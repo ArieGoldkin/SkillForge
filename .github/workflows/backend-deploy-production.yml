@@ -108,7 +108,7 @@ jobs:
 
       - name: Deploy to Render
         if: env.RENDER_API_KEY != ''
-        uses: johnbeynon/render-deploy-action@v0.0.8
+        uses: johnbeynon/render-deploy-action@v0.0.9
         with:
           service-id: ${{ secrets.RENDER_SERVICE_ID_PRODUCTION }}
           api-key: ${{ secrets.RENDER_API_KEY }}
