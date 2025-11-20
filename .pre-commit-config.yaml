@@ -1,0 +1,94 @@
+# Pre-commit hooks configuration for SkillForge
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # Python code formatting and linting
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3.13
+        args: ["--line-length=100"]
+        files: ^backend/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # Python type checking (optional - can run manually)
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.13.0
+  #   hooks:
+  #     - id: mypy
+  #       args: ['--ignore-missing-imports', '--python-version=3.13']
+  #       files: ^backend/app/
+  #       pass_filenames: false
+
+  # Frontend (if exists)
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.17.0
+    hooks:
+      - id: eslint
+        files: ^frontend/.*\.[jt]sx?$
+        types: [file]
+        additional_dependencies:
+          - eslint@9.17.0
+        entry: bash -c 'cd frontend && npm run lint || true'
+        pass_filenames: false
+        always_run: false
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types: [yaml]
+        exclude: ^(.github/workflows/|docker-compose)
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        files: \.(sh|bash)$
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+    .*\.lock|
+    .*\.pyc|
+    .*\.pyo|
+    __pycache__|
+    .venv|
+    venv|
+    node_modules|
+    .git|
+    dist|
+    build|
+    .pytest_cache|
+    htmlcov|
+    .coverage
+  )

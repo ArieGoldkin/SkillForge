@@ -2,12 +2,7 @@ name: Database Migrations Check
 
 on:
   push:
-    branches: ['**']
-    paths:
-      - 'backend/alembic/versions/**'
-      - '.github/workflows/migrations-check.yml'
-  pull_request:
-    branches: ['**']
+    branches: [main, dev]
     paths:
       - 'backend/alembic/versions/**'
       - '.github/workflows/migrations-check.yml'
