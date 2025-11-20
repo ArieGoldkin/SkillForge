@@ -1,0 +1,411 @@
+# SkillForge Cursor Rules
+
+**Project:** SkillForge - Research-to-Implementation Pipeline  
+**Stack:** Python 3.13, FastAPI, LangGraph v1.0, PostgreSQL, React 19
+
+---
+
+## 🔴 Zero-Tolerance Execution Rules
+
+### Root Cause Analysis (MANDATORY)
+- **NEVER suppress warnings** - Fix root cause, not symptoms
+- **NEVER skip failing tests** - Fix the test or the code
+- **NEVER ignore type errors** - Fix types properly
+- **Production ready = thoroughly tested** - All features must have tests
+
+### Quality Gates (Hard Blocks)
+- **Backend coverage:** ≥80% (hard block if below)
+- **Type errors:** 0 type-arg errors, ≤50 total mypy errors
+- **Linting:** 0 warnings, 0 errors (ruff)
+- **Tests:** 100% pass rate before commit
+
+### Pre-Commit Checks
+```bash
+# Fast, selective (only changed files)
+ruff check --select=E,F,I,N,W,UP .
+black --check .
+mypy app
+pytest tests/ --cov=app --cov-fail-under=80
+```
+
+### Pre-Push Checks
+```bash
+# Comprehensive (full test suite)
+ruff check .
+black --check .
+mypy app
+pytest tests/ -v --cov=app --cov-report=html --cov-fail-under=80
+```
+
+---
+
+## 📋 Code Quality Standards
+
+### Python/FastAPI Standards
+
+**1. Type Hints (MANDATORY)**
+- Use type hints for all function parameters and return values
+- **NEVER use `Any`** - use `Unknown` or proper types
+- Use `from typing import Any` only when absolutely necessary (document why)
+
+**2. File Size Limits**
+- Source files: **200 lines maximum** (refactor when approaching)
+- Repository files: **150 lines maximum**
+- Service files: **200 lines maximum**
+- Test files: **300 lines maximum**
+- Refactor when approaching limits
+
+**3. Function Complexity**
+- Maximum parameters: **5 per function**
+- Maximum nesting depth: **4 levels**
+- Maximum cyclomatic complexity: **15**
+
+**4. Async/Await**
+- Use `async/await` for all I/O operations
+- Use `async def` for FastAPI endpoints
+- Use `AsyncSession` for database operations
+- Use `async` context managers where applicable
+
+**5. Error Handling**
+- Use specific exception types, not bare `except:`
+- Log errors with context using `structlog`
+- Return appropriate HTTP status codes
+- Don't expose internal errors to clients
+
+---
+
+## 🏗️ Architecture Patterns
+
+### Repository Pattern (MANDATORY)
+
+**✅ GOOD: Repository interface dependency injection**
+```python
+from app.db.repositories.analysis import IAnalysisRepository, get_analysis_repository
+
+@router.post("/analyze")
+async def create_analysis(
+    request: AnalyzeRequest,
+    repo: IAnalysisRepository = Depends(get_analysis_repository)
+) -> AnalyzeResponse:
+    analysis = await repo.create(url=request.url)
+    return AnalyzeResponse.from_orm(analysis)
+```
+
+**❌ BAD: Direct Session access**
+```python
+@router.post("/analyze")
+async def create_analysis(
+    request: AnalyzeRequest,
+    db: AsyncSession = Depends(get_db)
+) -> AnalyzeResponse:
+    # Direct database access - violates repository pattern
+    result = await db.execute(select(Analysis))
+    return result.scalars().all()
+```
+
+### Structured Logging (MANDATORY)
+
+**✅ GOOD: Structured logging with context**
+```python
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+logger.info(
+    "workflow_extraction_complete",
+    analysis_id=analysis_id,
+    word_count=len(content),
+    duration_ms=duration
+)
+```
+
+**❌ BAD: Print statements or basic logging**
+```python
+print(f"Extraction complete for {analysis_id}")
+logging.info(f"Extraction complete")
+```
+
+### SSE Instrumentation (MANDATORY)
+
+All LangGraph workflow nodes MUST emit SSE events:
+```python
+from app.services.event_broadcaster import broadcaster
+
+async def emit_streaming_event(
+    event_type: str,
+    analysis_id: str,
+    stage: str,
+    **kwargs
+) -> None:
+    """Emit SSE event during workflow execution."""
+    event_data = {
+        "type": event_type,
+        "analysis_id": analysis_id,
+        "stage": stage,
+        "timestamp": datetime.now(UTC).isoformat(),
+        **kwargs
+    }
+    await broadcaster.publish(
+        channel=f"workflow:{analysis_id}",
+        message=event_data
+    )
+```
+
+---
+
+## 🔧 LangGraph v1.0 Patterns
+
+### Functional API (@entrypoint, @task)
+
+```python
+from langgraph.func import entrypoint, task
+from langgraph.checkpoint.postgres import PostgresSaver
+
+checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
+    """Extract content from URL."""
+    # SSE event
+    await emit_streaming_event("progress", analysis_id, "extraction", status="running")
+    # ... extraction logic
+    await emit_streaming_event("progress", analysis_id, "extraction", status="complete")
+    return {"content": content}
+
+@entrypoint(checkpointer=checkpointer)
+async def analysis_workflow(
+    url: str,
+    analysis_id: str,
+    previous: dict | None = None
+) -> dict:
+    """Main analysis workflow."""
+    result = await extract_content(url, analysis_id)
+    return result
+```
+
+### LangChain v1.0 create_agent
+
+```python
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+
+model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+
+agent = create_agent(
+    model,
+    tools=[tool1, tool2],
+    system_prompt="Agent system prompt"
+)
+```
+
+---
+
+## 📦 Alembic Migrations (MANDATORY)
+
+### Always Reversible
+
+**✅ GOOD: Reversible migration**
+```python
+def upgrade():
+    op.create_table(
+        'analyses',
+        sa.Column('id', sa.UUID(), primary_key=True),
+        sa.Column('url', sa.Text(), nullable=False),
+    )
+    op.create_index('ix_analyses_url', 'analyses', ['url'])
+
+def downgrade():
+    op.drop_index('ix_analyses_url', table_name='analyses')
+    op.drop_table('analyses')
+```
+
+**❌ BAD: Non-reversible migration**
+```python
+def upgrade():
+    op.create_table('analyses', ...)
+
+def downgrade():
+    pass  # Data loss!
+```
+
+### Index Naming Convention
+- Index names: `ix_<table>_<column>`
+- Unique indexes: `uq_<table>_<column>`
+- Foreign keys: `fk_<table>_<column>`
+
+### Verify Locally
+```bash
+alembic upgrade head
+alembic downgrade -1
+alembic upgrade head
+```
+
+---
+
+## 🔒 Security Standards
+
+### Environment Variables
+- **NEVER commit `.env` files**
+- Use `.env.example` as template
+- Validate required variables at startup
+- Use Pydantic Settings for type-safe config
+
+### API Security
+- Validate all inputs with Pydantic schemas
+- Use dependency injection for repositories
+- Don't expose internal errors to clients
+- Sanitize user inputs before logging
+
+### CORS Configuration
+- Configure allowed origins explicitly
+- Don't use `allow_origins=["*"]` in production
+- Use environment variables for CORS origins
+
+---
+
+## 📝 Documentation Standards
+
+### Docstrings
+- Include docstrings for all public functions/classes
+- Use Google-style docstrings:
+  ```python
+  def extract_content(url: str, analysis_id: str) -> dict:
+      """Extract content from URL.
+      
+      Args:
+          url: The URL to extract content from
+          analysis_id: Unique identifier for the analysis
+          
+      Returns:
+          Dictionary with 'content', 'title', 'metadata'
+          
+      Raises:
+          JinaReaderError: If extraction fails
+      """
+  ```
+
+### Code Comments
+- Explain **why**, not **what**
+- Remove commented-out code
+- Update comments when code changes
+
+---
+
+## 🧪 Testing Standards
+
+### Test Structure
+- One test file per source file: `test_{module_name}.py`
+- Use descriptive test names: `test_extract_content_returns_dict_with_content`
+- Use pytest fixtures for common setup
+- Mock external dependencies (APIs, LLMs, databases)
+
+### Test Coverage
+- **Backend: ≥80%** (hard block)
+- Focus on critical paths first
+- Test error cases, not just happy paths
+- Use VCR.py for HTTP recording (optional)
+
+### Test Examples
+
+```python
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+
+def test_health_check(client: TestClient):
+    """Test health check endpoint returns healthy status."""
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "version" in data
+```
+
+---
+
+## 🚀 Git Workflow
+
+### Branch Naming
+- Feature: `feature/issue-{number}-{description}`
+- Bugfix: `bugfix/issue-{number}-{description}`
+- Hotfix: `hotfix/{description}`
+
+### Commit Messages
+- Use conventional commits format:
+  ```
+  feat: add health check endpoint
+  
+  - Implement /api/v1/health endpoint
+  - Add HealthStatus Pydantic model
+  - Add tests for health check
+  
+  Closes #1
+  ```
+
+### Atomic Commits
+- One logical change per commit
+- Run tests before committing
+- Fix linting errors before committing
+- Update docs if API changes
+
+---
+
+## 📊 Project-Specific Rules
+
+### FastAPI Endpoints
+- Use `@router.post("/path")` for POST endpoints
+- Use `response_model` for response validation
+- Use Pydantic schemas for request validation
+- Return appropriate HTTP status codes:
+  - `200` - Success
+  - `201` - Created
+  - `400` - Bad Request
+  - `404` - Not Found
+  - `422` - Unprocessable Entity
+  - `500` - Internal Server Error
+
+### Database Models
+- Use SQLAlchemy async models
+- Include `created_at` and `updated_at` timestamps
+- Use UUID primary keys
+- Add indexes for foreign keys and search fields
+
+### Configuration
+- Use Pydantic Settings for config
+- Load from environment variables
+- Validate at startup
+- Provide sensible defaults for development
+
+### Logging
+- Use structlog for structured logging
+- Include request_id in all logs
+- Different formats for dev (readable) vs prod (JSON)
+- Never log sensitive data (API keys, passwords, tokens)
+
+---
+
+## 🎯 Quality Checklist (Before Commit)
+
+- [ ] All tests pass: `pytest tests/`
+- [ ] No linting errors: `ruff check .`
+- [ ] Code formatted: `black --check .`
+- [ ] Type checking passes: `mypy app`
+- [ ] Coverage ≥80%: `pytest --cov=app --cov-fail-under=80`
+- [ ] Docstrings added for new functions
+- [ ] Commit message follows convention
+- [ ] No `TODO` or `FIXME` comments (create issues instead)
+- [ ] File sizes within limits (200 lines source, 300 lines tests)
+
+---
+
+## 📚 Reference
+
+- **Backend Tasks:** `docs/YONATAN_BACKEND_TASKS.md`
+- **Integration Points:** `docs/INTEGRATION_POINTS.md`
+- **API Contract:** `docs/API_CONTRACT.md` (when created)
+- **Architecture:** `docs/ARCHITECTURE.md`
+
+---
+
+**Last Updated:** November 20, 2025  
+**Maintained By:** Backend Team
