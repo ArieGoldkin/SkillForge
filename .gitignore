@@ -1,0 +1,369 @@
+# SkillForge .gitignore
+# Project: Research-to-Implementation Pipeline with AI Tutoring
+# Repository: https://github.com/ArieGoldkin/SkillForge
+
+# ============================================================================
+# Python / Backend
+# ============================================================================
+
+# Virtual Environment
+venv/
+env/
+ENV/
+backend/venv/
+backend/env/
+.venv/
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+__pycache__/
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Django/Flask (if used later)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+
+# Alembic (keep migrations in git, but not temp files)
+alembic/versions/__pycache__/
+
+# ============================================================================
+# Node.js / Frontend
+# ============================================================================
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+frontend/dist/
+frontend/dist-ssr/
+
+# Environment
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Vite
+.vite/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================================================
+# Database
+# ============================================================================
+
+# PostgreSQL
+*.sql
+*.dump
+pgdata/
+
+# SQLite (if used for testing)
+*.db
+*.sqlite
+*.sqlite3
+
+# Database backups
+backups/
+*.backup
+
+# ============================================================================
+# Docker
+# ============================================================================
+
+# Docker volumes (data should not be in git)
+postgres_data/
+ollama_data/
+
+# Docker Compose override (for local customizations)
+docker-compose.override.yml
+
+# ============================================================================
+# IDEs and Editors
+# ============================================================================
+
+# VSCode
+.vscode/
+.history/
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# Operating System
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# Logs and Temporary Files
+# ============================================================================
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ============================================================================
+# API Keys and Secrets (CRITICAL - NEVER COMMIT)
+# ============================================================================
+
+# Environment files with secrets
+.env.production
+.env.staging
+secrets.json
+credentials.json
+service-account.json
+
+# API Keys
+*_api_key.txt
+api_keys/
+secrets/
+
+# SSL Certificates (if self-signed for dev)
+*.pem
+*.key
+*.cert
+*.crt
+
+# ============================================================================
+# Testing
+# ============================================================================
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
+# Jest
+coverage/
+
+# Pytest
+.pytest_cache/
+htmlcov/
+
+# ============================================================================
+# Project Specific
+# ============================================================================
+
+# Downloaded models (Ollama models are large)
+models/
+*.bin
+*.safetensors
+
+# Generated artifacts (outputs from analysis)
+artifacts/
+generated/
+
+# Cache directories
+.cache/
+*.cache
+
+# Uploads (user-uploaded content)
+uploads/
+
+# Vector embeddings (can be large)
+embeddings/
+vectors/
+
+# ============================================================================
+# Build and Deployment
+# ============================================================================
+
+# Vercel
+.vercel/
+
+# Railway
+.railway/
+
+# Terraform (if used for infrastructure)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes (if used)
+*.kubeconfig
+
+# ============================================================================
+# Documentation Build (if using something like Sphinx)
+# ============================================================================
+
+docs/_build/
+docs/.doctrees/
+site/
+
+# ============================================================================
+# Miscellaneous
+# ============================================================================
+
+# macOS specific
+.Spotlight-V100
+.fseventsd
+
+# Backup files
+*.bak
+*.backup
+*~.nib
+
+# Archive files (shouldn't be in repo)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Large media files (should use Git LFS if needed)
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# ============================================================================
+# KEEP THESE FILES (Explicitly NOT ignored)
+# ============================================================================
+
+# Keep example environment files
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Keep README files
+!README.md
+!*/README.md
+
+# Keep documentation
+!docs/**
+!*.md
+
+# Keep Alembic migrations (these should be in git)
+!alembic/versions/*.py
+
+# Keep Docker files
+!Dockerfile
+!docker-compose.yml
+!.dockerignore
+
+# Keep CI/CD configs
+!.github/
+!.github/workflows/
+
+# Keep config files
+!.eslintrc.*
+!.prettierrc.*
+!tsconfig.json
+!vite.config.ts
+!tailwind.config.js
+!alembic.ini
