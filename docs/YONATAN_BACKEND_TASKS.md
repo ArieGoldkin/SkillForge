@@ -109,16 +109,19 @@ async def emit_streaming_event(
 
 ## 🎯 Sprint 1: Foundation - Weeks 1-2
 
-**Sprint Goal:** Setup backend infrastructure with FastAPI, PostgreSQL, Docker
-**Total Story Points:** 21
-**User Stories:** US-1.1 (partial)
+**Sprint Goal:** Setup backend infrastructure with FastAPI, PostgreSQL, Docker  
+**Total Story Points:** 21  
+**User Stories:** US-1.1 (partial)  
+**GitHub Milestone:** [Sprint 1: Backend Foundation](https://github.com/ArieGoldkin/SkillForge/milestone/1)  
+**GitHub Issues:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1), [#2](https://github.com/ArieGoldkin/SkillForge/issues/2), [#3](https://github.com/ArieGoldkin/SkillForge/issues/3), [#4](https://github.com/ArieGoldkin/SkillForge/issues/4), [#5](https://github.com/ArieGoldkin/SkillForge/issues/5)
 
 ---
 
 ### ✅ Task 1.1.1: Create FastAPI Project Structure [3 pts]
 
-**Status:** Not Started
-**Dependencies:** None
+**Status:** Not Started  
+**GitHub Issue:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1)  
+**Dependencies:** None  
 **Parallel Work:** Arie setting up frontend
 
 #### Description
@@ -305,7 +308,8 @@ curl http://localhost:8000/health
 
 ### ✅ Task 1.1.2: Setup Environment Configuration [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.3)  
 **Dependencies:** Task 1.1.1
 
 #### Description
@@ -327,7 +331,8 @@ LOG_LEVEL=DEBUG
 
 ### ✅ Task 1.1.3: Implement Structured Logging [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.2)  
 **Dependencies:** Task 1.1.2
 
 #### Description
@@ -380,7 +385,8 @@ async def startup_event():
 
 ### ✅ Task 1.2.1: Install & Configure Alembic [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.1.3
 
 #### Description
@@ -407,7 +413,8 @@ target_metadata = Base.metadata
 
 ### ✅ Task 1.2.2: Create SQLAlchemy Models [5 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.1
 
 #### Description
@@ -560,7 +567,8 @@ from app.models.progress import AnalysisProgress
 
 ### ✅ Task 1.2.3: Enable PGVector Extension [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.2
 
 #### Description
@@ -584,7 +592,8 @@ def downgrade():
 
 ### ✅ Task 1.2.4: Generate Initial Migration [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.3
 
 #### Description
@@ -606,7 +615,8 @@ psql -U dev -d skillforge -c "\dt"
 
 ### ✅ Task 1.2.5: Create Database Utilities [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.4
 
 #### Description
@@ -653,7 +663,8 @@ async def create_analysis(db: AsyncSession = Depends(get_db)):
 
 ### ✅ Task 1.4.1: Research & Setup Jina AI [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.2.5
 
 #### Description
@@ -672,7 +683,8 @@ curl -H "Authorization: Bearer YOUR_KEY" https://r.jina.ai/https://react.dev
 
 ### ✅ Task 1.4.2: Create Jina Reader Service [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.4.1
 
 #### Description
@@ -764,7 +776,8 @@ class JinaReader:
 
 ### ✅ Task 1.4.3: Create Analysis Endpoint [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.4.2
 **Integration Point:** API contract meeting with Arie (Day 3)
 
@@ -933,7 +946,8 @@ app.include_router(analyze_router)
 
 ### ✅ Task 1.5.1: Install Ollama Models [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
 **Dependencies:** Docker Compose running (Task 1.6.1)
 
 #### Description
@@ -956,7 +970,8 @@ curl http://localhost:11434/api/tags
 
 ### ✅ Task 1.5.2: Create Embedding Service [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
 **Dependencies:** Task 1.5.1
 
 #### Description
@@ -1858,10 +1873,17 @@ docker exec -it ollama ollama list
 
 **For Yonatan (Backend):**
 1. **Day 1-2:** Setup project structure with Poetry + pyproject.toml
+   - Start with [Issue #1](https://github.com/ArieGoldkin/SkillForge/issues/1) - Task 1.1.1
 2. **Day 3:** API contract meeting with Arie (define `/api/v1/analyze` schema)
 3. **Day 4-5:** Implement database schema + migrations
+   - Continue with [Issue #2](https://github.com/ArieGoldkin/SkillForge/issues/2) - Tasks 1.1.2-1.1.3
+   - Then [Issue #3](https://github.com/ArieGoldkin/SkillForge/issues/3) - Tasks 1.2.1-1.2.5
 4. **Day 6-7:** Implement content extraction (Jina AI)
+   - [Issue #4](https://github.com/ArieGoldkin/SkillForge/issues/4) - Tasks 1.4.1-1.4.5
 5. **Day 8-10:** Implement embedding service + basic LangGraph workflow
+   - [Issue #5](https://github.com/ArieGoldkin/SkillForge/issues/5) - Tasks 1.5.1-1.5.2
+
+**GitHub Milestone:** [Sprint 1: Backend Foundation](https://github.com/ArieGoldkin/SkillForge/milestone/1)
 
 **For Arie (Frontend):**
 1. **Day 1-2:** Setup React 19 + Vite project
