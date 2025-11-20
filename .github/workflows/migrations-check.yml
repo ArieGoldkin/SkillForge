@@ -1,0 +1,145 @@
+name: Database Migrations Check
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'backend/alembic/versions/**'
+      - '.github/workflows/migrations-check.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-reversible:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Check for irreversible migrations
+        working-directory: ./backend
+        run: |
+          # Get list of migration files
+          MIGRATIONS=$(find alembic/versions -name "*.py" -type f)
+          
+          # Check each migration for downgrade() function
+          FAILED=false
+          for migration in $MIGRATIONS; do
+            if ! grep -q "def downgrade" "$migration"; then
+              echo "ERROR: Migration $migration is missing downgrade() function"
+              FAILED=true
+            fi
+          done
+          
+          if [ "$FAILED" = true ]; then
+            echo "Found irreversible migrations. All migrations must include a downgrade() function."
+            exit 1
+          fi
+          
+          echo "All migrations appear to have downgrade functions"
+
+  test-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Setup database connection
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: |
+          # Enable pgvector extension
+          PGPASSWORD=testpass psql -h localhost -U testuser -d testdb -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      - name: Run migrations up
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: poetry run alembic upgrade head
+
+      - name: Verify schema
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: |
+          # Verify migrations were applied
+          poetry run alembic current
+          poetry run alembic history
+
+      - name: Run migrations down (one step)
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: |
+          # Get current revision
+          CURRENT=$(poetry run alembic current | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
+          if [ -n "$CURRENT" ]; then
+            # Get previous revision
+            PREV=$(poetry run alembic history | grep -A 1 "$CURRENT" | tail -1 | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
+            if [ -n "$PREV" ] && [ "$PREV" != "$CURRENT" ]; then
+              echo "Downgrading from $CURRENT to $PREV"
+              poetry run alembic downgrade "$PREV"
+            fi
+          fi
+
+      - name: Run migrations up again
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: poetry run alembic upgrade head
+
+      - name: Cleanup
+        if: always()
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
+        run: poetry run alembic downgrade base || true
