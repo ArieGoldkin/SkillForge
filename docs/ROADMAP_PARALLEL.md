@@ -29,9 +29,10 @@
 - **Focus Areas:** UI/UX, real-time updates (SSE), state management, accessibility
 
 **Yonatan (Backend Specialist)**
-- **Primary Stack:** Python, FastAPI, LangGraph, PostgreSQL, PGVector
+- **Primary Stack:** Python 3.13, FastAPI 0.121.2+, LangGraph v1.0, LangChain v1.0, PostgreSQL, PGVector
 - **Secondary Skills:** Can handle frontend debugging, API documentation
 - **Focus Areas:** LangGraph workflows, LLM integration, database design, content extraction
+- **Backend Patterns:** Async repository pattern, SSE instrumentation, structured logging, reversible migrations
 
 ### Work Distribution Principles
 
