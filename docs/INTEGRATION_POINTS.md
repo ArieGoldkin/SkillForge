@@ -81,6 +81,90 @@
 
 ---
 
+## 🎯 Backend Implementation Patterns
+
+### API Endpoint Pattern
+
+**Repository-Based Endpoints:**
+```python
+# app/api/v1/analyze.py
+from fastapi import Depends, APIRouter
+from app.db.repositories.analysis import get_analysis_repository, IAnalysisRepository
+from app.schemas.analysis import AnalyzeRequest, AnalyzeResponse
+
+router = APIRouter(prefix="/api/v1", tags=["analyze"])
+
+@router.post("/analyze", response_model=AnalyzeResponse)
+async def create_analysis(
+    request: AnalyzeRequest,
+    repo: IAnalysisRepository = Depends(get_analysis_repository)
+) -> AnalyzeResponse:
+    """Create new analysis from URL."""
+    analysis = await repo.create(
+        url=request.url,
+        content_type=request.content_type
+    )
+    return AnalyzeResponse.from_orm(analysis)
+```
+
+**SSE Endpoint Pattern:**
+```python
+from sse_starlette.sse import EventSourceResponse
+from app.services.event_broadcaster import broadcaster
+
+@router.get("/analyze/{analysis_id}/stream")
+async def stream_analysis_progress(
+    analysis_id: uuid.UUID,
+    request: Request
+) -> EventSourceResponse:
+    """Stream real-time analysis progress via SSE."""
+    
+    async def event_generator():
+        async for event in broadcaster.subscribe(f"workflow:{analysis_id}"):
+            yield {
+                "event": event["type"],
+                "data": json.dumps(event)
+            }
+    
+    return EventSourceResponse(event_generator())
+```
+
+### LangGraph Workflow Pattern (v1.0 Functional API)
+
+**SSE Instrumentation in Nodes:**
+```python
+from langgraph.func import entrypoint, task
+from app.services.event_broadcaster import broadcaster
+
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
+    """Extract content with SSE events."""
+    # Emit start event
+    await broadcaster.publish(
+        f"workflow:{analysis_id}",
+        {"type": "progress", "stage": "extraction", "status": "running"}
+    )
+    
+    # Do work
+    content = await jina_reader.extract(url)
+    
+    # Emit complete event
+    await broadcaster.publish(
+        f"workflow:{analysis_id}",
+        {"type": "progress", "stage": "extraction", "status": "complete"}
+    )
+    
+    return {"content": content}
+
+@entrypoint(checkpointer=checkpointer)
+async def analysis_workflow(url: str, analysis_id: str) -> dict:
+    """Main workflow with SSE instrumentation."""
+    result = extract_content(url, analysis_id).result()
+    return result
+```
+
+---
+
 ## 📅 Integration Calendar
 
 ### Sprint 1: Foundation (Weeks 1-2)
@@ -93,6 +177,9 @@
 
 **Pre-work:**
 - **Yonatan:** Draft OpenAPI spec for `/api/v1/analyze` endpoint
+  - Use Pydantic schemas for request/response validation
+  - Include error response schemas (400, 404, 500)
+  - Document SSE endpoint separately
 - **Arie:** Review user stories, list required frontend data
 
 **Agenda:**
@@ -112,9 +199,19 @@
    - Arie: Create mock responses
 
 **Outputs:**
-- [ ] `docs/API_CONTRACT.md` created
-- [ ] `frontend/src/types/api.ts` generated
+- [ ] `docs/API_CONTRACT.md` created with:
+  - Request/response schemas (Pydantic models)
+  - Error codes and messages
+  - SSE event schemas
+  - Example requests/responses
+- [ ] `frontend/src/types/api.ts` generated from OpenAPI spec
 - [ ] Both developers agree on contract (no changes without discussion)
+
+**Backend Implementation Notes:**
+- Use repository pattern: `Depends(get_analysis_repository)`
+- Validate with Pydantic schemas
+- Return proper HTTP status codes
+- Log all requests with structlog (include analysis_id in context)
 
 **Post-meeting:**
 - Yonatan implements endpoint following contract exactly
@@ -165,6 +262,39 @@
 **Blocker:** Arie cannot build progress UI without this
 
 **Deliverable:** Yonatan provides SSE event schema
+
+**Backend Implementation Pattern:**
+```python
+# Yonatan implements SSE events in LangGraph nodes
+# Event types match schema exactly:
+
+# 1. Progress events (from each workflow stage)
+await emit_streaming_event(
+    "progress",
+    analysis_id=analysis_id,
+    stage="extraction",  # or "supervisor_routing", "tech_comparison", etc.
+    status="running",    # or "pending", "complete", "failed"
+    details={"word_count": 5234}  # Optional stage-specific data
+)
+
+# 2. Complete event (when analysis finishes)
+await emit_streaming_event(
+    "complete",
+    analysis_id=analysis_id,
+    stage="artifact_generation",
+    status="complete",
+    details={"artifact_id": "abc123..."}
+)
+
+# 3. Error events (on failures)
+await emit_streaming_event(
+    "error",
+    analysis_id=analysis_id,
+    stage="extraction",
+    status="failed",
+    details={"error": "URL not found (404)"}
+)
+```
 
 **Format:**
 ```typescript

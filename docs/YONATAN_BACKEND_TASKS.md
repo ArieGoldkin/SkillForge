@@ -1,8 +1,96 @@
 # ⚙️ Yonatan's Backend Tasks - SkillForge
 
 **Developer:** Yonatan (Backend Specialist)
-**Primary Stack:** Python 3.11+, FastAPI, LangGraph, PostgreSQL, PGVector
+**Primary Stack:** Python 3.13, FastAPI, LangGraph v1.0, LangChain v1.0, PostgreSQL, PGVector
 **Project:** SkillForge - Research-to-Implementation Pipeline
+
+## ⚠️ Important Requirements
+
+- **Python 3.13** - Required (released October 2024, stable)
+- **Dependency Management:** Use `pyproject.toml` with Poetry (PEP 518 standard)
+- **LangGraph v1.0** - Use Functional API (`@entrypoint`, `@task`) patterns
+- **LangChain v1.0** - Use `create_agent` (replaces deprecated `create_react_agent`)
+- **FastAPI 0.121.2+** - Latest with CVE fixes
+- **Starlette 0.49.3+** - Required for CVE fixes
+
+---
+
+## 🎯 Backend Patterns & Best Practices
+
+### Golden Patterns (Do Not Violate)
+
+**1. Async Repository Pattern**
+```python
+# ✅ GOOD: Endpoints depend on repository interfaces
+async def list_analyses(repo: IAnalysisRepository) -> list[Analysis]:
+    analyses = await repo.list_active()
+    return analyses
+
+# ❌ BAD: Direct Session access in routers
+async def list_analyses(db: AsyncSession) -> list[Analysis]:
+    result = await db.execute(select(Analysis))
+    return result.scalars().all()
+```
+
+**2. Alembic Migrations Always Reversible**
+- `upgrade()` + matching `downgrade()` with index cleanup
+- Index names follow `ix_<table>_<column>`
+- Verify `alembic upgrade head` + `alembic downgrade -1` locally
+
+**3. Structured Logging with Context**
+```python
+import structlog
+
+logger = structlog.get_logger()
+
+# ✅ GOOD: Structured logging with context
+logger.info(
+    "workflow_extraction_complete",
+    analysis_id=analysis_id,
+    word_count=len(content),
+    duration_ms=duration
+)
+
+# ❌ BAD: Print statements or basic logging
+print(f"Extraction complete for {analysis_id}")
+```
+
+**4. SSE Instrumentation in LangGraph Nodes**
+```python
+from app.services.event_broadcaster import broadcaster
+
+async def emit_streaming_event(
+    event_type: str,
+    analysis_id: str,
+    stage: str,
+    **kwargs
+) -> None:
+    """Emit SSE event during workflow execution."""
+    event_data = {
+        "type": event_type,
+        "analysis_id": analysis_id,
+        "stage": stage,
+        "timestamp": datetime.now(UTC).isoformat(),
+        **kwargs
+    }
+    await broadcaster.publish(
+        channel=f"workflow:{analysis_id}",
+        message=event_data
+    )
+```
+
+**5. File Size Limits**
+- Source files: 200 lines maximum
+- Repository files: 150 lines maximum
+- Service files: 200 lines maximum
+- Test files: 300 lines maximum
+- Refactor when approaching limits
+
+**6. Quality Gates (Mandatory)**
+- Backend coverage: ≥80% (hard block if below)
+- Type errors: 0 type-arg errors
+- Linting: 0 warnings, 0 errors (`ruff`, `mypy`)
+- Tests: 100% pass rate
 
 ---
 
@@ -21,16 +109,19 @@
 
 ## 🎯 Sprint 1: Foundation - Weeks 1-2
 
-**Sprint Goal:** Setup backend infrastructure with FastAPI, PostgreSQL, Docker
-**Total Story Points:** 21
-**User Stories:** US-1.1 (partial)
+**Sprint Goal:** Setup backend infrastructure with FastAPI, PostgreSQL, Docker  
+**Total Story Points:** 21  
+**User Stories:** US-1.1 (partial)  
+**GitHub Milestone:** [Sprint 1: Backend Foundation](https://github.com/ArieGoldkin/SkillForge/milestone/1)  
+**GitHub Issues:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1), [#2](https://github.com/ArieGoldkin/SkillForge/issues/2), [#3](https://github.com/ArieGoldkin/SkillForge/issues/3), [#4](https://github.com/ArieGoldkin/SkillForge/issues/4), [#5](https://github.com/ArieGoldkin/SkillForge/issues/5)
 
 ---
 
 ### ✅ Task 1.1.1: Create FastAPI Project Structure [3 pts]
 
-**Status:** Not Started
-**Dependencies:** None
+**Status:** Not Started  
+**GitHub Issue:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1)  
+**Dependencies:** None  
 **Parallel Work:** Arie setting up frontend
 
 #### Description
@@ -49,24 +140,50 @@ Initialize FastAPI project with proper directory structure and core files.
 mkdir -p backend/app/{api/v1,core,db,models,schemas,services,workflows}
 cd backend
 
-# 2. Initialize Python environment
-python3.11 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# 2. Install Poetry (if not already installed)
+curl -sSL https://install.python-poetry.org | python3 -
 
-# 3. Create requirements.txt
+# 3. Initialize Poetry project
+poetry init --no-interaction --name skillforge-backend --python "^3.13"
+
+# 4. Add core dependencies
+poetry add fastapi@^0.121.2 starlette@^0.49.3 "uvicorn[standard]@^0.32.0"
+poetry add pydantic@^2.10.3 pydantic-settings@^2.6.1 python-dotenv@^1.0.1
+
+# 5. Add LangGraph v1.0 dependencies
+poetry add langgraph@^1.0.0 langgraph-checkpoint@^3.0.0
+
+# 6. Add LangChain v1.0 dependencies
+poetry add langchain@^1.0.0 langchain-core@^1.0.0 langchain-community@^1.0.0
+
+# 7. Add LLM providers
+poetry add langchain-openai@^1.0.0 langchain-anthropic@^1.0.0 langchain-ollama@^1.0.0 ollama@^0.4.3
+
+# 8. Add database dependencies
+poetry add "psycopg[binary,pool]@^3.2.3" pgvector@^0.4.1 "sqlalchemy[asyncio]@^2.0.36" alembic@^1.13.3
+
+# 9. Add HTTP & utilities
+poetry add "httpx[brotli,zstd]@^0.28.1" sse-starlette@^2.1.3 structlog@^24.4.0 tenacity@^9.0.0 orjson@^3.9.7
+
+# 10. Add content extraction
+poetry add youtube-transcript-api@^0.6.2 pygithub@^2.5.0 beautifulsoup4@^4.12.3 playwright@^1.48.0
+
+# 11. Add observability
+poetry add langsmith@^1.0.0
+
+# 12. Add dev dependencies
+poetry add --group dev pytest@^8.3.4 pytest-asyncio@^0.25.1 pytest-cov@^5.0.0
+poetry add --group dev black@^24.8.0 ruff@^0.6.9 mypy@^1.13.0 isort@^5.13.2
+
+# 13. Install all dependencies
+poetry install
 ```
 
-```txt
-# requirements.txt
-fastapi==0.118.2
-uvicorn[standard]==0.32.0
-pydantic==2.10.3
-pydantic-settings==2.6.1
-python-dotenv==1.0.1
-```
-
+**Note:** Poetry automatically creates and manages a virtual environment. To activate it:
 ```bash
-pip install -r requirements.txt
+poetry shell  # Activates the virtual environment
+# OR
+poetry run <command>  # Runs command in virtual environment
 ```
 
 #### Directory Structure
@@ -110,7 +227,8 @@ backend/
 ├── tests/
 ├── .env.example
 ├── .env
-├── requirements.txt
+├── pyproject.toml           # Poetry dependency management (PEP 518)
+├── poetry.lock              # Locked dependency versions (auto-generated)
 └── README.md
 ```
 
@@ -190,7 +308,8 @@ curl http://localhost:8000/health
 
 ### ✅ Task 1.1.2: Setup Environment Configuration [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.3)  
 **Dependencies:** Task 1.1.1
 
 #### Description
@@ -212,7 +331,8 @@ LOG_LEVEL=DEBUG
 
 ### ✅ Task 1.1.3: Implement Structured Logging [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.2)  
 **Dependencies:** Task 1.1.2
 
 #### Description
@@ -265,7 +385,8 @@ async def startup_event():
 
 ### ✅ Task 1.2.1: Install & Configure Alembic [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.1.3
 
 #### Description
@@ -292,7 +413,8 @@ target_metadata = Base.metadata
 
 ### ✅ Task 1.2.2: Create SQLAlchemy Models [5 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.1
 
 #### Description
@@ -445,7 +567,8 @@ from app.models.progress import AnalysisProgress
 
 ### ✅ Task 1.2.3: Enable PGVector Extension [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.2
 
 #### Description
@@ -469,7 +592,8 @@ def downgrade():
 
 ### ✅ Task 1.2.4: Generate Initial Migration [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.3
 
 #### Description
@@ -491,7 +615,8 @@ psql -U dev -d skillforge -c "\dt"
 
 ### ✅ Task 1.2.5: Create Database Utilities [2 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
 **Dependencies:** Task 1.2.4
 
 #### Description
@@ -538,7 +663,8 @@ async def create_analysis(db: AsyncSession = Depends(get_db)):
 
 ### ✅ Task 1.4.1: Research & Setup Jina AI [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.2.5
 
 #### Description
@@ -557,7 +683,8 @@ curl -H "Authorization: Bearer YOUR_KEY" https://r.jina.ai/https://react.dev
 
 ### ✅ Task 1.4.2: Create Jina Reader Service [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.4.1
 
 #### Description
@@ -649,7 +776,8 @@ class JinaReader:
 
 ### ✅ Task 1.4.3: Create Analysis Endpoint [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.4.2
 **Integration Point:** API contract meeting with Arie (Day 3)
 
@@ -818,7 +946,8 @@ app.include_router(analyze_router)
 
 ### ✅ Task 1.5.1: Install Ollama Models [1 pt]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
 **Dependencies:** Docker Compose running (Task 1.6.1)
 
 #### Description
@@ -841,7 +970,8 @@ curl http://localhost:11434/api/tags
 
 ### ✅ Task 1.5.2: Create Embedding Service [3 pts]
 
-**Status:** Not Started
+**Status:** Not Started  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
 **Dependencies:** Task 1.5.1
 
 #### Description
@@ -1138,17 +1268,19 @@ Implement initial LangGraph workflow (no sub-agents yet).
 
 #### Installation
 ```bash
-pip install langgraph==0.6.7 langchain==0.3.27 langchain-core==0.3.42 langchain-community==0.3.5 langgraph-checkpoint==2.0.23
+pip install langgraph>=1.0.0 langchain>=1.0.0 langchain-core>=1.0.0 langchain-community>=1.0.0 langgraph-checkpoint>=3.0.0
 ```
 
-#### Implementation
+#### Implementation (LangGraph v1.0 Functional API)
 ```python
 # app/workflows/analysis.py
 from typing import TypedDict
-from langgraph.graph import StateGraph, END
+from langgraph.func import entrypoint, task
+from langgraph.checkpoint.postgres import PostgresSaver
 from app.services.extraction.jina_reader import JinaReader
 from app.services.embeddings import embedding_service
 from app.core.logging import logger
+from app.core.config import settings
 
 class AnalysisState(TypedDict):
     analysis_id: str
@@ -1162,37 +1294,54 @@ class AnalysisState(TypedDict):
     aggregated_insights: dict
     final_markdown: str
 
-async def extract_content(state: AnalysisState) -> AnalysisState:
+# Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
+checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
+
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
     """Extract content from URL."""
     jina = JinaReader()
     try:
-        extracted = await jina.extract_article(state["url"])
-        state["raw_content"] = extracted["content"]
-        state["extraction_metadata"] = extracted["metadata"]
-        logger.info("workflow_extraction_complete", analysis_id=state["analysis_id"])
+        extracted = await jina.extract_article(url)
+        logger.info("workflow_extraction_complete", analysis_id=analysis_id)
+        return {
+            "raw_content": extracted["content"],
+            "extraction_metadata": extracted["metadata"]
+        }
     finally:
         await jina.close()
 
-    return state
-
-async def generate_embedding(state: AnalysisState) -> AnalysisState:
+@task
+async def generate_embedding(content: str) -> list[float]:
     """Generate embedding for content."""
-    embedding = await embedding_service.generate_embedding(state["raw_content"])
-    state["content_embedding"] = embedding
-    logger.info("workflow_embedding_complete", analysis_id=state["analysis_id"])
-    return state
+    embedding = await embedding_service.generate_embedding(content)
+    return embedding
 
-# Build workflow
-workflow = StateGraph(AnalysisState)
-
-workflow.add_node("extract", extract_content)
-workflow.add_node("embed", generate_embedding)
-
-workflow.set_entry_point("extract")
-workflow.add_edge("extract", "embed")
-workflow.add_edge("embed", END)
-
-analysis_workflow = workflow.compile()
+# Main workflow using Functional API
+@entrypoint(checkpointer=checkpointer)
+async def analysis_workflow(
+    url: str,
+    analysis_id: str,
+    previous: dict | None = None
+) -> dict:
+    """Main analysis workflow using LangGraph v1.0 Functional API."""
+    
+    # Extract content (returns future, can run in parallel)
+    extraction_future = extract_content(url, analysis_id)
+    
+    # Block and get result
+    extraction_result = extraction_future.result()
+    
+    # Generate embedding
+    embedding = generate_embedding(extraction_result["raw_content"]).result()
+    
+    return {
+        "analysis_id": analysis_id,
+        "url": url,
+        "raw_content": extraction_result["raw_content"],
+        "extraction_metadata": extraction_result["extraction_metadata"],
+        "content_embedding": embedding
+    }
 ```
 
 ---
@@ -1278,59 +1427,114 @@ async def stream_analysis_progress(
 **Dependencies:** Task 1.5.4
 
 #### Description
-Create supervisor node that routes to sub-agents dynamically.
+Create supervisor node that routes to sub-agents dynamically using LangChain v1.0 `create_agent`.
 
-#### Implementation (Simplified)
+#### Backend Pattern
+**Use LangChain v1.0 create_agent as supervisor:**
+```python
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.tools import tool
+
+# Define agent tools (agents exposed as tools)
+@tool
+def tech_comparator_tool(content: str) -> str:
+    """Invoke tech comparator agent."""
+    return tech_comparator_agent.invoke({"messages": [content]})
+
+@tool
+def security_auditor_tool(content: str) -> str:
+    """Invoke security auditor agent."""
+    return security_auditor_agent.invoke({"messages": [content]})
+
+# Create supervisor agent using LangChain v1.0
+model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+
+supervisor_agent = create_agent(
+    model,
+    tools=[tech_comparator_tool, security_auditor_tool, ...],
+    system_prompt="""You are a content analysis supervisor. 
+    Analyze the content and decide which specialized agents should analyze it.
+    Return the agent names to invoke."""
+)
+
+@task
+async def supervisor_route(content: str, content_type: str) -> dict:
+    """Supervisor decides which agents to invoke."""
+    result = supervisor_agent.invoke({
+        "messages": [{
+            "role": "user",
+            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+        }]
+    })
+    
+    # Parse agent selection from result
+    selected_agents = parse_agent_selection(result)
+    
+    return {
+        "supervisor_decision": {
+            "agents": selected_agents,
+            "priority": [0.9] * len(selected_agents)
+        }
+    }
+```
+
+#### Implementation (LangGraph v1.0 + LangChain v1.0)
 ```python
 # app/workflows/nodes/supervisor.py
-import ollama
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.tools import tool
 from app.core.config import settings
 
-SUPERVISOR_PROMPT = """
-You are a content analysis supervisor. Analyze this content and decide which specialized agents should analyze it.
+# Define tools for each agent (agents are exposed as tools)
+@tool
+def tech_comparator_tool(content: str) -> str:
+    """Invoke tech comparator agent."""
+    # This will be called by supervisor agent
+    return "tech_comparator_result"
 
-Available agents:
-- tech_comparator: Compares technologies and frameworks
-- integration_feasibility: Assesses integration with modern stacks
-- security_auditor: Identifies security implications
-- performance_analyst: Evaluates performance considerations
-- code_quality_critic: Reviews code patterns
-- trend_validator: Checks if tech is current (2025)
-- implementation_planner: Creates step-by-step guides
-- dependency_mapper: Lists required dependencies
+@tool
+def security_auditor_tool(content: str) -> str:
+    """Invoke security auditor agent."""
+    return "security_auditor_result"
 
-Content Type: {content_type}
-Content Preview: {content_preview}
+# ... 6 more agent tools
 
-Return JSON with agents to invoke and their priority (0-1):
-{{"agents": ["agent_name1", "agent_name2"], "priority": [0.9, 0.7]}}
-"""
+# Create supervisor agent using LangChain v1.0 create_agent
+model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
 
-async def supervisor_route(state: AnalysisState) -> AnalysisState:
-    """Analyze content and decide which agents to invoke."""
-    client = ollama.AsyncClient(host=settings.OLLAMA_BASE_URL)
+supervisor_agent = create_agent(
+    model,
+    tools=[
+        tech_comparator_tool,
+        security_auditor_tool,
+        # ... 6 more agent tools
+    ],
+    system_prompt="""You are a content analysis supervisor. 
+    Analyze the content and decide which specialized agents should analyze it.
+    Return the agent names to invoke."""
+)
 
-    prompt = SUPERVISOR_PROMPT.format(
-        content_type=state["content_type"],
-        content_preview=state["raw_content"][:2000],  # First 2000 chars
-    )
-
-    response = await client.chat(
-        model=settings.OLLAMA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        format="json",
-    )
-
-    decision = json.loads(response["message"]["content"])
-    state["supervisor_decision"] = decision
-
-    logger.info(
-        "supervisor_routing_complete",
-        analysis_id=state["analysis_id"],
-        agents=decision["agents"],
-    )
-
-    return state
+@task
+async def supervisor_route(content: str, content_type: str) -> dict:
+    """Supervisor decides which agents to invoke."""
+    result = supervisor_agent.invoke({
+        "messages": [{
+            "role": "user",
+            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+        }]
+    })
+    
+    # Parse agent selection from result
+    selected_agents = parse_agent_selection(result)
+    
+    return {
+        "supervisor_decision": {
+            "agents": selected_agents,
+            "priority": [0.9] * len(selected_agents)  # Simplified
+        }
+    }
 ```
 
 ---
@@ -1341,15 +1545,116 @@ async def supervisor_route(state: AnalysisState) -> AnalysisState:
 **Dependencies:** Task 2.1.5
 
 #### Description
-Implement Tech Comparator, Integration Feasibility, Implementation Planner agents.
+Implement Tech Comparator, Integration Feasibility, Implementation Planner agents using LangChain v1.0 `create_agent`.
 
-#### Tech Comparator Agent
+#### Backend Pattern
+**Agent Implementation with create_agent:**
+```python
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.tools import tool
+
+# Define tools for each agent
+@tool
+def compare_technologies(primary_tech: str, alternatives: list[str]) -> dict:
+    """Compare primary technology with alternatives."""
+    # Implementation
+    return {"comparison": {...}}
+
+@tool
+def find_alternatives(tech_name: str) -> list[str]:
+    """Find alternative technologies."""
+    # Implementation
+    return ["alt1", "alt2"]
+
+# Create agent using LangChain v1.0
+model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+
+tech_comparator_agent = create_agent(
+    model,
+    tools=[compare_technologies, find_alternatives],
+    system_prompt="""
+You are a Technical Comparison Specialist. Analyze the technology/approach in this content.
+Your task:
+- Compare the primary technology with modern alternatives
+- Assess pros/cons of each approach
+- Recommend best fit for 2025 projects
+"""
+)
+
+# Use in workflow
+@task
+async def run_tech_comparator(content: str) -> dict:
+    """Run tech comparator agent."""
+    result = tech_comparator_agent.invoke({
+        "messages": [{"role": "user", "content": content}]
+    })
+    return parse_agent_result(result)
+```
+
+**SSE Instrumentation in Agent Nodes:**
+```python
+from app.services.event_broadcaster import broadcaster
+
+@task
+async def run_tech_comparator(content: str, analysis_id: str) -> dict:
+    """Run tech comparator with SSE events."""
+    # Emit start event
+    await broadcaster.publish(
+        f"workflow:{analysis_id}",
+        {
+            "type": "progress",
+            "stage": "tech_comparison",
+            "status": "running",
+            "agent": "tech_comparator"
+        }
+    )
+    
+    # Run agent
+    result = tech_comparator_agent.invoke({"messages": [content]})
+    
+    # Emit complete event
+    await broadcaster.publish(
+        f"workflow:{analysis_id}",
+        {
+            "type": "progress",
+            "stage": "tech_comparison",
+            "status": "complete",
+            "agent": "tech_comparator"
+        }
+    )
+    
+    return result
+```
+
+#### Tech Comparator Agent (LangChain v1.0 create_agent)
 ```python
 # app/workflows/agents/tech_comparator.py
-import ollama
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+from langchain_core.tools import tool
 from app.core.config import settings
 
-TECH_COMPARATOR_PROMPT = """
+# Define tools for tech comparison
+@tool
+def compare_technologies(primary_tech: str, alternatives: list[str]) -> dict:
+    """Compare primary technology with alternatives."""
+    # Implementation
+    return {"comparison": {...}}
+
+@tool
+def find_alternatives(tech_name: str) -> list[str]:
+    """Find alternative technologies."""
+    # Implementation
+    return ["alt1", "alt2"]
+
+# Create agent using LangChain v1.0
+model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+
+tech_comparator_agent = create_agent(
+    model,
+    tools=[compare_technologies, find_alternatives],
+    system_prompt="""
 You are a Technical Comparison Specialist. Analyze the technology/approach in this content.
 
 Your task:
@@ -1430,6 +1735,108 @@ Would you like me to continue with Sprint 3-7 in this document, or is this level
 
 ## 🎯 Quick Reference
 
+### Backend Patterns Cheat Sheet
+
+**1. FastAPI Endpoint Pattern:**
+```python
+from fastapi import Depends, APIRouter
+from app.db.repositories.analysis import get_analysis_repository, IAnalysisRepository
+
+@router.post("/analyze")
+async def create_analysis(
+    request: AnalyzeRequest,
+    repo: IAnalysisRepository = Depends(get_analysis_repository)
+) -> AnalyzeResponse:
+    analysis = await repo.create(url=request.url)
+    return AnalyzeResponse.from_orm(analysis)
+```
+
+**2. LangGraph v1.0 Functional API:**
+```python
+from langgraph.func import entrypoint, task
+from langgraph.checkpoint.postgres import PostgresSaver
+
+checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+
+@task
+def extract_content(url: str) -> str:
+    return content
+
+@entrypoint(checkpointer=checkpointer)
+def workflow(url: str) -> dict:
+    content = extract_content(url).result()
+    return {"content": content}
+```
+
+**3. LangChain v1.0 create_agent:**
+```python
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+
+model = init_chat_model("ollama:llama3.1:8b")
+agent = create_agent(model, tools=[tool1, tool2])
+```
+
+**4. SSE Instrumentation:**
+```python
+from app.services.event_broadcaster import broadcaster
+
+await broadcaster.publish(
+    f"workflow:{analysis_id}",
+    {"type": "progress", "stage": "extraction", "status": "running"}
+)
+```
+
+**5. Structured Logging:**
+```python
+import structlog
+logger = structlog.get_logger()
+
+logger.info(
+    "workflow_stage_complete",
+    analysis_id=analysis_id,
+    stage="extraction",
+    duration_ms=1234
+)
+```
+
+### Quality Gates Commands
+
+```bash
+# Backend quality checks
+cd backend
+poetry run ruff check . && ruff format .
+poetry run mypy app
+poetry run pytest tests/ --cov=app --cov-fail-under=80
+
+# Pre-commit (automatic)
+git commit  # Runs hooks automatically
+
+# Pre-push (automatic)
+git push  # Runs full test suite
+```
+
+### Common Commands
+
+```bash
+# Start backend
+cd backend
+poetry run uvicorn app.main:app --reload
+
+# Run migrations
+poetry run alembic upgrade head
+
+# Run tests
+poetry run pytest tests/ -v
+
+# Check types
+poetry run mypy app
+```
+
+---
+
+## 🎯 Quick Reference
+
 ### Daily Workflow
 1. **Morning:** Pull latest code, review integration points
 2. **During:** Push frequently, document API changes
@@ -1455,6 +1862,58 @@ docker exec -it ollama ollama list
 ### When Blocked
 - **If blocked by frontend (>4 hours):** Write API docs, work on other endpoints
 - **If blocked by unclear requirements:** Check `USER_STORIES.md`, ask PM
+
+---
+
+---
+
+## 📊 Next Steps Summary
+
+### Immediate Next Steps (Week 1)
+
+**For Yonatan (Backend):**
+1. **Day 1-2:** Setup project structure with Poetry + pyproject.toml
+   - Start with [Issue #1](https://github.com/ArieGoldkin/SkillForge/issues/1) - Task 1.1.1
+2. **Day 3:** API contract meeting with Arie (define `/api/v1/analyze` schema)
+3. **Day 4-5:** Implement database schema + migrations
+   - Continue with [Issue #2](https://github.com/ArieGoldkin/SkillForge/issues/2) - Tasks 1.1.2-1.1.3
+   - Then [Issue #3](https://github.com/ArieGoldkin/SkillForge/issues/3) - Tasks 1.2.1-1.2.5
+4. **Day 6-7:** Implement content extraction (Jina AI)
+   - [Issue #4](https://github.com/ArieGoldkin/SkillForge/issues/4) - Tasks 1.4.1-1.4.5
+5. **Day 8-10:** Implement embedding service + basic LangGraph workflow
+   - [Issue #5](https://github.com/ArieGoldkin/SkillForge/issues/5) - Tasks 1.5.1-1.5.2
+
+**GitHub Milestone:** [Sprint 1: Backend Foundation](https://github.com/ArieGoldkin/SkillForge/milestone/1)
+
+**For Arie (Frontend):**
+1. **Day 1-2:** Setup React 19 + Vite project
+2. **Day 3:** API contract meeting with Yonatan
+3. **Day 4-7:** Create mock API layer + URL input form
+4. **Day 8-10:** Build component library + routing
+
+**For Both:**
+1. **Day 3:** Integration meeting - Lock API contract
+2. **Day 10:** First end-to-end test (frontend → backend connection)
+
+### Sprint 2 Next Steps (Week 3-4)
+
+**For Yonatan:**
+1. **Day 1:** Provide SSE event schema to Arie (BLOCKER)
+2. **Day 2-5:** Implement LangGraph v1.0 Functional API workflow
+3. **Day 6-7:** Implement supervisor pattern with create_agent
+4. **Day 8:** Integration test with Arie (SSE connection)
+5. **Day 9-10:** Implement first 3 sub-agents
+
+**For Arie:**
+1. **Day 1:** Receive SSE schema from Yonatan
+2. **Day 2-5:** Build SSE client hook + progress UI
+3. **Day 6-7:** Create Analysis view page
+4. **Day 8:** Integration test with Yonatan (SSE connection)
+5. **Day 9-10:** Refine UI based on real events
+
+**For Both:**
+1. **Day 1:** SSE schema handoff (Yonatan → Arie)
+2. **Day 8:** Live SSE testing session
 
 ---
 

@@ -1,0 +1,753 @@
+# 🏗️ SkillForge - Architecture & Workflow Diagrams
+
+**Version:** 1.0  
+**Last Updated:** November 20, 2025  
+**Project:** SkillForge - Research-to-Implementation Pipeline
+
+---
+
+## 📋 Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [System Architecture](#system-architecture)
+3. [Backend Workflow (LangGraph v1.0)](#backend-workflow-langgraph-v10)
+4. [Integration Flow](#integration-flow)
+5. [Sprint 1 Workflow](#sprint-1-workflow)
+6. [Sprint 2 Workflow](#sprint-2-workflow)
+7. [Component Relationships](#component-relationships)
+8. [Data Flow](#data-flow)
+9. [Deployment Architecture](#deployment-architecture)
+
+---
+
+## Project Structure
+
+```mermaid
+graph TB
+    subgraph "SkillForge Project"
+        Root[SkillForge Root]
+        
+        subgraph "Backend [Yonatan]"
+            Backend[backend/]
+            BackendApp[app/]
+            BackendAPI[api/v1/]
+            BackendCore[core/]
+            BackendDB[db/]
+            BackendModels[models/]
+            BackendSchemas[schemas/]
+            BackendServices[services/]
+            BackendWorkflows[workflows/]
+            BackendAlembic[alembic/]
+            BackendTests[tests/]
+            BackendPyProject[pyproject.toml]
+            
+            Backend --> BackendApp
+            BackendApp --> BackendAPI
+            BackendApp --> BackendCore
+            BackendApp --> BackendDB
+            BackendApp --> BackendModels
+            BackendApp --> BackendSchemas
+            BackendApp --> BackendServices
+            BackendApp --> BackendWorkflows
+            Backend --> BackendAlembic
+            Backend --> BackendTests
+            Backend --> BackendPyProject
+        end
+        
+        subgraph "Frontend [Arie]"
+            Frontend[frontend/]
+            FrontendSrc[src/]
+            FrontendComponents[components/]
+            FrontendHooks[hooks/]
+            FrontendPages[pages/]
+            FrontendTypes[types/]
+            FrontendPackage[package.json]
+            
+            Frontend --> FrontendSrc
+            FrontendSrc --> FrontendComponents
+            FrontendSrc --> FrontendHooks
+            FrontendSrc --> FrontendPages
+            FrontendSrc --> FrontendTypes
+            Frontend --> FrontendPackage
+        end
+        
+        subgraph "Documentation"
+            Docs[docs/]
+            DocsRoadmap[ROADMAP.md]
+            DocsParallel[ROADMAP_PARALLEL.md]
+            DocsBackend[YONATAN_BACKEND_TASKS.md]
+            DocsFrontend[ARIE_FRONTEND_TASKS.md]
+            DocsIntegration[INTEGRATION_POINTS.md]
+            DocsStories[USER_STORIES.md]
+            
+            Docs --> DocsRoadmap
+            Docs --> DocsParallel
+            Docs --> DocsBackend
+            Docs --> DocsFrontend
+            Docs --> DocsIntegration
+            Docs --> DocsStories
+        end
+        
+        Root --> Backend
+        Root --> Frontend
+        Root --> Docs
+    end
+    
+    style Backend fill:#e1f5ff,stroke:#0077cc
+    style Frontend fill:#ffe1f5,stroke:#cc0077
+    style Docs fill:#f0f0f0,stroke:#666
+```
+
+---
+
+## System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        User[👤 User]
+        Browser[🌐 Browser]
+        User --> Browser
+    end
+    
+    subgraph "Frontend [Arie]"
+        React[React 19 App]
+        Router[React Router]
+        Query[TanStack Query]
+        SSE[useSSE Hook]
+        Components[UI Components]
+        
+        Browser --> React
+        React --> Router
+        React --> Query
+        React --> SSE
+        React --> Components
+    end
+    
+    subgraph "Backend API [Yonatan]"
+        FastAPI[FastAPI Server]
+        Endpoints[API Endpoints]
+        SSEEndpoint[SSE Endpoint]
+        Repos[Repository Layer]
+        
+        React -->|HTTP/REST| FastAPI
+        React -->|SSE Stream| SSEEndpoint
+        FastAPI --> Endpoints
+        Endpoints --> Repos
+        SSEEndpoint --> Repos
+    end
+    
+    subgraph "Business Logic [Yonatan]"
+        Services[Services]
+        Workflows[LangGraph Workflows]
+        Agents[LangChain Agents]
+        
+        Repos --> Services
+        Services --> Workflows
+        Workflows --> Agents
+    end
+    
+    subgraph "Data Layer [Yonatan]"
+        PostgreSQL[(PostgreSQL)]
+        PGVector[(PGVector)]
+        Alembic[Alembic Migrations]
+        
+        Repos --> PostgreSQL
+        Services --> PGVector
+        Alembic --> PostgreSQL
+    end
+    
+    subgraph "External Services"
+        JinaAI[Jina AI Reader]
+        Ollama[Ollama LLM]
+        OpenAI[OpenAI API]
+        
+        Services --> JinaAI
+        Agents --> Ollama
+        Agents --> OpenAI
+    end
+    
+    style React fill:#ffe1f5,stroke:#cc0077
+    style FastAPI fill:#e1f5ff,stroke:#0077cc
+    style PostgreSQL fill:#336791,stroke:#fff,color:#fff
+    style Workflows fill:#e1f5ff,stroke:#0077cc
+```
+
+---
+
+## Backend Workflow (LangGraph v1.0)
+
+```mermaid
+graph TB
+    Start([User Submits URL])
+    
+    subgraph "FastAPI Endpoint"
+        Validate[Validate URL]
+        CreateRecord[Create Analysis Record]
+        ReturnID[Return analysis_id]
+    end
+    
+    subgraph "LangGraph v1.0 Functional API"
+        EntryPoint["@entrypoint checkpointer"]
+        
+        subgraph "Workflow Tasks"
+            Extract["@task extract_content"]
+            Embed["@task generate_embedding"]
+            Supervisor["@task supervisor_route"]
+            
+            subgraph "Sub-Agents"
+                TechComp["@task run_tech_comparator"]
+                Security["@task run_security_auditor"]
+                ImplPlan["@task run_implementation_planner"]
+                Perf["@task run_performance_auditor"]
+                CodeQual["@task run_code_quality_auditor"]
+                Trends["@task run_trends_analyzer"]
+                Deps["@task run_dependencies_analyzer"]
+            end
+            
+            Aggregate["@task aggregate_findings"]
+            Artifact["@task generate_artifact"]
+        end
+    end
+    
+    subgraph "SSE Events"
+        SSEProgress[progress events]
+        SSEComplete[complete event]
+        SSEError[error events]
+    end
+    
+    subgraph "Database"
+        SaveProgress[Save Progress]
+        SaveFindings[Save Agent Findings]
+        SaveArtifact[Save Artifact]
+    end
+    
+    Start --> Validate
+    Validate --> CreateRecord
+    CreateRecord --> ReturnID
+    ReturnID --> EntryPoint
+    
+    EntryPoint --> Extract
+    Extract -->|"SSE: extraction running"| SSEProgress
+    Extract --> Embed
+    Embed --> Supervisor
+    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
+    
+    Supervisor --> TechComp
+    Supervisor --> Security
+    Supervisor --> ImplPlan
+    Supervisor --> Perf
+    Supervisor --> CodeQual
+    Supervisor --> Trends
+    Supervisor --> Deps
+    
+    TechComp -->|"SSE: tech_comparison"| SSEProgress
+    Security -->|"SSE: security_audit"| SSEProgress
+    ImplPlan -->|"SSE: implementation_planning"| SSEProgress
+    Perf -->|"SSE: performance_audit"| SSEProgress
+    CodeQual -->|"SSE: code_quality"| SSEProgress
+    Trends -->|"SSE: trends_analysis"| SSEProgress
+    Deps -->|"SSE: dependencies"| SSEProgress
+    
+    TechComp --> Aggregate
+    Security --> Aggregate
+    ImplPlan --> Aggregate
+    Perf --> Aggregate
+    CodeQual --> Aggregate
+    Trends --> Aggregate
+    Deps --> Aggregate
+    
+    Aggregate --> Artifact
+    Artifact -->|"SSE: artifact_generation complete"| SSEComplete
+    
+    Extract --> SaveProgress
+    TechComp --> SaveFindings
+    Security --> SaveFindings
+    ImplPlan --> SaveFindings
+    Artifact --> SaveArtifact
+    
+    End([Analysis Complete])
+    SSEComplete --> End
+    
+    style EntryPoint fill:#e1f5ff,stroke:#0077cc
+    style Extract fill:#e1f5ff,stroke:#0077cc
+    style Supervisor fill:#ffd700,stroke:#ff8c00
+    style TechComp fill:#90ee90,stroke:#228b22
+    style SSEProgress fill:#ffe1f5,stroke:#cc0077
+    style SSEComplete fill:#90ee90,stroke:#228b22
+```
+
+---
+
+## Integration Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend (Arie)
+    participant B as Backend API (Yonatan)
+    participant W as LangGraph Workflow
+    participant DB as PostgreSQL
+    participant SSE as SSE Stream
+    
+    U->>F: Submit URL
+    F->>B: POST /api/v1/analyze
+    B->>DB: Create Analysis Record
+    DB-->>B: analysis_id
+    B-->>F: {analysis_id, status: "pending"}
+    
+    F->>SSE: GET /api/v1/analyze/{id}/stream
+    SSE-->>F: SSE Connection Established
+    
+    B->>W: Start Workflow (analysis_id)
+    
+    W->>W: task extract_content
+    W->>SSE: Emit progress extraction running
+    SSE-->>F: Event: extraction running
+    W->>DB: Save Progress
+    W->>W: Content extracted
+    
+    W->>W: task generate_embedding
+    W->>DB: Save Embedding
+    
+    W->>W: task supervisor_route
+    W->>SSE: Emit progress supervisor_routing
+    SSE-->>F: Event: supervisor_routing
+    
+    W->>W: task run_tech_comparator
+    W->>SSE: Emit progress tech_comparison running
+    SSE-->>F: Event: tech_comparison running
+    W->>DB: Save Findings
+    W->>SSE: Emit progress tech_comparison complete
+    SSE-->>F: Event: tech_comparison complete
+    
+    Note over W: ... 5 more sub-agents
+    
+    W->>W: task aggregate_findings
+    W->>W: task generate_artifact
+    W->>DB: Save Artifact
+    W->>SSE: Emit "complete" (artifact_generation)
+    SSE-->>F: Event: complete
+    F->>U: Show "Download" button
+    
+    U->>F: Click Download
+    F->>B: GET /api/v1/artifacts/{id}/download
+    B->>DB: Fetch Artifact
+    DB-->>B: Markdown Content
+    B-->>F: File Download
+    F->>U: Download Complete
+```
+
+---
+
+## Sprint 1 Workflow
+
+```mermaid
+gantt
+    title Sprint 1: Foundation (Week 1-2)
+    dateFormat YYYY-MM-DD
+    section Yonatan (Backend)
+    Setup Poetry + FastAPI        :2025-11-25, 2d
+    Database Schema + Migrations  :2025-11-27, 2d
+    Content Extraction (Jina)    :2025-11-29, 2d
+    Embedding Service             :2025-12-01, 2d
+    Basic LangGraph Workflow      :2025-12-03, 2d
+    section Arie (Frontend)
+    Setup React 19 + Vite        :2025-11-25, 2d
+    Mock API Layer               :2025-11-27, 2d
+    URL Input Form               :2025-11-29, 2d
+    Component Library            :2025-12-01, 2d
+    Routing                      :2025-12-03, 2d
+    section Integration
+    API Contract Meeting         :milestone, 2025-11-27, 0d
+    First E2E Test               :milestone, 2025-12-05, 0d
+```
+
+```mermaid
+graph LR
+    subgraph "Day 1-2: Independent"
+        Y1[Yonatan: Setup]
+        A1[Arie: Setup]
+    end
+    
+    subgraph "Day 3: Integration #1"
+        Meeting[API Contract Meeting]
+        Contract[Lock Contract]
+    end
+    
+    subgraph "Day 4-10: Parallel"
+        Y2[Yonatan: Implement]
+        A2[Arie: Build UI]
+    end
+    
+    subgraph "Day 10: Integration #2"
+        Test[E2E Test]
+    end
+    
+    Y1 --> Meeting
+    A1 --> Meeting
+    Meeting --> Contract
+    Contract --> Y2
+    Contract --> A2
+    Y2 --> Test
+    A2 --> Test
+    
+    style Meeting fill:#ffd700,stroke:#ff8c00
+    style Test fill:#90ee90,stroke:#228b22
+```
+
+---
+
+## Sprint 2 Workflow
+
+```mermaid
+graph TB
+    subgraph "Day 1: BLOCKER"
+        SSE[SSE Schema Handoff]
+        YonatanSSE[Yonatan provides schema]
+        ArieSSE[Arie receives schema]
+        YonatanSSE --> SSE
+        SSE --> ArieSSE
+    end
+    
+    subgraph "Day 2-7: Parallel"
+        YonatanWork[Yonatan:<br/>- LangGraph v1.0<br/>- Supervisor<br/>- SSE Events<br/>- 3 Sub-agents]
+        ArieWork[Arie:<br/>- useSSE Hook<br/>- Progress UI<br/>- Analysis Page<br/>- Loading States]
+    end
+    
+    subgraph "Day 8: Integration #3"
+        SSETest[Live SSE Testing]
+        HappyPath[Happy Path Test]
+        ErrorTest[Error Handling Test]
+        ConnectionTest[Connection Loss Test]
+        
+        SSETest --> HappyPath
+        SSETest --> ErrorTest
+        SSETest --> ConnectionTest
+    end
+    
+    subgraph "Day 9-10: Refinement"
+        YonatanRefine[Yonatan: Fix Issues]
+        ArieRefine[Arie: Polish UI]
+    end
+    
+    SSE --> YonatanWork
+    SSE --> ArieWork
+    YonatanWork --> SSETest
+    ArieWork --> SSETest
+    SSETest --> YonatanRefine
+    SSETest --> ArieRefine
+    
+    style SSE fill:#ff6b6b,stroke:#c92a2a
+    style SSETest fill:#90ee90,stroke:#228b22
+```
+
+---
+
+## Component Relationships
+
+```mermaid
+classDiagram
+    class FastAPIEndpoint {
+        +POST /api/v1/analyze
+        +GET /api/v1/analyze/{id}/stream
+        +GET /api/v1/artifacts/{id}/download
+    }
+    
+    class IAnalysisRepository {
+        <<interface>>
+        +create(url: str) Analysis
+        +get_by_id(id: UUID) Analysis
+        +list_active() List[Analysis]
+    }
+    
+    class AnalysisRepository {
+        -db: AsyncSession
+        +create(url: str) Analysis
+        +get_by_id(id: UUID) Analysis
+        +list_active() List[Analysis]
+    }
+    
+    class AnalysisModel {
+        +id: UUID
+        +url: str
+        +status: str
+        +created_at: datetime
+    }
+    
+    class LangGraphWorkflow {
+        +entrypoint checkpointer
+        +task extract_content
+        +task supervisor_route
+        +task run_agents
+        +task generate_artifact
+    }
+    
+    class SupervisorAgent {
+        +create_agent()
+        +route(content: str) List[str]
+    }
+    
+    class SubAgent {
+        +create_agent()
+        +analyze(content: str) dict
+    }
+    
+    class EventBroadcaster {
+        +publish(channel: str, event: dict)
+        +subscribe(channel: str) AsyncIterator
+    }
+    
+    class SSEEndpoint {
+        +stream_analysis_progress(id: UUID)
+        +event_generator() AsyncIterator
+    }
+    
+    FastAPIEndpoint --> IAnalysisRepository : depends on
+    IAnalysisRepository <|.. AnalysisRepository : implements
+    AnalysisRepository --> AnalysisModel : uses
+    FastAPIEndpoint --> LangGraphWorkflow : invokes
+    LangGraphWorkflow --> SupervisorAgent : uses
+    SupervisorAgent --> SubAgent : routes to
+    LangGraphWorkflow --> EventBroadcaster : emits events
+    EventBroadcaster --> SSEEndpoint : streams to
+    SSEEndpoint --> FastAPIEndpoint : returns
+    
+    style IAnalysisRepository fill:#e1f5ff,stroke:#0077cc
+    style LangGraphWorkflow fill:#ffd700,stroke:#ff8c00
+    style EventBroadcaster fill:#ffe1f5,stroke:#cc0077
+```
+
+---
+
+## Data Flow
+
+```mermaid
+flowchart TD
+    Start([User Input: URL])
+    
+    subgraph "Request Flow"
+        Validate[Validate URL Format]
+        DetectType[Detect Content Type]
+        CreateAnalysis[Create Analysis Record]
+    end
+    
+    subgraph "Content Extraction"
+        JinaExtract[Jina AI Extract]
+        YouTubeExtract[YouTube Transcript]
+        GitHubExtract[GitHub Repo]
+    end
+    
+    subgraph "Processing"
+        GenerateEmbed[Generate Embedding]
+        StoreEmbed[Store in PGVector]
+        SupervisorDecide[Supervisor Routes]
+    end
+    
+    subgraph "Agent Analysis"
+        TechComp[Tech Comparator]
+        Security[Security Auditor]
+        ImplPlan[Implementation Planner]
+        Perf[Performance Auditor]
+        CodeQual[Code Quality]
+        Trends[Trends Analyzer]
+        Deps[Dependencies]
+    end
+    
+    subgraph "Aggregation"
+        Aggregate[Aggregate Findings]
+        GenerateMarkdown[Generate Markdown]
+        SaveArtifact[Save Artifact]
+    end
+    
+    subgraph "Response"
+        SSEStream[SSE Stream Events]
+        Download[Download Endpoint]
+    end
+    
+    Start --> Validate
+    Validate --> DetectType
+    DetectType --> CreateAnalysis
+    
+    CreateAnalysis --> JinaExtract
+    CreateAnalysis --> YouTubeExtract
+    CreateAnalysis --> GitHubExtract
+    
+    JinaExtract --> GenerateEmbed
+    YouTubeExtract --> GenerateEmbed
+    GitHubExtract --> GenerateEmbed
+    
+    GenerateEmbed --> StoreEmbed
+    StoreEmbed --> SupervisorDecide
+    
+    SupervisorDecide --> TechComp
+    SupervisorDecide --> Security
+    SupervisorDecide --> ImplPlan
+    SupervisorDecide --> Perf
+    SupervisorDecide --> CodeQual
+    SupervisorDecide --> Trends
+    SupervisorDecide --> Deps
+    
+    TechComp --> Aggregate
+    Security --> Aggregate
+    ImplPlan --> Aggregate
+    Perf --> Aggregate
+    CodeQual --> Aggregate
+    Trends --> Aggregate
+    Deps --> Aggregate
+    
+    Aggregate --> GenerateMarkdown
+    GenerateMarkdown --> SaveArtifact
+    
+    CreateAnalysis --> SSEStream
+    JinaExtract --> SSEStream
+    SupervisorDecide --> SSEStream
+    TechComp --> SSEStream
+    Security --> SSEStream
+    SaveArtifact --> SSEStream
+    
+    SaveArtifact --> Download
+    
+    End([User Downloads Artifact])
+    Download --> End
+    
+    style SupervisorDecide fill:#ffd700,stroke:#ff8c00
+    style SSEStream fill:#ffe1f5,stroke:#cc0077
+    style Download fill:#90ee90,stroke:#228b22
+```
+
+---
+
+## Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph "Development"
+        DevUser[Developer]
+        DevFrontend[Frontend Dev Server<br/>localhost:5173]
+        DevBackend[Backend Dev Server<br/>localhost:8000]
+        DevDB[(PostgreSQL Dev<br/>localhost:5432)]
+        DevOllama[Ollama Local<br/>localhost:11434]
+        
+        DevUser --> DevFrontend
+        DevFrontend --> DevBackend
+        DevBackend --> DevDB
+        DevBackend --> DevOllama
+    end
+    
+    subgraph "Production"
+        ProdUser[End Users]
+        ProdCDN[CDN / Vercel<br/>Frontend]
+        ProdAPI[Backend API<br/>FastAPI + Uvicorn]
+        ProdDB[(PostgreSQL<br/>Production)]
+        ProdRedis[(Redis<br/>Event Broadcasting)]
+        ProdOllama[Ollama Cloud<br/>or OpenAI]
+        
+        ProdUser --> ProdCDN
+        ProdCDN --> ProdAPI
+        ProdAPI --> ProdDB
+        ProdAPI --> ProdRedis
+        ProdAPI --> ProdOllama
+    end
+    
+    subgraph "CI/CD"
+        GitHub[GitHub Repository]
+        GitHubActions[GitHub Actions]
+        Tests[Test Suite]
+        Lint[Linting & Type Check]
+        Build[Build & Deploy]
+        
+        GitHub --> GitHubActions
+        GitHubActions --> Tests
+        GitHubActions --> Lint
+        Tests --> Build
+        Lint --> Build
+        Build --> ProdAPI
+        Build --> ProdCDN
+    end
+    
+    style DevFrontend fill:#ffe1f5,stroke:#cc0077
+    style DevBackend fill:#e1f5ff,stroke:#0077cc
+    style ProdCDN fill:#ffe1f5,stroke:#cc0077
+    style ProdAPI fill:#e1f5ff,stroke:#0077cc
+    style GitHubActions fill:#90ee90,stroke:#228b22
+```
+
+---
+
+## Backend Pattern Architecture
+
+```mermaid
+graph TB
+    subgraph "API Layer"
+        Router[FastAPI Router]
+        Endpoint[API Endpoint]
+        Schema[Pydantic Schema]
+    end
+    
+    subgraph "Repository Pattern"
+        Interface[IRepository Interface]
+        Impl[Repository Implementation]
+        Model[SQLAlchemy Model]
+    end
+    
+    subgraph "Service Layer"
+        Service[Business Logic Service]
+        Extraction[Content Extraction]
+        Embedding[Embedding Service]
+    end
+    
+    subgraph "Workflow Layer"
+        LangGraph[LangGraph v1.0]
+        EntryPoint["@entrypoint"]
+        Tasks["@task functions"]
+        Checkpointer[PostgreSQL Checkpointer]
+    end
+    
+    subgraph "Agent Layer"
+        Supervisor[Supervisor Agent<br/>create_agent]
+        SubAgents[Sub-Agents<br/>create_agent]
+        Tools[Agent Tools]
+    end
+    
+    subgraph "Event Layer"
+        Broadcaster[Event Broadcaster]
+        SSE[SSE Endpoint]
+        Events[Progress Events]
+    end
+    
+    Router --> Endpoint
+    Endpoint --> Schema
+    Endpoint --> Interface
+    Interface --> Impl
+    Impl --> Model
+    
+    Endpoint --> Service
+    Service --> Extraction
+    Service --> Embedding
+    
+    Service --> LangGraph
+    LangGraph --> EntryPoint
+    EntryPoint --> Tasks
+    EntryPoint --> Checkpointer
+    
+    Tasks --> Supervisor
+    Supervisor --> SubAgents
+    SubAgents --> Tools
+    
+    Tasks --> Broadcaster
+    Broadcaster --> SSE
+    Broadcaster --> Events
+    
+    style Interface fill:#e1f5ff,stroke:#0077cc
+    style LangGraph fill:#ffd700,stroke:#ff8c00
+    style Supervisor fill:#ffd700,stroke:#ff8c00
+    style SSE fill:#ffe1f5,stroke:#cc0077
+```
+
+---
+
+**Document Maintained By:** Yonatan & Arie  
+**Last Updated:** November 20, 2025  
+**View in:** GitHub, VS Code (Mermaid Preview), or any Mermaid-compatible viewer
+

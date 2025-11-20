@@ -115,35 +115,37 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 
 ## 🛠️ Tech Stack
 
-### Backend (Python 3.11+)
+### Backend (Python 3.13)
 
 **Framework & Core:**
-- `fastapi==0.118.2` - Modern async web framework
-- `uvicorn[standard]==0.32.0` - ASGI server
-- `pydantic==2.10.3` - Data validation
-- `pydantic-settings==2.6.1` - Configuration management
+- `fastapi>=0.121.2` - Modern async web framework (latest with CVE fixes)
+- `starlette>=0.49.3` - ASGI framework (CVE fixes included)
+- `uvicorn[standard]>=0.32.0` - ASGI server
+- `pydantic>=2.10.3` - Data validation
+- `pydantic-settings>=2.6.1` - Configuration management
 
-**LangChain/LangGraph (Latest Nov 2025):**
-- `langgraph==0.6.7` - Latest stable agent orchestration
-- `langchain==0.3.27` - Core framework
-- `langchain-core==0.3.42` - Foundation library
-- `langchain-community==0.3.5` - Community integrations
-- `langgraph-checkpoint==2.0.23` - State persistence
-- `langsmith>=0.1.66` - Observability & tracing
+**LangChain/LangGraph v1.0 (November 2025):**
+- `langgraph>=1.0.0` - **v1.0 stable** - Agent orchestration with Functional API
+- `langchain>=1.0.0` - **v1.0 stable** - Core framework with create_agent
+- `langchain-core>=1.0.0` - **v1.0 stable** - Foundation library
+- `langchain-community>=1.0.0` - **v1.0 stable** - Community integrations
+- `langgraph-checkpoint>=3.0.0` - Advanced checkpointing (PostgreSQL, time-travel)
+- `langsmith>=1.0.0` - Observability & tracing (v1.0 compatible)
 
 **LLM Providers:**
-- `langchain-openai==0.2.8` - OpenAI models (staging/prod)
-- `langchain-anthropic==0.2.3` - Claude models (optional)
-- `ollama==0.4.3` - Local models (dev environment)
+- `langchain-openai>=1.0.0` - OpenAI models (staging/prod, v1.0 compatible)
+- `langchain-anthropic>=1.0.0` - Claude models (optional, v1.0 compatible)
+- `langchain-ollama>=1.0.0` - Ollama integration (v1.0 compatible)
+- `ollama>=0.4.3` - Local models (dev environment)
 
 **Database:**
 - `psycopg[binary,pool]==3.2.3` - PostgreSQL driver
-- `pgvector==0.3.5` - Vector similarity search
+- `pgvector>=0.4.1` - Vector similarity search (latest)
 - `sqlalchemy==2.0.36` - ORM
 - `alembic==1.13.3` - Database migrations
 
 **Content Extraction:**
-- `httpx==0.27.2` - Async HTTP client
+- `httpx[brotli,zstd]>=0.28.1` - Async HTTP client with compression
 - `youtube-transcript-api==0.6.2` - YouTube transcripts
 - `pygithub==2.5.0` - GitHub API wrapper
 - `beautifulsoup4==4.12.3` - HTML parsing
@@ -194,6 +196,235 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 - Backend: TBD (Railway/Render/AWS)
 - Database: Managed PostgreSQL with PGVector
 - LLM: OpenAI GPT-4 Turbo or Claude 3.5 Sonnet
+
+---
+
+## 📦 Dependency Management
+
+### pyproject.toml + Poetry (Recommended)
+
+**Why pyproject.toml over requirements.txt:**
+- ✅ **PEP 518 Standard** - Official Python packaging standard
+- ✅ **Unified Configuration** - Metadata, dependencies, tools in one file
+- ✅ **Rich Metadata** - Project name, version, authors, license
+- ✅ **Tool Integration** - Works with Poetry, Hatch, uv, pip
+- ✅ **Optional Dependencies** - Dev, test, docs groups
+- ✅ **Build System** - Specifies build backend
+- ✅ **Modern Tools** - Poetry, uv use it natively
+
+**Setup:**
+```bash
+# Install Poetry
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Initialize project
+poetry init
+
+# Add dependencies
+poetry add fastapi langgraph langchain
+
+# Add dev dependencies
+poetry add --group dev pytest black ruff mypy
+
+# Install
+poetry install
+```
+
+**pyproject.toml Template:**
+```toml
+[tool.poetry]
+name = "skillforge-backend"
+version = "0.1.0"
+description = "SkillForge Backend API"
+authors = ["SkillForge Team"]
+package-mode = false  # Application, not a package
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.121.2"
+starlette = "^0.49.3"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+pydantic = "^2.10.3"
+pydantic-settings = "^2.6.1"
+python-dotenv = "^1.0.1"
+
+# LangGraph v1.0
+langgraph = "^1.0.0"
+langgraph-checkpoint = "^3.0.0"
+
+# LangChain v1.0
+langchain = "^1.0.0"
+langchain-core = "^1.0.0"
+langchain-community = "^1.0.0"
+
+# LLM Providers
+langchain-openai = "^1.0.0"
+langchain-anthropic = "^1.0.0"
+langchain-ollama = "^1.0.0"
+ollama = "^0.4.3"
+
+# Database
+psycopg = {extras = ["binary", "pool"], version = "^3.2.3"}
+pgvector = "^0.4.1"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
+alembic = "^1.13.3"
+
+# HTTP & Utilities
+httpx = {extras = ["brotli", "zstd"], version = "^0.28.1"}
+sse-starlette = "^2.1.3"
+structlog = "^24.4.0"
+tenacity = "^9.0.0"
+orjson = "^3.9.7"
+
+# Content Extraction
+youtube-transcript-api = "^0.6.2"
+pygithub = "^2.5.0"
+beautifulsoup4 = "^4.12.3"
+playwright = "^1.48.0"
+
+# Observability
+langsmith = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.1"
+pytest-cov = "^5.0.0"
+black = "^24.8.0"
+ruff = "^0.6.9"
+mypy = "^1.13.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+```
+
+**For Deployment:**
+Generate `requirements.txt` from lock file when needed:
+```bash
+poetry export -f requirements.txt --output requirements.txt --without-hashes
+```
+
+---
+
+## 🚀 LangGraph v1.0 Features
+
+### Functional API (@entrypoint, @task)
+
+**New Pattern for Workflows:**
+```python
+from langgraph.func import entrypoint, task
+from langgraph.checkpoint.postgres import PostgresSaver
+
+checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+
+@task
+def extract_content(url: str) -> str:
+    """Extract content from URL."""
+    return content
+
+@entrypoint(checkpointer=checkpointer)
+def analysis_workflow(url: str, previous: dict | None = None) -> dict:
+    """Main analysis workflow using Functional API."""
+    content = extract_content(url).result()
+    return {"content": content}
+```
+
+**Benefits:**
+- ✅ Simpler syntax than StateGraph
+- ✅ Built-in checkpointing
+- ✅ Parallel execution with futures
+- ✅ Human-in-the-loop support
+
+### create_agent (LangChain v1.0)
+
+**Replaces deprecated `create_react_agent`:**
+```python
+from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+
+model = init_chat_model("ollama:llama3.1:8b")
+
+agent = create_agent(
+    model,
+    tools=[tool1, tool2],
+    middleware=[...]  # Optional middleware
+)
+```
+
+**Benefits:**
+- ✅ Cleaner interface
+- ✅ Middleware customization
+- ✅ Built on LangGraph v1.0
+
+### Advanced Checkpointing
+
+**PostgreSQL Persistence:**
+```python
+from langgraph.checkpoint.postgres import PostgresSaver
+
+checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+```
+
+**Features:**
+- ✅ Time-travel debugging
+- ✅ Subgraph state inspection
+- ✅ Checkpoint listing
+- ✅ Production-ready persistence
+
+---
+
+## 🎯 Backend Development Standards
+
+### Code Quality Standards
+
+**File Size Limits:**
+- Source files: 200 lines maximum (refactor when approaching)
+- Repository files: 150 lines maximum
+- Service files: 200 lines maximum
+- Test files: 300 lines maximum
+
+**Function Complexity:**
+- Maximum parameters: 5 per function
+- Maximum nesting depth: 4 levels
+- Maximum cyclomatic complexity: 15
+
+**Async Repository Pattern (Mandatory):**
+```python
+# ✅ GOOD: Repository interface dependency injection
+async def list_analyses(repo: IAnalysisRepository = Depends(get_analysis_repository)):
+    return await repo.list_active()
+
+# ❌ BAD: Direct Session access
+async def list_analyses(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Analysis))
+    return result.scalars().all()
+```
+
+**Structured Logging:**
+```python
+import structlog
+logger = structlog.get_logger()
+
+# ✅ GOOD: Structured logging with context
+logger.info(
+    "workflow_stage_complete",
+    analysis_id=analysis_id,
+    stage="extraction",
+    duration_ms=1234
+)
+```
+
+**Alembic Migrations:**
+- Always reversible (`upgrade()` + `downgrade()`)
+- Index names: `ix_<table>_<column>`
+- Test locally: `alembic upgrade head` + `alembic downgrade -1`
+
+**Quality Gates:**
+- Backend coverage: ≥80% (hard block)
+- Type errors: 0 (mypy strict)
+- Linting: 0 warnings (ruff)
+- Tests: 100% pass rate
 
 ---
 
