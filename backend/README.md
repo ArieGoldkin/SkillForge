@@ -96,7 +96,10 @@ backend/
 │   ├── conftest.py               # Pytest fixtures
 │   ├── test_main.py              # Endpoint tests
 │   ├── test_config.py            # Configuration tests
-│   └── test_jina_reader.py       # Jina Reader service tests
+│   ├── test_jina_reader.py       # Jina Reader service unit tests
+│   ├── test_jina_integration.py  # Jina Reader integration tests
+│   ├── test_jina_extended.py     # Jina Reader extended tests
+│   └── test_anthropic_article.py # Specific article integration test
 │
 ├── .env.example                  # Environment variable template
 ├── pyproject.toml                # Poetry configuration
