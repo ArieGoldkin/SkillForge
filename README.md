@@ -246,6 +246,22 @@ We welcome contributions! This project follows a **parallel development workflow
 4. Pick a task from [Frontend Tasks](docs/ARIE_FRONTEND_TASKS.md) or [Backend Tasks](docs/YONATAN_BACKEND_TASKS.md)
 5. Submit a pull request
 
+### Git Workflow
+
+**Branch Strategy:**
+- **`main`** - Production-ready code (protected, requires PR)
+- **`dev`** - Development branch (default for all PRs)
+- **`feature/*`** - Feature branches for new work
+
+**Pull Request Process:**
+1. Create feature branch from `dev`: `git checkout -b feature/issue-X-description`
+2. Make changes and commit
+3. **Open PR targeting `dev` branch** (not `main`)
+4. After review and approval, PR is merged into `dev`
+5. `dev` is periodically merged into `main` for releases
+
+**Important:** All new pull requests must target the `dev` branch.
+
 ### Development Workflow
 
 - **Daily async standups** (15 min) - Update task status
