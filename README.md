@@ -10,6 +10,19 @@
 
 ---
 
+## 📚 Documentation
+
+- **[Architecture](docs/ARCHITECTURE.md)** - System architecture diagrams
+- **[Roadmap](docs/ROADMAP.md)** - Project roadmap and phases
+- **[Integration Points](docs/INTEGRATION_POINTS.md)** - API contracts & coordination
+- **[User Stories](docs/USER_STORIES.md)** - User stories with acceptance criteria
+- **[Current Status](docs/CURRENT_STATUS.md)** - Current project status
+- **[Issues Documentation](docs/issues/README.md)** - Issue-specific documentation
+- **[Backend Tasks](docs/YONATAN_BACKEND_TASKS.md)** - Backend task breakdown
+- **[Frontend Tasks](docs/ARIE_FRONTEND_TASKS.md)** - Frontend task breakdown
+
+---
+
 ## 📖 What is SkillForge?
 
 SkillForge is a research-to-implementation pipeline that helps developers:
