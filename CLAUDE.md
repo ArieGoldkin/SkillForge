@@ -8,6 +8,29 @@ version: 3.5.9
 
 **Mode**: ⚡ Squad (Parallel)
 
+## 📦 Project: SkillForge
+
+**Intelligent Learning Integration Platform** - Multi-agent system that analyzes technical content (URLs, videos, repos) via LangGraph pipeline and generates AI-ready implementation guides with Socratic tutoring.
+
+**Stack**: React 19 + FastAPI + LangGraph 0.6.7 + PostgreSQL/PGVector
+
+**Architecture**:
+- System design: `docs/ARCHITECTURE.md` (workflows, deployment, diagrams)
+- Agent coordination: `.claude/instructions/architecture-decisions.md` (file-based, supervisor-worker)
+
+**Docs**:
+- Overview: `README.md` | `docs/USER_STORIES.md`
+- Integration: `docs/INTEGRATION_POINTS.md`
+- Tasks: `docs/ARIE_FRONTEND_TASKS.md` | `docs/YONATAN_BACKEND_TASKS.md`
+
+**Key Design Decisions**:
+- File-based agent communication (no APIs/DBs) → `.squad/sessions/`
+- Parallel execution via domain isolation → See `.claude/instructions/parallel-execution-rules.md`
+- 8 specialized content analysis agents → Tech Comparator, Security Auditor, Implementation Planner, etc.
+- Evidence-based verification (exit codes, test logs) → Quality gates at 80%+ coverage
+
+**Codebase Structure**: `backend/` (FastAPI + LangGraph) | `frontend/` (React 19) | `docs/` (specs & tasks)
+
 ## 📋 Modular Instruction System
 
 This project uses specialized instruction files to optimize tokens while maintaining agent capabilities.
