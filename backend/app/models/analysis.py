@@ -1,0 +1,36 @@
+"""Analysis model for content analysis pipeline."""
+
+import uuid
+from datetime import datetime, UTC
+
+from sqlalchemy import Column, String, Text, DateTime
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID, JSONB
+from pgvector.sqlalchemy import Vector
+
+from app.db.base import Base
+
+
+class Analysis(Base):
+    """Analysis model representing a content analysis task.
+
+    Stores information about URLs being analyzed, their content, embeddings,
+    and processing status. This is the primary table in the system.
+    """
+
+    __tablename__ = "analyses"
+
+    id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url = Column(Text, nullable=False, index=True)
+    content_type = Column(String(50), nullable=False)  # 'article', 'video', 'repo'
+    title = Column(Text)
+    raw_content = Column(Text)
+    content_embedding = Column(Vector(1536))  # Embedding vector for semantic search
+    extraction_metadata = Column(JSONB)  # Metadata from content extraction
+    status = Column(String(50), nullable=False, default="pending", index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
