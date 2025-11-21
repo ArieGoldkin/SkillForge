@@ -33,9 +33,12 @@ docs/
 ├── USER_STORIES.md                 # User stories with acceptance criteria
 ├── YONATAN_BACKEND_TASKS.md        # Backend task breakdown
 │
-└── [Issue-specific docs - to be consolidated]
-    ├── ISSUE_3_*.md                # Will be consolidated into issues/003-database-schema/
-    └── VERIFICATION_PLAN_ISSUE_2.md # Will be archived
+└── issues/                          # Issue-specific documentation
+    ├── README.md                    # Issues index
+    ├── 002-environment-config/
+    │   └── README.md                # Issue #2 complete doc
+    └── 003-database-schema/
+        └── README.md                # Issue #3 complete doc
 ```
 
 ---

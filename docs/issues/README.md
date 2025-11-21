@@ -53,7 +53,6 @@ Each issue doc (`XXX-issue-name/README.md`) should include:
 - [Frontend Tasks](../ARIE_FRONTEND_TASKS.md)
 - [Current Status](../CURRENT_STATUS.md)
 - [GitHub Issues](https://github.com/ArieGoldkin/SkillForge/issues)
-- [Archived Docs](./archived/README.md)
 
 ---
 
