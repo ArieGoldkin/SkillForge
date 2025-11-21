@@ -34,25 +34,19 @@
 
 ## 🚨 Current Issues
 
-### GitHub Actions - All Failing ❌
+### GitHub Actions - Failing ⚠️
 
 **Problem:** Docker build fails because `alembic/` directory is empty
 ```
 ERROR: "/alembic": not found
 ```
 
-**Root Cause:** 
-- `backend/alembic/` directory exists but is empty
-- Dockerfile tries to `COPY alembic/ ./alembic/` but nothing to copy
-- Alembic migrations haven't been initialized yet
+**Status:** 
+- Issue #3 implements Alembic migrations and fixes this
+- Once Issue #3 PR is merged, CI/CD will pass
+- All migrations are ready and tested locally
 
-**Impact:**
-- ❌ Backend CI failing
-- ❌ Security scans failing  
-- ❌ E2E tests failing
-- ❌ Frontend CI failing (no frontend yet)
-
-**Fix Required:** Initialize Alembic (part of Issue #3)
+**Fix:** Merge Issue #3 PR to fix CI/CD
 
 ---
 
@@ -116,23 +110,22 @@ ERROR: "/alembic": not found
 
 ### Immediate (Today)
 
-1. **Fix CI/CD Pipeline** 🔴 CRITICAL
-   - Start Issue #3: Initialize Alembic
-   - This will fix the Docker build failure
-   - Command: `cd backend && poetry run alembic init alembic`
-
-2. **Start Issue #2: Environment Config** ⚡ HIGH
-   - Complete `.env.example` (already exists, needs review)
-   - Verify Pydantic settings in `app/core/config.py`
-   - Test structured logging
+1. **Review Issue #3 PR** ⚡ HIGH
+   - Issue #3 is complete and ready for PR
+   - Database schema and migrations implemented
+   - Review and merge to unblock CI/CD
 
 ### This Week
 
-3. **Issue #3: Database Schema** ⚡ HIGH
-   - Initialize Alembic migrations
-   - Create base models (Analysis, Artifact, etc.)
-   - Write first migration
-   - This unblocks CI/CD
+2. **Start Issue #4: Content Extraction** 🔄 MEDIUM
+   - Implement Jina AI content extraction
+   - Create extraction service
+   - Add tests and documentation
+
+3. **Start Issue #5: Embedding Service** 🔄 MEDIUM
+   - Implement embedding generation
+   - Integrate with database
+   - Add vector search capabilities
 
 4. **Review Dependabot PRs**
    - Decide which to merge
@@ -178,14 +171,16 @@ ERROR: "/alembic": not found
     │  └─ alembic/ empty            └─ Workflows need alembic
     └─ Need Alembic init
 
+    ✅ COMPLETED ISSUES (Sprint 1)
+    ├─ Issue #2: Config & Logging [3 pts] ✅
+    └─ Issue #3: Database & Migrations [8 pts] ✅ ← Ready for PR!
+
     📋 READY TO START (Sprint 1)
-    ├─ Issue #2: Config & Logging [3 pts] ⚡
-    ├─ Issue #3: Database & Migrations [8 pts] ⚡ ← FIXES CI!
-    ├─ Issue #4: Content Extraction [5 pts]
-    └─ Issue #5: Embedding Service [3 pts]
+    ├─ Issue #4: Content Extraction [5 pts] 🔄
+    └─ Issue #5: Embedding Service [3 pts] 🔄
 
     🔄 DEPENDENCIES
-    Issue #2 → Issue #3 → Issue #5
+    Issue #2 ✅ → Issue #3 ✅ → Issue #5
          ↓
     Issue #4 (independent)
 ```
@@ -219,17 +214,17 @@ gh pr edit <PR_NUMBER> --base dev
 ## 📈 Sprint 1 Progress
 
 **Total Story Points:** 21  
-**Completed:** 3 pts (Task 1.1.1)  
+**Completed:** 14 pts (Issue #1: 3 pts, Issue #2: 3 pts, Issue #3: 8 pts)  
 **In Progress:** 0 pts  
-**Remaining:** 18 pts
+**Remaining:** 8 pts
 
-**Velocity:** 3/21 = 14% complete
+**Velocity:** 14/21 = 67% complete
 
 **Blockers:**
-- CI/CD failing (blocks confidence in merges)
-- Need Alembic init (Issue #3)
+- CI/CD failing (will be fixed when Issue #3 PR is merged)
+- Need to review and merge Issue #3 PR
 
-**Next Milestone:** Complete Issues #2 and #3 (11 pts) to unblock rest of sprint
+**Next Milestone:** Complete Issues #4 and #5 (8 pts) to finish Sprint 1
 
 ---
 
