@@ -1,10 +1,12 @@
 """Configure structured logging with structlog."""
 
-import structlog
-import structlog.dev
 import logging
 import sys
 from typing import Any
+
+import structlog
+import structlog.dev
+
 from app.core.config import settings
 
 
@@ -43,7 +45,8 @@ def setup_logging() -> None:
 
 def get_logger(name: str = __name__) -> structlog.BoundLogger:
     """Get a configured structlog logger instance."""
-    return structlog.get_logger(name)
+    logger: structlog.BoundLogger = structlog.get_logger(name)  # type: ignore[assignment]
+    return logger
 
 
 logger = get_logger(__name__)

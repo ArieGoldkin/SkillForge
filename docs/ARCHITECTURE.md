@@ -6,6 +6,31 @@
 
 ---
 
+## 📖 Viewing Mermaid Diagrams
+
+This document contains Mermaid diagrams that require a compatible viewer to render properly.
+
+### ✅ Recommended Viewers
+
+1. **VS Code**: Install the "Markdown Preview Mermaid Support" extension
+   - Extension ID: `bierner.markdown-mermaid`
+   - Press `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows/Linux) to preview
+
+2. **GitHub**: Diagrams render automatically when viewing on GitHub.com
+
+3. **Online Viewer**: Copy diagram code to [Mermaid Live Editor](https://mermaid.live/)
+
+4. **Cursor/VS Code**: Use the built-in markdown preview (may require extension)
+
+### 🔧 Quick Fix
+
+If diagrams don't render:
+- Open the file in VS Code with the Mermaid extension installed
+- Or view on GitHub.com
+- Or copy the ```mermaid code blocks to [mermaid.live](https://mermaid.live/)
+
+---
+
 ## 📋 Table of Contents
 
 1. [Project Structure](#project-structure)
@@ -749,5 +774,13 @@ graph TB
 
 **Document Maintained By:** Yonatan & Arie  
 **Last Updated:** November 20, 2025  
-**View in:** GitHub, VS Code (Mermaid Preview), or any Mermaid-compatible viewer
+
+### Viewing Instructions
+
+**To view Mermaid diagrams:**
+- **VS Code/Cursor**: Install "Markdown Preview Mermaid Support" extension, then press `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows/Linux)
+- **GitHub**: View on GitHub.com - diagrams render automatically
+- **Online**: Copy any ```mermaid code block to [Mermaid Live Editor](https://mermaid.live/)
+
+**Note**: Plain text editors and some markdown viewers do not support Mermaid rendering. Use one of the recommended viewers above.
 
