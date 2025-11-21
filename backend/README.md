@@ -82,8 +82,10 @@ backend/
 │   │
 │   ├── services/                 # Business logic layer
 │   │   ├── __init__.py
-│   │   └── extraction/           # Content extraction services (future)
-│   │       └── __init__.py
+│   │   └── extraction/           # Content extraction services
+│   │       ├── __init__.py
+│   │       ├── jina_reader.py    # Jina AI Reader service
+│   │       └── content_type.py   # Content type detection
 │   │
 │   └── workflows/                # LangGraph workflows (future)
 │       └── __init__.py
@@ -93,7 +95,8 @@ backend/
 │   ├── __init__.py
 │   ├── conftest.py               # Pytest fixtures
 │   ├── test_main.py              # Endpoint tests
-│   └── test_config.py            # Configuration tests
+│   ├── test_config.py            # Configuration tests
+│   └── test_jina_reader.py       # Jina Reader service tests
 │
 ├── .env.example                  # Environment variable template
 ├── pyproject.toml                # Poetry configuration
