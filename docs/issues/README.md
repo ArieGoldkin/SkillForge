@@ -22,12 +22,12 @@ docs/issues/
 
 ### Issues Status
 
-| Issue | Title | Status | Assignee | Docs |
-|-------|-------|--------|----------|------|
-| [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) |
-| [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) |
-| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | 🔄 Ready | Yonatan | TBD |
-| [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service | 🔄 Ready | Yonatan | TBD |
+| Issue | Title | Status | Assignee | Docs | GitHub |
+|-------|-------|--------|----------|------|--------|
+| [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) |
+| [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
+| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | 🔄 Ready | Yonatan | TBD | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
+| [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service | 🔄 Ready | Yonatan | TBD | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 
 ---
 
