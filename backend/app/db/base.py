@@ -1,8 +1,12 @@
 """Base class for SQLAlchemy models."""
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    """Base class for all SQLAlchemy models."""
+
+    pass
 
 # Import all models here for Alembic autogenerate support
 from app.models.agent_finding import AgentFinding  # noqa: E402, F401
