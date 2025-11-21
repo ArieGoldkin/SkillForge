@@ -83,27 +83,22 @@ ERROR: "/alembic": not found
 
 ---
 
-## 📋 Open Issues (Sprint 1)
+## 📋 Issues Status (Sprint 1)
 
-### Issue #2: Environment Config & Logging [3 pts] ⚡ HIGH
-- **Status:** Ready to start
+### Issue #2: Environment Config & Logging [3 pts] ⚡ HIGH ✅ COMPLETE
+- **Status:** ✅ Complete (merged to `dev`)
 - **Assignee:** Yonatan
-- **Dependencies:** Task 1.1.1 ✅ (completed)
-- **Tasks:**
-  - Create `.env.example` template
-  - Setup Pydantic settings
-  - Implement structlog with JSON output
-  - Add request ID tracking
+- **Completed:** November 20, 2025
+- **Documentation:** [Issue #2 Docs](./issues/002-environment-config/README.md)
+- **GitHub:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2)
 
-### Issue #3: Database Schema & Migrations [8 pts] ⚡ HIGH
-- **Status:** Ready to start
+### Issue #3: Database Schema & Migrations [8 pts] ⚡ HIGH ✅ COMPLETE
+- **Status:** ✅ Complete (ready for PR)
 - **Assignee:** Yonatan
-- **Dependencies:** Task 1.1.2 ✅ (can start after #2)
-- **Tasks:**
-  - Initialize Alembic (fixes CI!)
-  - Create database models
-  - Write initial migrations
-  - Setup PGVector extension
+- **Completed:** November 21, 2025
+- **Branch:** `feature/issue-3-database-schema-migrations`
+- **Documentation:** [Issue #3 Docs](./issues/003-database-schema/README.md)
+- **GitHub:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3)
 
 ### Issue #4: Content Extraction (Jina AI) [5 pts] 🔄 MEDIUM
 - **Status:** Ready to start
