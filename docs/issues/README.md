@@ -1,7 +1,7 @@
 # Issues Documentation Index
 
 **Last Updated:** November 21, 2025  
-**Status:** 📋 **Active Issues Documentation**
+**Status:** ✅ **ORGANIZED**
 
 ---
 
@@ -13,14 +13,18 @@ This directory contains documentation for each GitHub issue, organized by issue 
 
 ```
 docs/issues/
+├── README.md                    # This file (issues index)
 ├── 002-environment-config/
-│   └── README.md
+│   └── README.md               # Issue #2 complete doc
 ├── 003-database-schema/
-│   └── README.md
-└── README.md (this file)
+│   └── README.md               # Issue #3 complete doc
+└── archived/                    # Historical docs (reference only)
+    └── README.md               # Archive index
 ```
 
-### Issues Status
+---
+
+## 📊 Issues Status
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -33,41 +37,23 @@ docs/issues/
 
 ## 📖 Documentation Standards
 
-### Each Issue Doc Should Include:
+Each issue doc (`XXX-issue-name/README.md`) should include:
 
-1. **Issue Overview**
-   - Title, number, GitHub link
-   - Status, assignee, completion date
-   - Story points, sprint
-
-2. **Implementation Summary**
-   - Tasks completed
-   - Commits made
-   - Files changed
-
-3. **Technical Details**
-   - Architecture decisions
-   - Patterns used
-   - Dependencies
-
-4. **Verification**
-   - Test coverage
-   - Dev environment verification
-   - Standards compliance
-
-5. **Related Documentation**
-   - Links to task docs
-   - Related issues
-   - Reference materials
+1. **Issue Overview** - Title, status, assignee, completion date
+2. **Implementation Summary** - Tasks completed, commits made, files changed
+3. **Technical Details** - Architecture decisions, patterns used, dependencies
+4. **Verification** - Test coverage, dev environment verification, standards compliance
+5. **Related Documentation** - Links to task docs, related issues
 
 ---
 
 ## 🔗 Quick Links
 
-- [Backend Tasks](../../YONATAN_BACKEND_TASKS.md)
-- [Frontend Tasks](../../ARIE_FRONTEND_TASKS.md)
-- [Current Status](../../CURRENT_STATUS.md)
+- [Backend Tasks](../YONATAN_BACKEND_TASKS.md)
+- [Frontend Tasks](../ARIE_FRONTEND_TASKS.md)
+- [Current Status](../CURRENT_STATUS.md)
 - [GitHub Issues](https://github.com/ArieGoldkin/SkillForge/issues)
+- [Archived Docs](./archived/README.md)
 
 ---
 
