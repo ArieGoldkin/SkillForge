@@ -60,8 +60,6 @@ async def add_request_id(request: Request, call_next):
     request.state.request_id = request_id
 
     # Add to context vars for logging
-    import structlog
-
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
 
