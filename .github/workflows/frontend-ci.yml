@@ -1,12 +1,13 @@
 name: Frontend CI
 
 on:
-  push:
-    branches: [main, dev]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend-ci.yml'
-  workflow_dispatch:
+  # Disabled until frontend directory exists
+  # push:
+  #   branches: [main, dev]
+  #   paths:
+  #     - 'frontend/**'
+  #     - '.github/workflows/frontend-ci.yml'
+  workflow_dispatch:  # Only allow manual runs for now
 
 jobs:
   test:

@@ -60,6 +60,7 @@ jobs:
 
   frontend-security:
     runs-on: ubuntu-latest
+    if: ${{ hashFiles('frontend/package.json') != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -132,7 +133,7 @@ jobs:
 
   security-report:
     runs-on: ubuntu-latest
-    needs: [backend-security, frontend-security, dependabot-alerts]
+    needs: [backend-security, dependabot-alerts]
     if: always()
     steps:
       - name: Download security reports
