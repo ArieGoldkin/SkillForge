@@ -6,14 +6,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Analysis,
     AgentFinding,
-    Artifact,
-    TutoringSession,
-    TutoringMessage,
+    Analysis,
     AnalysisProgress,
+    Artifact,
+    TutoringMessage,
+    TutoringSession,
 )
-
 
 # db_session fixture is in conftest.py
 
@@ -60,8 +59,6 @@ async def test_analysis_model_defaults(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_all_models_have_uuid_primary_keys(db_session: AsyncSession):
     """Test all models use UUID primary keys."""
-    models = [Analysis, AgentFinding, Artifact, TutoringSession, TutoringMessage, AnalysisProgress]
-
     # Test Analysis model
     analysis = Analysis(url="https://test.com", content_type="article")
     db_session.add(analysis)
@@ -69,9 +66,7 @@ async def test_all_models_have_uuid_primary_keys(db_session: AsyncSession):
     assert isinstance(analysis.id, uuid.UUID)
 
     # Test AgentFinding model
-    finding = AgentFinding(
-        analysis_id=analysis.id, agent_type="test", findings={"key": "value"}
-    )
+    finding = AgentFinding(analysis_id=analysis.id, agent_type="test", findings={"key": "value"})
     db_session.add(finding)
     await db_session.flush()
     assert isinstance(finding.id, uuid.UUID)

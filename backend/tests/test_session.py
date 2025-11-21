@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import AsyncSessionLocal, engine, get_async_database_url, get_db
 from app.core.config import settings
+from app.db.session import AsyncSessionLocal, engine, get_async_database_url, get_db
 
 
 def test_get_async_database_url_converts_postgresql_to_asyncpg():
@@ -77,7 +77,9 @@ async def test_get_db_commits_on_success():
         assert count > 0
 
         # Cleanup
-        await session.execute(text("DELETE FROM analyses WHERE url = :url"), {"url": "https://test.com"})
+        await session.execute(
+            text("DELETE FROM analyses WHERE url = :url"), {"url": "https://test.com"}
+        )
         await session.commit()
 
 

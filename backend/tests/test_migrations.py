@@ -1,19 +1,10 @@
 """Tests for database migrations."""
 
 import pytest
-from sqlalchemy import text, inspect
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
-from app.db.session import AsyncSessionLocal
 from app.db.base import Base
-from app.models import (
-    Analysis,
-    AgentFinding,
-    Artifact,
-    TutoringSession,
-    TutoringMessage,
-    AnalysisProgress,
-)
+from app.db.session import AsyncSessionLocal
 
 
 @pytest.mark.asyncio
@@ -41,9 +32,7 @@ async def test_all_tables_exist():
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            text(
-                "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
-            )
+            text("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")
         )
         existing_tables = [row[0] for row in result.fetchall()]
 
@@ -233,7 +222,14 @@ async def test_models_match_schema():
 async def test_uuid_primary_keys():
     """Test all tables use UUID primary keys."""
     async with AsyncSessionLocal() as session:
-        tables = ["analyses", "agent_findings", "artifacts", "tutoring_sessions", "tutoring_messages", "analysis_progress"]
+        tables = [
+            "analyses",
+            "agent_findings",
+            "artifacts",
+            "tutoring_sessions",
+            "tutoring_messages",
+            "analysis_progress",
+        ]
 
         for table in tables:
             result = await session.execute(

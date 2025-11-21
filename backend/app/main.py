@@ -51,6 +51,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Request ID Middleware
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):

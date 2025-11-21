@@ -1,6 +1,7 @@
 """Tests for configuration management."""
 
 import pytest
+
 from app.core.config import Settings
 
 

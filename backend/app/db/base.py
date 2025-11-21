@@ -8,6 +8,7 @@ class Base(DeclarativeBase):
 
     pass
 
+
 # Import all models here for Alembic autogenerate support
 from app.models.agent_finding import AgentFinding  # noqa: E402, F401
 from app.models.analysis import Analysis  # noqa: E402, F401

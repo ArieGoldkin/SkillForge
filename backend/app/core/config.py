@@ -19,31 +19,20 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: list[str] = Field(
-        default=["http://localhost:5173"],
-        description="Allowed CORS origins"
+        default=["http://localhost:5173"], description="Allowed CORS origins"
     )
 
     # Database (to be used in Task 1.2.5)
-    DATABASE_URL: str | None = Field(
-        default=None,
-        description="PostgreSQL connection string"
-    )
+    DATABASE_URL: str | None = Field(default=None, description="PostgreSQL connection string")
 
     # LLM Configuration (to be used in Task 1.5.2)
     OLLAMA_BASE_URL: str = Field(
-        default="http://localhost:11434",
-        description="Ollama API base URL"
+        default="http://localhost:11434", description="Ollama API base URL"
     )
-    OLLAMA_MODEL: str = Field(
-        default="llama3.1:8b",
-        description="Ollama model name"
-    )
+    OLLAMA_MODEL: str = Field(default="llama3.1:8b", description="Ollama model name")
 
     # Content Extraction (to be used in Task 1.4.2)
-    JINA_API_KEY: str | None = Field(
-        default=None,
-        description="Jina AI API key (optional for dev)"
-    )
+    JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
     model_config = SettingsConfigDict(
         env_file=".env",

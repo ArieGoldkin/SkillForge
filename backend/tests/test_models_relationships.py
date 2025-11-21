@@ -1,18 +1,15 @@
 """Tests for SQLAlchemy model relationships."""
 
-import uuid
-
 import pytest
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Analysis,
     AgentFinding,
-    Artifact,
-    TutoringSession,
-    TutoringMessage,
+    Analysis,
     AnalysisProgress,
+    Artifact,
+    TutoringMessage,
+    TutoringSession,
 )
 
 

@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
 
 from app.api.v1.health import check_database
 
@@ -24,14 +23,15 @@ async def test_check_database_returns_connected_when_database_available():
 @pytest.mark.asyncio
 async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     """Test check_database returns None when DATABASE_URL is not configured."""
-    from app.core.config import settings
     from app.api.v1 import health as health_module
+    from app.core.config import settings
 
     original_url = settings.DATABASE_URL
     try:
         monkeypatch.setattr(settings, "DATABASE_URL", None)
         # Reload module to pick up change
         import importlib
+
         importlib.reload(health_module)
 
         result = await health_module.check_database()
@@ -39,20 +39,24 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     finally:
         monkeypatch.setattr(settings, "DATABASE_URL", original_url)
         import importlib
+
         importlib.reload(health_module)
 
 
 @pytest.mark.asyncio
 async def test_check_database_returns_error_on_connection_failure(monkeypatch):
     """Test check_database returns error status when connection fails."""
-    from app.core.config import settings
     from app.api.v1 import health as health_module
+    from app.core.config import settings
 
     original_url = settings.DATABASE_URL
     try:
         # Set invalid database URL
-        monkeypatch.setattr(settings, "DATABASE_URL", "postgresql://invalid:invalid@localhost:9999/invalid")
+        monkeypatch.setattr(
+            settings, "DATABASE_URL", "postgresql://invalid:invalid@localhost:9999/invalid"
+        )
         import importlib
+
         importlib.reload(health_module)
 
         result = await health_module.check_database()
@@ -63,6 +67,7 @@ async def test_check_database_returns_error_on_connection_failure(monkeypatch):
     finally:
         monkeypatch.setattr(settings, "DATABASE_URL", original_url)
         import importlib
+
         importlib.reload(health_module)
 
 
