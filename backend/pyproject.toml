@@ -43,8 +43,32 @@ line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # Pyflakes
+    "W",      # pycodestyle warnings
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (Python syntax upgrades)
+    "B",      # flake8-bugbear (security and performance)
+    "SIM",    # flake8-simplify (simplification)
+    "C4",     # flake8-comprehensions (comprehension checks)
+    "TID",    # flake8-tidy-imports (import conventions)
+    "PTH",    # flake8-use-pathlib (pathlib usage)
+    "TD",     # flake8-todos (TODO comments)
+    "D",      # pydocstyle (docstring style)
+    "PL",     # Pylint (error checking)
+    "TRY",    # tryceratops (exception handling)
+    "EM",     # flake8-errmsg (exception messages)
+    "BLE",    # flake8-blind-except (blind exceptions)
+    "FAST",   # FastAPI-specific rules
+    "RUF",    # Ruff-specific rules
+]
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "D203",   # 1 blank line required before class docstring (conflicts with D211)
+    "D213",   # Multi-line summary should start at second line (conflicts with D212)
+]
 
 [tool.mypy]
 python_version = "3.13"

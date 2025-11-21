@@ -13,7 +13,8 @@ def get_async_database_url() -> str:
     Converts postgresql:// to postgresql+asyncpg:// for async operations.
     """
     if not settings.DATABASE_URL:
-        raise ValueError("DATABASE_URL is not set")
+        msg = "DATABASE_URL is not set"
+        raise ValueError(msg)
     return settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 

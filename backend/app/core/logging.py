@@ -12,7 +12,6 @@ from app.core.config import settings
 
 def setup_logging() -> None:
     """Configure structured logging with structlog."""
-
     # Configure standard logging
     logging.basicConfig(
         format="%(message)s",

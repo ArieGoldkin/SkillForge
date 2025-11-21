@@ -3,7 +3,9 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.config import settings
 from app.db.session import engine
 
 router = APIRouter(tags=["health"])
@@ -23,26 +25,25 @@ async def check_database() -> dict[str, str] | None:
     """Check database connection status.
 
     Returns:
-        Dictionary with database status, or None if DATABASE_URL is not configured
-    """
-    from app.core.config import settings
+        Dictionary with database status, or None if DATABASE_URL is not configured.
 
+    """
     if not settings.DATABASE_URL:
         return None
 
     try:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
+    except SQLAlchemyError as e:
+        error_msg = str(e)
+        return {"status": "disconnected", "error": error_msg}
+    else:
         return {"status": "connected"}
-    except Exception as e:
-        return {"status": "disconnected", "error": str(e)}
 
 
-@router.get("/health", response_model=HealthStatus)
+@router.get("/health")
 async def health_check() -> HealthStatus:
     """Health check endpoint for monitoring and deployment verification."""
-    from app.core.config import settings
-
     database_status = await check_database()
 
     return HealthStatus(
