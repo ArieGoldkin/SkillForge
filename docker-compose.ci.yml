@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: skillforge-postgres-ci
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data-ci:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_preload_libraries=vector
+      -c max_connections=200
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: skillforge-ollama-ci
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ollama-data-ci:/root/.ollama
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-ci
+    environment:
+      ENVIRONMENT: test
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://testuser:testpass@postgres:5432/testdb
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3.1:8b
+      API_V1_PREFIX: /api/v1
+      HOST: 0.0.0.0
+      PORT: 8500
+      CORS_ORIGINS: '["http://localhost:5173","http://frontend:5173"]'
+    ports:
+      - "8500:8500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./backend:/app:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h postgres -U testuser; do sleep 2; done &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting backend...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
+      "
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skillforge-frontend-ci
+    environment:
+      NODE_ENV: test
+      VITE_API_BASE_URL: http://localhost:8500
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+
+volumes:
+  postgres-data-ci:
+  ollama-data-ci:
+
+networks:
+  default:
+    name: skillforge-ci-network

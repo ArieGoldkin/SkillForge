@@ -36,6 +36,7 @@ ISSUES=(
 # Sprint 7 Issues
 ISSUES+=(
     "7"   # Task 6.5-6.7, 7.5-7.7 - CI/CD Pipeline Setup [13 pts]
+    "9"   # Task 7.8 - GitHub Project Setup [3 pts]
 )
 
 for issue_num in "${ISSUES[@]}"; do

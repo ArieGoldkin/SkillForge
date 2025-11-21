@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "skillforge-backend"
+version = "0.1.0"
+description = "SkillForge Backend API - Research-to-Implementation Pipeline"
+authors = ["SkillForge Team"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.121.2"
+starlette = "^0.49.3"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+pydantic = "^2.10.3"
+pydantic-settings = "^2.6.1"
+python-dotenv = "^1.0.1"
+structlog = "^24.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.1"
+pytest-cov = "^5.0.0"
+black = "^24.8.0"
+ruff = "^0.6.9"
+mypy = "^1.13.0"
+isort = "^5.13.2"
+httpx = "^0.28.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"

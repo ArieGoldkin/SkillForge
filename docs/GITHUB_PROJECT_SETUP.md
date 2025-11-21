@@ -68,6 +68,7 @@ Once the project is created, add all existing issues:
 
 ### Sprint 7 Issues
 - Issue #7: Task 6.5-6.7, 7.5-7.7 - CI/CD Pipeline Setup [13 pts]
+- Issue #9: Task 7.8 - GitHub Project Setup [3 pts]
 
 ## Project Views
 

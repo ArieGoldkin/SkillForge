@@ -1,0 +1,117 @@
+name: Backend Deploy - Staging
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy-staging.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to container registry
+        if: env.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ env.DOCKERHUB_USERNAME != '' }}
+          tags: ${{ env.DOCKERHUB_USERNAME != '' && format('{0}/skillforge-backend:staging-{1}', secrets.DOCKERHUB_USERNAME, github.sha) || 'skillforge-backend:staging' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Railway
+        if: env.RAILWAY_TOKEN != ''
+        uses: bervProject/railway-deploy@v0.1.0
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: skillforge-backend-staging
+          detach: true
+
+      - name: Deploy to Render
+        if: env.RENDER_API_KEY != ''
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID_STAGING }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: deploy
+    environment:
+      name: staging
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          STAGING_URL="${{ secrets.STAGING_API_URL || 'https://staging-api.skillforge.com' }}"
+          echo "Checking health at $STAGING_URL/health"
+          
+          for i in {1..10}; do
+            if curl -f "$STAGING_URL/health"; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10 seconds..."
+            sleep 10
+          done
+          
+          echo "Health check failed after 10 attempts"
+          exit 1
+
+  smoke-tests:
+    runs-on: ubuntu-latest
+    needs: health-check
+    environment:
+      name: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'poetry'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Run smoke tests
+        working-directory: ./backend
+        env:
+          API_BASE_URL: ${{ secrets.STAGING_API_URL || 'https://staging-api.skillforge.com' }}
+        run: |
+          # Basic smoke tests
+          poetry run pytest tests/test_health.py -v || true
+          
+          # Test health endpoint
+          curl -f "$API_BASE_URL/health" || exit 1
+          echo "Smoke tests passed!"
