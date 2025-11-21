@@ -16,10 +16,8 @@ docs/issues/
 ├── README.md                    # This file (issues index)
 ├── 002-environment-config/
 │   └── README.md               # Issue #2 complete doc
-├── 003-database-schema/
-│   └── README.md               # Issue #3 complete doc
-└── archived/                    # Historical docs (reference only)
-    └── README.md               # Archive index
+└── 003-database-schema/
+    └── README.md               # Issue #3 complete doc
 ```
 
 ---
