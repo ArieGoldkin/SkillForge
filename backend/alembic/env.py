@@ -79,6 +79,9 @@ def run_migrations_online() -> None:
             "Set DATABASE_URL environment variable or use offline mode."
         )
 
+    # Use psycopg2-binary driver for migrations (synchronous)
+    # This is standard for Alembic migrations
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
