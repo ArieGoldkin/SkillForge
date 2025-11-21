@@ -105,10 +105,8 @@ Create complete database schema with SQLAlchemy 2.0 models, Alembic migrations, 
 
 ## 📚 Related Documentation
 
-- [Implementation Summary](../ISSUE_3_IMPLEMENTATION_SUMMARY.md)
-- [Standards Compliance](../ISSUE_3_STANDARDS_COMPLETE.md)
-- [Dev Environment Verification](../ISSUE_3_DEV_ENV_VERIFICATION.md)
 - [Backend Tasks](../../YONATAN_BACKEND_TASKS.md#task-121)
+- [Archived Documentation](../archived/) - Historical implementation docs (consolidated into this file)
 
 ---
 

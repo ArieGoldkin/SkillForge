@@ -101,8 +101,7 @@ Implement environment configuration with Pydantic Settings and structured loggin
 ## 📚 Related Documentation
 
 - [Backend Tasks](../../YONATAN_BACKEND_TASKS.md#task-112)
-- [Verification Plan](../../VERIFICATION_PLAN_ISSUE_2.md) (archived)
-- [Test Coverage](../../ISSUE_2_TEST_COVERAGE.md) (consolidated)
+- [Archived Documentation](../archived/) - Historical verification docs (consolidated into this file)
 
 ---
 
