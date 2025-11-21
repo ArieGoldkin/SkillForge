@@ -1,11 +1,12 @@
 """Analysis model for content analysis pipeline."""
 
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, String, Text, DateTime
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID, JSONB
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import Column, DateTime, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 
 from app.db.base import Base
 

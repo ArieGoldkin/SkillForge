@@ -1,10 +1,11 @@
 """Artifact model for generated implementation guides."""
 
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-from sqlalchemy import Column, Text, Integer, DateTime, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
