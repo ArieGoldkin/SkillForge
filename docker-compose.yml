@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: skillforge-postgres-dev
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: skillforge
+    ports:
+      - "5437:5432"  # Using 5437 to avoid conflicts with reporter-accuracy (5433, 5436)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+
+# NOTE: Ollama not included - using existing service on host (port 11434)
+
+volumes:
+  postgres-dev-data:
