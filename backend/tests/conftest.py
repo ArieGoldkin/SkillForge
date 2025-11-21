@@ -4,8 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
-from app.db.session import AsyncSessionLocal, engine
+from app.db.session import AsyncSessionLocal
 from app.main import app
 
 
@@ -27,14 +26,16 @@ def test_settings():
     )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def db_session() -> AsyncSession:
-    """Create a test database session.
+    """Create a test database session with automatic rollback.
 
-    Yields an async session and ensures proper cleanup after test.
-    Uses nested transaction for automatic rollback.
+    Yields an async session and rolls back all changes after test.
     """
     async with AsyncSessionLocal() as session:
-        async with session.begin() as transaction:
+        # Use nested transaction for automatic rollback
+        transaction = await session.begin()
+        try:
             yield session
+        finally:
             await transaction.rollback()
