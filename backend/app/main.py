@@ -1,15 +1,16 @@
 """FastAPI application initialization and middleware."""
 
+import time
+import uuid
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import time
-import uuid
 
-from app.core.config import settings
-from app.core.logging import setup_logging, get_logger
 from app.api.v1 import health
+from app.core.config import settings
+from app.core.logging import get_logger, setup_logging
 
 # Setup logging first
 setup_logging()

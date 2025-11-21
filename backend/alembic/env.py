@@ -20,9 +20,11 @@ from app.db.base import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set database URL from settings
-if settings.DATABASE_URL:
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set database URL from settings (only if available)
+# This allows offline mode to work when DATABASE_URL is None
+database_url = settings.DATABASE_URL
+if database_url:
+    config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -70,6 +72,13 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    url = config.get_main_option("sqlalchemy.url")
+    if not url:
+        raise RuntimeError(
+            "DATABASE_URL is not set. Cannot run migrations in online mode. "
+            "Set DATABASE_URL environment variable or use offline mode."
+        )
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
