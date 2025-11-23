@@ -34,15 +34,30 @@ except ImportError:
             """Initialize with coroutine."""
             self._coro = coro
 
+        async def _await_result(self):
+            """Await the coroutine (for use in async context)."""
+            return await self._coro
+
         def result(self):
             """Execute coroutine and return result (synchronous)."""
+            # Check if we're in an async context
             try:
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
+                # We're in an async context - can't use run_until_complete
+                # Return a coroutine that the caller should await
+                # This is a limitation of the mock - in real LangGraph, this wouldn't happen
+                raise RuntimeError(
+                    "MockFuture.result() called in async context. "
+                    "Use await MockFuture._await_result() instead, or ensure LangGraph is installed."
+                )
             except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            return loop.run_until_complete(self._coro)
+                # No running loop, create a new one
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                return loop.run_until_complete(self._coro)
 
     def task(func):
         """Mock task decorator that returns MockFuture."""
@@ -244,13 +259,27 @@ async def analysis_workflow(
         # Extract content (returns future, can run in parallel)
         extraction_future = extract_content(url, analysis_id)
 
-        # Block and get result
-        extraction_result = extraction_future.result()
+        # Get result - handle both MockFuture and real LangGraph futures
+        if hasattr(extraction_future, "_await_result"):
+            # MockFuture in async context
+            extraction_result = await extraction_future._await_result()
+        elif hasattr(extraction_future, "result"):
+            # MockFuture in sync context or real LangGraph future
+            extraction_result = extraction_future.result()
+        else:
+            # Direct coroutine (shouldn't happen with @task decorator)
+            extraction_result = await extraction_future
 
         # Generate embedding
-        embedding = generate_embedding(
+        embedding_future = generate_embedding(
             extraction_result["raw_content"], analysis_id
-        ).result()
+        )
+        if hasattr(embedding_future, "_await_result"):
+            embedding = await embedding_future._await_result()
+        elif hasattr(embedding_future, "result"):
+            embedding = embedding_future.result()
+        else:
+            embedding = await embedding_future
 
         result = {
             "analysis_id": analysis_id,
