@@ -75,14 +75,14 @@ _No backend issues in progress_
 
 **Sprint 1:**
 - **Total Story Points:** 45 pts
-- **Completed:** 35 pts (78%)
-- **Remaining:** 10 pts (22%)
-- **Yonatan Progress:** 24/22 pts (109%) ✅
+- **Completed:** 40 pts (80%)
+- **Remaining:** 10 pts (20%)
+- **Yonatan Progress:** 29/27 pts (107%) ✅
 - **Arie Progress:** 11/23 pts (48%)
 
 **Sprint 2:**
-- **Completed:** 8 pts (Issues #39, #40)
-- **Yonatan Progress:** 8/10 pts (80%)
+- **Completed:** 5 pts (Issue #39)
+- **Yonatan Progress:** 5/10 pts (50%)
 
 ---
 
