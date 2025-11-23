@@ -1,9 +1,29 @@
 """Application settings loaded from environment variables."""
 
+import os
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _get_env_file() -> str:
+    """Get environment file path, preferring .env.test for tests."""
+    # Check if ENV_FILE is explicitly set
+    if env_file := os.environ.get("ENV_FILE"):
+        return env_file
+
+    # Check if we're in test mode and .env.test exists
+    test_env = Path(__file__).parent.parent / ".env.test"
+    if test_env.exists() and (
+        os.environ.get("PYTEST_CURRENT_TEST")
+        or os.environ.get("ENVIRONMENT") == "testing"
+    ):
+        return str(test_env)
+
+    # Default to .env
+    return ".env"
 
 
 class Settings(BaseSettings):
@@ -55,7 +75,7 @@ class Settings(BaseSettings):
     JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_get_env_file(),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

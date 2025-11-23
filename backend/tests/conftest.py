@@ -1,5 +1,8 @@
 """Pytest configuration and fixtures."""
 
+import os
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.db.session import AsyncSessionLocal
 from app.main import app
+
+# Load .env.test if it exists for integration tests
+# This allows tests to use real API keys from .env.test
+TEST_ENV_FILE = Path(__file__).parent.parent / ".env.test"
+if TEST_ENV_FILE.exists():
+    # Set environment variable to load .env.test
+    # The Settings class will detect this and load .env.test
+    os.environ["ENV_FILE"] = str(TEST_ENV_FILE)
+    # Also set ENVIRONMENT=testing to trigger test mode
+    os.environ.setdefault("ENVIRONMENT", "testing")
 
 
 @pytest.fixture
