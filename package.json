@@ -4,9 +4,31 @@
   "private": true,
   "scripts": {
     "context:sync": "node .claude/scripts/context-bridge.js",
-    "context:watch": "node .claude/scripts/context-bridge.js --watch"
+    "context:watch": "node .claude/scripts/context-bridge.js --watch",
+    "prepare": "husky"
   },
   "dependencies": {
     "chokidar": "^3.6.0"
+  },
+  "description": "> **Intelligent Learning Integration Platform** - Analyze technical content, generate actionable implementation guides, and learn through Socratic tutoring.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArieGoldkin/SkillForge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ArieGoldkin/SkillForge/issues"
+  },
+  "homepage": "https://github.com/ArieGoldkin/SkillForge#readme",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
   }
 }

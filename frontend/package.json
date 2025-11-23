@@ -12,8 +12,7 @@
     "format:check": "biome check src",
     "quality:check": "npm run lint && npm run format:check && tsc --noEmit",
     "quality:fix": "npm run lint:fix && npm run format",
-    "preview": "vite preview",
-    "prepare": "husky"
+    "preview": "vite preview"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
