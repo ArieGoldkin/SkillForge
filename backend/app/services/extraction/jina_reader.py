@@ -112,7 +112,9 @@ class JinaReader:
             raise
 
         except Exception as e:
-            logger.error("jina_extraction_failed", url=url, error=str(e), error_type=type(e).__name__)
+            logger.error(
+                "jina_extraction_failed", url=url, error=str(e), error_type=type(e).__name__
+            )
             raise JinaReaderError(f"Extraction failed: {str(e)}") from e
 
     async def close(self) -> None:

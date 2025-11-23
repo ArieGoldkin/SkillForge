@@ -96,10 +96,13 @@
 - **Documentation:** [Issue #3 Docs](./issues/003-database-schema/README.md)
 - **GitHub:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3)
 
-### Issue #4: Content Extraction (Jina AI) [5 pts] 🔄 MEDIUM
-- **Status:** Ready to start
+### Issue #4: Content Extraction (Jina AI) [5 pts] ✅ COMPLETE
+- **Status:** ✅ Complete (ready for PR)
 - **Assignee:** Yonatan
-- **Dependencies:** Task 1.1.2 ✅
+- **Completed:** November 23, 2025
+- **Branch:** `feature/issue-4-content-extraction-jina`
+- **Documentation:** [Issue #4 Docs](./issues/004-content-extraction-jina/README.md)
+- **GitHub:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4)
 
 ### Issue #5: Embedding Service [3 pts] 🔄 MEDIUM
 - **Status:** Ready to start
@@ -119,10 +122,10 @@
 
 ### This Week
 
-2. **Start Issue #4: Content Extraction** 🔄 MEDIUM
-   - Implement Jina AI content extraction
-   - Create extraction service
-   - Add tests and documentation
+2. ~~**Start Issue #4: Content Extraction**~~ ✅ COMPLETE
+   - ✅ Jina AI content extraction implemented
+   - ✅ Extraction service created
+   - ✅ Tests and documentation complete
 
 3. **Start Issue #5: Embedding Service** 🔄 MEDIUM
    - Implement embedding generation
@@ -179,10 +182,10 @@
 
     ✅ COMPLETED ISSUES (Sprint 1)
     ├─ Issue #2: Config & Logging [3 pts] ✅
-    └─ Issue #3: Database & Migrations [8 pts] ✅ ← Ready for PR!
+    ├─ Issue #3: Database & Migrations [8 pts] ✅
+    └─ Issue #4: Content Extraction [5 pts] ✅ ← Ready for PR!
 
     📋 READY TO START (Sprint 1)
-    ├─ Issue #4: Content Extraction [5 pts] 🔄
     └─ Issue #5: Embedding Service [3 pts] 🔄
 
     🔄 DEPENDENCIES
@@ -220,18 +223,18 @@ gh pr edit <PR_NUMBER> --base dev
 ## 📈 Sprint 1 Progress
 
 **Total Story Points:** 21  
-**Completed:** 14 pts (Issue #1: 3 pts, Issue #2: 3 pts, Issue #3: 8 pts)  
+**Completed:** 19 pts (Issue #1: 3 pts, Issue #2: 3 pts, Issue #3: 8 pts, Issue #4: 5 pts)  
 **In Progress:** 0 pts  
-**Remaining:** 8 pts
+**Remaining:** 2 pts
 
-**Velocity:** 14/21 = 67% complete
+**Velocity:** 19/21 = 90% complete
 
 **Blockers:**
 - Issue #3 PR ready for review and merge (includes Alembic setup and migrations)
 
-**Next Milestone:** Complete Issues #4 and #5 (8 pts) to finish Sprint 1
+**Next Milestone:** Complete Issue #5 (2 pts) to finish Sprint 1
 
 ---
 
-**Last Updated:** November 21, 2025 (Workflow fixes applied)
+**Last Updated:** November 23, 2025 (Issue #4 completed)
 **Maintained By:** Yonatan & Arie
