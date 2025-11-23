@@ -27,16 +27,18 @@ docs/issues/
 │   ├── README.md                         # Issue #4 complete doc
 │   ├── ISSUE_4_VERIFICATION.md
 │   └── TEST_RESULTS.md
-└── 030-frontend-code-quality/
-    ├── README.md                         # Issue #30 complete doc
-    └── ISSUE_30_VALIDATION_COMPLETE.md
+├── 030-frontend-code-quality/
+│   ├── README.md                         # Issue #30 complete doc
+│   └── ISSUE_30_VALIDATION_COMPLETE.md
+└── 034-app-router-integration/
+    └── README.md                         # Issue #34 complete doc
 ```
 
 ---
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (5 total - 24 pts)
+### ✅ Completed Issues (6 total - 27 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -45,8 +47,9 @@ docs/issues/
 | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
 | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) | Frontend Code Quality & Design Prototypes | ✅ Complete (Closed) | Arie | [📄 Docs](./030-frontend-code-quality/README.md) | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) |
+| [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | ✅ Complete | Arie | [📄 Docs](./034-app-router-integration/README.md) | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
 
-### 🔄 In Progress / Ready (6 total - 21 pts)
+### 🔄 In Progress / Ready (5 total - 18 pts)
 
 #### Backend (Yonatan)
 
@@ -61,16 +64,15 @@ docs/issues/
 | [#31](https://github.com/ArieGoldkin/SkillForge/issues/31) | Setup Testing Infrastructure | 🔄 Ready | Arie | TBD | [#31](https://github.com/ArieGoldkin/SkillForge/issues/31) |
 | [#32](https://github.com/ArieGoldkin/SkillForge/issues/32) | Convert HTML Prototypes to React | 🔄 Ready | Arie | TBD | [#32](https://github.com/ArieGoldkin/SkillForge/issues/32) |
 | [#33](https://github.com/ArieGoldkin/SkillForge/issues/33) | Initialize Husky Pre-commit Hooks | 🔄 Ready | Arie | TBD | [#33](https://github.com/ArieGoldkin/SkillForge/issues/33) |
-| [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | 🔄 Ready | Arie | TBD | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
 | [#35](https://github.com/ArieGoldkin/SkillForge/issues/35) | Add Error Boundaries and 404 Page | 🔄 Ready | Arie | TBD | [#35](https://github.com/ArieGoldkin/SkillForge/issues/35) |
 
 ### 📈 Sprint 1 Progress
 
 - **Total Story Points:** 45 pts
-- **Completed:** 24 pts (53%)
-- **Remaining:** 21 pts (47%)
+- **Completed:** 27 pts (60%)
+- **Remaining:** 18 pts (40%)
 - **Yonatan Progress:** 19/22 pts (86%)
-- **Arie Progress:** 5/23 pts (22%)
+- **Arie Progress:** 8/23 pts (35%)
 
 ---
 

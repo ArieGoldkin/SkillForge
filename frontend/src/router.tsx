@@ -1,62 +1,18 @@
-import { lazy, Suspense } from 'react'
+import { createRouter } from '@tanstack/react-router'
 
-import { createBrowserRouter } from 'react-router-dom'
+// Import route tree - TanStack Router will generate this automatically
+// The route tree is built from the files in src/routes/
+import { routeTree } from './routeTree.gen'
 
-// Lazy load feature modules
-const Home = lazy(() => import('@features/home').then((m) => ({ default: m.Home })))
-const AnalyzeResult = lazy(() =>
-  import('@features/analysis').then((m) => ({ default: m.AnalyzeResult }))
-)
-const TutorSession = lazy(() =>
-  import('@features/tutor').then((m) => ({ default: m.TutorSession }))
-)
-const Library = lazy(() => import('@features/library').then((m) => ({ default: m.Library })))
+// Create the router instance with type-safe routing
+export const router = createRouter({
+  routeTree,
+  defaultPreload: 'intent', // Preload on hover/focus for better UX
+})
 
-// Loading fallback component
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-muted-foreground">Loading...</div>
-    </div>
-  )
+// Register router for type safety throughout the app
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
 }
-
-// Wrapper for lazy-loaded routes
-function LazyRoute({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
-}
-
-export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: (
-      <LazyRoute>
-        <Home />
-      </LazyRoute>
-    ),
-  },
-  {
-    path: '/analyze/:id',
-    element: (
-      <LazyRoute>
-        <AnalyzeResult />
-      </LazyRoute>
-    ),
-  },
-  {
-    path: '/tutor/:sessionId',
-    element: (
-      <LazyRoute>
-        <TutorSession />
-      </LazyRoute>
-    ),
-  },
-  {
-    path: '/library',
-    element: (
-      <LazyRoute>
-        <Library />
-      </LazyRoute>
-    ),
-  },
-])

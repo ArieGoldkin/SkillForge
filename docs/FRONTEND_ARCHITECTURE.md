@@ -1,8 +1,8 @@
 # Frontend Architecture - SkillForge
 
-**Version:** 1.0
-**Last Updated:** November 21, 2025
-**Stack:** React 19 + Vite + TypeScript + Tailwind CSS
+**Version:** 1.1
+**Last Updated:** November 23, 2025
+**Stack:** React 19 + Vite + TypeScript + Tailwind CSS + TanStack Router
 
 ---
 
@@ -32,6 +32,13 @@ frontend/src/
 │   ├── tutor/
 │   └── library/
 │
+├── routes/                       # TanStack Router - file-based routes
+│   ├── __root.tsx               # Root layout (Navigation + theme)
+│   ├── index.tsx                # / (Home)
+│   ├── library.tsx              # /library
+│   ├── analyze.$id.tsx          # /analyze/:id (typed param)
+│   └── tutor.$sessionId.tsx     # /tutor/:sessionId (typed param)
+│
 ├── shared/                       # Cross-app reusable code
 │   ├── components/
 │   │   ├── ui/                  # Base primitives (Button, Card)
@@ -43,7 +50,8 @@ frontend/src/
 ├── types/                        # Global TypeScript types
 ├── lib/                          # Core utilities (cn() function)
 ├── services/                     # API layer (grouped by domain)
-├── router.tsx                    # Route configuration
+├── router.tsx                    # Router configuration (TanStack Router)
+├── routeTree.gen.ts             # Auto-generated route tree (DO NOT EDIT)
 └── main.tsx                      # App entry point
 ```
 
@@ -169,14 +177,15 @@ import { mockAnalyzeAPI } from '@services/mock.service'
 
 ```typescript
 // features/analysis/AnalyzeResult.tsx (main component)
-import { useParams } from 'react-router-dom'
+import { useParams } from '@tanstack/react-router'
 
 import { useAnalysisData } from './hooks/useAnalysisData'
 import ProgressTracker from './components/ProgressTracker'
 import AgentFindings from './components/AgentFindings'
 
 export default function AnalyzeResult() {
-  const { id } = useParams<{ id: string }>()
+  // Type-safe params from TanStack Router route definition
+  const { id } = useParams({ from: '/analyze/$id' })  // 'id' is automatically typed!
   const { data, isLoading } = useAnalysisData(id)
 
   if (isLoading) return <LoadingState />
@@ -391,12 +400,28 @@ export { default as NewFeature } from './NewFeature'
 
 4. **Add route:**
 
+Create a new route file in `src/routes/`:
+
 ```typescript
-// src/router.tsx
+// src/routes/new-feature.tsx (creates /new-feature route)
+import { lazy } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { LazyRoute } from '@router/LazyRoute'
+
 const NewFeature = lazy(() =>
   import('@features/new-feature').then((m) => ({ default: m.NewFeature }))
 )
+
+export const Route = createFileRoute('/new-feature')({
+  component: () => (
+    <LazyRoute>
+      <NewFeature />
+    </LazyRoute>
+  ),
+})
 ```
+
+**TanStack Router automatically detects the new route file and regenerates `routeTree.gen.ts`.**
 
 ### Refactoring Large Components
 
