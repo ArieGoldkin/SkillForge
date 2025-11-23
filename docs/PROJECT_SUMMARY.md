@@ -186,7 +186,7 @@ docs/
 2. ✅ Issue #2: Environment Config & Logging (3 pts) - Complete
 3. ✅ Issue #3: Database Schema & Migrations (8 pts) - Complete
 4. ✅ Issue #4: Content Extraction (Jina AI) (5 pts) - Complete
-5. 🔄 Issue #5: Embedding Service (2 pts) - Ready to start
+5. ✅ Issue #5: Embedding Service Implementation (5 pts) - Complete
 
 ---
 

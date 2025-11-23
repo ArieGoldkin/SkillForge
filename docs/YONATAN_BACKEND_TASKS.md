@@ -946,11 +946,29 @@ app.include_router(analyze_router)
 
 ---
 
+### ✅ Task 1.5.0: Schema Migration to Vector(768) [1 pt]
+
+**Status:** ✅ Complete  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5)  
+**Dependencies:** Task 1.2.4 (Issue #3)  
+**Completed:** November 23, 2025
+
+#### Description
+Create migration to update `content_embedding` column from `Vector(1536)` to `Vector(768)` to match nomic-embed-text model dimensions.
+
+#### Implementation
+- Created migration: `637794773190_update_embedding_dimension_to_768.py`
+- Updated `app/models/analysis.py` model definition
+- Migration is reversible (can downgrade back to 1536)
+
+---
+
 ### ✅ Task 1.5.1: Install Ollama Models [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
-**Dependencies:** Docker Compose running (Task 1.6.1)
+**Dependencies:** Ollama running on host  
+**Completed:** November 23, 2025
 
 #### Description
 Pull required Ollama models for dev environment.
@@ -972,60 +990,26 @@ curl http://localhost:11434/api/tags
 
 ### ✅ Task 1.5.2: Create Embedding Service [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
-**Dependencies:** Task 1.5.1
+**Dependencies:** Task 1.5.1  
+**Completed:** November 23, 2025
 
 #### Description
-Implement service to generate embeddings using Ollama.
-
-#### Installation
-```bash
-pip install ollama==0.4.3
-```
+Implement service to generate embeddings using Ollama with dimension handling and normalization.
 
 #### Implementation
-```python
-# app/services/embeddings.py
-import ollama
-from app.core.config import settings
-from app.core.logging import logger
+- Created `app/services/embeddings.py` (209 lines)
+- Dimension handling: truncate if >768, pad if <768 (following reporter-accuracy pattern)
+- L2 normalization for cosine similarity search
+- Retry logic with exponential backoff (tenacity)
+- Comprehensive error handling with custom `EmbeddingError`
+- Health check integration (Ollama availability)
+- Configuration: `EMBEDDING_DIMENSIONS=768`, `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`
 
-class EmbeddingService:
-    def __init__(self):
-        self.client = ollama.AsyncClient(host=settings.OLLAMA_BASE_URL)
-        self.model = settings.OLLAMA_EMBEDDING_MODEL
-
-    async def generate_embedding(self, text: str) -> list[float]:
-        """Generate embedding vector for text using Ollama."""
-        try:
-            # Truncate text if too long (Ollama has limits)
-            max_length = 8000
-            if len(text) > max_length:
-                text = text[:max_length]
-                logger.warning("embedding_text_truncated", original_length=len(text))
-
-            response = await self.client.embeddings(
-                model=self.model,
-                prompt=text,
-            )
-
-            embedding = response["embedding"]
-
-            logger.info(
-                "embedding_generated",
-                text_length=len(text),
-                embedding_dim=len(embedding),
-            )
-
-            return embedding
-
-        except Exception as e:
-            logger.error("embedding_generation_failed", error=str(e))
-            raise
-
-embedding_service = EmbeddingService()
-```
+#### Testing
+- Created `tests/test_embeddings.py` (15 tests, 100% pass rate)
+- Tests cover: success cases, dimension handling, normalization, error handling, edge cases
 
 ---
 

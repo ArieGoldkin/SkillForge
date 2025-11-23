@@ -679,15 +679,17 @@ logger.info(
 ---
 
 #### **1.5 Basic Analysis Workflow (3 days)**
-- [ ] **1.5.1** Install Ollama & pull models
-  - Add Ollama to `docker-compose.yml`
-  - Pull `llama3.1:8b` and `nomic-embed-text`
-  - Test Ollama API: `curl http://localhost:11434/api/generate`
-- [ ] **1.5.2** Create embedding service
-  - `app/services/embeddings.py`
-  - Implement `generate_embedding(text: str) -> list[float]`
-  - Use `nomic-embed-text` via Ollama
-  - Store embeddings in `analyses.content_embedding`
+- [x] **1.5.0** Schema migration to Vector(768) ✅
+- [x] **1.5.1** Install Ollama & pull models ✅
+  - Pulled `nomic-embed-text` model
+  - Verified model availability via health check
+- [x] **1.5.2** Create embedding service ✅
+  - `app/services/embeddings.py` (209 lines)
+  - Implemented `generate_embedding(text: str) -> list[float]`
+  - Uses `nomic-embed-text` via Ollama (768 dimensions)
+  - Dimension handling (truncate/pad) following reporter-accuracy pattern
+  - L2 normalization for cosine similarity search
+  - Comprehensive tests (15 tests, 100% pass rate)
 - [ ] **1.5.3** Create basic LangGraph workflow
   - `app/workflows/analysis.py`
   - Define `AnalysisState` TypedDict
