@@ -58,7 +58,7 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
     async def run_workflow():
         """Run workflow and emit SSE events."""
         try:
-            result = await analysis_workflow(
+            await analysis_workflow(
                 url="https://react.dev",
                 analysis_id=analysis_id,
             )
@@ -75,7 +75,6 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
             )
         except Exception as e:
             # Emit error event on failure
-            # Emit error event
             await broadcaster.publish(
                 channel,
                 {
