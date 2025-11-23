@@ -31,38 +31,38 @@ def test_health_check(client):
     assert "environment" in data
 
 
-def test_health_check_includes_request_id(client):
+@pytest.mark.asyncio
+async def test_health_check_includes_request_id(reset_engine_connections):
     """Test health check endpoint includes X-Request-ID header."""
-    # Skip if DATABASE_URL is set to avoid event loop conflicts with TestClient
-    from app.core.config import settings
+    import httpx
 
-    if settings.DATABASE_URL:
-        pytest.skip(
-            "Skipping to avoid event loop conflicts when DATABASE_URL is set. "
-            "Health endpoint uses database which causes event loop issues with TestClient."
-        )
+    from app.main import app
 
-    response = client.get("/api/v1/health")
-    assert response.status_code == status.HTTP_200_OK
-    assert "X-Request-ID" in response.headers
-    assert response.headers["X-Request-ID"] is not None
+    # Use AsyncClient with ASGITransport to avoid event loop conflicts
+    # reset_engine_connections ensures connections are created in test's event loop
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/health")
+        assert response.status_code == status.HTTP_200_OK
+        assert "X-Request-ID" in response.headers
+        assert response.headers["X-Request-ID"] is not None
 
 
-def test_health_check_with_custom_request_id(client):
+@pytest.mark.asyncio
+async def test_health_check_with_custom_request_id(reset_engine_connections):
     """Test health check endpoint respects custom X-Request-ID header."""
-    # Skip if DATABASE_URL is set to avoid event loop conflicts with TestClient
-    from app.core.config import settings
+    import httpx
 
-    if settings.DATABASE_URL:
-        pytest.skip(
-            "Skipping to avoid event loop conflicts when DATABASE_URL is set. "
-            "Health endpoint uses database which causes event loop issues with TestClient."
-        )
+    from app.main import app
 
+    # Use AsyncClient with ASGITransport to avoid event loop conflicts
+    # reset_engine_connections ensures connections are created in test's event loop
+    transport = httpx.ASGITransport(app=app)
     custom_id = "custom-health-check-123"
-    response = client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
-    assert response.status_code == status.HTTP_200_OK
-    assert response.headers["X-Request-ID"] == custom_id
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.headers["X-Request-ID"] == custom_id
 
 
 def test_openapi_docs_available(client):

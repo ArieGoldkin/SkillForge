@@ -66,23 +66,15 @@ async def test_check_database_returns_error_on_connection_failure(monkeypatch, r
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_includes_database_status():
+async def test_health_endpoint_includes_database_status(reset_engine_connections):
     """Test health check endpoint includes database status."""
     import httpx
 
     from app.core.config import settings
     from app.main import app
 
-    # Skip if DATABASE_URL is set to avoid event loop conflicts
-    # The engine is created at import time with a different event loop
-    # and causes conflicts when TestClient/AsyncClient tries to use it
-    if settings.DATABASE_URL:
-        pytest.skip(
-            "Skipping to avoid event loop conflicts when DATABASE_URL is set. "
-            "Engine connections created at import time conflict with test event loops."
-        )
-
     # Use AsyncClient with ASGITransport to avoid event loop conflicts
+    # reset_engine_connections ensures connections are created in test's event loop
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/api/v1/health")
@@ -90,7 +82,12 @@ async def test_health_endpoint_includes_database_status():
 
         data = response.json()
         assert "database" in data
-        assert data["database"] is None
+
+        if settings.DATABASE_URL:
+            assert data["database"] is not None
+            assert "status" in data["database"]
+        else:
+            assert data["database"] is None
 
 
 @pytest.mark.asyncio
