@@ -129,6 +129,8 @@ async def stream_analysis_progress(
     return EventSourceResponse(event_generator())
 ```
 
+**Note:** Full SSE event schema documented in `docs/issues/040-sse-endpoint/SSE_SCHEMA.md`
+
 ### LangGraph Workflow Pattern (v1.0 Functional API)
 
 **SSE Instrumentation in Nodes:**
