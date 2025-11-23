@@ -132,5 +132,22 @@ export default tseslint.config(
       'import/first': 'error',
       'import/newline-after-import': 'error',
     },
+  },
+
+  // Relaxed rules for example/showcase files and layout components
+  {
+    files: ['**/examples/**/*.tsx', '**/design-system/example.tsx', '**/AppShell.tsx'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+    },
+  },
+
+  // Relaxed rules for shadcn/ui components (they export variants by design)
+  {
+    files: ['**/components/ui/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   }
 )
