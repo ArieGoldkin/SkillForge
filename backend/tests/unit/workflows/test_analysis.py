@@ -51,13 +51,21 @@ async def test_analysis_workflow_with_mocked_services(
             mock_embedding_service,
         ),
     ):
-        result = await analysis_workflow.ainvoke(
-            {
-                "url": "https://example.com",
-                "analysis_id": "test-analysis-id",
-            },
-            config={"configurable": {"thread_id": "test-thread"}},
-        )
+        # Handle both LangGraph graph and direct function call
+        if hasattr(analysis_workflow, "ainvoke"):
+            result = await analysis_workflow.ainvoke(
+                {
+                    "url": "https://example.com",
+                    "analysis_id": "test-analysis-id",
+                },
+                config={"configurable": {"thread_id": "test-thread"}},
+            )
+        else:
+            # Direct function call when LangGraph not available
+            result = await analysis_workflow(
+                url="https://example.com",
+                analysis_id="test-analysis-id",
+            )
 
         # Verify result structure
         assert "analysis_id" in result
@@ -92,13 +100,21 @@ async def test_analysis_workflow_error_handling() -> None:
         patch("app.workflows.analysis.JinaReader", return_value=mock_jina),
         pytest.raises(JinaReaderError, match="Extraction failed"),
     ):
-        await analysis_workflow.ainvoke(
-            {
-                "url": "https://example.com",
-                "analysis_id": "test-analysis-id",
-            },
-            config={"configurable": {"thread_id": "test-thread"}},
-        )
+        # Handle both LangGraph graph and direct function call
+        if hasattr(analysis_workflow, "ainvoke"):
+            await analysis_workflow.ainvoke(
+                {
+                    "url": "https://example.com",
+                    "analysis_id": "test-analysis-id",
+                },
+                config={"configurable": {"thread_id": "test-thread"}},
+            )
+        else:
+            # Direct function call when LangGraph not available
+            await analysis_workflow(
+                url="https://example.com",
+                analysis_id="test-analysis-id",
+            )
 
 
 @pytest.mark.asyncio
