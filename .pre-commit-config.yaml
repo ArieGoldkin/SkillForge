@@ -20,15 +20,7 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
 
-  # Python code formatting and linting
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        language_version: python3.13
-        args: ["--line-length=100"]
-        files: ^backend/
-
+  # Python code formatting and linting (Ruff replaces Black)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:
