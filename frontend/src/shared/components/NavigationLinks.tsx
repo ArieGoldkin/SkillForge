@@ -1,5 +1,5 @@
+import { Link } from '@tanstack/react-router'
 import { GraduationCap } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export function NavigationLinks() {
   return (

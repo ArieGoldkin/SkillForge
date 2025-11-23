@@ -1,7 +1,8 @@
-import { useParams } from 'react-router-dom'
+import { useParams } from '@tanstack/react-router'
 
 export default function AnalyzeResult() {
-  const { id } = useParams<{ id: string }>()
+  // TanStack Router provides type-safe params automatically
+  const { id } = useParams({ from: '/analyze/$id' })
 
   return (
     <div className="container mx-auto px-4 py-8">

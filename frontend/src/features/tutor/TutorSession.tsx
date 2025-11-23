@@ -1,7 +1,8 @@
-import { useParams } from 'react-router-dom'
+import { useParams } from '@tanstack/react-router'
 
 export default function TutorSession() {
-  const { sessionId } = useParams<{ sessionId: string }>()
+  // TanStack Router provides type-safe params automatically
+  const { sessionId } = useParams({ from: '/tutor/$sessionId' })
 
   return (
     <div className="container mx-auto px-4 py-8">
