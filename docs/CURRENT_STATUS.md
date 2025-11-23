@@ -118,28 +118,23 @@
 
 ### Immediate (Today)
 
-1. **Review Issue #3 PR** ⚡ HIGH
-   - Issue #3 is complete and ready for PR
-   - Database schema and migrations implemented
-   - Review and merge to unblock CI/CD
+1. **Create PRs for Completed Issues** ⚡ HIGH
+   - Issue #3: Database Schema & Migrations - Ready for PR
+   - Issue #4: Content Extraction (Jina AI) - Ready for PR
+   - Issue #5: Embedding Service Implementation - Ready for PR
+   - All issues complete with tests, documentation, and code quality checks passing
 
-### This Week
-
-2. ~~**Start Issue #4: Content Extraction**~~ ✅ COMPLETE
-   - ✅ Jina AI content extraction implemented
-   - ✅ Extraction service created
-   - ✅ Tests and documentation complete
-
-3. ~~**Start Issue #5: Embedding Service**~~ ✅ COMPLETE
-   - ✅ Embedding service implemented with Ollama
-   - ✅ Dimension handling (truncate/pad) following reporter-accuracy pattern
-   - ✅ Schema migration to Vector(768)
-   - ✅ Comprehensive tests and documentation complete
-
-4. **Review Dependabot PRs**
+2. **Review Dependabot PRs**
    - Decide which to merge
    - Update base branch to `dev` if keeping workflow
    - OR update Dependabot config
+
+### Next Sprint (Sprint 2)
+
+3. **Start Sprint 2 Tasks**
+   - Task 1.5.3: Create Basic LangGraph Workflow
+   - Task 1.5.4: Implement SSE Endpoint
+   - Task 2.1.1-2.1.5: Supervisor Pattern Implementation
 
 ### Security & Actions Review
 

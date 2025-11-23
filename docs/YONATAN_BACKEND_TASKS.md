@@ -119,20 +119,22 @@ async def emit_streaming_event(
 
 ### ✅ Task 1.1.1: Create FastAPI Project Structure [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1)  
 **Dependencies:** None  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #1 Docs](../issues/001-fastapi-structure/README.md)  
 **Parallel Work:** Arie setting up frontend
 
 #### Description
 Initialize FastAPI project with proper directory structure and core files.
 
 #### Acceptance Criteria
-- [ ] Project directory `backend/` created
-- [ ] Directory structure follows best practices
-- [ ] FastAPI app runs with `uvicorn app.main:app --reload`
-- [ ] Health check endpoint responds at `/health`
-- [ ] CORS middleware configured for frontend
+- [x] Project directory `backend/` created
+- [x] Directory structure follows best practices
+- [x] FastAPI app runs with `uvicorn app.main:app --reload`
+- [x] Health check endpoint responds at `/api/v1/health`
+- [x] CORS middleware configured for frontend
 
 #### Implementation Steps
 ```bash
@@ -308,9 +310,11 @@ curl http://localhost:8000/health
 
 ### ✅ Task 1.1.2: Setup Environment Configuration [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.3)  
-**Dependencies:** Task 1.1.1
+**Dependencies:** Task 1.1.1  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #2 Docs](../issues/002-environment-config/README.md)
 
 #### Description
 Create `.env.example` and `.env` files for configuration.
@@ -331,9 +335,11 @@ LOG_LEVEL=DEBUG
 
 ### ✅ Task 1.1.3: Implement Structured Logging [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.2)  
-**Dependencies:** Task 1.1.2
+**Dependencies:** Task 1.1.2  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #2 Docs](../issues/002-environment-config/README.md)
 
 #### Description
 Setup structlog for JSON logging with request IDs.
@@ -385,9 +391,11 @@ async def startup_event():
 
 ### ✅ Task 1.2.1: Install & Configure Alembic [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.1.3
+**Dependencies:** Task 1.1.3  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Setup Alembic for database migrations.
@@ -413,9 +421,11 @@ target_metadata = Base.metadata
 
 ### ✅ Task 1.2.2: Create SQLAlchemy Models [5 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.1
+**Dependencies:** Task 1.2.1  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Define database models for analyses, artifacts, tutoring.
@@ -567,9 +577,11 @@ from app.models.progress import AnalysisProgress
 
 ### ✅ Task 1.2.3: Enable PGVector Extension [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.2
+**Dependencies:** Task 1.2.2  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Create migration to enable PGVector extension.
@@ -592,9 +604,11 @@ def downgrade():
 
 ### ✅ Task 1.2.4: Generate Initial Migration [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.3
+**Dependencies:** Task 1.2.3  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Create initial schema migration with all tables.
@@ -615,9 +629,11 @@ psql -U dev -d skillforge -c "\dt"
 
 ### ✅ Task 1.2.5: Create Database Utilities [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.4
+**Dependencies:** Task 1.2.4  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Setup async session factory and dependency injection.

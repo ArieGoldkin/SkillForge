@@ -64,7 +64,7 @@ Once the project is created, add all existing issues:
 - Issue #2: Task 1.1.2-1.1.3 - Environment Config & Logging [3 pts]
 - Issue #3: Task 1.2.1-1.2.5 - Database Schema & Migrations [8 pts]
 - Issue #4: Task 1.4.1-1.4.5 - Content Extraction (Jina AI) [5 pts]
-- Issue #5: Task 1.5.1-1.5.2 - Embedding Service [3 pts]
+- Issue #5: Task 1.5.0-1.5.2 - Embedding Service Implementation [5 pts]
 
 ### Sprint 7 Issues
 - Issue #7: Task 6.5-6.7, 7.5-7.7 - CI/CD Pipeline Setup [13 pts]
