@@ -1,6 +1,8 @@
 """Application settings loaded from environment variables."""
 
-from pydantic import Field, field_validator
+from functools import lru_cache
+
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -61,5 +63,35 @@ class Settings(BaseSettings):
             raise ValueError(f"ENVIRONMENT must be one of {allowed}")
         return v
 
+    @model_validator(mode="after")
+    def validate_production_requirements(self) -> "Settings":
+        """Validate required variables in production environment."""
+        if self.ENVIRONMENT == "production":
+            if not self.DATABASE_URL:
+                raise ValueError("DATABASE_URL is required in production environment")
+        return self
 
-settings = Settings()
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.ENVIRONMENT == "development"
+
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.ENVIRONMENT == "production"
+
+    def is_staging(self) -> bool:
+        """Check if running in staging environment."""
+        return self.ENVIRONMENT == "staging"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance.
+
+    Uses LRU cache to avoid reloading configuration on every access.
+    Cache is cleared in tests via fixtures.
+    """
+    return Settings()
+
+
+settings = get_settings()
