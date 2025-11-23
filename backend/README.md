@@ -132,17 +132,14 @@ poetry run pytest -v
 ### Code Quality Checks
 
 ```bash
-# Format code with Black
-poetry run black app tests
+# Format code with Ruff (replaces Black - 30x faster!)
+poetry run ruff format app tests
 
 # Lint with Ruff
 poetry run ruff check app tests
 
 # Type check with mypy
 poetry run mypy app
-
-# Sort imports with isort
-poetry run isort app tests
 ```
 
 ### Pre-commit Checks (Recommended)
@@ -154,7 +151,7 @@ You can set up pre-commit hooks to run these checks automatically:
 poetry add --group dev pre-commit
 
 # Create .pre-commit-config.yaml
-# Add hooks for black, ruff, mypy, isort
+# Add hooks for ruff (format + lint), mypy
 ```
 
 ## Configuration

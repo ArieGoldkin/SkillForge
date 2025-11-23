@@ -6,7 +6,7 @@ import pytest
 import structlog
 from fastapi.testclient import TestClient
 
-from app.main import app, RequestIDMiddleware
+from app.main import RequestIDMiddleware, app
 
 
 @pytest.fixture

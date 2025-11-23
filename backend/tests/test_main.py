@@ -1,6 +1,5 @@
 """Tests for main FastAPI application."""
 
-import pytest
 from fastapi import status
 
 

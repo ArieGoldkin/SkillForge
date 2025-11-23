@@ -2,8 +2,10 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
+from app.db.session import AsyncSessionLocal
 from app.main import app
 
 
@@ -26,8 +28,6 @@ def clear_config_cache():
 @pytest.fixture
 def test_settings():
     """Override settings for testing."""
-    from app.core.config import Settings
-
     return Settings(
         ENVIRONMENT="testing",
         LOG_LEVEL="INFO",
@@ -40,3 +40,17 @@ def auto_clear_config_cache(clear_config_cache):
     """Automatically clear config cache for all tests."""
     pass
 
+
+@pytest.fixture
+async def db_session() -> AsyncSession:
+    """Create a test database session with automatic rollback.
+
+    Yields an async session and rolls back all changes after test.
+    """
+    async with AsyncSessionLocal() as session:
+        # Use nested transaction for automatic rollback
+        transaction = await session.begin()
+        try:
+            yield session
+        finally:
+            await transaction.rollback()

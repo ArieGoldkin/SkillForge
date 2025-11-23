@@ -72,13 +72,13 @@ jobs:
         working-directory: ./backend
         run: poetry install --no-interaction --no-root
 
-      - name: Run ruff
+      - name: Run ruff linting
         working-directory: ./backend
         run: poetry run ruff check app/
 
-      - name: Check black formatting
+      - name: Check ruff formatting
         working-directory: ./backend
-        run: poetry run black --check app/
+        run: poetry run ruff format --check app/
 
   type-check:
     runs-on: ubuntu-latest

@@ -45,10 +45,10 @@
 - ✅ Made security scan frontend job conditional (skips when frontend doesn't exist)
 
 **Remaining Issue:**
-- ⚠️ Backend CI may still fail until Alembic is initialized (Issue #3)
-- ⚠️ Docker build may fail if `alembic/versions/` is empty (expected until migrations are created)
+- ⚠️ Backend CI may still fail until Alembic is initialized (Issue #3) - **RESOLVED** (Issue #3 PR includes Alembic setup)
+- ⚠️ Docker build may fail if `alembic/versions/` is empty (expected until migrations are created) - **RESOLVED** (Issue #3 PR includes migrations)
 
-**Next Step:** Initialize Alembic and create first migration (part of Issue #3)
+**Next Step:** Review and merge Issue #3 PR to complete CI/CD setup
 
 ---
 
@@ -79,27 +79,22 @@
 
 ---
 
-## 📋 Open Issues (Sprint 1)
+## 📋 Issues Status (Sprint 1)
 
-### Issue #2: Environment Config & Logging [3 pts] ⚡ HIGH
-- **Status:** Ready to start
+### Issue #2: Environment Config & Logging [3 pts] ⚡ HIGH ✅ COMPLETE
+- **Status:** ✅ Complete (merged to `dev`)
 - **Assignee:** Yonatan
-- **Dependencies:** Task 1.1.1 ✅ (completed)
-- **Tasks:**
-  - Create `.env.example` template
-  - Setup Pydantic settings
-  - Implement structlog with JSON output
-  - Add request ID tracking
+- **Completed:** November 20, 2025
+- **Documentation:** [Issue #2 Docs](./issues/002-environment-config/README.md)
+- **GitHub:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2)
 
-### Issue #3: Database Schema & Migrations [8 pts] ⚡ HIGH
-- **Status:** Ready to start
+### Issue #3: Database Schema & Migrations [8 pts] ⚡ HIGH ✅ COMPLETE
+- **Status:** ✅ Complete (ready for PR)
 - **Assignee:** Yonatan
-- **Dependencies:** Task 1.1.2 ✅ (can start after #2)
-- **Tasks:**
-  - Initialize Alembic (fixes CI!)
-  - Create database models
-  - Write initial migrations
-  - Setup PGVector extension
+- **Completed:** November 21, 2025
+- **Branch:** `feature/issue-3-database-schema-migrations`
+- **Documentation:** [Issue #3 Docs](./issues/003-database-schema/README.md)
+- **GitHub:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3)
 
 ### Issue #4: Content Extraction (Jina AI) [5 pts] 🔄 MEDIUM
 - **Status:** Ready to start
@@ -117,23 +112,22 @@
 
 ### Immediate (Today)
 
-1. **Fix CI/CD Pipeline** 🔴 CRITICAL
-   - Start Issue #3: Initialize Alembic
-   - This will fix the Docker build failure
-   - Command: `cd backend && poetry run alembic init alembic`
-
-2. **Start Issue #2: Environment Config** ⚡ HIGH
-   - Complete `.env.example` (already exists, needs review)
-   - Verify Pydantic settings in `app/core/config.py`
-   - Test structured logging
+1. **Review Issue #3 PR** ⚡ HIGH
+   - Issue #3 is complete and ready for PR
+   - Database schema and migrations implemented
+   - Review and merge to unblock CI/CD
 
 ### This Week
 
-3. **Issue #3: Database Schema** ⚡ HIGH
-   - Initialize Alembic migrations
-   - Create base models (Analysis, Artifact, etc.)
-   - Write first migration
-   - This unblocks CI/CD
+2. **Start Issue #4: Content Extraction** 🔄 MEDIUM
+   - Implement Jina AI content extraction
+   - Create extraction service
+   - Add tests and documentation
+
+3. **Start Issue #5: Embedding Service** 🔄 MEDIUM
+   - Implement embedding generation
+   - Integrate with database
+   - Add vector search capabilities
 
 4. **Review Dependabot PRs**
    - Decide which to merge
@@ -183,14 +177,16 @@
     ├─ Frontend workflows disabled
     └─ E2E tests disabled
 
+    ✅ COMPLETED ISSUES (Sprint 1)
+    ├─ Issue #2: Config & Logging [3 pts] ✅
+    └─ Issue #3: Database & Migrations [8 pts] ✅ ← Ready for PR!
+
     📋 READY TO START (Sprint 1)
-    ├─ Issue #2: Config & Logging [3 pts] ⚡
-    ├─ Issue #3: Database & Migrations [8 pts] ⚡ ← FIXES CI!
-    ├─ Issue #4: Content Extraction [5 pts]
-    └─ Issue #5: Embedding Service [3 pts]
+    ├─ Issue #4: Content Extraction [5 pts] 🔄
+    └─ Issue #5: Embedding Service [3 pts] 🔄
 
     🔄 DEPENDENCIES
-    Issue #2 → Issue #3 → Issue #5
+    Issue #2 ✅ → Issue #3 ✅ → Issue #5
          ↓
     Issue #4 (independent)
 ```
@@ -224,18 +220,18 @@ gh pr edit <PR_NUMBER> --base dev
 ## 📈 Sprint 1 Progress
 
 **Total Story Points:** 21  
-**Completed:** 3 pts (Task 1.1.1)  
+**Completed:** 14 pts (Issue #1: 3 pts, Issue #2: 3 pts, Issue #3: 8 pts)  
 **In Progress:** 0 pts  
-**Remaining:** 18 pts
+**Remaining:** 8 pts
 
-**Velocity:** 3/21 = 14% complete
+**Velocity:** 14/21 = 67% complete
 
 **Blockers:**
-- Need Alembic init (Issue #3) - will unblock backend CI once migrations exist
+- Issue #3 PR ready for review and merge (includes Alembic setup and migrations)
 
-**Next Milestone:** Complete Issues #2 and #3 (11 pts) to unblock rest of sprint
+**Next Milestone:** Complete Issues #4 and #5 (8 pts) to finish Sprint 1
 
 ---
 
-**Last Updated:** November 21, 2025 (Workflow fixes applied)  
+**Last Updated:** November 21, 2025 (Workflow fixes applied)
 **Maintained By:** Yonatan & Arie

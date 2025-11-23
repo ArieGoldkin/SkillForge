@@ -50,6 +50,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         Returns:
             Response with X-Request-ID header
+
         """
         # Check for existing request ID (for distributed tracing)
         request_id = request.headers.get("X-Request-ID")
@@ -80,8 +81,6 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
             # Add request ID to response headers
             response.headers["X-Request-ID"] = request_id
-            return response
-
         except Exception as e:
             # Log error with request ID
             process_time = time.time() - start_time
@@ -94,7 +93,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 exc_info=True,
             )
             raise
-
+        else:
+            return response
         finally:
             # Always cleanup context vars to prevent context leakage
             structlog.contextvars.unbind_contextvars("request_id")
@@ -119,6 +119,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Request ID Middleware
 app.add_middleware(RequestIDMiddleware)
