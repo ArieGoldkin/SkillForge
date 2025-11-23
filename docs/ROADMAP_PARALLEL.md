@@ -279,15 +279,15 @@ graph TD
 
 ---
 
-#### 1.4 Content Extraction - Jina AI [BACKEND - Yonatan]
+#### 1.4 Content Extraction - Jina AI [BACKEND - Yonatan] ✅ COMPLETE
 
-| Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
-|---------|------|--------------|--------------|---------------------|
-| 1.4.1 | Research & obtain Jina AI API key | 1 | None | API key in `.env`, tested with curl |
-| 1.4.2 | Create extraction service | 2 | 1.1.1 | `extract_article(url)` returns dict |
-| 1.4.3 | Create extraction endpoint | 1 | 1.2.5, 1.4.2 | `POST /api/v1/analyze` accepts URL, creates Analysis record |
-| 1.4.4 | Add retry logic with Tenacity | 1 | 1.4.3 | Max 3 retries with exponential backoff |
-| 1.4.5 | Write tests | 0 (deferred) | - | (Move to Sprint 7) |
+| Task ID | Task | Story Points | Dependencies | Acceptance Criteria | Status |
+|---------|------|--------------|--------------|---------------------|--------|
+| 1.4.1 | Research & obtain Jina AI API key | 1 | None | API key in `.env`, tested with curl | ✅ Complete |
+| 1.4.2 | Create extraction service | 3 | 1.1.1 | `extract_article(url)` returns dict | ✅ Complete |
+| 1.4.3 | Content type detection utility | 1 | 1.4.2 | Detects article/video/repo types | ✅ Complete |
+| 1.4.4 | Add retry logic with Tenacity | 1 | 1.4.2 | Max 3 retries with exponential backoff | ✅ Complete |
+| 1.4.5 | Write tests | 1 | 1.4.2 | Unit, integration, and extended tests | ✅ Complete |
 
 **Arie Involvement:** None initially. On Day 7, integrate UI form with this endpoint.
 

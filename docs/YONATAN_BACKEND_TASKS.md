@@ -663,9 +663,10 @@ async def create_analysis(db: AsyncSession = Depends(get_db)):
 
 ### ✅ Task 1.4.1: Research & Setup Jina AI [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
-**Dependencies:** Task 1.2.5
+**Dependencies:** Task 1.2.5  
+**Completed:** November 23, 2025
 
 #### Description
 Sign up for Jina AI and test API.
@@ -683,9 +684,10 @@ curl -H "Authorization: Bearer YOUR_KEY" https://r.jina.ai/https://react.dev
 
 ### ✅ Task 1.4.2: Create Jina Reader Service [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
-**Dependencies:** Task 1.4.1
+**Dependencies:** Task 1.4.1  
+**Completed:** November 23, 2025
 
 #### Description
 Implement content extraction service using Jina AI Reader API.

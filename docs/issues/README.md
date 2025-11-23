@@ -23,6 +23,10 @@ docs/issues/
 ├── 003-database-schema/
 │   ├── README.md                         # Issue #3 complete doc
 │   └── ISSUE_3_VALIDATION_COMPLETE.md
+├── 004-content-extraction-jina/
+│   ├── README.md                         # Issue #4 complete doc
+│   ├── ISSUE_4_VERIFICATION.md
+│   └── TEST_RESULTS.md
 └── 030-frontend-code-quality/
     ├── README.md                         # Issue #30 complete doc
     └── ISSUE_30_VALIDATION_COMPLETE.md
@@ -32,22 +36,22 @@ docs/issues/
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (4 total - 19 pts)
+### ✅ Completed Issues (5 total - 24 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
 | [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) | FastAPI Project Structure | ✅ Complete (Closed) | Yonatan | [📄 Docs](./001-fastapi-structure/README.md) | [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) |
 | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) |
 | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
+| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) | Frontend Code Quality & Design Prototypes | ✅ Complete (Closed) | Arie | [📄 Docs](./030-frontend-code-quality/README.md) | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) |
 
-### 🔄 In Progress / Ready (7 total - 26 pts)
+### 🔄 In Progress / Ready (6 total - 21 pts)
 
 #### Backend (Yonatan)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
-| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | 🔄 Ready | Yonatan | TBD | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service | 🔄 Ready | Yonatan | TBD | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 
 #### Frontend (Arie)
@@ -63,9 +67,9 @@ docs/issues/
 ### 📈 Sprint 1 Progress
 
 - **Total Story Points:** 45 pts
-- **Completed:** 19 pts (42%)
-- **Remaining:** 26 pts (58%)
-- **Yonatan Progress:** 14/19 pts (74%)
+- **Completed:** 24 pts (53%)
+- **Remaining:** 21 pts (47%)
+- **Yonatan Progress:** 19/22 pts (86%)
 - **Arie Progress:** 5/23 pts (22%)
 
 ---
