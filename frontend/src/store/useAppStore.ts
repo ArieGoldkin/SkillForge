@@ -11,6 +11,7 @@ interface AppState {
 
   // Actions
   setTheme: (theme: 'light' | 'dark' | 'system') => void
+  toggleTheme: () => void
   toggleSidebar: () => void
   setPreferredLLMModel: (model: string) => void
 }
@@ -25,6 +26,11 @@ export const useAppStore = create<AppState>()(
 
       // Actions
       setTheme: (theme) => set({ theme }),
+      toggleTheme: () =>
+        set((state) => {
+          const cycle = { light: 'dark', dark: 'system', system: 'light' } as const
+          return { theme: cycle[state.theme] }
+        }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       setPreferredLLMModel: (model) => set({ preferredLLMModel: model }),
     }),
