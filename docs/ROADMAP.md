@@ -671,14 +671,18 @@ logger.info(
   - 100% coverage on extraction services
 
 **Acceptance Criteria:**
-- `POST /api/v1/analyze` with article URL returns `analysis_id`
-- Extracted content stored in `analyses.raw_content`
-- Extraction completes in <10 seconds for typical articles
-- Errors logged with context
+- ✅ Extraction service implemented (`app/services/extraction/jina_reader.py`)
+- ✅ Content type detection working
+- ✅ Retry logic with exponential backoff
+- ✅ Comprehensive tests (unit + integration)
+- ⏳ `POST /api/v1/analyze` endpoint (Task 1.5.4 - future)
+- ⏳ Extracted content stored in `analyses.raw_content` (Task 1.5.3 - future)
+- ✅ Extraction completes in <10 seconds for typical articles (verified)
+- ✅ Errors logged with context
 
 ---
 
-#### **1.5 Basic Analysis Workflow (3 days)**
+#### **1.5 Basic Analysis Workflow (3 days)** ⚠️ PARTIAL (1.5.0-1.5.2 ✅ Complete)
 - [x] **1.5.0** Schema migration to Vector(768) ✅
 - [x] **1.5.1** Install Ollama & pull models ✅
   - Pulled `nomic-embed-text` model
@@ -705,9 +709,12 @@ logger.info(
   - Event types: `extraction`, `embedding`, `complete`, `error`
 
 **Acceptance Criteria:**
-- Submit article URL → backend extracts → generates embedding → stores in PGVector
-- Frontend can connect to SSE endpoint and receive real-time updates
-- Analysis completes end-to-end in <30 seconds
+- ✅ Embedding service generates 768-dim vectors (verified)
+- ✅ Database schema supports Vector(768) (verified)
+- ✅ Embeddings can be stored in PGVector (verified)
+- ⏳ Submit article URL → backend extracts → generates embedding → stores in PGVector (Task 1.5.3-1.5.4)
+- ⏳ Frontend can connect to SSE endpoint and receive real-time updates (Task 1.5.5)
+- ⏳ Analysis completes end-to-end in <30 seconds (Task 1.5.3-1.5.5)
 
 ---
 
