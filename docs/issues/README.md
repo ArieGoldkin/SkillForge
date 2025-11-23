@@ -38,7 +38,7 @@ docs/issues/
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (6 total - 27 pts)
+### ✅ Completed Issues (7 total - 32 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -67,9 +67,9 @@ _No backend issues in progress_
 ### 📈 Sprint 1 Progress
 
 - **Total Story Points:** 45 pts
-- **Completed:** 27 pts (60%)
-- **Remaining:** 18 pts (40%)
-- **Yonatan Progress:** 19/22 pts (86%)
+- **Completed:** 32 pts (71%)
+- **Remaining:** 13 pts (29%)
+- **Yonatan Progress:** 24/22 pts (109%) ✅
 - **Arie Progress:** 8/23 pts (35%)
 
 ---
