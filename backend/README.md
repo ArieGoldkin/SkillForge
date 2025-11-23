@@ -72,54 +72,49 @@ backend/
 │   ├── db/                       # Database layer
 │   │   ├── __init__.py
 │   │   ├── base.py               # SQLAlchemy Base class
-│   │   └── session.py            # AsyncSession factory
+│   │   └── session.py            # AsyncSession factory (future)
 │   │
-│   ├── models/                   # SQLAlchemy ORM models
-│   │   ├── __init__.py
-│   │   ├── analysis.py          # Analysis model with embeddings
-│   │   ├── agent_finding.py      # Agent findings model
-│   │   ├── artifact.py           # Artifact model
-│   │   ├── progress.py           # Analysis progress model
-│   │   └── tutoring.py          # Tutoring models
+│   ├── models/                   # SQLAlchemy ORM models (future)
+│   │   └── __init__.py
 │   │
-│   ├── schemas/                  # Pydantic request/response schemas
+│   ├── schemas/                  # Pydantic request/response schemas (future)
 │   │   └── __init__.py
 │   │
 │   ├── services/                 # Business logic layer
 │   │   ├── __init__.py
-│   │   ├── embeddings.py         # Embedding service (Ollama)
 │   │   └── extraction/           # Content extraction services
 │   │       ├── __init__.py
 │   │       ├── jina_reader.py    # Jina AI Reader service
 │   │       └── content_type.py   # Content type detection
 │   │
 │   └── workflows/                # LangGraph workflows
-│       └── __init__.py
+│       ├── __init__.py
+│       └── analysis.py           # Analysis workflow (extract → embed)
 │
 ├── alembic/                      # Database migrations
-│   ├── versions/                 # Migration files
-│   │   ├── e3c50d69e442_enable_pgvector.py
-│   │   ├── a37ac3b6a635_initial_schema.py
-│   │   └── 637794773190_update_embedding_dimension_to_768.py
-│   ├── env.py                    # Alembic environment
-│   └── script.py.mako            # Migration template
 ├── tests/                        # Test suite
 │   ├── __init__.py
 │   ├── conftest.py               # Pytest fixtures
+│   ├── unit/                     # Unit tests (mocked services)
+│   │   ├── __init__.py
+│   │   ├── workflows/
+│   │   │   ├── __init__.py
+│   │   │   └── test_analysis.py  # Workflow unit tests
+│   │   └── services/
+│   │       └── __init__.py
+│   ├── integration/              # Integration tests (real services)
+│   │   ├── __init__.py
+│   │   ├── workflows/
+│   │   │   ├── __init__.py
+│   │   │   └── test_analysis.py  # Workflow integration tests
+│   │   └── services/
+│   │       └── __init__.py
 │   ├── test_main.py              # Endpoint tests
 │   ├── test_config.py            # Configuration tests
-│   ├── test_logging.py           # Logging tests
-│   ├── test_middleware.py         # Middleware tests
-│   ├── test_session.py           # Database session tests
-│   ├── test_models.py            # Model tests
-│   ├── test_models_relationships.py  # Model relationship tests
-│   ├── test_migrations.py        # Migration tests
-│   ├── test_health_db.py         # Health check database tests
 │   ├── test_jina_reader.py       # Jina Reader service unit tests
 │   ├── test_jina_integration.py  # Jina Reader integration tests
 │   ├── test_jina_extended.py     # Jina Reader extended tests
-│   ├── test_anthropic_article.py # Specific article integration test
-│   └── test_embeddings.py        # Embedding service tests
+│   └── test_anthropic_article.py # Specific article integration test
 │
 ├── .env.example                  # Environment variable template
 ├── pyproject.toml                # Poetry configuration
@@ -154,12 +149,6 @@ poetry run pytest tests/test_main.py
 # Run with verbose output
 poetry run pytest -v
 ```
-
-**Note on Integration Tests:**
-- The Jina AI integration test (`test_extract_article_real_api`) requires `JINA_API_KEY` in your `.env` file
-- If the key is not set, the test is automatically skipped
-- If the key is set in `.env`, the test runs automatically (no need to export environment variables)
-- The test reads from `.env` via the Settings system (`app.core.config`)
 
 ### Code Quality Checks
 
@@ -196,19 +185,64 @@ Key variables:
 - `ENVIRONMENT`: Runtime environment (`development`, `staging`, `production`)
 - `LOG_LEVEL`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
 - `CORS_ORIGINS`: Allowed CORS origins (JSON array)
-- `DATABASE_URL`: PostgreSQL connection string (required in production)
-- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
-- `OLLAMA_MODEL`: Ollama LLM model (default: `llama3.1:8b`)
-- `OLLAMA_EMBEDDING_MODEL`: Ollama embedding model (default: `nomic-embed-text`)
-- `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `768`)
-- `JINA_API_KEY`: Jina AI API key (optional for dev)
-  - **Add to `.env` file**: The integration test (`test_extract_article_real_api`) automatically reads this from `.env` via the Settings system
-  - **Get free key**: https://jina.ai
-  - **Test behavior**: If not set, the integration test is skipped; if set in `.env`, it runs automatically
+- `DATABASE_URL`: PostgreSQL connection string (future)
+- `OLLAMA_BASE_URL`: Ollama API base URL (future)
+- `JINA_API_KEY`: Jina AI API key (future, optional for dev)
 
 ### CORS Configuration
 
 CORS is configured for the frontend dev server by default (`http://localhost:5173`). Update `CORS_ORIGINS` in `.env` for production.
+
+## Workflows
+
+The application uses LangGraph v1.0 Functional API for workflow orchestration.
+
+### Analysis Workflow
+
+The `analysis_workflow` performs content extraction and embedding generation:
+
+```python
+from app.workflows import analysis_workflow
+
+# Run workflow
+result = await analysis_workflow.ainvoke({
+    "url": "https://example.com/article",
+    "analysis_id": "unique-analysis-id",
+})
+
+# Result contains:
+# - analysis_id: str
+# - url: str
+# - content_type: str
+# - raw_content: str
+# - extraction_metadata: dict
+# - content_embedding: list[float]
+```
+
+### Workflow Structure
+
+- **Extract Content**: Uses JinaReader to extract content from URL
+- **Generate Embedding**: Uses EmbeddingService to create vector embeddings
+- **Checkpointing**: Automatically saves state to PostgreSQL (or MemorySaver in dev)
+
+### Test Structure
+
+Tests are organized into unit and integration tests:
+
+```
+tests/
+├── unit/
+│   ├── workflows/
+│   │   └── test_analysis.py      # Unit tests (mocked services)
+│   └── services/
+│       └── test_*.py             # Service unit tests
+├── integration/
+│   ├── workflows/
+│   │   └── test_analysis.py     # Integration tests (real services)
+│   └── services/
+│       └── test_*.py             # Service integration tests
+└── conftest.py                   # Shared fixtures
+```
 
 ## Logging
 
@@ -313,18 +347,13 @@ If imports fail:
 
 ## Next Steps
 
-Sprint 1 is complete! All foundation tasks are implemented:
+After completing this setup:
 
-1. ✅ **Task 1.1.1**: FastAPI Project Structure (Issue #1)
-2. ✅ **Task 1.1.2-1.1.3**: Environment Configuration & Logging (Issue #2)
-3. ✅ **Task 1.2.1-1.2.5**: Database Schema & Migrations (Issue #3)
-4. ✅ **Task 1.4.1-1.4.5**: Content Extraction (Jina AI) (Issue #4)
-5. ✅ **Task 1.5.0-1.5.2**: Embedding Service (Issue #5)
-
-**Next Sprint (Sprint 2):**
-- Task 1.5.3: Create Basic LangGraph Workflow
-- Task 1.5.4: Implement SSE Endpoint
-- Task 2.1.1-2.1.5: Supervisor Pattern Implementation
+1. **Task 1.1.2**: Environment Configuration (already included)
+2. **Task 1.1.3**: Structured Logging (already included)
+3. **Task 1.2.1**: Install & Configure Alembic
+4. **Task 1.2.2**: Create SQLAlchemy Models
+5. **Task 1.4.1**: Research & Setup Jina AI
 
 See `docs/YONATAN_BACKEND_TASKS.md` for full task breakdown.
 
