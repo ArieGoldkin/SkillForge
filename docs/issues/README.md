@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 23, 2025
+**Last Updated:** November 23, 2025  
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -38,7 +38,7 @@ docs/issues/
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (6 total - 27 pts)
+### ✅ Completed Issues (7 total - 32 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -46,16 +46,14 @@ docs/issues/
 | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) |
 | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
 | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
+| [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service Implementation | ✅ Complete | Yonatan | [📄 Docs](./005-embedding-service/README.md) | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) | Frontend Code Quality & Design Prototypes | ✅ Complete (Closed) | Arie | [📄 Docs](./030-frontend-code-quality/README.md) | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) |
-| [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | ✅ Complete | Arie | [📄 Docs](./034-app-router-integration/README.md) | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
 
 ### 🔄 In Progress / Ready (5 total - 18 pts)
 
 #### Backend (Yonatan)
 
-| Issue | Title | Status | Assignee | Docs | GitHub |
-|-------|-------|--------|----------|------|--------|
-| [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service | 🔄 Ready | Yonatan | TBD | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
+_No backend issues in progress_
 
 #### Frontend (Arie)
 
@@ -69,9 +67,9 @@ docs/issues/
 ### 📈 Sprint 1 Progress
 
 - **Total Story Points:** 45 pts
-- **Completed:** 27 pts (60%)
-- **Remaining:** 18 pts (40%)
-- **Yonatan Progress:** 19/22 pts (86%)
+- **Completed:** 32 pts (71%)
+- **Remaining:** 13 pts (29%)
+- **Yonatan Progress:** 24/22 pts (109%) ✅
 - **Arie Progress:** 8/23 pts (35%)
 
 ---

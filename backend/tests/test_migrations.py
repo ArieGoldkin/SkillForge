@@ -8,7 +8,7 @@ from app.db.session import AsyncSessionLocal
 
 
 @pytest.mark.asyncio
-async def test_vector_extension_exists():
+async def test_vector_extension_exists(requires_database, reset_engine_connections):
     """Test PGVector extension is enabled in database."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -19,7 +19,7 @@ async def test_vector_extension_exists():
 
 
 @pytest.mark.asyncio
-async def test_all_tables_exist():
+async def test_all_tables_exist(requires_database, reset_engine_connections):
     """Test all 6 tables exist in database."""
     expected_tables = [
         "analyses",
@@ -41,7 +41,7 @@ async def test_all_tables_exist():
 
 
 @pytest.mark.asyncio
-async def test_analyses_table_columns():
+async def test_analyses_table_columns(requires_database, reset_engine_connections):
     """Test analyses table has all required columns."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -67,7 +67,7 @@ async def test_analyses_table_columns():
 
 
 @pytest.mark.asyncio
-async def test_analyses_table_has_vector_column():
+async def test_analyses_table_has_vector_column(requires_database, reset_engine_connections):
     """Test analyses table has vector embedding column."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -85,7 +85,7 @@ async def test_analyses_table_has_vector_column():
 
 
 @pytest.mark.asyncio
-async def test_foreign_key_constraints_exist():
+async def test_foreign_key_constraints_exist(requires_database, reset_engine_connections):
     """Test all foreign key constraints are created correctly."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -123,7 +123,7 @@ async def test_foreign_key_constraints_exist():
 
 
 @pytest.mark.asyncio
-async def test_indexes_exist():
+async def test_indexes_exist(requires_database, reset_engine_connections):
     """Test all expected indexes are created."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -151,7 +151,7 @@ async def test_indexes_exist():
 
 
 @pytest.mark.asyncio
-async def test_cascade_delete_foreign_keys():
+async def test_cascade_delete_foreign_keys(requires_database, reset_engine_connections):
     """Test foreign keys have CASCADE delete where appropriate."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -175,7 +175,7 @@ async def test_cascade_delete_foreign_keys():
 
 
 @pytest.mark.asyncio
-async def test_set_null_delete_foreign_key():
+async def test_set_null_delete_foreign_key(requires_database, reset_engine_connections):
     """Test tutoring_sessions foreign key has SET NULL delete."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -196,7 +196,7 @@ async def test_set_null_delete_foreign_key():
 
 
 @pytest.mark.asyncio
-async def test_models_match_schema():
+async def test_models_match_schema(requires_database, reset_engine_connections):
     """Test SQLAlchemy models match database schema."""
     async with AsyncSessionLocal() as session:
         # Get all model tables
@@ -219,7 +219,7 @@ async def test_models_match_schema():
 
 
 @pytest.mark.asyncio
-async def test_uuid_primary_keys():
+async def test_uuid_primary_keys(requires_database, reset_engine_connections):
     """Test all tables use UUID primary keys."""
     async with AsyncSessionLocal() as session:
         tables = [

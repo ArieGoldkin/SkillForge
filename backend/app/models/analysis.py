@@ -25,7 +25,7 @@ class Analysis(Base):
     content_type = Column(String(50), nullable=False)  # 'article', 'video', 'repo'
     title = Column(Text)
     raw_content = Column(Text)
-    content_embedding = Column(Vector(1536))  # Embedding vector for semantic search
+    content_embedding = Column(Vector(768))  # Embedding vector for semantic search (768-dim for nomic-embed-text)
     extraction_metadata = Column(JSONB)  # Metadata from content extraction
     status = Column(String(50), nullable=False, default="pending", index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

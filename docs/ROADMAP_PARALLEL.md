@@ -1,7 +1,7 @@
 # 🚀 SkillForge - Parallel Development Roadmap
 
 **Version:** 2.0 (Parallel-Optimized)
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025
 **Team:** Arie (Frontend Specialist) + Yonatan (Backend Specialist)
 **Timeline:** 11 weeks (6 sprints of 2 weeks, 1 sprint of 1 week)
 
@@ -50,7 +50,7 @@
 
 | Developer | Tasks | Story Points | Status |
 |-----------|-------|--------------|--------|
-| **Yonatan (Backend)** | 1.1.1-1.1.4: Backend scaffolding<br>1.2.1-1.2.5: Database schema + migrations<br>1.4.1-1.4.5: Jina AI content extraction<br>1.5.1-1.5.2: Embedding service<br>1.6.1-1.6.4: Docker Compose setup | **21 pts**<br>(5 + 8 + 5 + 3) | Sprint 1 |
+| **Yonatan (Backend)** | 1.1.1-1.1.4: Backend scaffolding<br>1.2.1-1.2.5: Database schema + migrations<br>1.4.1-1.4.5: Jina AI content extraction<br>1.5.0-1.5.2: Embedding service ✅<br>1.6.1-1.6.4: Docker Compose setup | **24 pts**<br>(5 + 8 + 5 + 5 + 1) | Sprint 1 |
 | **GitHub** | [Milestone #1](https://github.com/ArieGoldkin/SkillForge/milestone/1) | [Issues #1-5](https://github.com/ArieGoldkin/SkillForge/issues?q=is%3Aissue+milestone%3A%22Sprint+1%3A+Backend+Foundation%22) | ✅ Created |
 | **Arie (Frontend)** | 1.3.1-1.3.5: Frontend scaffolding<br>Create mock API responses<br>Design component library<br>Implement URL input form | **13 pts**<br>(8 + 3 + 2) | Sprint 1 |
 | **Integration Point** | API Contract Definition (Day 3) | - | 🔗 |
@@ -1047,4 +1047,4 @@ VITE_API_BASE_URL=http://localhost:8000
 **Document Version:** 2.0 (Parallel-Optimized)
 **Maintained By:** Arie + Yonatan
 **Review Cycle:** End of each sprint
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025

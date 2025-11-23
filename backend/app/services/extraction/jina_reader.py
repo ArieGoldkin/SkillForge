@@ -31,8 +31,7 @@ class JinaReader:
         reraise=True,
     )
     async def extract_article(self, url: str) -> dict[str, str | int | dict[str, str]]:
-        """
-        Extract content from article URL using Jina AI Reader.
+        """Extract content from article URL using Jina AI Reader.
 
         Args:
             url: The URL to extract content from
@@ -42,6 +41,7 @@ class JinaReader:
 
         Raises:
             JinaReaderError: If extraction fails or URL is not found
+
         """
         try:
             # Build headers with optional API key
@@ -115,7 +115,7 @@ class JinaReader:
             logger.error(
                 "jina_extraction_failed", url=url, error=str(e), error_type=type(e).__name__
             )
-            raise JinaReaderError(f"Extraction failed: {str(e)}") from e
+            raise JinaReaderError(f"Extraction failed: {e!s}") from e
 
     async def close(self) -> None:
         """Close the HTTP client."""

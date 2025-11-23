@@ -27,7 +27,8 @@ def reset_context():
 
 def test_request_id_middleware_adds_header_to_response(client, reset_context):
     """Test Request ID middleware adds X-Request-ID header to all responses."""
-    response = client.get("/api/v1/health")
+    # Use root endpoint to avoid database connection issues
+    response = client.get("/")
     assert response.status_code == 200
     assert "X-Request-ID" in response.headers
     assert response.headers["X-Request-ID"] is not None
@@ -41,16 +42,18 @@ def test_request_id_middleware_adds_header_to_response(client, reset_context):
 def test_request_id_middleware_uses_custom_header(client, reset_context):
     """Test Request ID middleware uses existing X-Request-ID header if provided."""
     custom_id = "custom-request-id-12345"
-    response = client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
+    # Use root endpoint to avoid database connection issues
+    response = client.get("/", headers={"X-Request-ID": custom_id})
     assert response.status_code == 200
     assert response.headers["X-Request-ID"] == custom_id
 
 
 def test_request_id_middleware_generates_unique_ids(client, reset_context):
     """Test Request ID middleware generates unique IDs for each request."""
-    response1 = client.get("/api/v1/health")
-    response2 = client.get("/api/v1/health")
-    response3 = client.get("/api/v1/health")
+    # Use root endpoint to avoid database connection issues
+    response1 = client.get("/")
+    response2 = client.get("/")
+    response3 = client.get("/")
 
     id1 = response1.headers["X-Request-ID"]
     id2 = response2.headers["X-Request-ID"]
@@ -64,7 +67,8 @@ def test_request_id_middleware_generates_unique_ids(client, reset_context):
 
 def test_request_id_middleware_adds_to_all_endpoints(client, reset_context):
     """Test Request ID middleware adds header to all endpoints."""
-    endpoints = ["/", "/api/v1/health", "/docs", "/openapi.json"]
+    # Use endpoints that don't require database to avoid event loop conflicts
+    endpoints = ["/", "/docs", "/openapi.json"]
 
     for endpoint in endpoints:
         response = client.get(endpoint)
@@ -83,7 +87,8 @@ def test_request_id_middleware_adds_to_error_responses(client, reset_context):
 def test_request_id_middleware_binds_to_context_vars(client, reset_context):
     """Test Request ID middleware binds request ID to structlog context vars."""
     custom_id = "test-context-binding"
-    response = client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
+    # Use root endpoint to avoid database connection issues
+    response = client.get("/", headers={"X-Request-ID": custom_id})
 
     # Context should be cleaned up after request
     # So we can't check it here, but we verify the header is set
@@ -97,7 +102,8 @@ def test_request_id_middleware_cleans_up_context(reset_context):
     assert "request_id" not in context or context.get("request_id") is None
 
     client = TestClient(app)
-    response = client.get("/api/v1/health")
+    # Use root endpoint to avoid database connection issues
+    response = client.get("/")
 
     # After request - context should still be clean (no leakage)
     context_after = structlog.contextvars.get_contextvars()
@@ -108,7 +114,8 @@ def test_request_id_middleware_cleans_up_context(reset_context):
 def test_request_id_middleware_stores_in_request_state(client, reset_context):
     """Test Request ID middleware stores request ID in request.state."""
     custom_id = "test-state-storage"
-    response = client.get("/api/v1/health", headers={"X-Request-ID": custom_id})
+    # Use root endpoint to avoid database connection issues
+    response = client.get("/", headers={"X-Request-ID": custom_id})
 
     # Verify header is set (indirect proof that state was set)
     assert response.headers["X-Request-ID"] == custom_id
@@ -130,7 +137,8 @@ def test_request_id_middleware_multiple_concurrent_requests(client, reset_contex
 
     def make_request():
         try:
-            response = client.get("/api/v1/health")
+            # Use root endpoint to avoid database connection issues
+            response = client.get("/")
             ids.append(response.headers["X-Request-ID"])
         except Exception as e:
             errors.append(str(e))

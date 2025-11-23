@@ -119,20 +119,22 @@ async def emit_streaming_event(
 
 ### ✅ Task 1.1.1: Create FastAPI Project Structure [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#1](https://github.com/ArieGoldkin/SkillForge/issues/1)  
 **Dependencies:** None  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #1 Docs](../issues/001-fastapi-structure/README.md)  
 **Parallel Work:** Arie setting up frontend
 
 #### Description
 Initialize FastAPI project with proper directory structure and core files.
 
 #### Acceptance Criteria
-- [ ] Project directory `backend/` created
-- [ ] Directory structure follows best practices
-- [ ] FastAPI app runs with `uvicorn app.main:app --reload`
-- [ ] Health check endpoint responds at `/health`
-- [ ] CORS middleware configured for frontend
+- [x] Project directory `backend/` created
+- [x] Directory structure follows best practices
+- [x] FastAPI app runs with `uvicorn app.main:app --reload`
+- [x] Health check endpoint responds at `/api/v1/health`
+- [x] CORS middleware configured for frontend
 
 #### Implementation Steps
 ```bash
@@ -308,9 +310,11 @@ curl http://localhost:8000/health
 
 ### ✅ Task 1.1.2: Setup Environment Configuration [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.3)  
-**Dependencies:** Task 1.1.1
+**Dependencies:** Task 1.1.1  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #2 Docs](../issues/002-environment-config/README.md)
 
 #### Description
 Create `.env.example` and `.env` files for configuration.
@@ -331,9 +335,11 @@ LOG_LEVEL=DEBUG
 
 ### ✅ Task 1.1.3: Implement Structured Logging [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) (combined with 1.1.2)  
-**Dependencies:** Task 1.1.2
+**Dependencies:** Task 1.1.2  
+**Completed:** November 20, 2025  
+**Documentation:** [Issue #2 Docs](../issues/002-environment-config/README.md)
 
 #### Description
 Setup structlog for JSON logging with request IDs.
@@ -385,9 +391,11 @@ async def startup_event():
 
 ### ✅ Task 1.2.1: Install & Configure Alembic [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.1.3
+**Dependencies:** Task 1.1.3  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Setup Alembic for database migrations.
@@ -413,9 +421,11 @@ target_metadata = Base.metadata
 
 ### ✅ Task 1.2.2: Create SQLAlchemy Models [5 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.1
+**Dependencies:** Task 1.2.1  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Define database models for analyses, artifacts, tutoring.
@@ -567,9 +577,11 @@ from app.models.progress import AnalysisProgress
 
 ### ✅ Task 1.2.3: Enable PGVector Extension [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.2
+**Dependencies:** Task 1.2.2  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Create migration to enable PGVector extension.
@@ -592,9 +604,11 @@ def downgrade():
 
 ### ✅ Task 1.2.4: Generate Initial Migration [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.3
+**Dependencies:** Task 1.2.3  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Create initial schema migration with all tables.
@@ -615,9 +629,11 @@ psql -U dev -d skillforge -c "\dt"
 
 ### ✅ Task 1.2.5: Create Database Utilities [2 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) (tasks 1.2.1-1.2.5)  
-**Dependencies:** Task 1.2.4
+**Dependencies:** Task 1.2.4  
+**Completed:** November 21, 2025  
+**Documentation:** [Issue #3 Docs](../issues/003-database-schema/README.md)
 
 #### Description
 Setup async session factory and dependency injection.
@@ -946,11 +962,29 @@ app.include_router(analyze_router)
 
 ---
 
+### ✅ Task 1.5.0: Schema Migration to Vector(768) [1 pt]
+
+**Status:** ✅ Complete  
+**GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5)  
+**Dependencies:** Task 1.2.4 (Issue #3)  
+**Completed:** November 23, 2025
+
+#### Description
+Create migration to update `content_embedding` column from `Vector(1536)` to `Vector(768)` to match nomic-embed-text model dimensions.
+
+#### Implementation
+- Created migration: `637794773190_update_embedding_dimension_to_768.py`
+- Updated `app/models/analysis.py` model definition
+- Migration is reversible (can downgrade back to 1536)
+
+---
+
 ### ✅ Task 1.5.1: Install Ollama Models [1 pt]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
-**Dependencies:** Docker Compose running (Task 1.6.1)
+**Dependencies:** Ollama running on host  
+**Completed:** November 23, 2025
 
 #### Description
 Pull required Ollama models for dev environment.
@@ -972,60 +1006,26 @@ curl http://localhost:11434/api/tags
 
 ### ✅ Task 1.5.2: Create Embedding Service [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
-**Dependencies:** Task 1.5.1
+**Dependencies:** Task 1.5.1  
+**Completed:** November 23, 2025
 
 #### Description
-Implement service to generate embeddings using Ollama.
-
-#### Installation
-```bash
-pip install ollama==0.4.3
-```
+Implement service to generate embeddings using Ollama with dimension handling and normalization.
 
 #### Implementation
-```python
-# app/services/embeddings.py
-import ollama
-from app.core.config import settings
-from app.core.logging import logger
+- Created `app/services/embeddings.py` (209 lines)
+- Dimension handling: truncate if >768, pad if <768 (following reporter-accuracy pattern)
+- L2 normalization for cosine similarity search
+- Retry logic with exponential backoff (tenacity)
+- Comprehensive error handling with custom `EmbeddingError`
+- Health check integration (Ollama availability)
+- Configuration: `EMBEDDING_DIMENSIONS=768`, `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`
 
-class EmbeddingService:
-    def __init__(self):
-        self.client = ollama.AsyncClient(host=settings.OLLAMA_BASE_URL)
-        self.model = settings.OLLAMA_EMBEDDING_MODEL
-
-    async def generate_embedding(self, text: str) -> list[float]:
-        """Generate embedding vector for text using Ollama."""
-        try:
-            # Truncate text if too long (Ollama has limits)
-            max_length = 8000
-            if len(text) > max_length:
-                text = text[:max_length]
-                logger.warning("embedding_text_truncated", original_length=len(text))
-
-            response = await self.client.embeddings(
-                model=self.model,
-                prompt=text,
-            )
-
-            embedding = response["embedding"]
-
-            logger.info(
-                "embedding_generated",
-                text_length=len(text),
-                embedding_dim=len(embedding),
-            )
-
-            return embedding
-
-        except Exception as e:
-            logger.error("embedding_generation_failed", error=str(e))
-            raise
-
-embedding_service = EmbeddingService()
-```
+#### Testing
+- Created `tests/test_embeddings.py` (15 tests, 100% pass rate)
+- Tests cover: success cases, dimension handling, normalization, error handling, edge cases
 
 ---
 

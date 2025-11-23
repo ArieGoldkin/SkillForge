@@ -1,7 +1,7 @@
 # 🗺️ SkillForge Development Roadmap
 
 **Version:** 1.0
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025
 **Project Type:** Research-to-Implementation Pipeline with AI Tutoring
 
 ---
@@ -558,23 +558,23 @@ logger.info(
 ### Phase 1: Foundation (Weeks 1-2)
 
 #### **1.1 Backend Scaffolding (3 days)**
-- [ ] **1.1.1** Create FastAPI project structure
+- [x] **1.1.1** Create FastAPI project structure ✅
   - `app/main.py` - FastAPI app initialization
   - `app/api/v1/` - API route modules
   - `app/core/config.py` - Settings with Pydantic
   - `app/db/` - Database connection & session management
   - `app/models/` - SQLAlchemy models
   - `app/schemas/` - Pydantic request/response schemas
-- [ ] **1.1.2** Setup environment configuration
+- [x] **1.1.2** Setup environment configuration ✅
   - `.env.example` - Template for environment variables
   - `app/core/config.py` - Load settings from environment
   - Validation for required variables (DATABASE_URL, OLLAMA_BASE_URL, etc.)
-- [ ] **1.1.3** Implement logging & error handling
+- [x] **1.1.3** Implement logging & error handling ✅
   - `app/core/logging.py` - Structured logging with structlog
   - Global exception handlers in `main.py`
   - Request ID tracking middleware
-- [ ] **1.1.4** Write basic health check endpoint
-  - `GET /health` - Returns status, database connectivity, Ollama connectivity
+- [x] **1.1.4** Write basic health check endpoint ✅
+  - `GET /api/v1/health` - Returns status, database connectivity, Ollama connectivity
 
 **Acceptance Criteria:**
 - `uvicorn app.main:app --reload` starts server successfully
@@ -584,24 +584,24 @@ logger.info(
 ---
 
 #### **1.2 Database Schema & Migrations (4 days)**
-- [ ] **1.2.1** Install & configure Alembic
+- [x] **1.2.1** Install & configure Alembic ✅
   - `alembic init alembic`
   - Configure `alembic.ini` with SQLAlchemy async
   - Setup `env.py` to load models
-- [ ] **1.2.2** Create SQLAlchemy models
+- [x] **1.2.2** Create SQLAlchemy models ✅
   - `app/models/analysis.py` - `Analysis` model (url, content, status, embeddings)
   - `app/models/agent_finding.py` - `AgentFinding` model (analysis_id FK, agent_type, findings)
   - `app/models/artifact.py` - `Artifact` model (analysis_id FK, markdown_content)
   - `app/models/tutoring.py` - `TutoringSession`, `TutoringMessage` models
   - `app/models/progress.py` - `AnalysisProgress` model (for SSE tracking)
-- [ ] **1.2.3** Enable PGVector extension
+- [x] **1.2.3** Enable PGVector extension ✅
   - Create custom migration with `CREATE EXTENSION IF NOT EXISTS vector;`
-  - Add vector column types to models (`Vector(1536)`)
-- [ ] **1.2.4** Write initial migration
+  - Add vector column types to models (`Vector(768)` for nomic-embed-text)
+- [x] **1.2.4** Write initial migration ✅
   - `alembic revision --autogenerate -m "Initial schema"`
   - Review generated migration SQL
   - Test `alembic upgrade head`
-- [ ] **1.2.5** Create database utilities
+- [x] **1.2.5** Create database utilities ✅
   - `app/db/session.py` - AsyncSession factory
   - `app/db/base.py` - Base class for models
   - CRUD utilities for common operations
@@ -671,23 +671,29 @@ logger.info(
   - 100% coverage on extraction services
 
 **Acceptance Criteria:**
-- `POST /api/v1/analyze` with article URL returns `analysis_id`
-- Extracted content stored in `analyses.raw_content`
-- Extraction completes in <10 seconds for typical articles
-- Errors logged with context
+- ✅ Extraction service implemented (`app/services/extraction/jina_reader.py`)
+- ✅ Content type detection working
+- ✅ Retry logic with exponential backoff
+- ✅ Comprehensive tests (unit + integration)
+- ⏳ `POST /api/v1/analyze` endpoint (Task 1.5.4 - future)
+- ⏳ Extracted content stored in `analyses.raw_content` (Task 1.5.3 - future)
+- ✅ Extraction completes in <10 seconds for typical articles (verified)
+- ✅ Errors logged with context
 
 ---
 
-#### **1.5 Basic Analysis Workflow (3 days)**
-- [ ] **1.5.1** Install Ollama & pull models
-  - Add Ollama to `docker-compose.yml`
-  - Pull `llama3.1:8b` and `nomic-embed-text`
-  - Test Ollama API: `curl http://localhost:11434/api/generate`
-- [ ] **1.5.2** Create embedding service
-  - `app/services/embeddings.py`
-  - Implement `generate_embedding(text: str) -> list[float]`
-  - Use `nomic-embed-text` via Ollama
-  - Store embeddings in `analyses.content_embedding`
+#### **1.5 Basic Analysis Workflow (3 days)** ⚠️ PARTIAL (1.5.0-1.5.2 ✅ Complete)
+- [x] **1.5.0** Schema migration to Vector(768) ✅
+- [x] **1.5.1** Install Ollama & pull models ✅
+  - Pulled `nomic-embed-text` model
+  - Verified model availability via health check
+- [x] **1.5.2** Create embedding service ✅
+  - `app/services/embeddings.py` (209 lines)
+  - Implemented `generate_embedding(text: str) -> list[float]`
+  - Uses `nomic-embed-text` via Ollama (768 dimensions)
+  - Dimension handling (truncate/pad) following reporter-accuracy pattern
+  - L2 normalization for cosine similarity search
+  - Comprehensive tests (15 tests, 100% pass rate)
 - [ ] **1.5.3** Create basic LangGraph workflow
   - `app/workflows/analysis.py`
   - Define `AnalysisState` TypedDict
@@ -703,9 +709,12 @@ logger.info(
   - Event types: `extraction`, `embedding`, `complete`, `error`
 
 **Acceptance Criteria:**
-- Submit article URL → backend extracts → generates embedding → stores in PGVector
-- Frontend can connect to SSE endpoint and receive real-time updates
-- Analysis completes end-to-end in <30 seconds
+- ✅ Embedding service generates 768-dim vectors (verified)
+- ✅ Database schema supports Vector(768) (verified)
+- ✅ Embeddings can be stored in PGVector (verified)
+- ⏳ Submit article URL → backend extracts → generates embedding → stores in PGVector (Task 1.5.3-1.5.4)
+- ⏳ Frontend can connect to SSE endpoint and receive real-time updates (Task 1.5.5)
+- ⏳ Analysis completes end-to-end in <30 seconds (Task 1.5.3-1.5.5)
 
 ---
 
@@ -1372,6 +1381,6 @@ This roadmap is designed to be imported into your project management system. Eac
 ---
 
 **Document Version:** 1.0
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025
 **Maintained By:** Project Team
 **Review Cycle:** Weekly during active development
