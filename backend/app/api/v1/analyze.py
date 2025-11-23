@@ -72,8 +72,9 @@ async def stream_analysis_progress(
                     break
 
                 # Format event for SSE
+                event_type = str(event.get("type", "message"))
                 yield {
-                    "event": event.get("type", "message"),
+                    "event": event_type,
                     "data": json.dumps(event),
                 }
 
