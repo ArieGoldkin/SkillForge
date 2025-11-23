@@ -558,23 +558,23 @@ logger.info(
 ### Phase 1: Foundation (Weeks 1-2)
 
 #### **1.1 Backend Scaffolding (3 days)**
-- [ ] **1.1.1** Create FastAPI project structure
+- [x] **1.1.1** Create FastAPI project structure ✅
   - `app/main.py` - FastAPI app initialization
   - `app/api/v1/` - API route modules
   - `app/core/config.py` - Settings with Pydantic
   - `app/db/` - Database connection & session management
   - `app/models/` - SQLAlchemy models
   - `app/schemas/` - Pydantic request/response schemas
-- [ ] **1.1.2** Setup environment configuration
+- [x] **1.1.2** Setup environment configuration ✅
   - `.env.example` - Template for environment variables
   - `app/core/config.py` - Load settings from environment
   - Validation for required variables (DATABASE_URL, OLLAMA_BASE_URL, etc.)
-- [ ] **1.1.3** Implement logging & error handling
+- [x] **1.1.3** Implement logging & error handling ✅
   - `app/core/logging.py` - Structured logging with structlog
   - Global exception handlers in `main.py`
   - Request ID tracking middleware
-- [ ] **1.1.4** Write basic health check endpoint
-  - `GET /health` - Returns status, database connectivity, Ollama connectivity
+- [x] **1.1.4** Write basic health check endpoint ✅
+  - `GET /api/v1/health` - Returns status, database connectivity, Ollama connectivity
 
 **Acceptance Criteria:**
 - `uvicorn app.main:app --reload` starts server successfully
@@ -584,24 +584,24 @@ logger.info(
 ---
 
 #### **1.2 Database Schema & Migrations (4 days)**
-- [ ] **1.2.1** Install & configure Alembic
+- [x] **1.2.1** Install & configure Alembic ✅
   - `alembic init alembic`
   - Configure `alembic.ini` with SQLAlchemy async
   - Setup `env.py` to load models
-- [ ] **1.2.2** Create SQLAlchemy models
+- [x] **1.2.2** Create SQLAlchemy models ✅
   - `app/models/analysis.py` - `Analysis` model (url, content, status, embeddings)
   - `app/models/agent_finding.py` - `AgentFinding` model (analysis_id FK, agent_type, findings)
   - `app/models/artifact.py` - `Artifact` model (analysis_id FK, markdown_content)
   - `app/models/tutoring.py` - `TutoringSession`, `TutoringMessage` models
   - `app/models/progress.py` - `AnalysisProgress` model (for SSE tracking)
-- [ ] **1.2.3** Enable PGVector extension
+- [x] **1.2.3** Enable PGVector extension ✅
   - Create custom migration with `CREATE EXTENSION IF NOT EXISTS vector;`
-  - Add vector column types to models (`Vector(1536)`)
-- [ ] **1.2.4** Write initial migration
+  - Add vector column types to models (`Vector(768)` for nomic-embed-text)
+- [x] **1.2.4** Write initial migration ✅
   - `alembic revision --autogenerate -m "Initial schema"`
   - Review generated migration SQL
   - Test `alembic upgrade head`
-- [ ] **1.2.5** Create database utilities
+- [x] **1.2.5** Create database utilities ✅
   - `app/db/session.py` - AsyncSession factory
   - `app/db/base.py` - Base class for models
   - CRUD utilities for common operations
