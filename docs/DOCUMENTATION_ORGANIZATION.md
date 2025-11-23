@@ -16,6 +16,10 @@ docs/
 │   └── 003-database-schema/
 │       └── README.md               # Issue #3 complete doc
 │
+├── sprints/                         # Sprint-level summaries
+│   ├── README.md                    # Sprints index
+│   └── SPRINT_2_ISSUES_SUMMARY.md  # Sprint 2 planning & alignment
+│
 ├── reporter-accuracy-reference/     # Reference materials (archived)
 │   ├── README.md
 │   ├── REPORTER_ACCURACY_ANALYSIS.md
@@ -71,6 +75,24 @@ docs/issues/
 3. Technical Details (architecture, patterns, dependencies)
 4. Verification (tests, dev env, standards)
 5. Related Documentation (links)
+
+### Sprint Documentation (`docs/sprints/`)
+
+**Purpose:** Sprint-level summaries, issue planning, and alignment analysis
+
+**Structure:**
+```
+docs/sprints/
+├── README.md                    # Sprints index
+└── SPRINT_2_ISSUES_SUMMARY.md  # Sprint 2 planning & alignment
+```
+
+**Sprint Summaries Include:**
+1. Issues created for the sprint
+2. Backend/frontend alignment analysis
+3. Critical path and dependencies
+4. Integration points
+5. Status and next steps
 
 ### Reference Documentation (`docs/reporter-accuracy-reference/`)
 

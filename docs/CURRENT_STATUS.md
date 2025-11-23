@@ -1,8 +1,8 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** November 21, 2025  
+**Date:** November 23, 2025  
 **Branch:** `dev` (aligned with `main`)  
-**Sprint:** Sprint 1 - Foundation
+**Sprint:** Sprint 1 Complete → Sprint 2 Starting
 
 ---
 
@@ -105,12 +105,79 @@
 - **GitHub:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4)
 
 ### Issue #5: Embedding Service Implementation [5 pts] ✅ COMPLETE
-- **Status:** ✅ Complete (ready for PR)
+- **Status:** ✅ Complete (PR #38 open)
 - **Assignee:** Yonatan
 - **Completed:** November 23, 2025
 - **Branch:** `feature/issue-5-embedding-service`
 - **Documentation:** [Issue #5 Docs](./issues/005-embedding-service/README.md)
 - **GitHub:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5)
+
+### Issue #30: Frontend Code Quality Foundation & Design Prototypes [5 pts] ✅ COMPLETE
+- **Status:** ✅ Complete (PR #36 merged)
+- **Assignee:** ArieGoldkin
+- **Completed:** November 23, 2025
+- **GitHub:** [#30](https://github.com/ArieGoldkin/SkillForge/issues/30)
+- **Note:** Frontend scaffolding complete, design prototypes ready for React conversion
+
+---
+
+## 📋 Issues Status (Sprint 2)
+
+### Backend Sprint 2 Issues
+
+**Issue #39:** Task 1.5.3 - Create Basic LangGraph Workflow [5 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** yonatangross
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #5 ✅ Complete
+- **GitHub:** [#39](https://github.com/ArieGoldkin/SkillForge/issues/39)
+
+**Issue #40:** Task 1.5.4 - Implement SSE Endpoint [3 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** yonatangross
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #39
+- **BLOCKER FOR:** Frontend Issue #43 (SSE Client Hook)
+- **Integration Point:** Day 1 Sprint 2 - Provide SSE schema to Arie
+- **GitHub:** [#40](https://github.com/ArieGoldkin/SkillForge/issues/40)
+
+**Issue #41:** Task 2.1.1-2.1.5 - Implement Supervisor Pattern [8 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** yonatangross
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #40
+- **GitHub:** [#41](https://github.com/ArieGoldkin/SkillForge/issues/41)
+
+**Issue #42:** Task 2.2.1-2.2.3 - Implement First 3 Core Sub-Agents [8 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** yonatangross
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #41
+- **GitHub:** [#42](https://github.com/ArieGoldkin/SkillForge/issues/42)
+
+### Frontend Sprint 2 Issues
+
+**Issue #43:** Task 2.1 - Create SSE Client Hook [5 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **BLOCKER:** Issue #40 (Backend SSE Endpoint + schema)
+- **Integration Point:** Day 1 Sprint 2 - Receive SSE schema from Yonatan
+- **GitHub:** [#43](https://github.com/ArieGoldkin/SkillForge/issues/43)
+
+**Issue #44:** Task 2.2 - Build ProgressTracker Component [5 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #43
+- **GitHub:** [#44](https://github.com/ArieGoldkin/SkillForge/issues/44)
+
+**Issue #45:** Task 2.3 - Build Analysis View Page [3 pts] 🎯 READY
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Milestone:** Sprint 2: LangGraph Workflow & SSE
+- **Dependencies:** Issue #44
+- **GitHub:** [#45](https://github.com/ArieGoldkin/SkillForge/issues/45)
 
 ---
 
@@ -131,10 +198,18 @@
 
 ### Next Sprint (Sprint 2)
 
-3. **Start Sprint 2 Tasks**
-   - Task 1.5.3: Create Basic LangGraph Workflow
-   - Task 1.5.4: Implement SSE Endpoint
-   - Task 2.1.1-2.1.5: Supervisor Pattern Implementation
+3. **Sprint 2 Issues Created** ✅
+   - Issue #39: Create Basic LangGraph Workflow [5 pts]
+   - Issue #40: Implement SSE Endpoint [3 pts] ⚡ CRITICAL (blocks frontend)
+   - Issue #41: Implement Supervisor Pattern [8 pts]
+   - Issue #42: Implement First 3 Core Sub-Agents [8 pts]
+   - Issue #43: Create SSE Client Hook [5 pts] (frontend, blocked by #40)
+   - Issue #44: Build ProgressTracker Component [5 pts] (frontend)
+   - Issue #45: Build Analysis View Page [3 pts] (frontend)
+
+4. **Critical Integration Point**
+   - **Day 1 Sprint 2:** Yonatan must provide SSE event schema to Arie
+   - See: `docs/INTEGRATION_POINTS.md#integration-point-3`
 
 ### Security & Actions Review
 
@@ -229,9 +304,60 @@ gh pr edit <PR_NUMBER> --base dev
 **Blockers:**
 - None - Sprint 1 complete!
 
-**Next Milestone:** Begin Sprint 2 - Analysis Pipeline Foundation
+---
+
+## 📈 Sprint 2 Progress
+
+**Total Story Points:** 37  
+**Backend:** 24 pts (Issues #39, #40, #41, #42)  
+**Frontend:** 13 pts (Issues #43, #44, #45)  
+**In Progress:** 0 pts  
+**Remaining:** 37 pts
+
+### Backend/Frontend Alignment ✅
+
+**✅ PROPERLY ALIGNED:**
+- Backend Issue #40 (SSE Endpoint) must complete before Frontend Issue #43 (SSE Client Hook)
+- Integration point defined: Day 1 Sprint 2 - Yonatan provides SSE schema to Arie
+- Frontend can work on Sprint 1 tasks (#31-35) while waiting for SSE schema
+- All Sprint 2 issues created and assigned to milestone
+
+**Critical Path:**
+```
+Issue #39 (LangGraph Workflow) 
+  → Issue #40 (SSE Endpoint) ⚡ BLOCKS FRONTEND
+    → Issue #41 (Supervisor Pattern)
+      → Issue #42 (First 3 Sub-Agents)
+
+Issue #40 (SSE Endpoint) 
+  → Issue #43 (SSE Client Hook) ⚡ FRONTEND BLOCKED
+    → Issue #44 (ProgressTracker)
+      → Issue #45 (Analysis View)
+```
+
+**Next Milestone:** Sprint 2 - LangGraph Workflow & SSE
 
 ---
 
-**Last Updated:** November 23, 2025 (Issue #5 completed - Sprint 1 complete!)
+## ✅ Arie's Design Prototype Alignment
+
+**Status:** ✅ FULLY ALIGNED and EXCEEDS roadmap requirements
+
+**What Arie Built (PR #36 - Issue #30):**
+- ✅ React 19.2.0, Vite 6.0.1, React Router v7.9.6
+- ✅ TanStack Query, Zustand, Radix UI components
+- ✅ Tailwind CSS v4 (newer than roadmap v3.4.15)
+- ✅ Biome (35x faster than Prettier mentioned in roadmap)
+- ✅ Feature-based architecture (best practice)
+- ✅ Design prototypes (HTML) ready for React conversion
+- ✅ All routes configured: `/`, `/analyze/:id`, `/tutor/:sessionId`, `/library`
+
+**Conclusion:** No changes needed - Arie's work is production-ready and follows best practices.
+
+---
+
+**Last Updated:** November 23, 2025 (Sprint 2 issues created - ready to begin!)
 **Maintained By:** Yonatan & Arie
+
+**See Also:**
+- [Sprint 2 Issues Summary](./sprints/SPRINT_2_ISSUES_SUMMARY.md) - Detailed Sprint 2 planning and alignment analysis
