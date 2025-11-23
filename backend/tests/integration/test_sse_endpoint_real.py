@@ -73,8 +73,8 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
                     "timestamp": "2025-01-01T00:00:00Z",
                 },
             )
-            return result
         except Exception as e:
+            # Emit error event on failure
             # Emit error event
             await broadcaster.publish(
                 channel,
@@ -154,7 +154,6 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     that can be received via the SSE endpoint.
     """
     analysis_id = str(uuid.uuid4())
-    channel = f"workflow:{analysis_id}"
 
     # Run workflow (which should emit SSE events)
     workflow_task = asyncio.create_task(
