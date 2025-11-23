@@ -23,7 +23,7 @@
 ```bash
 # Fast, selective (only changed files)
 ruff check --select=E,F,I,N,W,UP .
-black --check .
+ruff format --check .
 mypy app
 pytest tests/ --cov=app --cov-fail-under=80
 ```
@@ -32,7 +32,7 @@ pytest tests/ --cov=app --cov-fail-under=80
 ```bash
 # Comprehensive (full test suite)
 ruff check .
-black --check .
+ruff format --check .
 mypy app
 pytest tests/ -v --cov=app --cov-report=html --cov-fail-under=80
 ```
@@ -489,7 +489,7 @@ structlog.contextvars.bind_contextvars(request_id=request_id)
 
 - [ ] All tests pass: `pytest tests/`
 - [ ] No linting errors: `ruff check .`
-- [ ] Code formatted: `black --check .`
+- [ ] Code formatted: `ruff format --check .`
 - [ ] Type checking passes: `mypy app`
 - [ ] Coverage ≥80%: `pytest --cov=app --cov-fail-under=80`
 - [ ] Docstrings added for new functions

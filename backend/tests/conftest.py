@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.db.session import AsyncSessionLocal
 from app.main import app
 
@@ -28,8 +28,6 @@ def clear_config_cache():
 @pytest.fixture
 def test_settings():
     """Override settings for testing."""
-    from app.core.config import Settings
-
     return Settings(
         ENVIRONMENT="testing",
         LOG_LEVEL="INFO",

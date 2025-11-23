@@ -61,9 +61,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_production_requirements(self) -> "Settings":
         """Validate required variables in production environment."""
-        if self.ENVIRONMENT == "production":
-            if not self.DATABASE_URL:
-                raise ValueError("DATABASE_URL is required in production environment")
+        if self.ENVIRONMENT == "production" and not self.DATABASE_URL:
+            error_msg = "DATABASE_URL is required in production environment"
+            raise ValueError(error_msg)
         return self
 
     def is_development(self) -> bool:
@@ -79,7 +79,7 @@ class Settings(BaseSettings):
         return self.ENVIRONMENT == "staging"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance.
 

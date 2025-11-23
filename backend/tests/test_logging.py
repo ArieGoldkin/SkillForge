@@ -1,7 +1,6 @@
 """Tests for structured logging configuration."""
 
 import logging
-import sys
 from io import StringIO
 
 import pytest
@@ -66,7 +65,7 @@ def test_setup_logging_production_config(reset_logging, monkeypatch):
 def test_setup_logging_invalid_log_level(reset_logging, monkeypatch):
     """Test logging setup raises ValueError for invalid log level."""
     monkeypatch.setenv("LOG_LEVEL", "INVALID_LEVEL")
-    from app.core.config import Settings, get_settings
+    from app.core.config import get_settings
 
     get_settings.cache_clear()
     # Create settings with invalid log level

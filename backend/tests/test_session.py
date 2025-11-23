@@ -143,14 +143,13 @@ async def test_engine_echo_in_development():
 @pytest.mark.asyncio
 async def test_multiple_sessions_work_independently():
     """Test multiple sessions work independently."""
-    async with AsyncSessionLocal() as session1:
-        async with AsyncSessionLocal() as session2:
-            # Both sessions should work independently
-            result1 = await session1.execute(text("SELECT 1"))
-            result2 = await session2.execute(text("SELECT 2"))
+    async with AsyncSessionLocal() as session1, AsyncSessionLocal() as session2:
+        # Both sessions should work independently
+        result1 = await session1.execute(text("SELECT 1"))
+        result2 = await session2.execute(text("SELECT 2"))
 
-            assert result1.scalar() == 1
-            assert result2.scalar() == 2
+        assert result1.scalar() == 1
+        assert result2.scalar() == 2
 
 
 @pytest.mark.asyncio

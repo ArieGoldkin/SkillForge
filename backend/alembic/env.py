@@ -1,20 +1,19 @@
-from logging.config import fileConfig
+"""Alembic environment configuration for database migrations."""
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+import sys
+from logging.config import fileConfig
+from pathlib import Path
+
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
-# Import app configuration
-import sys
-from pathlib import Path
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.config import settings
-from app.db.base import Base
+from app.core.config import settings  # noqa: E402
+from app.db.base import Base  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -74,10 +73,11 @@ def run_migrations_online() -> None:
     """
     url = config.get_main_option("sqlalchemy.url")
     if not url:
-        raise RuntimeError(
+        error_msg = (
             "DATABASE_URL is not set. Cannot run migrations in online mode. "
             "Set DATABASE_URL environment variable or use offline mode."
         )
+        raise RuntimeError(error_msg)
 
     # Use psycopg2-binary driver for migrations (synchronous)
     # This is standard for Alembic migrations

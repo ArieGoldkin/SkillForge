@@ -19,16 +19,18 @@ def setup_logging() -> None:
     standard logging library for compatibility with third-party libraries.
 
     Raises:
-        ValueError: If LOG_LEVEL is invalid
+        TypeError: If LOG_LEVEL is invalid
+
     """
     try:
         # Validate log level
         log_level = getattr(logging, settings.LOG_LEVEL.upper(), None)
         if not isinstance(log_level, int):
-            raise ValueError(
+            error_msg = (
                 f"Invalid LOG_LEVEL: {settings.LOG_LEVEL}. "
                 f"Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"
             )
+            raise TypeError(error_msg)  # noqa: TRY301
 
         # Configure standard logging first
         logging.basicConfig(
@@ -80,6 +82,7 @@ def get_logger(name: str = __name__) -> structlog.BoundLogger:
 
     Returns:
         Configured structlog BoundLogger instance
+
     """
     logger: structlog.BoundLogger = structlog.get_logger(name)  # type: ignore[assignment]
     return logger

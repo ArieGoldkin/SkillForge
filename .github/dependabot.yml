@@ -32,10 +32,8 @@ updates:
       development-dependencies:
         patterns:
           - "pytest*"
-          - "black"
           - "ruff"
           - "mypy"
-          - "isort"
         update-types:
           - "minor"
           - "patch"
