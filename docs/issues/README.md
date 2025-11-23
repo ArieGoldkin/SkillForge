@@ -34,7 +34,7 @@ docs/issues/
 | [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) | FastAPI Project Structure | ✅ Complete | Yonatan | [📄 Docs](./001-fastapi-structure/README.md) | [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) |
 | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) |
 | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
-| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | 🔄 Ready | Yonatan | TBD | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
+| [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service | 🔄 Ready | Yonatan | TBD | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 
 ---

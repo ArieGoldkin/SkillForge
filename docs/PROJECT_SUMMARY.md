@@ -181,6 +181,13 @@ docs/
 3. ✅ Created 5 issues for Sprint 1 (21 story points)
 4. ✅ Updated documentation with GitHub issue links
 
+### Phase 6: Sprint 1 Progress
+1. ✅ Issue #1: FastAPI Project Structure (3 pts) - Complete
+2. ✅ Issue #2: Environment Config & Logging (3 pts) - Complete
+3. ✅ Issue #3: Database Schema & Migrations (8 pts) - Complete
+4. ✅ Issue #4: Content Extraction (Jina AI) (5 pts) - Complete
+5. 🔄 Issue #5: Embedding Service (2 pts) - Ready to start
+
 ---
 
 ## 🚀 Next Steps
@@ -212,6 +219,6 @@ docs/
 
 ---
 
-**Last Updated:** November 21, 2025 (Workflow fixes, dependency updates)  
+**Last Updated:** November 23, 2025 (Issue #4 completed - Sprint 1 at 90%)  
 **Maintained By:** Yonatan & Arie
 
