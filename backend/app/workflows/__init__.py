@@ -1,5 +1,5 @@
-"""LangGraph workflows for content analysis."""
+"""LangGraph workflows."""
 
-from app.workflows.analysis import AnalysisState, analysis_workflow
+from app.workflows.analysis import analysis_workflow
 
-__all__ = ["AnalysisState", "analysis_workflow"]
+__all__ = ["analysis_workflow"]

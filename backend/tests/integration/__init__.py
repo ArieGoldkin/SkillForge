@@ -1,1 +1,1 @@
-"""Integration tests package."""
+"""Integration tests for component interactions."""

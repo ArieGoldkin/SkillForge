@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.v1 import health
+from app.api.v1 import analyze, health
 from app.core.config import settings
 from app.core.logging import get_logger, setup_logging
 
@@ -151,6 +151,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Register routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
+app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

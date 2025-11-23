@@ -1,35 +1,73 @@
-"""LangGraph workflow for content analysis.
+"""LangGraph analysis workflow implementation.
 
-This module implements the initial LangGraph workflow using the Functional API.
-Flow: extract → embed → done (no sub-agents yet).
+Implements the main analysis workflow using LangGraph v1.0 Functional API.
+Workflow extracts content, generates embeddings, and emits SSE progress events.
 """
 
+import asyncio
 from typing import TypedDict
-
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.func import entrypoint, task
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.embeddings import EmbeddingService
+from app.services.embeddings import embedding_service
 from app.services.extraction.jina_reader import JinaReader
-
-# Try to import PostgresSaver, fallback to MemorySaver if not available
-try:
-    from langgraph.checkpoint.postgres import (
-        PostgresSaver,  # type: ignore[import-not-found,import-untyped]
-    )
-except ImportError:
-    PostgresSaver = None  # type: ignore[assignment, misc]
+from app.services.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
 
+# Try to import LangGraph, fallback to mock if not available
+try:
+    from langgraph.checkpoint.postgres import PostgresSaver
+    from langgraph.func import entrypoint, task
 
-class AnalysisState(TypedDict, total=False):
-    """State schema for the analysis workflow.
+    LANGGRAPH_AVAILABLE = True
+except ImportError:
+    # Fallback for development when LangGraph not installed
+    LANGGRAPH_AVAILABLE = False
+    logger.warning("langgraph_not_installed", message="Using mock implementation")
 
-    Fields marked with total=False are optional and may be populated
-    as the workflow progresses through different stages.
+    # Mock decorators for development
+    class MockFuture:
+        """Mock future object that wraps async function results."""
+
+        def __init__(self, coro):
+            """Initialize with coroutine."""
+            self._coro = coro
+
+        def result(self):
+            """Execute coroutine and return result (synchronous)."""
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            return loop.run_until_complete(self._coro)
+
+    def task(func):
+        """Mock task decorator that returns MockFuture."""
+
+        def wrapper(*args, **kwargs):
+            return MockFuture(func(*args, **kwargs))
+
+        return wrapper
+
+    def entrypoint(checkpointer=None):
+        """Mock entrypoint decorator."""
+
+        def decorator(func):
+            return func
+
+        return decorator
+
+    PostgresSaver = None  # type: ignore[assignment, misc]
+
+
+class AnalysisState(TypedDict):
+    """State schema for analysis workflow.
+
+    Defines the structure of data passed between workflow nodes.
+
     """
 
     analysis_id: str
@@ -38,144 +76,201 @@ class AnalysisState(TypedDict, total=False):
     raw_content: str
     extraction_metadata: dict
     content_embedding: list[float]
-    supervisor_decision: dict  # For future use
-    agent_findings: list[dict]  # For future use
-    aggregated_insights: dict  # For future use
-    final_markdown: str  # For future use
+    supervisor_decision: dict | None
+    agent_findings: list[dict]
+    aggregated_insights: dict | None
+    final_markdown: str | None
 
 
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
-if settings.DATABASE_URL and PostgresSaver is not None:
+checkpointer = None
+if LANGGRAPH_AVAILABLE and settings.DATABASE_URL:
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
-        logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
-    except (ValueError, ConnectionError) as e:
+    except (ValueError, ImportError, RuntimeError) as e:
         logger.warning(
-            "workflow_checkpointer_fallback",
+            "checkpointer_setup_failed",
             error=str(e),
-            fallback="MemorySaver",
+            message="Workflow will run without checkpointing",
         )
-        checkpointer = MemorySaver()
-else:
-    checkpointer = MemorySaver()
-    logger.info("workflow_checkpointer_initialized", type="MemorySaver")
 
 
 @task
 async def extract_content(url: str, analysis_id: str) -> dict:
-    """Extract content from URL using JinaReader.
+    """Extract content from URL using Jina Reader.
 
     Args:
-        url: The URL to extract content from
-        analysis_id: Unique identifier for this analysis
+        url: URL to extract content from
+        analysis_id: UUID of the analysis
 
     Returns:
-        Dictionary with 'raw_content' and 'extraction_metadata'
-
-    Raises:
-        Exception: If extraction fails
+        Dictionary with raw_content and extraction_metadata
 
     """
-    logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
+    # Emit SSE event: extraction started
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
+    )
+
     jina = JinaReader()
     try:
         extracted = await jina.extract_article(url)
+
+        # Emit SSE event: extraction complete
+        await emit_streaming_event(
+            "progress",
+            analysis_id=analysis_id,
+            stage="extraction",
+            status="complete",
+            word_count=extracted["word_count"],
+        )
+
         logger.info(
             "workflow_extraction_complete",
             analysis_id=analysis_id,
-            url=url,
-            word_count=extracted.get("word_count", 0),
+            word_count=extracted["word_count"],
         )
+
         return {
             "raw_content": extracted["content"],
             "extraction_metadata": extracted["metadata"],
         }
+    except Exception as e:
+        # Emit SSE event: extraction failed
+        await emit_streaming_event(
+            "error",
+            analysis_id=analysis_id,
+            stage="extraction",
+            status="failed",
+            error=str(e),
+            error_code="EXTRACTION_FAILED",
+        )
+        logger.error(
+            "workflow_extraction_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise
     finally:
         await jina.close()
 
 
 @task
-async def generate_embedding(content: str) -> list[float]:
-    """Generate embedding vector for content.
+async def generate_embedding(content: str, analysis_id: str) -> list[float]:
+    """Generate embedding for content.
 
     Args:
-        content: The text content to embed
+        content: Text content to generate embedding for
+        analysis_id: UUID of the analysis
 
     Returns:
         List of floats representing the embedding vector
 
-    Raises:
-        Exception: If embedding generation fails
-
     """
-    logger.info("workflow_embedding_started", content_length=len(content))
-    embedding_service = EmbeddingService()
-    embedding_result = await embedding_service.generate_embedding(content)
-    embedding: list[float] = list(embedding_result)
-    logger.info(
-        "workflow_embedding_complete",
-        embedding_dimensions=len(embedding),
+    # Emit SSE event: embedding generation started
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="embedding",
+        status="running",
     )
-    return embedding
+
+    try:
+        embedding = await embedding_service.generate_embedding(content)
+
+        # Emit SSE event: embedding complete
+        await emit_streaming_event(
+            "progress",
+            analysis_id=analysis_id,
+            stage="embedding",
+            status="complete",
+        )
+
+        logger.info(
+            "workflow_embedding_complete",
+            analysis_id=analysis_id,
+            embedding_dim=len(embedding),
+        )
+    except Exception as e:
+        # Emit SSE event: embedding failed
+        await emit_streaming_event(
+            "error",
+            analysis_id=analysis_id,
+            stage="embedding",
+            status="failed",
+            error=str(e),
+            error_code="EMBEDDING_FAILED",
+        )
+        logger.error(
+            "workflow_embedding_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise
+    else:
+        return embedding
 
 
+# Main workflow using Functional API
 @entrypoint(checkpointer=checkpointer)
-async def analysis_workflow(input_data: dict) -> dict:
-    """Run main analysis workflow using LangGraph v1.0 Functional API.
-
-    This workflow performs:
-    1. Extract content from URL using JinaReader
-    2. Generate embeddings for the extracted content
-    3. Return complete state with all fields populated
+async def analysis_workflow(
+    url: str,
+    analysis_id: str,
+    previous: dict | None = None,
+) -> dict:
+    """Execute main analysis workflow using LangGraph v1.0 Functional API.
 
     Args:
-        input_data: Dictionary with 'url' and 'analysis_id' keys
+        url: URL to analyze
+        analysis_id: UUID of the analysis
+        previous: Previous workflow state (for resumption)
 
     Returns:
-        Dictionary matching AnalysisState structure with:
-        - analysis_id
-        - url
-        - raw_content
-        - extraction_metadata
-        - content_embedding
+        Dictionary with analysis results
 
     """
-    url = input_data["url"]
-    analysis_id = input_data["analysis_id"]
-
     logger.info(
         "workflow_started",
         analysis_id=analysis_id,
         url=url,
     )
 
-    # Extract content (task returns awaitable)
-    extraction_result = await extract_content(url, analysis_id)
+    try:
+        # Extract content (returns future, can run in parallel)
+        extraction_future = extract_content(url, analysis_id)
 
-    # Generate embedding (task returns awaitable)
-    embedding = await generate_embedding(extraction_result["raw_content"])
+        # Block and get result
+        extraction_result = extraction_future.result()
 
-    # Determine content type from metadata
-    content_type = extraction_result["extraction_metadata"].get(
-        "content_type",
-        "article",
-    )
+        # Generate embedding
+        embedding = generate_embedding(
+            extraction_result["raw_content"], analysis_id
+        ).result()
 
-    result = {
-        "analysis_id": analysis_id,
-        "url": url,
-        "content_type": content_type,
-        "raw_content": extraction_result["raw_content"],
-        "extraction_metadata": extraction_result["extraction_metadata"],
-        "content_embedding": embedding,
-    }
+        result = {
+            "analysis_id": analysis_id,
+            "url": url,
+            "raw_content": extraction_result["raw_content"],
+            "extraction_metadata": extraction_result["extraction_metadata"],
+            "content_embedding": embedding,
+        }
 
-    logger.info(
-        "workflow_complete",
-        analysis_id=analysis_id,
-        url=url,
-        content_length=len(extraction_result["raw_content"]),
-        embedding_dimensions=len(embedding),
-    )
-
-    return result
+        logger.info(
+            "workflow_complete",
+            analysis_id=analysis_id,
+        )
+    except Exception as e:
+        logger.error(
+            "workflow_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise
+    else:
+        return result
