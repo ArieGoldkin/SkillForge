@@ -47,8 +47,8 @@ async def test_analysis_workflow_with_mocked_services(
     with (
         patch("app.workflows.analysis.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.analysis.EmbeddingService",
-            return_value=mock_embedding_service,
+            "app.workflows.analysis.embedding_service",
+            mock_embedding_service,
         ),
     ):
         result = await analysis_workflow.ainvoke(
