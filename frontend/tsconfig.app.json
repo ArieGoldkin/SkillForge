@@ -23,14 +23,14 @@
       "@store/*": ["./src/store/*"],
       "@types/*": ["./src/types/*"],
       "@lib/*": ["./src/lib/*"],
-      "@services/*": ["./src/services/*"]
+      "@services/*": ["./src/services/*"],
+      "@router/*": ["./src/router/*"]
     },
 
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
