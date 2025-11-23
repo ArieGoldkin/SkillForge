@@ -86,6 +86,16 @@ frontend/.env.production.local
 # Vite
 .vite/
 
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Husky (auto-generated)
+.husky/_
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
