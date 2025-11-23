@@ -38,6 +38,19 @@ class Settings(BaseSettings):
     )
     OLLAMA_MODEL: str = Field(default="llama3.1:8b", description="Ollama model name")
 
+    # Embedding Configuration (to be used in Task 1.5.2)
+    OLLAMA_EMBEDDING_MODEL: str = Field(
+        default="nomic-embed-text",
+        description="Ollama embedding model for vector generation",
+    )
+    EMBEDDING_DIMENSIONS: int = Field(
+        default=768,
+        description=(
+            "Expected embedding dimensions "
+            "(768 for nomic-embed-text, 1536 for OpenAI text-embedding-3-small)"
+        ),
+    )
+
     # Content Extraction (to be used in Task 1.4.2)
     JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
