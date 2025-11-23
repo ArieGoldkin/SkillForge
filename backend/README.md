@@ -155,6 +155,12 @@ poetry run pytest tests/test_main.py
 poetry run pytest -v
 ```
 
+**Note on Integration Tests:**
+- The Jina AI integration test (`test_extract_article_real_api`) requires `JINA_API_KEY` in your `.env` file
+- If the key is not set, the test is automatically skipped
+- If the key is set in `.env`, the test runs automatically (no need to export environment variables)
+- The test reads from `.env` via the Settings system (`app.core.config`)
+
 ### Code Quality Checks
 
 ```bash
@@ -196,6 +202,9 @@ Key variables:
 - `OLLAMA_EMBEDDING_MODEL`: Ollama embedding model (default: `nomic-embed-text`)
 - `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `768`)
 - `JINA_API_KEY`: Jina AI API key (optional for dev)
+  - **Add to `.env` file**: The integration test (`test_extract_article_real_api`) automatically reads this from `.env` via the Settings system
+  - **Get free key**: https://jina.ai
+  - **Test behavior**: If not set, the integration test is skipped; if set in `.env`, it runs automatically
 
 ### CORS Configuration
 

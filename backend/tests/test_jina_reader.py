@@ -1,11 +1,11 @@
 """Tests for Jina AI Reader service."""
 
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 
+from app.core.config import get_settings
 from app.services.extraction.content_type import detect_content_type
 from app.services.extraction.jina_reader import JinaReader, JinaReaderError
 
@@ -247,13 +247,14 @@ def test_detect_content_type_article() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(
-    not os.environ.get("JINA_API_KEY"),
-    reason="JINA_API_KEY not set - skipping integration test",
+    not get_settings().JINA_API_KEY,
+    reason="JINA_API_KEY not set in .env - skipping integration test",
 )
 async def test_extract_article_real_api() -> None:
-    """Integration test with real Jina API (requires API key)."""
+    """Integration test with real Jina API (requires API key in .env)."""
+    settings = get_settings()
     reader = JinaReader()
-    reader.api_key = os.environ.get("JINA_API_KEY")
+    reader.api_key = settings.JINA_API_KEY
 
     try:
         result = await reader.extract_article("https://react.dev")
