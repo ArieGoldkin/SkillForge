@@ -43,7 +43,7 @@ docs/issues/
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (8 total - 35 pts)
+### ✅ Completed Issues (9 total - 40 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -53,15 +53,10 @@ docs/issues/
 | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service Implementation | ✅ Complete | Yonatan | [📄 Docs](./005-embedding-service/README.md) | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) | Frontend Code Quality & Design Prototypes | ✅ Complete (Closed) | Arie | [📄 Docs](./030-frontend-code-quality/README.md) | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) |
-<<<<<<< HEAD
 | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | ✅ Complete | Arie | [📄 Docs](./034-app-router-integration/README.md) | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
-
-### 🔄 In Progress / Ready (5 total - 18 pts)
-=======
 | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) | Create Basic LangGraph Workflow | ✅ Complete | Yonatan | [📄 Docs](./039-langgraph-workflow/README.md) | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) |
 
-### 🔄 In Progress / Ready (5 total - 16 pts)
->>>>>>> 0035cd6 (feat: implement LangGraph workflow with EmbeddingService integration (Issue #39))
+### 🔄 In Progress / Ready (4 total - 13 pts)
 
 #### Backend (Yonatan)
 
