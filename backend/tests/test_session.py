@@ -36,7 +36,7 @@ def test_get_async_database_url_raises_without_database_url(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_async_session_local_creates_session():
+async def test_async_session_local_creates_session(requires_database, reset_engine_connections):
     """Test AsyncSessionLocal creates valid async sessions."""
     async with AsyncSessionLocal() as session:
         assert isinstance(session, AsyncSession)
@@ -46,7 +46,7 @@ async def test_async_session_local_creates_session():
 
 
 @pytest.mark.asyncio
-async def test_get_db_dependency_yields_session():
+async def test_get_db_dependency_yields_session(requires_database, reset_engine_connections):
     """Test get_db dependency yields async session."""
     async for session in get_db():
         assert isinstance(session, AsyncSession)
@@ -57,16 +57,24 @@ async def test_get_db_dependency_yields_session():
 
 
 @pytest.mark.asyncio
-async def test_get_db_commits_on_success():
+async def test_get_db_commits_on_success(requires_database, reset_engine_connections):
     """Test get_db commits session on successful operation."""
     from app.models import Analysis
 
-    async for session in get_db():
+    # Use get_db generator properly - consume it fully so commit happens
+    gen = get_db()
+    session = await gen.__anext__()
+    try:
         # Create analysis
         analysis = Analysis(url="https://test.com", content_type="article", status="pending")
         session.add(analysis)
-        # Should commit after yield
-        break
+        # Generator will commit when we exit the try block normally
+    finally:
+        # Close generator - this triggers commit in get_db's try block
+        try:
+            await gen.__anext__()
+        except StopAsyncIteration:
+            pass  # Generator exhausted, commit should have happened
 
     # Verify analysis was committed (session is closed, so check in new session)
     async with AsyncSessionLocal() as session:
@@ -74,7 +82,7 @@ async def test_get_db_commits_on_success():
             text("SELECT COUNT(*) FROM analyses WHERE url = :url"), {"url": "https://test.com"}
         )
         count = result.scalar()
-        assert count > 0
+        assert count > 0, f"Expected analysis to be committed, but count is {count}"
 
         # Cleanup
         await session.execute(
@@ -84,7 +92,7 @@ async def test_get_db_commits_on_success():
 
 
 @pytest.mark.asyncio
-async def test_get_db_rolls_back_on_exception():
+async def test_get_db_rolls_back_on_exception(requires_database, reset_engine_connections):
     """Test get_db rolls back session on exception."""
     from app.models import Analysis
 
@@ -123,7 +131,7 @@ async def test_get_db_closes_session_in_finally():
 
 
 @pytest.mark.asyncio
-async def test_engine_connection_pool():
+async def test_engine_connection_pool(requires_database, reset_engine_connections):
     """Test async engine connection pool works correctly."""
     async with engine.begin() as conn:
         result = await conn.execute(text("SELECT version()"))
@@ -141,7 +149,7 @@ async def test_engine_echo_in_development():
 
 
 @pytest.mark.asyncio
-async def test_multiple_sessions_work_independently():
+async def test_multiple_sessions_work_independently(requires_database, reset_engine_connections):
     """Test multiple sessions work independently."""
     async with AsyncSessionLocal() as session1, AsyncSessionLocal() as session2:
         # Both sessions should work independently
@@ -153,7 +161,7 @@ async def test_multiple_sessions_work_independently():
 
 
 @pytest.mark.asyncio
-async def test_session_expire_on_commit_false():
+async def test_session_expire_on_commit_false(requires_database, reset_engine_connections):
     """Test session expire_on_commit is False (objects don't expire after commit)."""
     from app.models import Analysis
 

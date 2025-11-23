@@ -76,7 +76,7 @@ def test_setup_logging_invalid_log_level(reset_logging, monkeypatch):
     original_settings = logging_module.settings
     logging_module.settings = settings
     try:
-        with pytest.raises(ValueError, match="Invalid LOG_LEVEL"):
+        with pytest.raises(TypeError, match="Invalid LOG_LEVEL"):
             setup_logging()
     finally:
         logging_module.settings = original_settings

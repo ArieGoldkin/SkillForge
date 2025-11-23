@@ -42,10 +42,38 @@ def auto_clear_config_cache(clear_config_cache):
 
 
 @pytest.fixture
-async def db_session() -> AsyncSession:
+def requires_database():
+    """Skip test if DATABASE_URL is not configured."""
+    from app.core.config import settings
+
+    if not settings.DATABASE_URL:
+        pytest.skip("DATABASE_URL not configured")
+
+
+@pytest.fixture
+async def reset_engine_connections():
+    """Dispose engine connections before test to avoid event loop conflicts.
+
+    This ensures engine connections are created in the test's event loop,
+    preventing 'attached to different loop' errors. Use this fixture for
+    tests that use database connections and have event loop issues.
+    """
+    from app.db.session import engine
+
+    # Dispose existing connections before test
+    await engine.dispose()
+    yield
+    # Dispose after test to clean up
+    await engine.dispose()
+
+
+@pytest.fixture
+async def db_session(requires_database, reset_engine_connections) -> AsyncSession:
     """Create a test database session with automatic rollback.
 
     Yields an async session and rolls back all changes after test.
+    Requires DATABASE_URL to be configured.
+    reset_engine_connections ensures connections are in the test's event loop.
     """
     async with AsyncSessionLocal() as session:
         # Use nested transaction for automatic rollback
