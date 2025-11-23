@@ -2,4 +2,4 @@
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
 
-__all__ = ["EmbeddingService", "EmbeddingError"]
+__all__ = ["EmbeddingError", "EmbeddingService"]

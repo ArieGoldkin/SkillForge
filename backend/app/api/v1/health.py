@@ -50,6 +50,7 @@ async def check_ollama() -> dict[str, str] | None:
 
     Returns:
         Dictionary with Ollama status, or None if Ollama is not configured.
+
     """
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:

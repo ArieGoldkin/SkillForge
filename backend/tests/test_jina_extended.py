@@ -30,10 +30,10 @@ async def test_multiple_urls() -> None:
 
     for url, expected_type in test_urls:
         detected_type = detect_content_type(url)
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * 70}")
         print(f"Testing: {url}")
         print(f"Detected type: {detected_type} (expected: {expected_type})")
-        print(f"{'='*70}")
+        print(f"{'=' * 70}")
 
         try:
             result = await reader.extract_article(url)
@@ -42,7 +42,7 @@ async def test_multiple_urls() -> None:
             assert result["content"], f"Content is empty for {url}"
             assert result["word_count"] > 0, f"Word count is 0 for {url}"
 
-            print(f"✓ Success!")
+            print("✓ Success!")
             print(f"  Title: {result['title'][:100]}")
             print(f"  Content length: {len(result['content']):,} characters")
             print(f"  Word count: {result['word_count']:,} words")
@@ -64,9 +64,9 @@ async def test_multiple_urls() -> None:
 
     await reader.close()
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"Results: {sum(results)}/{len(results)} URLs extracted successfully")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     return all(results)
 
@@ -154,7 +154,7 @@ async def test_metadata_structure() -> None:
         assert metadata["extractor"] == "jina_reader", "Wrong extractor name"
         assert metadata["source_url"] == test_url, "Wrong source URL"
 
-        print(f"✓ Metadata structure correct")
+        print("✓ Metadata structure correct")
         print(f"  Extractor: {metadata['extractor']}")
         print(f"  Source URL: {metadata['source_url']}")
 

@@ -90,7 +90,7 @@ async def test_jina_reader_basic() -> None:
         assert len(result["content"]) > 0, "Content is empty"
         assert result["word_count"] > 0, "Word count is 0"
 
-        print(f"✓ Extraction successful!")
+        print("✓ Extraction successful!")
         print(f"  Title: {result['title'][:80]}")
         print(f"  Content length: {len(result['content'])} characters")
         print(f"  Word count: {result['word_count']} words")
@@ -133,7 +133,7 @@ async def test_jina_reader_error_handling() -> None:
 
     try:
         result = await reader.extract_article(invalid_url)
-        print(f"⚠ Unexpected success with invalid URL")
+        print("⚠ Unexpected success with invalid URL")
         print(f"  Result: {result.get('title', 'N/A')[:50]}")
         # This might still work if Jina can resolve it somehow
     except JinaReaderError as e:
@@ -169,7 +169,7 @@ async def test_jina_reader_without_api_key() -> None:
         assert "title" in result, "Missing 'title' in result"
         assert "content" in result, "Missing 'content' in result"
 
-        print(f"✓ Extraction successful without API key!")
+        print("✓ Extraction successful without API key!")
         print(f"  Title: {result['title'][:80]}")
         print(f"  Content length: {len(result['content'])} characters")
 
@@ -232,7 +232,7 @@ async def run_all_tests() -> None:
             "Error Handling",
             "Without API Key",
         ]
-        print(f"  [{i}] {test_names[i-1]:<30} {status}")
+        print(f"  [{i}] {test_names[i - 1]:<30} {status}")
 
     print(f"\nTotal: {passed}/{total} tests passed")
 

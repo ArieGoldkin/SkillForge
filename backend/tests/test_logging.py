@@ -72,6 +72,7 @@ def test_setup_logging_invalid_log_level(reset_logging, monkeypatch):
     settings = Settings(LOG_LEVEL="INVALID_LEVEL")
     # Monkeypatch settings to use invalid level
     import app.core.logging as logging_module
+
     original_settings = logging_module.settings
     logging_module.settings = settings
     try:

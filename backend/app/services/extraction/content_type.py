@@ -2,14 +2,14 @@
 
 
 def detect_content_type(url: str) -> str:
-    """
-    Detect content type from URL patterns.
+    """Detect content type from URL patterns.
 
     Args:
         url: The URL to analyze
 
     Returns:
         Content type string: 'article', 'video', or 'repo'
+
     """
     url_lower = url.lower()
 

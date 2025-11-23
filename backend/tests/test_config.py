@@ -52,7 +52,9 @@ def test_settings_production_validation_with_database_url(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
     # Clear cache to pick up new env vars
     get_settings.cache_clear()
-    settings = Settings(ENVIRONMENT="production", DATABASE_URL="postgresql://user:pass@localhost/db")
+    settings = Settings(
+        ENVIRONMENT="production", DATABASE_URL="postgresql://user:pass@localhost/db"
+    )
     assert settings.ENVIRONMENT == "production"
     assert settings.DATABASE_URL == "postgresql://user:pass@localhost/db"
     # Restore cache

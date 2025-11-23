@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
 from app.services.extraction.content_type import detect_content_type
+from app.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
 @pytest.fixture
@@ -23,7 +23,9 @@ def jina_reader() -> JinaReader:
 
 
 @pytest.mark.asyncio
-async def test_extract_article_success(jina_reader: JinaReader, sample_markdown_content: str) -> None:
+async def test_extract_article_success(
+    jina_reader: JinaReader, sample_markdown_content: str
+) -> None:
     """Test successful article extraction."""
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -97,7 +99,9 @@ async def test_extract_article_empty_content(jina_reader: JinaReader) -> None:
 
 
 @pytest.mark.asyncio
-async def test_extract_article_with_api_key(jina_reader: JinaReader, sample_markdown_content: str) -> None:
+async def test_extract_article_with_api_key(
+    jina_reader: JinaReader, sample_markdown_content: str
+) -> None:
     """Test extraction includes Authorization header when API key is present."""
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -119,7 +123,9 @@ async def test_extract_article_with_api_key(jina_reader: JinaReader, sample_mark
 
 
 @pytest.mark.asyncio
-async def test_extract_article_without_api_key(jina_reader: JinaReader, sample_markdown_content: str) -> None:
+async def test_extract_article_without_api_key(
+    jina_reader: JinaReader, sample_markdown_content: str
+) -> None:
     """Test extraction works without API key."""
     mock_response = MagicMock()
     mock_response.status_code = 200

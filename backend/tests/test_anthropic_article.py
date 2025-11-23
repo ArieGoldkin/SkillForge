@@ -42,7 +42,7 @@ async def test_anthropic_article() -> None:
         print(f"\nTitle: {result['title']}")
         print(f"Content length: {len(result['content']):,} characters")
         print(f"Word count: {result['word_count']:,} words")
-        print(f"\nMetadata:")
+        print("\nMetadata:")
         print(f"  Extractor: {result['metadata']['extractor']}")
         print(f"  Source URL: {result['metadata']['source_url']}")
 
@@ -50,7 +50,7 @@ async def test_anthropic_article() -> None:
         print("\n" + "=" * 70)
         print("CONTENT PREVIEW (first 1000 characters)")
         print("=" * 70)
-        content_preview = result['content'][:1000]
+        content_preview = result["content"][:1000]
         print(content_preview)
         print("...")
 
@@ -59,8 +59,8 @@ async def test_anthropic_article() -> None:
         print("CONTENT ANALYSIS")
         print("=" * 70)
 
-        content = result['content']
-        lines = content.split('\n')
+        content = result["content"]
+        lines = content.split("\n")
 
         print(f"Total lines: {len(lines)}")
         print(f"Non-empty lines: {len([l for l in lines if l.strip()])}")
@@ -82,9 +82,9 @@ async def test_anthropic_article() -> None:
             print(f"  {status} '{term}': {count} occurrence(s)")
 
         # Check for markdown structure
-        has_headers = any(line.startswith('#') for line in lines[:20])
-        has_links = '[' in content and '](' in content
-        has_bold = '**' in content or '__' in content
+        has_headers = any(line.startswith("#") for line in lines[:20])
+        has_links = "[" in content and "](" in content
+        has_bold = "**" in content or "__" in content
 
         print("\nMarkdown structure:")
         print(f"  Headers (#): {'✓' if has_headers else '✗'}")
@@ -97,7 +97,7 @@ async def test_anthropic_article() -> None:
         print("=" * 70)
         for i, line in enumerate(lines[:30], 1):
             if line.strip():  # Only show non-empty lines
-                preview = line[:100].replace('\n', ' ')
+                preview = line[:100].replace("\n", " ")
                 print(f"{i:2d}. {preview}")
 
         print("\n" + "=" * 70)
@@ -112,6 +112,7 @@ async def test_anthropic_article() -> None:
     except Exception as e:
         print(f"\n✗ Unexpected error: {type(e).__name__}: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:
