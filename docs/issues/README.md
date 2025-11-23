@@ -14,10 +14,15 @@ This directory contains documentation for each GitHub issue, organized by issue 
 ```
 docs/issues/
 ├── README.md                    # This file (issues index)
+├── 001-fastapi-structure/
+│   ├── README.md               # Issue #1 complete doc
+│   └── ISSUE_1_VALIDATION_COMPLETE.md
 ├── 002-environment-config/
-│   └── README.md               # Issue #2 complete doc
+│   ├── README.md               # Issue #2 complete doc
+│   └── [verification docs]
 └── 003-database-schema/
-    └── README.md               # Issue #3 complete doc
+    ├── README.md               # Issue #3 complete doc
+    └── ISSUE_3_VALIDATION_COMPLETE.md
 ```
 
 ---
@@ -26,6 +31,7 @@ docs/issues/
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
+| [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) | FastAPI Project Structure | ✅ Complete | Yonatan | [📄 Docs](./001-fastapi-structure/README.md) | [#1](https://github.com/ArieGoldkin/SkillForge/issues/1) |
 | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) | Environment Config & Logging | ✅ Complete | Yonatan | [📄 Docs](./002-environment-config/README.md) | [#2](https://github.com/ArieGoldkin/SkillForge/issues/2) |
 | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) | Database Schema & Migrations | ✅ Complete | Yonatan | [📄 Docs](./003-database-schema/README.md) | [#3](https://github.com/ArieGoldkin/SkillForge/issues/3) |
 | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | 🔄 Ready | Yonatan | TBD | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
