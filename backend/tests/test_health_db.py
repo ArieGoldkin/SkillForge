@@ -94,7 +94,9 @@ async def test_health_endpoint_includes_database_status():
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_database_status_connected(requires_database, reset_engine_connections):
+async def test_health_endpoint_database_status_connected(
+    requires_database, reset_engine_connections
+):
     """Test health check endpoint shows database as connected when available."""
     import httpx
 
