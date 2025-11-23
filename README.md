@@ -4,9 +4,9 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.118-009688.svg)](https://fastapi.tiangolo.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.6.7-orange.svg)](https://github.com/langchain-ai/langgraph)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776ab.svg)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.121-009688.svg)](https://fastapi.tiangolo.com)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.0-orange.svg)](https://github.com/langchain-ai/langgraph)
+[![Python](https://img.shields.io/badge/Python-3.13-3776ab.svg)](https://python.org)
 
 ---
 
@@ -75,11 +75,11 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Framework:** FastAPI 0.118.2
-- **AI Orchestration:** LangGraph 0.6.7 + LangChain 0.3.27
-- **Database:** PostgreSQL 17 + PGVector 0.3.5
+- **Framework:** FastAPI 0.121.2+
+- **AI Orchestration:** LangGraph 1.0 + LangChain 1.0 (Sprint 2)
+- **Database:** PostgreSQL 17 + PGVector 0.4.1
 - **LLM:** Ollama (dev), OpenAI/Claude (production)
-- **Language:** Python 3.11+
+- **Language:** Python 3.13
 
 ### Frontend
 - **Framework:** React 19.0.0
@@ -100,7 +100,7 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 ### Prerequisites
 
 - **Docker Desktop** (v24+)
-- **Python** 3.11+
+- **Python** 3.13
 - **Node.js** 20+
 - **Git**
 
@@ -316,4 +316,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using Claude Code**
 
-*Last Updated: November 20, 2025*
+*Last Updated: November 21, 2025*

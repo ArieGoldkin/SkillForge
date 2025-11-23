@@ -34,25 +34,21 @@
 
 ## 🚨 Current Issues
 
-### GitHub Actions - All Failing ❌
+### GitHub Actions Workflow Fixes ✅ (Fixed)
 
-**Problem:** Docker build fails because `alembic/` directory is empty
-```
-ERROR: "/alembic": not found
-```
+**Status:** Workflow configuration issues resolved
 
-**Root Cause:** 
-- `backend/alembic/` directory exists but is empty
-- Dockerfile tries to `COPY alembic/ ./alembic/` but nothing to copy
-- Alembic migrations haven't been initialized yet
+**Fixes Applied:**
+- ✅ Removed `cache: 'poetry'` from all backend workflows (poetry cache requires poetry to be installed first)
+- ✅ Disabled frontend CI workflow (frontend directory doesn't exist yet)
+- ✅ Disabled E2E tests workflow (requires both backend and frontend)
+- ✅ Made security scan frontend job conditional (skips when frontend doesn't exist)
 
-**Impact:**
-- ❌ Backend CI failing
-- ❌ Security scans failing  
-- ❌ E2E tests failing
-- ❌ Frontend CI failing (no frontend yet)
+**Remaining Issue:**
+- ⚠️ Backend CI may still fail until Alembic is initialized (Issue #3)
+- ⚠️ Docker build may fail if `alembic/versions/` is empty (expected until migrations are created)
 
-**Fix Required:** Initialize Alembic (part of Issue #3)
+**Next Step:** Initialize Alembic and create first migration (part of Issue #3)
 
 ---
 
@@ -148,9 +144,12 @@ ERROR: "/alembic": not found
 
 **GitHub Actions Status:**
 - ✅ 8 workflows configured
-- ❌ All currently failing (alembic issue)
-- ✅ Security scan configured (weekly)
+- ✅ Workflow configuration issues fixed (poetry cache, frontend/E2E disabled)
+- ⚠️ Backend CI may fail until Alembic migrations exist (expected)
+- ✅ Security scan configured (weekly, frontend job conditional)
 - ✅ Dependabot active
+- ✅ Frontend workflows disabled until frontend exists
+- ✅ E2E tests disabled until both backend and frontend ready
 
 **Security:**
 - ✅ `pip-audit` configured for backend
@@ -178,10 +177,11 @@ ERROR: "/alembic": not found
     ├─ GitHub Project Docs
     └─ Branch Alignment
 
-    ❌ BLOCKING ISSUES              ⚠️  WARNINGS
-    ├─ CI/CD Failing                ├─ 13 Dependabot PRs (wrong base)
-    │  └─ alembic/ empty            └─ Workflows need alembic
-    └─ Need Alembic init
+    ✅ RECENTLY FIXED                ⚠️  WARNINGS
+    ├─ Workflow config issues       ├─ 13 Dependabot PRs (wrong base)
+    │  └─ Poetry cache fixed        └─ Alembic init needed (Issue #3)
+    ├─ Frontend workflows disabled
+    └─ E2E tests disabled
 
     📋 READY TO START (Sprint 1)
     ├─ Issue #2: Config & Logging [3 pts] ⚡
@@ -231,12 +231,11 @@ gh pr edit <PR_NUMBER> --base dev
 **Velocity:** 3/21 = 14% complete
 
 **Blockers:**
-- CI/CD failing (blocks confidence in merges)
-- Need Alembic init (Issue #3)
+- Need Alembic init (Issue #3) - will unblock backend CI once migrations exist
 
 **Next Milestone:** Complete Issues #2 and #3 (11 pts) to unblock rest of sprint
 
 ---
 
-**Last Updated:** November 21, 2025  
+**Last Updated:** November 21, 2025 (Workflow fixes applied)  
 **Maintained By:** Yonatan & Arie
