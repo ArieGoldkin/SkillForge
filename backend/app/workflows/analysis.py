@@ -1,19 +1,59 @@
 """LangGraph workflow for content analysis.
 
-This module implements the initial LangGraph workflow using the Functional API.
-Flow: extract → embed → done (no sub-agents yet).
-"""
+This module implements the analysis workflow using LangGraph v1.0 Functional API.
+The workflow orchestrates content extraction and embedding generation for URLs.
 
-from typing import TypedDict
+Architecture:
+    The workflow uses LangGraph's @entrypoint and @task decorators to create
+    a functional workflow. Tasks are executed sequentially with automatic
+    checkpointing to PostgreSQL (or MemorySaver in development).
+
+Workflow Flow:
+    1. Extract Content: Uses JinaReader to extract content from URL
+    2. Generate Embedding: Uses EmbeddingService to create vector embeddings
+    3. Return Complete State: Returns AnalysisState with all fields populated
+
+Checkpointing:
+    - Production: Uses PostgresSaver for persistent state across restarts
+    - Development: Falls back to MemorySaver if database unavailable
+    - Thread-based isolation: Each analysis_id uses a unique thread_id
+
+SSE Events:
+    The workflow emits Server-Sent Events (SSE) at each stage:
+    - progress events: Stage status updates (running, complete)
+    - error events: Failure notifications with error details
+    - complete events: Final workflow completion
+
+State Management:
+    AnalysisState is a TypedDict that tracks workflow progress. Fields are
+    populated incrementally as the workflow progresses through stages.
+
+Example:
+    ```python
+    from app.workflows.analysis import analysis_workflow
+
+    result = await analysis_workflow.ainvoke(
+        {
+            "url": "https://example.com/article",
+            "analysis_id": "unique-analysis-id",
+        },
+        config={"configurable": {"thread_id": "unique-analysis-id"}},
+    )
+    ```
+
+Future Enhancements:
+    - Sub-agents for specialized analysis (tech comparison, security audit, etc.)
+    - Supervisor pattern for agent coordination
+    - Artifact generation (markdown guides, code examples)
+"""
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.func import entrypoint, task
 
 from app.core.config import settings
+from app.core.constants import CONTENT_TYPE_ARTICLE
 from app.core.logging import get_logger
-from app.services.embeddings import EmbeddingService
-from app.services.extraction.jina_reader import JinaReader
-from app.services.sse_helpers import emit_streaming_event
+from app.workflows.tasks import extract_content, generate_embedding
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
@@ -24,26 +64,6 @@ except ImportError:
     PostgresSaver = None  # type: ignore[assignment, misc]
 
 logger = get_logger(__name__)
-
-
-class AnalysisState(TypedDict, total=False):
-    """State schema for the analysis workflow.
-
-    Fields marked with total=False are optional and may be populated
-    as the workflow progresses through different stages.
-    """
-
-    analysis_id: str
-    url: str
-    content_type: str
-    raw_content: str
-    extraction_metadata: dict
-    content_embedding: list[float]
-    supervisor_decision: dict  # For future use
-    agent_findings: list[dict]  # For future use
-    aggregated_insights: dict  # For future use
-    final_markdown: str  # For future use
-
 
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
 if settings.DATABASE_URL and PostgresSaver is not None:
@@ -62,136 +82,10 @@ else:
     logger.info("workflow_checkpointer_initialized", type="MemorySaver")
 
 
-@task
-async def extract_content(url: str, analysis_id: str) -> dict:
-    """Extract content from URL using JinaReader.
-
-    Args:
-        url: The URL to extract content from
-        analysis_id: Unique identifier for this analysis
-
-    Returns:
-        Dictionary with 'raw_content' and 'extraction_metadata'
-
-    Raises:
-        Exception: If extraction fails
-
-    """
-    # Emit SSE event: extraction started
-    await emit_streaming_event(
-        "progress",
-        analysis_id=analysis_id,
-        stage="extraction",
-        status="running",
-    )
-
-    logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
-    jina = JinaReader()
-    try:
-        extracted = await jina.extract_article(url)
-
-        # Emit SSE event: extraction complete
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage="extraction",
-            status="complete",
-            word_count=extracted.get("word_count", 0),
-        )
-
-        logger.info(
-            "workflow_extraction_complete",
-            analysis_id=analysis_id,
-            url=url,
-            word_count=extracted.get("word_count", 0),
-        )
-        return {
-            "raw_content": extracted["content"],
-            "extraction_metadata": extracted["metadata"],
-        }
-    except Exception as e:
-        # Emit SSE event: extraction failed
-        await emit_streaming_event(
-            "error",
-            analysis_id=analysis_id,
-            stage="extraction",
-            status="failed",
-            error=str(e),
-            error_code="EXTRACTION_FAILED",
-        )
-        logger.error(
-            "workflow_extraction_failed",
-            analysis_id=analysis_id,
-            error=str(e),
-            exc_info=True,
-        )
-        raise
-    finally:
-        await jina.close()
-
-
-@task
-async def generate_embedding(content: str, analysis_id: str) -> list[float]:
-    """Generate embedding vector for content.
-
-    Args:
-        content: The text content to embed
-        analysis_id: Unique identifier for this analysis
-
-    Returns:
-        List of floats representing the embedding vector
-
-    Raises:
-        Exception: If embedding generation fails
-
-    """
-    # Emit SSE event: embedding generation started
-    await emit_streaming_event(
-        "progress",
-        analysis_id=analysis_id,
-        stage="embedding",
-        status="running",
-    )
-
-    logger.info("workflow_embedding_started", content_length=len(content))
-    embedding_service = EmbeddingService()
-    try:
-        embedding_result = await embedding_service.generate_embedding(content)
-        embedding: list[float] = list(embedding_result)
-
-        # Emit SSE event: embedding complete
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage="embedding",
-            status="complete",
-        )
-
-        logger.info(
-            "workflow_embedding_complete",
-            embedding_dimensions=len(embedding),
-        )
-    except Exception as e:
-        # Emit SSE event: embedding failed
-        await emit_streaming_event(
-            "error",
-            analysis_id=analysis_id,
-            stage="embedding",
-            status="failed",
-            error=str(e),
-            error_code="EMBEDDING_FAILED",
-        )
-        logger.error(
-            "workflow_embedding_failed",
-            analysis_id=analysis_id,
-            error=str(e),
-            exc_info=True,
-        )
-        raise
-    finally:
-        await embedding_service.close()
-
-    return embedding
+# Apply @task decorator to task functions for LangGraph
+# Note: task() can be used as a decorator factory or called directly
+extract_content_task = task(extract_content)
+generate_embedding_task = task(generate_embedding)
 
 
 @entrypoint(checkpointer=checkpointer)
@@ -226,17 +120,15 @@ async def analysis_workflow(input_data: dict) -> dict:
 
     try:
         # Extract content (task returns awaitable)
-        extraction_result = await extract_content(url, analysis_id)
+        extraction_result = await extract_content_task(url, analysis_id)
 
         # Generate embedding (task returns awaitable)
-        embedding = await generate_embedding(
-            extraction_result["raw_content"], analysis_id
-        )
+        embedding = await generate_embedding_task(extraction_result["raw_content"], analysis_id)
 
         # Determine content type from metadata
         content_type = extraction_result["extraction_metadata"].get(
             "content_type",
-            "article",
+            CONTENT_TYPE_ARTICLE,
         )
 
         result = {
