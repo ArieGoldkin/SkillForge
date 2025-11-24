@@ -14,22 +14,31 @@ Architecture:
 - Returns normalized vectors for pgvector cosine similarity
 """
 
-import math
+import os
 from typing import Any
 
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
+from app.core.constants import (
+    EMBEDDING_TIMEOUT,
+    HTTP_ERROR_THRESHOLD,
+    MAX_ERROR_MESSAGE_LENGTH_LONG,
+    MAX_RETRY_ATTEMPTS,
+    MAX_TEXT_LENGTH,
+    RETRY_MAX_WAIT_EMBEDDING,
+    RETRY_MAX_WAIT_EMBEDDING_TEST,
+    RETRY_MIN_WAIT_EMBEDDING,
+    RETRY_MIN_WAIT_EMBEDDING_TEST,
+    RETRY_MULTIPLIER_EMBEDDING,
+)
+from app.core.exceptions import EmbeddingError
 from app.core.logging import get_logger
+from app.core.types import EmbeddingVector
+from app.services.embeddings_utils import normalize_vector
 
 logger = get_logger(__name__)
-
-
-class EmbeddingError(Exception):
-    """Custom exception for embedding errors."""
-
-    pass
 
 
 class EmbeddingService:
@@ -53,7 +62,7 @@ class EmbeddingService:
         self.ollama_url = settings.OLLAMA_BASE_URL
         self.model = settings.OLLAMA_EMBEDDING_MODEL
         self.expected_dimensions = settings.EMBEDDING_DIMENSIONS
-        self.client = httpx.AsyncClient(timeout=120.0)
+        self.client = httpx.AsyncClient(timeout=EMBEDDING_TIMEOUT)
         self.embeddings_endpoint = f"{self.ollama_url}/api/embeddings"
 
         logger.info(
@@ -64,11 +73,23 @@ class EmbeddingService:
         )
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=2, min=2, max=16),
+        stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
+        wait=wait_exponential(
+            multiplier=RETRY_MULTIPLIER_EMBEDDING,
+            min=(
+                RETRY_MIN_WAIT_EMBEDDING_TEST
+                if os.environ.get("PYTEST_CURRENT_TEST")
+                else RETRY_MIN_WAIT_EMBEDDING
+            ),
+            max=(
+                RETRY_MAX_WAIT_EMBEDDING_TEST
+                if os.environ.get("PYTEST_CURRENT_TEST")
+                else RETRY_MAX_WAIT_EMBEDDING
+            ),
+        ),
         reraise=True,
     )
-    async def generate_embedding(self, text: str, normalize: bool = True) -> list[float]:
+    async def generate_embedding(self, text: str, normalize: bool = True) -> EmbeddingVector:
         """Generate embedding vector for text using Ollama.
 
         Args:
@@ -88,14 +109,13 @@ class EmbeddingService:
             raise ValueError(msg)
 
         # Truncate text if too long (Ollama has limits, typically 8192 tokens)
-        max_length = 8000
         original_length = len(text)
-        if len(text) > max_length:
-            text = text[:max_length]
+        if len(text) > MAX_TEXT_LENGTH:
+            text = text[:MAX_TEXT_LENGTH]
             logger.warning(
                 "embedding_text_truncated",
                 original_length=original_length,
-                truncated_length=max_length,
+                truncated_length=MAX_TEXT_LENGTH,
             )
 
         try:
@@ -106,9 +126,10 @@ class EmbeddingService:
             )
 
             # Handle HTTP errors
-            http_error_threshold = 400
-            if response.status_code >= http_error_threshold:
-                error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
+            if response.status_code >= HTTP_ERROR_THRESHOLD:
+                error_msg = (
+                    f"HTTP {response.status_code}: {response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]}"
+                )
                 logger.error(
                     "embedding_http_error",
                     status_code=response.status_code,
@@ -122,7 +143,10 @@ class EmbeddingService:
 
             if not embedding:
                 error_msg = "No 'embedding' field in API response"
-                logger.error("embedding_missing_field", response_data=str(data)[:200])
+                logger.error(
+                    "embedding_missing_field",
+                    response_data=str(data)[:MAX_ERROR_MESSAGE_LENGTH_LONG],
+                )
                 raise EmbeddingError(error_msg)  # noqa: TRY301
 
             if not isinstance(embedding, list):
@@ -148,7 +172,7 @@ class EmbeddingService:
 
             # Normalize if requested (L2 norm for cosine similarity)
             if normalize:
-                embedding = self._normalize_vector(embedding)
+                embedding = normalize_vector(embedding)
 
             logger.info(
                 "embedding_generated",
@@ -175,32 +199,6 @@ class EmbeddingService:
             raise EmbeddingError(error_msg) from e
         else:
             return embedding
-
-    def _normalize_vector(self, vector: list[float]) -> list[float]:
-        """Apply L2 normalization to vector.
-
-        L2 normalization scales the vector to unit length, which is optimal
-        for cosine similarity search with pgvector.
-
-        Args:
-            vector: Input vector
-
-        Returns:
-            Normalized vector (L2 norm = 1.0)
-
-        """
-        # Calculate L2 norm
-        norm = math.sqrt(sum(x * x for x in vector))
-
-        # Avoid division by zero
-        if norm == 0.0:
-            logger.warning("embedding_zero_norm_vector")
-            return vector
-
-        # Normalize
-        normalized = [x / norm for x in vector]
-
-        return normalized
 
     async def close(self) -> None:
         """Close the HTTP client."""
