@@ -285,9 +285,51 @@ FastAPI automatically generates OpenAPI documentation:
 - `tests/conftest.py`: Pytest fixtures and configuration
 - `tests/test_main.py`: Endpoint integration tests
 - `tests/test_config.py`: Configuration unit tests
+- `pytest.ini`: Pytest configuration (timeouts, markers, asyncio mode)
+
+### Test Configuration
+
+The project uses `pytest-timeout` to prevent tests from hanging indefinitely:
+
+- **Default timeout**: 5 minutes (300 seconds) for all tests
+- **Test-level timeouts**: Use `@pytest.mark.timeout(seconds)` to override
+- **Timeout method**: Thread-based (works with async tests)
+- **Asyncio mode**: Auto (allows mixing sync and async fixtures/tests)
+
+### Test Markers
+
+Tests are categorized with markers for selective execution:
+
+- `@pytest.mark.slow`: Slow-running tests (deselect with `-m "not slow"`)
+- `@pytest.mark.integration`: Integration tests requiring real services
+- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.timeout(N)`: Override default timeout for specific test
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=app --cov-report=html
+
+# Run specific test file
+poetry run pytest tests/test_main.py
+
+# Run only fast tests (exclude slow)
+poetry run pytest -m "not slow"
+
+# Run with verbose output
+poetry run pytest -v
+
+# Run with specific timeout
+poetry run pytest --timeout=60
+```
 
 ### Writing Tests
 
+**Sync Test Example:**
 ```python
 from fastapi.testclient import TestClient
 from app.main import app
@@ -300,6 +342,39 @@ def test_health_check(client):
     data = response.json()
     assert data["status"] == "healthy"
 ```
+
+**Async Test Example:**
+```python
+import pytest
+import pytest_asyncio
+
+@pytest.mark.asyncio
+async def test_async_operation():
+    result = await some_async_function()
+    assert result is not None
+```
+
+**Async Fixture Example:**
+```python
+import pytest_asyncio
+
+@pytest_asyncio.fixture
+async def async_resource():
+    resource = await create_resource()
+    try:
+        yield resource
+    finally:
+        await cleanup_resource(resource)
+```
+
+### Test Best Practices
+
+1. **Use `@pytest_asyncio.fixture` for async fixtures** (not `@pytest.fixture`)
+2. **Add timeouts to slow/integration tests** with `@pytest.mark.timeout(seconds)`
+3. **Clean up resources** in `finally` blocks or fixture teardown
+4. **Cancel background tasks** explicitly to prevent hanging
+5. **Use `reset_engine_connections` fixture** for database tests
+6. **Mark slow/external tests** appropriately for selective execution
 
 ## Troubleshooting
 

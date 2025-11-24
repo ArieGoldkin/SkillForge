@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+import pytest_asyncio
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
 from app.services.embeddings_utils import normalize_vector
@@ -32,10 +33,14 @@ def sample_embedding_512() -> list[float]:
     return [0.1] * 512
 
 
-@pytest.fixture
-def embedding_service() -> EmbeddingService:
-    """Create EmbeddingService instance for testing."""
-    return EmbeddingService()
+@pytest_asyncio.fixture
+async def embedding_service() -> EmbeddingService:
+    """Create EmbeddingService instance for testing with proper cleanup."""
+    service = EmbeddingService()
+    try:
+        yield service
+    finally:
+        await service.close()
 
 
 @pytest.mark.asyncio

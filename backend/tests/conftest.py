@@ -5,12 +5,14 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.main import app
+from app.services.event_broadcaster import broadcaster
 
 # Load .env.test if it exists for integration tests
 # This allows tests to use real API keys from .env.test
@@ -64,7 +66,7 @@ def requires_database():
         pytest.skip("DATABASE_URL not configured")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def reset_engine_connections():
     """Dispose engine connections before test to avoid event loop conflicts.
 
@@ -79,7 +81,19 @@ async def reset_engine_connections():
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_event_broadcaster():
+    """Clean up event broadcaster after each test.
+
+    Clears all channels and subscriptions to prevent hanging tests
+    from lingering event broadcaster queues.
+    """
+    yield
+    # Clear all channels and subscriptions
+    broadcaster._channels.clear()
+
+
+@pytest_asyncio.fixture
 async def db_session(requires_database, reset_engine_connections) -> AsyncGenerator[AsyncSession]:
     """Create a test database session with automatic rollback.
 

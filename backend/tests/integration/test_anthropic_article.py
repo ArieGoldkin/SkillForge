@@ -15,8 +15,10 @@ from app.services.extraction.content_type import detect_content_type
 from app.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
+@pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
+@pytest.mark.timeout(60)  # 1 minute max timeout
 async def test_anthropic_article() -> None:
     """Test extraction from Anthropic article.
 

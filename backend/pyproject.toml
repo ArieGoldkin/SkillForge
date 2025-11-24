@@ -96,12 +96,10 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
-# Timeout configuration: prevent tests from hanging indefinitely
-timeout = 300  # 5 minutes default timeout for all tests (seconds)
-timeout_method = "thread"  # Use thread-based timeout (works with async)
 # Markers for test categorization
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "external: marks tests that require external services (Ollama, Jina, etc.)",
+    "timeout: marks tests with specific timeout values (pytest-timeout plugin)",
 ]

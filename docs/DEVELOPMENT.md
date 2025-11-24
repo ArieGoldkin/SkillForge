@@ -121,8 +121,27 @@ tests/
         └── test_analysis.py
 ```
 
+### Test Configuration
+
+The project uses `pytest-timeout` to prevent tests from hanging:
+
+- **Default timeout**: 5 minutes (configured in `pytest.ini`)
+- **Test-level timeouts**: Use `@pytest.mark.timeout(seconds)` to override
+- **Timeout method**: Thread-based (works with async tests)
+- **Asyncio mode**: Auto (configured in `pytest.ini`)
+
+### Test Markers
+
+Tests are categorized with markers for selective execution:
+
+- `@pytest.mark.slow`: Slow-running tests
+- `@pytest.mark.integration`: Integration tests requiring real services
+- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.timeout(N)`: Override default timeout for specific test
+
 ### Writing Tests
 
+**Unit Test Example:**
 ```python
 import pytest
 from unittest.mock import AsyncMock, patch
@@ -138,15 +157,72 @@ async def test_generate_embedding_success():
         mock_post.return_value.json.return_value = {"embedding": [0.1] * 768}
         result = await service.generate_embedding("test text")
         assert len(result) == 768
+    await service.close()  # Clean up resources
+```
+
+**Integration Test Example:**
+```python
+import pytest
+import pytest_asyncio
 
 @pytest.mark.asyncio
-async def test_generate_embedding_failure():
-    """Test embedding generation failure."""
-    service = EmbeddingService()
-    with patch.object(service.client, "post") as mock_post:
-        mock_post.return_value.status_code = 500
-        with pytest.raises(EmbeddingError):
-            await service.generate_embedding("test text")
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(120)  # 2 minute timeout
+async def test_workflow_end_to_end(requires_database, reset_engine_connections):
+    """Test workflow with real services."""
+    try:
+        result = await analysis_workflow.ainvoke({
+            "url": "https://example.com",
+            "analysis_id": "test-123",
+        })
+        assert "raw_content" in result
+    finally:
+        await engine.dispose()  # Clean up database connections
+```
+
+**Async Fixture Example:**
+```python
+import pytest_asyncio
+
+@pytest_asyncio.fixture  # Use pytest_asyncio.fixture, not @pytest.fixture
+async def async_resource():
+    """Create async resource with proper cleanup."""
+    resource = await create_resource()
+    try:
+        yield resource
+    finally:
+        await cleanup_resource(resource)
+```
+
+### Preventing Hanging Tests
+
+To prevent tests from hanging indefinitely:
+
+1. **Use `@pytest.mark.timeout(seconds)`** for slow/integration tests
+2. **Wrap async operations in `asyncio.wait_for()`** with timeouts
+3. **Cancel background tasks** explicitly in `finally` blocks
+4. **Use `reset_engine_connections` fixture** for database tests
+5. **Clean up event broadcaster subscriptions** (automatic via fixture)
+6. **Await cancelled tasks** to ensure proper cleanup
+
+```python
+@pytest.mark.asyncio
+@pytest.mark.timeout(60)
+async def test_with_background_task():
+    """Test with background task that must be cleaned up."""
+    task = asyncio.create_task(long_running_operation())
+    try:
+        result = await asyncio.wait_for(task, timeout=30.0)
+        assert result is not None
+    finally:
+        # Always cancel and await background tasks
+        if not task.done():
+            task.cancel()
+            try:
+                await asyncio.wait_for(task, timeout=2.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
 ```
 
 ### Test Coverage

@@ -203,4 +203,4 @@ async def test_sse_endpoint_invalid_uuid():
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         response = await client.get("/api/v1/analyze/invalid-uuid/stream")
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
