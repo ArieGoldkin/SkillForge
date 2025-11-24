@@ -69,7 +69,11 @@ logger = get_logger(__name__)
 
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
 # Use MemorySaver in tests to avoid database connection hangs
-if settings.DATABASE_URL and PostgresSaver is not None and not os.environ.get("PYTEST_CURRENT_TEST"):
+if (
+    settings.DATABASE_URL
+    and PostgresSaver is not None
+    and not os.environ.get("PYTEST_CURRENT_TEST")
+):
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
         logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
