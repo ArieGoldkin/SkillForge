@@ -285,9 +285,51 @@ FastAPI automatically generates OpenAPI documentation:
 - `tests/conftest.py`: Pytest fixtures and configuration
 - `tests/test_main.py`: Endpoint integration tests
 - `tests/test_config.py`: Configuration unit tests
+- `pytest.ini`: Pytest configuration (timeouts, markers, asyncio mode)
+
+### Test Configuration
+
+The project uses `pytest-timeout` to prevent tests from hanging indefinitely:
+
+- **Default timeout**: 5 minutes (300 seconds) for all tests
+- **Test-level timeouts**: Use `@pytest.mark.timeout(seconds)` to override
+- **Timeout method**: Thread-based (works with async tests)
+- **Asyncio mode**: Auto (allows mixing sync and async fixtures/tests)
+
+### Test Markers
+
+Tests are categorized with markers for selective execution:
+
+- `@pytest.mark.slow`: Slow-running tests (deselect with `-m "not slow"`)
+- `@pytest.mark.integration`: Integration tests requiring real services
+- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.timeout(N)`: Override default timeout for specific test
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=app --cov-report=html
+
+# Run specific test file
+poetry run pytest tests/test_main.py
+
+# Run only fast tests (exclude slow)
+poetry run pytest -m "not slow"
+
+# Run with verbose output
+poetry run pytest -v
+
+# Run with specific timeout
+poetry run pytest --timeout=60
+```
 
 ### Writing Tests
 
+**Sync Test Example:**
 ```python
 from fastapi.testclient import TestClient
 from app.main import app
@@ -300,6 +342,39 @@ def test_health_check(client):
     data = response.json()
     assert data["status"] == "healthy"
 ```
+
+**Async Test Example:**
+```python
+import pytest
+import pytest_asyncio
+
+@pytest.mark.asyncio
+async def test_async_operation():
+    result = await some_async_function()
+    assert result is not None
+```
+
+**Async Fixture Example:**
+```python
+import pytest_asyncio
+
+@pytest_asyncio.fixture
+async def async_resource():
+    resource = await create_resource()
+    try:
+        yield resource
+    finally:
+        await cleanup_resource(resource)
+```
+
+### Test Best Practices
+
+1. **Use `@pytest_asyncio.fixture` for async fixtures** (not `@pytest.fixture`)
+2. **Add timeouts to slow/integration tests** with `@pytest.mark.timeout(seconds)`
+3. **Clean up resources** in `finally` blocks or fixture teardown
+4. **Cancel background tasks** explicitly to prevent hanging
+5. **Use `reset_engine_connections` fixture** for database tests
+6. **Mark slow/external tests** appropriately for selective execution
 
 ## Troubleshooting
 
@@ -344,6 +419,143 @@ If imports fail:
 1. Ensure you're in Poetry shell: `poetry shell`
 2. Or prefix commands with `poetry run`
 3. Verify dependencies installed: `poetry install`
+
+## Architecture
+
+The backend follows a layered architecture with clear separation of concerns:
+
+- **API Layer**: FastAPI routers and endpoints (`app/api/`)
+- **Service Layer**: Business logic and external integrations (`app/services/`)
+- **Workflow Layer**: LangGraph orchestration (`app/workflows/`)
+- **Database Layer**: SQLAlchemy models and repositories (`app/db/`, `app/models/`)
+- **Core Layer**: Configuration, logging, exceptions, constants (`app/core/`)
+
+For detailed architecture documentation, see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
+
+### Key Patterns
+
+- **Repository Pattern**: Abstract database access (see `docs/ARCHITECTURE.md`)
+- **Service Layer**: Encapsulate business logic
+- **Dependency Injection**: FastAPI Depends() for testability
+- **Structured Logging**: structlog with request ID tracking
+- **Error Handling**: Custom exception hierarchy (see Error Handling section)
+
+## Constants
+
+Application-wide constants are centralized in `app/core/constants.py`:
+
+- **HTTP Status Codes**: `HTTP_OK`, `HTTP_NOT_FOUND`, `HTTP_ERROR_THRESHOLD`
+- **Timeouts**: `DEFAULT_TIMEOUT`, `EMBEDDING_TIMEOUT`, `DB_TIMEOUT`
+- **Text Limits**: `MAX_TEXT_LENGTH`, `MAX_ERROR_MESSAGE_LENGTH`
+- **Retry Configuration**: `MAX_RETRY_ATTEMPTS`, retry wait times
+- **Database Pool**: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`
+- **Content Types**: `CONTENT_TYPE_ARTICLE`, `CONTENT_TYPE_VIDEO`, `CONTENT_TYPE_REPO`
+
+**Usage:**
+```python
+from app.core.constants import MAX_TEXT_LENGTH, HTTP_ERROR_THRESHOLD
+
+if len(text) > MAX_TEXT_LENGTH:
+    text = text[:MAX_TEXT_LENGTH]
+
+if response.status_code >= HTTP_ERROR_THRESHOLD:
+    raise Error("HTTP error")
+```
+
+## Error Handling
+
+The application uses a structured exception hierarchy for consistent error handling:
+
+```
+SkillForgeException (base)
+├── ServiceException
+│   ├── EmbeddingError
+│   └── JinaReaderError
+├── WorkflowError
+└── DatabaseError
+```
+
+**Raising Exceptions:**
+```python
+from app.core.exceptions import EmbeddingError
+
+if embedding is None:
+    raise EmbeddingError("Embedding generation failed")
+```
+
+**Handling Exceptions:**
+- Custom exceptions are caught by `SkillForgeException` handler in `main.py`
+- All exceptions include request ID for tracing
+- Error responses follow consistent format:
+  ```json
+  {
+    "error": {
+      "code": "EmbeddingError",
+      "message": "Error message",
+      "request_id": "abc-123"
+    }
+  }
+  ```
+
+See `app/core/exceptions.py` for the full exception hierarchy.
+
+## Type Safety
+
+Type aliases are defined in `app/core/types.py` for better code readability:
+
+- `EmbeddingVector`: `list[float]` - Embedding vectors
+- `AnalysisID`: `str` - Analysis identifiers
+- `ChannelName`: `str` - SSE channel names
+- `EventData`: `dict[str, object]` - SSE event data
+- `ExtractionResult`: `dict[str, str | int | dict[str, str]]` - Extraction results
+
+**Usage:**
+```python
+from app.core.types import EmbeddingVector, AnalysisID
+
+async def generate_embedding(text: str) -> EmbeddingVector:
+    # Returns list[float]
+    pass
+```
+
+## Contributing
+
+### Code Quality Standards
+
+- **File Size Limits**: 200 lines (source), 300 lines (tests)
+- **Type Coverage**: 100% type hints, use type aliases from `app/core/types.py`
+- **Constants**: Use constants from `app/core/constants.py`, no magic numbers
+- **Exceptions**: Use custom exceptions from `app/core/exceptions.py`
+- **Documentation**: Comprehensive docstrings for all public functions/classes
+
+### Pre-Commit Checklist
+
+- [ ] All tests pass: `poetry run pytest`
+- [ ] No linting errors: `poetry run ruff check .`
+- [ ] Code formatted: `poetry run ruff format .`
+- [ ] Type checking passes: `poetry run mypy app`
+- [ ] Coverage ≥80%: `poetry run pytest --cov=app --cov-fail-under=80`
+- [ ] Docstrings added for new functions
+- [ ] Constants used instead of magic numbers
+- [ ] Custom exceptions used instead of generic Exception
+
+### Development Workflow
+
+1. **Create feature branch**: `git checkout -b feature/issue-XX-description`
+2. **Make changes**: Follow code quality standards
+3. **Run tests**: `poetry run pytest`
+4. **Check quality**: `poetry run ruff check . && poetry run mypy app`
+5. **Commit**: Use conventional commits format
+6. **Push**: `git push origin feature/issue-XX-description`
+
+### Code Style
+
+- **Imports**: Standard library → Third-party → Local (ruff auto-formats)
+- **Naming**: snake_case for functions/variables, PascalCase for classes
+- **Docstrings**: Google-style with Args, Returns, Raises sections
+- **Type Hints**: Required for all function parameters and return values
+
+See `docs/DEVELOPMENT.md` for detailed development guidelines.
 
 ## Next Steps
 

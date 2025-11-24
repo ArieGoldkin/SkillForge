@@ -48,9 +48,11 @@ celerybeat.pid
 
 # Environment Variables
 .env
+.env.test
 .env.local
 .env.*.local
 backend/.env
+backend/.env.test
 backend/.env.local
 
 # Alembic (keep migrations in git, but not temp files)

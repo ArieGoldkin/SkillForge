@@ -246,12 +246,22 @@ def test_detect_content_type_article() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(60)  # 1 minute max timeout
 @pytest.mark.skipif(
     not get_settings().JINA_API_KEY,
     reason="JINA_API_KEY not set in .env - skipping integration test",
 )
 async def test_extract_article_real_api() -> None:
-    """Integration test with real Jina API (requires API key in .env)."""
+    """Integration test with real Jina API (requires API key in .env).
+
+    This test requires:
+    - Jina API key configured
+    - Network access to jina.ai
+
+    Can take 10-30 seconds due to external API call.
+    """
     settings = get_settings()
     reader = JinaReader()
     reader.api_key = settings.JINA_API_KEY

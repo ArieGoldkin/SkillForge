@@ -1,9 +1,67 @@
-"""Application settings loaded from environment variables."""
+"""Application settings loaded from environment variables.
 
+This module provides the Settings class for managing application configuration
+using Pydantic Settings. Configuration is loaded from environment variables or
+a .env file, with special handling for test environments.
+
+Key Features:
+    - Environment-aware configuration (development, staging, production)
+    - Automatic .env file loading with test environment support
+    - Cached settings instance for performance
+    - Type-safe configuration with validation
+    - Production requirement validation
+
+Settings Pattern:
+    The Settings class uses Pydantic Settings which automatically loads values
+    from environment variables. The get_settings() function provides a cached
+    instance to avoid reloading configuration on every access.
+
+Environment File Loading:
+    - Production/Development: Loads from .env file
+    - Tests: Automatically loads from .env.test if PYTEST_CURRENT_TEST is set
+    - Explicit override: ENV_FILE environment variable takes precedence
+
+Example:
+    ```python
+    from app.core.config import settings, get_settings
+
+    # Use cached global instance
+    if settings.ENVIRONMENT == "development":
+        print("Running in development mode")
+
+    # Or get fresh instance (cache cleared in tests)
+    settings = get_settings()
+    ```
+"""
+
+import os
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _get_env_file() -> str:
+    """Get environment file path, preferring .env.test for tests.
+
+    This function is called at class definition time, so it checks
+    environment variables that are set before the Settings class is imported.
+    For tests, pytest sets PYTEST_CURRENT_TEST automatically, and conftest.py
+    sets ENV_FILE before any tests run.
+    """
+    # Check if ENV_FILE is explicitly set (set by conftest.py for tests)
+    if env_file := os.environ.get("ENV_FILE"):
+        return env_file
+
+    # Check if we're in test mode and .env.test exists
+    # PYTEST_CURRENT_TEST is automatically set by pytest when running tests
+    test_env = Path(__file__).parent.parent / ".env.test"
+    if test_env.exists() and os.environ.get("PYTEST_CURRENT_TEST"):
+        return str(test_env)
+
+    # Default to .env
+    return ".env"
 
 
 class Settings(BaseSettings):
@@ -55,7 +113,7 @@ class Settings(BaseSettings):
     JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_get_env_file(),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

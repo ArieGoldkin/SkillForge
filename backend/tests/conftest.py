@@ -1,12 +1,29 @@
 """Pytest configuration and fixtures."""
 
+import os
+from collections.abc import AsyncGenerator
+from pathlib import Path
+
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, engine
 from app.main import app
+from app.services.event_broadcaster import broadcaster
+
+# Load .env.test if it exists for integration tests
+# This allows tests to use real API keys from .env.test
+TEST_ENV_FILE = Path(__file__).parent.parent / ".env.test"
+if TEST_ENV_FILE.exists():
+    # Set environment variable to load .env.test
+    # The Settings class will detect this and load .env.test
+    os.environ["ENV_FILE"] = str(TEST_ENV_FILE)
+    # Also set ENVIRONMENT=development for test mode
+    # (Settings validation requires development/staging/production)
+    os.environ.setdefault("ENVIRONMENT", "development")
 
 
 @pytest.fixture
@@ -29,7 +46,7 @@ def clear_config_cache():
 def test_settings():
     """Override settings for testing."""
     return Settings(
-        ENVIRONMENT="testing",
+        ENVIRONMENT="development",
         LOG_LEVEL="INFO",
         CORS_ORIGINS=["http://localhost:5173"],
     )
@@ -44,13 +61,12 @@ def auto_clear_config_cache(clear_config_cache):
 @pytest.fixture
 def requires_database():
     """Skip test if DATABASE_URL is not configured."""
-    from app.core.config import settings
-
+    settings = get_settings()
     if not settings.DATABASE_URL:
         pytest.skip("DATABASE_URL not configured")
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def reset_engine_connections():
     """Dispose engine connections before test to avoid event loop conflicts.
 
@@ -58,8 +74,6 @@ async def reset_engine_connections():
     preventing 'attached to different loop' errors. Use this fixture for
     tests that use database connections and have event loop issues.
     """
-    from app.db.session import engine
-
     # Dispose existing connections before test
     await engine.dispose()
     yield
@@ -67,8 +81,20 @@ async def reset_engine_connections():
     await engine.dispose()
 
 
-@pytest.fixture
-async def db_session(requires_database, reset_engine_connections) -> AsyncSession:
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_event_broadcaster():
+    """Clean up event broadcaster after each test.
+
+    Clears all channels and subscriptions to prevent hanging tests
+    from lingering event broadcaster queues.
+    """
+    yield
+    # Clear all channels and subscriptions
+    broadcaster._channels.clear()
+
+
+@pytest_asyncio.fixture
+async def db_session(requires_database, reset_engine_connections) -> AsyncGenerator[AsyncSession]:
     """Create a test database session with automatic rollback.
 
     Yields an async session and rolls back all changes after test.

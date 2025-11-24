@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.services.extraction.jina_reader import JinaReaderError
-from app.workflows.analysis import AnalysisState, analysis_workflow
+from app.workflows.analysis import analysis_workflow
+from app.workflows.types import AnalysisState
 
 # Expected embedding dimensions for nomic-embed-text
 EXPECTED_EMBEDDING_DIMENSIONS = 768
@@ -43,11 +44,12 @@ async def test_analysis_workflow_with_mocked_services(
 
     mock_embedding_service = MagicMock()
     mock_embedding_service.generate_embedding = AsyncMock(return_value=sample_embedding)
+    mock_embedding_service.close = AsyncMock()
 
     with (
-        patch("app.workflows.analysis.JinaReader", return_value=mock_jina),
+        patch("app.workflows.tasks.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.analysis.EmbeddingService",
+            "app.workflows.tasks.EmbeddingService",
             return_value=mock_embedding_service,
         ),
     ):
@@ -89,7 +91,7 @@ async def test_analysis_workflow_error_handling() -> None:
     mock_jina.close = AsyncMock()
 
     with (
-        patch("app.workflows.analysis.JinaReader", return_value=mock_jina),
+        patch("app.workflows.tasks.JinaReader", return_value=mock_jina),
         pytest.raises(JinaReaderError, match="Extraction failed"),
     ):
         await analysis_workflow.ainvoke(

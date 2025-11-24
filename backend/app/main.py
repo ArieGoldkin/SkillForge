@@ -10,8 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.v1 import health
+from app.api.v1 import analyze, health
 from app.core.config import settings
+from app.core.exceptions import SkillForgeException
 from app.core.logging import get_logger, setup_logging
 
 # Setup logging first
@@ -126,6 +127,30 @@ app.add_middleware(RequestIDMiddleware)
 
 
 # Global Exception Handler
+@app.exception_handler(SkillForgeException)
+async def skillforge_exception_handler(request: Request, exc: SkillForgeException):
+    """Handle SkillForge application exceptions."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.error(
+        "application_exception",
+        request_id=request_id,
+        path=request.url.path,
+        error=str(exc),
+        exception_type=type(exc).__name__,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": type(exc).__name__,
+                "message": str(exc),
+                "request_id": request_id,
+            }
+        },
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions."""
@@ -151,6 +176,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Register routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
+app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")
