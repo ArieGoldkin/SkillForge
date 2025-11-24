@@ -47,6 +47,8 @@ Future Enhancements:
     - Artifact generation (markdown guides, code examples)
 """
 
+import os
+
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.func import entrypoint, task
 
@@ -66,11 +68,12 @@ except ImportError:
 logger = get_logger(__name__)
 
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
-if settings.DATABASE_URL and PostgresSaver is not None:
+# Use MemorySaver in tests to avoid database connection hangs
+if settings.DATABASE_URL and PostgresSaver is not None and not os.environ.get("PYTEST_CURRENT_TEST"):
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
         logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
-    except (ValueError, ConnectionError) as e:
+    except (ValueError, ConnectionError, Exception) as e:
         logger.warning(
             "workflow_checkpointer_fallback",
             error=str(e),
