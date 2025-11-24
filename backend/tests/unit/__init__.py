@@ -1,1 +1,1 @@
-"""Unit tests for isolated components."""
+"""Unit tests package."""

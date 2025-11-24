@@ -1,88 +1,36 @@
-"""LangGraph analysis workflow implementation.
+"""LangGraph workflow for content analysis.
 
-Implements the main analysis workflow using LangGraph v1.0 Functional API.
-Workflow extracts content, generates embeddings, and emits SSE progress events.
+This module implements the initial LangGraph workflow using the Functional API.
+Flow: extract → embed → done (no sub-agents yet).
 """
 
-import asyncio
 from typing import TypedDict
+
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.func import entrypoint, task
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.embeddings import embedding_service
+from app.services.embeddings import EmbeddingService
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
 
-logger = get_logger(__name__)
-
-# Try to import LangGraph, fallback to mock if not available
+# Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
-    from langgraph.checkpoint.postgres import PostgresSaver
-    from langgraph.func import entrypoint, task
-
-    LANGGRAPH_AVAILABLE = True
+    from langgraph.checkpoint.postgres import (
+        PostgresSaver,  # type: ignore[import-not-found,import-untyped]
+    )
 except ImportError:
-    # Fallback for development when LangGraph not installed
-    LANGGRAPH_AVAILABLE = False
-    logger.warning("langgraph_not_installed", message="Using mock implementation")
-
-    # Mock decorators for development
-    class MockFuture:
-        """Mock future object that wraps async function results."""
-
-        def __init__(self, coro):
-            """Initialize with coroutine."""
-            self._coro = coro
-
-        async def _await_result(self):
-            """Await the coroutine (for use in async context)."""
-            return await self._coro
-
-        def result(self):
-            """Execute coroutine and return result (synchronous)."""
-            # Check if we're in an async context
-            try:
-                loop = asyncio.get_running_loop()
-                # We're in an async context - can't use run_until_complete
-                # Return a coroutine that the caller should await
-                # This is a limitation of the mock - in real LangGraph, this wouldn't happen
-                raise RuntimeError(
-                    "MockFuture.result() called in async context. "
-                    "Use await MockFuture._await_result() instead, or ensure LangGraph is installed."
-                )
-            except RuntimeError:
-                # No running loop, create a new one
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                return loop.run_until_complete(self._coro)
-
-    def task(func):
-        """Mock task decorator that returns MockFuture."""
-
-        def wrapper(*args, **kwargs):
-            return MockFuture(func(*args, **kwargs))
-
-        return wrapper
-
-    def entrypoint(checkpointer=None):
-        """Mock entrypoint decorator."""
-
-        def decorator(func):
-            return func
-
-        return decorator
-
     PostgresSaver = None  # type: ignore[assignment, misc]
 
+logger = get_logger(__name__)
 
-class AnalysisState(TypedDict):
-    """State schema for analysis workflow.
 
-    Defines the structure of data passed between workflow nodes.
+class AnalysisState(TypedDict, total=False):
+    """State schema for the analysis workflow.
 
+    Fields marked with total=False are optional and may be populated
+    as the workflow progresses through different stages.
     """
 
     analysis_id: str
@@ -91,35 +39,42 @@ class AnalysisState(TypedDict):
     raw_content: str
     extraction_metadata: dict
     content_embedding: list[float]
-    supervisor_decision: dict | None
-    agent_findings: list[dict]
-    aggregated_insights: dict | None
-    final_markdown: str | None
+    supervisor_decision: dict  # For future use
+    agent_findings: list[dict]  # For future use
+    aggregated_insights: dict  # For future use
+    final_markdown: str  # For future use
 
 
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
-checkpointer = None
-if LANGGRAPH_AVAILABLE and settings.DATABASE_URL:
+if settings.DATABASE_URL and PostgresSaver is not None:
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
-    except (ValueError, ImportError, RuntimeError) as e:
+        logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
+    except (ValueError, ConnectionError) as e:
         logger.warning(
-            "checkpointer_setup_failed",
+            "workflow_checkpointer_fallback",
             error=str(e),
-            message="Workflow will run without checkpointing",
+            fallback="MemorySaver",
         )
+        checkpointer = MemorySaver()
+else:
+    checkpointer = MemorySaver()
+    logger.info("workflow_checkpointer_initialized", type="MemorySaver")
 
 
 @task
 async def extract_content(url: str, analysis_id: str) -> dict:
-    """Extract content from URL using Jina Reader.
+    """Extract content from URL using JinaReader.
 
     Args:
-        url: URL to extract content from
-        analysis_id: UUID of the analysis
+        url: The URL to extract content from
+        analysis_id: Unique identifier for this analysis
 
     Returns:
-        Dictionary with raw_content and extraction_metadata
+        Dictionary with 'raw_content' and 'extraction_metadata'
+
+    Raises:
+        Exception: If extraction fails
 
     """
     # Emit SSE event: extraction started
@@ -130,6 +85,7 @@ async def extract_content(url: str, analysis_id: str) -> dict:
         status="running",
     )
 
+    logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
     jina = JinaReader()
     try:
         extracted = await jina.extract_article(url)
@@ -140,15 +96,15 @@ async def extract_content(url: str, analysis_id: str) -> dict:
             analysis_id=analysis_id,
             stage="extraction",
             status="complete",
-            word_count=extracted["word_count"],
+            word_count=extracted.get("word_count", 0),
         )
 
         logger.info(
             "workflow_extraction_complete",
             analysis_id=analysis_id,
-            word_count=extracted["word_count"],
+            url=url,
+            word_count=extracted.get("word_count", 0),
         )
-
         return {
             "raw_content": extracted["content"],
             "extraction_metadata": extracted["metadata"],
@@ -176,14 +132,17 @@ async def extract_content(url: str, analysis_id: str) -> dict:
 
 @task
 async def generate_embedding(content: str, analysis_id: str) -> list[float]:
-    """Generate embedding for content.
+    """Generate embedding vector for content.
 
     Args:
-        content: Text content to generate embedding for
-        analysis_id: UUID of the analysis
+        content: The text content to embed
+        analysis_id: Unique identifier for this analysis
 
     Returns:
         List of floats representing the embedding vector
+
+    Raises:
+        Exception: If embedding generation fails
 
     """
     # Emit SSE event: embedding generation started
@@ -194,8 +153,11 @@ async def generate_embedding(content: str, analysis_id: str) -> list[float]:
         status="running",
     )
 
+    logger.info("workflow_embedding_started", content_length=len(content))
+    embedding_service = EmbeddingService()
     try:
-        embedding = await embedding_service.generate_embedding(content)
+        embedding_result = await embedding_service.generate_embedding(content)
+        embedding: list[float] = list(embedding_result)
 
         # Emit SSE event: embedding complete
         await emit_streaming_event(
@@ -207,8 +169,7 @@ async def generate_embedding(content: str, analysis_id: str) -> list[float]:
 
         logger.info(
             "workflow_embedding_complete",
-            analysis_id=analysis_id,
-            embedding_dim=len(embedding),
+            embedding_dimensions=len(embedding),
         )
     except Exception as e:
         # Emit SSE event: embedding failed
@@ -227,28 +188,36 @@ async def generate_embedding(content: str, analysis_id: str) -> list[float]:
             exc_info=True,
         )
         raise
-    else:
-        return embedding
+    finally:
+        await embedding_service.close()
+
+    return embedding
 
 
-# Main workflow using Functional API
 @entrypoint(checkpointer=checkpointer)
-async def analysis_workflow(
-    url: str,
-    analysis_id: str,
-    previous: dict | None = None,
-) -> dict:
-    """Execute main analysis workflow using LangGraph v1.0 Functional API.
+async def analysis_workflow(input_data: dict) -> dict:
+    """Run main analysis workflow using LangGraph v1.0 Functional API.
+
+    This workflow performs:
+    1. Extract content from URL using JinaReader
+    2. Generate embeddings for the extracted content
+    3. Return complete state with all fields populated
 
     Args:
-        url: URL to analyze
-        analysis_id: UUID of the analysis
-        previous: Previous workflow state (for resumption)
+        input_data: Dictionary with 'url' and 'analysis_id' keys
 
     Returns:
-        Dictionary with analysis results
+        Dictionary matching AnalysisState structure with:
+        - analysis_id
+        - url
+        - raw_content
+        - extraction_metadata
+        - content_embedding
 
     """
+    url = input_data["url"]
+    analysis_id = input_data["analysis_id"]
+
     logger.info(
         "workflow_started",
         analysis_id=analysis_id,
@@ -256,34 +225,24 @@ async def analysis_workflow(
     )
 
     try:
-        # Extract content (returns future, can run in parallel)
-        extraction_future = extract_content(url, analysis_id)
+        # Extract content (task returns awaitable)
+        extraction_result = await extract_content(url, analysis_id)
 
-        # Get result - handle both MockFuture and real LangGraph futures
-        if hasattr(extraction_future, "_await_result"):
-            # MockFuture in async context
-            extraction_result = await extraction_future._await_result()
-        elif hasattr(extraction_future, "result"):
-            # MockFuture in sync context or real LangGraph future
-            extraction_result = extraction_future.result()
-        else:
-            # Direct coroutine (shouldn't happen with @task decorator)
-            extraction_result = await extraction_future
-
-        # Generate embedding
-        embedding_future = generate_embedding(
+        # Generate embedding (task returns awaitable)
+        embedding = await generate_embedding(
             extraction_result["raw_content"], analysis_id
         )
-        if hasattr(embedding_future, "_await_result"):
-            embedding = await embedding_future._await_result()
-        elif hasattr(embedding_future, "result"):
-            embedding = embedding_future.result()
-        else:
-            embedding = await embedding_future
+
+        # Determine content type from metadata
+        content_type = extraction_result["extraction_metadata"].get(
+            "content_type",
+            "article",
+        )
 
         result = {
             "analysis_id": analysis_id,
             "url": url,
+            "content_type": content_type,
             "raw_content": extraction_result["raw_content"],
             "extraction_metadata": extraction_result["extraction_metadata"],
             "content_embedding": embedding,
@@ -292,7 +251,12 @@ async def analysis_workflow(
         logger.info(
             "workflow_complete",
             analysis_id=analysis_id,
+            url=url,
+            content_length=len(extraction_result["raw_content"]),
+            embedding_dimensions=len(embedding),
         )
+
+        return result
     except Exception as e:
         logger.error(
             "workflow_failed",
@@ -301,5 +265,3 @@ async def analysis_workflow(
             exc_info=True,
         )
         raise
-    else:
-        return result
