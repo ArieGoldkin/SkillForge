@@ -4,8 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+import pytest_asyncio
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.services.embeddings_utils import normalize_vector
 
 # Constants for test assertions
 EXPECTED_EMBEDDING_DIMENSIONS = 768
@@ -31,10 +33,14 @@ def sample_embedding_512() -> list[float]:
     return [0.1] * 512
 
 
-@pytest.fixture
-def embedding_service() -> EmbeddingService:
-    """Create EmbeddingService instance for testing."""
-    return EmbeddingService()
+@pytest_asyncio.fixture
+async def embedding_service() -> EmbeddingService:
+    """Create EmbeddingService instance for testing with proper cleanup."""
+    service = EmbeddingService()
+    try:
+        yield service
+    finally:
+        await service.close()
 
 
 @pytest.mark.asyncio
@@ -229,11 +235,10 @@ async def test_generate_embedding_invalid_embedding_type(
             await embedding_service.generate_embedding("Sample text")
 
 
-@pytest.mark.asyncio
-async def test_normalize_vector(embedding_service: EmbeddingService) -> None:
+def test_normalize_vector() -> None:
     """Test vector normalization."""
     vector = [3.0, 4.0, 0.0]
-    normalized = embedding_service._normalize_vector(vector)
+    normalized = normalize_vector(vector)
 
     # Check L2 norm is 1.0
     norm = sum(x * x for x in normalized) ** 0.5
@@ -243,11 +248,10 @@ async def test_normalize_vector(embedding_service: EmbeddingService) -> None:
     assert abs(normalized[0] / normalized[1] - 3.0 / 4.0) < NORMALIZATION_TOLERANCE
 
 
-@pytest.mark.asyncio
-async def test_normalize_zero_vector(embedding_service: EmbeddingService) -> None:
+def test_normalize_zero_vector() -> None:
     """Test that zero vector is returned unchanged."""
     zero_vector = [0.0] * 768
-    result = embedding_service._normalize_vector(zero_vector)
+    result = normalize_vector(zero_vector)
 
     assert result == zero_vector
 

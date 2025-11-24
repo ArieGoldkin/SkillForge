@@ -1,10 +1,12 @@
 """Integration tests for analysis workflow."""
 
+import asyncio
 import os
 
 import pytest
 
 from app.core.config import get_settings
+from app.db.session import engine
 from app.workflows.analysis import analysis_workflow
 
 # Expected embedding dimensions for nomic-embed-text
@@ -27,8 +29,19 @@ def requires_jina_api_key():
 
 
 @pytest.mark.asyncio
-async def test_analysis_workflow_end_to_end(requires_database) -> None:
-    """Test analysis_workflow end-to-end with real services."""
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(120)  # 2 minute max timeout
+async def test_analysis_workflow_end_to_end(requires_database, reset_engine_connections) -> None:
+    """Test analysis_workflow end-to-end with real services.
+
+    This test requires:
+    - Ollama running on localhost:11434 with nomic-embed-text model
+    - Jina API key configured
+    - Database connection
+
+    Can take 2+ minutes due to Ollama embedding generation.
+    """
     settings = get_settings()
     if not settings.JINA_API_KEY:
         pytest.skip("JINA_API_KEY not configured in .env")
@@ -37,34 +50,54 @@ async def test_analysis_workflow_end_to_end(requires_database) -> None:
     test_url = "https://react.dev"
     test_analysis_id = "test-integration-analysis-123"
 
-    # Run workflow
-    result = await analysis_workflow.ainvoke(
-        {
-            "url": test_url,
-            "analysis_id": test_analysis_id,
-        },
-        config={"configurable": {"thread_id": test_analysis_id}},
-    )
+    try:
+        # Run workflow with timeout
+        result = await asyncio.wait_for(
+            analysis_workflow.ainvoke(
+                {
+                    "url": test_url,
+                    "analysis_id": test_analysis_id,
+                },
+                config={"configurable": {"thread_id": test_analysis_id}},
+            ),
+            timeout=90.0,  # 90 seconds for real workflow
+        )
 
-    # Verify result structure
-    assert "analysis_id" in result
-    assert "url" in result
-    assert "raw_content" in result
-    assert "extraction_metadata" in result
-    assert "content_embedding" in result
+        # Verify result structure
+        assert "analysis_id" in result
+        assert "url" in result
+        assert "raw_content" in result
+        assert "extraction_metadata" in result
+        assert "content_embedding" in result
 
-    # Verify values
-    assert result["analysis_id"] == test_analysis_id
-    assert result["url"] == test_url
-    assert len(result["raw_content"]) > 0
-    assert isinstance(result["extraction_metadata"], dict)
-    assert len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS
-    assert all(isinstance(x, float) for x in result["content_embedding"])
+        # Verify values
+        assert result["analysis_id"] == test_analysis_id
+        assert result["url"] == test_url
+        assert len(result["raw_content"]) > 0
+        assert isinstance(result["extraction_metadata"], dict)
+        assert len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS
+        assert all(isinstance(x, float) for x in result["content_embedding"])
+    finally:
+        # Ensure engine connections are disposed
+        await engine.dispose()
 
 
 @pytest.mark.asyncio
-async def test_analysis_workflow_with_checkpointer(requires_database) -> None:
-    """Test analysis_workflow with database checkpointer."""
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(240)  # 4 minute max timeout (runs twice)
+async def test_analysis_workflow_with_checkpointer(
+    requires_database, reset_engine_connections
+) -> None:
+    """Test analysis_workflow with database checkpointer.
+
+    This test requires:
+    - Ollama running on localhost:11434 with nomic-embed-text model
+    - Jina API key configured
+    - Database connection
+
+    Can take 2+ minutes due to Ollama embedding generation (runs twice).
+    """
     settings = get_settings()
     if not settings.JINA_API_KEY:
         pytest.skip("JINA_API_KEY not configured in .env")
@@ -72,25 +105,35 @@ async def test_analysis_workflow_with_checkpointer(requires_database) -> None:
     test_url = "https://react.dev"
     test_analysis_id = "test-checkpointer-analysis-456"
 
-    # Run workflow first time
-    result1 = await analysis_workflow.ainvoke(
-        {
-            "url": test_url,
-            "analysis_id": test_analysis_id,
-        },
-        config={"configurable": {"thread_id": test_analysis_id}},
-    )
+    try:
+        # Run workflow first time with timeout
+        result1 = await asyncio.wait_for(
+            analysis_workflow.ainvoke(
+                {
+                    "url": test_url,
+                    "analysis_id": test_analysis_id,
+                },
+                config={"configurable": {"thread_id": test_analysis_id}},
+            ),
+            timeout=90.0,  # 90 seconds for real workflow
+        )
 
-    # Run workflow again (should use checkpoint)
-    result2 = await analysis_workflow.ainvoke(
-        {
-            "url": test_url,
-            "analysis_id": test_analysis_id,
-        },
-        config={"configurable": {"thread_id": test_analysis_id}},
-    )
+        # Run workflow again (should use checkpoint) with timeout
+        result2 = await asyncio.wait_for(
+            analysis_workflow.ainvoke(
+                {
+                    "url": test_url,
+                    "analysis_id": test_analysis_id,
+                },
+                config={"configurable": {"thread_id": test_analysis_id}},
+            ),
+            timeout=90.0,  # 90 seconds for real workflow
+        )
 
-    # Verify both results are consistent
-    assert result1["analysis_id"] == result2["analysis_id"]
-    assert result1["url"] == result2["url"]
-    assert len(result1["content_embedding"]) == len(result2["content_embedding"])
+        # Verify both results are consistent
+        assert result1["analysis_id"] == result2["analysis_id"]
+        assert result1["url"] == result2["url"]
+        assert len(result1["content_embedding"]) == len(result2["content_embedding"])
+    finally:
+        # Ensure engine connections are disposed
+        await engine.dispose()

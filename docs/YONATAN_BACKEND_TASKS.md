@@ -57,26 +57,32 @@ print(f"Extraction complete for {analysis_id}")
 
 **4. SSE Instrumentation in LangGraph Nodes**
 ```python
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
-async def emit_streaming_event(
-    event_type: str,
-    analysis_id: str,
-    stage: str,
-    **kwargs
-) -> None:
-    """Emit SSE event during workflow execution."""
-    event_data = {
-        "type": event_type,
-        "analysis_id": analysis_id,
-        "stage": stage,
-        "timestamp": datetime.now(UTC).isoformat(),
-        **kwargs
-    }
-    await broadcaster.publish(
-        channel=f"workflow:{analysis_id}",
-        message=event_data
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
+    """Extract content with SSE events."""
+    # Emit start event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
     )
+    
+    # Do work
+    content = await jina_reader.extract(url)
+    
+    # Emit complete event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="complete",
+        word_count=len(content.split()),
+    )
+    
+    return {"content": content}
 ```
 
 **5. File Size Limits**
@@ -1596,34 +1602,30 @@ async def run_tech_comparator(content: str) -> dict:
 
 **SSE Instrumentation in Agent Nodes:**
 ```python
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
 @task
 async def run_tech_comparator(content: str, analysis_id: str) -> dict:
     """Run tech comparator with SSE events."""
     # Emit start event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {
-            "type": "progress",
-            "stage": "tech_comparison",
-            "status": "running",
-            "agent": "tech_comparator"
-        }
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="tech_comparison",
+        status="running",
+        agent="tech_comparator",
     )
     
     # Run agent
     result = tech_comparator_agent.invoke({"messages": [content]})
     
     # Emit complete event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {
-            "type": "progress",
-            "stage": "tech_comparison",
-            "status": "complete",
-            "agent": "tech_comparator"
-        }
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="tech_comparison",
+        status="complete",
+        agent="tech_comparator",
     )
     
     return result
@@ -1781,11 +1783,13 @@ agent = create_agent(model, tools=[tool1, tool2])
 
 **4. SSE Instrumentation:**
 ```python
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
-await broadcaster.publish(
-    f"workflow:{analysis_id}",
-    {"type": "progress", "stage": "extraction", "status": "running"}
+await emit_streaming_event(
+    "progress",
+    analysis_id=analysis_id,
+    stage="extraction",
+    status="running",
 )
 ```
 

@@ -1,18 +1,30 @@
 """Jina AI Reader service for content extraction."""
 
+import os
+
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
+from app.core.constants import (
+    DEFAULT_TIMEOUT,
+    DEFAULT_TITLE,
+    HTTP_ERROR_THRESHOLD,
+    HTTP_NOT_FOUND,
+    MAX_ERROR_MESSAGE_LENGTH_LONG,
+    MAX_RETRY_ATTEMPTS,
+    MAX_TITLE_PREVIEW_LENGTH,
+    RETRY_MAX_WAIT_JINA,
+    RETRY_MAX_WAIT_JINA_TEST,
+    RETRY_MIN_WAIT_JINA,
+    RETRY_MIN_WAIT_JINA_TEST,
+    RETRY_MULTIPLIER_JINA,
+)
+from app.core.exceptions import JinaReaderError
 from app.core.logging import get_logger
+from app.core.types import ExtractionResult
 
 logger = get_logger(__name__)
-
-
-class JinaReaderError(Exception):
-    """Custom exception for Jina Reader errors."""
-
-    pass
 
 
 class JinaReader:
@@ -23,14 +35,26 @@ class JinaReader:
     def __init__(self) -> None:
         """Initialize Jina Reader with API key and HTTP client."""
         self.api_key = settings.JINA_API_KEY
-        self.client = httpx.AsyncClient(timeout=30.0)
+        self.client = httpx.AsyncClient(timeout=DEFAULT_TIMEOUT)
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
+        stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
+        wait=wait_exponential(
+            multiplier=RETRY_MULTIPLIER_JINA,
+            min=(
+                RETRY_MIN_WAIT_JINA_TEST
+                if os.environ.get("PYTEST_CURRENT_TEST")
+                else RETRY_MIN_WAIT_JINA
+            ),
+            max=(
+                RETRY_MAX_WAIT_JINA_TEST
+                if os.environ.get("PYTEST_CURRENT_TEST")
+                else RETRY_MAX_WAIT_JINA
+            ),
+        ),
         reraise=True,
     )
-    async def extract_article(self, url: str) -> dict[str, str | int | dict[str, str]]:
+    async def extract_article(self, url: str) -> ExtractionResult:
         """Extract content from article URL using Jina AI Reader.
 
         Args:
@@ -57,13 +81,19 @@ class JinaReader:
             )
 
             # Handle 404 specifically
-            if response.status_code == 404:
-                logger.error("jina_extraction_not_found", url=url, status_code=404)
-                raise JinaReaderError("URL not found (404)")
+            if response.status_code == HTTP_NOT_FOUND:
+                logger.error(
+                    "jina_extraction_not_found",
+                    url=url,
+                    status_code=HTTP_NOT_FOUND,
+                )
+                raise JinaReaderError(f"URL not found ({HTTP_NOT_FOUND})")
 
             # Handle other HTTP errors
-            if response.status_code >= 400:
-                error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
+            if response.status_code >= HTTP_ERROR_THRESHOLD:
+                error_msg = (
+                    f"HTTP {response.status_code}: {response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]}"
+                )
                 logger.error(
                     "jina_extraction_http_error",
                     url=url,
@@ -77,7 +107,7 @@ class JinaReader:
 
             # Extract title from first line (remove markdown header)
             lines = content.split("\n")
-            title = "Untitled"
+            title = DEFAULT_TITLE
             if lines:
                 first_line = lines[0].strip()
                 if first_line.startswith("# "):
@@ -90,7 +120,7 @@ class JinaReader:
                 url=url,
                 content_length=len(content),
                 word_count=len(content.split()),
-                title=title[:100] if title else "Untitled",
+                title=title[:MAX_TITLE_PREVIEW_LENGTH] if title else DEFAULT_TITLE,
             )
 
             return {

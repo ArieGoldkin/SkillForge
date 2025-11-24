@@ -52,30 +52,27 @@
 
 ---
 
-### Dependabot PRs - 13 Open ⚠️
+### Dependabot PRs - 5 Open ✅ FIXED
 
-**Status:** All targeting `main` (should target `dev`)
+**Status:** ✅ All fixed - Base branches changed to `dev`, conflicts resolved
 
-**Backend Dependencies (8 PRs):**
-- #23: ruff ^0.6.9 → ^0.14.5
-- #22: starlette ^0.49.3 → ^0.50.0
-- #21: pytest-asyncio ^0.25.1 → ^1.3.0
-- #20: structlog ^24.4.0 → ^25.5.0
-- #19: black ^24.8.0 → ^25.11.0
-- #18: pytest-cov ^5.0.0 → ^7.0.0
-- #17: uvicorn ^0.32.0 → ^0.38.0
-- #16: isort ^5.13.2 → ^7.0.0
+**Fixes Applied:**
+- ✅ Updated Dependabot config: Added `versioning-strategy: "increase"` for Poetry projects
+- ✅ Changed base branch of all open PRs from `main` → `dev`
+- ✅ Manually updated dependency versions to resolve conflicts:
+  - `ruff`: ^0.14.5 → ^0.14.6 (in `backend/pyproject.toml`)
+  - `actions/setup-python`: v5 → v6 (in all workflow files)
+  - `codecov/codecov-action`: v4 → v5 (in backend-ci.yml, frontend-ci.yml)
+  - `actions/github-script`: v7 → v8 (in security-scan.yml, backend-deploy-production.yml)
 
-**GitHub Actions (5 PRs):**
-- #15: actions/download-artifact 4 → 6
-- #14: actions/checkout 4 → 6
-- #13: actions/setup-node 4 → 6
-- #12: docker/build-push-action 5 → 6
-- #11: johnbeynon/render-deploy-action 0.0.8 → 0.0.9
+**Current Open PRs (5):**
+- #50: ruff ^0.14.6 (backend) - Ready to merge (conflicts resolved)
+- #51: codecov-action v5 - Ready to merge (conflicts resolved)
+- #52: setup-python v6 - Ready to merge (conflicts resolved)
+- #53: github-script v8 - Ready to merge (conflicts resolved)
+- #54: upload-artifact v5 - Can be closed (already at v6 in codebase)
 
-**Action Needed:** 
-- Update Dependabot config to target `dev` branch
-- OR manually change base branch for these PRs
+**Note:** PR #54 can be closed as `upload-artifact` is already at v6 in all workflow files.
 
 ---
 
@@ -229,10 +226,11 @@
 - ⚠️ No vulnerabilities API access (might need repo settings)
 
 **Dependabot:**
-- ✅ Configured for backend (pip)
+- ✅ Configured for backend (pip) with `versioning-strategy: "increase"` for Poetry
 - ✅ Configured for frontend (npm) - when frontend exists
 - ✅ Configured for GitHub Actions
-- ⚠️ PRs targeting `main` (should target `dev`)
+- ✅ All PRs now targeting `dev` branch
+- ✅ Dependency conflicts resolved (versions manually updated)
 
 ---
 
@@ -249,10 +247,11 @@
     └─ Branch Alignment
 
     ✅ RECENTLY FIXED                ⚠️  WARNINGS
-    ├─ Workflow config issues       ├─ 13 Dependabot PRs (wrong base)
-    │  └─ Poetry cache fixed        └─ Alembic init needed (Issue #3)
+    ├─ Workflow config issues       └─ (None - all issues resolved)
+    │  └─ Poetry cache fixed
     ├─ Frontend workflows disabled
-    └─ E2E tests disabled
+    ├─ E2E tests disabled
+    └─ Dependabot conflicts resolved
 
     ✅ COMPLETED ISSUES (Sprint 1)
     ├─ Issue #2: Config & Logging [3 pts] ✅
@@ -270,25 +269,15 @@
 
 ## 🔧 Quick Fixes Needed
 
-### 1. Fix Alembic (Unblocks CI)
-```bash
-cd backend
-poetry run alembic init alembic
-# This creates alembic.ini and alembic/versions/
-git add alembic/ alembic.ini
-git commit -m "fix(backend): initialize Alembic migrations"
-git push origin dev
-```
+### ✅ All Critical Fixes Complete
 
-### 2. Update Dependabot Base Branch
-Edit `.github/dependabot.yml`:
-- Change default branch or add `target-branch: dev` to each update config
+**Dependabot Issues:** ✅ **RESOLVED**
+- Dependabot config updated with `versioning-strategy: "increase"`
+- All PR base branches changed to `dev`
+- Dependency versions manually updated to resolve conflicts
+- PRs #50-53 ready to merge, PR #54 can be closed
 
-### 3. Or Manually Update PRs
-```bash
-# For each dependabot PR, change base to dev
-gh pr edit <PR_NUMBER> --base dev
-```
+**Note:** Alembic is already initialized (Issue #3 complete), so no action needed there.
 
 ---
 
