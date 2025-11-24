@@ -86,10 +86,8 @@ async def test_supervisor_route_with_security_content(requires_ollama) -> None:
     decision = result["supervisor_decision"]
     assert len(decision["agents"]) > 0
 
-    # Should likely select security_auditor
-    agent_names = decision["agents"]
     # Note: We don't assert specific agents since LLM selection may vary
-    # Just verify that agents were selected
+    # Just verify that agents were selected (assertion above confirms this)
 
 
 @pytest.mark.asyncio
