@@ -114,7 +114,7 @@ class EmbeddingService:
                     status_code=response.status_code,
                     error=error_msg,
                 )
-                raise EmbeddingError(error_msg)
+                raise EmbeddingError(error_msg)  # noqa: TRY301
 
             # Parse response
             data: dict[str, Any] = response.json()
@@ -123,12 +123,12 @@ class EmbeddingService:
             if not embedding:
                 error_msg = "No 'embedding' field in API response"
                 logger.error("embedding_missing_field", response_data=str(data)[:200])
-                raise EmbeddingError(error_msg)
+                raise EmbeddingError(error_msg)  # noqa: TRY301
 
             if not isinstance(embedding, list):
                 error_msg = f"Expected list embedding, got {type(embedding)}"
                 logger.error("embedding_invalid_type", embedding_type=type(embedding).__name__)
-                raise EmbeddingError(error_msg)
+                raise EmbeddingError(error_msg)  # noqa: TRY301
 
             # Handle dimension mismatch (like reporter-accuracy)
             if len(embedding) > self.expected_dimensions:

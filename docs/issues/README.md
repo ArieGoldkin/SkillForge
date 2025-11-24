@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 23, 2025  
+**Last Updated:** November 23, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -27,18 +27,23 @@ docs/issues/
 │   ├── README.md                         # Issue #4 complete doc
 │   ├── ISSUE_4_VERIFICATION.md
 │   └── TEST_RESULTS.md
+├── 005-embedding-service/
+│   └── README.md                         # Issue #5 complete doc
 ├── 030-frontend-code-quality/
 │   ├── README.md                         # Issue #30 complete doc
 │   └── ISSUE_30_VALIDATION_COMPLETE.md
-└── 034-app-router-integration/
-    └── README.md                         # Issue #34 complete doc
+├── 034-app-router-integration/
+│   └── README.md                         # Issue #34 complete doc
+└── 039-langgraph-workflow/
+    ├── README.md                         # Issue #39 complete doc
+    └── ISSUE_39_VERIFICATION.md
 ```
 
 ---
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (7 total - 32 pts)
+### ✅ Completed Issues (9 total - 40 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -48,8 +53,10 @@ docs/issues/
 | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) | Content Extraction (Jina AI) | ✅ Complete | Yonatan | [📄 Docs](./004-content-extraction-jina/README.md) | [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) |
 | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) | Embedding Service Implementation | ✅ Complete | Yonatan | [📄 Docs](./005-embedding-service/README.md) | [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) |
 | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) | Frontend Code Quality & Design Prototypes | ✅ Complete (Closed) | Arie | [📄 Docs](./030-frontend-code-quality/README.md) | [#30](https://github.com/ArieGoldkin/SkillForge/issues/30) |
+| [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | ✅ Complete | Arie | [📄 Docs](./034-app-router-integration/README.md) | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
+| [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) | Create Basic LangGraph Workflow | ✅ Complete | Yonatan | [📄 Docs](./039-langgraph-workflow/README.md) | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) |
 
-### 🔄 In Progress / Ready (5 total - 18 pts)
+### 🔄 In Progress / Ready (4 total - 13 pts)
 
 #### Backend (Yonatan)
 
@@ -64,13 +71,18 @@ _No backend issues in progress_
 | [#33](https://github.com/ArieGoldkin/SkillForge/issues/33) | Initialize Husky Pre-commit Hooks | 🔄 Ready | Arie | TBD | [#33](https://github.com/ArieGoldkin/SkillForge/issues/33) |
 | [#35](https://github.com/ArieGoldkin/SkillForge/issues/35) | Add Error Boundaries and 404 Page | 🔄 Ready | Arie | TBD | [#35](https://github.com/ArieGoldkin/SkillForge/issues/35) |
 
-### 📈 Sprint 1 Progress
+### 📈 Sprint Progress
 
+**Sprint 1:**
 - **Total Story Points:** 45 pts
-- **Completed:** 32 pts (71%)
-- **Remaining:** 13 pts (29%)
-- **Yonatan Progress:** 24/22 pts (109%) ✅
-- **Arie Progress:** 8/23 pts (35%)
+- **Completed:** 40 pts (80%)
+- **Remaining:** 10 pts (20%)
+- **Yonatan Progress:** 29/27 pts (107%) ✅
+- **Arie Progress:** 11/23 pts (48%)
+
+**Sprint 2:**
+- **Completed:** 5 pts (Issue #39)
+- **Yonatan Progress:** 5/10 pts (50%)
 
 ---
 

@@ -7,6 +7,11 @@ import pytest
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
 
+# Constants for test assertions
+EXPECTED_EMBEDDING_DIMENSIONS = 768
+MAX_TEXT_LENGTH = 8000
+NORMALIZATION_TOLERANCE = 0.0001
+
 
 @pytest.fixture
 def sample_embedding_768() -> list[float]:
@@ -46,12 +51,12 @@ async def test_generate_embedding_success(
 
         result = await embedding_service.generate_embedding("Sample text")
 
-        assert len(result) == 768
+        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
         assert all(isinstance(x, float) for x in result)
         # Result is normalized, so values will differ from input
         # Check that it's a valid normalized vector (L2 norm ≈ 1.0)
         norm = sum(x * x for x in result) ** 0.5
-        assert abs(norm - 1.0) < 0.0001
+        assert abs(norm - 1.0) < NORMALIZATION_TOLERANCE
 
         # Verify API call
         mock_post.assert_called_once()
@@ -74,8 +79,8 @@ async def test_generate_embedding_truncates_large_embedding(
 
         result = await embedding_service.generate_embedding("Sample text", normalize=False)
 
-        assert len(result) == 768
-        assert result == sample_embedding_1536[:768]
+        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
+        assert result == sample_embedding_1536[:EXPECTED_EMBEDDING_DIMENSIONS]
 
 
 @pytest.mark.asyncio
@@ -92,7 +97,7 @@ async def test_generate_embedding_pads_small_embedding(
 
         result = await embedding_service.generate_embedding("Sample text", normalize=False)
 
-        assert len(result) == 768
+        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
         assert result[:512] == sample_embedding_512
         assert all(x == 0.0 for x in result[512:])
 
@@ -115,7 +120,7 @@ async def test_generate_embedding_normalizes_vector(
 
         # Check that vector is normalized (L2 norm = 1.0)
         norm = sum(x * x for x in result) ** 0.5
-        assert abs(norm - 1.0) < 0.0001
+        assert abs(norm - 1.0) < NORMALIZATION_TOLERANCE
 
 
 @pytest.mark.asyncio
@@ -151,7 +156,7 @@ async def test_generate_embedding_truncates_long_text(embedding_service: Embeddi
 
         # Verify that truncated text was sent (8000 chars max)
         call_args = mock_post.call_args
-        assert len(call_args[1]["json"]["prompt"]) == 8000
+        assert len(call_args[1]["json"]["prompt"]) == MAX_TEXT_LENGTH
 
 
 @pytest.mark.asyncio
@@ -232,10 +237,10 @@ async def test_normalize_vector(embedding_service: EmbeddingService) -> None:
 
     # Check L2 norm is 1.0
     norm = sum(x * x for x in normalized) ** 0.5
-    assert abs(norm - 1.0) < 0.0001
+    assert abs(norm - 1.0) < NORMALIZATION_TOLERANCE
 
     # Check direction is preserved (proportional)
-    assert abs(normalized[0] / normalized[1] - 3.0 / 4.0) < 0.0001
+    assert abs(normalized[0] / normalized[1] - 3.0 / 4.0) < NORMALIZATION_TOLERANCE
 
 
 @pytest.mark.asyncio
