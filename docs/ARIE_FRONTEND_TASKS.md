@@ -297,7 +297,7 @@ src/
 
 #### Example Component
 ```typescript
-// src/components/ui/Button.tsx
+// src/shared/components/ui/Button.tsx
 import { ButtonHTMLAttributes } from 'react'
 import { clsx } from 'clsx'
 
@@ -461,7 +461,7 @@ Create a visual component showing analysis progress through multiple stages.
 
 #### Component Design
 ```typescript
-// src/components/ProgressTracker.tsx
+// src/shared/components/ProgressTracker.tsx
 import { useSSE } from '../hooks/useSSE'
 import { CheckCircle, Loader, Circle } from 'lucide-react'
 
@@ -660,7 +660,7 @@ Build a component that renders markdown with syntax highlighting.
 
 #### Implementation
 ```typescript
-// src/components/MarkdownPreview.tsx
+// src/shared/components/MarkdownPreview.tsx
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Prism from 'prismjs'
@@ -765,7 +765,7 @@ Create a modal that shows markdown preview before downloading.
 
 #### Implementation
 ```typescript
-// src/components/ArtifactPreviewModal.tsx
+// src/shared/components/ArtifactPreviewModal.tsx
 import * as Dialog from '@radix-ui/react-dialog'
 import { MarkdownPreview } from './MarkdownPreview'
 import { Button } from './ui/Button'
@@ -891,7 +891,7 @@ Build a chat interface for tutoring sessions.
 
 #### Component Structure
 ```typescript
-// src/components/TutorChat.tsx
+// src/shared/components/TutorChat.tsx
 interface Message {
   id: string
   role: 'user' | 'assistant'

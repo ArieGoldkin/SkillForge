@@ -9,15 +9,47 @@ import type {
 
 // Mock data for development (until backend is ready)
 
-export const mockAnalysis: Analysis = {
-  id: '550e8400-e29b-41d4-a716-446655440000',
-  url: 'https://example.com/article',
-  content_type: 'article',
-  title: 'Introduction to React Server Components',
-  status: 'complete',
-  created_at: new Date().toISOString(),
-  artifact_id: 'artifact-123',
-}
+// Multiple analyses for Library page
+export const mockAnalyses: Analysis[] = [
+  {
+    id: '550e8400-e29b-41d4-a716-446655440000',
+    url: 'https://react.dev/reference/rsc/server-components',
+    content_type: 'article',
+    title: 'Introduction to React Server Components',
+    status: 'complete',
+    created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    artifact_id: 'artifact-123',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    content_type: 'video',
+    title: 'Advanced TypeScript Patterns',
+    status: 'complete',
+    created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+    artifact_id: 'artifact-124',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    url: 'https://github.com/vercel/next.js',
+    content_type: 'repo',
+    title: 'Next.js Repository Analysis',
+    status: 'complete',
+    created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+    artifact_id: 'artifact-125',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440003',
+    url: 'https://python.org/docs',
+    content_type: 'article',
+    title: 'Python Documentation Deep Dive',
+    status: 'analyzing',
+    created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+    artifact_id: null,
+  },
+]
+
+export const mockAnalysis: Analysis = mockAnalyses[0]
 
 export const mockArtifact: Artifact = {
   id: 'artifact-123',
@@ -65,7 +97,22 @@ export const mockTutoringMessages: TutoringMessage[] = [
     role: 'assistant',
     content:
       'Hello! I can help you implement React Server Components. What would you like to learn?',
-    created_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 300000).toISOString(),
+  },
+  {
+    id: 'msg-2',
+    session_id: 'session-456',
+    role: 'user',
+    content: 'How do I fetch data in a Server Component?',
+    created_at: new Date(Date.now() - 240000).toISOString(),
+  },
+  {
+    id: 'msg-3',
+    session_id: 'session-456',
+    role: 'assistant',
+    content:
+      'Great question! In Server Components, you can fetch data directly using async/await. Here\'s an example:\n\n```typescript\nasync function UserProfile({ userId }: { userId: string }) {\n  const user = await fetch(`https://api.example.com/users/${userId}`)\n  const data = await user.json()\n  return <div>{data.name}</div>\n}\n```\n\nWhat makes this powerful is that it runs on the server, so you never expose API keys to the client.',
+    created_at: new Date(Date.now() - 180000).toISOString(),
   },
 ]
 
@@ -76,21 +123,28 @@ export const mockAnalyzeAPI = {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500))
 
+    const analysisId = `analysis-${Date.now()}`
     return {
-      analysis_id: '550e8400-e29b-41d4-a716-446655440000',
-      sse_endpoint: '/api/v1/analyze/550e8400-e29b-41d4-a716-446655440000/stream',
+      analysis_id: analysisId,
+      sse_endpoint: `/api/v1/analyze/${analysisId}/stream`,
       status: 'pending',
     }
   },
 
-  getAnalysis: async (_id: string): Promise<Analysis> => {
+  getAnalysis: async (id: string): Promise<Analysis> => {
     await new Promise((resolve) => setTimeout(resolve, 300))
-    return mockAnalysis
+    const found = mockAnalyses.find((a) => a.id === id)
+    return found || mockAnalysis
   },
 
   getArtifact: async (_id: string): Promise<Artifact> => {
     await new Promise((resolve) => setTimeout(resolve, 300))
     return mockArtifact
+  },
+
+  listAnalyses: async (): Promise<Analysis[]> => {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    return mockAnalyses
   },
 }
 
