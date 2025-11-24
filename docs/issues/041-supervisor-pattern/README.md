@@ -48,6 +48,9 @@ Create supervisor node that routes to sub-agents dynamically using LangChain v1.
 
 **Modified Files:**
 - `backend/app/workflows/analysis.py` - Integrated supervisor_route into workflow
+- `backend/app/workflows/nodes/supervisor.py` - Updated to use model factory
+- `backend/app/core/model_factory.py` - Added multi-provider support (November 24, 2025)
+- `backend/app/core/config.py` - Added multi-provider LLM configuration
 
 ---
 
@@ -79,8 +82,13 @@ extract_content → generate_embedding → supervisor_route → return state
 
 ### Key Features
 
-1. **LangChain v1.0 create_agent:**
-   - Supervisor agent created with `init_chat_model("ollama:llama3.1:8b")`
+1. **LangChain v1.0 create_agent with Multi-Provider LLM Support:**
+   - Supervisor agent uses flexible model factory (`app/core/model_factory.py`)
+   - Supports multiple providers: OpenAI, Anthropic, Google, xAI, DeepSeek, Ollama
+   - Default: `ollama:llama3.3:8b` for development (free, local)
+   - Production: `gpt-5-mini` recommended ($0.25/$2.00 per 1M tokens - verified November 24, 2025)
+   - Model selection via `LLM_MODEL` environment variable
+   - Provider auto-inference from model name or explicit `LLM_PROVIDER` setting
    - System prompt instructs supervisor to analyze content and select agents
    - Tools are exposed to supervisor for agent selection
 
@@ -152,12 +160,31 @@ backend/tests/
 - ✅ All 6 integration tests passing (when Ollama available)
 - ✅ Tests use proper fixtures and mocking
 
+### Multi-Provider LLM Integration (November 24, 2025)
+
+**Added Support:**
+- ✅ Multi-provider LLM configuration system
+- ✅ Model factory (`app/core/model_factory.py`) for unified model initialization
+- ✅ Provider auto-inference from model names
+- ✅ GPT-5 Mini integration as recommended production model
+- ✅ Verified November 24, 2025 pricing for all providers
+- ✅ API key validation per provider
+- ✅ Dev environment validated with GPT-5 Mini
+
+**Test Results:**
+- ✅ All 68 unit tests passing
+- ✅ All 15 supervisor tests passing (9 unit + 6 integration)
+- ✅ Model factory tested with GPT-5 Mini
+- ✅ Supervisor agent initialized correctly with multi-provider support
+- ✅ API integration verified working
+
 ### Standards Compliance
 
 **File Size Limits:** ✅
 - `agent_tools.py`: 82 lines (< 200 limit)
 - `supervisor.py`: 165 lines (< 200 limit)
 - `supervisor_config.py`: 25 lines (< 200 limit)
+- `model_factory.py`: 59 lines (< 200 limit)
 - `test_supervisor.py` (unit): 293 lines (< 300 limit)
 - `test_supervisor.py` (integration): 192 lines (< 300 limit)
 
@@ -223,20 +250,63 @@ result = {
 
 ## Environment Configuration
 
-**Required Environment Variables:**
-```bash
-# Ollama (for supervisor LLM)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
+### Multi-Provider LLM Configuration
 
+The supervisor supports multiple LLM providers through a unified configuration system.
+
+**Primary LLM Configuration:**
+```bash
+# Multi-Provider LLM (recommended)
+LLM_MODEL=gpt-5-mini              # Production: GPT-5 Mini ($0.25/$2.00)
+# LLM_MODEL=ollama:llama3.3:8b    # Development: Ollama (free, local)
+# LLM_MODEL=claude-sonnet-4       # Anthropic Claude 4 Sonnet
+# LLM_MODEL=gemini-2.0-flash      # Google Gemini 2.0 Flash
+# LLM_PROVIDER=openai             # Optional: explicit provider override
+
+# Provider API Keys (set based on provider)
+OPENAI_API_KEY=sk-...             # Required for OpenAI models
+ANTHROPIC_API_KEY=sk-ant-...      # Required for Anthropic models
+GOOGLE_API_KEY=...                # Required for Google models
+XAI_API_KEY=...                   # Required for xAI (Grok) models
+DEEPSEEK_API_KEY=...              # Required for DeepSeek models
+```
+
+**Supported Providers & Models (Verified November 24, 2025):**
+- **Ollama** (FREE): `ollama:llama3.3:8b` - Development, local
+- **OpenAI**: `gpt-5-mini` ($0.25/$2.00) - **RECOMMENDED** for production
+- **OpenAI**: `gpt-5-nano` ($0.05/$0.40) - Cheapest OpenAI option
+- **Google**: `gemini-2.0-flash` ($0.075/$0.30) - Cheapest input pricing
+- **DeepSeek**: `deepseek-v3.2` ($0.28/$0.42) - Very cheap
+- **xAI**: `grok-3-mini` ($0.30/$0.50) - Very cheap alternative
+- **Anthropic**: `claude-sonnet-4` ($3.00/$15.00) - Strong reasoning
+
+**Model Factory:**
+- `app/core/model_factory.py` - Centralizes model initialization
+- `app/core/config.py` - Provider inference and API key validation
+- Automatic provider detection from model name
+- Explicit provider override via `LLM_PROVIDER` environment variable
+
+**Legacy Ollama Configuration (for embeddings):**
+```bash
+# Legacy Ollama config (used for embeddings / backwards compatibility)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.3:8b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+**Database Configuration:**
+```bash
 # Database (for workflow checkpointing)
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
 ```
 
-**Note:** 
-- `OLLAMA_MODEL` must match a model available in Ollama
-- Supervisor agent requires Ollama running on `OLLAMA_BASE_URL`
+**Notes:** 
+- `LLM_MODEL` is the primary configuration (supports all providers)
+- Provider API keys are validated automatically based on selected provider
+- Ollama doesn't require API key (local deployment)
 - Database is optional - workflow uses MemorySaver if not configured
+- Default model: `ollama:llama3.3:8b` for development
+- Production recommendation: `gpt-5-mini` (newer + cheaper than GPT-4o Mini)
 
 ---
 

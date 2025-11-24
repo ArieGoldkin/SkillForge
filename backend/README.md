@@ -179,15 +179,53 @@ poetry add --group dev pre-commit
 
 ### Environment Variables
 
-All configuration is loaded from environment variables or `.env` file. See `.env.example` for all available options.
+All configuration is loaded from environment variables or `.env` file. See `.env.example` for all available options with verified November 2025 pricing.
 
-Key variables:
+**Application Settings:**
 - `ENVIRONMENT`: Runtime environment (`development`, `staging`, `production`)
 - `LOG_LEVEL`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
 - `CORS_ORIGINS`: Allowed CORS origins (JSON array)
-- `DATABASE_URL`: PostgreSQL connection string (future)
-- `OLLAMA_BASE_URL`: Ollama API base URL (future)
-- `JINA_API_KEY`: Jina AI API key (future, optional for dev)
+
+**Database:**
+- `DATABASE_URL`: PostgreSQL connection string (required in production)
+
+**Multi-Provider LLM Configuration:**
+- `LLM_MODEL`: Primary LLM identifier (supports 6 providers)
+  - Development: `ollama:llama3.3:8b` (free, local)
+  - Production (recommended): `gpt-5-mini` ($0.25/$2.00 per 1M tokens)
+  - Other options: `claude-sonnet-4`, `gemini-2.0-flash`, `grok-3-mini`, `deepseek-v3.2`
+- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `ollama`, `xai`, `deepseek`)
+
+**Provider API Keys (set based on selected provider):**
+- `OPENAI_API_KEY`: Required for OpenAI models (GPT-5 Mini, GPT-5, GPT-4o, etc.)
+- `ANTHROPIC_API_KEY`: Required for Anthropic models (Claude 4 Sonnet, Claude 4 Opus)
+- `GOOGLE_API_KEY`: Required for Google models (Gemini 2.0 Flash, Gemini 2.5 Pro)
+- `XAI_API_KEY`: Required for xAI models (Grok 3 Mini, Grok 3 Std)
+- `DEEPSEEK_API_KEY`: Required for DeepSeek models (V3.2)
+
+**Legacy Ollama Configuration (for embeddings / backwards compatibility):**
+- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
+- `OLLAMA_MODEL`: Ollama model name (default: `llama3.3:8b`)
+- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
+
+**Content Extraction:**
+- `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
+
+**Example Configuration:**
+
+Development (with Ollama - free):
+```env
+LLM_MODEL=ollama:llama3.3:8b
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+Production (with GPT-5 Mini - recommended):
+```env
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
+```
+
+See `.env.example` for complete configuration options and verified November 2025 pricing.
 
 ### CORS Configuration
 

@@ -42,6 +42,7 @@ Usage:
 Note:
     The engine is created at module import time. Ensure DATABASE_URL is
     configured before importing this module.
+
 """
 
 from collections.abc import AsyncGenerator

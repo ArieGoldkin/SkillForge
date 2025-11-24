@@ -102,7 +102,7 @@ def test_settings_ollama_defaults():
     """Test Ollama configuration defaults."""
     settings = Settings()
     assert settings.OLLAMA_BASE_URL == "http://localhost:11434"
-    assert settings.OLLAMA_MODEL == "llama3.1:8b"
+    assert settings.OLLAMA_MODEL == "llama3.3:8b"
 
 
 def test_settings_optional_fields():

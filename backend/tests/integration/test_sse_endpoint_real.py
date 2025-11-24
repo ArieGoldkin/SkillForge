@@ -5,6 +5,7 @@ and will be skipped if .env.test doesn't exist or keys are missing.
 """
 
 import asyncio
+import contextlib
 import json
 import uuid
 from pathlib import Path
@@ -136,7 +137,7 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
         event_collection_task = asyncio.create_task(collect_events())
 
         # Wait for either events to complete or timeout (shorter timeout)
-        done, pending = await asyncio.wait(
+        _done, pending = await asyncio.wait(
             [event_collection_task],
             timeout=30.0,  # 30 seconds max - fail fast
             return_when=asyncio.FIRST_COMPLETED,
@@ -145,34 +146,26 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
         # Cancel event collection if it's still pending
         if event_collection_task in pending:
             event_collection_task.cancel()
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(event_collection_task, timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
     except Exception:
         # Ensure event collection is cancelled on any error
         if event_collection_task and not event_collection_task.done():
             event_collection_task.cancel()
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(event_collection_task, timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
     finally:
         # Cancel and await workflow task to ensure proper cleanup
         if workflow_task and not workflow_task.done():
             workflow_task.cancel()
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(workflow_task, timeout=2.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
         # Ensure event collection is cancelled
         if event_collection_task and not event_collection_task.done():
             event_collection_task.cancel()
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(event_collection_task, timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     # Verify we received events
     # If no events received, the test should still complete (not hang)
@@ -205,12 +198,20 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(60)  # 1 minute max timeout - fail fast if hanging
+@pytest.mark.timeout(
+    90
+)  # 90 seconds max timeout - accounts for streaming/parallel execution overhead
 async def test_sse_endpoint_real_workflow_events(requires_test_env):
     """Test that real workflow execution emits SSE events.
 
     This test verifies that when a workflow runs, it emits SSE events
     that can be received via the SSE endpoint.
+
+    Timeout is set to 90s to account for:
+    - Streaming overhead from agent.astream()
+    - Parallel execution of embedding and supervisor
+    - Real external service response times (OpenAI, Jina, Ollama)
+    - SSE event emission and processing
     """
     analysis_id = str(uuid.uuid4())
 
@@ -233,18 +234,16 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     # Note: Subscriber count may be 0 if no one is subscribed, but events
     # should still be published
 
-    # Wait for workflow to complete with timeout (shorter for faster failure)
+    # Wait for workflow to complete with timeout (increased for streaming/parallel overhead)
     try:
-        result = await asyncio.wait_for(workflow_task, timeout=30.0)
+        result = await asyncio.wait_for(workflow_task, timeout=60.0)
         assert "analysis_id" in result
         assert result["analysis_id"] == analysis_id
         assert "raw_content" in result
         assert "content_embedding" in result
-    except (TimeoutError, asyncio.TimeoutError):
+    except TimeoutError:
         workflow_task.cancel()
         # Await cancellation to ensure proper cleanup
-        try:
+        with contextlib.suppress(TimeoutError, asyncio.CancelledError):
             await asyncio.wait_for(workflow_task, timeout=2.0)
-        except (asyncio.CancelledError, asyncio.TimeoutError):
-            pass
         pytest.fail("Workflow did not complete within timeout")

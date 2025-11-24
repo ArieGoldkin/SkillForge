@@ -56,13 +56,15 @@ def test_exception_instantiation() -> None:
 def test_exception_catching() -> None:
     """Test that exceptions can be caught by base class."""
     try:
-        raise EmbeddingError("Test error")
+        msg = "Test error"
+        raise EmbeddingError(msg)
     except SkillForgeException as e:
         assert isinstance(e, EmbeddingError)
         assert str(e) == "Test error"
 
     try:
-        raise JinaReaderError("Test error")
+        msg = "Test error"
+        raise JinaReaderError(msg)
     except ServiceException as e:
         assert isinstance(e, JinaReaderError)
         assert str(e) == "Test error"
