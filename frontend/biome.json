@@ -41,6 +41,15 @@
       "formatter": {
         "lineWidth": 120
       }
+    },
+    {
+      "includes": ["*.css"],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      }
     }
   ]
 }

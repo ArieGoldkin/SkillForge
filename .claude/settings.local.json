@@ -1,8 +1,11 @@
 {
-  "enableAllProjectMcpServers": true,
   "permissions": {
     "allow": [
-      "Bash(gh issue list:*)"
+      "Bash(gh issue list:*)",
+      "Skill(brainstorming)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh issue view:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true
 }

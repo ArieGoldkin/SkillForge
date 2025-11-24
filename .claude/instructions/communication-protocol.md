@@ -72,8 +72,8 @@ instruction: |
 
 boundaries:
   allowed:
-    - frontend/src/components/SearchableDropdown.tsx
-    - frontend/src/components/SearchableDropdown.test.tsx
+    - frontend/src/shared/components/SearchableDropdown.tsx
+    - frontend/src/shared/components/SearchableDropdown.test.tsx
     - frontend/src/styles/dropdown.css
   forbidden:
     - backend/**
@@ -85,8 +85,8 @@ inputs:
   api_contract: api/search-endpoint.yaml
   
 outputs:
-  component: frontend/src/components/SearchableDropdown.tsx
-  tests: frontend/src/components/SearchableDropdown.test.tsx
+  component: frontend/src/shared/components/SearchableDropdown.tsx
+  tests: frontend/src/shared/components/SearchableDropdown.test.tsx
   documentation: docs/components/SearchableDropdown.md
 
 success_criteria:
@@ -125,7 +125,7 @@ remaining_steps:
   - Unit tests
 
 artifacts_created:
-  - path: frontend/src/components/SearchableDropdown.tsx
+  - path: frontend/src/shared/components/SearchableDropdown.tsx
     lines: 186
     status: draft
   - path: frontend/src/types/dropdown.ts
@@ -177,7 +177,7 @@ message: |
 context:
   task_id: task_001
   component: SearchableDropdown
-  file: frontend/src/components/SearchableDropdown.tsx
+  file: frontend/src/shared/components/SearchableDropdown.tsx
 
 response_needed: true
 response_by: 2024-01-15T10:45:00Z
@@ -279,7 +279,7 @@ occurred_at: 2024-01-15T10:38:00Z
 error:
   type: TypeScriptCompilationError
   message: "Type 'string' is not assignable to type 'number'"
-  file: frontend/src/components/SearchableDropdown.tsx
+  file: frontend/src/shared/components/SearchableDropdown.tsx
   line: 45
   column: 12
 

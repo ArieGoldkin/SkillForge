@@ -2,26 +2,40 @@ import { useEffect } from 'react'
 
 import { Outlet, createRootRoute } from '@tanstack/react-router'
 
+import { applyTheme, setupSystemThemeListener, useThemeStore } from '@/stores/themeStore'
+
 import { Navigation } from '@shared/components/Navigation'
 
-import { useAppStore } from '@store/useAppStore'
-
+/**
+ * Root Layout Component
+ *
+ * Provides the base layout structure for all routes:
+ * - Theme management and application
+ * - Navigation header
+ * - Route content outlet
+ *
+ * Theme handling:
+ * - Applies theme via data-theme attribute and CSS classes
+ * - Listens for system preference changes
+ * - Persists theme selection in localStorage
+ */
 function RootComponent() {
-  const theme = useAppStore((state) => state.theme)
+  const theme = useThemeStore((state) => state.theme)
 
-  // Apply theme to document
+  // Apply theme on mount and when theme changes
   useEffect(() => {
-    const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
+    applyTheme(theme)
+  }, [theme])
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      root.classList.add(systemTheme)
-    } else {
-      root.classList.add(theme)
-    }
+  // Listen for system theme changes when theme is 'system'
+  useEffect(() => {
+    if (theme !== 'system') return
+
+    const cleanup = setupSystemThemeListener(() => {
+      applyTheme(theme)
+    })
+
+    return cleanup
   }, [theme])
 
   return (
