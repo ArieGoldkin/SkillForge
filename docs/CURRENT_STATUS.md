@@ -400,4 +400,4 @@ Issue #40 (SSE Endpoint)
 **Maintained By:** Yonatan & Arie
 
 **See Also:**
-- [Sprint 2 Issues Summary](./sprints/SPRINT_2_ISSUES_SUMMARY.md) - Detailed Sprint 2 planning and alignment analysis
+- [Issues Documentation](./issues/README.md) - Complete issue status and documentation
