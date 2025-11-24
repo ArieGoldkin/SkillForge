@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from app.core.logging import get_logger
+from app.core.types import AnalysisID
 from app.services.event_broadcaster import broadcaster
 
 logger = get_logger(__name__)
@@ -10,7 +11,7 @@ logger = get_logger(__name__)
 
 async def emit_streaming_event(
     event_type: str,
-    analysis_id: str,
+    analysis_id: AnalysisID,
     stage: str,
     status: str,
     **kwargs: object,
@@ -34,7 +35,7 @@ async def emit_streaming_event(
             analysis_id="123e4567-e89b-12d3-a456-426614174000",
             stage="extraction",
             status="running",
-            word_count=5234
+            word_count=5234,
         )
         ```
 

@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator
 from contextlib import suppress
 
 from app.core.logging import get_logger
+from app.core.types import ChannelName, EventData
 
 logger = get_logger(__name__)
 
@@ -40,10 +41,10 @@ class EventBroadcaster:
 
     def __init__(self) -> None:
         """Initialize event broadcaster with empty channels."""
-        self._channels: dict[str, list[asyncio.Queue[dict[str, object]]]] = defaultdict(list)
+        self._channels: dict[ChannelName, list[asyncio.Queue[EventData]]] = defaultdict(list)
         self._lock = asyncio.Lock()
 
-    async def publish(self, channel: str, message: dict[str, object]) -> None:
+    async def publish(self, channel: ChannelName, message: EventData) -> None:
         """Publish message to all subscribers of a channel.
 
         Args:
@@ -76,7 +77,7 @@ class EventBroadcaster:
             subscribers=len(queues),
         )
 
-    async def subscribe(self, channel: str) -> AsyncIterator[dict[str, object]]:
+    async def subscribe(self, channel: ChannelName) -> AsyncIterator[EventData]:
         """Subscribe to a channel and yield messages.
 
         Creates a new queue for this subscriber and yields messages as they
@@ -90,7 +91,7 @@ class EventBroadcaster:
             Message dictionaries published to the channel
 
         """
-        queue: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+        queue: asyncio.Queue[EventData] = asyncio.Queue()
 
         # Add queue to channel subscribers
         async with self._lock:
@@ -118,7 +119,7 @@ class EventBroadcaster:
 
             logger.debug("subscribe_cleaned", channel=channel)
 
-    def get_subscriber_count(self, channel: str) -> int:
+    def get_subscriber_count(self, channel: ChannelName) -> int:
         """Get number of active subscribers for a channel.
 
         Args:
