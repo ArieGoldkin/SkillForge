@@ -3,7 +3,6 @@
 import pytest
 
 from app.workflows.analysis import analysis_workflow
-from app.workflows.types import AnalysisState
 
 
 @pytest.mark.asyncio

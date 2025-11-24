@@ -106,7 +106,6 @@ def test_request_id_middleware_cleans_up_context(reset_context):
     response = client.get("/")
 
     # After request - context should still be clean (no leakage)
-    context_after = structlog.contextvars.get_contextvars()
     # Context should be clean (request_id removed in finally block)
     assert response.headers["X-Request-ID"] is not None
 

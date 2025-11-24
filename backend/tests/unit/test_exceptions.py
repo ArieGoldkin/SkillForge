@@ -1,7 +1,5 @@
 """Unit tests for exception hierarchy."""
 
-import pytest
-
 from app.core.exceptions import (
     DatabaseError,
     EmbeddingError,

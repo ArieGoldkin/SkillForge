@@ -162,7 +162,9 @@ async def test_cascade_delete_foreign_keys(requires_database, reset_engine_conne
                     conrelid::regclass as table_name,
                     pg_get_constraintdef(oid) as constraint_def
                 FROM pg_constraint
-                WHERE contype = 'f' AND conrelid::regclass::text IN ('agent_findings', 'artifacts', 'analysis_progress')
+                WHERE contype = 'f' AND conrelid::regclass::text IN (
+                    'agent_findings', 'artifacts', 'analysis_progress'
+                )
                 """
             )
         )

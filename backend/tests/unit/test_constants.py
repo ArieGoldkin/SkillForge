@@ -1,7 +1,5 @@
 """Unit tests for constants module."""
 
-import pytest
-
 from app.core.constants import (
     CONTENT_TYPE_ARTICLE,
     CONTENT_TYPE_REPO,
@@ -53,7 +51,7 @@ def test_text_limits() -> None:
     assert MAX_ERROR_MESSAGE_LENGTH_LONG == 200
     assert MAX_TITLE_PREVIEW_LENGTH == 100
     assert MAX_MODELS_PREVIEW_COUNT == 5
-    assert all(isinstance(l, int) for l in [MAX_TEXT_LENGTH, MAX_ERROR_MESSAGE_LENGTH])
+    assert all(isinstance(length, int) for length in [MAX_TEXT_LENGTH, MAX_ERROR_MESSAGE_LENGTH])
 
 
 def test_retry_configuration() -> None:
@@ -80,7 +78,9 @@ def test_content_types() -> None:
     assert CONTENT_TYPE_ARTICLE == "article"
     assert CONTENT_TYPE_VIDEO == "video"
     assert CONTENT_TYPE_REPO == "repo"
-    assert all(isinstance(ct, str) for ct in [CONTENT_TYPE_ARTICLE, CONTENT_TYPE_VIDEO, CONTENT_TYPE_REPO])
+    assert all(
+        isinstance(ct, str) for ct in [CONTENT_TYPE_ARTICLE, CONTENT_TYPE_VIDEO, CONTENT_TYPE_REPO]
+    )
 
 
 def test_default_values() -> None:

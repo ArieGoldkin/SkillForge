@@ -29,7 +29,9 @@ def test_detect_article_default() -> None:
 
 def test_url_validation_empty_string() -> None:
     """Test that empty string raises ContentTypeError."""
-    with pytest.raises(ContentTypeError, match="URL must be a non-empty string|URL cannot be empty"):
+    with pytest.raises(
+        ContentTypeError, match="URL must be a non-empty string|URL cannot be empty"
+    ):
         detect_content_type("")
 
 
