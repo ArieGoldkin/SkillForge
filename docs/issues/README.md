@@ -65,6 +65,7 @@ docs/issues/
 | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) | Integrate App.tsx with Router Layout | ✅ Complete | Arie | [📄 Docs](./034-app-router-integration/README.md) | [#34](https://github.com/ArieGoldkin/SkillForge/issues/34) |
 | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) | Create Basic LangGraph Workflow | ✅ Complete | Yonatan | [📄 Docs](./039-langgraph-workflow/README.md) | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) |
 | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) | SSE Endpoint for Real-Time Progress | ✅ Complete | Yonatan | [📄 Docs](./040-sse-endpoint/README.md) | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) |
+| [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) | Implement Supervisor Pattern | ✅ Complete | Yonatan | [📄 Docs](./041-supervisor-pattern/README.md) | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) |
 
 ### 🔄 In Progress / Ready (4 total - 13 pts)
 
