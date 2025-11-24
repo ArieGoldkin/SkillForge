@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import os
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, engine
 from app.main import app
 
 # Load .env.test if it exists for integration tests
@@ -18,8 +19,9 @@ if TEST_ENV_FILE.exists():
     # Set environment variable to load .env.test
     # The Settings class will detect this and load .env.test
     os.environ["ENV_FILE"] = str(TEST_ENV_FILE)
-    # Also set ENVIRONMENT=testing to trigger test mode
-    os.environ.setdefault("ENVIRONMENT", "testing")
+    # Also set ENVIRONMENT=development for test mode
+    # (Settings validation requires development/staging/production)
+    os.environ.setdefault("ENVIRONMENT", "development")
 
 
 @pytest.fixture
@@ -42,7 +44,7 @@ def clear_config_cache():
 def test_settings():
     """Override settings for testing."""
     return Settings(
-        ENVIRONMENT="testing",
+        ENVIRONMENT="development",
         LOG_LEVEL="INFO",
         CORS_ORIGINS=["http://localhost:5173"],
     )
@@ -57,8 +59,7 @@ def auto_clear_config_cache(clear_config_cache):
 @pytest.fixture
 def requires_database():
     """Skip test if DATABASE_URL is not configured."""
-    from app.core.config import settings
-
+    settings = get_settings()
     if not settings.DATABASE_URL:
         pytest.skip("DATABASE_URL not configured")
 
@@ -71,8 +72,6 @@ async def reset_engine_connections():
     preventing 'attached to different loop' errors. Use this fixture for
     tests that use database connections and have event loop issues.
     """
-    from app.db.session import engine
-
     # Dispose existing connections before test
     await engine.dispose()
     yield
@@ -81,7 +80,7 @@ async def reset_engine_connections():
 
 
 @pytest.fixture
-async def db_session(requires_database, reset_engine_connections) -> AsyncSession:
+async def db_session(requires_database, reset_engine_connections) -> AsyncGenerator[AsyncSession]:
     """Create a test database session with automatic rollback.
 
     Yields an async session and rolls back all changes after test.
