@@ -27,8 +27,18 @@ def requires_jina_api_key():
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
 async def test_analysis_workflow_end_to_end(requires_database) -> None:
-    """Test analysis_workflow end-to-end with real services."""
+    """Test analysis_workflow end-to-end with real services.
+
+    This test requires:
+    - Ollama running on localhost:11434 with nomic-embed-text model
+    - Jina API key configured
+    - Database connection
+
+    Can take 2+ minutes due to Ollama embedding generation.
+    """
     settings = get_settings()
     if not settings.JINA_API_KEY:
         pytest.skip("JINA_API_KEY not configured in .env")
@@ -63,8 +73,18 @@ async def test_analysis_workflow_end_to_end(requires_database) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
 async def test_analysis_workflow_with_checkpointer(requires_database) -> None:
-    """Test analysis_workflow with database checkpointer."""
+    """Test analysis_workflow with database checkpointer.
+
+    This test requires:
+    - Ollama running on localhost:11434 with nomic-embed-text model
+    - Jina API key configured
+    - Database connection
+
+    Can take 2+ minutes due to Ollama embedding generation (runs twice).
+    """
     settings = get_settings()
     if not settings.JINA_API_KEY:
         pytest.skip("JINA_API_KEY not configured in .env")

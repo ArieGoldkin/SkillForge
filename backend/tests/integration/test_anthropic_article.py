@@ -5,6 +5,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pytest
+
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
@@ -13,8 +15,17 @@ from app.services.extraction.content_type import detect_content_type
 from app.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
+@pytest.mark.slow
+@pytest.mark.external
 async def test_anthropic_article() -> None:
-    """Test extraction from Anthropic article."""
+    """Test extraction from Anthropic article.
+
+    This test requires:
+    - Jina API key configured
+    - Network access to jina.ai
+
+    Can take 10-30 seconds due to external API call.
+    """
     print("\n" + "=" * 70)
     print("Testing Jina Reader with Anthropic Article")
     print("=" * 70)
