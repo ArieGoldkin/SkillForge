@@ -9,6 +9,7 @@ updates:
       day: "monday"
       time: "09:00"
     target-branch: "dev"
+    versioning-strategy: "increase"
     open-pull-requests-limit: 10
     reviewers:
       - "ArieGoldkin"
