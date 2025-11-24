@@ -30,6 +30,12 @@ htmlcov/
 .tox/
 .hypothesis/
 
+# Generated requirements files (from Poetry)
+requirements.txt
+requirements-dev.txt
+backend/requirements.txt
+backend/requirements-dev.txt
+
 # Django/Flask (if used later)
 *.log
 local_settings.py
