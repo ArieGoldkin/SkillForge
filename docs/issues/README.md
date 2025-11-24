@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 23, 2025
+**Last Updated:** January 24, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -43,13 +43,15 @@ docs/issues/
 └── 040-sse-endpoint/
     ├── README.md                         # Issue #40 complete doc
     └── SSE_SCHEMA.md
+└── 041-supervisor-pattern/
+    └── README.md                         # Issue #41 complete doc
 ```
 
 ---
 
 ## 📊 Sprint 1 Issues Status
 
-### ✅ Completed Issues (10 total - 48 pts)
+### ✅ Completed Issues (11 total - 56 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -88,8 +90,8 @@ _No backend issues in progress_
 - **Arie Progress:** 17/23 pts (74%) - *6pts from Issue #32*
 
 **Sprint 2:**
-- **Completed:** 8 pts (Issues #39, #40)
-- **Yonatan Progress:** 8/10 pts (80%)
+- **Completed:** 16 pts (Issues #39, #40, #41)
+- **Yonatan Progress:** 16/18 pts (89%)
 
 ---
 

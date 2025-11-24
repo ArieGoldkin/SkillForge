@@ -55,6 +55,7 @@ from langgraph.func import entrypoint, task
 from app.core.config import settings
 from app.core.constants import CONTENT_TYPE_ARTICLE
 from app.core.logging import get_logger
+from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.tasks import extract_content, generate_embedding
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
@@ -93,6 +94,7 @@ else:
 # Note: task() can be used as a decorator factory or called directly
 extract_content_task = task(extract_content)
 generate_embedding_task = task(generate_embedding)
+supervisor_route_task = task(supervisor_route)
 
 
 @entrypoint(checkpointer=checkpointer)
@@ -102,7 +104,8 @@ async def analysis_workflow(input_data: dict) -> dict:
     This workflow performs:
     1. Extract content from URL using JinaReader
     2. Generate embeddings for the extracted content
-    3. Return complete state with all fields populated
+    3. Supervisor analyzes content and selects relevant agents
+    4. Return complete state with all fields populated
 
     Args:
         input_data: Dictionary with 'url' and 'analysis_id' keys
@@ -111,9 +114,11 @@ async def analysis_workflow(input_data: dict) -> dict:
         Dictionary matching AnalysisState structure with:
         - analysis_id
         - url
+        - content_type
         - raw_content
         - extraction_metadata
         - content_embedding
+        - supervisor_decision
 
     """
     url = input_data["url"]
@@ -138,6 +143,13 @@ async def analysis_workflow(input_data: dict) -> dict:
             CONTENT_TYPE_ARTICLE,
         )
 
+        # Supervisor decides which agents should analyze the content
+        supervisor_result = await supervisor_route_task(
+            extraction_result["raw_content"],
+            content_type,
+            analysis_id,
+        )
+
         result = {
             "analysis_id": analysis_id,
             "url": url,
@@ -145,6 +157,7 @@ async def analysis_workflow(input_data: dict) -> dict:
             "raw_content": extraction_result["raw_content"],
             "extraction_metadata": extraction_result["extraction_metadata"],
             "content_embedding": embedding,
+            "supervisor_decision": supervisor_result.get("supervisor_decision", {}),
         }
 
         logger.info(
