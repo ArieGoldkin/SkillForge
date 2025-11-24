@@ -74,10 +74,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
+  fullPaths:
+    | '/'
+    | '/$'
+    | '/library'
+    | '/showcase'
+    | '/analyze/$id'
+    | '/tutor/$sessionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
-  id: '__root__' | '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
+  to:
+    | '/'
+    | '/$'
+    | '/library'
+    | '/showcase'
+    | '/analyze/$id'
+    | '/tutor/$sessionId'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/library'
+    | '/showcase'
+    | '/analyze/$id'
+    | '/tutor/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
