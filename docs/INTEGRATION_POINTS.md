@@ -136,24 +136,29 @@ async def stream_analysis_progress(
 **SSE Instrumentation in Nodes:**
 ```python
 from langgraph.func import entrypoint, task
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
 @task
 async def extract_content(url: str, analysis_id: str) -> dict:
     """Extract content with SSE events."""
     # Emit start event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {"type": "progress", "stage": "extraction", "status": "running"}
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
     )
     
     # Do work
     content = await jina_reader.extract(url)
     
     # Emit complete event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {"type": "progress", "stage": "extraction", "status": "complete"}
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="complete",
+        word_count=len(content.split()),
     )
     
     return {"content": content}
@@ -161,7 +166,7 @@ async def extract_content(url: str, analysis_id: str) -> dict:
 @entrypoint(checkpointer=checkpointer)
 async def analysis_workflow(url: str, analysis_id: str) -> dict:
     """Main workflow with SSE instrumentation."""
-    result = extract_content(url, analysis_id).result()
+    result = await extract_content(url, analysis_id)
     return result
 ```
 

@@ -129,26 +129,32 @@ logging.info(f"Extraction complete")
 
 All LangGraph workflow nodes MUST emit SSE events:
 ```python
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
-async def emit_streaming_event(
-    event_type: str,
-    analysis_id: str,
-    stage: str,
-    **kwargs
-) -> None:
-    """Emit SSE event during workflow execution."""
-    event_data = {
-        "type": event_type,
-        "analysis_id": analysis_id,
-        "stage": stage,
-        "timestamp": datetime.now(UTC).isoformat(),
-        **kwargs
-    }
-    await broadcaster.publish(
-        channel=f"workflow:{analysis_id}",
-        message=event_data
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
+    """Extract content with SSE events."""
+    # Emit start event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
     )
+    
+    # Do work
+    content = await jina_reader.extract(url)
+    
+    # Emit complete event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="complete",
+        word_count=len(content.split()),
+    )
+    
+    return {"content": content}
 ```
 
 ---

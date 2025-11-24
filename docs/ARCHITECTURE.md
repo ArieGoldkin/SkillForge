@@ -881,17 +881,23 @@ async def analysis_workflow(input_data: dict) -> dict:
 **Pattern:**
 ```python
 # In workflow
+from app.services.sse_helpers import emit_streaming_event
+
 await emit_streaming_event(
     "progress",
     analysis_id=analysis_id,
     stage="extraction",
-    status="running"
+    status="running",
 )
 
 # In SSE endpoint
+from app.services.event_broadcaster import broadcaster
+
 async for event in broadcaster.subscribe(f"workflow:{analysis_id}"):
     yield {"event": event["type"], "data": json.dumps(event)}
 ```
+
+**Event Schema:** See [`docs/issues/040-sse-endpoint/SSE_SCHEMA.md`](../docs/issues/040-sse-endpoint/SSE_SCHEMA.md) for complete event type definitions and TypeScript types.
 
 **Benefits:**
 - Real-time user feedback

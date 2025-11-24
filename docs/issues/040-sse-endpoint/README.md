@@ -151,7 +151,6 @@ async def extract_content(url: str, analysis_id: str) -> dict:
         analysis_id=analysis_id,
         stage="extraction",
         status="running",
-        word_count=0
     )
     
     # Do work
@@ -163,7 +162,7 @@ async def extract_content(url: str, analysis_id: str) -> dict:
         analysis_id=analysis_id,
         stage="extraction",
         status="complete",
-        word_count=len(content)
+        word_count=len(content.split()),
     )
     
     return {"content": content}

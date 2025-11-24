@@ -328,6 +328,180 @@ export function useAnalysisData(id: string) {
 }
 ```
 
+## 📡 SSE Integration
+
+### Server-Sent Events (SSE) for Real-Time Updates
+
+SkillForge uses Server-Sent Events (SSE) to stream real-time progress updates during analysis workflow execution. The frontend connects to the SSE endpoint and receives progress events as the workflow executes.
+
+**Event Schema:** See [`docs/issues/040-sse-endpoint/SSE_SCHEMA.md`](../docs/issues/040-sse-endpoint/SSE_SCHEMA.md) for complete TypeScript type definitions.
+
+**API Contract:** See [`docs/INTEGRATION_POINTS.md`](../docs/INTEGRATION_POINTS.md) for SSE endpoint details.
+
+### useSSE Hook Pattern
+
+**Recommended implementation:**
+```typescript
+// features/analysis/hooks/useSSE.ts
+import { useEffect, useRef, useState } from 'react'
+
+import type { SSEEvent } from '@types/sse'
+
+interface UseSSEOptions {
+  analysisId: string
+  onProgress?: (event: SSEEvent) => void
+  onComplete?: (event: SSEEvent) => void
+  onError?: (event: SSEEvent) => void
+}
+
+export function useSSE({ analysisId, onProgress, onComplete, onError }: UseSSEOptions) {
+  const [isConnected, setIsConnected] = useState(false)
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  useEffect(() => {
+    if (!analysisId) return
+
+    const eventSource = new EventSource(
+      `/api/v1/analyze/${analysisId}/stream`
+    )
+
+    eventSourceRef.current = eventSource
+    setIsConnected(true)
+
+    eventSource.addEventListener('progress', (event: MessageEvent) => {
+      const data: SSEEvent = JSON.parse(event.data)
+      onProgress?.(data)
+    })
+
+    eventSource.addEventListener('complete', (event: MessageEvent) => {
+      const data: SSEEvent = JSON.parse(event.data)
+      onComplete?.(data)
+      eventSource.close()
+    })
+
+    eventSource.addEventListener('error', (event: MessageEvent) => {
+      const data: SSEEvent = JSON.parse(event.data)
+      onError?.(data)
+      eventSource.close()
+    })
+
+    eventSource.onerror = () => {
+      console.error('SSE connection error')
+      setIsConnected(false)
+      eventSource.close()
+    }
+
+    return () => {
+      eventSource.close()
+      setIsConnected(false)
+    }
+  }, [analysisId, onProgress, onComplete, onError])
+
+  return { isConnected }
+}
+```
+
+### Usage in Components
+
+```typescript
+// features/analysis/AnalyzeResult.tsx
+import { useSSE } from './hooks/useSSE'
+import type { SSEEvent } from '@types/sse'
+
+export default function AnalyzeResult() {
+  const { id } = useParams({ from: '/analyze/$id' })
+  const [progress, setProgress] = useState<Record<string, string>>({})
+
+  useSSE({
+    analysisId: id,
+    onProgress: (event: SSEEvent) => {
+      if (event.type === 'progress') {
+        setProgress((prev) => ({
+          ...prev,
+          [event.stage]: event.status,
+        }))
+      }
+    },
+    onComplete: (event: SSEEvent) => {
+      if (event.type === 'complete') {
+        // Navigate to artifact view
+        navigate({ to: '/library' })
+      }
+    },
+    onError: (event: SSEEvent) => {
+      if (event.type === 'error') {
+        showError(event.details.error)
+      }
+    },
+  })
+
+  return <ProgressTracker progress={progress} />
+}
+```
+
+### TypeScript Types
+
+Import SSE types from the schema document:
+```typescript
+// types/sse.ts (generated from SSE_SCHEMA.md)
+export type StageName =
+  | 'extraction'
+  | 'supervisor_routing'
+  | 'tech_comparison'
+  | 'security_audit'
+  | 'implementation_planning'
+  | 'performance_audit'
+  | 'code_quality_audit'
+  | 'trends_analysis'
+  | 'dependencies_analysis'
+  | 'aggregation'
+  | 'artifact_generation'
+
+export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
+
+export interface SSEProgressEvent {
+  type: 'progress'
+  analysis_id: string
+  stage: StageName
+  status: StageStatus
+  timestamp: string
+  details?: {
+    word_count?: number
+    agent?: string
+    progress_percent?: number
+    [key: string]: unknown
+  }
+}
+
+export interface SSECompleteEvent {
+  type: 'complete'
+  analysis_id: string
+  stage: 'artifact_generation'
+  status: 'complete'
+  timestamp: string
+  details: {
+    artifact_id: string
+  }
+}
+
+export interface SSEErrorEvent {
+  type: 'error'
+  analysis_id: string
+  stage: string
+  status: 'failed'
+  timestamp: string
+  details: {
+    error: string
+    error_code?: string
+    [key: string]: unknown
+  }
+}
+
+export type SSEEvent = SSEProgressEvent | SSECompleteEvent | SSEErrorEvent
+```
+
+**Note:** For complete type definitions, see [`docs/issues/040-sse-endpoint/SSE_SCHEMA.md`](../docs/issues/040-sse-endpoint/SSE_SCHEMA.md).
+
 ---
 
 ## 🧪 Testing Strategy
