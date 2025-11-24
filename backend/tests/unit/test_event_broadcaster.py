@@ -1,6 +1,7 @@
 """Tests for event broadcaster service."""
 
 import asyncio
+
 import pytest
 
 from app.services.event_broadcaster import EventBroadcaster
