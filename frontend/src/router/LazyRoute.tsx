@@ -1,7 +1,12 @@
 import { Suspense } from 'react'
 
 import { PageLoader } from './PageLoader'
+import { RouteErrorBoundary } from './RouteErrorBoundary'
 
 export function LazyRoute({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+  return (
+    <RouteErrorBoundary>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  )
 }

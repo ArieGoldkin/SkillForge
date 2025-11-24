@@ -1,5 +1,6 @@
 import { createRouter } from '@tanstack/react-router'
 
+import { GlobalErrorComponent } from './router/GlobalErrorComponent'
 // Import route tree - TanStack Router will generate this automatically
 // The route tree is built from the files in src/routes/
 import { routeTree } from './routeTree.gen'
@@ -8,6 +9,7 @@ import { routeTree } from './routeTree.gen'
 export const router = createRouter({
   routeTree,
   defaultPreload: 'intent', // Preload on hover/focus for better UX
+  defaultErrorComponent: GlobalErrorComponent, // Global error handling
 })
 
 // Register router for type safety throughout the app

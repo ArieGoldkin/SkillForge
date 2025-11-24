@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShowcaseRouteImport } from './routes/showcase'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorSessionIdRouteImport } from './routes/tutor.$sessionId'
 import { Route as AnalyzeIdRouteImport } from './routes/analyze.$id'
@@ -23,6 +24,11 @@ const ShowcaseRoute = ShowcaseRouteImport.update({
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +49,7 @@ const AnalyzeIdRoute = AnalyzeIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -65,25 +74,15 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/library'
-    | '/showcase'
-    | '/analyze/$id'
-    | '/tutor/$sessionId'
+  fullPaths: '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
-  id:
-    | '__root__'
-    | '/'
-    | '/library'
-    | '/showcase'
-    | '/analyze/$id'
-    | '/tutor/$sessionId'
+  to: '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
+  id: '__root__' | '/' | '/$' | '/library' | '/showcase' | '/analyze/$id' | '/tutor/$sessionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
   LibraryRoute: typeof LibraryRoute
   ShowcaseRoute: typeof ShowcaseRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
@@ -104,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -132,6 +138,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SplatRoute: SplatRoute,
   LibraryRoute: LibraryRoute,
   ShowcaseRoute: ShowcaseRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,
