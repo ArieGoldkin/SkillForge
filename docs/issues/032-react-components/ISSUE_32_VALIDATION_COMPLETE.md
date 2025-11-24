@@ -53,8 +53,8 @@ Successfully implemented in-app design system with shadcn/ui and built 11 produc
    - ThemeToggle: System preference detection with MediaQueryList API
 
 **Files Created:**
-- `frontend/src/components/layout/` - AppShell, ThemeToggle, examples, README
-- `frontend/src/components/ui/` - Customized shadcn/ui components
+- `frontend/src/shared/components/layout/` - AppShell, ThemeToggle, examples, README
+- `frontend/src/shared/components/ui/` - Customized shadcn/ui components
 
 ### Phase 3: Feature Components (3 story points - estimates 1 additional point remaining)
 
@@ -78,10 +78,10 @@ Successfully implemented in-app design system with shadcn/ui and built 11 produc
 - `SocraticPrompt` - Formatted question with expandable hints
 
 **Files Created:**
-- `frontend/src/components/features/analysis/` - 3 components + types + index
-- `frontend/src/components/features/library/` - 8 components (4 main + 4 refactored sub-components) + types + index
-- `frontend/src/components/features/tutor/` - 4 components + index
-- `frontend/src/components/features/showcase/` - FeaturesShowcase + 3 tab components + demo data
+- `frontend/src/shared/components/features/analysis/` - 3 components + types + index
+- `frontend/src/shared/components/features/library/` - 8 components (4 main + 4 refactored sub-components) + types + index
+- `frontend/src/shared/components/features/tutor/` - 4 components + index
+- `frontend/src/shared/components/features/showcase/` - FeaturesShowcase + 3 tab components + demo data
 
 **Total New Files:** ~50 TypeScript files (~3,500 lines of code)
 
@@ -116,14 +116,15 @@ Successfully implemented in-app design system with shadcn/ui and built 11 produc
 ### Component Organization
 ```
 frontend/src/
-├── components/
-│   ├── ui/                    # shadcn/ui components (8 components)
-│   ├── layout/                # AppShell, Navigation, ThemeToggle
-│   └── features/
-│       ├── analysis/          # 3 components + index
-│       ├── library/           # 4 main + 8 sub-components + index
-│       ├── tutor/             # 4 components + index
-│       └── showcase/          # Demo showcase (5 files)
+├── shared/
+│   └── components/
+│       ├── ui/                # shadcn/ui components (8 components)
+│       ├── layout/            # AppShell, Navigation, ThemeToggle
+│       └── features/
+│           ├── analysis/      # 3 components + index
+│           ├── library/       # 4 main + 8 sub-components + index
+│           ├── tutor/         # 4 components + index
+│           └── showcase/      # Demo showcase (5 files)
 ├── design-system/
 │   ├── tokens.ts              # OKLCH colors, Outfit typography, spacing, shadows
 │   ├── theme.css              # CSS variables for light/dark themes

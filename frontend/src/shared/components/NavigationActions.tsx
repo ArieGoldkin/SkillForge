@@ -1,7 +1,7 @@
 import { User } from 'lucide-react'
 
-import { ThemeToggle } from '@/components/layout'
-import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/shared/components/layout'
+import { Button } from '@/shared/components/ui/button'
 
 /**
  * NavigationActions Component
