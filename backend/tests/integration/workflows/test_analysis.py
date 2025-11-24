@@ -3,7 +3,6 @@
 import os
 
 import pytest
-
 from app.core.config import get_settings
 from app.workflows.analysis import analysis_workflow
 
