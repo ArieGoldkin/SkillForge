@@ -5,7 +5,6 @@ including content extraction, embedding generation, supervisor routing,
 and agent execution with proper session isolation.
 """
 
-import asyncio
 import os
 from uuid import uuid4
 
