@@ -1,7 +1,10 @@
 """Tests for main FastAPI application."""
 
+import httpx
 import pytest
 from fastapi import status
+
+from app.main import app
 
 
 def test_root_endpoint(client):
@@ -34,10 +37,6 @@ def test_health_check(client):
 @pytest.mark.asyncio
 async def test_health_check_includes_request_id(reset_engine_connections):
     """Test health check endpoint includes X-Request-ID header."""
-    import httpx
-
-    from app.main import app
-
     # Use AsyncClient with ASGITransport to avoid event loop conflicts
     # reset_engine_connections ensures connections are created in test's event loop
     transport = httpx.ASGITransport(app=app)
@@ -51,10 +50,6 @@ async def test_health_check_includes_request_id(reset_engine_connections):
 @pytest.mark.asyncio
 async def test_health_check_with_custom_request_id(reset_engine_connections):
     """Test health check endpoint respects custom X-Request-ID header."""
-    import httpx
-
-    from app.main import app
-
     # Use AsyncClient with ASGITransport to avoid event loop conflicts
     # reset_engine_connections ensures connections are created in test's event loop
     transport = httpx.ASGITransport(app=app)

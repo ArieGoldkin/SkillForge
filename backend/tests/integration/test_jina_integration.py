@@ -14,10 +14,10 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.config import settings
-from app.core.logging import setup_logging
-from app.services.extraction.content_type import detect_content_type
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.core.config import settings  # noqa: E402
+from app.core.logging import setup_logging  # noqa: E402
+from app.services.extraction.content_type import detect_content_type  # noqa: E402
+from app.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
 
 
 async def test_content_type_detection() -> None:
@@ -105,7 +105,7 @@ async def test_jina_reader_basic() -> None:
     except JinaReaderError as e:
         print(f"✗ JinaReaderError: {e}")
         success = False
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
         print(f"✗ Unexpected error: {type(e).__name__}: {e}")
         success = False
     finally:
@@ -138,7 +138,7 @@ async def test_jina_reader_error_handling() -> None:
         # This might still work if Jina can resolve it somehow
     except JinaReaderError as e:
         print(f"✓ Correctly raised JinaReaderError: {e}")
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
         print(f"⚠ Unexpected exception type: {type(e).__name__}: {e}")
 
     await reader.close()
@@ -179,7 +179,7 @@ async def test_jina_reader_without_api_key() -> None:
         # This might fail if rate limited, which is okay
         print(f"⚠ Extraction failed (expected if rate limited): {e}")
         success = True  # Not a failure, just rate limiting
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
         print(f"⚠ Unexpected error: {type(e).__name__}: {e}")
         success = False
     finally:

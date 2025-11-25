@@ -8,9 +8,9 @@ from pathlib import Path
 backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
-from app.core.logging import setup_logging
-from app.services.extraction.content_type import detect_content_type
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.core.logging import setup_logging  # noqa: E402
+from app.services.extraction.content_type import detect_content_type  # noqa: E402
+from app.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
 
 
 async def test_multiple_urls() -> None:
@@ -58,7 +58,7 @@ async def test_multiple_urls() -> None:
         except JinaReaderError as e:
             print(f"✗ JinaReaderError: {e}")
             results.append(False)
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
             print(f"✗ Unexpected error: {type(e).__name__}: {e}")
             results.append(False)
 
@@ -120,7 +120,7 @@ async def test_title_extraction_variations() -> None:
 
         results = True
 
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
         print(f"✗ Error: {e}")
         results = False
     finally:
@@ -168,7 +168,7 @@ async def test_metadata_structure() -> None:
 
         results = True
 
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
         print(f"✗ Error: {e}")
         results = False
     finally:
@@ -198,7 +198,7 @@ async def run_extended_tests() -> None:
         try:
             result = await test_func()
             results.append((name, result))
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
             print(f"✗ Test '{name}' crashed: {e}")
             results.append((name, False))
 
