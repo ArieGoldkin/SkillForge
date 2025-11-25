@@ -279,15 +279,17 @@ async def _stream_supervisor_response(
             async for chunk in stream:
                 final_result = chunk
 
-                # Early exit: break immediately if we have a complete result with tool calls
-                # This prevents waiting for unnecessary streaming chunks
+                # Check if we've received tool calls (agent decision is complete)
+                # We continue consuming the stream to let it finish naturally
+                # This avoids GeneratorExit which LangGraph logs as an error in LangSmith
                 if chunk.get("messages"):
                     messages = chunk["messages"]
                     latest_message = messages[-1]
                     if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
-                        # Tool calls indicate agent decision is complete, can break early
-                        # The finally block will handle proper cleanup via aclose()
-                        break
+                        # Tool calls indicate agent decision is complete
+                        # Don't break - continue to let stream finish naturally
+                        # Otherwise LangGraph logs GeneratorExit as an error
+                        continue
 
                     # Extract latest message for token streaming (batched)
                     if hasattr(latest_message, "content") and latest_message.content:
@@ -326,16 +328,9 @@ async def _stream_supervisor_response(
                     token_chunk=token_chunk_buffer,
                     accumulated_content=accumulated_content,
                 )
-        except GeneratorExit:
-            # GeneratorExit is raised when Python's garbage collector closes the generator
-            # This is expected behavior when breaking from async for loop early
-            # We handle it silently - Python handles cleanup automatically per PEP 525
-            # Do NOT call aclose() here as it causes double-close and LangSmith error logs
+        except StopAsyncIteration:
+            # Stream finished naturally - this is expected
             pass
-    except GeneratorExit:
-        # GeneratorExit is not an error - it's Python cleaning up the generator
-        # Handle silently and continue to fallback
-        return None
     except (ConnectionError, TimeoutError, ValueError) as e:
         # Log error but allow fallback to invoke
         logger.warning(
