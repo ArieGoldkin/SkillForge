@@ -716,9 +716,9 @@ logger.info(
 ---
 
 #### **1.6 Docker Compose Dev Environment (2 days)**
-- [ ] **1.6.1** Create `docker-compose.yml`
+- [x] **1.6.1** Create `docker-compose.yml`
   - Service: `postgres` (pgvector/pgvector:pg17)
-  - Service: `backend` (build from `./backend/Dockerfile`)
+  - Service: `backend` (build from `./backend/Dockerfile`) ✅
   - Service: `frontend` (build from `./frontend/Dockerfile` - dev mode)
   - Networks & volumes configuration
 - [ ] **1.6.2** Write Dockerfiles
@@ -737,9 +737,11 @@ logger.info(
   - Common troubleshooting (port conflicts, DB connection issues)
 
 **Acceptance Criteria:**
+- ✅ Backend service in docker-compose.yml (completed)
+- ✅ All services healthy: `docker-compose ps` shows postgres and backend "Up" (completed)
+- ✅ Can access backend (http://localhost:8500/docs) (completed)
 - `./scripts/setup.sh` brings up entire stack on fresh machine
-- All services healthy: `docker-compose ps` shows all "Up"
-- Can access frontend (http://localhost:5173) and backend (http://localhost:8000/docs)
+- Can access frontend (http://localhost:5173) (pending frontend service)
 
 ---
 

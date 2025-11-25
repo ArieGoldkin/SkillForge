@@ -119,19 +119,39 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 
 ### Installation
 
+**Option 1: Docker Compose (Recommended)**
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/ArieGoldkin/SkillForge.git
 cd SkillForge
 
-# 2. Run setup script
-chmod +x scripts/setup.sh
-./scripts/setup.sh
+# 2. Start services with Docker Compose
+docker-compose up -d
 
-# 3. Start backend
+# 3. Verify services are running
+docker-compose ps
+
+# 4. Open browser
+# Backend API: http://localhost:8500/docs
+# Frontend: http://localhost:5173 (when frontend service is added)
+```
+
+**Option 2: Local Development**
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/ArieGoldkin/SkillForge.git
+cd SkillForge
+
+# 2. Start PostgreSQL with Docker Compose
+docker-compose up -d postgres
+
+# 3. Start backend (in backend directory)
 cd backend
-source venv/bin/activate  # Windows: venv\Scripts\activate
-uvicorn app.main:app --reload
+poetry install
+poetry shell
+poetry run uvicorn app.main:app --reload
 
 # 4. Start frontend (in new terminal)
 cd frontend

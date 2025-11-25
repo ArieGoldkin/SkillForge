@@ -45,6 +45,32 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
    - OpenAPI Docs: http://localhost:8500/docs
    - Health Check: http://localhost:8500/api/v1/health
 
+### Docker Compose (Alternative)
+
+The backend service is also available in Docker Compose for easier development:
+
+```bash
+# From project root, start backend service
+docker-compose up -d backend
+
+# View logs
+docker-compose logs -f backend
+
+# Stop backend
+docker-compose stop backend
+
+# Rebuild after code changes
+docker-compose up -d --build backend
+```
+
+The backend service will:
+- Automatically wait for PostgreSQL to be ready
+- Run Alembic migrations on startup
+- Start with hot reload enabled (code changes are reflected automatically)
+- Connect to PostgreSQL service in Docker network
+
+**Note:** Make sure to set `OPENAI_API_KEY` in your host environment or `.env` file for LLM features to work.
+
 ## Project Structure
 
 ```

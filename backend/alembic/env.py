@@ -23,6 +23,10 @@ config = context.config
 # This allows offline mode to work when DATABASE_URL is None
 database_url = settings.DATABASE_URL
 if database_url:
+    # Convert asyncpg URL to psycopg2 URL for Alembic (synchronous migrations)
+    # postgresql+asyncpg:// -> postgresql+psycopg2://
+    if "+asyncpg" in database_url:
+        database_url = database_url.replace("+asyncpg", "+psycopg2")
     config.set_main_option("sqlalchemy.url", database_url)
 
 # Interpret the config file for Python logging.

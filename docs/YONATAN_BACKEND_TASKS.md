@@ -1026,42 +1026,83 @@ Implement service to generate embeddings using OpenAI with dimension handling an
 
 ### ✅ Task 1.6.1: Create Docker Compose Configuration [3 pts]
 
-**Status:** Not Started
+**Status:** ✅ Completed
 **Dependencies:** Task 1.5.2
 
 #### Description
-Setup Docker Compose for PostgreSQL and PGVector.
+Setup Docker Compose for PostgreSQL, PGVector, and Backend service.
 
 #### File: docker-compose.yml
 ```yaml
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: skillforge_postgres
+    container_name: skillforge-postgres-dev
     environment:
       POSTGRES_DB: skillforge
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: devpass
     ports:
-      - "5432:5432"
+      - "5437:5432"  # Using 5437 to avoid conflicts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-dev-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dev"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-dev
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://dev:devpass@postgres:5432/skillforge
+      API_V1_PREFIX: /api/v1
+      HOST: 0.0.0.0
+      PORT: 8500
+      CORS_ORIGINS: '["http://localhost:5173"]'
+      LLM_MODEL: ${LLM_MODEL:-gpt-5-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+    ports:
+      - "8500:8500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h postgres -U dev; do sleep 2; done &&
+        echo 'Running migrations...' &&
+        /app/.venv/bin/alembic upgrade head &&
+        echo 'Starting backend...' &&
+        /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
+      "
+
 volumes:
-  postgres_data:
+  postgres-dev-data:
 ```
 
 #### Commands
 ```bash
 docker-compose up -d
 docker-compose ps  # Verify all services running
+docker-compose logs backend  # View backend logs
 ```
 
 ---
