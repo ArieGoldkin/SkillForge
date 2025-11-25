@@ -149,14 +149,19 @@ async def test_implementation_planner_integration(
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(90)
-async def test_agents_parallel_execution(
+async def test_agents_parallel_execution_with_separate_sessions(
     requires_llm,
     requires_database,
-    db_session,
     reset_engine_connections,
 ):
-    """Test parallel execution of multiple agents."""
+    """Test parallel execution of multiple agents with separate database sessions.
+
+    This test verifies that each agent gets its own database session,
+    preventing concurrency errors when agents run in parallel.
+    """
     import asyncio
+
+    from app.db.session import AsyncSessionLocal
 
     analysis_id = str(uuid4())
     content = """
@@ -166,19 +171,32 @@ async def test_agents_parallel_execution(
     """
     content_type = "article"
 
-    # Execute all three agents in parallel
+    # Each agent gets its own session (matching the fix in execute_agents)
+    async def run_with_session_1():
+        async with AsyncSessionLocal() as session:
+            return await run_tech_comparator(content, content_type, analysis_id, session)
+
+    async def run_with_session_2():
+        async with AsyncSessionLocal() as session:
+            return await run_integration_feasibility(content, content_type, analysis_id, session)
+
+    async def run_with_session_3():
+        async with AsyncSessionLocal() as session:
+            return await run_implementation_planner(content, content_type, analysis_id, session)
+
+    # Execute all three agents in parallel with separate sessions
     tasks = [
-        run_tech_comparator(content, content_type, analysis_id, db_session),
-        run_integration_feasibility(content, content_type, analysis_id, db_session),
-        run_implementation_planner(content, content_type, analysis_id, db_session),
+        run_with_session_1(),
+        run_with_session_2(),
+        run_with_session_3(),
     ]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # Verify all agents completed successfully
+    # Verify all agents completed successfully (no concurrency errors)
     assert len(results) == 3
     for result in results:
-        assert not isinstance(result, Exception)
+        assert not isinstance(result, Exception), f"Agent failed with: {result}"
         assert "agent_type" in result
         assert "findings" in result
         assert result["processing_time_ms"] > 0
