@@ -116,12 +116,10 @@ async def test_run_agent_with_tracking_no_structured_response(
 @pytest.mark.asyncio
 async def test_save_agent_finding(mock_session):
     """Test saving agent finding to database."""
-    from app.models.agent_finding import AgentFinding
-
     analysis_id = uuid4()
     findings = {"key": "value"}
 
-    result = await save_agent_finding(
+    await save_agent_finding(
         session=mock_session,
         analysis_id=analysis_id,
         agent_type="test_agent",
