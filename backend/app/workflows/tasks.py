@@ -11,6 +11,8 @@ factory to wrap functions.
 
 import asyncio
 
+from langsmith import traceable
+
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EmbeddingVector
 from app.db.session import AsyncSessionLocal
@@ -26,6 +28,11 @@ from app.workflows.agents import (
 logger = get_logger(__name__)
 
 
+@traceable(
+    name="extract_content",
+    run_type="tool",
+    tags=["workflow", "node"],
+)
 async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
     """Extract content from URL using JinaReader.
 
@@ -93,6 +100,11 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         await jina.close()
 
 
+@traceable(
+    name="generate_embedding",
+    run_type="tool",
+    tags=["workflow", "node"],
+)
 async def generate_embedding(content: str, analysis_id: AnalysisID) -> EmbeddingVector:
     """Generate embedding vector for content.
 
@@ -156,6 +168,11 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
     return embedding
 
 
+@traceable(
+    name="execute_agents",
+    run_type="chain",
+    tags=["workflow", "node"],
+)
 async def execute_agents(
     content: str,
     content_type: str,

@@ -12,6 +12,7 @@ from uuid import UUID
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRequest, before_model, wrap_model_call
 from langchain.agents.structured_output import ToolStrategy
+from langsmith import traceable
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,14 +41,25 @@ def create_structured_agent(
     Returns:
         Configured agent instance with structured output support
 
+    Note:
+        ToolStrategy automatically validates output against response_schema.
+        Validation errors are automatically traced by LangSmith when they occur.
+
     """
     model = get_chat_model()
-    return create_agent(
+    agent = create_agent(
         model,
         tools=tools or [],
         system_prompt=system_prompt,
         response_format=ToolStrategy(response_schema),
     )
+
+    # Note: ToolStrategy already validates output against response_schema.
+    # Validation errors are automatically captured by LangChain and traced by LangSmith.
+    # We don't need to wrap invoke here as ToolStrategy handles validation internally.
+    # The validation errors will appear in LangSmith traces automatically.
+
+    return agent
 
 
 @before_model
@@ -169,7 +181,7 @@ async def emit_agent_progress(
     )
 
 
-async def run_agent_with_tracking(  # noqa: PLR0913
+async def _run_agent_with_tracking_impl(  # noqa: PLR0913
     agent: Any,
     content: str,
     content_type: str,
@@ -178,7 +190,10 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     session: AsyncSession,
     max_content_length: int = 2000,
 ) -> dict[str, Any]:
-    """Run an agent with progress tracking, error handling, and database persistence.
+    """Implement agent execution with tracking.
+
+    This function contains the actual logic. The public `run_agent_with_tracking`
+    function wraps this with @traceable for LangSmith instrumentation.
 
     Args:
         agent: Agent instance to run
@@ -291,3 +306,55 @@ async def run_agent_with_tracking(  # noqa: PLR0913
             processing_time_ms=processing_time_ms,
         )
         raise
+
+
+async def run_agent_with_tracking(  # noqa: PLR0913
+    agent: Any,
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    agent_type: str,
+    session: AsyncSession,
+    max_content_length: int = 2000,
+) -> dict[str, Any]:
+    """Run an agent with progress tracking, error handling, and database persistence.
+
+    This function is wrapped with @traceable to create LangSmith traces for each agent execution.
+
+    Args:
+        agent: Agent instance to run
+        content: Content to analyze
+        content_type: Type of content (article, video, repo)
+        analysis_id: UUID of the analysis
+        agent_type: Type of agent for logging and storage
+        session: Database session for persistence
+        max_content_length: Maximum content length to send to agent
+
+    Returns:
+        Dictionary with agent_type, findings, confidence_score, processing_time_ms
+
+    Raises:
+        Exception: If agent execution fails
+
+    """
+    # Use @traceable with dynamic name, tags, and metadata based on agent_type
+    traced_func = traceable(
+        name=agent_type,
+        run_type="chain",
+        tags=["agent", agent_type],
+        metadata={
+            "analysis_id": str(analysis_id),
+            "agent_type": agent_type,
+            "content_type": content_type,
+        },
+    )(_run_agent_with_tracking_impl)
+
+    return await traced_func(
+        agent=agent,
+        content=content,
+        content_type=content_type,
+        analysis_id=analysis_id,
+        agent_type=agent_type,
+        session=session,
+        max_content_length=max_content_length,
+    )

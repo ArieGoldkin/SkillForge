@@ -61,13 +61,24 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
 
     try:
         # Run workflow with timeout (increased for streaming/parallel overhead)
+        # Add LangSmith tracing config
+        workflow_config = {
+            "configurable": {"thread_id": test_analysis_id},
+            "run_name": f"test_analysis_{test_analysis_id}",
+            "tags": ["test", "integration", "workflow"],
+            "metadata": {
+                "analysis_id": test_analysis_id,
+                "url": test_url,
+                "test_type": "end_to_end",
+            },
+        }
         result = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
                     "url": test_url,
                     "analysis_id": test_analysis_id,
                 },
-                config={"configurable": {"thread_id": test_analysis_id}},
+                config=workflow_config,
             ),
             timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )
@@ -126,26 +137,48 @@ async def test_analysis_workflow_with_checkpointer(
 
     try:
         # Run workflow first time with timeout (increased for streaming/parallel overhead)
+        workflow_config1 = {
+            "configurable": {"thread_id": test_analysis_id},
+            "run_name": f"test_analysis_checkpointer_run1_{test_analysis_id}",
+            "tags": ["test", "integration", "workflow", "checkpointer"],
+            "metadata": {
+                "analysis_id": test_analysis_id,
+                "url": test_url,
+                "test_type": "checkpointer",
+                "run": 1,
+            },
+        }
         result1 = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
                     "url": test_url,
                     "analysis_id": test_analysis_id,
                 },
-                config={"configurable": {"thread_id": test_analysis_id}},
+                config=workflow_config1,
             ),
             timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )
 
         # Run workflow again (should use checkpoint) with timeout
         # (increased for streaming/parallel overhead)
+        workflow_config2 = {
+            "configurable": {"thread_id": test_analysis_id},
+            "run_name": f"test_analysis_checkpointer_run2_{test_analysis_id}",
+            "tags": ["test", "integration", "workflow", "checkpointer"],
+            "metadata": {
+                "analysis_id": test_analysis_id,
+                "url": test_url,
+                "test_type": "checkpointer",
+                "run": 2,
+            },
+        }
         result2 = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
                     "url": test_url,
                     "analysis_id": test_analysis_id,
                 },
-                config={"configurable": {"thread_id": test_analysis_id}},
+                config=workflow_config2,
             ),
             timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )

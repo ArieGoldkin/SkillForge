@@ -18,6 +18,7 @@ from typing import Any, TypedDict
 from langchain.agents import create_agent
 from langchain.agents.middleware import ModelRequest, before_model, dynamic_prompt, wrap_model_call
 from langchain_core.messages import AIMessage
+from langsmith import traceable
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -220,6 +221,11 @@ def _parse_tool_calls_from_messages(messages: list[Any]) -> list[str]:
     return selected_agents
 
 
+@traceable(
+    name="supervisor_route",
+    run_type="chain",
+    tags=["workflow", "supervisor"],
+)
 async def supervisor_route(
     content: str,
     content_type: str,
