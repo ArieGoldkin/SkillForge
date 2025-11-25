@@ -6,10 +6,12 @@ technical article. This serves as a regression test and performance baseline.
 """
 
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
+from app.db.session import AsyncSessionLocal
+from app.models.analysis import Analysis
 from app.workflows.analysis import analysis_workflow
 
 # Test constants
@@ -56,6 +58,17 @@ async def test_claude_opus_4_5_baseline(
     test_url = "https://www.anthropic.com/news/claude-opus-4-5"
     analysis_id = str(uuid4())
 
+    # Create Analysis record before running workflow (required for agent foreign keys)
+    async with AsyncSessionLocal() as session:
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url=test_url,
+            content_type="article",
+            status="pending",
+        )
+        session.add(analysis)
+        await session.commit()
+
     # Run workflow with LangSmith configuration
     workflow_config = {
         "configurable": {"thread_id": analysis_id},
@@ -91,16 +104,16 @@ async def test_claude_opus_4_5_baseline(
     assert result["url"] == test_url
     assert len(result["raw_content"]) > 0, "Raw content should not be empty"
     assert isinstance(result["extraction_metadata"], dict)
-    assert (
-        len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS
-    ), f"Expected {EXPECTED_EMBEDDING_DIMENSIONS} dimensions for OpenAI text-embedding-3-small"
+    assert len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS, (
+        f"Expected {EXPECTED_EMBEDDING_DIMENSIONS} dimensions for OpenAI text-embedding-3-small"
+    )
     assert all(isinstance(x, float) for x in result["content_embedding"])
 
     # Verify content quality - Claude Opus 4.5 article should be substantial
     content_length = len(result["raw_content"])
-    assert (
-        content_length > MIN_CONTENT_LENGTH
-    ), f"Article should be substantial (got {content_length} chars, expected >{MIN_CONTENT_LENGTH})"
+    assert content_length > MIN_CONTENT_LENGTH, (
+        f"Article should be substantial (got {content_length} chars, expected >{MIN_CONTENT_LENGTH})"
+    )
 
     # Verify supervisor selected agents
     supervisor_decision = result["supervisor_decision"]
@@ -128,9 +141,9 @@ async def test_claude_opus_4_5_baseline(
         "agent",
     ]
     found_keywords = [kw for kw in expected_keywords if kw in content_lower]
-    assert (
-        len(found_keywords) >= MIN_KEYWORD_MATCHES
-    ), f"Should find at least {MIN_KEYWORD_MATCHES} expected keywords (found: {found_keywords})"
+    assert len(found_keywords) >= MIN_KEYWORD_MATCHES, (
+        f"Should find at least {MIN_KEYWORD_MATCHES} expected keywords (found: {found_keywords})"
+    )
 
     # Verify LangSmith tracing is enabled (if configured)
     if os.getenv("LANGCHAIN_TRACING_V2") == "true":
