@@ -243,7 +243,7 @@ def _raise_no_messages_error(analysis_id: AnalysisID, used_streaming: bool) -> N
     raise RuntimeError(msg)
 
 
-async def _stream_supervisor_response(  # noqa: PLR0912
+async def _stream_supervisor_response(
     supervisor_agent: Any,
     input_messages: dict[str, Any],
     supervisor_context: SupervisorContext,
