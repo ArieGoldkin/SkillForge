@@ -309,62 +309,75 @@ async def supervisor_route(
         min_chunk_size = 10  # Minimum characters before emitting
 
         try:
-            async for chunk in supervisor_agent.astream(
+            stream = supervisor_agent.astream(
                 input_messages,
                 stream_mode="values",
                 context=supervisor_context,
                 config=agent_config,
-            ):
-                final_result = chunk
+            )
 
-                # Early exit: break immediately if we have a complete result with tool calls
-                # This prevents waiting for unnecessary streaming chunks
-                if chunk.get("messages"):
-                    messages = chunk["messages"]
-                    latest_message = messages[-1]
-                    if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
-                        # Tool calls indicate agent decision is complete, can break early
-                        break
+            try:
+                async for chunk in stream:
+                    final_result = chunk
 
-                # Extract latest message for token streaming (batched)
-                if chunk.get("messages"):
-                    latest_message = chunk["messages"][-1]
-                    if hasattr(latest_message, "content") and latest_message.content:
-                        # Accumulate content
-                        new_content = latest_message.content[len(accumulated_content) :]
-                        if new_content:
-                            accumulated_content = latest_message.content
-                            token_chunk_buffer += new_content
+                    # Early exit: break immediately if we have a complete result with tool calls
+                    # This prevents waiting for unnecessary streaming chunks
+                    if chunk.get("messages"):
+                        messages = chunk["messages"]
+                        latest_message = messages[-1]
+                        if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
+                            # Tool calls indicate agent decision is complete, can break early
+                            break
 
-                            # Emit batched chunks periodically to reduce SSE overhead
-                            current_time = asyncio.get_event_loop().time()
-                            time_since_last_emit = current_time - last_emit_time
+                    # Extract latest message for token streaming (batched)
+                    if chunk.get("messages"):
+                        latest_message = chunk["messages"][-1]
+                        if hasattr(latest_message, "content") and latest_message.content:
+                            # Accumulate content
+                            new_content = latest_message.content[len(accumulated_content) :]
+                            if new_content:
+                                accumulated_content = latest_message.content
+                                token_chunk_buffer += new_content
 
-                            if (
-                                len(token_chunk_buffer) >= min_chunk_size
-                                or time_since_last_emit >= batch_interval
-                            ):
-                                await emit_streaming_event(
-                                    "progress",
-                                    analysis_id=analysis_id,
-                                    stage="supervisor",
-                                    status="streaming",
-                                    token_chunk=token_chunk_buffer,
-                                    accumulated_content=accumulated_content,
-                                )
-                                token_chunk_buffer = ""
-                                last_emit_time = current_time
+                                # Emit batched chunks periodically to reduce SSE overhead
+                                current_time = asyncio.get_event_loop().time()
+                                time_since_last_emit = current_time - last_emit_time
 
-            # Emit any remaining buffered chunks
-            if token_chunk_buffer:
-                await emit_streaming_event(
-                    "progress",
-                    analysis_id=analysis_id,
-                    stage="supervisor",
-                    status="streaming",
-                    token_chunk=token_chunk_buffer,
-                    accumulated_content=accumulated_content,
-                )
+                                if (
+                                    len(token_chunk_buffer) >= min_chunk_size
+                                    or time_since_last_emit >= batch_interval
+                                ):
+                                    await emit_streaming_event(
+                                        "progress",
+                                        analysis_id=analysis_id,
+                                        stage="supervisor",
+                                        status="streaming",
+                                        token_chunk=token_chunk_buffer,
+                                        accumulated_content=accumulated_content,
+                                    )
+                                    token_chunk_buffer = ""
+                                    last_emit_time = current_time
+
+                # Emit any remaining buffered chunks
+                if token_chunk_buffer:
+                    await emit_streaming_event(
+                        "progress",
+                        analysis_id=analysis_id,
+                        stage="supervisor",
+                        status="streaming",
+                        token_chunk=token_chunk_buffer,
+                        accumulated_content=accumulated_content,
+                    )
+            except GeneratorExit:
+                # GeneratorExit is expected when breaking from async generator
+                # This is normal behavior - the generator is being closed by Python
+                # We should handle it silently (it's cleanup, not an error)
+                # Don't re-raise - just let the generator close naturally
+                pass
+        except GeneratorExit:
+            # GeneratorExit is not an error - it's Python cleaning up the generator
+            # Handle silently and continue to fallback
+            final_result = None
         except Exception as e:
             # Log error but allow fallback to invoke
             logger.warning(
