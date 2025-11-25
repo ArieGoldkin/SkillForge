@@ -294,9 +294,9 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
                                     if new_content:
                                         accumulated_content = latest_message.content
 
-                    # Throttle SSE events to prevent overwhelming frontend
-                    # Emit only if enough time has passed OR
-                    # enough characters accumulated
+                                        # Throttle SSE events to prevent overwhelming frontend
+                                        # Emit only if enough time has passed OR
+                                        # enough characters accumulated
                                         current_time = time.time()
                                         chars_since_last = (
                                             len(accumulated_content) - last_event_chars

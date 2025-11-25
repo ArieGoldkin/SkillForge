@@ -245,7 +245,7 @@ graph TD
 | 1.1.1 | Create FastAPI project structure | 2 | None | `uvicorn app.main:app --reload` starts server |
 | 1.1.2 | Setup environment configuration | 1 | 1.1.1 | `.env.example` exists, settings load correctly |
 | 1.1.3 | Implement logging & error handling | 1 | 1.1.1 | Structured JSON logs output |
-| 1.1.4 | Write basic health check endpoint | 1 | 1.1.1 | `/health` returns 200 with DB/Ollama status |
+| 1.1.4 | Write basic health check endpoint | 1 | 1.1.1 | `/health` returns 200 with DB/OpenAI status |
 
 **Arie Involvement:** None (fully independent)
 
@@ -297,8 +297,8 @@ graph TD
 
 | Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
 |---------|------|--------------|--------------|---------------------|
-| 1.5.1 | Install Ollama & pull models | 1 | 1.6.1 (Docker Compose) | `llama3.1:8b` and `nomic-embed-text` available |
-| 1.5.2 | Create embedding service | 2 | 1.5.1 | `generate_embedding(text)` returns 768-dim vector |
+| 1.5.1 | ~~Install Ollama & pull models~~ (Migrated to OpenAI) | 1 | N/A | OpenAI API key configured |
+| 1.5.2 | Create embedding service | 2 | 1.5.1 | `generate_embedding(text)` returns 1536-dim vector (OpenAI) |
 | 1.5.3 | Create basic LangGraph workflow | 3 | 1.4.3, 1.5.2 | Single-node workflow: extract → embed → done |
 | 1.5.4 | Integrate workflow with API | 2 | 1.5.3 | `POST /api/v1/analyze` triggers workflow in background |
 | 1.5.5 | Add SSE endpoint for progress | 2 | 1.5.4 | `GET /api/v1/analyze/{id}/stream` emits SSE events |
@@ -313,7 +313,7 @@ graph TD
 
 | Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
 |---------|------|--------------|--------------|---------------------|
-| 1.6.1 | Create `docker-compose.yml` | 1 | None | All 4 services defined (postgres, ollama, backend, frontend) |
+| 1.6.1 | Create `docker-compose.yml` | 1 | None | All 3 services defined (postgres, backend, frontend) |
 | 1.6.2 | Write Dockerfiles | 1 | 1.6.1 | Multi-stage builds work |
 | 1.6.3 | Create setup scripts | 1 | 1.6.2 | `./scripts/setup.sh` brings up entire stack |
 | 1.6.4 | Write developer documentation | 0 | - | (Inline in setup script comments) |
@@ -834,7 +834,8 @@ type SSEEvent =
 ```bash
 # Backend
 DATABASE_URL=postgresql://user:pass@localhost:5432/skillforge
-OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
 JINA_API_KEY=your_jina_key
 
 # Frontend
@@ -1009,7 +1010,7 @@ VITE_API_BASE_URL=http://localhost:8000
 - **LangGraph Docs:** https://langchain-ai.github.io/langgraph/
 - **FastAPI Best Practices:** https://fastapi.tiangolo.com
 - **PGVector Guide:** https://github.com/pgvector/pgvector
-- **Ollama API Docs:** https://github.com/ollama/ollama/blob/main/docs/api.md
+- **OpenAI API Docs:** https://platform.openai.com/docs/api-reference
 
 ### For Both
 - **API Contract First Design:** https://swagger.io/resources/articles/adopting-an-api-first-approach/

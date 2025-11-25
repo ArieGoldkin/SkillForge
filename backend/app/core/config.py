@@ -54,7 +54,6 @@ LLM_PROVIDER_ALIAS_MAP: Final[dict[str, str]] = {
     "google": "google_genai",
     "gemini": "google_genai",
     "google_genai": "google_genai",
-    "ollama": "ollama",
     "grok": "xai",
     "xai": "xai",
     "composer": "perplexity",
@@ -170,11 +169,11 @@ class Settings(BaseSettings):
 
     # Multi-provider LLM configuration
     LLM_MODEL: str = Field(
-        default="ollama:llama3.3:8b",
+        default="gpt-5-mini",
         description=(
             "Primary LLM identifier. Supports formats like 'gpt-5-mini', "
             "'claude-sonnet-4', 'gemini-2.0-flash', or provider-prefixed "
-            "values. Default uses Ollama (free, local) for development. "
+            "values. Default uses GPT-5 Mini for development. "
             "For production, use 'gpt-5-mini' ($0.25/$2.00 - recommended, "
             "newer + cheaper than GPT-4o Mini) or 'gpt-5' ($1.25/$10.00 - "
             "5x more expensive but maximum quality). Verified November 24, 2025."
@@ -184,7 +183,7 @@ class Settings(BaseSettings):
         default=None,
         description=(
             "Optional override for the LLM provider (e.g., openai, anthropic, "
-            "google_genai, ollama). When omitted, the provider is inferred "
+            "google_genai). When omitted, the provider is inferred "
             "from LLM_MODEL."
         ),
     )
@@ -286,8 +285,7 @@ class Settings(BaseSettings):
         """Ensure LLM provider/API key configuration is valid."""
         provider = self.resolved_llm_provider()
         api_field = LLM_PROVIDER_API_FIELDS.get(provider)
-        # Ollama doesn't require API key (local)
-        if api_field and provider != "ollama" and not getattr(self, api_field):
+        if api_field and not getattr(self, api_field):
             msg = (
                 f"{api_field} is required when using provider '{provider}'. "
                 "Set it via environment variables or in the .env file."

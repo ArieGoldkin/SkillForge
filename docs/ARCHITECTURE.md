@@ -184,11 +184,9 @@ graph TB
     
     subgraph "External Services"
         JinaAI[Jina AI Reader]
-        Ollama[Ollama LLM]
         OpenAI[OpenAI API]
         
         Services --> JinaAI
-        Agents --> Ollama
         Agents --> OpenAI
     end
     
@@ -652,12 +650,12 @@ graph TB
         DevFrontend[Frontend Dev Server<br/>localhost:5173]
         DevBackend[Backend Dev Server<br/>localhost:8000]
         DevDB[(PostgreSQL Dev<br/>localhost:5432)]
-        DevOllama[Ollama Local<br/>localhost:11434]
+        DevOpenAI[OpenAI API<br/>GPT-5 Mini]
         
         DevUser --> DevFrontend
         DevFrontend --> DevBackend
         DevBackend --> DevDB
-        DevBackend --> DevOllama
+        DevBackend --> DevOpenAI
     end
     
     subgraph "Production"
@@ -666,13 +664,13 @@ graph TB
         ProdAPI[Backend API<br/>FastAPI + Uvicorn]
         ProdDB[(PostgreSQL<br/>Production)]
         ProdRedis[(Redis<br/>Event Broadcasting)]
-        ProdOllama[Ollama Cloud<br/>or OpenAI]
+        ProdOpenAI[OpenAI API<br/>GPT-5 Mini]
         
         ProdUser --> ProdCDN
         ProdCDN --> ProdAPI
         ProdAPI --> ProdDB
         ProdAPI --> ProdRedis
-        ProdAPI --> ProdOllama
+        ProdAPI --> ProdOpenAI
     end
     
     subgraph "CI/CD"
@@ -811,7 +809,7 @@ async def create_analysis(
 
 **Responsibilities:**
 - Business logic implementation
-- External API integration (Jina Reader, Ollama)
+- External API integration (Jina Reader, OpenAI)
 - Data transformation and validation
 - Error handling and retry logic
 

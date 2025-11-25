@@ -16,7 +16,7 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     """Return True when provider prefix should be removed from model identifier."""
     if provider is None:
         return False
-    return provider in {"openai", "anthropic", "google_genai", "ollama"}
+    return provider in {"openai", "anthropic", "google_genai"}
 
 
 def get_chat_model(config: dict[str, Any] | None = None):

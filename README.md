@@ -91,7 +91,7 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 - **Framework:** FastAPI 0.121.2+
 - **AI Orchestration:** LangGraph 1.0 + LangChain 1.0 (Sprint 2)
 - **Database:** PostgreSQL 17 + PGVector 0.4.1
-- **LLM:** Multi-provider support (Ollama for dev, GPT-5 Mini/Claude/Gemini for production)
+- **LLM:** Multi-provider support (GPT-5 Mini/Claude/Gemini for dev and production)
 - **Language:** Python 3.13
 
 ### Frontend
@@ -150,8 +150,7 @@ npm run dev
 DATABASE_URL=postgresql://dev:devpass@localhost:5437/skillforge
 
 # Multi-Provider LLM Configuration
-LLM_MODEL=ollama:llama3.3:8b  # Development (free, local)
-# LLM_MODEL=gpt-5-mini         # Production: GPT-5 Mini ($0.25/$2.00) - RECOMMENDED
+LLM_MODEL=gpt-5-mini         # Development & Production: GPT-5 Mini ($0.25/$2.00) - RECOMMENDED
 # LLM_MODEL=claude-sonnet-4    # Anthropic Claude 4 Sonnet
 # LLM_MODEL=gemini-2.0-flash   # Google Gemini 2.0 Flash
 
@@ -161,10 +160,6 @@ OPENAI_API_KEY=sk-...          # Required for OpenAI models (GPT-5 Mini, GPT-5, 
 # GOOGLE_API_KEY=...            # Required for Google models (Gemini)
 # XAI_API_KEY=...               # Required for xAI models (Grok)
 # DEEPSEEK_API_KEY=...          # Required for DeepSeek models
-
-# Legacy Ollama (for embeddings / backwards compatibility)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.3:8b
 
 # Content Extraction
 JINA_API_KEY=your_key_here  # Get free key at https://jina.ai

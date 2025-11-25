@@ -27,7 +27,7 @@ if TEST_ENV_FILE.exists():
     # (Settings validation requires development/staging/production)
     os.environ.setdefault("ENVIRONMENT", "development")
 
-# Set LLM_MODEL for tests - prefer OpenAI if API key is available, otherwise fall back to Ollama
+# Set LLM_MODEL for tests - use OpenAI if API key is available, otherwise skip tests
 # This allows tests to run with OpenAI when configured, but prevents import failures
 # when langchain-openai isn't available in IDE's Python environment
 if "LLM_MODEL" not in os.environ:
@@ -35,8 +35,7 @@ if "LLM_MODEL" not in os.environ:
     openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
     if openai_key:
         os.environ["LLM_MODEL"] = "gpt-5-mini"  # Use OpenAI when key is available
-    else:
-        os.environ["LLM_MODEL"] = "ollama:llama3.3:8b"  # Fall back to Ollama
+    # If no OpenAI key, tests that require LLM will be skipped
 
 
 @pytest.fixture
@@ -75,13 +74,16 @@ def auto_clear_config_cache(clear_config_cache):
 def ensure_llm_model_set(monkeypatch):
     """Ensure LLM_MODEL is set for tests (if not already set in environment).
 
-    This ensures tests default to Ollama (which works without API keys)
+    This ensures tests default to OpenAI when API key is available
     even if LLM_MODEL is not set in the environment. Individual tests
     can override this by setting their own LLM_MODEL.
     """
     # Only set if not already in environment (module-level setenv takes precedence)
     if "LLM_MODEL" not in os.environ:
-        monkeypatch.setenv("LLM_MODEL", "ollama:llama3.3:8b")
+        # Only set if OpenAI key is available
+        openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+        if openai_key:
+            monkeypatch.setenv("LLM_MODEL", "gpt-5-mini")
     # Reduce retry delays for faster tests (0.1s base instead of 1.0s)
     if "LLM_RETRY_DELAY_BASE" not in os.environ:
         monkeypatch.setenv("LLM_RETRY_DELAY_BASE", "0.1")

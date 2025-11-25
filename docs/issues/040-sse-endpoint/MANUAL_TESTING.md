@@ -52,10 +52,10 @@ The current integration tests (`tests/integration/test_sse_endpoint.py`) have th
    docker-compose up -d postgres
    ```
 
-3. **Ollama Running (for embeddings):**
+3. **OpenAI API Key Configured:**
    ```bash
-   docker-compose up -d ollama
-   # Pull model: ollama pull nomic-embed-text
+   # Set in .env file
+   OPENAI_API_KEY=sk-...
    ```
 
 4. **Environment Variables:**
@@ -63,8 +63,7 @@ The current integration tests (`tests/integration/test_sse_endpoint.py`) have th
    # backend/.env
    DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
    JINA_API_KEY=your_jina_api_key
-   OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-   EMBEDDING_DIMENSIONS=768
+   EMBEDDING_DIMENSIONS=1536
    ```
 
 ### Test 1: SSE Connection (Browser)

@@ -314,8 +314,8 @@ Same as Issue #41 - multi-provider LLM support via `LLM_MODEL` environment varia
 # Production (recommended)
 LLM_MODEL=gpt-5-mini              # $0.25/$2.00 per 1M tokens
 
-# Development (free, local)
-LLM_MODEL=ollama:llama3.3:8b
+# Development (recommended)
+LLM_MODEL=gpt-5-mini
 
 # Provider API Keys
 OPENAI_API_KEY=sk-...             # Required for OpenAI models

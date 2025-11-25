@@ -110,7 +110,7 @@ Implement environment configuration with Pydantic Settings and structured loggin
 
 **Added to Environment Configuration:**
 - Multi-provider LLM configuration system added to `app/core/config.py`
-- Supports 6 providers: OpenAI, Anthropic, Google, xAI, DeepSeek, Ollama
+- Supports 5 providers: OpenAI, Anthropic, Google, xAI, DeepSeek
 - Model factory (`app/core/model_factory.py`) for unified model initialization
 - `LLM_MODEL` environment variable for flexible model selection
 - Provider API keys: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`

@@ -307,9 +307,8 @@ DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
 # Jina AI (for content extraction)
 JINA_API_KEY=your_jina_api_key_here
 
-# Ollama (for embeddings)
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-EMBEDDING_DIMENSIONS=768
+# OpenAI (for embeddings)
+EMBEDDING_DIMENSIONS=1536
 ```
 
 **Note:** 

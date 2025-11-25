@@ -815,15 +815,16 @@ pytest tests/e2e/
 
 ---
 
-### Issue: Ollama Model Not Found
+### Issue: OpenAI API Key Not Configured
 
-**Symptoms:** Backend LLM calls fail
+**Symptoms:** Backend LLM calls fail, embedding generation fails
 
 **Solution:**
 ```bash
-docker exec -it ollama ollama list
-# If model missing:
-docker exec -it ollama ollama pull llama3.1:8b
+# Set OpenAI API key in .env file
+OPENAI_API_KEY=sk-...
+
+# Verify key is loaded (check backend logs)
 ```
 
 ---

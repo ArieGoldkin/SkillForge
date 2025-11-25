@@ -98,13 +98,6 @@ def test_settings_cors_origins_default():
     assert "http://localhost:5173" in settings.CORS_ORIGINS
 
 
-def test_settings_ollama_defaults():
-    """Test Ollama configuration defaults."""
-    settings = Settings()
-    assert settings.OLLAMA_BASE_URL == "http://localhost:11434"
-    assert settings.OLLAMA_MODEL == "llama3.3:8b"
-
-
 def test_settings_optional_fields():
     """Test optional fields can be None."""
     settings = Settings()

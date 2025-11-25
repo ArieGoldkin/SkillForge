@@ -1,6 +1,6 @@
 """Integration tests for supervisor node.
 
-These tests require Ollama running with llama3.1:8b model.
+These tests require OpenAI API key configured.
 Tests are marked with @pytest.mark.external and @pytest.mark.slow.
 """
 
@@ -12,23 +12,20 @@ from app.workflows.nodes.supervisor import supervisor_route
 
 
 @pytest.fixture
-def requires_ollama():
-    """Skip test if Ollama is not available."""
-    import httpx
+def requires_openai():
+    """Skip test if OpenAI API key is not available."""
+    import os
 
-    try:
-        response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
-        if response.status_code != 200:
-            pytest.skip("Ollama not responding")
-    except Exception:
-        pytest.skip("Ollama not available - ensure it's running on localhost:11434")
+    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+    if not openai_key:
+        pytest.skip("OpenAI API key not available")
 
 
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)  # 1 minute max timeout
-async def test_supervisor_route_with_tech_content(requires_ollama) -> None:
+async def test_supervisor_route_with_tech_content(requires_openai) -> None:
     """Test supervisor selects tech-related agents for technology content."""
     content = """
     React is a popular JavaScript library for building user interfaces.
@@ -63,7 +60,7 @@ async def test_supervisor_route_with_tech_content(requires_ollama) -> None:
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)
-async def test_supervisor_route_with_security_content(requires_ollama) -> None:
+async def test_supervisor_route_with_security_content(requires_openai) -> None:
     """Test supervisor selects security-related agents for security content."""
     content = """
     Security best practices for API development:
@@ -94,7 +91,7 @@ async def test_supervisor_route_with_security_content(requires_ollama) -> None:
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)
-async def test_supervisor_route_with_implementation_content(requires_ollama) -> None:
+async def test_supervisor_route_with_implementation_content(requires_openai) -> None:
     """Test supervisor selects implementation-related agents for tutorial content."""
     content = """
     Step-by-step guide to implementing authentication in FastAPI:
@@ -124,7 +121,7 @@ async def test_supervisor_route_with_implementation_content(requires_ollama) -> 
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)
-async def test_supervisor_route_different_content_types(requires_ollama) -> None:
+async def test_supervisor_route_different_content_types(requires_openai) -> None:
     """Test supervisor works with different content types."""
     content = "This is a test article about web development and best practices."
 
@@ -148,7 +145,7 @@ async def test_supervisor_route_different_content_types(requires_ollama) -> None
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)
-async def test_supervisor_route_long_content(requires_ollama) -> None:
+async def test_supervisor_route_long_content(requires_openai) -> None:
     """Test supervisor handles long content (should truncate to 2000 chars)."""
     # Create content longer than 2000 chars
     long_content = "This is a long article. " * 200  # ~5000 chars
@@ -171,7 +168,7 @@ async def test_supervisor_route_long_content(requires_ollama) -> None:
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(60)
-async def test_supervisor_route_simple_content(requires_ollama) -> None:
+async def test_supervisor_route_simple_content(requires_openai) -> None:
     """Test supervisor with very simple content (may select no agents)."""
     simple_content = "Hello world."
 

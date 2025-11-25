@@ -4,10 +4,8 @@ import asyncio
 import os
 from uuid import UUID, uuid4
 
-import httpx
 import pytest
 
-from app.core.constants import HTTP_OK
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.workflows.agents import (
@@ -25,14 +23,10 @@ def requires_llm():
     llm_model = os.environ.get("LLM_MODEL", "")
     if not llm_model:
         pytest.skip("LLM_MODEL not configured")
-    # Skip if using Ollama and it's not available
-    if llm_model.startswith("ollama:"):
-        try:
-            response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
-            if response.status_code != HTTP_OK:
-                pytest.skip("Ollama not available")
-        except (httpx.RequestError, httpx.TimeoutException, httpx.NetworkError):
-            pytest.skip("Ollama not available")
+    # Skip if OpenAI API key is not available
+    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+    if not openai_key:
+        pytest.skip("OpenAI API key not available")
 
 
 @pytest.mark.asyncio

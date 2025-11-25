@@ -8,7 +8,7 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
 
 - **Python 3.13** (required)
 - **Poetry** (for dependency management)
-- **Docker Desktop** (for local PostgreSQL and Ollama)
+- **Docker Desktop** (for local PostgreSQL)
 
 ### Installation
 
@@ -190,11 +190,11 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 - `DATABASE_URL`: PostgreSQL connection string (required in production)
 
 **Multi-Provider LLM Configuration:**
-- `LLM_MODEL`: Primary LLM identifier (supports 6 providers)
-  - Development: `ollama:llama3.3:8b` (free, local)
+- `LLM_MODEL`: Primary LLM identifier (supports 5 providers)
+  - Development: `gpt-5-mini` (recommended, requires OpenAI API key)
   - Production (recommended): `gpt-5-mini` ($0.25/$2.00 per 1M tokens)
   - Other options: `claude-sonnet-4`, `gemini-2.0-flash`, `grok-3-mini`, `deepseek-v3.2`
-- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `ollama`, `xai`, `deepseek`)
+- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `xai`, `deepseek`)
 
 **Provider API Keys (set based on selected provider):**
 - `OPENAI_API_KEY`: Required for OpenAI models (GPT-5 Mini, GPT-5, GPT-4o, etc.)
@@ -206,21 +206,15 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 **Embedding Configuration:**
 - `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `1536` for OpenAI text-embedding-3-small)
 
-**Legacy Ollama Configuration (for embeddings / backwards compatibility):**
-- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
-- `OLLAMA_MODEL`: Ollama model name (default: `llama3.3:8b`)
-- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
-
 **Content Extraction:**
 - `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
 
 **Example Configuration:**
 
-Development (with free local models):
+Development (with GPT-5 Mini):
 ```env
-LLM_MODEL=ollama:llama3.3:8b
-OLLAMA_BASE_URL=http://localhost:11434
-# Note: Ollama must be running locally if using ollama: prefix
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
 ```
 
 Production (with GPT-5 Mini - recommended):
@@ -344,7 +338,7 @@ Tests are categorized with markers for selective execution:
 
 - `@pytest.mark.slow`: Slow-running tests (deselect with `-m "not slow"`)
 - `@pytest.mark.integration`: Integration tests requiring real services
-- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.external`: Tests requiring external services (OpenAI, Jina, etc.)
 - `@pytest.mark.timeout(N)`: Override default timeout for specific test
 
 ### Running Tests

@@ -28,7 +28,6 @@ langchain-community = "^0.4.1"
 langchain-openai = "^1.1.0"
 langchain-anthropic = "^1.2.0"
 langchain-google-genai = "^3.2.0"
-langchain-ollama = "^1.0.0"
 langgraph-checkpoint = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -104,6 +103,6 @@ asyncio_mode = "auto"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
-    "external: marks tests that require external services (Ollama, Jina, etc.)",
+    "external: marks tests that require external services (OpenAI, Jina, etc.)",
     "timeout: marks tests with specific timeout values (pytest-timeout plugin)",
 ]

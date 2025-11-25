@@ -135,8 +135,7 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 **LLM Providers:**
 - `langchain-openai>=1.0.0` - OpenAI models (staging/prod, v1.0 compatible)
 - `langchain-anthropic>=1.0.0` - Claude models (optional, v1.0 compatible)
-- `langchain-ollama>=1.0.0` - Ollama integration (v1.0 compatible)
-- `ollama>=0.4.3` - Local models (dev environment)
+- OpenAI integration via `langchain-openai` (v1.0 compatible)
 
 **Database:**
 - `psycopg[binary,pool]==3.2.3` - PostgreSQL driver
@@ -188,8 +187,8 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 ### Infrastructure
 
 **Development:**
-- Docker Compose (PostgreSQL + PGVector + Ollama)
-- Ollama models: `llama3.1:8b` (LLM), `nomic-embed-text` (embeddings)
+- Docker Compose (PostgreSQL + PGVector)
+- OpenAI API for LLM and embeddings (GPT-5 Mini recommended)
 
 **Production:**
 - Frontend: Vercel
@@ -260,8 +259,6 @@ langchain-community = "^1.0.0"
 # LLM Providers
 langchain-openai = "^1.0.0"
 langchain-anthropic = "^1.0.0"
-langchain-ollama = "^1.0.0"
-ollama = "^0.4.3"
 
 # Database
 psycopg = {extras = ["binary", "pool"], version = "^3.2.3"}
@@ -343,7 +340,7 @@ def analysis_workflow(url: str, previous: dict | None = None) -> dict:
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
-model = init_chat_model("ollama:llama3.1:8b")
+model = init_chat_model("gpt-5-mini")
 
 agent = create_agent(
     model,
@@ -568,13 +565,13 @@ logger.info(
 - [x] **1.1.2** Setup environment configuration ✅
   - `.env.example` - Template for environment variables
   - `app/core/config.py` - Load settings from environment
-  - Validation for required variables (DATABASE_URL, OLLAMA_BASE_URL, etc.)
+  - Validation for required variables (DATABASE_URL, OPENAI_API_KEY, etc.)
 - [x] **1.1.3** Implement logging & error handling ✅
   - `app/core/logging.py` - Structured logging with structlog
   - Global exception handlers in `main.py`
   - Request ID tracking middleware
 - [x] **1.1.4** Write basic health check endpoint ✅
-  - `GET /api/v1/health` - Returns status, database connectivity, Ollama connectivity
+  - `GET /api/v1/health` - Returns status, database connectivity, OpenAI API key validation
 
 **Acceptance Criteria:**
 - `uvicorn app.main:app --reload` starts server successfully
@@ -684,13 +681,13 @@ logger.info(
 
 #### **1.5 Basic Analysis Workflow (3 days)** ⚠️ PARTIAL (1.5.0-1.5.2 ✅ Complete)
 - [x] **1.5.0** Schema migration to Vector(768) ✅
-- [x] **1.5.1** Install Ollama & pull models ✅
+- [x] **1.5.1** ~~Install Ollama & pull models~~ ✅ (Migrated to OpenAI)
   - Pulled `nomic-embed-text` model
   - Verified model availability via health check
 - [x] **1.5.2** Create embedding service ✅
   - `app/services/embeddings.py` (209 lines)
   - Implemented `generate_embedding(text: str) -> list[float]`
-  - Uses `nomic-embed-text` via Ollama (768 dimensions)
+  - Uses OpenAI `text-embedding-3-small` (1536 dimensions)
   - Dimension handling (truncate/pad) following reporter-accuracy pattern
   - L2 normalization for cosine similarity search
   - Comprehensive tests (15 tests, 100% pass rate)
@@ -721,7 +718,6 @@ logger.info(
 #### **1.6 Docker Compose Dev Environment (2 days)**
 - [ ] **1.6.1** Create `docker-compose.yml`
   - Service: `postgres` (pgvector/pgvector:pg17)
-  - Service: `ollama` (ollama/ollama:latest)
   - Service: `backend` (build from `./backend/Dockerfile`)
   - Service: `frontend` (build from `./frontend/Dockerfile` - dev mode)
   - Networks & volumes configuration
@@ -734,7 +730,7 @@ logger.info(
     - Copies `.env.example` → `.env`
     - Runs `docker-compose up -d`
     - Runs Alembic migrations
-    - Pulls Ollama models
+    - Verifies OpenAI API key configuration
 - [ ] **1.6.4** Write developer documentation
   - `docs/DEVELOPMENT.md` - Setup instructions
   - Environment variable reference
@@ -757,7 +753,7 @@ logger.info(
     - `aggregated_insights: dict` - Combined findings
 - [ ] **2.1.2** Implement Supervisor node
   - `app/workflows/nodes/supervisor.py`
-  - LLM call (Ollama llama3.1:8b) analyzes extracted content
+  - LLM call (OpenAI GPT-5 Mini) analyzes extracted content
   - Returns: `{"agents": ["tech_comparator", "security_auditor", ...], "priority": [0.9, 0.7, ...]}`
   - Logic: Route based on content keywords, length, domain
 - [ ] **2.1.3** Implement dynamic routing with LangGraph `send()` API
@@ -1181,7 +1177,7 @@ logger.info(
   - Setup daily backups
 - [ ] **6.3.4** Switch to production LLM
   - Update `OPENAI_API_KEY` in backend env
-  - Change model from Ollama to `gpt-4-turbo-preview` or `claude-3-5-sonnet`
+  - Use `gpt-5-mini` (recommended) or `claude-sonnet-4` for production
   - Update embedding model to `text-embedding-3-large`
 
 **Acceptance Criteria:**
