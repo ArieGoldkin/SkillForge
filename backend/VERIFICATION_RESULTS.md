@@ -106,9 +106,9 @@ GeneratorExit
 
 **Status:** ✅ FIXED
 
-### ⚠️ Known Issue: Database Session Concurrency
+### ✅ Fixed: Database Session Concurrency
 
-**Problem:** Agents running in parallel share the same database session, causing SQLAlchemy concurrency errors.
+**Problem:** Agents running in parallel shared the same database session, causing SQLAlchemy concurrency errors.
 
 **Error:**
 ```
@@ -116,14 +116,34 @@ sqlalchemy.exc.InvalidRequestError: This session is provisioning a new connectio
 concurrent operations are not permitted
 ```
 
-**Location:** `app/workflows/agents/base.py:154` in `save_agent_finding()`
+**Root Cause:** SQLAlchemy async sessions are not thread-safe and cannot be used concurrently. When multiple agents tried to use the same session simultaneously, it caused connection provisioning conflicts.
 
-**Solution Required:**
-- Each agent should get its own database session
-- Or implement proper session pooling with connection limits
-- Or serialize agent database operations (less ideal)
+**Solution Applied:** 
+- Each agent now gets its own `AsyncSession` instance
+- Wrapper functions create and manage sessions independently per agent
+- Sessions are properly closed after each agent completes
+- Maintains parallel execution while ensuring thread-safe database access
 
-**Status:** ⚠️ PENDING FIX
+**Implementation:**
+```python
+# Each agent gets its own session wrapper
+async def run_tech_comparator_with_session() -> dict[str, object] | Exception:
+    """Run tech comparator with its own database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            return await run_tech_comparator(content, content_type, analysis_id, session)
+        except Exception as e:
+            return e
+```
+
+**Benefits:**
+- ✅ No concurrency errors - each agent has isolated database access
+- ✅ Proper resource management - sessions closed automatically
+- ✅ Maintains parallel execution performance
+- ✅ Follows SQLAlchemy best practices for async operations
+- ✅ Production-ready solution
+
+**Status:** ✅ FIXED
 
 ## ✅ Standards Compliance
 
