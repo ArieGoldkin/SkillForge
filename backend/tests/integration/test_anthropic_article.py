@@ -76,7 +76,7 @@ async def test_anthropic_article() -> None:
         lines = content.split("\n")
 
         print(f"Total lines: {len(lines)}")
-        print(f"Non-empty lines: {len([l for l in lines if l.strip()])}")
+        print(f"Non-empty lines: {len([line for line in lines if line.strip()])}")
 
         # Check for key terms that should be in the article
         key_terms = [

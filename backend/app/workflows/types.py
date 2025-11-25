@@ -22,6 +22,7 @@ class AnalysisState(TypedDict, total=False):
         agent_findings: Findings from sub-agents (future)
         aggregated_insights: Aggregated analysis insights (future)
         final_markdown: Generated markdown artifact (future)
+
     """
 
     analysis_id: str

@@ -45,8 +45,10 @@ Future Enhancements:
     - Sub-agents for specialized analysis (tech comparison, security audit, etc.)
     - Supervisor pattern for agent coordination
     - Artifact generation (markdown guides, code examples)
+
 """
 
+import asyncio
 import os
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -55,6 +57,7 @@ from langgraph.func import entrypoint, task
 from app.core.config import settings
 from app.core.constants import CONTENT_TYPE_ARTICLE
 from app.core.logging import get_logger
+from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.tasks import extract_content, generate_embedding
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
@@ -93,6 +96,7 @@ else:
 # Note: task() can be used as a decorator factory or called directly
 extract_content_task = task(extract_content)
 generate_embedding_task = task(generate_embedding)
+supervisor_route_task = task(supervisor_route)
 
 
 @entrypoint(checkpointer=checkpointer)
@@ -102,7 +106,8 @@ async def analysis_workflow(input_data: dict) -> dict:
     This workflow performs:
     1. Extract content from URL using JinaReader
     2. Generate embeddings for the extracted content
-    3. Return complete state with all fields populated
+    3. Supervisor analyzes content and selects relevant agents
+    4. Return complete state with all fields populated
 
     Args:
         input_data: Dictionary with 'url' and 'analysis_id' keys
@@ -111,9 +116,11 @@ async def analysis_workflow(input_data: dict) -> dict:
         Dictionary matching AnalysisState structure with:
         - analysis_id
         - url
+        - content_type
         - raw_content
         - extraction_metadata
         - content_embedding
+        - supervisor_decision
 
     """
     url = input_data["url"]
@@ -126,16 +133,75 @@ async def analysis_workflow(input_data: dict) -> dict:
     )
 
     try:
-        # Extract content (task returns awaitable)
+        # Extract content (task returns awaitable) - must complete first
+        logger.debug(
+            "workflow_extraction_starting",
+            analysis_id=analysis_id,
+        )
         extraction_result = await extract_content_task(url, analysis_id)
-
-        # Generate embedding (task returns awaitable)
-        embedding = await generate_embedding_task(extraction_result["raw_content"], analysis_id)
+        logger.debug(
+            "workflow_extraction_complete",
+            analysis_id=analysis_id,
+            content_length=len(extraction_result.get("raw_content", "")),
+        )
 
         # Determine content type from metadata
         content_type = extraction_result["extraction_metadata"].get(
             "content_type",
             CONTENT_TYPE_ARTICLE,
+        )
+
+        # Generate embedding and supervisor routing can run in parallel
+        # Both depend on raw_content but not on each other
+        logger.debug(
+            "workflow_parallel_tasks_starting",
+            analysis_id=analysis_id,
+            tasks=["embedding", "supervisor"],
+        )
+        parallel_start_time = asyncio.get_event_loop().time()
+
+        embedding_future = generate_embedding_task(extraction_result["raw_content"], analysis_id)
+        supervisor_future = supervisor_route_task(
+            extraction_result["raw_content"],
+            content_type,
+            analysis_id,
+        )
+
+        # Wait for both to complete (parallel execution) with timeout
+        # Timeout prevents hanging if one task fails silently
+        parallel_task_timeout = 120.0  # 2 minutes max for parallel tasks
+        try:
+            embedding, supervisor_result = await asyncio.wait_for(
+                asyncio.gather(
+                    embedding_future,
+                    supervisor_future,
+                ),
+                timeout=parallel_task_timeout,
+            )
+            parallel_duration = asyncio.get_event_loop().time() - parallel_start_time
+            logger.debug(
+                "workflow_parallel_tasks_complete",
+                analysis_id=analysis_id,
+                duration_seconds=parallel_duration,
+            )
+        except TimeoutError:
+            parallel_duration = asyncio.get_event_loop().time() - parallel_start_time
+            logger.exception(
+                "workflow_parallel_tasks_timeout",
+                analysis_id=analysis_id,
+                timeout=parallel_task_timeout,
+                duration_seconds=parallel_duration,
+            )
+            msg = (
+                f"Parallel tasks (embedding, supervisor) exceeded "
+                f"timeout of {parallel_task_timeout}s"
+            )
+            raise RuntimeError(msg) from None
+
+        # Assemble final result
+        logger.debug(
+            "workflow_assembling_result",
+            analysis_id=analysis_id,
         )
 
         result = {
@@ -145,6 +211,7 @@ async def analysis_workflow(input_data: dict) -> dict:
             "raw_content": extraction_result["raw_content"],
             "extraction_metadata": extraction_result["extraction_metadata"],
             "content_embedding": embedding,
+            "supervisor_decision": supervisor_result.get("supervisor_decision", {}),
         }
 
         logger.info(
@@ -153,6 +220,7 @@ async def analysis_workflow(input_data: dict) -> dict:
             url=url,
             content_length=len(extraction_result["raw_content"]),
             embedding_dimensions=len(embedding),
+            agents_selected=len(supervisor_result.get("supervisor_decision", {}).get("agents", [])),
         )
 
         return result

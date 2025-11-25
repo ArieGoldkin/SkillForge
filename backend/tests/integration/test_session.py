@@ -102,7 +102,8 @@ async def test_get_db_rolls_back_on_exception(requires_database, reset_engine_co
             analysis = Analysis(url="https://test-exception.com", content_type="article")
             session.add(analysis)
             # Raise exception (should trigger rollback)
-            raise ValueError("Test exception")
+            msg = "Test exception"
+            raise ValueError(msg)
     except ValueError:
         pass
 
@@ -121,7 +122,7 @@ async def test_get_db_closes_session_in_finally():
     """Test get_db closes session in finally block."""
     session_closed = False
 
-    async for session in get_db():
+    async for _session in get_db():
         assert not session_closed
         break
 

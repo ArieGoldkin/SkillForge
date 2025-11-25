@@ -31,7 +31,9 @@ def requires_jina_api_key():
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(120)  # 2 minute max timeout
+@pytest.mark.timeout(
+    150
+)  # 2.5 minute max timeout - accounts for streaming/parallel execution overhead
 async def test_analysis_workflow_end_to_end(requires_database, reset_engine_connections) -> None:
     """Test analysis_workflow end-to-end with real services.
 
@@ -40,7 +42,14 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes due to Ollama embedding generation.
+    Can take 2+ minutes due to Ollama embedding generation, streaming overhead,
+    and parallel execution of embedding + supervisor tasks.
+
+    Timeout increased to 150s to account for:
+    - Streaming overhead from agent.astream()
+    - Parallel execution overhead
+    - Real external service response times
+    - Variable network latency
     """
     settings = get_settings()
     if not settings.JINA_API_KEY:
@@ -51,7 +60,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
     test_analysis_id = "test-integration-analysis-123"
 
     try:
-        # Run workflow with timeout
+        # Run workflow with timeout (increased for streaming/parallel overhead)
         result = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
@@ -60,7 +69,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
                 },
                 config={"configurable": {"thread_id": test_analysis_id}},
             ),
-            timeout=90.0,  # 90 seconds for real workflow
+            timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )
 
         # Verify result structure
@@ -85,7 +94,9 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(240)  # 4 minute max timeout (runs twice)
+@pytest.mark.timeout(
+    300
+)  # 5 minute max timeout (runs twice) - accounts for streaming/parallel execution overhead
 async def test_analysis_workflow_with_checkpointer(
     requires_database, reset_engine_connections
 ) -> None:
@@ -96,7 +107,15 @@ async def test_analysis_workflow_with_checkpointer(
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes due to Ollama embedding generation (runs twice).
+    Can take 2+ minutes per run due to Ollama embedding generation, streaming overhead,
+    and parallel execution. Runs twice to test checkpoint functionality.
+
+    Timeout increased to 300s (5 minutes) to account for:
+    - Two workflow runs (first run + checkpointed second run)
+    - Streaming overhead from agent.astream() (both runs)
+    - Parallel execution overhead (both runs)
+    - Real external service response times
+    - Variable network latency
     """
     settings = get_settings()
     if not settings.JINA_API_KEY:
@@ -106,7 +125,7 @@ async def test_analysis_workflow_with_checkpointer(
     test_analysis_id = "test-checkpointer-analysis-456"
 
     try:
-        # Run workflow first time with timeout
+        # Run workflow first time with timeout (increased for streaming/parallel overhead)
         result1 = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
@@ -115,10 +134,11 @@ async def test_analysis_workflow_with_checkpointer(
                 },
                 config={"configurable": {"thread_id": test_analysis_id}},
             ),
-            timeout=90.0,  # 90 seconds for real workflow
+            timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )
 
         # Run workflow again (should use checkpoint) with timeout
+        # (increased for streaming/parallel overhead)
         result2 = await asyncio.wait_for(
             analysis_workflow.ainvoke(
                 {
@@ -127,7 +147,7 @@ async def test_analysis_workflow_with_checkpointer(
                 },
                 config={"configurable": {"thread_id": test_analysis_id}},
             ),
-            timeout=90.0,  # 90 seconds for real workflow
+            timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
         )
 
         # Verify both results are consistent

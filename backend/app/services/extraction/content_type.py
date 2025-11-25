@@ -41,19 +41,23 @@ def detect_content_type(url: str) -> str:
 
     """
     if not url or not isinstance(url, str):
-        raise ContentTypeError("URL must be a non-empty string")
+        msg = "URL must be a non-empty string"
+        raise ContentTypeError(msg)
 
     url = url.strip()
     if not url:
-        raise ContentTypeError("URL cannot be empty")
+        msg = "URL cannot be empty"
+        raise ContentTypeError(msg)
 
     # Validate URL format
     try:
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
-            raise ContentTypeError(f"Invalid URL format: {url}")
+            msg = f"Invalid URL format: {url}"
+            raise ContentTypeError(msg)
     except Exception as e:
-        raise ContentTypeError(f"Failed to parse URL: {url}") from e
+        msg = f"Failed to parse URL: {url}"
+        raise ContentTypeError(msg) from e
 
     url_lower = url.lower()
 

@@ -87,7 +87,8 @@ class JinaReader:
                     url=url,
                     status_code=HTTP_NOT_FOUND,
                 )
-                raise JinaReaderError(f"URL not found ({HTTP_NOT_FOUND})")
+                msg = f"URL not found ({HTTP_NOT_FOUND})"
+                raise JinaReaderError(msg)
 
             # Handle other HTTP errors
             if response.status_code >= HTTP_ERROR_THRESHOLD:
@@ -134,18 +135,20 @@ class JinaReader:
             }
 
         except httpx.TimeoutException as e:
-            logger.error("jina_extraction_timeout", url=url, error=str(e))
-            raise JinaReaderError("Request timed out") from e
+            logger.exception("jina_extraction_timeout", url=url, error=str(e))
+            msg = "Request timed out"
+            raise JinaReaderError(msg) from e
 
         except JinaReaderError:
             # Re-raise JinaReaderError without modification
             raise
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "jina_extraction_failed", url=url, error=str(e), error_type=type(e).__name__
             )
-            raise JinaReaderError(f"Extraction failed: {e!s}") from e
+            msg = f"Extraction failed: {e!s}"
+            raise JinaReaderError(msg) from e
 
     async def close(self) -> None:
         """Close the HTTP client."""

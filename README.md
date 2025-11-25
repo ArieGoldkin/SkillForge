@@ -91,7 +91,7 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 - **Framework:** FastAPI 0.121.2+
 - **AI Orchestration:** LangGraph 1.0 + LangChain 1.0 (Sprint 2)
 - **Database:** PostgreSQL 17 + PGVector 0.4.1
-- **LLM:** Ollama (dev), OpenAI/Claude (production)
+- **LLM:** Multi-provider support (Ollama for dev, GPT-5 Mini/Claude/Gemini for production)
 - **Language:** Python 3.13
 
 ### Frontend
@@ -139,22 +139,42 @@ npm run dev
 
 # 5. Open browser
 # Frontend: http://localhost:5173
-# Backend API: http://localhost:8000/docs
+# Backend API: http://localhost:8500/docs
 ```
 
 ### Environment Variables
 
 **Backend (`.env`):**
 ```env
-DATABASE_URL=postgresql://dev:devpass@localhost:5432/skillforge
+# Database
+DATABASE_URL=postgresql://dev:devpass@localhost:5437/skillforge
+
+# Multi-Provider LLM Configuration
+LLM_MODEL=ollama:llama3.3:8b  # Development (free, local)
+# LLM_MODEL=gpt-5-mini         # Production: GPT-5 Mini ($0.25/$2.00) - RECOMMENDED
+# LLM_MODEL=claude-sonnet-4    # Anthropic Claude 4 Sonnet
+# LLM_MODEL=gemini-2.0-flash   # Google Gemini 2.0 Flash
+
+# Provider API Keys (set based on provider)
+OPENAI_API_KEY=sk-...          # Required for OpenAI models (GPT-5 Mini, GPT-5, etc.)
+# ANTHROPIC_API_KEY=sk-ant-...  # Required for Anthropic models (Claude)
+# GOOGLE_API_KEY=...            # Required for Google models (Gemini)
+# XAI_API_KEY=...               # Required for xAI models (Grok)
+# DEEPSEEK_API_KEY=...          # Required for DeepSeek models
+
+# Legacy Ollama (for embeddings / backwards compatibility)
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
+OLLAMA_MODEL=llama3.3:8b
+
+# Content Extraction
 JINA_API_KEY=your_key_here  # Get free key at https://jina.ai
 ```
 
+**See `backend/.env.example` for complete configuration with verified November 2025 pricing.**
+
 **Frontend (`.env.local`):**
 ```env
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://localhost:8500
 ```
 
 ---

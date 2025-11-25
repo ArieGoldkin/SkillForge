@@ -30,6 +30,7 @@ async def read_sse_event(response, timeout: float = SSE_TEST_TIMEOUT) -> dict | 
         Parsed event data or None if timeout
 
     """
+
     async def _read_one():
         async for line in response.aiter_lines():
             if line.startswith("data:"):
@@ -42,9 +43,7 @@ async def read_sse_event(response, timeout: float = SSE_TEST_TIMEOUT) -> dict | 
         return None
 
 
-async def read_sse_events(
-    response, count: int, timeout: float = SSE_TEST_TIMEOUT
-) -> list[dict]:
+async def read_sse_events(response, count: int, timeout: float = SSE_TEST_TIMEOUT) -> list[dict]:
     """Read multiple SSE events from stream with timeout.
 
     Args:
@@ -56,6 +55,7 @@ async def read_sse_events(
         List of parsed event data
 
     """
+
     async def _read_multiple():
         events = []
         async for line in response.aiter_lines():
@@ -83,9 +83,7 @@ async def test_sse_endpoint_connects():
     # Verify endpoint exists by checking router registration
     # We can't actually test streaming with ASGITransport
     routes = [r for r in router.routes if hasattr(r, "path")]
-    stream_route = next(
-        (r for r in routes if "/analyze/{analysis_id}/stream" in str(r.path)), None
-    )
+    stream_route = next((r for r in routes if "/analyze/{analysis_id}/stream" in str(r.path)), None)
     assert stream_route is not None, "SSE stream route not found in router"
 
 
@@ -199,8 +197,6 @@ async def test_sse_endpoint_multiple_events():
 @pytest.mark.asyncio
 async def test_sse_endpoint_invalid_uuid():
     """Test SSE endpoint handles invalid UUID gracefully."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/v1/analyze/invalid-uuid/stream")
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT

@@ -47,7 +47,7 @@ class AnalyzeResponse(BaseModel):
             raw_content="Article content...",
             extraction_metadata={"word_count": 5234},
             content_embedding=[0.1, 0.2, ...],  # 768 dimensions
-            status="complete"
+            status="complete",
         )
         ```
 
@@ -92,7 +92,7 @@ class ErrorResponse(BaseModel):
             error={
                 "code": "INVALID_URL",
                 "message": "URL must be a valid HTTP/HTTPS URL",
-                "request_id": "abc-123"
+                "request_id": "abc-123",
             }
         )
         ```

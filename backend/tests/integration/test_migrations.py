@@ -205,7 +205,7 @@ async def test_models_match_schema(requires_database, reset_engine_connections):
         tables = Base.metadata.tables
 
         # Verify each model table exists in database
-        for table_name in tables.keys():
+        for table_name in tables:
             result = await session.execute(
                 text(
                     """

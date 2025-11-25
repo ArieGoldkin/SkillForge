@@ -1,6 +1,7 @@
 """Tests for event broadcaster service."""
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -83,9 +84,7 @@ async def test_subscribe_cleanup_on_cancel():
     channel = "test:cleanup"
 
     # Start subscriber
-    subscriber_task = asyncio.create_task(
-        broadcaster.subscribe(channel).__anext__()
-    )
+    subscriber_task = asyncio.create_task(broadcaster.subscribe(channel).__anext__())
 
     # Wait a bit for subscription to register
     await asyncio.sleep(0.1)
@@ -95,10 +94,8 @@ async def test_subscribe_cleanup_on_cancel():
 
     # Cancel subscriber
     subscriber_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await subscriber_task
-    except asyncio.CancelledError:
-        pass
 
     # Wait for cleanup
     await asyncio.sleep(0.1)
@@ -141,10 +138,8 @@ async def test_get_subscriber_count():
 
     # Cancel subscriber
     sub_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await sub_task
-    except asyncio.CancelledError:
-        pass
 
     await asyncio.sleep(0.1)  # Wait for cleanup
     assert broadcaster.get_subscriber_count(channel) == 0

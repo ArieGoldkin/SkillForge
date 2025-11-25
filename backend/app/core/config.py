@@ -32,14 +32,93 @@ Example:
     # Or get fresh instance (cache cleared in tests)
     settings = get_settings()
     ```
+
 """
 
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Final
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+LLM_PROVIDER_ALIAS_MAP: Final[dict[str, str]] = {
+    "openai": "openai",
+    "gpt": "openai",
+    "gpt4": "openai",
+    "gpt5": "openai",
+    "anthropic": "anthropic",
+    "claude": "anthropic",
+    "sonnet": "anthropic",
+    "google": "google_genai",
+    "gemini": "google_genai",
+    "google_genai": "google_genai",
+    "ollama": "ollama",
+    "grok": "xai",
+    "xai": "xai",
+    "composer": "perplexity",
+    "perplexity": "perplexity",
+    "kimi": "moonshot",
+    "moonshot": "moonshot",
+    "groq": "groq",
+    "deepseek": "deepseek",
+    "deepseek-v3": "deepseek",
+}
+
+LLM_PROVIDER_API_FIELDS: Final[dict[str, str]] = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "google_genai": "GOOGLE_API_KEY",
+    "xai": "XAI_API_KEY",
+    "deepseek": "DEEPSEEK_API_KEY",
+}
+
+
+def _canonical_provider(raw_provider: str | None) -> str | None:
+    if not raw_provider:
+        return None
+    normalized = raw_provider.strip().lower()
+    if not normalized:
+        return None
+    return LLM_PROVIDER_ALIAS_MAP.get(normalized, normalized)
+
+
+def _split_provider_from_model(model_identifier: str) -> tuple[str | None, str]:
+    """Return (provider, model_name) if provider prefix is embedded in identifier."""
+    identifier = model_identifier.strip()
+    if not identifier:
+        return None, identifier
+
+    for separator in ("/", ":"):
+        if separator in identifier:
+            prefix, remainder = identifier.split(separator, 1)
+            canonical = _canonical_provider(prefix)
+            if canonical:
+                return canonical, remainder.strip()
+            # Only treat separator as provider delimiter if prefix is recognized
+            # otherwise keep searching / fall through
+
+    return None, identifier
+
+
+def _infer_provider_from_model(model_identifier: str) -> str | None:
+    """Infer provider from model identifier using prefix heuristics."""
+    embedded_provider, _ = _split_provider_from_model(model_identifier)
+    if embedded_provider:
+        return embedded_provider
+
+    normalized = "".join(ch if ch.isalnum() else " " for ch in model_identifier.strip().lower())
+    tokens = normalized.split()
+    if not tokens:
+        return None
+
+    first_token = tokens[0]
+    for alias, canonical in LLM_PROVIDER_ALIAS_MAP.items():
+        if first_token.startswith(alias):
+            return canonical
+
+    return None
 
 
 def _get_env_file() -> str:
@@ -89,12 +168,84 @@ class Settings(BaseSettings):
         description="PostgreSQL connection string",
     )
 
-    # LLM Configuration (to be used in Task 1.5.2)
+    # Multi-provider LLM configuration
+    LLM_MODEL: str = Field(
+        default="ollama:llama3.3:8b",
+        description=(
+            "Primary LLM identifier. Supports formats like 'gpt-5-mini', "
+            "'claude-sonnet-4', 'gemini-2.0-flash', or provider-prefixed "
+            "values. Default uses Ollama (free, local) for development. "
+            "For production, use 'gpt-5-mini' ($0.25/$2.00 - recommended, "
+            "newer + cheaper than GPT-4o Mini) or 'gpt-5' ($1.25/$10.00 - "
+            "5x more expensive but maximum quality). Verified November 24, 2025."
+        ),
+    )
+    LLM_PROVIDER: str | None = Field(
+        default=None,
+        description=(
+            "Optional override for the LLM provider (e.g., openai, anthropic, "
+            "google_genai, ollama). When omitted, the provider is inferred "
+            "from LLM_MODEL."
+        ),
+    )
+    OPENAI_API_KEY: str | None = Field(
+        default=None,
+        description="OpenAI API key (required when using OpenAI models).",
+    )
+    ANTHROPIC_API_KEY: str | None = Field(
+        default=None,
+        description="Anthropic API key (required when using Anthropic models).",
+    )
+    GOOGLE_API_KEY: str | None = Field(
+        default=None,
+        description="Google API key (required when using Gemini models).",
+    )
+    XAI_API_KEY: str | None = Field(
+        default=None,
+        description="xAI API key (required when using Grok models).",
+    )
+    DEEPSEEK_API_KEY: str | None = Field(
+        default=None,
+        description="DeepSeek API key (required when using DeepSeek models).",
+    )
+    LLM_TEMPERATURE: float | None = Field(
+        default=None,
+        description=(
+            "Temperature for LLM responses (0.0-2.0). Lower = more deterministic, "
+            "higher = more creative. Defaults to model provider's default if not set."
+        ),
+    )
+    LLM_MAX_TOKENS: int | None = Field(
+        default=None,
+        description=(
+            "Maximum tokens in LLM response. Limits response length. "
+            "Defaults to model provider's default if not set."
+        ),
+    )
+    LLM_TIMEOUT: float | None = Field(
+        default=None,
+        description=(
+            "Timeout in seconds for LLM API calls. Defaults to model provider's default if not set."
+        ),
+    )
+    LLM_RETRY_DELAY_BASE: float = Field(
+        default=1.0,
+        description=(
+            "Base delay in seconds for retry exponential backoff. "
+            "Smaller values = faster retries. Default 1.0s (1s, 2s, 4s). "
+            "Use 0.1 for test environments (0.1s, 0.2s, 0.4s)."
+        ),
+    )
+
+    # Legacy Ollama configuration retained for backwards compatibility / embeddings
     OLLAMA_BASE_URL: str = Field(
         default="http://localhost:11434",
-        description="Ollama API base URL",
+        description="Ollama API base URL (used when provider is Ollama).",
     )
-    OLLAMA_MODEL: str = Field(default="llama3.1:8b", description="Ollama model name")
+    OLLAMA_MODEL: str = Field(
+        default="llama3.1:8b",
+        description="Legacy Ollama model name (prefer configuring via LLM_MODEL).",
+    )
 
     # Embedding Configuration (to be used in Task 1.5.2)
     OLLAMA_EMBEDDING_MODEL: str = Field(
@@ -129,12 +280,35 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         return v
 
+    @field_validator("LLM_MODEL")
+    @classmethod
+    def validate_llm_model(cls, v: str) -> str:
+        """Ensure LLM model identifier is not empty."""
+        if not v or not v.strip():
+            msg = "LLM_MODEL cannot be empty"
+            raise ValueError(msg)
+        return v.strip()
+
     @model_validator(mode="after")
     def validate_production_requirements(self) -> "Settings":
         """Validate required variables in production environment."""
         if self.ENVIRONMENT == "production" and not self.DATABASE_URL:
             error_msg = "DATABASE_URL is required in production environment"
             raise ValueError(error_msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_llm_configuration(self) -> "Settings":
+        """Ensure LLM provider/API key configuration is valid."""
+        provider = self.resolved_llm_provider()
+        api_field = LLM_PROVIDER_API_FIELDS.get(provider)
+        # Ollama doesn't require API key (local)
+        if api_field and provider != "ollama" and not getattr(self, api_field):
+            msg = (
+                f"{api_field} is required when using provider '{provider}'. "
+                "Set it via environment variables or in the .env file."
+            )
+            raise ValueError(msg)
         return self
 
     def is_development(self) -> bool:
@@ -148,6 +322,27 @@ class Settings(BaseSettings):
     def is_staging(self) -> bool:
         """Check if running in staging environment."""
         return self.ENVIRONMENT == "staging"
+
+    def resolved_llm_provider(self) -> str:
+        """Return canonical provider name for the configured LLM."""
+        provider = _canonical_provider(self.LLM_PROVIDER)
+        if provider:
+            return provider
+
+        inferred = _infer_provider_from_model(self.LLM_MODEL)
+        if inferred:
+            return inferred
+
+        msg = (
+            "Unable to determine LLM provider from LLM_MODEL. "
+            "Set LLM_PROVIDER or provide LLM_MODEL in 'provider:model' format."
+        )
+        raise ValueError(msg)
+
+    def resolved_llm_model_name(self) -> str:
+        """Return model identifier without embedded provider prefix."""
+        _, model_name = _split_provider_from_model(self.LLM_MODEL)
+        return model_name.strip()
 
 
 @lru_cache
