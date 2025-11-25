@@ -149,5 +149,14 @@ export default tseslint.config(
     rules: {
       'react-refresh/only-export-components': 'off',
     },
+  },
+
+  // Relaxed rules for test files
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+    },
   }
 )

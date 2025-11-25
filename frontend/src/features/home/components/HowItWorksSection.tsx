@@ -1,7 +1,7 @@
 interface WorkflowStepProps {
-  number: number;
-  title: string;
-  description: string;
+  number: number
+  title: string
+  description: string
 }
 
 function WorkflowStep({ number, title, description }: WorkflowStepProps) {
@@ -15,36 +15,35 @@ function WorkflowStep({ number, title, description }: WorkflowStepProps) {
         <p className="text-muted-foreground">{description}</p>
       </div>
     </div>
-  );
+  )
 }
 
 export function HowItWorksSection() {
   const steps = [
     {
       number: 1,
-      title: "Submit Content",
-      description:
-        "Enter a URL, video link, or GitHub repository to analyze technical content",
+      title: 'Submit Content',
+      description: 'Enter a URL, video link, or GitHub repository to analyze technical content',
     },
     {
       number: 2,
-      title: "Multi-Agent Analysis",
+      title: 'Multi-Agent Analysis',
       description:
-        "8 specialized agents work in parallel to extract insights, compare technologies, audit security, and plan implementation",
+        '8 specialized agents work in parallel to extract insights, compare technologies, audit security, and plan implementation',
     },
     {
       number: 3,
-      title: "Get Implementation Guide",
+      title: 'Get Implementation Guide',
       description:
-        "Receive a comprehensive markdown guide with code examples, best practices, and step-by-step instructions",
+        'Receive a comprehensive markdown guide with code examples, best practices, and step-by-step instructions',
     },
     {
       number: 4,
-      title: "Interactive Tutoring",
+      title: 'Interactive Tutoring',
       description:
-        "Chat with an AI tutor that uses Socratic questioning to guide your learning and implementation",
+        'Chat with an AI tutor that uses Socratic questioning to guide your learning and implementation',
     },
-  ];
+  ]
 
   return (
     <section className="py-20 px-8">
@@ -57,5 +56,5 @@ export function HowItWorksSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

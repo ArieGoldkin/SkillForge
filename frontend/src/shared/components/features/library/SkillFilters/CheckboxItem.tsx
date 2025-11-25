@@ -2,7 +2,7 @@
  * CheckboxItem - Reusable checkbox component for filters
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 /**
  * Props for CheckboxItem component

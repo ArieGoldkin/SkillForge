@@ -1,4 +1,4 @@
-import * as React from 'react'
+import type * as React from 'react'
 
 import { BookOpen } from 'lucide-react'
 
@@ -91,11 +91,7 @@ export const SkillGridView: React.FC<SkillGridViewProps> = ({
     >
       {loading ? (
         // Loading skeletons
-        <>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <SkillCardSkeleton key={index} />
-          ))}
-        </>
+        Array.from({ length: 6 }).map((_, index) => <SkillCardSkeleton key={index} />)
       ) : skills.length === 0 ? (
         // Empty state
         <EmptyState message={emptyMessage} />

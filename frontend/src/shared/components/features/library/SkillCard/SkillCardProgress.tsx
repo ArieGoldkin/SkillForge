@@ -2,7 +2,7 @@
  * SkillCardProgress - Progress bar for skill cards
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import { Progress } from '@/shared/components/ui/progress'
 

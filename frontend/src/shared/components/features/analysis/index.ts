@@ -6,20 +6,18 @@
  */
 
 export {
+  type AgentActivity,
+  AgentActivityFeed,
+  type AgentActivityFeedProps,
+} from './AgentActivityFeed'
+export {
   AnalysisProgressCard,
   type AnalysisProgressCardProps,
   type AnalysisStage,
 } from './AnalysisProgressCard'
-
 export {
+  type AnalysisStep,
   AnalysisStepList,
   type AnalysisStepListProps,
-  type AnalysisStep,
   type AnalysisStepStatus,
 } from './AnalysisStepList'
-
-export {
-  AgentActivityFeed,
-  type AgentActivityFeedProps,
-  type AgentActivity,
-} from './AgentActivityFeed'

@@ -2,7 +2,7 @@
  * DurationFilter - Duration range filter section
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import { FilterSection } from './FilterSection'
 
