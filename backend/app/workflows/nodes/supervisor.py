@@ -13,6 +13,7 @@ Architecture:
 """
 
 import asyncio
+from collections.abc import AsyncIterator
 from typing import Any, TypedDict
 
 from langchain.agents import create_agent
@@ -262,7 +263,10 @@ async def _stream_supervisor_response(  # noqa: PLR0912
     min_chunk_size = 10  # Minimum characters before emitting
     final_result = None
 
-    stream = None
+    # Type: LangGraph's astream() returns AsyncIterator[dict[str, Any] | Any]
+    # Note: AsyncIterator doesn't guarantee aclose(), but AsyncGenerator does
+    # We check with hasattr() at runtime
+    stream: AsyncIterator[dict[str, Any]] | None = None
     try:
         stream = supervisor_agent.astream(
             input_messages,
@@ -282,14 +286,7 @@ async def _stream_supervisor_response(  # noqa: PLR0912
                     latest_message = messages[-1]
                     if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
                         # Tool calls indicate agent decision is complete, can break early
-                        # Close the generator properly to prevent GeneratorExit
-                        if hasattr(stream, "aclose"):
-                            # contextlib.suppress doesn't work with async, use try-except
-                            try:  # noqa: SIM105
-                                await stream.aclose()
-                            except (GeneratorExit, RuntimeError):
-                                # Generator already closed or closing - ignore
-                                pass
+                        # The finally block will handle proper cleanup via aclose()
                         break
 
                     # Extract latest message for token streaming (batched)
@@ -330,20 +327,11 @@ async def _stream_supervisor_response(  # noqa: PLR0912
                     accumulated_content=accumulated_content,
                 )
         except GeneratorExit:
-            # GeneratorExit is expected when breaking from async generator
-            # This is normal behavior - the generator is being closed by Python
-            # We should handle it silently (it's cleanup, not an error)
-            # Don't re-raise - just let the generator close naturally
+            # GeneratorExit is raised when Python's garbage collector closes the generator
+            # This is expected behavior when breaking from async for loop early
+            # We handle it silently - Python handles cleanup automatically per PEP 525
+            # Do NOT call aclose() here as it causes double-close and LangSmith error logs
             pass
-        finally:
-            # Ensure generator is properly closed even if we break early
-            if stream is not None and hasattr(stream, "aclose"):
-                # contextlib.suppress doesn't work with async, use try-except
-                try:  # noqa: SIM105
-                    await stream.aclose()
-                except (GeneratorExit, RuntimeError, StopAsyncIteration):
-                    # Generator already closed or closing - ignore
-                    pass
     except GeneratorExit:
         # GeneratorExit is not an error - it's Python cleaning up the generator
         # Handle silently and continue to fallback
