@@ -82,9 +82,31 @@ All workflow components are properly instrumented:
 3. **Guardrails:**
    - ✅ Pydantic validation traced (if used)
 
-## 🐛 Issues Found
+## 🐛 Issues Found & Fixed
 
-### Critical: Database Session Concurrency
+### ✅ Fixed: GeneratorExit in Supervisor Streaming
+
+**Problem:** `GeneratorExit` was being raised when breaking from the async generator loop in supervisor streaming.
+
+**Error:**
+```
+GeneratorExit()
+Traceback (most recent call last):
+  File ".../langgraph/pregel/main.py", line 2970, in astream
+    yield o
+GeneratorExit
+```
+
+**Root Cause:** When breaking early from `async for chunk in stream:` loop (when tool calls are detected), Python's garbage collector closes the generator, raising `GeneratorExit`.
+
+**Fix Applied:** Added proper `GeneratorExit` handling in `app/workflows/nodes/supervisor.py`:
+- Catch `GeneratorExit` silently (it's cleanup, not an error)
+- Allow generator to close naturally
+- Continue to fallback if needed
+
+**Status:** ✅ FIXED
+
+### ⚠️ Known Issue: Database Session Concurrency
 
 **Problem:** Agents running in parallel share the same database session, causing SQLAlchemy concurrency errors.
 
@@ -100,6 +122,8 @@ concurrent operations are not permitted
 - Each agent should get its own database session
 - Or implement proper session pooling with connection limits
 - Or serialize agent database operations (less ideal)
+
+**Status:** ⚠️ PENDING FIX
 
 ## ✅ Standards Compliance
 
