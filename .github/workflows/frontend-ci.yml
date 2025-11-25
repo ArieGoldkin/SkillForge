@@ -1,13 +1,17 @@
 name: Frontend CI
 
 on:
-  # Disabled until frontend directory exists
-  # push:
-  #   branches: [main, dev]
-  #   paths:
-  #     - 'frontend/**'
-  #     - '.github/workflows/frontend-ci.yml'
-  workflow_dispatch:  # Only allow manual runs for now
+  push:
+    branches: [main, dev]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  workflow_dispatch: # Allow manual runs
 
 jobs:
   test:
@@ -27,9 +31,9 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         working-directory: ./frontend
-        run: npm run test:coverage || npm run test -- --coverage
+        run: npm run test:coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
@@ -65,11 +69,11 @@ jobs:
 
       - name: Run ESLint
         working-directory: ./frontend
-        run: npm run lint || npx eslint .
+        run: npm run lint
 
-      - name: Check Prettier
+      - name: Check Biome formatting
         working-directory: ./frontend
-        run: npm run format:check || npx prettier --check .
+        run: npm run format:check
 
   type-check:
     runs-on: ubuntu-latest
@@ -90,7 +94,7 @@ jobs:
 
       - name: Run TypeScript check
         working-directory: ./frontend
-        run: npm run type-check || npx tsc --noEmit
+        run: npx tsc --noEmit
 
   security:
     runs-on: ubuntu-latest

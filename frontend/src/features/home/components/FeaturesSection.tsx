@@ -1,11 +1,11 @@
-import { Bot, BookOpen, MessageCircle, Library } from "lucide-react";
+import { Bot, BookOpen, MessageCircle, Library } from 'lucide-react'
 
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Card, CardContent } from '@/shared/components/ui/card'
 
 interface FeatureCardProps {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  description: string
 }
 
 function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
@@ -19,35 +19,32 @@ function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
         <p className="text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export function FeaturesSection() {
   const features = [
     {
       icon: Bot,
-      title: "Multi-Agent Analysis",
-      description:
-        "8 specialized agents analyze content from multiple perspectives",
+      title: 'Multi-Agent Analysis',
+      description: '8 specialized agents analyze content from multiple perspectives',
     },
     {
       icon: BookOpen,
-      title: "Implementation Guides",
-      description:
-        "AI-ready markdown guides with code examples and best practices",
+      title: 'Implementation Guides',
+      description: 'AI-ready markdown guides with code examples and best practices',
     },
     {
       icon: MessageCircle,
-      title: "Socratic Tutoring",
-      description:
-        "Interactive AI tutor guides you through implementation step-by-step",
+      title: 'Socratic Tutoring',
+      description: 'Interactive AI tutor guides you through implementation step-by-step',
     },
     {
       icon: Library,
-      title: "Library Management",
-      description: "Save, organize, and search your analyzed content and guides",
+      title: 'Library Management',
+      description: 'Save, organize, and search your analyzed content and guides',
     },
-  ];
+  ]
 
   return (
     <section className="py-16 px-8 bg-muted/50">
@@ -59,5 +56,5 @@ export function FeaturesSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

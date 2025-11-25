@@ -1,9 +1,9 @@
-import { ChatMessage } from "@/shared/components/features/tutor/ChatMessage";
-import type { TutoringMessage } from "@/types/api";
+import { ChatMessage } from '@/shared/components/features/tutor/ChatMessage'
+import type { TutoringMessage } from '@/types/api'
 
 interface MessagesAreaProps {
-  messages: TutoringMessage[];
-  isPending: boolean;
+  messages: TutoringMessage[]
+  isPending: boolean
 }
 
 export function MessagesArea({ messages, isPending }: MessagesAreaProps) {
@@ -24,5 +24,5 @@ export function MessagesArea({ messages, isPending }: MessagesAreaProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

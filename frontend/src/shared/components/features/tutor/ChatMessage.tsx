@@ -1,46 +1,43 @@
-import * as React from "react";
+import * as React from 'react'
 
-import { Bot, User } from "lucide-react";
+import { Bot, User } from 'lucide-react'
 
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
 /**
  * Message role type
  */
-export type MessageRole = "user" | "assistant";
+export type MessageRole = 'user' | 'assistant'
 
 /**
  * Props for ChatMessage component
  */
 export interface ChatMessageProps {
-  role: MessageRole;
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  className?: string;
+  role: MessageRole
+  content: string
+  timestamp: Date
+  isStreaming?: boolean
+  className?: string
 }
 
 /**
  * Format timestamp to time string
  */
 const formatTimestamp = (timestamp: Date): string => {
-  return timestamp.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+  return timestamp.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 /**
  * Streaming cursor animation
  */
 const StreamingCursor: React.FC = () => {
   return (
-    <span
-      className="inline-block w-1 h-4 ml-0.5 bg-current animate-pulse"
-      aria-hidden="true"
-    />
-  );
-};
+    <span className="inline-block w-1 h-4 ml-0.5 bg-current animate-pulse" aria-hidden="true" />
+  )
+}
 
 /**
  * ChatMessage - Message bubble for user/assistant chat
@@ -78,25 +75,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   isStreaming = false,
   className,
 }) => {
-  const isUser = role === "user";
+  const isUser = role === 'user'
 
   return (
     <div
       className={cn(
-        "flex gap-3 animate-in slide-in-from-bottom-2 duration-300",
-        isUser ? "flex-row-reverse" : "flex-row",
+        'flex gap-3 animate-in slide-in-from-bottom-2 duration-300',
+        isUser ? 'flex-row-reverse' : 'flex-row',
         className
       )}
     >
       {/* Avatar */}
       <div
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground"
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
         )}
-        aria-label={isUser ? "User" : "Assistant"}
+        aria-label={isUser ? 'User' : 'Assistant'}
       >
         {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
       </div>
@@ -104,17 +99,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       {/* Message content */}
       <div
         className={cn(
-          "flex flex-col gap-1 max-w-[80%] md:max-w-[90%]",
-          isUser ? "items-end" : "items-start"
+          'flex flex-col gap-1 max-w-[80%] md:max-w-[90%]',
+          isUser ? 'items-end' : 'items-start'
         )}
       >
         {/* Message bubble */}
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 wrap-break-word",
+            'rounded-2xl px-4 py-3 wrap-break-word',
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-sm"
-              : "bg-muted text-foreground rounded-tl-sm"
+              ? 'bg-primary text-primary-foreground rounded-tr-sm'
+              : 'bg-muted text-foreground rounded-tl-sm'
           )}
         >
           {/* Content with proper whitespace handling */}
@@ -125,12 +120,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
 
         {/* Timestamp */}
-        <span className="text-xs text-muted-foreground px-1">
-          {formatTimestamp(timestamp)}
-        </span>
+        <span className="text-xs text-muted-foreground px-1">{formatTimestamp(timestamp)}</span>
       </div>
     </div>
-  );
-};
+  )
+}
 
-ChatMessage.displayName = "ChatMessage";
+ChatMessage.displayName = 'ChatMessage'

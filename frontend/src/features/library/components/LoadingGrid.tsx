@@ -5,5 +5,5 @@ export function LoadingGrid() {
         <div key={i} className="h-80 bg-muted animate-pulse rounded-xl" />
       ))}
     </div>
-  );
+  )
 }
