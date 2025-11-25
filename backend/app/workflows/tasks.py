@@ -9,11 +9,19 @@ to avoid circular dependencies. The task() function can be used as a decorator
 factory to wrap functions.
 """
 
+import asyncio
+
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EmbeddingVector
+from app.db.session import AsyncSessionLocal
 from app.services.embeddings import EmbeddingService
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
+from app.workflows.agents import (
+    run_implementation_planner,
+    run_integration_feasibility,
+    run_tech_comparator,
+)
 
 logger = get_logger(__name__)
 
@@ -146,3 +154,99 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
         await embedding_service.close()
 
     return embedding
+
+
+async def execute_agents(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    selected_agents: list[str],
+) -> list[dict[str, object]]:
+    """Execute selected agents in parallel.
+
+    Args:
+        content: Extracted text content to analyze
+        content_type: Type of content (article, video, repo)
+        analysis_id: Unique identifier for this analysis
+        selected_agents: List of agent names to execute
+
+    Returns:
+        List of agent findings dictionaries
+
+    """
+    if not selected_agents:
+        logger.debug("workflow_no_agents_selected", analysis_id=analysis_id)
+        return []
+
+    logger.info(
+        "workflow_agents_starting",
+        analysis_id=analysis_id,
+        selected_agents=selected_agents,
+        agent_count=len(selected_agents),
+    )
+
+    # Create database session for agent persistence
+    async with AsyncSessionLocal() as session:
+        agent_tasks = []
+
+        # Create tasks for selected agents
+        if "tech_comparator" in selected_agents:
+            agent_tasks.append(run_tech_comparator(content, content_type, analysis_id, session))
+        if "integration_feasibility" in selected_agents:
+            agent_tasks.append(
+                run_integration_feasibility(content, content_type, analysis_id, session)
+            )
+        if "implementation_planner" in selected_agents:
+            agent_tasks.append(
+                run_implementation_planner(content, content_type, analysis_id, session)
+            )
+
+        if not agent_tasks:
+            logger.warning(
+                "workflow_no_valid_agents",
+                analysis_id=analysis_id,
+                selected_agents=selected_agents,
+            )
+            return []
+
+        # Execute agents in parallel with timeout and error isolation
+        agent_timeout = 30.0  # 30 seconds per agent
+        try:
+            findings_list = await asyncio.wait_for(
+                asyncio.gather(*agent_tasks, return_exceptions=True),
+                timeout=agent_timeout * len(agent_tasks),  # Total timeout for all agents
+            )
+
+            # Filter out exceptions and collect successful results
+            agent_findings: list[dict[str, object]] = []
+            for i, result in enumerate(findings_list):
+                if isinstance(result, Exception):
+                    agent_name = selected_agents[i] if i < len(selected_agents) else "unknown"
+                    logger.error(
+                        "workflow_agent_failed",
+                        analysis_id=analysis_id,
+                        agent_type=agent_name,
+                        error=str(result),
+                        exc_info=True,
+                    )
+                elif isinstance(result, dict):
+                    agent_findings.append(result)
+
+            logger.info(
+                "workflow_agents_complete",
+                analysis_id=analysis_id,
+                successful_count=len(agent_findings),
+                total_count=len(agent_tasks),
+            )
+
+            return agent_findings  # noqa: TRY300
+
+        except TimeoutError:
+            logger.exception(
+                "workflow_agents_timeout",
+                analysis_id=analysis_id,
+                timeout=agent_timeout * len(agent_tasks),
+                agent_count=len(agent_tasks),
+            )
+            # Return any findings that completed before timeout
+            return []
