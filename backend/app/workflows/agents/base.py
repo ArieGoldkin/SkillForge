@@ -245,7 +245,7 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
 
         # Use async invoke if available, otherwise wrap sync invoke in thread pool
         # This prevents blocking the event loop during LLM calls
-        agent_timeout = 60.0  # 60 seconds max per agent
+        agent_timeout = 120.0  # 120 seconds (2 minutes) max per agent for complex LLM calls
         try:
             if hasattr(agent, "ainvoke"):
                 # Async invoke (preferred - non-blocking)

@@ -253,7 +253,7 @@ async def execute_agents(
 
     # Execute agents in parallel with timeout and error isolation
     # Each agent manages its own database session independently
-    agent_timeout = 30.0  # 30 seconds per agent
+    agent_timeout = 120.0  # 120 seconds (2 minutes) per agent for complex LLM calls
     try:
         # asyncio.gather returns a tuple, convert to list for type consistency
         # return_exceptions=True means results can be Exception or BaseException

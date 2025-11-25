@@ -362,7 +362,7 @@ async def _invoke_supervisor_fallback(
         reason="streaming_not_available_or_failed",
     )
     # Use async invoke if available, otherwise wrap sync invoke in thread pool
-    supervisor_timeout = 60.0  # 60 seconds max for supervisor
+    supervisor_timeout = 120.0  # 120 seconds (2 minutes) max for supervisor
     try:
         if hasattr(supervisor_agent, "ainvoke"):
             # Async invoke (preferred - non-blocking)
