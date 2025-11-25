@@ -163,6 +163,10 @@ backend/tests/
 
 ## Verification
 
+See detailed verification documents:
+- [Test Verification Summary](./TEST_VERIFICATION_SUMMARY.md) - Unit and integration test results
+- [End-to-End Verification Results](./VERIFICATION_RESULTS.md) - Real article analysis verification
+
 ### Tests
 
 **Unit Tests:**
