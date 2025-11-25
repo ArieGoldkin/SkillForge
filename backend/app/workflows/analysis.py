@@ -80,7 +80,7 @@ if (
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
         logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
-    except (ValueError, ConnectionError, Exception) as e:
+    except (ValueError, ConnectionError) as e:
         logger.warning(
             "workflow_checkpointer_fallback",
             error=str(e),
@@ -245,8 +245,6 @@ async def analysis_workflow(input_data: dict) -> dict:
             agents_selected=len(selected_agents),
             agents_completed=len(agent_findings),
         )
-
-        return result
     except Exception as e:
         logger.error(
             "workflow_failed",
@@ -255,3 +253,5 @@ async def analysis_workflow(input_data: dict) -> dict:
             exc_info=True,
         )
         raise
+    else:
+        return result

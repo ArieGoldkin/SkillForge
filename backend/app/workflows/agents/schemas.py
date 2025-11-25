@@ -40,7 +40,8 @@ class TechComparison(BaseModel):
         description=(
             "REQUIRED: Comparison table with pros, cons, and use_cases for each technology. "
             "MUST include an entry for primary_tech and each alternative. "
-            "Each entry contains three lists: pros (advantages), cons (disadvantages), and use_cases (recommended scenarios)."
+            "Each entry contains three lists: pros (advantages), "
+            "cons (disadvantages), and use_cases (recommended scenarios)."
         )
     )
     recommendation: str = Field(description="Recommendation based on the comparison analysis")
@@ -63,8 +64,10 @@ class IntegrationFeasibility(BaseModel):
     compatibility: dict[str, CompatibilityScore] = Field(
         description=(
             "REQUIRED: Compatibility scores and notes for modern development stacks. "
-            "MUST include at least 2-3 stack assessments (e.g., 'nextjs', 'fastapi', 'postgresql', 'react', 'docker'). "
-            "Each entry contains a score (0.0-1.0) indicating compatibility level and notes explaining the assessment."
+            "MUST include at least 2-3 stack assessments "
+            "(e.g., 'nextjs', 'fastapi', 'postgresql', 'react', 'docker'). "
+            "Each entry contains a score (0.0-1.0) indicating compatibility level "
+            "and notes explaining the assessment."
         )
     )
     migration_effort: Literal["low", "medium", "high"] = Field(

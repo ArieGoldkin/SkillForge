@@ -1,7 +1,7 @@
 # 🏗️ SkillForge - Architecture & Workflow Diagrams
 
-**Version:** 1.0  
-**Last Updated:** November 21, 2025  
+**Version:** 1.1  
+**Last Updated:** November 25, 2025  
 **Project:** SkillForge - Research-to-Implementation Pipeline
 
 ---
@@ -165,7 +165,7 @@ graph TB
     subgraph "Business Logic [Yonatan]"
         Services[Services]
         Workflows[LangGraph Workflows]
-        Agents[LangChain Agents]
+        Agents[LangChain Agents<br/>Async with Timeouts]
         
         Repos --> Services
         Services --> Workflows
@@ -816,7 +816,7 @@ async def create_analysis(
 - Error handling and retry logic
 
 **Current Services:**
-- `EmbeddingService`: Generates semantic embeddings using Ollama
+- `EmbeddingService`: Generates semantic embeddings using OpenAI (text-embedding-3-small, 1536 dimensions)
 - `JinaReader`: Extracts content from URLs
 - `EventBroadcaster`: Pub/sub messaging for SSE events
 

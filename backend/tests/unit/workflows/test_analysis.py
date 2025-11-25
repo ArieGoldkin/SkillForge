@@ -8,8 +8,8 @@ from app.services.extraction.jina_reader import JinaReaderError
 from app.workflows.analysis import analysis_workflow
 from app.workflows.types import AnalysisState
 
-# Expected embedding dimensions for nomic-embed-text
-EXPECTED_EMBEDDING_DIMENSIONS = 768
+# Expected embedding dimensions for OpenAI text-embedding-3-small
+EXPECTED_EMBEDDING_DIMENSIONS = 1536
 
 
 @pytest.fixture

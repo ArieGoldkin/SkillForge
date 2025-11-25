@@ -46,7 +46,7 @@ class AnalyzeResponse(BaseModel):
             content_type="article",
             raw_content="Article content...",
             extraction_metadata={"word_count": 5234},
-            content_embedding=[0.1, 0.2, ...],  # 768 dimensions
+            content_embedding=[0.1, 0.2, ...],  # 1536 dimensions
             status="complete",
         )
         ```
@@ -59,7 +59,7 @@ class AnalyzeResponse(BaseModel):
     raw_content: str = Field(..., description="Extracted text content")
     extraction_metadata: dict = Field(..., description="Metadata from extraction service")
     content_embedding: list[float] = Field(
-        ..., description="Vector embedding of the content (768 dimensions)"
+        ..., description="Vector embedding of the content (1536 dimensions)"
     )
     status: str = Field(
         default="complete", description="Analysis status (pending, running, complete, failed)"
@@ -73,7 +73,7 @@ class AnalyzeResponse(BaseModel):
                 "content_type": "article",
                 "raw_content": "Article content...",
                 "extraction_metadata": {"word_count": 5234},
-                "content_embedding": [0.1] * 768,
+                "content_embedding": [0.1] * 1536,
                 "status": "complete",
             }
         }

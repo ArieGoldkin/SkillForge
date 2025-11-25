@@ -9,8 +9,8 @@ from app.core.config import get_settings
 from app.db.session import engine
 from app.workflows.analysis import analysis_workflow
 
-# Expected embedding dimensions for nomic-embed-text
-EXPECTED_EMBEDDING_DIMENSIONS = 768
+# Expected embedding dimensions for OpenAI text-embedding-3-small
+EXPECTED_EMBEDDING_DIMENSIONS = 1536
 
 
 @pytest.fixture
@@ -38,11 +38,11 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
     """Test analysis_workflow end-to-end with real services.
 
     This test requires:
-    - Ollama running on localhost:11434 with nomic-embed-text model
+    - OpenAI API key configured
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes due to Ollama embedding generation, streaming overhead,
+    Can take 2+ minutes due to OpenAI embedding generation, streaming overhead,
     and parallel execution of embedding + supervisor tasks.
 
     Timeout increased to 150s to account for:
@@ -114,11 +114,11 @@ async def test_analysis_workflow_with_checkpointer(
     """Test analysis_workflow with database checkpointer.
 
     This test requires:
-    - Ollama running on localhost:11434 with nomic-embed-text model
+    - OpenAI API key configured
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes per run due to Ollama embedding generation, streaming overhead,
+    Can take 2+ minutes per run due to OpenAI embedding generation, streaming overhead,
     and parallel execution. Runs twice to test checkpoint functionality.
 
     Timeout increased to 300s (5 minutes) to account for:

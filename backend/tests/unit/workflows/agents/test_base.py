@@ -34,7 +34,8 @@ def mock_session():
 def mock_agent():
     """Mock agent instance."""
     agent = MagicMock()
-    agent.invoke = MagicMock(
+    # Mock ainvoke (async) which is preferred, fallback to invoke if not available
+    agent.ainvoke = AsyncMock(
         return_value={"structured_response": MockAgentSchema(field1="test", field2=42)}
     )
     return agent
@@ -100,7 +101,7 @@ async def test_run_agent_with_tracking_no_structured_response(
     """Test error when agent doesn't return structured_response."""
     analysis_id = str(uuid4())
     mock_agent = MagicMock()
-    mock_agent.invoke = MagicMock(return_value={})  # No structured_response
+    mock_agent.ainvoke = AsyncMock(return_value={})  # No structured_response
 
     with pytest.raises(RuntimeError, match="did not return structured_response"):
         await run_agent_with_tracking(

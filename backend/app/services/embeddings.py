@@ -1,36 +1,25 @@
-"""Embedding service for generating semantic embeddings using Ollama.
+"""Embedding service for generating semantic embeddings using OpenAI.
 
 This service provides:
 - Single text embedding generation
-- Dimension handling (truncate/pad to match schema)
 - L2 normalization for cosine similarity search
 - Retry logic with exponential backoff
 - Comprehensive error handling
 
 Architecture:
-- Uses ollama AsyncClient for async requests
-- Connects to Ollama API endpoint (localhost:11434 by default)
-- Generates 768-dimensional embeddings (nomic-embed-text)
+- Uses OpenAI SDK for async requests
+- Generates 1536-dimensional embeddings (text-embedding-3-small)
 - Returns normalized vectors for pgvector cosine similarity
 """
 
-import os
-from typing import Any
-
-import httpx
+from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.core.constants import (
-    EMBEDDING_TIMEOUT,
-    HTTP_ERROR_THRESHOLD,
-    MAX_ERROR_MESSAGE_LENGTH_LONG,
     MAX_RETRY_ATTEMPTS,
-    MAX_TEXT_LENGTH,
     RETRY_MAX_WAIT_EMBEDDING,
-    RETRY_MAX_WAIT_EMBEDDING_TEST,
     RETRY_MIN_WAIT_EMBEDDING,
-    RETRY_MIN_WAIT_EMBEDDING_TEST,
     RETRY_MULTIPLIER_EMBEDDING,
 )
 from app.core.exceptions import EmbeddingError
@@ -42,65 +31,61 @@ logger = get_logger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating semantic embeddings using Ollama.
+    """Service for generating semantic embeddings using OpenAI.
 
-    Uses Ollama's embeddings endpoint to generate vectors for content.
-    Handles dimension mismatches and normalizes vectors for cosine similarity.
+    Uses OpenAI's embeddings API to generate vectors for content.
+    Normalizes vectors for cosine similarity search.
 
     Example:
         >>> service = EmbeddingService()
         >>> embedding = await service.generate_embedding("Sample text")
         >>> len(embedding)
-        768
+        1536
 
     """
 
-    BASE_URL = "http://localhost:11434"
-
     def __init__(self) -> None:
-        """Initialize EmbeddingService with API client and configuration."""
-        self.ollama_url = settings.OLLAMA_BASE_URL
-        self.model = settings.OLLAMA_EMBEDDING_MODEL
-        self.expected_dimensions = settings.EMBEDDING_DIMENSIONS
-        self.client = httpx.AsyncClient(timeout=EMBEDDING_TIMEOUT)
-        self.embeddings_endpoint = f"{self.ollama_url}/api/embeddings"
+        """Initialize EmbeddingService with OpenAI client."""
+        if not settings.OPENAI_API_KEY:
+            raise ValueError(
+                "OPENAI_API_KEY is required for embedding generation. "
+                "Set it via environment variables or in the .env file."
+            )
+
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.model = "text-embedding-3-small"
+        self.expected_dimensions = 1536
+        self.max_text_length = 32_000  # ~8,191 tokens (OpenAI limit)
 
         logger.info(
             "embedding_service_initialized",
             model=self.model,
             dimensions=self.expected_dimensions,
-            endpoint=self.embeddings_endpoint,
+            provider="openai",
         )
 
     @retry(
         stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
         wait=wait_exponential(
             multiplier=RETRY_MULTIPLIER_EMBEDDING,
-            min=(
-                RETRY_MIN_WAIT_EMBEDDING_TEST
-                if os.environ.get("PYTEST_CURRENT_TEST")
-                else RETRY_MIN_WAIT_EMBEDDING
-            ),
-            max=(
-                RETRY_MAX_WAIT_EMBEDDING_TEST
-                if os.environ.get("PYTEST_CURRENT_TEST")
-                else RETRY_MAX_WAIT_EMBEDDING
-            ),
+            min=RETRY_MIN_WAIT_EMBEDDING,
+            max=RETRY_MAX_WAIT_EMBEDDING,
         ),
         reraise=True,
     )
     async def generate_embedding(self, text: str, normalize: bool = True) -> EmbeddingVector:
-        """Generate embedding vector for text using Ollama.
+        """Generate embedding vector for text using OpenAI.
 
         Args:
-            text: Text to embed
+            text: Text to embed (max 32,000 characters)
             normalize: If True, apply L2 normalization (default: True)
 
         Returns:
-            List of floats representing the embedding vector (expected dimensions)
+            List of floats representing the embedding vector (1536 dimensions)
 
         Raises:
             EmbeddingError: If embedding generation fails
+            ValueError: If text is empty
 
         """
         if not text or not text.strip():
@@ -108,67 +93,39 @@ class EmbeddingService:
             logger.error("embedding_empty_text")
             raise ValueError(msg)
 
-        # Truncate text if too long (Ollama has limits, typically 8192 tokens)
+        # Truncate text if too long (OpenAI limit: 8,191 tokens ≈ 32,000 chars)
         original_length = len(text)
-        if len(text) > MAX_TEXT_LENGTH:
-            text = text[:MAX_TEXT_LENGTH]
+        if len(text) > self.max_text_length:
+            text = text[: self.max_text_length]
             logger.warning(
                 "embedding_text_truncated",
                 original_length=original_length,
-                truncated_length=MAX_TEXT_LENGTH,
+                truncated_length=self.max_text_length,
             )
 
         try:
-            # Call Ollama embeddings API
-            response = await self.client.post(
-                self.embeddings_endpoint,
-                json={"model": self.model, "prompt": text},
+            # Call OpenAI embeddings API
+            response = await self.client.embeddings.create(
+                model=self.model,
+                input=text,
             )
 
-            # Handle HTTP errors
-            if response.status_code >= HTTP_ERROR_THRESHOLD:
-                error_msg = (
-                    f"HTTP {response.status_code}: {response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]}"
-                )
-                logger.error(
-                    "embedding_http_error",
-                    status_code=response.status_code,
-                    error=error_msg,
-                )
-                raise EmbeddingError(error_msg)  # noqa: TRY301
-
-            # Parse response
-            data: dict[str, Any] = response.json()
-            embedding = data.get("embedding")
+            # Extract embedding from response
+            embedding = response.data[0].embedding
 
             if not embedding:
-                error_msg = "No 'embedding' field in API response"
+                error_msg = "No embedding in API response"
+                logger.error("embedding_missing_field")
+                raise EmbeddingError(error_msg)
+
+            if len(embedding) != self.expected_dimensions:
+                error_msg = f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
                 logger.error(
-                    "embedding_missing_field",
-                    response_data=str(data)[:MAX_ERROR_MESSAGE_LENGTH_LONG],
+                    "embedding_dimension_mismatch",
+                    expected=self.expected_dimensions,
+                    actual=len(embedding),
                 )
-                raise EmbeddingError(error_msg)  # noqa: TRY301
-
-            if not isinstance(embedding, list):
-                error_msg = f"Expected list embedding, got {type(embedding)}"
-                logger.error("embedding_invalid_type", embedding_type=type(embedding).__name__)
-                raise EmbeddingError(error_msg)  # noqa: TRY301
-
-            # Handle dimension mismatch (like reporter-accuracy)
-            if len(embedding) > self.expected_dimensions:
-                logger.info(
-                    "embedding_truncated",
-                    original_dimensions=len(embedding),
-                    expected_dimensions=self.expected_dimensions,
-                )
-                embedding = embedding[: self.expected_dimensions]
-            elif len(embedding) < self.expected_dimensions:
-                logger.warning(
-                    "embedding_padded",
-                    original_dimensions=len(embedding),
-                    expected_dimensions=self.expected_dimensions,
-                )
-                embedding = embedding + [0.0] * (self.expected_dimensions - len(embedding))
+                raise EmbeddingError(error_msg)
 
             # Normalize if requested (L2 norm for cosine similarity)
             if normalize:
@@ -180,10 +137,8 @@ class EmbeddingService:
                 embedding_dimensions=len(embedding),
                 normalized=normalize,
             )
-        except httpx.TimeoutException as e:
-            timeout_msg = "Request timed out"
-            logger.exception("embedding_timeout", error=str(e))
-            raise EmbeddingError(timeout_msg) from e
+
+            return embedding
 
         except EmbeddingError:
             # Re-raise EmbeddingError without modification
@@ -197,9 +152,7 @@ class EmbeddingService:
                 error_type=type(e).__name__,
             )
             raise EmbeddingError(error_msg) from e
-        else:
-            return embedding
 
     async def close(self) -> None:
-        """Close the HTTP client."""
-        await self.client.aclose()
+        """Close the OpenAI client."""
+        await self.client.close()

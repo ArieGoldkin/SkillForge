@@ -14,14 +14,13 @@ DEFAULT_TIMEOUT = 30.0  # Default HTTP client timeout
 EMBEDDING_TIMEOUT = 120.0  # Embedding service timeout (longer for large texts)
 DB_TIMEOUT = 5.0  # Database connection timeout
 DB_TEST_TIMEOUT = 10.0  # Database timeout in tests (longer for CI/CD)
-OLLAMA_HEALTH_CHECK_TIMEOUT = 5.0  # Ollama health check timeout
 
 # Text and Message Limits
-MAX_TEXT_LENGTH = 8000  # Maximum text length for embedding (Ollama limit ~8192 tokens)
 MAX_ERROR_MESSAGE_LENGTH = 100  # Maximum length for error messages in responses
 MAX_ERROR_MESSAGE_LENGTH_LONG = 200  # Maximum length for error messages in logs
 MAX_TITLE_PREVIEW_LENGTH = 100  # Maximum length for title preview in logs
 MAX_MODELS_PREVIEW_COUNT = 5  # Maximum number of models to show in error messages
+SUPERVISOR_CONTENT_PREVIEW_LENGTH = 2000  # Maximum content length for supervisor prompt
 
 # Retry Configuration
 MAX_RETRY_ATTEMPTS = 3  # Maximum number of retry attempts

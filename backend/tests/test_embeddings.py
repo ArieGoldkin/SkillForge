@@ -2,7 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 import pytest_asyncio
 
@@ -10,27 +9,15 @@ from app.services.embeddings import EmbeddingError, EmbeddingService
 from app.services.embeddings_utils import normalize_vector
 
 # Constants for test assertions
-EXPECTED_EMBEDDING_DIMENSIONS = 768
-MAX_TEXT_LENGTH = 8000
+EXPECTED_EMBEDDING_DIMENSIONS = 1536
+MAX_TEXT_LENGTH = 32_000
 NORMALIZATION_TOLERANCE = 0.0001
 
 
 @pytest.fixture
-def sample_embedding_768() -> list[float]:
-    """Sample 768-dimensional embedding vector."""
-    return [0.1] * 768
-
-
-@pytest.fixture
 def sample_embedding_1536() -> list[float]:
-    """Sample 1536-dimensional embedding vector (for testing truncation)."""
+    """Sample 1536-dimensional embedding vector."""
     return [0.1] * 1536
-
-
-@pytest.fixture
-def sample_embedding_512() -> list[float]:
-    """Sample 512-dimensional embedding vector (for testing padding)."""
-    return [0.1] * 512
 
 
 @pytest_asyncio.fixture
@@ -45,15 +32,16 @@ async def embedding_service() -> EmbeddingService:
 
 @pytest.mark.asyncio
 async def test_generate_embedding_success(
-    embedding_service: EmbeddingService, sample_embedding_768: list[float]
+    embedding_service: EmbeddingService, sample_embedding_1536: list[float]
 ) -> None:
     """Test successful embedding generation."""
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": sample_embedding_768}
+    mock_response.data = [MagicMock(embedding=sample_embedding_1536)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         result = await embedding_service.generate_embedding("Sample text")
 
@@ -65,62 +53,26 @@ async def test_generate_embedding_success(
         assert abs(norm - 1.0) < NORMALIZATION_TOLERANCE
 
         # Verify API call
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
-        assert call_args[1]["json"]["model"] == "nomic-embed-text"
-        assert call_args[1]["json"]["prompt"] == "Sample text"
-
-
-@pytest.mark.asyncio
-async def test_generate_embedding_truncates_large_embedding(
-    embedding_service: EmbeddingService, sample_embedding_1536: list[float]
-) -> None:
-    """Test that embeddings larger than expected are truncated."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": sample_embedding_1536}
-
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
-
-        result = await embedding_service.generate_embedding("Sample text", normalize=False)
-
-        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
-        assert result == sample_embedding_1536[:EXPECTED_EMBEDDING_DIMENSIONS]
-
-
-@pytest.mark.asyncio
-async def test_generate_embedding_pads_small_embedding(
-    embedding_service: EmbeddingService, sample_embedding_512: list[float]
-) -> None:
-    """Test that embeddings smaller than expected are padded with zeros."""
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": sample_embedding_512}
-
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
-
-        result = await embedding_service.generate_embedding("Sample text", normalize=False)
-
-        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
-        assert result[:512] == sample_embedding_512
-        assert all(x == 0.0 for x in result[512:])
+        mock_create.assert_called_once()
+        call_args = mock_create.call_args
+        assert call_args.kwargs["model"] == "text-embedding-3-small"
+        assert call_args.kwargs["input"] == "Sample text"
 
 
 @pytest.mark.asyncio
 async def test_generate_embedding_normalizes_vector(
-    embedding_service: EmbeddingService, sample_embedding_768: list[float]
+    embedding_service: EmbeddingService, sample_embedding_1536: list[float]
 ) -> None:
     """Test that vectors are normalized when normalize=True."""
     # Create a non-normalized vector
-    non_normalized = [3.0, 4.0] + [0.0] * 766
+    non_normalized = [3.0, 4.0] + [0.0] * 1534
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": non_normalized}
+    mock_response.data = [MagicMock(embedding=non_normalized)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         result = await embedding_service.generate_embedding("Sample text", normalize=True)
 
@@ -131,38 +83,40 @@ async def test_generate_embedding_normalizes_vector(
 
 @pytest.mark.asyncio
 async def test_generate_embedding_without_normalization(
-    embedding_service: EmbeddingService, sample_embedding_768: list[float]
+    embedding_service: EmbeddingService, sample_embedding_1536: list[float]
 ) -> None:
     """Test that vectors are not normalized when normalize=False."""
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": sample_embedding_768}
+    mock_response.data = [MagicMock(embedding=sample_embedding_1536)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         result = await embedding_service.generate_embedding("Sample text", normalize=False)
 
         # Vector should be unchanged (not normalized)
-        assert result == sample_embedding_768
+        assert result == sample_embedding_1536
 
 
 @pytest.mark.asyncio
 async def test_generate_embedding_truncates_long_text(embedding_service: EmbeddingService) -> None:
-    """Test that very long text is truncated before sending to Ollama."""
-    long_text = "x" * 10000  # 10k characters
+    """Test that very long text is truncated before sending to OpenAI."""
+    long_text = "x" * 50_000  # 50k characters
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": [0.1] * 768}
+    mock_response.data = [MagicMock(embedding=[0.1] * 1536)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         await embedding_service.generate_embedding(long_text)
 
-        # Verify that truncated text was sent (8000 chars max)
-        call_args = mock_post.call_args
-        assert len(call_args[1]["json"]["prompt"]) == MAX_TEXT_LENGTH
+        # Verify that truncated text was sent (32,000 chars max)
+        call_args = mock_create.call_args
+        assert len(call_args.kwargs["input"]) == MAX_TEXT_LENGTH
 
 
 @pytest.mark.asyncio
@@ -180,26 +134,14 @@ async def test_generate_embedding_whitespace_only(embedding_service: EmbeddingSe
 
 
 @pytest.mark.asyncio
-async def test_generate_embedding_http_error(embedding_service: EmbeddingService) -> None:
-    """Test handling of HTTP errors from Ollama."""
-    mock_response = MagicMock()
-    mock_response.status_code = 500
-    mock_response.text = "Internal Server Error"
+async def test_generate_embedding_api_error(embedding_service: EmbeddingService) -> None:
+    """Test handling of API errors from OpenAI."""
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.side_effect = Exception("API Error")
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
-
-        with pytest.raises(EmbeddingError, match="HTTP 500"):
-            await embedding_service.generate_embedding("Sample text")
-
-
-@pytest.mark.asyncio
-async def test_generate_embedding_timeout(embedding_service: EmbeddingService) -> None:
-    """Test handling of timeout errors."""
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.side_effect = httpx.TimeoutException("Request timed out")
-
-        with pytest.raises(EmbeddingError, match="timed out"):
+        with pytest.raises(EmbeddingError, match="Embedding generation failed"):
             await embedding_service.generate_embedding("Sample text")
 
 
@@ -209,29 +151,33 @@ async def test_generate_embedding_missing_embedding_field(
 ) -> None:
     """Test handling of missing embedding field in response."""
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"error": "Model not found"}
+    mock_response.data = [MagicMock(embedding=None)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
-        with pytest.raises(EmbeddingError, match="No 'embedding' field"):
+        with pytest.raises(EmbeddingError, match="No embedding in API response"):
             await embedding_service.generate_embedding("Sample text")
 
 
 @pytest.mark.asyncio
-async def test_generate_embedding_invalid_embedding_type(
+async def test_generate_embedding_dimension_mismatch(
     embedding_service: EmbeddingService,
 ) -> None:
-    """Test handling of invalid embedding type in response."""
+    """Test handling of dimension mismatch in response."""
+    # OpenAI should always return 1536, but test error handling
+    wrong_dimension_embedding = [0.1] * 768
     mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"embedding": "not a list"}
+    mock_response.data = [MagicMock(embedding=wrong_dimension_embedding)]
 
-    with patch.object(embedding_service.client, "post", new_callable=AsyncMock) as mock_post:
-        mock_post.return_value = mock_response
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
-        with pytest.raises(EmbeddingError, match="Expected list"):
+        with pytest.raises(EmbeddingError, match="Expected 1536 dimensions"):
             await embedding_service.generate_embedding("Sample text")
 
 
@@ -250,7 +196,7 @@ def test_normalize_vector() -> None:
 
 def test_normalize_zero_vector() -> None:
     """Test that zero vector is returned unchanged."""
-    zero_vector = [0.0] * 768
+    zero_vector = [0.0] * 1536
     result = normalize_vector(zero_vector)
 
     assert result == zero_vector
@@ -259,6 +205,16 @@ def test_normalize_zero_vector() -> None:
 @pytest.mark.asyncio
 async def test_close_client(embedding_service: EmbeddingService) -> None:
     """Test that client is properly closed."""
-    with patch.object(embedding_service.client, "aclose", new_callable=AsyncMock) as mock_close:
+    with patch.object(embedding_service.client, "close", new_callable=AsyncMock) as mock_close:
         await embedding_service.close()
         mock_close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_embedding_service_requires_api_key() -> None:
+    """Test that EmbeddingService requires OpenAI API key."""
+    with patch("app.services.embeddings.settings") as mock_settings:
+        mock_settings.OPENAI_API_KEY = None
+
+        with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):
+            EmbeddingService()

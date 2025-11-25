@@ -21,6 +21,7 @@ from langchain_core.messages import AIMessage
 from langsmith import traceable
 
 from app.core.config import settings
+from app.core.constants import SUPERVISOR_CONTENT_PREVIEW_LENGTH
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
@@ -94,8 +95,6 @@ async def retry_supervisor_model(
     Retries up to 3 times with exponential backoff for transient failures.
     Handles both sync and async handlers.
     """
-    import asyncio
-
     max_attempts = 3
 
     for attempt in range(max_attempts):
@@ -103,9 +102,8 @@ async def retry_supervisor_model(
             # Handle both sync and async handlers
             if asyncio.iscoroutinefunction(handler):
                 return await handler(request)
-            else:
-                return handler(request)
-        except Exception as e:
+            return handler(request)
+        except (ConnectionError, TimeoutError, ValueError) as e:
             if attempt == max_attempts - 1:
                 # Last attempt failed, re-raise
                 logger.error(
@@ -138,39 +136,51 @@ async def retry_supervisor_model(
 
 logger = get_logger(__name__)
 
-# Lazy initialization for supervisor agent (avoids import-time initialization during tests)
-_supervisor_agent: Any | None = None
+
+class SupervisorAgentManager:
+    """Manages supervisor agent instance with lazy initialization."""
+
+    def __init__(self) -> None:
+        """Initialize manager with no agent."""
+        self._agent: Any | None = None
+
+    def get_agent(self) -> Any:
+        """Get or create the supervisor agent instance (lazy initialization).
+
+        Initializes the supervisor agent on first access to avoid import-time
+        initialization issues during test discovery.
+
+        Uses dynamic prompts and middleware hooks for:
+        - Context-aware prompt generation (content type, analysis context)
+        - Request logging before model calls
+        - Retry logic with exponential backoff
+
+        Returns:
+            The supervisor agent instance
+
+        """
+        if self._agent is None:
+            _model = get_chat_model()
+            self._agent = create_agent(
+                _model,
+                tools=AGENT_TOOLS,
+                middleware=[
+                    dynamic_supervisor_prompt,
+                    log_supervisor_before_model,
+                    retry_supervisor_model,
+                ],
+                context_schema=SupervisorContext,
+            )
+        return self._agent
+
+
+# Module-level manager instance (avoids global variable)
+_supervisor_manager = SupervisorAgentManager()
 
 
 def _get_supervisor_agent() -> Any:
-    """Get or create the supervisor agent instance (lazy initialization).
-
-    Initializes the supervisor agent on first access to avoid import-time
-    initialization issues during test discovery.
-
-    Uses dynamic prompts and middleware hooks for:
-    - Context-aware prompt generation (content type, analysis context)
-    - Request logging before model calls
-    - Retry logic with exponential backoff
-
-    Returns:
-        The supervisor agent instance
-
-    """
-    global _supervisor_agent
-    if _supervisor_agent is None:
-        _model = get_chat_model()
-        _supervisor_agent = create_agent(
-            _model,
-            tools=AGENT_TOOLS,
-            middleware=[
-                dynamic_supervisor_prompt,
-                log_supervisor_before_model,
-                retry_supervisor_model,
-            ],
-            context_schema=SupervisorContext,
-        )
-    return _supervisor_agent
+    """Get supervisor agent instance."""
+    return _supervisor_manager.get_agent()
 
 
 def _parse_tool_calls_from_messages(messages: list[Any]) -> list[str]:
@@ -221,6 +231,171 @@ def _parse_tool_calls_from_messages(messages: list[Any]) -> list[str]:
     return selected_agents
 
 
+def _raise_no_messages_error(analysis_id: AnalysisID, used_streaming: bool) -> None:
+    """Raise error when supervisor returns no messages."""
+    logger.error(
+        "supervisor_no_messages_received",
+        analysis_id=analysis_id,
+        used_streaming=used_streaming,
+    )
+    msg = "Supervisor agent returned no messages"
+    raise RuntimeError(msg)
+
+
+async def _stream_supervisor_response(
+    supervisor_agent: Any,
+    input_messages: dict[str, Any],
+    supervisor_context: SupervisorContext,
+    agent_config: dict[str, Any],
+    analysis_id: AnalysisID,
+) -> dict[str, Any] | None:
+    """Stream supervisor agent response and accumulate result.
+
+    Returns:
+        Final result dict if streaming succeeds, None if it fails
+
+    """
+    accumulated_content = ""
+    token_chunk_buffer = ""
+    last_emit_time = asyncio.get_event_loop().time()
+    batch_interval = 0.1  # Emit batched chunks every 100ms
+    min_chunk_size = 10  # Minimum characters before emitting
+    final_result = None
+
+    try:
+        stream = supervisor_agent.astream(
+            input_messages,
+            stream_mode="values",
+            context=supervisor_context,
+            config=agent_config,
+        )
+
+        try:
+            async for chunk in stream:
+                final_result = chunk
+
+                # Early exit: break immediately if we have a complete result with tool calls
+                # This prevents waiting for unnecessary streaming chunks
+                if chunk.get("messages"):
+                    messages = chunk["messages"]
+                    latest_message = messages[-1]
+                    if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
+                        # Tool calls indicate agent decision is complete, can break early
+                        break
+
+                    # Extract latest message for token streaming (batched)
+                    if hasattr(latest_message, "content") and latest_message.content:
+                        # Accumulate content
+                        new_content = latest_message.content[len(accumulated_content) :]
+                        if new_content:
+                            accumulated_content = latest_message.content
+                            token_chunk_buffer += new_content
+
+                            # Emit batched chunks periodically to reduce SSE overhead
+                            current_time = asyncio.get_event_loop().time()
+                            time_since_last_emit = current_time - last_emit_time
+
+                            if (
+                                len(token_chunk_buffer) >= min_chunk_size
+                                or time_since_last_emit >= batch_interval
+                            ):
+                                await emit_streaming_event(
+                                    "progress",
+                                    analysis_id=analysis_id,
+                                    stage="supervisor",
+                                    status="streaming",
+                                    token_chunk=token_chunk_buffer,
+                                    accumulated_content=accumulated_content,
+                                )
+                                token_chunk_buffer = ""
+                                last_emit_time = current_time
+
+            # Emit any remaining buffered chunks
+            if token_chunk_buffer:
+                await emit_streaming_event(
+                    "progress",
+                    analysis_id=analysis_id,
+                    stage="supervisor",
+                    status="streaming",
+                    token_chunk=token_chunk_buffer,
+                    accumulated_content=accumulated_content,
+                )
+        except GeneratorExit:
+            # GeneratorExit is expected when breaking from async generator
+            # This is normal behavior - the generator is being closed by Python
+            # We should handle it silently (it's cleanup, not an error)
+            # Don't re-raise - just let the generator close naturally
+            pass
+    except GeneratorExit:
+        # GeneratorExit is not an error - it's Python cleaning up the generator
+        # Handle silently and continue to fallback
+        return None
+    except (ConnectionError, TimeoutError, ValueError) as e:
+        # Log error but allow fallback to invoke
+        logger.warning(
+            "supervisor_streaming_error",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        return None
+
+    return final_result
+
+
+async def _invoke_supervisor_fallback(
+    supervisor_agent: Any,
+    input_messages: dict[str, Any],
+    supervisor_context: SupervisorContext,
+    agent_config: dict[str, Any],
+    analysis_id: AnalysisID,
+) -> dict[str, Any]:
+    """Invoke supervisor agent synchronously as fallback.
+
+    Returns:
+        Result dict with messages
+
+    """
+    logger.info(
+        "supervisor_fallback_to_invoke",
+        analysis_id=analysis_id,
+        reason="streaming_not_available_or_failed",
+    )
+    # Use async invoke if available, otherwise wrap sync invoke in thread pool
+    supervisor_timeout = 60.0  # 60 seconds max for supervisor
+    try:
+        if hasattr(supervisor_agent, "ainvoke"):
+            # Async invoke (preferred - non-blocking)
+            result = await asyncio.wait_for(
+                supervisor_agent.ainvoke(
+                    input_messages,
+                    context=supervisor_context,
+                    config=agent_config,
+                ),
+                timeout=supervisor_timeout,
+            )
+        else:
+            # Fallback: run sync invoke in thread pool to avoid blocking event loop
+            result = await asyncio.wait_for(
+                asyncio.to_thread(
+                    supervisor_agent.invoke,
+                    input_messages,
+                    context=supervisor_context,
+                    config=agent_config,
+                ),
+                timeout=supervisor_timeout,
+            )
+    except TimeoutError:
+        msg = f"Supervisor agent exceeded timeout of {supervisor_timeout}s"
+        logger.exception(
+            "supervisor_timeout",
+            analysis_id=analysis_id,
+            timeout=supervisor_timeout,
+        )
+        raise TimeoutError(msg) from None
+    return result
+
+
 @traceable(
     name="supervisor_route",
     run_type="chain",
@@ -267,8 +442,12 @@ async def supervisor_route(
     )
 
     try:
-        # Prepare content for supervisor (limit to 2000 chars for prompt efficiency)
-        content_preview = content[:2000] if len(content) > 2000 else content
+        # Prepare content for supervisor (limit to constant for prompt efficiency)
+        content_preview = (
+            content[:SUPERVISOR_CONTENT_PREVIEW_LENGTH]
+            if len(content) > SUPERVISOR_CONTENT_PREVIEW_LENGTH
+            else content
+        )
         user_prompt = f"Content Type: {content_type}\n\nContent:\n{content_preview}"
 
         # Invoke supervisor agent with streaming (lazy initialization)
@@ -285,9 +464,6 @@ async def supervisor_route(
             ]
         }
 
-        final_result = None
-        accumulated_content = ""
-
         # Stream agent progress and accumulate final result
         # Pass context for dynamic prompts and middleware
         # Also support runtime model configuration via config parameter
@@ -302,103 +478,23 @@ async def supervisor_route(
         # Note: Runtime model switching can be done via config["configurable"]["model"]
         # Example: config={"configurable": {"model": "gpt-5-nano"}} for cost optimization
 
-        # Batch token chunks to reduce SSE event frequency (optimize for performance)
-        token_chunk_buffer = ""
-        last_emit_time = asyncio.get_event_loop().time()
-        batch_interval = 0.1  # Emit batched chunks every 100ms
-        min_chunk_size = 10  # Minimum characters before emitting
-
-        try:
-            stream = supervisor_agent.astream(
-                input_messages,
-                stream_mode="values",
-                context=supervisor_context,
-                config=agent_config,
-            )
-
-            try:
-                async for chunk in stream:
-                    final_result = chunk
-
-                    # Early exit: break immediately if we have a complete result with tool calls
-                    # This prevents waiting for unnecessary streaming chunks
-                    if chunk.get("messages"):
-                        messages = chunk["messages"]
-                        latest_message = messages[-1]
-                        if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
-                            # Tool calls indicate agent decision is complete, can break early
-                            break
-
-                    # Extract latest message for token streaming (batched)
-                    if chunk.get("messages"):
-                        latest_message = chunk["messages"][-1]
-                        if hasattr(latest_message, "content") and latest_message.content:
-                            # Accumulate content
-                            new_content = latest_message.content[len(accumulated_content) :]
-                            if new_content:
-                                accumulated_content = latest_message.content
-                                token_chunk_buffer += new_content
-
-                                # Emit batched chunks periodically to reduce SSE overhead
-                                current_time = asyncio.get_event_loop().time()
-                                time_since_last_emit = current_time - last_emit_time
-
-                                if (
-                                    len(token_chunk_buffer) >= min_chunk_size
-                                    or time_since_last_emit >= batch_interval
-                                ):
-                                    await emit_streaming_event(
-                                        "progress",
-                                        analysis_id=analysis_id,
-                                        stage="supervisor",
-                                        status="streaming",
-                                        token_chunk=token_chunk_buffer,
-                                        accumulated_content=accumulated_content,
-                                    )
-                                    token_chunk_buffer = ""
-                                    last_emit_time = current_time
-
-                # Emit any remaining buffered chunks
-                if token_chunk_buffer:
-                    await emit_streaming_event(
-                        "progress",
-                        analysis_id=analysis_id,
-                        stage="supervisor",
-                        status="streaming",
-                        token_chunk=token_chunk_buffer,
-                        accumulated_content=accumulated_content,
-                    )
-            except GeneratorExit:
-                # GeneratorExit is expected when breaking from async generator
-                # This is normal behavior - the generator is being closed by Python
-                # We should handle it silently (it's cleanup, not an error)
-                # Don't re-raise - just let the generator close naturally
-                pass
-        except GeneratorExit:
-            # GeneratorExit is not an error - it's Python cleaning up the generator
-            # Handle silently and continue to fallback
-            final_result = None
-        except Exception as e:
-            # Log error but allow fallback to invoke
-            logger.warning(
-                "supervisor_streaming_error",
-                analysis_id=analysis_id,
-                error=str(e),
-                exc_info=True,
-            )
-            final_result = None
+        # Try streaming first, fallback to invoke if needed
+        final_result = await _stream_supervisor_response(
+            supervisor_agent,
+            input_messages,
+            supervisor_context,
+            agent_config,
+            analysis_id,
+        )
 
         # Fallback to invoke if streaming not supported or failed
         if final_result is None:
-            logger.info(
-                "supervisor_fallback_to_invoke",
-                analysis_id=analysis_id,
-                reason="streaming_not_available_or_failed",
-            )
-            result = supervisor_agent.invoke(
+            result = await _invoke_supervisor_fallback(
+                supervisor_agent,
                 input_messages,
-                context=supervisor_context,
-                config=agent_config,
+                supervisor_context,
+                agent_config,
+                analysis_id,
             )
             messages = result.get("messages", [])
         else:
@@ -406,13 +502,8 @@ async def supervisor_route(
 
         # Validate that we have messages before parsing
         if not messages:
-            logger.error(
-                "supervisor_no_messages_received",
-                analysis_id=analysis_id,
-                used_streaming=final_result is not None,
-            )
-            msg = "Supervisor agent returned no messages"
-            raise RuntimeError(msg)
+            _raise_no_messages_error(analysis_id, final_result is not None)
+            return {"supervisor_decision": {}}  # Unreachable, but satisfies type checker
 
         # Extract tool calls from response messages
         selected_agents = _parse_tool_calls_from_messages(messages)
@@ -440,9 +531,6 @@ async def supervisor_route(
             selected_agents=selected_agents,
             agent_count=len(selected_agents),
         )
-
-        return {"supervisor_decision": supervisor_decision}
-
     except Exception as e:
         # Emit SSE event: supervisor failed
         await emit_streaming_event(
@@ -461,3 +549,5 @@ async def supervisor_route(
             exc_info=True,
         )
         raise
+    else:
+        return {"supervisor_decision": supervisor_decision}

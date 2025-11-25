@@ -237,27 +237,10 @@ class Settings(BaseSettings):
         ),
     )
 
-    # Legacy Ollama configuration retained for backwards compatibility / embeddings
-    OLLAMA_BASE_URL: str = Field(
-        default="http://localhost:11434",
-        description="Ollama API base URL (used when provider is Ollama).",
-    )
-    OLLAMA_MODEL: str = Field(
-        default="llama3.1:8b",
-        description="Legacy Ollama model name (prefer configuring via LLM_MODEL).",
-    )
-
-    # Embedding Configuration (to be used in Task 1.5.2)
-    OLLAMA_EMBEDDING_MODEL: str = Field(
-        default="nomic-embed-text",
-        description="Ollama embedding model for vector generation",
-    )
+    # Embedding Configuration
     EMBEDDING_DIMENSIONS: int = Field(
-        default=768,
-        description=(
-            "Expected embedding dimensions "
-            "(768 for nomic-embed-text, 1536 for OpenAI text-embedding-3-small)"
-        ),
+        default=1536,
+        description=("Expected embedding dimensions (1536 for OpenAI text-embedding-3-small)"),
     )
 
     # Content Extraction (to be used in Task 1.4.2)

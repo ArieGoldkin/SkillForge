@@ -10,8 +10,12 @@ factory to wrap functions.
 """
 
 import asyncio
+from typing import TYPE_CHECKING
 
 from langsmith import traceable
+
+if TYPE_CHECKING:
+    from typing import BaseException
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EmbeddingVector
@@ -204,30 +208,30 @@ async def execute_agents(
 
     # Create wrapper functions that manage their own database sessions
     # Each agent gets its own session to avoid concurrency issues
-    async def run_tech_comparator_with_session() -> dict[str, object] | Exception:
+    async def run_tech_comparator_with_session() -> dict[str, object] | BaseException:
         """Run tech comparator with its own database session."""
         async with AsyncSessionLocal() as session:
             try:
                 return await run_tech_comparator(content, content_type, analysis_id, session)
-            except Exception as e:
+            except (RuntimeError, ValueError, TimeoutError) as e:
                 return e
 
-    async def run_integration_feasibility_with_session() -> dict[str, object] | Exception:
+    async def run_integration_feasibility_with_session() -> dict[str, object] | BaseException:
         """Run integration feasibility with its own database session."""
         async with AsyncSessionLocal() as session:
             try:
                 return await run_integration_feasibility(
                     content, content_type, analysis_id, session
                 )
-            except Exception as e:
+            except (RuntimeError, ValueError, TimeoutError) as e:
                 return e
 
-    async def run_implementation_planner_with_session() -> dict[str, object] | Exception:
+    async def run_implementation_planner_with_session() -> dict[str, object] | BaseException:
         """Run implementation planner with its own database session."""
         async with AsyncSessionLocal() as session:
             try:
                 return await run_implementation_planner(content, content_type, analysis_id, session)
-            except Exception as e:
+            except (RuntimeError, ValueError, TimeoutError) as e:
                 return e
 
     # Create tasks for selected agents (each with its own session)
@@ -283,9 +287,6 @@ async def execute_agents(
             successful_count=len(agent_findings),
             total_count=len(agent_tasks),
         )
-
-        return agent_findings
-
     except TimeoutError:
         logger.exception(
             "workflow_agents_timeout",
@@ -295,3 +296,5 @@ async def execute_agents(
         )
         # Return any findings that completed before timeout
         return []
+    else:
+        return agent_findings

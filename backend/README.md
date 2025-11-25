@@ -203,20 +203,18 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 - `XAI_API_KEY`: Required for xAI models (Grok 3 Mini, Grok 3 Std)
 - `DEEPSEEK_API_KEY`: Required for DeepSeek models (V3.2)
 
-**Legacy Ollama Configuration (for embeddings / backwards compatibility):**
-- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
-- `OLLAMA_MODEL`: Ollama model name (default: `llama3.3:8b`)
-- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
+**Embedding Configuration:**
+- `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `1536` for OpenAI text-embedding-3-small)
 
 **Content Extraction:**
 - `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
 
 **Example Configuration:**
 
-Development (with Ollama - free):
+Development (with free local models):
 ```env
 LLM_MODEL=ollama:llama3.3:8b
-OLLAMA_BASE_URL=http://localhost:11434
+# Note: Ollama must be running locally if using ollama: prefix
 ```
 
 Production (with GPT-5 Mini - recommended):
@@ -484,17 +482,16 @@ Application-wide constants are centralized in `app/core/constants.py`:
 
 - **HTTP Status Codes**: `HTTP_OK`, `HTTP_NOT_FOUND`, `HTTP_ERROR_THRESHOLD`
 - **Timeouts**: `DEFAULT_TIMEOUT`, `EMBEDDING_TIMEOUT`, `DB_TIMEOUT`
-- **Text Limits**: `MAX_TEXT_LENGTH`, `MAX_ERROR_MESSAGE_LENGTH`
+- **Text Limits**: `MAX_ERROR_MESSAGE_LENGTH`
 - **Retry Configuration**: `MAX_RETRY_ATTEMPTS`, retry wait times
 - **Database Pool**: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`
 - **Content Types**: `CONTENT_TYPE_ARTICLE`, `CONTENT_TYPE_VIDEO`, `CONTENT_TYPE_REPO`
 
 **Usage:**
 ```python
-from app.core.constants import MAX_TEXT_LENGTH, HTTP_ERROR_THRESHOLD
+from app.core.constants import HTTP_ERROR_THRESHOLD
 
-if len(text) > MAX_TEXT_LENGTH:
-    text = text[:MAX_TEXT_LENGTH]
+# Text truncation handled by EmbeddingService (32,000 char limit)
 
 if response.status_code >= HTTP_ERROR_THRESHOLD:
     raise Error("HTTP error")

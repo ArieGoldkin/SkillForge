@@ -14,7 +14,7 @@ from app.workflows.agents.schemas import CompatibilityScore, IntegrationFeasibil
 def mock_agent():
     """Mock agent with structured response."""
     agent = MagicMock()
-    agent.invoke = MagicMock(
+    agent.ainvoke = AsyncMock(
         return_value={
             "structured_response": IntegrationFeasibility(
                 compatibility={

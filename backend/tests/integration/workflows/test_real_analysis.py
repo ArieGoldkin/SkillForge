@@ -81,7 +81,7 @@ async def test_real_article_analysis_claude_opus_4_5(
     assert result["url"] == test_url
     assert len(result["raw_content"]) > 0
     assert isinstance(result["extraction_metadata"], dict)
-    assert len(result["content_embedding"]) == 768  # nomic-embed-text dimensions
+    assert len(result["content_embedding"]) == 1536  # OpenAI text-embedding-3-small dimensions
     assert all(isinstance(x, float) for x in result["content_embedding"])
 
     # Verify supervisor selected agents

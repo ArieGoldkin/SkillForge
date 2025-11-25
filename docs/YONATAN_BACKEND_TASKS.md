@@ -1469,12 +1469,32 @@ supervisor_agent = create_agent(
 @task
 async def supervisor_route(content: str, content_type: str) -> dict:
     """Supervisor decides which agents to invoke."""
-    result = supervisor_agent.invoke({
-        "messages": [{
-            "role": "user",
-            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
-        }]
-    })
+    # Use async invoke with timeout to prevent blocking
+    supervisor_timeout = 60.0  # 60 seconds max
+    if hasattr(supervisor_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            supervisor_agent.ainvoke({
+                "messages": [{
+                    "role": "user",
+                    "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                }]
+            }),
+            timeout=supervisor_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                supervisor_agent.invoke,
+                {
+                    "messages": [{
+                        "role": "user",
+                        "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                    }]
+                }
+            ),
+            timeout=supervisor_timeout,
+        )
     
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
@@ -1527,12 +1547,32 @@ supervisor_agent = create_agent(
 @task
 async def supervisor_route(content: str, content_type: str) -> dict:
     """Supervisor decides which agents to invoke."""
-    result = supervisor_agent.invoke({
-        "messages": [{
-            "role": "user",
-            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
-        }]
-    })
+    # Use async invoke with timeout to prevent blocking
+    supervisor_timeout = 60.0  # 60 seconds max
+    if hasattr(supervisor_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            supervisor_agent.ainvoke({
+                "messages": [{
+                    "role": "user",
+                    "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                }]
+            }),
+            timeout=supervisor_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                supervisor_agent.invoke,
+                {
+                    "messages": [{
+                        "role": "user",
+                        "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                    }]
+                }
+            ),
+            timeout=supervisor_timeout,
+        )
     
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
@@ -1594,9 +1634,24 @@ Your task:
 @task
 async def run_tech_comparator(content: str) -> dict:
     """Run tech comparator agent."""
-    result = tech_comparator_agent.invoke({
-        "messages": [{"role": "user", "content": content}]
-    })
+    # Use async invoke with timeout to prevent blocking
+    agent_timeout = 60.0  # 60 seconds max per agent
+    if hasattr(tech_comparator_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            tech_comparator_agent.ainvoke({
+                "messages": [{"role": "user", "content": content}]
+            }),
+            timeout=agent_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                tech_comparator_agent.invoke,
+                {"messages": [{"role": "user", "content": content}]}
+            ),
+            timeout=agent_timeout,
+        )
     return parse_agent_result(result)
 ```
 
@@ -1616,8 +1671,18 @@ async def run_tech_comparator(content: str, analysis_id: str) -> dict:
         agent="tech_comparator",
     )
     
-    # Run agent
-    result = tech_comparator_agent.invoke({"messages": [content]})
+    # Run agent (async with timeout to prevent blocking)
+    agent_timeout = 60.0  # 60 seconds max
+    if hasattr(tech_comparator_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            tech_comparator_agent.ainvoke({"messages": [content]}),
+            timeout=agent_timeout,
+        )
+    else:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(tech_comparator_agent.invoke, {"messages": [content]}),
+            timeout=agent_timeout,
+        )
     
     # Emit complete event
     await emit_streaming_event(

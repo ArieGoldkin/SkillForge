@@ -5,6 +5,7 @@ including agent creation with structured output, database persistence, and
 SSE event emission.
 """
 
+import asyncio
 import time
 from typing import Any
 from uuid import UUID
@@ -232,7 +233,7 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
             content_preview = content
         user_prompt = f"Content Type: {content_type}\n\nContent:\n{content_preview}"
 
-        # Invoke agent with structured output
+        # Invoke agent with structured output (async with timeout)
         input_messages = {
             "messages": [
                 {
@@ -242,7 +243,31 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
             ]
         }
 
-        result = agent.invoke(input_messages)
+        # Use async invoke if available, otherwise wrap sync invoke in thread pool
+        # This prevents blocking the event loop during LLM calls
+        agent_timeout = 60.0  # 60 seconds max per agent
+        try:
+            if hasattr(agent, "ainvoke"):
+                # Async invoke (preferred - non-blocking)
+                result = await asyncio.wait_for(
+                    agent.ainvoke(input_messages),
+                    timeout=agent_timeout,
+                )
+            else:
+                # Fallback: run sync invoke in thread pool to avoid blocking event loop
+                result = await asyncio.wait_for(
+                    asyncio.to_thread(agent.invoke, input_messages),
+                    timeout=agent_timeout,
+                )
+        except TimeoutError:
+            msg = f"Agent {agent_type} exceeded timeout of {agent_timeout}s"
+            logger.exception(
+                "agent_timeout",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                timeout=agent_timeout,
+            )
+            raise TimeoutError(msg) from None
 
         # Extract structured response (validated Pydantic model)
         structured_response = result.get("structured_response")

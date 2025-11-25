@@ -43,11 +43,11 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
     """Test SSE endpoint with real workflow execution.
 
     This test requires:
-    - Ollama running on localhost:11434 with nomic-embed-text model
+    - OpenAI API key configured
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes due to Ollama embedding generation.
+    Can take 2+ minutes due to OpenAI embedding generation.
 
     This test:
     1. Connects to SSE endpoint
@@ -210,7 +210,7 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     Timeout is set to 90s to account for:
     - Streaming overhead from agent.astream()
     - Parallel execution of embedding and supervisor
-    - Real external service response times (OpenAI, Jina, Ollama)
+    - Real external service response times (OpenAI, Jina)
     - SSE event emission and processing
     """
     analysis_id = str(uuid.uuid4())

@@ -17,9 +17,7 @@ from app.core.constants import (
     MAX_ERROR_MESSAGE_LENGTH_LONG,
     MAX_MODELS_PREVIEW_COUNT,
     MAX_RETRY_ATTEMPTS,
-    MAX_TEXT_LENGTH,
     MAX_TITLE_PREVIEW_LENGTH,
-    OLLAMA_HEALTH_CHECK_TIMEOUT,
     RETRY_MAX_WAIT_EMBEDDING,
     RETRY_MAX_WAIT_JINA,
     RETRY_MIN_WAIT_EMBEDDING,
@@ -40,18 +38,16 @@ def test_timeout_constants() -> None:
     """Test timeout constants."""
     assert DEFAULT_TIMEOUT == 30.0
     assert EMBEDDING_TIMEOUT == 120.0
-    assert OLLAMA_HEALTH_CHECK_TIMEOUT == 5.0
     assert all(isinstance(t, float) for t in [DEFAULT_TIMEOUT, EMBEDDING_TIMEOUT])
 
 
 def test_text_limits() -> None:
     """Test text and message limit constants."""
-    assert MAX_TEXT_LENGTH == 8000
     assert MAX_ERROR_MESSAGE_LENGTH == 100
     assert MAX_ERROR_MESSAGE_LENGTH_LONG == 200
     assert MAX_TITLE_PREVIEW_LENGTH == 100
     assert MAX_MODELS_PREVIEW_COUNT == 5
-    assert all(isinstance(length, int) for length in [MAX_TEXT_LENGTH, MAX_ERROR_MESSAGE_LENGTH])
+    assert isinstance(MAX_ERROR_MESSAGE_LENGTH, int)
 
 
 def test_retry_configuration() -> None:

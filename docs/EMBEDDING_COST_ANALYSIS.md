@@ -1,8 +1,9 @@
 # Embedding Service Cost Analysis
 
 **Date:** November 25, 2025  
-**Current Setup:** Ollama (nomic-embed-text) - Free, Local  
-**Proposed:** OpenAI (text-embedding-3-small) - $0.02 per million tokens
+**Status:** ✅ Migration Completed  
+**Current Setup:** OpenAI (text-embedding-3-small) - $0.02 per million tokens  
+**Previous:** Ollama (nomic-embed-text) - Free, Local (migrated from)
 
 ## Current Setup
 

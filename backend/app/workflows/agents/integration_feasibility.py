@@ -20,7 +20,9 @@ INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Feasibility Analyst. 
 
 CRITICAL: You MUST include a "compatibility" field with at least 2-3 stack assessments.
 Each compatibility entry must contain: score (0.0-1.0) and notes (string).
-Assess compatibility for stacks mentioned in the content (e.g., nextjs, fastapi, postgresql, react, docker).
+Assess compatibility for stacks mentioned in the content (
+    e.g., nextjs, fastapi, postgresql, react, docker
+).
 
 Focus on:
 - API compatibility and integration patterns
