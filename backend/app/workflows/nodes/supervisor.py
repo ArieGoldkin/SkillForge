@@ -242,7 +242,7 @@ def _raise_no_messages_error(analysis_id: AnalysisID, used_streaming: bool) -> N
     raise RuntimeError(msg)
 
 
-async def _stream_supervisor_response(
+async def _stream_supervisor_response(  # noqa: PLR0912
     supervisor_agent: Any,
     input_messages: dict[str, Any],
     supervisor_context: SupervisorContext,
@@ -262,6 +262,7 @@ async def _stream_supervisor_response(
     min_chunk_size = 10  # Minimum characters before emitting
     final_result = None
 
+    stream = None
     try:
         stream = supervisor_agent.astream(
             input_messages,
@@ -281,6 +282,14 @@ async def _stream_supervisor_response(
                     latest_message = messages[-1]
                     if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
                         # Tool calls indicate agent decision is complete, can break early
+                        # Close the generator properly to prevent GeneratorExit
+                        if hasattr(stream, "aclose"):
+                            # contextlib.suppress doesn't work with async, use try-except
+                            try:  # noqa: SIM105
+                                await stream.aclose()
+                            except (GeneratorExit, RuntimeError):
+                                # Generator already closed or closing - ignore
+                                pass
                         break
 
                     # Extract latest message for token streaming (batched)
@@ -326,6 +335,15 @@ async def _stream_supervisor_response(
             # We should handle it silently (it's cleanup, not an error)
             # Don't re-raise - just let the generator close naturally
             pass
+        finally:
+            # Ensure generator is properly closed even if we break early
+            if stream is not None and hasattr(stream, "aclose"):
+                # contextlib.suppress doesn't work with async, use try-except
+                try:  # noqa: SIM105
+                    await stream.aclose()
+                except (GeneratorExit, RuntimeError, StopAsyncIteration):
+                    # Generator already closed or closing - ignore
+                    pass
     except GeneratorExit:
         # GeneratorExit is not an error - it's Python cleaning up the generator
         # Handle silently and continue to fallback
