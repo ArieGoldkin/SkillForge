@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { Moon, Sun, Monitor } from 'lucide-react'
+import { Monitor, Moon, Sun } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import {

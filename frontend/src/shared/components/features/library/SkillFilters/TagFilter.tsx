@@ -2,7 +2,7 @@
  * TagFilter - Tag filter section with scrollable list
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import { CheckboxItem } from './CheckboxItem'
 import { FilterSection } from './FilterSection'

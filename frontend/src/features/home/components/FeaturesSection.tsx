@@ -1,4 +1,4 @@
-import { Bot, BookOpen, MessageCircle, Library } from 'lucide-react'
+import { BookOpen, Bot, Library, MessageCircle } from 'lucide-react'
 
 import { Card, CardContent } from '@/shared/components/ui/card'
 
@@ -50,8 +50,8 @@ export function FeaturesSection() {
     <section className="py-16 px-8 bg-muted/50">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <FeatureCard key={index} {...feature} />
+          {features.map((feature) => (
+            <FeatureCard key={feature.title} {...feature} />
           ))}
         </div>
       </div>

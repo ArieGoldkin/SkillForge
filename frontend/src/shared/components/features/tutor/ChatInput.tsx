@@ -58,7 +58,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     // Calculate new height (max 5 lines ~= 120px)
     const newHeight = Math.min(textarea.scrollHeight, 120)
     textarea.style.height = `${newHeight}px`
-  }, [message])
+  }, [])
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = event.target.value

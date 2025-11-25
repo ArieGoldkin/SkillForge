@@ -2,7 +2,7 @@
  * SkillCardMetadata - Metadata badges for skill cards
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import { Clock } from 'lucide-react'
 

@@ -1,5 +1,5 @@
-import { SkillFilters } from '@/shared/components/features/library/SkillFilters'
 import type { SkillFilters as SkillFiltersType } from '@/shared/components/features/library/SkillFilters'
+import { SkillFilters } from '@/shared/components/features/library/SkillFilters'
 
 interface FiltersSidebarProps {
   filters: SkillFiltersType

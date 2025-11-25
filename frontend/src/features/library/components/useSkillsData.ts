@@ -13,8 +13,8 @@ export function useSkillsData(analyses: Analysis[] | undefined) {
   return (analyses || []).map((analysis) => ({
     id: analysis.id,
     title: analysis.title || 'Untitled',
-    description: 'Analysis of ' + analysis.content_type,
-    thumbnail: 'https://api.dicebear.com/7.x/shapes/svg?seed=' + analysis.id,
+    description: `Analysis of ${analysis.content_type}`,
+    thumbnail: `https://api.dicebear.com/7.x/shapes/svg?seed=${analysis.id}`,
     duration: 25,
     difficulty: 'intermediate' as const,
     tags: [analysis.content_type, analysis.status],

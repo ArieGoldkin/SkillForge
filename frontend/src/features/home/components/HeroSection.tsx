@@ -1,4 +1,4 @@
-import { Link, Sparkles, FileText, Video, Github } from 'lucide-react'
+import { FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/shared/components/ui/badge'

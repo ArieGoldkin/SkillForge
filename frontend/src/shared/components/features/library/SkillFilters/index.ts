@@ -2,22 +2,17 @@
  * SkillFilters barrel export
  */
 
-export { CheckboxItem } from './CheckboxItem'
 export type { CheckboxItemProps } from './CheckboxItem'
-
-export { DifficultyFilter } from './DifficultyFilter'
+export { CheckboxItem } from './CheckboxItem'
 export type { DifficultyFilterProps } from './DifficultyFilter'
+export { DifficultyFilter } from './DifficultyFilter'
 
 export { DurationFilter } from './DurationFilter'
-
-export { FilterSection } from './FilterSection'
 export type { FilterSectionProps } from './FilterSection'
-
-export { StatusFilter } from './StatusFilter'
+export { FilterSection } from './FilterSection'
 export type { StatusFilterProps } from './StatusFilter'
-
-export { TagFilter } from './TagFilter'
+export { StatusFilter } from './StatusFilter'
 export type { TagFilterProps } from './TagFilter'
-
-export { useSkillFilters } from './useSkillFilters'
+export { TagFilter } from './TagFilter'
 export type { SkillFilters, SkillFiltersHandlers, UseSkillFiltersReturn } from './useSkillFilters'
+export { useSkillFilters } from './useSkillFilters'

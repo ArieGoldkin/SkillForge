@@ -14,10 +14,8 @@ export {
 
 export {
   SkillFilters,
-  type SkillFiltersProps,
   type SkillFilters as SkillFiltersType,
+  type SkillFiltersProps,
 } from './SkillFilters'
-
-export { SkillSearch, type SkillSearchProps } from './SkillSearch'
-
 export { SkillGridView, type SkillGridViewProps } from './SkillGridView'
+export { SkillSearch, type SkillSearchProps } from './SkillSearch'

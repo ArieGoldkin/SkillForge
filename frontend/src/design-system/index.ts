@@ -3,19 +3,18 @@
  * Central export point for design tokens and theme utilities
  */
 
-// Export all design tokens
-export * from './tokens'
-
 // Re-export commonly used types
 export type {
-  LightColor,
+  BorderRadius,
   DarkColor,
   FontFamily,
   FontSize,
   FontWeight,
   LetterSpacing,
+  LightColor,
   LineHeight,
-  Spacing,
-  BorderRadius,
   Shadow,
+  Spacing,
 } from './tokens'
+// Export all design tokens
+export * from './tokens'

@@ -9,7 +9,7 @@
  * Use this for visual testing and documentation.
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 

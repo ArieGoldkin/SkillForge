@@ -16,7 +16,7 @@ export function useSendMessage({ sessionId, messages, setMessages }: UseSendMess
       setMessages([...messages, userMessage])
       setTimeout(() => {
         const assistantMessage: TutoringMessage = {
-          id: 'msg-' + Date.now(),
+          id: `msg-${Date.now()}`,
           session_id: sessionId,
           role: 'assistant',
           content:

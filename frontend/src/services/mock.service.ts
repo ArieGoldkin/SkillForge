@@ -3,8 +3,8 @@ import type {
   AnalyzeRequest,
   AnalyzeResponse,
   Artifact,
-  TutoringSession,
   TutoringMessage,
+  TutoringSession,
 } from '@/types/api'
 
 // Mock data for development (until backend is ready)

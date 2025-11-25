@@ -2,7 +2,7 @@
  * SkillCardTags - Tag display for skill cards
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 /**
  * Props for SkillCardTags component

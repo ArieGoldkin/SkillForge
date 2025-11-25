@@ -2,7 +2,7 @@
  * ShowcaseSection - Reusable wrapper for showcase sections
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 /**
  * Props for ShowcaseSection component

@@ -2,7 +2,7 @@
  * DifficultyFilter - Difficulty level filter section
  */
 
-import * as React from 'react'
+import type * as React from 'react'
 
 import type { SkillDifficulty } from '../SkillCard'
 
