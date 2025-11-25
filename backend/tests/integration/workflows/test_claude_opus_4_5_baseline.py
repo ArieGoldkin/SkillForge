@@ -112,7 +112,8 @@ async def test_claude_opus_4_5_baseline(
     # Verify content quality - Claude Opus 4.5 article should be substantial
     content_length = len(result["raw_content"])
     assert content_length > MIN_CONTENT_LENGTH, (
-        f"Article should be substantial (got {content_length} chars, expected >{MIN_CONTENT_LENGTH})"
+        f"Article should be substantial "
+        f"(got {content_length} chars, expected >{MIN_CONTENT_LENGTH})"
     )
 
     # Verify supervisor selected agents

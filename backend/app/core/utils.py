@@ -46,5 +46,3 @@ def normalize_analysis_id_to_uuid(analysis_id: str | UUID) -> UUID:
         # consistency (same string always produces same UUID)
         namespace = UUID(UUID_NAMESPACE_DNS)
         return uuid.uuid5(namespace, str(analysis_id))
-
-

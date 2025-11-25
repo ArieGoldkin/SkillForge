@@ -11,10 +11,12 @@ from app.workflows.agents.base import create_structured_agent, run_agent_with_tr
 from app.workflows.agents.schemas import IntegrationFeasibility
 
 # System prompt for integration feasibility agent
-INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst. Assess technology integration with modern stacks.
+INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst.
+Assess technology integration with modern stacks.
 
 For the given content, provide:
-1. compatibility: Score (0.0-1.0) and notes for 2-3 common stacks (nextjs, fastapi, react, docker, etc.)
+1. compatibility: Score (0.0-1.0) and notes for 2-3 common stacks
+   (nextjs, fastapi, react, docker, etc.)
 2. migration_effort: low/medium/high
 3. breaking_changes: List of potential issues
 4. integration_steps: Actionable steps to integrate

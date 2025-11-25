@@ -267,11 +267,13 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
                         stream_mode="values",
                     ):
                         # Check for structured_response early (robustness)
-                        # Preserve chunk with structured_response, even if later chunks don't have it
+                        # Preserve chunk with structured_response,
+                        # even if later chunks don't have it
                         if isinstance(chunk, dict) and chunk.get("structured_response"):
                             # Found structured_response - preserve this chunk
                             # Continue streaming for progress updates, but keep this result
-                            # This handles cases where structured_response appears in intermediate chunks
+                            # This handles cases where structured_response appears
+                            # in intermediate chunks
                             final_result = chunk
                         elif final_result is None or not (
                             isinstance(final_result, dict)
@@ -292,8 +294,9 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
                                     if new_content:
                                         accumulated_content = latest_message.content
 
-                                        # Throttle SSE events to prevent overwhelming frontend
-                                        # Emit only if enough time has passed OR enough characters accumulated
+                    # Throttle SSE events to prevent overwhelming frontend
+                    # Emit only if enough time has passed OR
+                    # enough characters accumulated
                                         current_time = time.time()
                                         chars_since_last = (
                                             len(accumulated_content) - last_event_chars

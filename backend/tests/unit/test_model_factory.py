@@ -441,4 +441,3 @@ def test_get_chat_model_with_all_parameters(mock_settings, mock_init_chat_model)
     assert call_kwargs["max_tokens"] == 1500
     assert call_kwargs["timeout"] == 45.0
     assert result == mock_model
-

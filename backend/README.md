@@ -206,6 +206,11 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 **Embedding Configuration:**
 - `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `1536` for OpenAI text-embedding-3-small)
 
+**Legacy Ollama Configuration (for embeddings / backwards compatibility):**
+- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
+- `OLLAMA_MODEL`: Ollama model name (default: `llama3.3:8b`)
+- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
+
 **Content Extraction:**
 - `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
 
@@ -214,6 +219,7 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 Development (with free local models):
 ```env
 LLM_MODEL=ollama:llama3.3:8b
+OLLAMA_BASE_URL=http://localhost:11434
 # Note: Ollama must be running locally if using ollama: prefix
 ```
 

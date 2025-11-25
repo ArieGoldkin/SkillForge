@@ -69,6 +69,7 @@ docs/issues/
 | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) | SSE Endpoint for Real-Time Progress | ✅ Complete | Yonatan | [📄 Docs](./040-sse-endpoint/README.md) | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) |
 | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) | Implement Supervisor Pattern | ✅ Complete (PR #57) | Yonatan | [📄 Docs](./041-supervisor-pattern/README.md) | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) |
 | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
+|| [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
 
 ### 🔄 In Progress / Ready (4 total - 13 pts)
 
