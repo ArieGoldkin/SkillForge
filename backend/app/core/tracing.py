@@ -5,9 +5,9 @@ agents, and guardrails with proper metadata, tags, and run types for
 observability in LangSmith.
 """
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, TypeVar
+from typing import Literal, ParamSpec, TypeVar
 
 from langsmith import traceable
 from langsmith.run_trees import RunTree
@@ -16,15 +16,20 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-F = TypeVar("F", bound=Callable[..., Any])
+# Type variables for preserving function signatures in decorators
+P = ParamSpec("P")  # Captures parameter types
+R = TypeVar("R")  # Captures return type
+
+# Run types supported by LangSmith traceable
+RunType = Literal["tool", "chain", "llm", "retriever", "embedding", "prompt", "parser"]
 
 
 def trace_node(
     name: str | None = None,
-    run_type: str = "tool",
+    run_type: RunType = "tool",
     tags: list[str] | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> Callable[[F], F]:
+    metadata: dict[str, str | int | float | bool] | None = None,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Trace LangGraph node functions.
 
     Args:
@@ -45,32 +50,36 @@ def trace_node(
     default_tags = ["workflow", "node"]
     combined_tags = (tags or []) + default_tags
 
-    def decorator(func: F) -> F:
-        # Note: Any is necessary here for generic decorator factory pattern.
-        # Type erasure is required to support functions with varying signatures.
-        # The decorator must accept any function signature and preserve it.
-        traced_func = traceable(  # type: ignore[call-overload]
-            run_type=run_type,  # type: ignore[arg-type]
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        traced_func = traceable(
+            run_type=run_type,
             name=name or func.__name__,
             tags=combined_tags,
             metadata=metadata or {},
         )
+        traced_wrapper = traced_func(func)
 
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-            return await traced_func(func)(*args, **kwargs)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            # traced_wrapper preserves the original function signature
+            # SupportsLangsmithExtra has overloads that mypy can't fully resolve
+            # The runtime behavior is correct - it calls the original function
+            # We ignore both call-overload and arg-type because the actual call
+            # signature matches the original function, not the type annotation
+            result: R = await traced_wrapper(*args, **kwargs)  # type: ignore[call-overload, arg-type]
+            return result
 
-        return wrapper  # type: ignore[return-value]
+        return wrapper
 
     return decorator
 
 
 def trace_agent(
     name: str | None = None,
-    run_type: str = "chain",
+    run_type: RunType = "chain",
     tags: list[str] | None = None,
-    metadata: dict[str, Any] | None = None,
-) -> Callable[[F], F]:
+    metadata: dict[str, str | int | float | bool] | None = None,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Trace agent execution functions.
 
     Args:
@@ -91,33 +100,43 @@ def trace_agent(
     default_tags = ["agent"]
     combined_tags = (tags or []) + default_tags
 
-    def decorator(func: F) -> F:
-        # Note: Any is necessary here for generic decorator factory pattern.
-        # Type erasure is required to support functions with varying signatures.
-        # The decorator must accept any function signature and preserve it.
-        traced_func = traceable(  # type: ignore[call-overload]
-            run_type=run_type,  # type: ignore[arg-type]
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        traced_func = traceable(
+            run_type=run_type,
             name=name or func.__name__,
             tags=combined_tags,
             metadata=metadata or {},
         )
+        traced_wrapper = traced_func(func)
 
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-            return await traced_func(func)(*args, **kwargs)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            # traced_wrapper preserves the original function signature
+            # SupportsLangsmithExtra has overloads that mypy can't fully resolve
+            # The runtime behavior is correct - it calls the original function
+            # We ignore both call-overload and arg-type because the actual call
+            # signature matches the original function, not the type annotation
+            result: R = await traced_wrapper(*args, **kwargs)  # type: ignore[call-overload, arg-type]
+            return result
 
-        return wrapper  # type: ignore[return-value]
+        return wrapper
 
     return decorator
 
 
-async def trace_guardrail(
+T = TypeVar("T")  # Type variable for validation result
+
+# Type alias for JSON-serializable values
+JSONValue = str | int | float | bool | dict[str, "JSONValue"] | list["JSONValue"] | None
+
+
+async def trace_guardrail[T](  # noqa: UP047
     name: str,
     schema_name: str,
-    inputs: dict[str, Any],
-    validation_func: Callable[[dict[str, Any]], Any],
+    inputs: dict[str, JSONValue],
+    validation_func: Callable[[dict[str, JSONValue]], T],
     parent_run: RunTree | None = None,
-) -> Any:
+) -> T:
     """Trace Pydantic validation as a guardrail step.
 
     Args:
