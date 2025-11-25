@@ -1,15 +1,22 @@
 """Integration tests for agent implementations with real LLM."""
 
+import asyncio
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 
+import httpx
 import pytest
 
+from app.core.constants import HTTP_OK
+from app.db.session import AsyncSessionLocal
+from app.models.analysis import Analysis
 from app.workflows.agents import (
     run_implementation_planner,
     run_integration_feasibility,
     run_tech_comparator,
 )
+
+EXPECTED_AGENT_COUNT = 3
 
 
 @pytest.fixture
@@ -21,24 +28,23 @@ def requires_llm():
     # Skip if using Ollama and it's not available
     if llm_model.startswith("ollama:"):
         try:
-            import httpx
-
             response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
-            if response.status_code != 200:
+            if response.status_code != HTTP_OK:
                 pytest.skip("Ollama not available")
-        except Exception:
+        except (httpx.RequestError, httpx.TimeoutException, httpx.NetworkError):
             pytest.skip("Ollama not available")
 
 
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls
 async def test_tech_comparator_integration(
     requires_llm,
     requires_database,
     db_session,
     reset_engine_connections,
+    create_test_analysis,
 ):
     """Test tech comparator agent with real LLM."""
     analysis_id = str(uuid4())
@@ -48,6 +54,16 @@ async def test_tech_comparator_integration(
     React has a large ecosystem with tools like Next.js, Redux, and React Router.
     """
     content_type = "article"
+
+    # Create Analysis record before calling agent (required for foreign key)
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
 
     result = await run_tech_comparator(
         content=content,
@@ -70,12 +86,13 @@ async def test_tech_comparator_integration(
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls
 async def test_integration_feasibility_integration(
     requires_llm,
     requires_database,
     db_session,
     reset_engine_connections,
+    create_test_analysis,
 ):
     """Test integration feasibility agent with real LLM."""
     analysis_id = str(uuid4())
@@ -84,6 +101,16 @@ async def test_integration_feasibility_integration(
     with Next.js and FastAPI. The library supports JWT tokens and OAuth2.
     """
     content_type = "article"
+
+    # Create Analysis record before calling agent (required for foreign key)
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
 
     result = await run_integration_feasibility(
         content=content,
@@ -106,12 +133,13 @@ async def test_integration_feasibility_integration(
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls
 async def test_implementation_planner_integration(
     requires_llm,
     requires_database,
     db_session,
     reset_engine_connections,
+    create_test_analysis,
 ):
     """Test implementation planner agent with real LLM."""
     analysis_id = str(uuid4())
@@ -121,6 +149,16 @@ async def test_implementation_planner_integration(
     React components that can be rendered on the server.
     """
     content_type = "article"
+
+    # Create Analysis record before calling agent (required for foreign key)
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
 
     result = await run_implementation_planner(
         content=content,
@@ -148,7 +186,7 @@ async def test_implementation_planner_integration(
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(90)
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls with parallel execution
 async def test_agents_parallel_execution_with_separate_sessions(
     requires_llm,
     requires_database,
@@ -159,10 +197,6 @@ async def test_agents_parallel_execution_with_separate_sessions(
     This test verifies that each agent gets its own database session,
     preventing concurrency errors when agents run in parallel.
     """
-    import asyncio
-
-    from app.db.session import AsyncSessionLocal
-
     analysis_id = str(uuid4())
     content = """
     React is a JavaScript library for building user interfaces.
@@ -170,6 +204,18 @@ async def test_agents_parallel_execution_with_separate_sessions(
     This guide shows how to implement a full-stack application.
     """
     content_type = "article"
+
+    # Create Analysis record before calling agents (required for foreign key)
+    # Use a shared session to create the analysis, then each agent gets its own session
+    async with AsyncSessionLocal() as shared_session:
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url="https://example.com",
+            content_type=content_type,
+            status="pending",
+        )
+        shared_session.add(analysis)
+        await shared_session.commit()
 
     # Each agent gets its own session (matching the fix in execute_agents)
     async def run_with_session_1():
@@ -194,7 +240,7 @@ async def test_agents_parallel_execution_with_separate_sessions(
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Verify all agents completed successfully (no concurrency errors)
-    assert len(results) == 3
+    assert len(results) == EXPECTED_AGENT_COUNT
     for result in results:
         assert not isinstance(result, Exception), f"Agent failed with: {result}"
         assert "agent_type" in result

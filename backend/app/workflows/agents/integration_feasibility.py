@@ -18,11 +18,29 @@ INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Feasibility Analyst. 
 3. Evaluate migration effort (low/medium/high) and identify potential breaking changes
 4. Provide step-by-step integration guidance
 
-CRITICAL: You MUST include a "compatibility" field with at least 2-3 stack assessments.
-Each compatibility entry must contain: score (0.0-1.0) and notes (string).
-Assess compatibility for stacks mentioned in the content (
-    e.g., nextjs, fastapi, postgresql, react, docker
-).
+CRITICAL REQUIREMENT - THE "compatibility" FIELD IS MANDATORY:
+You MUST ALWAYS include a "compatibility" field in your response. This field is REQUIRED and cannot be omitted.
+
+The compatibility field must:
+- Contain at least 2-3 stack assessments (e.g., 'nextjs', 'fastapi', 'postgresql', 'react', 'docker')
+- Each entry must have:
+  * score: A number between 0.0 (incompatible) and 1.0 (fully compatible)
+  * notes: A string explaining the compatibility assessment
+
+Example format:
+{
+  "compatibility": {
+    "nextjs": {"score": 0.9, "notes": "Excellent integration with Next.js..."},
+    "fastapi": {"score": 0.8, "notes": "Good compatibility with FastAPI..."},
+    "postgresql": {"score": 0.95, "notes": "Fully compatible with PostgreSQL..."}
+  },
+  "migration_effort": "medium",
+  "breaking_changes": [...],
+  "integration_steps": [...]
+}
+
+If the content mentions specific stacks, assess those. Otherwise, assess common stacks like:
+- nextjs, react, fastapi, postgresql, docker, typescript, python
 
 Focus on:
 - API compatibility and integration patterns

@@ -3,6 +3,7 @@
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.main import app
+from app.models.analysis import Analysis
 from app.services.event_broadcaster import broadcaster
 
 # Load .env.test if it exists for integration tests
@@ -137,3 +139,41 @@ async def db_session(requires_database, reset_engine_connections) -> AsyncGenera
             yield session
         finally:
             await transaction.rollback()
+
+
+@pytest_asyncio.fixture
+async def create_test_analysis(db_session):
+    """Create a test Analysis record for use in agent tests.
+
+    Returns a helper function that creates an Analysis record with the given parameters.
+    The analysis is automatically rolled back after the test due to db_session fixture.
+
+    Usage:
+        async def test_my_agent(create_test_analysis, db_session):
+            analysis_id = str(uuid4())
+            analysis = await create_test_analysis(
+                analysis_id=analysis_id,
+                url="https://example.com",
+                content_type="article"
+            )
+            # Now you can use analysis_id with agents
+    """
+
+    async def _create(
+        analysis_id: str,
+        url: str = "https://example.com",
+        content_type: str = "article",
+    ) -> Analysis:
+        """Create an Analysis record in the database."""
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url=url,
+            content_type=content_type,
+            status="pending",
+        )
+        db_session.add(analysis)
+        await db_session.commit()
+        await db_session.refresh(analysis)
+        return analysis
+
+    return _create
