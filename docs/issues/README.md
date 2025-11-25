@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** January 24, 2025
+**Last Updated:** November 25, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -45,13 +45,15 @@ docs/issues/
     └── SSE_SCHEMA.md
 └── 041-supervisor-pattern/
     └── README.md                         # Issue #41 complete doc
+└── 042-first-3-agents/
+    └── README.md                         # Issue #42 complete doc
 ```
 
 ---
 
-## 📊 Sprint 1 Issues Status
+## 📊 Sprint 1 & 2 Issues Status
 
-### ✅ Completed Issues (11 total - 56 pts)
+### ✅ Completed Issues (12 total - 62 pts)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -66,6 +68,7 @@ docs/issues/
 | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) | Create Basic LangGraph Workflow | ✅ Complete | Yonatan | [📄 Docs](./039-langgraph-workflow/README.md) | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) |
 | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) | SSE Endpoint for Real-Time Progress | ✅ Complete | Yonatan | [📄 Docs](./040-sse-endpoint/README.md) | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) |
 | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) | Implement Supervisor Pattern | ✅ Complete (PR #57) | Yonatan | [📄 Docs](./041-supervisor-pattern/README.md) | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) |
+| [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
 
 ### 🔄 In Progress / Ready (4 total - 13 pts)
 
@@ -91,8 +94,8 @@ _No backend issues in progress_
 - **Arie Progress:** 17/23 pts (74%) - *6pts from Issue #32*
 
 **Sprint 2:**
-- **Completed:** 16 pts (Issues #39 ✅, #40 ✅, #41 ✅ - PR #57 open)
-- **Yonatan Progress:** 16/18 pts (89%)
+- **Completed:** 22 pts (Issues #39 ✅, #40 ✅, #41 ✅, #42 ✅ - PR #58 open)
+- **Yonatan Progress:** 22/24 pts (92%)
 
 ---
 
