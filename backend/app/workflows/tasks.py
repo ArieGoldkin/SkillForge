@@ -202,68 +202,96 @@ async def execute_agents(
         agent_count=len(selected_agents),
     )
 
-    # Create database session for agent persistence
-    async with AsyncSessionLocal() as session:
-        agent_tasks = []
+    # Create wrapper functions that manage their own database sessions
+    # Each agent gets its own session to avoid concurrency issues
+    async def run_tech_comparator_with_session() -> dict[str, object] | Exception:
+        """Run tech comparator with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_tech_comparator(content, content_type, analysis_id, session)
+            except Exception as e:
+                return e
 
-        # Create tasks for selected agents
-        if "tech_comparator" in selected_agents:
-            agent_tasks.append(run_tech_comparator(content, content_type, analysis_id, session))
-        if "integration_feasibility" in selected_agents:
-            agent_tasks.append(
-                run_integration_feasibility(content, content_type, analysis_id, session)
-            )
-        if "implementation_planner" in selected_agents:
-            agent_tasks.append(
-                run_implementation_planner(content, content_type, analysis_id, session)
-            )
+    async def run_integration_feasibility_with_session() -> dict[str, object] | Exception:
+        """Run integration feasibility with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_integration_feasibility(
+                    content, content_type, analysis_id, session
+                )
+            except Exception as e:
+                return e
 
-        if not agent_tasks:
-            logger.warning(
-                "workflow_no_valid_agents",
-                analysis_id=analysis_id,
-                selected_agents=selected_agents,
-            )
-            return []
+    async def run_implementation_planner_with_session() -> dict[str, object] | Exception:
+        """Run implementation planner with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_implementation_planner(content, content_type, analysis_id, session)
+            except Exception as e:
+                return e
 
-        # Execute agents in parallel with timeout and error isolation
-        agent_timeout = 30.0  # 30 seconds per agent
-        try:
-            findings_list = await asyncio.wait_for(
-                asyncio.gather(*agent_tasks, return_exceptions=True),
-                timeout=agent_timeout * len(agent_tasks),  # Total timeout for all agents
-            )
+    # Create tasks for selected agents (each with its own session)
+    agent_tasks = []
+    if "tech_comparator" in selected_agents:
+        agent_tasks.append(run_tech_comparator_with_session())
+    if "integration_feasibility" in selected_agents:
+        agent_tasks.append(run_integration_feasibility_with_session())
+    if "implementation_planner" in selected_agents:
+        agent_tasks.append(run_implementation_planner_with_session())
 
-            # Filter out exceptions and collect successful results
-            agent_findings: list[dict[str, object]] = []
-            for i, result in enumerate(findings_list):
-                if isinstance(result, Exception):
-                    agent_name = selected_agents[i] if i < len(selected_agents) else "unknown"
-                    logger.error(
-                        "workflow_agent_failed",
-                        analysis_id=analysis_id,
-                        agent_type=agent_name,
-                        error=str(result),
-                        exc_info=True,
-                    )
-                elif isinstance(result, dict):
-                    agent_findings.append(result)
+    if not agent_tasks:
+        logger.warning(
+            "workflow_no_valid_agents",
+            analysis_id=analysis_id,
+            selected_agents=selected_agents,
+        )
+        return []
 
-            logger.info(
-                "workflow_agents_complete",
-                analysis_id=analysis_id,
-                successful_count=len(agent_findings),
-                total_count=len(agent_tasks),
-            )
+    # Execute agents in parallel with timeout and error isolation
+    # Each agent manages its own database session independently
+    agent_timeout = 30.0  # 30 seconds per agent
+    try:
+        # asyncio.gather returns a tuple, convert to list for type consistency
+        # return_exceptions=True means results can be Exception or BaseException
+        # Note: mypy has issues with asyncio.gather return types, but runtime is correct
+        findings_tuple = await asyncio.wait_for(
+            asyncio.gather(*agent_tasks, return_exceptions=True),  # type: ignore[arg-type]
+            timeout=agent_timeout * len(agent_tasks),  # Total timeout for all agents
+        )
+        # Convert tuple to list - mypy sees BaseException but we filter it below
+        findings_list = list(findings_tuple)  # type: ignore[arg-type]
 
-            return agent_findings  # noqa: TRY300
+        # Filter out exceptions and collect successful results
+        # Note: return_exceptions=True means results can be Exception or BaseException
+        agent_findings: list[dict[str, object]] = []
+        for i, result in enumerate(findings_list):
+            if isinstance(result, (Exception, BaseException)):
+                agent_name = selected_agents[i] if i < len(selected_agents) else "unknown"
+                logger.error(
+                    "workflow_agent_failed",
+                    analysis_id=analysis_id,
+                    agent_type=agent_name,
+                    error=str(result),
+                    exc_info=True,
+                )
+            elif isinstance(result, dict):
+                agent_findings.append(result)
 
-        except TimeoutError:
-            logger.exception(
-                "workflow_agents_timeout",
-                analysis_id=analysis_id,
-                timeout=agent_timeout * len(agent_tasks),
-                agent_count=len(agent_tasks),
-            )
-            # Return any findings that completed before timeout
-            return []
+        logger.info(
+            "workflow_agents_complete",
+            analysis_id=analysis_id,
+            successful_count=len(agent_findings),
+            total_count=len(agent_tasks),
+        )
+
+        return agent_findings
+
+    except TimeoutError:
+        logger.exception(
+            "workflow_agents_timeout",
+            analysis_id=analysis_id,
+            timeout=agent_timeout * len(agent_tasks),
+            agent_count=len(agent_tasks),
+        )
+        # Return any findings that completed before timeout
+        return []
