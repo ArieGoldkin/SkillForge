@@ -223,9 +223,10 @@ class Settings(BaseSettings):
         ),
     )
     LLM_TIMEOUT: float | None = Field(
-        default=None,
+        default=60.0,
         description=(
-            "Timeout in seconds for LLM API calls. Defaults to model provider's default if not set."
+            "Timeout in seconds for LLM API calls. Defaults to 60s. "
+            "Set to None to use model provider's default."
         ),
     )
     LLM_RETRY_DELAY_BASE: float = Field(

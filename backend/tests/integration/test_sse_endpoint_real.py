@@ -148,9 +148,7 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
 
     # Collect events from SSE stream with timeout
     events_received = []
-    event_collection_task = asyncio.create_task(
-        _collect_sse_events(response, events_received)
-    )
+    event_collection_task = asyncio.create_task(_collect_sse_events(response, events_received))
 
     try:
         # Wait for either events to complete or timeout

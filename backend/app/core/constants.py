@@ -48,3 +48,12 @@ CONTENT_TYPE_REPO = "repo"
 
 # Default Values
 DEFAULT_TITLE = "Untitled"  # Default title when extraction fails to find one
+
+# UUID Configuration
+UUID_NAMESPACE_DNS = (
+    "6ba7b810-9dad-11d1-80b4-00c04fd430c8"  # DNS namespace for deterministic UUID generation
+)
+
+# SSE Event Throttling
+SSE_EVENT_THROTTLE_MS = 500  # Minimum time between SSE events (milliseconds)
+SSE_EVENT_THROTTLE_CHARS = 50  # Minimum characters between SSE events

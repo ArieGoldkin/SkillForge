@@ -11,45 +11,15 @@ from app.workflows.agents.base import create_structured_agent, run_agent_with_tr
 from app.workflows.agents.schemas import IntegrationFeasibility
 
 # System prompt for integration feasibility agent
-INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Feasibility Analyst. Your task is to:
-1. Analyze how the technology integrates with modern development stacks
-2. Assess compatibility with common frameworks and tools
-   (Next.js, React, FastAPI, PostgreSQL, Docker, etc.)
-3. Evaluate migration effort (low/medium/high) and identify potential breaking changes
-4. Provide step-by-step integration guidance
+INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst. Assess technology integration with modern stacks.
 
-CRITICAL REQUIREMENT - THE "compatibility" FIELD IS MANDATORY:
-You MUST ALWAYS include a "compatibility" field in your response. This field is REQUIRED and cannot be omitted.
+For the given content, provide:
+1. compatibility: Score (0.0-1.0) and notes for 2-3 common stacks (nextjs, fastapi, react, docker, etc.)
+2. migration_effort: low/medium/high
+3. breaking_changes: List of potential issues
+4. integration_steps: Actionable steps to integrate
 
-The compatibility field must:
-- Contain at least 2-3 stack assessments (e.g., 'nextjs', 'fastapi', 'postgresql', 'react', 'docker')
-- Each entry must have:
-  * score: A number between 0.0 (incompatible) and 1.0 (fully compatible)
-  * notes: A string explaining the compatibility assessment
-
-Example format:
-{
-  "compatibility": {
-    "nextjs": {"score": 0.9, "notes": "Excellent integration with Next.js..."},
-    "fastapi": {"score": 0.8, "notes": "Good compatibility with FastAPI..."},
-    "postgresql": {"score": 0.95, "notes": "Fully compatible with PostgreSQL..."}
-  },
-  "migration_effort": "medium",
-  "breaking_changes": [...],
-  "integration_steps": [...]
-}
-
-If the content mentions specific stacks, assess those. Otherwise, assess common stacks like:
-- nextjs, react, fastapi, postgresql, docker, typescript, python
-
-Focus on:
-- API compatibility and integration patterns
-- Dependency management and version conflicts
-- Configuration requirements
-- Migration paths from similar technologies
-- Potential breaking changes and mitigation strategies
-
-Provide practical, actionable integration recommendations."""
+Be concise. Focus on practical, actionable insights."""
 
 
 async def run_integration_feasibility(

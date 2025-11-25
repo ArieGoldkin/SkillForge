@@ -18,9 +18,11 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.constants import SSE_EVENT_THROTTLE_CHARS, SSE_EVENT_THROTTLE_MS
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
+from app.core.utils import normalize_analysis_id_to_uuid
 from app.models.agent_finding import AgentFinding
 from app.services.sse_helpers import emit_streaming_event
 
@@ -182,14 +184,14 @@ async def emit_agent_progress(
     )
 
 
-async def _run_agent_with_tracking_impl(  # noqa: PLR0913
+async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
     agent: Any,
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     agent_type: str,
     session: AsyncSession,
-    max_content_length: int = 2000,
+    max_content_length: int = 1500,
 ) -> dict[str, Any]:
     """Implement agent execution with tracking.
 
@@ -243,22 +245,109 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
             ]
         }
 
-        # Use async invoke if available, otherwise wrap sync invoke in thread pool
-        # This prevents blocking the event loop during LLM calls
+        # Stream agent execution for real-time progress visibility
+        # This follows LangChain v1.0 best practices for long-running agent calls
         agent_timeout = 120.0  # 120 seconds (2 minutes) max per agent for complex LLM calls
+        accumulated_content = ""
+        final_result: dict[str, Any] | None = None
+
         try:
-            if hasattr(agent, "ainvoke"):
-                # Async invoke (preferred - non-blocking)
+            # Check if agent supports streaming (must be callable, not just present)
+            agent_has_streaming = callable(getattr(agent, "astream", None))
+            if agent_has_streaming:
+                # Stream agent execution (preferred - shows progress)
+                # Use stream_mode="values" to get state updates after each step
+                async def stream_with_timeout():
+                    nonlocal final_result, accumulated_content
+                    last_event_time = 0.0
+                    last_event_chars = 0
+
+                    async for chunk in agent.astream(
+                        input_messages,
+                        stream_mode="values",
+                    ):
+                        # Check for structured_response early (robustness)
+                        # Preserve chunk with structured_response, even if later chunks don't have it
+                        if isinstance(chunk, dict) and chunk.get("structured_response"):
+                            # Found structured_response - preserve this chunk
+                            # Continue streaming for progress updates, but keep this result
+                            # This handles cases where structured_response appears in intermediate chunks
+                            final_result = chunk
+                        elif final_result is None or not (
+                            isinstance(final_result, dict)
+                            and final_result.get("structured_response")
+                        ):
+                            # Update final_result only if we haven't found structured_response yet
+                            # This ensures we preserve the chunk with structured_response
+                            final_result = chunk
+
+                        # Extract content from messages for progress updates
+                        if isinstance(chunk, dict) and chunk.get("messages"):
+                            messages = chunk["messages"]
+                            if messages:
+                                latest_message = messages[-1]
+                                # Extract text content for streaming preview
+                                if hasattr(latest_message, "content") and latest_message.content:
+                                    new_content = latest_message.content[len(accumulated_content) :]
+                                    if new_content:
+                                        accumulated_content = latest_message.content
+
+                                        # Throttle SSE events to prevent overwhelming frontend
+                                        # Emit only if enough time has passed OR enough characters accumulated
+                                        current_time = time.time()
+                                        chars_since_last = (
+                                            len(accumulated_content) - last_event_chars
+                                        )
+                                        time_since_last_ms = (current_time - last_event_time) * 1000
+
+                                        should_emit = (
+                                            time_since_last_ms >= SSE_EVENT_THROTTLE_MS
+                                            or chars_since_last >= SSE_EVENT_THROTTLE_CHARS
+                                        )
+
+                                        if should_emit:
+                                            # Emit SSE so frontend sees progress
+                                            await emit_agent_progress(
+                                                analysis_id,
+                                                agent_type,
+                                                "streaming",
+                                                token_preview=accumulated_content[
+                                                    -100:
+                                                ],  # Last 100 chars
+                                            )
+                                            # Update throttling tracking
+                                            last_event_time = current_time
+                                            last_event_chars = len(accumulated_content)
+
+                # Stream with timeout
+                try:
+                    await asyncio.wait_for(
+                        stream_with_timeout(),
+                        timeout=agent_timeout,
+                    )
+                except TimeoutError:
+                    msg = f"Agent {agent_type} exceeded timeout of {agent_timeout}s"
+                    logger.exception(
+                        "agent_timeout",
+                        agent_type=agent_type,
+                        analysis_id=analysis_id,
+                        timeout=agent_timeout,
+                    )
+                    raise TimeoutError(msg) from None
+            elif hasattr(agent, "ainvoke"):
+                # Fallback: async invoke without streaming
                 result = await asyncio.wait_for(
                     agent.ainvoke(input_messages),
                     timeout=agent_timeout,
                 )
+                final_result = result
             else:
-                # Fallback: run sync invoke in thread pool to avoid blocking event loop
+                # Fallback: run sync invoke in thread pool
                 result = await asyncio.wait_for(
                     asyncio.to_thread(agent.invoke, input_messages),
                     timeout=agent_timeout,
                 )
+                final_result = result
         except TimeoutError:
             msg = f"Agent {agent_type} exceeded timeout of {agent_timeout}s"
             logger.exception(
@@ -270,7 +359,13 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
             raise TimeoutError(msg) from None
 
         # Extract structured response (validated Pydantic model)
-        structured_response = result.get("structured_response")
+        if final_result is None:
+            msg = f"Agent {agent_type} returned no result"
+            raise RuntimeError(msg)  # noqa: TRY301
+        if not isinstance(final_result, dict):
+            msg = f"Agent {agent_type} returned invalid result type: {type(final_result)}"
+            raise TypeError(msg)  # noqa: TRY301
+        structured_response = final_result.get("structured_response")
         if structured_response is None:
             msg = f"Agent {agent_type} did not return structured_response"
             raise RuntimeError(msg)  # noqa: TRY301
@@ -282,9 +377,12 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
         processing_time_ms = int((time.time() - start_time) * 1000)
 
         # Save to database
+        # Normalize analysis_id to UUID (handles strings, UUID objects, and non-UUID strings)
+        analysis_uuid = normalize_analysis_id_to_uuid(analysis_id)
+
         await save_agent_finding(
             session=session,
-            analysis_id=UUID(str(analysis_id)),
+            analysis_id=analysis_uuid,
             agent_type=agent_type,
             findings=findings,
             processing_time_ms=processing_time_ms,
@@ -340,7 +438,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     analysis_id: AnalysisID,
     agent_type: str,
     session: AsyncSession,
-    max_content_length: int = 2000,
+    max_content_length: int = 1500,
 ) -> dict[str, Any]:
     """Run an agent with progress tracking, error handling, and database persistence.
 

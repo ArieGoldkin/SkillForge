@@ -51,34 +51,22 @@ class CompatibilityScore(BaseModel):
     """Compatibility assessment for a technology stack."""
 
     score: float = Field(
-        description="Compatibility score from 0.0 (incompatible) to 1.0 (fully compatible)",
+        description="Score 0.0-1.0",
         ge=0.0,
         le=1.0,
     )
-    notes: str = Field(description="Detailed notes explaining the compatibility assessment")
+    notes: str = Field(description="Compatibility notes")
 
 
 class IntegrationFeasibility(BaseModel):
     """Integration feasibility analysis output schema."""
 
     compatibility: dict[str, CompatibilityScore] = Field(
-        description=(
-            "REQUIRED: Compatibility scores and notes for modern development stacks. "
-            "MUST include at least 2-3 stack assessments "
-            "(e.g., 'nextjs', 'fastapi', 'postgresql', 'react', 'docker'). "
-            "Each entry contains a score (0.0-1.0) indicating compatibility level "
-            "and notes explaining the assessment."
-        )
+        description="Compatibility scores for 2-3 stacks (nextjs, fastapi, react, docker, etc.)"
     )
-    migration_effort: Literal["low", "medium", "high"] = Field(
-        description="Estimated migration effort level"
-    )
-    breaking_changes: list[str] = Field(
-        description="List of potential breaking changes when integrating"
-    )
-    integration_steps: list[str] = Field(
-        description="Step-by-step integration guidance and recommendations"
-    )
+    migration_effort: Literal["low", "medium", "high"] = Field(description="Migration effort level")
+    breaking_changes: list[str] = Field(description="Potential breaking changes")
+    integration_steps: list[str] = Field(description="Integration steps")
 
 
 class ImplementationStep(BaseModel):
