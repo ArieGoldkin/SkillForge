@@ -14,12 +14,12 @@ on:
   #     - 'frontend/**'
   #     - '.github/workflows/e2e-tests.yml'
   #     - 'docker-compose.ci.yml'
-  workflow_dispatch:  # Only allow manual runs for now
+  workflow_dispatch: # Only allow manual runs for now
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -55,7 +55,7 @@ jobs:
           API_BASE_URL: http://localhost:8500
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
@@ -63,7 +63,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test screenshots
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-screenshots

@@ -5,7 +5,11 @@
       "Skill(brainstorming)",
       "WebFetch(domain:github.com)",
       "Bash(gh issue view:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(cat:*)",
+      "Bash(gh project:*)",
+      "Bash(xargs ls:*)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": true

@@ -1,15 +1,20 @@
 import { useEffect } from 'react'
 
-import { Moon, Sun, Monitor } from 'lucide-react'
-
-import { Button } from '@/shared/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import {
   applyTheme,
   getResolvedTheme,
   setupSystemThemeListener,
   useThemeStore,
-} from '@/stores/themeStore'
+} from '@stores/themeStore'
+import { Monitor, Moon, Sun } from 'lucide-react'
+
+import { Button } from '@shared/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@shared/components/ui/tooltip'
 
 /**
  * ThemeToggle Component

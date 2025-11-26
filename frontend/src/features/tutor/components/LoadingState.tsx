@@ -6,5 +6,5 @@ export function LoadingState() {
         <div className="h-96 bg-muted rounded" />
       </div>
     </div>
-  );
+  )
 }

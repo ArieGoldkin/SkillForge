@@ -1,19 +1,20 @@
-import { Link, Sparkles, FileText, Video, Github } from "lucide-react";
+import { FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
-import { cn } from "@/lib/utils";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
+import { Badge } from '@shared/components/ui/badge'
+import { Button } from '@shared/components/ui/button'
+import { Input } from '@shared/components/ui/input'
 
-type ContentType = "article" | "video" | "repository";
+import { cn } from '@lib/utils'
+
+type ContentType = 'article' | 'video' | 'repository'
 
 interface HeroSectionProps {
-  url: string;
-  setUrl: (url: string) => void;
-  selectedContentType: ContentType;
-  setSelectedContentType: (type: ContentType) => void;
-  isSubmitting: boolean;
-  handleSubmit: (e: React.FormEvent) => void;
+  url: string
+  setUrl: (url: string) => void
+  selectedContentType: ContentType
+  setSelectedContentType: (type: ContentType) => void
+  isSubmitting: boolean
+  handleSubmit: (e: React.FormEvent) => void
 }
 
 export function HeroSection({
@@ -33,8 +34,7 @@ export function HeroSection({
           Integration Platform
         </h1>
         <p className="text-xl text-muted-foreground mb-12">
-          Analyze technical content and generate AI-ready implementation guides
-          with expert tutoring
+          Analyze technical content and generate AI-ready implementation guides with expert tutoring
         </p>
 
         <ContentAnalysisForm
@@ -47,16 +47,16 @@ export function HeroSection({
         />
       </div>
     </section>
-  );
+  )
 }
 
 interface ContentAnalysisFormProps {
-  url: string;
-  setUrl: (url: string) => void;
-  selectedContentType: ContentType;
-  setSelectedContentType: (type: ContentType) => void;
-  isSubmitting: boolean;
-  handleSubmit: (e: React.FormEvent) => void;
+  url: string
+  setUrl: (url: string) => void
+  selectedContentType: ContentType
+  setSelectedContentType: (type: ContentType) => void
+  isSubmitting: boolean
+  handleSubmit: (e: React.FormEvent) => void
 }
 
 function ContentAnalysisForm({
@@ -88,22 +88,17 @@ function ContentAnalysisForm({
         setSelectedContentType={setSelectedContentType}
       />
 
-      <Button
-        type="submit"
-        disabled={isSubmitting || !url.trim()}
-        size="lg"
-        className="gap-2"
-      >
+      <Button type="submit" disabled={isSubmitting || !url.trim()} size="lg" className="gap-2">
         <Sparkles className="w-5 h-5" />
-        {isSubmitting ? "Analyzing..." : "Analyze Content"}
+        {isSubmitting ? 'Analyzing...' : 'Analyze Content'}
       </Button>
     </form>
-  );
+  )
 }
 
 interface ContentTypeBadgesProps {
-  selectedContentType: ContentType;
-  setSelectedContentType: (type: ContentType) => void;
+  selectedContentType: ContentType
+  setSelectedContentType: (type: ContentType) => void
 }
 
 function ContentTypeBadges({
@@ -116,52 +111,47 @@ function ContentTypeBadges({
         type="article"
         icon={FileText}
         label="Article"
-        selected={selectedContentType === "article"}
-        onClick={() => setSelectedContentType("article")}
+        selected={selectedContentType === 'article'}
+        onClick={() => setSelectedContentType('article')}
       />
       <ContentTypeBadge
         type="video"
         icon={Video}
         label="Video"
-        selected={selectedContentType === "video"}
-        onClick={() => setSelectedContentType("video")}
+        selected={selectedContentType === 'video'}
+        onClick={() => setSelectedContentType('video')}
       />
       <ContentTypeBadge
         type="repository"
         icon={Github}
         label="Repository"
-        selected={selectedContentType === "repository"}
-        onClick={() => setSelectedContentType("repository")}
+        selected={selectedContentType === 'repository'}
+        onClick={() => setSelectedContentType('repository')}
       />
     </div>
-  );
+  )
 }
 
 interface ContentTypeBadgeProps {
-  type: ContentType;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  selected: boolean;
-  onClick: () => void;
+  type: ContentType
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  selected: boolean
+  onClick: () => void
 }
 
-function ContentTypeBadge({
-  icon: Icon,
-  label,
-  selected,
-  onClick,
-}: ContentTypeBadgeProps) {
+function ContentTypeBadge({ icon: Icon, label, selected, onClick }: ContentTypeBadgeProps) {
   return (
     <Badge
-      variant={selected ? "default" : "outline"}
+      variant={selected ? 'default' : 'outline'}
       className={cn(
-        "cursor-pointer transition-all hover:scale-105 px-4 py-2 gap-2",
-        selected && "ring-2 ring-ring ring-offset-2"
+        'cursor-pointer transition-all hover:scale-105 px-4 py-2 gap-2',
+        selected && 'ring-2 ring-ring ring-offset-2'
       )}
       onClick={onClick}
     >
       <Icon className="w-4 h-4" />
       {label}
     </Badge>
-  );
+  )
 }

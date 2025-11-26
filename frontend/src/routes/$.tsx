@@ -1,10 +1,9 @@
 import { lazy } from 'react'
 
+import { LazyRoute } from '@router/LazyRoute'
 import { createFileRoute } from '@tanstack/react-router'
 
-import { LazyRoute } from '@/router/LazyRoute'
-
-const NotFound = lazy(() => import('@/features/not-found').then((m) => ({ default: m.NotFound })))
+const NotFound = lazy(() => import('@features/not-found').then((m) => ({ default: m.NotFound })))
 
 export const Route = createFileRoute('/$')({
   component: () => (

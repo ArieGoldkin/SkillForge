@@ -3,9 +3,9 @@ import type {
   AnalyzeRequest,
   AnalyzeResponse,
   Artifact,
-  TutoringSession,
   TutoringMessage,
-} from '@/types/api'
+  TutoringSession,
+} from '@app-types/api'
 
 // Mock data for development (until backend is ready)
 
@@ -111,7 +111,7 @@ export const mockTutoringMessages: TutoringMessage[] = [
     session_id: 'session-456',
     role: 'assistant',
     content:
-      'Great question! In Server Components, you can fetch data directly using async/await. Here\'s an example:\n\n```typescript\nasync function UserProfile({ userId }: { userId: string }) {\n  const user = await fetch(`https://api.example.com/users/${userId}`)\n  const data = await user.json()\n  return <div>{data.name}</div>\n}\n```\n\nWhat makes this powerful is that it runs on the server, so you never expose API keys to the client.',
+      "Great question! In Server Components, you can fetch data directly using async/await. Here's an example:\n\n```typescript\nasync function UserProfile({ userId }: { userId: string }) {\n  const user = await fetch(`https://api.example.com/users/${userId}`)\n  const data = await user.json()\n  return <div>{data.name}</div>\n}\n```\n\nWhat makes this powerful is that it runs on the server, so you never expose API keys to the client.",
     created_at: new Date(Date.now() - 180000).toISOString(),
   },
 ]

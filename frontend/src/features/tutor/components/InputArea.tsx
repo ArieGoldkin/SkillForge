@@ -1,8 +1,8 @@
-import { ChatInput } from "@/shared/components/features/tutor/ChatInput";
+import { ChatInput } from './ChatInput'
 
 interface InputAreaProps {
-  onSend: (content: string) => void;
-  disabled: boolean;
+  onSend: (content: string) => void
+  disabled: boolean
 }
 
 export function InputArea({ onSend, disabled }: InputAreaProps) {
@@ -14,5 +14,5 @@ export function InputArea({ onSend, disabled }: InputAreaProps) {
         placeholder="Ask a question or share your thoughts..."
       />
     </div>
-  );
+  )
 }

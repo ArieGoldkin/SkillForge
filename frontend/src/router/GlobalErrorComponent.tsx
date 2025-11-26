@@ -1,7 +1,7 @@
-import { useRouter, type ErrorComponentProps } from '@tanstack/react-router'
+import { type ErrorComponentProps, useRouter } from '@tanstack/react-router'
 
-import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Button } from '@shared/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
 export function GlobalErrorComponent({ error }: ErrorComponentProps) {
   const router = useRouter()

@@ -2,9 +2,10 @@ import { type ReactNode, useState } from 'react'
 
 import { Menu, X } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
-import { Navigation } from '@/shared/components/Navigation'
-import { Button } from '@/shared/components/ui/button'
+import { Navigation } from '@shared/components/navigation'
+import { Button } from '@shared/components/ui/button'
+
+import { cn } from '@lib/utils'
 
 interface AppShellProps {
   children: ReactNode

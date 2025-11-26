@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 25, 2025
+**Last Updated:** November 26, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -40,20 +40,26 @@ docs/issues/
 ├── 039-langgraph-workflow/
 │   ├── README.md                         # Issue #39 complete doc
 │   └── ISSUE_39_VERIFICATION.md
-└── 040-sse-endpoint/
-    ├── README.md                         # Issue #40 complete doc
-    └── SSE_SCHEMA.md
-└── 041-supervisor-pattern/
-    └── README.md                         # Issue #41 complete doc
-└── 042-first-3-agents/
-    └── README.md                         # Issue #42 complete doc
+├── 040-sse-endpoint/
+│   ├── README.md                         # Issue #40 complete doc
+│   └── SSE_SCHEMA.md
+├── 041-supervisor-pattern/
+│   └── README.md                         # Issue #41 complete doc
+├── 042-first-3-agents/
+│   └── README.md                         # Issue #42 complete doc
+├── 043-sse-client-hook/
+│   └── ISSUE_43_VALIDATION_COMPLETE.md   # Issue #43 complete doc
+├── 044-progress-tracker/
+│   └── ISSUE_44_VALIDATION_COMPLETE.md   # Issue #44 complete doc
+└── 045-analysis-view-page/
+    └── ISSUE_45_VALIDATION_COMPLETE.md   # Issue #45 complete doc
 ```
 
 ---
 
 ## 📊 Sprint 1 & 2 Issues Status
 
-### ✅ Completed Issues (12 total - 62 pts)
+### ✅ Completed Issues (15 total)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -69,7 +75,9 @@ docs/issues/
 | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) | SSE Endpoint for Real-Time Progress | ✅ Complete | Yonatan | [📄 Docs](./040-sse-endpoint/README.md) | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) |
 | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) | Implement Supervisor Pattern | ✅ Complete (PR #57) | Yonatan | [📄 Docs](./041-supervisor-pattern/README.md) | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) |
 | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
-|| [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
+| [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) | Create SSE Client Hook [5 pts] | ✅ Complete | Arie | [📄 Docs](./043-sse-client-hook/ISSUE_43_VALIDATION_COMPLETE.md) | [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) |
+| [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) | Build ProgressTracker Component [5 pts] | ✅ Complete | Arie | [📄 Docs](./044-progress-tracker/ISSUE_44_VALIDATION_COMPLETE.md) | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) |
+| [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) | Build Analysis View Page [3 pts] | ✅ Complete | Arie | [📄 Docs](./045-analysis-view-page/ISSUE_45_VALIDATION_COMPLETE.md) | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) |
 
 ### 🔄 In Progress / Ready (4 total - 13 pts)
 
@@ -95,8 +103,42 @@ _No backend issues in progress_
 - **Arie Progress:** 17/23 pts (74%) - *6pts from Issue #32*
 
 **Sprint 2:**
-- **Completed:** 22 pts (Issues #39 ✅, #40 ✅, #41 ✅, #42 ✅ - PR #58 open)
+- **Completed:** 35 pts (Issues #39 ✅, #40 ✅, #41 ✅, #42 ✅, #43 ✅, #44 ✅, #45 ✅)
 - **Yonatan Progress:** 22/24 pts (92%)
+- **Arie Progress:** 13/13 pts (100%) ✅
+
+---
+
+## 🚀 Sprint 3: Artifact Viewer + Integration (16 pts)
+
+### Frontend Issues (Arie)
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) | Task 3.1 - Install Markdown Dependencies | 1 | 🎯 Ready | Arie | [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) |
+| [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) | Task 3.2 - MarkdownPreview Component | 5 | 🎯 Ready | Arie | [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) |
+| [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) | Task 3.3 - Artifact Download Handler | 2 | 🎯 Ready | Arie | [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) |
+| [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) | Task 3.4 - Preview Modal | 3 | 🎯 Ready | Arie | [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) |
+| [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) | Task 3.5 - Copy-to-Clipboard | 2 | 🎯 Ready | Arie | [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) |
+| [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) | Task 3.6 - Frontend-Backend Integration | 3 | ⏳ Blocked | Arie | [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) |
+
+### Backend Blockers
+
+| Endpoint | Description | Blocks | Owner |
+|----------|-------------|--------|-------|
+| `POST /api/v1/analyze` | Start new analysis | All Sprint 3 | Yonatan (Task 1.4.3) |
+| `GET /api/v1/artifacts/{id}` | Fetch artifact content | #61, #63 | Yonatan |
+| `GET /api/v1/artifacts/{id}/download` | Download artifact | #62 | Yonatan |
+
+### Already Implemented (Ready for Integration)
+
+| Component | Description | Status |
+|-----------|-------------|--------|
+| SSE Endpoint | `GET /api/v1/analyze/{id}/stream` | ✅ Ready |
+| LangGraph Workflow | Multi-agent analysis | ✅ Ready |
+| Supervisor Pattern | Agent coordination | ✅ Ready |
+| Frontend SSE Hook | `useSSE` hook | ✅ Ready |
+| ProgressTracker | Progress UI component | ✅ Ready |
 
 ---
 

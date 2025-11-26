@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import globals from 'globals'
+import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
@@ -28,11 +29,15 @@ export default tseslint.config(
       },
     },
     plugins: {
+      react: react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
       import: importPlugin,
     },
     rules: {
+      // React rules
+      'react/no-array-index-key': 'error',
+
       // React Hooks rules
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
@@ -148,6 +153,15 @@ export default tseslint.config(
     files: ['**/components/ui/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+
+  // Relaxed rules for test files
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    rules: {
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
     },
   }
 )

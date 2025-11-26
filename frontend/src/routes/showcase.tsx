@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { FeaturesShowcase } from '@/shared/components/features/FeaturesShowcase'
+import { FeaturesShowcase } from '@features/home/components/FeaturesShowcase'
 
 /**
  * Showcase Route - Component Testing & Documentation
