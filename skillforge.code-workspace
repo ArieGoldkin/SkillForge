@@ -1,0 +1,54 @@
+{
+  "folders": [
+    {
+      "name": "SkillForge",
+      "path": "."
+    },
+    {
+      "name": "Backend (Python)",
+      "path": "backend"
+    },
+    {
+      "name": "Frontend (React)",
+      "path": "frontend"
+    }
+  ],
+  "settings": {
+    // Python Configuration for Backend
+    "python.defaultInterpreterPath": "${workspaceFolder:Backend (Python)}/.venv/bin/python",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": [
+      "tests",
+      "-v",
+      "--tb=short"
+    ],
+    "python.testing.cwd": "${workspaceFolder:Backend (Python)}",
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+    // Ruff for Python
+    "ruff.enable": true,
+    "ruff.organizeImports": true,
+
+    // TypeScript/JavaScript for Frontend
+    "typescript.tsdk": "frontend/node_modules/typescript/lib",
+
+    // File associations
+    "files.associations": {
+      "*.py": "python",
+      "*.tsx": "typescriptreact",
+      "*.ts": "typescript"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "charliermarsh.ruff",
+      "vitest.explorer",
+      "bradlc.vscode-tailwindcss",
+      "dbaeumer.vscode-eslint",
+      "biomejs.biome"
+    ]
+  }
+}

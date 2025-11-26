@@ -1,11 +1,18 @@
 """Unit tests for analyze API endpoints."""
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+
+
+def create_mock_task():
+    """Create a mock asyncio.Task with proper methods."""
+    mock_task = MagicMock()
+    mock_task.add_done_callback = MagicMock()
+    return mock_task
 
 
 class TestCreateAnalysis:
@@ -27,9 +34,8 @@ class TestCreateAnalysis:
         # Setup mocks
         analysis_uuid = uuid.uuid4()
         mock_detect_type.return_value = "article"
-        # Mock create_task to do nothing (prevent background task from running)
-        mock_create_task.return_value = None
-        mock_create_task.side_effect = None
+        # Mock create_task to return a proper mock task (prevents background task from running)
+        mock_create_task.return_value = create_mock_task()
 
         # Create request
         request = AnalyzeRequest(url="https://example.com/article")
@@ -94,6 +100,7 @@ class TestCreateAnalysis:
         analysis_uuid = uuid.uuid4()
         mock_normalize_id.return_value = analysis_uuid
         mock_detect_type.return_value = "article"
+        mock_create_task.return_value = create_mock_task()
 
         request = AnalyzeRequest(
             url="https://example.com/article",
@@ -137,6 +144,8 @@ class TestCreateAnalysis:
         """Test content type detection for different URL types."""
         from app.api.v1.analyze import create_analysis
         from app.schemas.analyze import AnalyzeRequest
+
+        mock_create_task.return_value = create_mock_task()
 
         test_cases = [
             ("https://example.com/article", "article"),
@@ -191,6 +200,7 @@ class TestCreateAnalysis:
 
         analysis_uuid = uuid.uuid4()
         mock_detect_type.return_value = "article"
+        mock_create_task.return_value = create_mock_task()
 
         request = AnalyzeRequest(url="https://example.com/article")
 
@@ -200,3 +210,5 @@ class TestCreateAnalysis:
         assert response.sse_endpoint.startswith("/api/v1/analyze/")
         assert response.sse_endpoint.endswith("/stream")
         assert str(analysis_uuid) in response.sse_endpoint
+
+
