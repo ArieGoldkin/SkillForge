@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sse_starlette.sse import EventSourceResponse
 
-from app.api.v1.analyze import stream_analysis_progress
+from app.api.v1.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.event_broadcaster import broadcaster

@@ -15,6 +15,15 @@ sys.path.insert(0, str(backend_dir))
 from app.core.config import settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
 
+# Import all models for Alembic autogenerate support
+# This must be done AFTER importing Base to avoid circular imports
+# Models register themselves with Base.metadata when imported
+from app.models.agent_finding import AgentFinding  # noqa: E402, F401
+from app.models.analysis import Analysis  # noqa: E402, F401
+from app.models.artifact import Artifact  # noqa: E402, F401
+from app.models.progress import AnalysisProgress  # noqa: E402, F401
+from app.models.tutoring import TutoringMessage, TutoringSession  # noqa: E402, F401
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

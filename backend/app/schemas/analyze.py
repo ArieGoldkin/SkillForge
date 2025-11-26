@@ -26,6 +26,53 @@ class AnalyzeRequest(BaseModel):
     model_config = {"json_schema_extra": {"example": {"url": "https://example.com/article"}}}
 
 
+class AnalyzeCreateResponse(BaseModel):
+    """Response schema for creating a new analysis.
+
+    This schema is returned immediately after creating an analysis request.
+    It contains minimal information available at creation time.
+
+    Attributes:
+        analysis_id: Unique identifier for the analysis
+        url: Source URL that was analyzed
+        content_type: Detected content type (article, video, repo)
+        status: Analysis status (always "pending" at creation)
+        sse_endpoint: URL endpoint for streaming progress updates
+
+    Example:
+        ```python
+        response = AnalyzeCreateResponse(
+            analysis_id="123e4567-e89b-12d3-a456-426614174000",
+            url="https://example.com/article",
+            content_type="article",
+            status="pending",
+            sse_endpoint="/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+        )
+        ```
+
+    """
+
+    analysis_id: str = Field(..., description="Unique identifier for the analysis")
+    url: str = Field(..., description="Source URL that was analyzed")
+    content_type: str = Field(..., description="Detected content type (article, video, repo)")
+    status: str = Field(
+        default="pending", description="Analysis status (pending, running, complete, failed)"
+    )
+    sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
+                "url": "https://example.com/article",
+                "content_type": "article",
+                "status": "pending",
+                "sse_endpoint": "/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+            }
+        }
+    }
+
+
 class AnalyzeResponse(BaseModel):
     """Response schema for analysis results.
 

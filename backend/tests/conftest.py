@@ -16,13 +16,25 @@ from app.main import app
 from app.models.analysis import Analysis
 from app.services.event_broadcaster import broadcaster
 
-# Load .env.test if it exists for integration tests
-# This allows tests to use real API keys from .env.test
-TEST_ENV_FILE = Path(__file__).parent.parent / ".env.test"
-if TEST_ENV_FILE.exists():
-    # Set environment variable to load .env.test
-    # The Settings class will detect this and load .env.test
-    os.environ["ENV_FILE"] = str(TEST_ENV_FILE)
+# Load .env file for tests (same as development)
+# This allows tests to use the same configuration as the running application
+# We use python-dotenv to explicitly load the file to ensure VS Code test explorer
+# and pytest both load environment variables correctly
+ENV_FILE = Path(__file__).parent.parent / ".env"
+if ENV_FILE.exists():
+    # Explicitly load .env using python-dotenv for VS Code test explorer compatibility
+    try:
+        from dotenv import load_dotenv
+
+        # Load .env file explicitly (don't override existing env vars)
+        load_dotenv(dotenv_path=ENV_FILE, override=False)
+    except ImportError:
+        # If python-dotenv is not available, fall back to setting ENV_FILE
+        # The Settings class will detect this and load .env
+        os.environ["ENV_FILE"] = str(ENV_FILE)
+
+    # Set environment variable to load .env (for Settings class)
+    os.environ["ENV_FILE"] = str(ENV_FILE)
     # Also set ENVIRONMENT=development for test mode
     # (Settings validation requires development/staging/production)
     os.environ.setdefault("ENVIRONMENT", "development")
@@ -93,10 +105,149 @@ def ensure_llm_model_set(monkeypatch):
 
 @pytest.fixture
 def requires_database():
-    """Skip test if DATABASE_URL is not configured."""
+    """Skip test if DATABASE_URL is not configured.
+
+    Note: We don't check if database is reachable here to avoid hanging.
+    The pool_timeout in engine config should prevent hanging if database
+    is unreachable. Tests will fail quickly with timeout errors rather than
+    hanging indefinitely.
+    """
     settings = get_settings()
     if not settings.DATABASE_URL:
         pytest.skip("DATABASE_URL not configured")
+
+
+async def get_test_session(timeout: float | None = None) -> AsyncSession:
+    """Create a test database session with timeout protection.
+
+    Wraps AsyncSessionLocal() with timeout to prevent hanging if database
+    is unreachable or connection pool is exhausted.
+
+    Args:
+        timeout: Timeout in seconds (defaults to DB_TIMEOUT)
+
+    Returns:
+        AsyncSession with timeout protection (caller must close it)
+
+    Raises:
+        asyncio.TimeoutError: If session creation times out
+
+    """
+    import asyncio
+
+    from app.core.constants import DB_TIMEOUT
+
+    if timeout is None:
+        timeout = DB_TIMEOUT
+
+    # Create session with timeout protection
+    # AsyncSessionLocal() returns an AsyncSession which is a context manager
+    # We need to enter it with timeout protection
+    session = AsyncSessionLocal()
+    enter_task = asyncio.create_task(session.__aenter__())
+    try:
+        await asyncio.wait_for(enter_task, timeout=timeout)
+        return session
+    except TimeoutError:
+        enter_task.cancel()
+        try:
+            await enter_task
+        except asyncio.CancelledError:
+            pass
+        # Try to close the session if entry failed
+        try:
+            await session.__aexit__(None, None, None)
+        except Exception:
+            pass
+        raise
+
+
+class TimeoutSession:
+    """Context manager for timeout-protected database sessions.
+
+    Usage:
+        async with TimeoutSession(timeout=5.0) as session:
+            # use session
+    """
+
+    def __init__(self, timeout: float | None = None):
+        """Initialize timeout session context manager.
+
+        Args:
+            timeout: Timeout in seconds (defaults to DB_TIMEOUT)
+
+        """
+        self.timeout = timeout
+        self.session: AsyncSession | None = None
+
+    async def __aenter__(self) -> AsyncSession:
+        """Enter context manager and create session with timeout."""
+        self.session = await get_test_session(timeout=self.timeout)
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager and close session."""
+        if self.session is not None:
+            try:
+                await self.session.__aexit__(exc_type, exc_val, exc_tb)
+            except Exception:
+                pass
+
+
+@pytest_asyncio.fixture
+async def check_database_available(requires_database):
+    """Check if database is reachable and skip test if not available.
+
+    Performs a quick connectivity check with 1-second timeout.
+    Skips the test gracefully if database is unreachable.
+    """
+    import asyncio
+
+    from sqlalchemy import text
+
+    # Quick connectivity check with short timeout
+    try:
+        # Use timeout-protected session creation
+        session = await get_test_session(timeout=1.0)
+        try:
+            # Try a simple query with short timeout
+            query_task = asyncio.create_task(session.execute(text("SELECT 1")))
+            await asyncio.wait_for(query_task, timeout=1.0)
+        finally:
+            # Ensure session is closed
+            try:
+                await session.__aexit__(None, None, None)
+            except Exception:
+                pass
+    except (TimeoutError, Exception) as e:
+        # Skip test if database is unreachable
+        pytest.skip(f"Database not available: {e}")
+
+
+async def _dispose_engine_safely(timeout: float) -> None:
+    """Dispose engine connections with timeout protection.
+
+    Uses non-blocking approach to prevent hanging if database is unreachable.
+    """
+    import asyncio
+
+    # Create a task for dispose operation
+    dispose_task = asyncio.create_task(engine.dispose())
+
+    try:
+        # Wait for dispose with timeout
+        await asyncio.wait_for(dispose_task, timeout=timeout)
+    except TimeoutError:
+        # Cancel the dispose task if it times out
+        dispose_task.cancel()
+        try:
+            await dispose_task
+        except asyncio.CancelledError:
+            pass
+        # Continue anyway - connections will be cleaned up later
+    except Exception:
+        # If dispose fails for any reason, continue anyway
+        pass
 
 
 @pytest_asyncio.fixture
@@ -106,12 +257,18 @@ async def reset_engine_connections():
     This ensures engine connections are created in the test's event loop,
     preventing 'attached to different loop' errors. Use this fixture for
     tests that use database connections and have event loop issues.
+
+    Uses non-blocking disposal to prevent hanging if database is unreachable.
     """
+    from app.core.constants import DB_TIMEOUT
+
     # Dispose existing connections before test
-    await engine.dispose()
+    await _dispose_engine_safely(DB_TIMEOUT)
+
     yield
+
     # Dispose after test to clean up
-    await engine.dispose()
+    await _dispose_engine_safely(DB_TIMEOUT)
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -127,20 +284,44 @@ async def cleanup_event_broadcaster():
 
 
 @pytest_asyncio.fixture
-async def db_session(requires_database, reset_engine_connections) -> AsyncGenerator[AsyncSession]:
+async def db_session(
+    requires_database, reset_engine_connections, check_database_available
+) -> AsyncGenerator[AsyncSession]:
     """Create a test database session with automatic rollback.
 
     Yields an async session and rolls back all changes after test.
-    Requires DATABASE_URL to be configured.
+    Requires DATABASE_URL to be configured and database to be reachable.
     reset_engine_connections ensures connections are in the test's event loop.
+    check_database_available ensures database is reachable before creating session.
     """
-    async with AsyncSessionLocal() as session:
+    from app.core.constants import DB_TIMEOUT
+
+    # Create session with timeout protection
+    try:
+        session = await get_test_session(timeout=DB_TIMEOUT)
+    except TimeoutError:
+        pytest.skip("Database connection timeout - database may be unreachable")
+
+    try:
         # Use nested transaction for automatic rollback
         transaction = await session.begin()
         try:
             yield session
         finally:
-            await transaction.rollback()
+            # Only rollback if transaction is still active
+            if transaction.is_active:
+                try:
+                    await transaction.rollback()
+                except Exception:
+                    # Transaction may already be closed, ignore
+                    pass
+    finally:
+        # Ensure session is properly closed
+        try:
+            await session.close()
+        except Exception:
+            # Session may already be closed, ignore
+            pass
 
 
 @pytest_asyncio.fixture

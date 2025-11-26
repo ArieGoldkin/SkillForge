@@ -45,16 +45,13 @@ Note:
 
 """
 
+import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.core.constants import (
-    DB_MAX_OVERFLOW,
-    DB_POOL_RECYCLE,
-    DB_POOL_SIZE,
-)
+from app.core.constants import DB_MAX_OVERFLOW, DB_POOL_RECYCLE, DB_POOL_SIZE, DB_TIMEOUT
 
 
 def get_async_database_url() -> str:
@@ -68,14 +65,32 @@ def get_async_database_url() -> str:
     return settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
-# Create async engine
+# Create async engine with connection timeout to prevent hanging
+# connect_args sets asyncpg connection timeout (in seconds)
+# pool_timeout prevents waiting indefinitely for a connection from the pool
+# Note: asyncpg uses 'timeout' for connection timeout, 'command_timeout' for query timeout
+# Disable pool_pre_ping in test mode to prevent hanging when database is unreachable
+# (tests will handle connection errors gracefully)
+# Use smaller connection pool in test mode to prevent exhaustion
+_is_test_mode = os.getenv("PYTEST_CURRENT_TEST") is not None
+_test_pool_size = 1  # Minimal pool size for tests to prevent exhaustion
+_test_max_overflow = 1  # Minimal overflow for tests
+
 engine = create_async_engine(
     get_async_database_url(),
     echo=settings.ENVIRONMENT == "development",  # Log SQL in development
-    pool_size=DB_POOL_SIZE,
-    max_overflow=DB_MAX_OVERFLOW,
+    pool_size=_test_pool_size if _is_test_mode else DB_POOL_SIZE,
+    max_overflow=_test_max_overflow if _is_test_mode else DB_MAX_OVERFLOW,
     pool_recycle=DB_POOL_RECYCLE,
-    pool_pre_ping=True,  # Verify connections before using
+    pool_pre_ping=not _is_test_mode,  # Disable in tests to prevent hanging
+    pool_timeout=DB_TIMEOUT,  # Timeout when getting connection from pool
+    connect_args={
+        "timeout": DB_TIMEOUT,  # Connection timeout in seconds (asyncpg parameter)
+        "command_timeout": DB_TIMEOUT,  # Query execution timeout in seconds
+        "server_settings": {
+            "application_name": "skillforge-backend",
+        },
+    },
 )
 
 # Create async session factory
@@ -94,12 +109,18 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
     Yields an async database session and ensures it's properly closed
     after the request completes.
 
+    The pool_timeout in engine configuration (DB_TIMEOUT) should prevent
+    hanging when getting connections from the pool. If a connection cannot
+    be obtained within the timeout, SQLAlchemy will raise an exception.
+
     Usage:
         @app.post("/items")
         async def create_item(db: AsyncSession = Depends(get_db)):
             # Use db session here
             pass
     """
+    # pool_timeout in engine config should prevent hanging
+    # SQLAlchemy will raise an exception if connection cannot be obtained
     async with AsyncSessionLocal() as session:
         try:
             yield session

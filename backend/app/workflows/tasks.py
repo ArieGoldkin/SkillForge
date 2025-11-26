@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 from langsmith import traceable
 
 if TYPE_CHECKING:
-    from typing import BaseException
+    pass  # BaseException is a builtin, no import needed
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EmbeddingVector

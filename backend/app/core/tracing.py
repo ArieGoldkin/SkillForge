@@ -130,7 +130,7 @@ T = TypeVar("T")  # Type variable for validation result
 JSONValue = str | int | float | bool | dict[str, "JSONValue"] | list["JSONValue"] | None
 
 
-async def trace_guardrail[T](  # noqa: UP047
+async def trace_guardrail[T](
     name: str,
     schema_name: str,
     inputs: dict[str, JSONValue],

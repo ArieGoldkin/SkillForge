@@ -4,168 +4,73 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.nodes.supervisor import _parse_tool_calls_from_messages, supervisor_route
+from app.workflows.nodes.supervisor import _get_content_for_supervisor, supervisor_route
+from app.workflows.nodes.supervisor_schema import AgentSelection
 
 
 @pytest.fixture
-def mock_agent_response_with_tool_calls():
-    """Mock agent response with tool calls."""
-    return {
-        "messages": [
-            {
-                "id": "msg_1",
-                "type": "ai",
-                "tool_calls": [
-                    {
-                        "name": "tech_comparator_tool",
-                        "args": {"content": "test content"},
-                        "id": "call_1",
-                    },
-                    {
-                        "name": "security_auditor_tool",
-                        "args": {"content": "test content"},
-                        "id": "call_2",
-                    },
-                ],
-            }
-        ]
-    }
-
-
-@pytest.fixture
-def mock_agent_response_no_tool_calls():
-    """Mock agent response without tool calls."""
-    return {
-        "messages": [
-            {
-                "id": "msg_1",
-                "type": "ai",
-                "content": "No agents needed for this content.",
-            }
-        ]
-    }
-
-
-@pytest.fixture
-def mock_ai_message_with_tool_calls():
-    """Create a mock AIMessage with tool calls."""
-    from langchain_core.messages import AIMessage
-
-    return AIMessage(
-        content="",
-        tool_calls=[
-            {
-                "name": "tech_comparator_tool",
-                "args": {"content": "test"},
-                "id": "call_1",
-            },
-            {
-                "name": "implementation_planner_tool",
-                "args": {"content": "test"},
-                "id": "call_2",
-            },
-        ],
+def mock_agent_selection():
+    """Mock AgentSelection with selected agents."""
+    return AgentSelection(
+        agents=["tech_comparator", "security_auditor"],
+        reasoning="Tech content needs comparison and security analysis",
+        confidence=0.9,
     )
 
 
 @pytest.fixture
-def mock_ai_message_no_tool_calls():
-    """Create a mock AIMessage without tool calls."""
-    from langchain_core.messages import AIMessage
-
-    return AIMessage(content="No agents needed.")
-
-
-def test_parse_tool_calls_from_ai_message(mock_ai_message_with_tool_calls):
-    """Test parsing tool calls from AIMessage."""
-    messages = [mock_ai_message_with_tool_calls]
-    selected_agents = _parse_tool_calls_from_messages(messages)
-
-    assert len(selected_agents) == 2
-    assert "tech_comparator" in selected_agents
-    assert "implementation_planner" in selected_agents
+def mock_agent_selection_empty():
+    """Mock AgentSelection with no agents."""
+    return AgentSelection(
+        agents=[],
+        reasoning="Simple content doesn't need analysis",
+        confidence=0.5,
+    )
 
 
-def test_parse_tool_calls_no_tool_calls(mock_ai_message_no_tool_calls):
-    """Test parsing when no tool calls are present."""
-    messages = [mock_ai_message_no_tool_calls]
-    selected_agents = _parse_tool_calls_from_messages(messages)
-
-    assert len(selected_agents) == 0
-
-
-def test_parse_tool_calls_empty_messages():
-    """Test parsing with empty messages list."""
-    selected_agents = _parse_tool_calls_from_messages([])
-    assert len(selected_agents) == 0
+def test_get_content_for_supervisor_small():
+    """Test dynamic content sizing for small content (<5K)."""
+    content = "x" * 3000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 3000  # All content used
 
 
-def test_parse_tool_calls_all_agents():
-    """Test parsing all 8 agent tool calls."""
-    from langchain_core.messages import AIMessage
-
-    messages = [
-        AIMessage(
-            content="",
-            tool_calls=[
-                {"name": "tech_comparator_tool", "args": {}, "id": f"call_{i}"} for i in range(8)
-            ]
-            + [
-                {"name": "security_auditor_tool", "args": {}, "id": "call_9"},
-                {"name": "integration_feasibility_tool", "args": {}, "id": "call_10"},
-                {"name": "implementation_planner_tool", "args": {}, "id": "call_11"},
-                {"name": "performance_analyst_tool", "args": {}, "id": "call_12"},
-                {"name": "code_quality_critic_tool", "args": {}, "id": "call_13"},
-                {"name": "trend_validator_tool", "args": {}, "id": "call_14"},
-                {"name": "dependency_mapper_tool", "args": {}, "id": "call_15"},
-            ],
-        )
-    ]
-
-    selected_agents = _parse_tool_calls_from_messages(messages)
-    assert len(selected_agents) == 8
-    assert "tech_comparator" in selected_agents
-    assert "security_auditor" in selected_agents
-    assert "integration_feasibility" in selected_agents
-    assert "implementation_planner" in selected_agents
-    assert "performance_analyst" in selected_agents
-    assert "code_quality_critic" in selected_agents
-    assert "trend_validator" in selected_agents
-    assert "dependency_mapper" in selected_agents
+def test_get_content_for_supervisor_medium():
+    """Test dynamic content sizing for medium content (5K-15K)."""
+    content = "x" * 12000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 10000  # Truncated to 10K
 
 
-def _create_mock_agent_with_streaming(messages: list) -> MagicMock:
-    """Create a mock agent that supports astream() for streaming."""
+def test_get_content_for_supervisor_large():
+    """Test dynamic content sizing for large content (15K+)."""
+    content = "x" * 25000
+    result = _get_content_for_supervisor(content, "article")
+    # Should be 10K + 2K middle section + separator text
+    assert len(result) > 10000
+    assert len(result) <= 15000
 
-    async def mock_astream_generator(*args, **kwargs):
-        yield {"messages": messages}
 
-    class MockAsyncIterator:
-        def __init__(self, messages):
-            self.messages = messages
-
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            if not hasattr(self, "_yielded"):
-                self._yielded = True
-                return {"messages": self.messages}
-            raise StopAsyncIteration
-
-    mock_agent = MagicMock()
-    mock_agent.astream = MagicMock(return_value=MockAsyncIterator(messages))
-    mock_agent.invoke = MagicMock(return_value={"messages": messages})  # Fallback
-    return mock_agent
+def test_get_content_for_supervisor_very_large():
+    """Test dynamic content sizing for very large content (>50K)."""
+    content = "x" * 60000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 12000  # Truncated to 12K
 
 
 @pytest.mark.asyncio
-async def test_supervisor_route_success(mock_ai_message_with_tool_calls):
+async def test_supervisor_route_success(mock_agent_selection):
     """Test supervisor_route with successful agent selection."""
-    mock_agent = _create_mock_agent_with_streaming([mock_ai_message_with_tool_calls])
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor._get_supervisor_agent", return_value=mock_agent),
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
             "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
@@ -182,10 +87,14 @@ async def test_supervisor_route_success(mock_ai_message_with_tool_calls):
         assert "agents" in decision
         assert "priority" in decision
         assert "reasoning" in decision
+        assert "confidence" in decision
 
         # Verify agents were selected
-        assert len(decision["agents"]) > 0
+        assert len(decision["agents"]) == 2
+        assert "tech_comparator" in decision["agents"]
+        assert "security_auditor" in decision["agents"]
         assert len(decision["priority"]) == len(decision["agents"])
+        assert decision["confidence"] == 0.9
 
         # Verify SSE events were emitted
         assert mock_emit.call_count >= 2  # Start and complete events
@@ -195,12 +104,18 @@ async def test_supervisor_route_success(mock_ai_message_with_tool_calls):
 
 
 @pytest.mark.asyncio
-async def test_supervisor_route_no_agents_selected(mock_ai_message_no_tool_calls):
+async def test_supervisor_route_no_agents_selected(mock_agent_selection_empty):
     """Test supervisor_route when no agents are selected."""
-    mock_agent = _create_mock_agent_with_streaming([mock_ai_message_no_tool_calls])
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_empty)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor._get_supervisor_agent", return_value=mock_agent),
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
             "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
@@ -216,6 +131,7 @@ async def test_supervisor_route_no_agents_selected(mock_ai_message_no_tool_calls
         decision = result["supervisor_decision"]
         assert decision["agents"] == []
         assert decision["priority"] == []
+        assert decision["confidence"] == 0.5
 
         # Verify complete event was emitted with agent_count=0
         complete_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "complete"]
@@ -227,16 +143,20 @@ async def test_supervisor_route_no_agents_selected(mock_ai_message_no_tool_calls
 @pytest.mark.asyncio
 async def test_supervisor_route_error_handling():
     """Test supervisor_route handles errors gracefully."""
-    mock_agent = MagicMock()
-    mock_agent.astream = MagicMock(side_effect=Exception("Agent invocation failed"))
-    mock_agent.invoke = MagicMock(side_effect=Exception("Agent invocation failed"))
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(side_effect=Exception("Model invocation failed"))
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor._get_supervisor_agent", return_value=mock_agent),
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
             "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
-        pytest.raises(Exception, match="Agent invocation failed"),
+        pytest.raises(Exception, match="Model invocation failed"),
     ):
         await supervisor_route(
             content="Test content",
@@ -253,55 +173,63 @@ async def test_supervisor_route_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_supervisor_route_content_truncation():
-    """Test that content is truncated to 2000 chars for prompt efficiency."""
-    mock_ai_message = MagicMock()
-    mock_ai_message.tool_calls = []
-    mock_agent = _create_mock_agent_with_streaming([mock_ai_message])
+async def test_supervisor_route_content_dynamic_sizing():
+    """Test that content is dynamically sized based on length."""
+    mock_selection = AgentSelection(
+        agents=["tech_comparator"],
+        reasoning="Test",
+        confidence=0.8,
+    )
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
 
-    # Create content longer than 2000 chars
-    long_content = "x" * 3000
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Create content of different sizes
+    small_content = "x" * 3000  # <5K: use all
+    medium_content = "x" * 12000  # 5K-15K: use 10K
+    large_content = "x" * 25000  # 15K+: use 12K-15K
 
     with (
-        patch("app.workflows.nodes.supervisor._get_supervisor_agent", return_value=mock_agent),
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
+        # Test small content (uses all)
         await supervisor_route(
-            content=long_content,
+            content=small_content,
             content_type="article",
-            analysis_id="test-analysis-id",
+            analysis_id="test-small",
         )
+        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        assert len(call_args) > 3000  # Includes prompt + all content
 
-        # Verify agent was called with truncated content
-        # astream is called with input_messages
-        assert mock_agent.astream.called
-        call_args = mock_agent.astream.call_args
-        if call_args:
-            input_messages = call_args[0][0] if call_args[0] else {}
-            messages = input_messages.get("messages", [])
-            if messages:
-                user_message = messages[0].get("content", "")
-                # Content should be truncated to 2000 chars (plus header text)
-                assert "Content Type: article" in user_message
-                assert len(user_message) < 3000  # Should be truncated
+        # Test medium content (truncated to 10K)
+        await supervisor_route(
+            content=medium_content,
+            content_type="article",
+            analysis_id="test-medium",
+        )
+        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        # Should contain ~10K chars of content (plus prompt)
+        assert "Content Type: article" in call_args
 
 
 @pytest.mark.asyncio
-async def test_supervisor_route_decision_structure():
+async def test_supervisor_route_decision_structure(mock_agent_selection):
     """Test that supervisor decision has correct structure."""
-    from langchain_core.messages import AIMessage
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
 
-    mock_ai_message = AIMessage(
-        content="",
-        tool_calls=[
-            {"name": "tech_comparator_tool", "args": {}, "id": "call_1"},
-            {"name": "security_auditor_tool", "args": {}, "id": "call_2"},
-        ],
-    )
-    mock_agent = _create_mock_agent_with_streaming([mock_ai_message])
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor._get_supervisor_agent", return_value=mock_agent),
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(
@@ -315,6 +243,8 @@ async def test_supervisor_route_decision_structure():
         assert isinstance(decision["agents"], list)
         assert isinstance(decision["priority"], list)
         assert isinstance(decision["reasoning"], str)
+        assert isinstance(decision["confidence"], float)
         assert len(decision["agents"]) == len(decision["priority"])
-        # All priorities should be 0.9 (simplified)
-        assert all(p == 0.9 for p in decision["priority"])
+        # Priorities should match confidence
+        assert all(p == decision["confidence"] for p in decision["priority"])
+        assert decision["confidence"] == 0.9

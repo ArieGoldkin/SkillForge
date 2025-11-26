@@ -146,9 +146,9 @@ async def test_supervisor_route_different_content_types(requires_openai) -> None
 @pytest.mark.external
 @pytest.mark.timeout(60)
 async def test_supervisor_route_long_content(requires_openai) -> None:
-    """Test supervisor handles long content (should truncate to 2000 chars)."""
-    # Create content longer than 2000 chars
-    long_content = "This is a long article. " * 200  # ~5000 chars
+    """Test supervisor handles long content (should use dynamic sizing)."""
+    # Create content longer than 15K chars (should use 12K-15K)
+    long_content = "This is a long article. " * 1000  # ~25,000 chars
 
     result = await asyncio.wait_for(
         supervisor_route(
@@ -156,12 +156,13 @@ async def test_supervisor_route_long_content(requires_openai) -> None:
             content_type="article",
             analysis_id="test-supervisor-long",
         ),
-        timeout=45.0,
+        timeout=60.0,  # Increased timeout for large content
     )
 
-    # Should still work with truncated content
+    # Should still work with dynamically sized content
     decision = result["supervisor_decision"]
     assert "agents" in decision
+    assert "confidence" in decision
 
 
 @pytest.mark.asyncio

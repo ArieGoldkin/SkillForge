@@ -270,11 +270,15 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
                         # Preserve chunk with structured_response,
                         # even if later chunks don't have it
                         if isinstance(chunk, dict) and chunk.get("structured_response"):
-                            # Found structured_response - preserve this chunk
-                            # Continue streaming for progress updates, but keep this result
-                            # This handles cases where structured_response appears
-                            # in intermediate chunks
+                            # Found structured_response - preserve this chunk and exit
+                            # The agent has completed its task, no need to continue streaming
                             final_result = chunk
+                            logger.debug(
+                                "agent_structured_response_found",
+                                agent_type=agent_type,
+                                analysis_id=analysis_id,
+                            )
+                            break  # Exit streaming loop - we have the result
                         elif final_result is None or not (
                             isinstance(final_result, dict)
                             and final_result.get("structured_response")

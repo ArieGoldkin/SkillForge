@@ -286,7 +286,7 @@ class Settings(BaseSettings):
         # Skip validation in development if API key is not set (allows local dev without API keys)
         if self.is_development():
             return self
-        
+
         provider = self.resolved_llm_provider()
         api_field = LLM_PROVIDER_API_FIELDS.get(provider)
         if api_field and not getattr(self, api_field):

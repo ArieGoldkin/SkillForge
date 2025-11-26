@@ -158,8 +158,9 @@ curl -X POST http://localhost:8500/api/v1/analyze \
 ## Known Issues
 
 1. **No API Endpoint to Trigger Workflow:**
-   - Workflow exists but no `POST /api/v1/analyze` endpoint yet
-   - Need to create endpoint that triggers workflow and returns analysis_id
+   - ✅ `POST /api/v1/analyze` endpoint implemented
+   - ✅ Endpoint triggers workflow and returns analysis_id
+   - ✅ SSE endpoint streams progress events
 
 2. **ASGITransport Limitation:**
    - `httpx.ASGITransport` doesn't support streaming responses

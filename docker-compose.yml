@@ -22,6 +22,8 @@ services:
       dockerfile: Dockerfile
       target: runtime
     container_name: skillforge-backend-dev
+    env_file:
+      - ./backend/.env
     environment:
       ENVIRONMENT: development
       LOG_LEVEL: DEBUG
@@ -30,17 +32,8 @@ services:
       HOST: 0.0.0.0
       PORT: 8500
       CORS_ORIGINS: '["http://localhost:5173"]'
-      # LLM configuration (OpenAI)
-      LLM_MODEL: ${LLM_MODEL:-gpt-5-mini}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      # Optional: Other provider keys if needed
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
-      XAI_API_KEY: ${XAI_API_KEY:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      # Embedding & Content Extraction
-      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
-      JINA_API_KEY: ${JINA_API_KEY:-}
+      # Note: DATABASE_URL is overridden above for container-internal connection
+      # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
     ports:
       - "8500:8500"
     depends_on:
