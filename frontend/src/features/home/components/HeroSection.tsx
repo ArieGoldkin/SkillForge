@@ -1,9 +1,10 @@
 import { FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { Input } from '@/shared/components/ui/input'
+import { Badge } from '@shared/components/ui/badge'
+import { Button } from '@shared/components/ui/button'
+import { Input } from '@shared/components/ui/input'
+
+import { cn } from '@lib/utils'
 
 type ContentType = 'article' | 'video' | 'repository'
 

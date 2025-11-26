@@ -1,9 +1,9 @@
 import { useState } from 'react'
 
+import type { TutoringMessage } from '@app-types/api'
 import { useQuery } from '@tanstack/react-query'
 
-import { mockTutoringAPI } from '@/services/mock.service'
-import type { TutoringMessage } from '@/types/api'
+import { mockTutoringAPI } from '@services/mock.service'
 
 export function useTutoringMessages(sessionId: string) {
   const [messages, setMessages] = useState<TutoringMessage[]>([])

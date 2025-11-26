@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react'
 
+import type { Analysis } from '@app-types/api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-
-import type { Analysis } from '@/types/api'
 
 import { useAnalysis } from '../useAnalysis'
 

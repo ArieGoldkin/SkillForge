@@ -1,1 +1,1 @@
-export { Navigation } from './Navigation'
+export { Navigation, NavigationActions, NavigationLinks } from './navigation'

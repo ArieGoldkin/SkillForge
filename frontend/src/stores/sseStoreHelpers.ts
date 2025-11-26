@@ -3,8 +3,8 @@
  * Connection management and event handling utilities
  */
 
-import type { SSEEvent } from '@/types/sse'
-import { isCompleteEvent, isErrorEvent } from '@/types/sse'
+import type { SSEEvent } from '@app-types/sse'
+import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
 // Connection management (shared state)
 let eventSource: EventSource | null = null

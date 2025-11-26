@@ -17,11 +17,11 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
       "@features/*": ["./src/features/*"],
       "@shared/*": ["./src/shared/*"],
-      "@store/*": ["./src/store/*"],
-      "@types/*": ["./src/types/*"],
+      "@stores/*": ["./src/stores/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@app-types/*": ["./src/types/*"],
       "@lib/*": ["./src/lib/*"],
       "@services/*": ["./src/services/*"],
       "@router/*": ["./src/router/*"]

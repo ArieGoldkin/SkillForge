@@ -3,15 +3,14 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { mockAnalyzeAPI } from '@/services/mock.service'
-import type { SkillFilters as SkillFiltersType } from '@/shared/components/features/library/SkillFilters'
-import { SkillSearch } from '@/shared/components/features/library/SkillSearch'
+import { mockAnalyzeAPI } from '@services/mock.service'
 
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
 import { LibraryHeader } from './components/LibraryHeader'
-import { useFilteredSkills } from './components/useFilteredSkills'
-import { useSkillsData } from './components/useSkillsData'
+import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
+import { SkillSearch } from './components/SkillSearch'
+import { useFilteredSkills, useSkillsData } from './hooks'
 
 export default function Library() {
   const navigate = useNavigate()

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { useSSEStore } from '@/stores/sseStore'
+import { useSSEStore } from '@stores/sseStore'
 
 /**
  * useSSE - Convenience hook for SSE connection with lifecycle management

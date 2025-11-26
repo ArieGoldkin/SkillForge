@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
-import { mockTutoringAPI } from '@/services/mock.service'
+import { mockTutoringAPI } from '@services/mock.service'
 
 import { InputArea } from './components/InputArea'
 import { LoadingState } from './components/LoadingState'

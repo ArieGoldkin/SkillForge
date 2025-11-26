@@ -1,8 +1,7 @@
+import type { SSEProgressEvent } from '@app-types/sse'
+import { useSSEStore } from '@stores/sseStore'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useSSEStore } from '@/stores/sseStore'
-import type { SSEProgressEvent } from '@/types/sse'
 
 import { useSSE } from '../useSSE'
 

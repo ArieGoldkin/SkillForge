@@ -1,7 +1,7 @@
 # Frontend Architecture - SkillForge
 
-**Version:** 1.1
-**Last Updated:** November 23, 2025
+**Version:** 2.0
+**Last Updated:** November 26, 2025
 **Stack:** React 19 + Vite + TypeScript + Tailwind CSS + TanStack Router
 
 ---
@@ -25,33 +25,153 @@ frontend/src/
 │   ├── home/
 │   │   ├── index.ts             # Export { Home }
 │   │   ├── Home.tsx             # Main component (max 180 lines)
-│   │   ├── components/          # Nested components
-│   │   ├── hooks/               # Feature-specific hooks
-│   │   └── types.ts             # Feature-specific types
+│   │   └── components/          # Nested components with barrel exports
+│   │       ├── index.ts
+│   │       ├── HeroSection.tsx
+│   │       ├── FeaturesSection.tsx
+│   │       ├── HowItWorksSection.tsx
+│   │       ├── FeaturesShowcase.tsx
+│   │       └── showcase-data.ts
+│   │
 │   ├── analysis/
+│   │   ├── index.ts
+│   │   ├── AnalyzeResult.tsx
+│   │   ├── components/          # Grouped by domain
+│   │   │   ├── index.ts         # Re-exports all component groups
+│   │   │   ├── progress/        # Progress-related components
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── ProgressTracker.tsx
+│   │   │   │   ├── ProgressColumn.tsx
+│   │   │   │   ├── StageItem.tsx
+│   │   │   │   ├── ConnectionStatus.tsx
+│   │   │   │   ├── constants.ts
+│   │   │   │   ├── sseNormalizer.ts
+│   │   │   │   └── __tests__/
+│   │   │   ├── activity/        # Agent activity components
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── ActivityColumn.tsx
+│   │   │   │   └── AgentActivityFeed.tsx
+│   │   │   ├── steps/           # Analysis steps components
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── AnalysisSteps.tsx
+│   │   │   │   ├── AnalysisStepList.tsx
+│   │   │   │   └── AnalysisProgressCard.tsx
+│   │   │   └── states/          # Loading/error states
+│   │   │       ├── index.ts
+│   │   │       ├── LoadingState.tsx
+│   │   │       └── NotFoundState.tsx
+│   │   └── hooks/
+│   │       └── useMockTimestamps.ts
+│   │
+│   ├── library/
+│   │   ├── index.ts
+│   │   ├── Library.tsx
+│   │   ├── components/
+│   │   │   ├── index.ts
+│   │   │   ├── SkillCard/       # Complex component with subfiles
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── SkillCard.tsx        # Main component
+│   │   │   │   ├── SkillCardThumbnail.tsx
+│   │   │   │   ├── SkillCardMetadata.tsx
+│   │   │   │   ├── SkillCardProgress.tsx
+│   │   │   │   ├── SkillCardTags.tsx
+│   │   │   │   └── types.ts
+│   │   │   ├── SkillFilters/    # Filter components with co-located hooks
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── SkillFilters.tsx
+│   │   │   │   ├── FilterSection.tsx
+│   │   │   │   ├── DifficultyFilter.tsx
+│   │   │   │   ├── StatusFilter.tsx
+│   │   │   │   ├── TagFilter.tsx
+│   │   │   │   ├── DurationFilter.tsx
+│   │   │   │   ├── CheckboxItem.tsx
+│   │   │   │   └── hooks/       # Co-located hooks
+│   │   │   │       ├── index.ts
+│   │   │   │       ├── useSkillFilters.ts
+│   │   │   │       └── __tests__/
+│   │   │   ├── SkillGridView.tsx
+│   │   │   ├── SkillSearch.tsx
+│   │   │   └── ContentGrid.tsx
+│   │   └── hooks/               # Feature-level hooks
+│   │       ├── index.ts
+│   │       ├── useFilteredSkills.ts
+│   │       ├── useSkillsData.ts
+│   │       └── __tests__/
+│   │
 │   ├── tutor/
-│   └── library/
+│   │   ├── index.ts
+│   │   ├── TutorSession.tsx
+│   │   ├── components/
+│   │   │   ├── index.ts
+│   │   │   ├── ChatMessage.tsx
+│   │   │   ├── ChatInput.tsx
+│   │   │   ├── CodeBlock.tsx
+│   │   │   ├── SocraticPrompt.tsx
+│   │   │   └── MessagesArea.tsx
+│   │   └── hooks/
+│   │       └── __tests__/
+│   │
+│   └── not-found/
+│       ├── index.ts
+│       └── NotFound.tsx
 │
 ├── routes/                       # TanStack Router - file-based routes
 │   ├── __root.tsx               # Root layout (Navigation + theme)
 │   ├── index.tsx                # / (Home)
 │   ├── library.tsx              # /library
 │   ├── analyze.$id.tsx          # /analyze/:id (typed param)
-│   └── tutor.$sessionId.tsx     # /tutor/:sessionId (typed param)
+│   ├── tutor.$sessionId.tsx     # /tutor/:sessionId (typed param)
+│   └── $.tsx                    # Catch-all 404 route
 │
 ├── shared/                       # Cross-app reusable code
 │   ├── components/
-│   │   ├── ui/                  # Base primitives (Button, Card)
-│   │   └── layout/              # Layout components (Header, Sidebar)
-│   ├── hooks/                   # Shared hooks (useLocalStorage, useDebounce)
-│   └── utils/                   # Shared utilities
+│   │   ├── index.ts             # Barrel exports
+│   │   ├── ui/                  # Base primitives (shadcn/ui)
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   └── dialog.tsx
+│   │   ├── layout/              # Layout components
+│   │   │   ├── index.ts
+│   │   │   ├── AppShell.tsx
+│   │   │   └── ThemeToggle.tsx
+│   │   └── navigation/          # Navigation components
+│   │       ├── index.ts
+│   │       ├── Navigation.tsx
+│   │       ├── NavigationLinks.tsx
+│   │       └── NavigationActions.tsx
+│   └── hooks/                   # Shared hooks
 │
-├── store/                        # Global state (Zustand)
+├── hooks/                        # App-level hooks (useSSE, useAnalysis)
+│   ├── index.ts
+│   ├── useSSE.ts
+│   ├── useAnalysis.ts
+│   └── __tests__/
+│
+├── stores/                       # Global state (Zustand)
+│   ├── sseStore.ts
+│   ├── sseStoreHelpers.ts
+│   └── __tests__/
+│
 ├── types/                        # Global TypeScript types
-├── lib/                          # Core utilities (cn() function)
-├── services/                     # API layer (grouped by domain)
-├── router.tsx                    # Router configuration (TanStack Router)
-├── routeTree.gen.ts             # Auto-generated route tree (DO NOT EDIT)
+│   ├── api.ts                   # API response types
+│   └── sse.ts                   # SSE event types
+│
+├── lib/                          # Core utilities
+│   └── utils.ts                 # cn() function, etc.
+│
+├── services/                     # API layer
+│   └── mock.service.ts          # Mock API for development
+│
+├── router/                       # Router utilities
+│   └── LazyRoute.tsx            # Suspense wrapper
+│
+├── router.tsx                    # Router configuration
+├── routeTree.gen.ts             # Auto-generated (DO NOT EDIT)
 └── main.tsx                      # App entry point
 ```
 
@@ -59,41 +179,110 @@ frontend/src/
 
 ## 🎯 Feature Module Structure
 
-Each feature follows this pattern:
+Each feature follows this pattern with **domain-based component grouping**:
 
 ```
 features/[feature-name]/
-├── index.ts                     # Public exports
+├── index.ts                     # Public exports (barrel file)
 ├── [FeatureName].tsx            # Main component
 ├── components/                  # Private nested components
-│   ├── [Component]A.tsx
-│   └── [Component]B.tsx
-├── hooks/                       # Private hooks
-│   └── use[FeatureName]Data.ts
-└── types.ts                     # Private types
+│   ├── index.ts                 # Re-exports all components
+│   ├── SimpleComponent.tsx      # Simple components at root
+│   ├── [ComponentGroup]/        # Complex components in subfolders
+│   │   ├── index.ts
+│   │   ├── MainComponent.tsx
+│   │   ├── SubComponent1.tsx
+│   │   ├── SubComponent2.tsx
+│   │   ├── types.ts             # Component-specific types
+│   │   └── hooks/               # Co-located hooks
+│   │       ├── index.ts
+│   │       ├── useComponentData.ts
+│   │       └── __tests__/
+│   └── [domain]/                # Domain-grouped components
+│       ├── index.ts
+│       └── *.tsx
+├── hooks/                       # Feature-level hooks
+│   ├── index.ts
+│   └── __tests__/
+└── types.ts                     # Feature-specific types
 ```
 
-**Example: Analysis Feature**
+### Component Organization Patterns
+
+**Pattern 1: Simple Component (single file)**
+```
+components/
+├── SkillSearch.tsx              # < 100 lines, self-contained
+└── LoadingGrid.tsx
+```
+
+**Pattern 2: Complex Component (subfolder with breakdown)**
+```
+components/
+└── SkillCard/
+    ├── index.ts                 # export { SkillCard } from './SkillCard'
+    ├── SkillCard.tsx            # Main component (orchestrates subcomponents)
+    ├── SkillCardThumbnail.tsx   # Visual subcomponent
+    ├── SkillCardMetadata.tsx    # Data display subcomponent
+    ├── SkillCardProgress.tsx    # Progress indicator
+    ├── SkillCardTags.tsx        # Tags display
+    └── types.ts                 # SkillCardProps, etc.
+```
+
+**Pattern 3: Component with Co-located Hooks**
+```
+components/
+└── SkillFilters/
+    ├── index.ts
+    ├── SkillFilters.tsx         # Main filter component
+    ├── DifficultyFilter.tsx     # Filter subcomponents
+    ├── StatusFilter.tsx
+    ├── TagFilter.tsx
+    └── hooks/                   # Co-located hooks
+        ├── index.ts
+        ├── useSkillFilters.ts   # Filter state management
+        └── __tests__/
+            └── useSkillFilters.test.ts
+```
+
+**Pattern 4: Domain-Grouped Components**
+```
+components/
+├── index.ts                     # Re-exports all domains
+├── progress/                    # Progress-related components
+│   ├── index.ts
+│   ├── ProgressTracker.tsx
+│   ├── StageItem.tsx
+│   └── constants.ts
+├── activity/                    # Activity-related components
+│   ├── index.ts
+│   └── AgentActivityFeed.tsx
+└── states/                      # UI states
+    ├── index.ts
+    ├── LoadingState.tsx
+    └── NotFoundState.tsx
+```
+
+### Example: Library Feature
 
 ```typescript
-// features/analysis/index.ts
-export { default as AnalyzeResult } from './AnalyzeResult'
+// features/library/index.ts
+export { Library } from './Library'
+export * from './components'
 
-// features/analysis/AnalyzeResult.tsx
-export default function AnalyzeResult() {
-  const data = useAnalysisData()
-  return (
-    <div>
-      <ProgressTracker />
-      <AgentFindings />
-    </div>
-  )
-}
+// features/library/components/index.ts
+export { SkillCard, type SkillCardProps } from './SkillCard'
+export { SkillFilters } from './SkillFilters'
+export { SkillGridView } from './SkillGridView'
+export { SkillSearch } from './SkillSearch'
 
-// features/analysis/components/ProgressTracker.tsx
-export default function ProgressTracker() {
-  // Nested component specific to analysis feature
-}
+// features/library/components/SkillCard/index.ts
+export { SkillCard } from './SkillCard'
+export type { SkillCardProps } from './types'
+
+// features/library/hooks/index.ts
+export { useFilteredSkills } from './useFilteredSkills'
+export { useSkillsData } from './useSkillsData'
 ```
 
 ---
@@ -104,22 +293,29 @@ Use path aliases for clean imports:
 
 ```typescript
 import { Home } from '@features/home'
-import { Button } from '@shared/components/ui/Button'
-import { useAppStore } from '@store/useAppStore'
-import type { Analysis } from '@types/api'
+import { Button } from '@shared/components/ui/button'
+import { useSSEStore } from '@stores/sseStore'
+import type { Analysis } from '@app-types/api'
 import { cn } from '@lib/utils'
 import { mockAnalyzeAPI } from '@services/mock.service'
+import { useSSE } from '@hooks'
+import { LazyRoute } from '@router/LazyRoute'
 ```
 
-**Configured aliases:**
+**Configured aliases (vite.config.ts & tsconfig.json):**
 
-- `@/*` → `src/*`
-- `@features/*` → `src/features/*`
-- `@shared/*` → `src/shared/*`
-- `@store/*` → `src/store/*`
-- `@types/*` → `src/types/*`
-- `@lib/*` → `src/lib/*`
-- `@services/*` → `src/services/*`
+| Alias | Path | Usage |
+|-------|------|-------|
+| `@features` | `src/features/*` | Feature modules |
+| `@shared` | `src/shared/*` | Shared components/hooks |
+| `@stores` | `src/stores/*` | Zustand stores |
+| `@hooks` | `src/hooks/*` | App-level hooks |
+| `@app-types` | `src/types/*` | TypeScript types (renamed from `@types` to avoid conflict with DefinitelyTyped) |
+| `@lib` | `src/lib/*` | Utility functions |
+| `@services` | `src/services/*` | API services |
+| `@router` | `src/router/*` | Router utilities |
+
+> **Note:** We use `@app-types` instead of `@types` because TypeScript reserves `@types/` for DefinitelyTyped packages.
 
 ---
 
@@ -134,6 +330,30 @@ import { mockAnalyzeAPI } from '@services/mock.service'
 | **Cyclomatic complexity** | 15    | Error       |
 | **Max nesting depth**     | 4     | Error       |
 | **Max function params**   | 4     | Error       |
+
+### React-Specific Rules
+
+| Rule | Description | Enforcement |
+|------|-------------|-------------|
+| **react/no-array-index-key** | Never use array index as React key | Error |
+
+**Why no array index as key?**
+Using array index as key causes React reconciliation issues when items are reordered, deleted, or inserted. Always use stable, unique identifiers.
+
+```typescript
+// ❌ Bad - using index as key
+{items.map((item, index) => <Item key={index} {...item} />)}
+
+// ✅ Good - using stable ID
+{items.map((item) => <Item key={item.id} {...item} />)}
+
+// ✅ Good - pre-process to add stable IDs
+const itemsWithIds = React.useMemo(
+  () => items.map((content, idx) => ({ id: `item-${idx}`, content })),
+  [items]
+)
+{itemsWithIds.map((item) => <Item key={item.id} {...item} />)}
+```
 
 ### Why These Limits?
 

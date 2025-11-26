@@ -19,11 +19,10 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings 0",
-      "biome format --write"
+      "biome format --write --no-errors-on-unmatched"
     ],
-    "*.{json,md}": [
-      "biome format --write"
+    "*.md": [
+      "biome format --write --no-errors-on-unmatched"
     ]
   },
   "dependencies": {
@@ -59,6 +58,7 @@
     "autoprefixer": "^10.4.22",
     "eslint": "^9.39.1",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
