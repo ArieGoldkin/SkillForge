@@ -1,6 +1,5 @@
-import { SkillGridView } from '@/shared/components/features/library/SkillGridView'
-
 import { LoadingGrid } from './LoadingGrid'
+import { SkillGridView } from './SkillGridView'
 
 interface Skill {
   id: string

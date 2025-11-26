@@ -1,5 +1,6 @@
-import { ChatMessage } from '@/shared/components/features/tutor/ChatMessage'
-import type { TutoringMessage } from '@/types/api'
+import type { TutoringMessage } from '@app-types/api'
+
+import { ChatMessage } from './ChatMessage'
 
 interface MessagesAreaProps {
   messages: TutoringMessage[]

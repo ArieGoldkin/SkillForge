@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 
+import { applyTheme, setupSystemThemeListener, useThemeStore } from '@stores/themeStore'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-
-import { applyTheme, setupSystemThemeListener, useThemeStore } from '@/stores/themeStore'
 
 import { Navigation } from '@shared/components/Navigation'
 

@@ -1,6 +1,6 @@
 import { BookOpen, Bot, Library, MessageCircle } from 'lucide-react'
 
-import { Card, CardContent } from '@/shared/components/ui/card'
+import { Card, CardContent } from '@shared/components/ui/card'
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ className?: string }>

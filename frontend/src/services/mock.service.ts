@@ -5,7 +5,7 @@ import type {
   Artifact,
   TutoringMessage,
   TutoringSession,
-} from '@/types/api'
+} from '@app-types/api'
 
 // Mock data for development (until backend is ready)
 

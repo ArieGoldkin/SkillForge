@@ -1,4 +1,4 @@
-import { ChatInput } from '@/shared/components/features/tutor/ChatInput'
+import { ChatInput } from './ChatInput'
 
 interface InputAreaProps {
   onSend: (content: string) => void

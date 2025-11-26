@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
-import { mockAnalyzeAPI } from '@/services/mock.service'
+import { mockAnalyzeAPI } from '@services/mock.service'
 
-import { ActivityColumn } from './components/ActivityColumn'
-import { AnalysisHeader } from './components/AnalysisHeader'
-import { LoadingState } from './components/LoadingState'
-import { NotFoundState } from './components/NotFoundState'
-import { ProgressColumn } from './components/ProgressColumn'
+import {
+  ActivityColumn,
+  AnalysisHeader,
+  LoadingState,
+  NotFoundState,
+  ProgressColumn,
+} from './components'
 import { useMockTimestamps } from './hooks/useMockTimestamps'
 
 export default function AnalyzeResult() {

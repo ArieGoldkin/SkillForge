@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { useNavigate } from '@tanstack/react-router'
 
-import { mockAnalyzeAPI } from '@/services/mock.service'
+import { mockAnalyzeAPI } from '@services/mock.service'
 
 import { FeaturesSection } from './components/FeaturesSection'
 import { HeroSection } from './components/HeroSection'
