@@ -45,12 +45,15 @@ class EmbeddingService:
     """
 
     def __init__(self) -> None:
-        """Initialize EmbeddingService with OpenAI client."""
+        """Initialize EmbeddingService with OpenAI client.
+
+        Raises:
+            ValueError: If OPENAI_API_KEY is not configured.
+
+        """
         if not settings.OPENAI_API_KEY:
-            raise ValueError(
-                "OPENAI_API_KEY is required for embedding generation. "
-                "Set it via environment variables or in the .env file."
-            )
+            msg = "OPENAI_API_KEY is required for embedding generation"
+            raise ValueError(msg)
 
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = "text-embedding-3-small"

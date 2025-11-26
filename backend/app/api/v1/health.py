@@ -49,7 +49,10 @@ async def check_database() -> dict[str, str] | None:
     except SQLAlchemyError as e:
         error_msg = str(e)
         return {"status": "disconnected", "error": error_msg[:MAX_ERROR_MESSAGE_LENGTH]}
-    except Exception as e:
+    except OSError as e:  # Network/connection errors
+        error_msg = str(e)
+        return {"status": "error", "error": error_msg[:MAX_ERROR_MESSAGE_LENGTH]}
+    except RuntimeError as e:  # Event loop/async errors
         error_msg = str(e)
         return {"status": "error", "error": error_msg[:MAX_ERROR_MESSAGE_LENGTH]}
     else:

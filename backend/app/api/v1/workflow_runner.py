@@ -1,6 +1,7 @@
 """Background task runner for analysis workflows."""
 
 import uuid
+from typing import Any
 
 from sqlalchemy import select
 
@@ -40,13 +41,10 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
         )
 
         # Run workflow with checkpointing
-        from langchain_core.runnables import RunnableConfig
-
-        config: RunnableConfig = {"configurable": {"thread_id": str(analysis_id)}}  # type: ignore[assignment]
-        await analysis_workflow.ainvoke(
-            {"url": url, "analysis_id": str(analysis_id)},
-            config=config,
-        )
+        # LangGraph's Pregel.ainvoke has complex state/config types that mypy can't resolve
+        config: dict[str, Any] = {"configurable": {"thread_id": str(analysis_id)}}
+        input_state = {"url": url, "analysis_id": str(analysis_id)}
+        await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
 
         logger.info(
             "workflow_task_complete",

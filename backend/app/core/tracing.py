@@ -177,13 +177,6 @@ async def trace_guardrail[T](
     try:
         # Perform validation
         result = validation_func(inputs)
-
-        # Success - end trace with outputs
-        guardrail_run.end(
-            outputs={"validated": True, "schema": schema_name, **metadata},
-        )
-        guardrail_run.patch()
-        return result
     except Exception as e:
         # Validation failed - end trace with error
         error_msg = str(e)
@@ -200,3 +193,10 @@ async def trace_guardrail[T](
         )
 
         raise
+    else:
+        # Success - end trace with outputs
+        guardrail_run.end(
+            outputs={"validated": True, "schema": schema_name, **metadata},
+        )
+        guardrail_run.patch()
+        return result

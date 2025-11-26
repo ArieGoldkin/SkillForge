@@ -120,8 +120,6 @@ async def test_full_workflow_e2e(reset_engine_connections):
         # Use timeout protection for session creation
         # Note: pool_timeout in engine config should prevent hanging,
         # but we add explicit timeout protection for safety
-        import asyncio
-
         from app.core.constants import DB_TIMEOUT
 
         try:

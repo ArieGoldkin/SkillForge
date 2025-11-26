@@ -368,14 +368,14 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
         # Extract structured response (validated Pydantic model)
         if final_result is None:
             msg = f"Agent {agent_type} returned no result"
-            raise RuntimeError(msg)  # noqa: TRY301
+            raise RuntimeError(msg)
         if not isinstance(final_result, dict):
             msg = f"Agent {agent_type} returned invalid result type: {type(final_result)}"
-            raise TypeError(msg)  # noqa: TRY301
+            raise TypeError(msg)
         structured_response = final_result.get("structured_response")
         if structured_response is None:
             msg = f"Agent {agent_type} did not return structured_response"
-            raise RuntimeError(msg)  # noqa: TRY301
+            raise RuntimeError(msg)
 
         # Convert Pydantic model to dict for storage
         findings = structured_response.model_dump()
@@ -410,7 +410,7 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
             processing_time_ms=processing_time_ms,
         )
 
-        return {  # noqa: TRY300
+        return {
             "agent_type": agent_type,
             "findings": findings,
             "processing_time_ms": processing_time_ms,

@@ -2,6 +2,7 @@
 
 import asyncio
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -20,6 +21,9 @@ from app.services.extraction.content_type import ContentTypeError, detect_conten
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
 
+# Store background task references to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
+
 
 @router.get("/analyze/{analysis_id}/stream")
 async def stream_analysis_progress_endpoint(
@@ -36,7 +40,7 @@ async def stream_analysis_progress_endpoint(
 @router.post("/analyze", status_code=status.HTTP_201_CREATED)
 async def create_analysis(
     request: AnalyzeRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AnalyzeCreateResponse:
     """Create a new analysis and start the workflow.
 
@@ -55,25 +59,6 @@ async def create_analysis(
     Raises:
         HTTPException: 422 if URL validation fails or content type detection fails
         HTTPException: 500 if database operation fails
-
-    Example Request:
-        ```json
-        {
-            "url": "https://example.com/article",
-            "analysis_id": "optional-custom-id"
-        }
-        ```
-
-    Example Response:
-        ```json
-        {
-            "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
-            "url": "https://example.com/article",
-            "content_type": "article",
-            "status": "pending",
-            "sse_endpoint": "/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream"
-        }
-        ```
 
     """
     url_str = str(request.url)
@@ -141,9 +126,10 @@ async def create_analysis(
             detail="Failed to create analysis record",
         ) from e
 
-    # Start workflow asynchronously
-    # Store task reference to prevent garbage collection (RUF006)
-    _ = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))
+    # Start workflow asynchronously with proper task lifecycle management
+    task = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"

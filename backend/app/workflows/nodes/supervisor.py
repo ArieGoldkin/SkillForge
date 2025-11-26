@@ -25,6 +25,11 @@ from app.workflows.nodes.supervisor_schema import AgentSelection
 
 logger = get_logger(__name__)
 
+# Content size thresholds for supervisor analysis
+CONTENT_SIZE_SMALL = 5000  # Use all content
+CONTENT_SIZE_MEDIUM = 15000  # Use 8K-10K chars
+CONTENT_SIZE_LARGE = 50000  # Use 12K-15K chars
+
 
 def _get_content_for_supervisor(
     content: str,
@@ -48,14 +53,14 @@ def _get_content_for_supervisor(
     """
     content_len = len(content)
 
-    if content_len <= 5000:
+    if content_len <= CONTENT_SIZE_SMALL:
         # Small content: use all
         return content
-    elif content_len <= 15000:
+    elif content_len <= CONTENT_SIZE_MEDIUM:
         # Medium: use 8K-10K (balanced)
         target = min(10000, content_len)
         return content[:target]
-    elif content_len <= 50000:
+    elif content_len <= CONTENT_SIZE_LARGE:
         # Large: use 12K-15K (comprehensive)
         target = min(15000, content_len)
         # For articles: first 10K + middle section highlights
@@ -117,7 +122,7 @@ async def _invoke_supervisor_with_retry(
         except TimeoutError:
             if attempt == max_attempts - 1:
                 # Last attempt failed
-                logger.error(
+                logger.warning(
                     "supervisor_timeout_all_attempts",
                     analysis_id=analysis_id,
                     max_attempts=max_attempts,

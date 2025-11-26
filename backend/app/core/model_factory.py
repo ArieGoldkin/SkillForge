@@ -19,7 +19,7 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     return provider in {"openai", "anthropic", "google_genai"}
 
 
-def get_chat_model(config: dict[str, Any] | None = None):
+def get_chat_model(config: dict[str, Any] | None = None):  # noqa: PLR0912
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
@@ -111,4 +111,5 @@ def get_chat_model(config: dict[str, Any] | None = None):
 
     # Create configurable model that can be switched at invocation time
     # If no runtime model was provided, the model is still configurable via config at invoke time
-    return init_chat_model(model_identifier_to_use, **init_kwargs)
+    # LangChain's init_chat_model has complex overloads that mypy can't resolve
+    return init_chat_model(model_identifier_to_use, **init_kwargs)  # type: ignore[call-overload]

@@ -30,7 +30,7 @@ def setup_logging() -> None:
                 f"Invalid LOG_LEVEL: {settings.LOG_LEVEL}. "
                 f"Must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL"
             )
-            raise TypeError(error_msg)  # noqa: TRY301
+            raise TypeError(error_msg)
 
         # Configure standard logging first
         logging.basicConfig(
