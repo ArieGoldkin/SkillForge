@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { applyTheme, setupSystemThemeListener, useThemeStore } from '@stores/themeStore'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 
-import { Navigation } from '@shared/components/Navigation'
+import { Navigation } from '@shared/components/navigation'
 
 /**
  * Root Layout Component

@@ -203,7 +203,7 @@ function normalizeErrorEvent(event: Record<string, unknown>): SSEErrorEvent | nu
     timestamp: String(event.timestamp),
     details: {
       error: String(errorMessage),
-      ...(errorCode && { error_code: String(errorCode) }),
+      ...(errorCode ? { error_code: String(errorCode) } : {}),
     },
   }
 }
