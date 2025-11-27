@@ -63,7 +63,16 @@ if "LLM_MODEL" not in os.environ:
 
 @pytest.fixture
 def client() -> TestClient:
-    """Create test client for FastAPI app."""
+    """Create test client for FastAPI app.
+
+    Note: This fixture requires DATABASE_URL to be configured because the app
+    imports database session modules. Tests that don't need a real database
+    should mock the session module or use unit test patterns that don't require
+    the full FastAPI app.
+    """
+    settings = get_settings()
+    if not settings.DATABASE_URL:
+        pytest.skip("DATABASE_URL not configured - client fixture requires database")
     return TestClient(app)
 
 
