@@ -12,6 +12,8 @@ Architecture:
 - Returns normalized vectors for pgvector cosine similarity
 """
 
+from typing import cast
+
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -114,7 +116,8 @@ class EmbeddingService:
             )
 
             # Extract embedding from response
-            embedding = response.data[0].embedding
+            # Type cast needed because OpenAI SDK types embedding as Any
+            embedding = cast(EmbeddingVector, response.data[0].embedding)
 
             if not embedding:
                 error_msg = "No embedding in API response"

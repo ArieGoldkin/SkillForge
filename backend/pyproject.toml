@@ -113,6 +113,14 @@ check_untyped_defs = true
 module = "langgraph.checkpoint.postgres"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "openai",
+    "langchain.*",
+    "sse_starlette.*",
+]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
