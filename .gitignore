@@ -246,6 +246,7 @@ temp/
 secrets.json
 credentials.json
 service-account.json
+.mcp.json
 
 # API Keys
 *_api_key.txt
