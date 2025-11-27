@@ -1,4 +1,5 @@
 import type { AgentActivity } from '../../hooks/useAnalysisProgress'
+
 import { AgentActivityFeed } from './AgentActivityFeed'
 
 interface ActivityColumnProps {

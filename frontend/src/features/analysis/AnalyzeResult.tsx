@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 
-import { useParams } from '@tanstack/react-router'
-
 import { useSSEStore } from '@stores/sseStore'
+import { useParams } from '@tanstack/react-router'
 
 import { ActivityColumn, AnalysisHeader, LoadingState, ProgressColumn } from './components'
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'

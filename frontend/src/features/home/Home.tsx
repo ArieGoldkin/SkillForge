@@ -45,6 +45,7 @@ export default function Home() {
         setSelectedContentType={setSelectedContentType}
         isSubmitting={isSubmitting}
         handleSubmit={handleSubmit}
+        error={error}
       />
       <FeaturesSection />
       <HowItWorksSection />
