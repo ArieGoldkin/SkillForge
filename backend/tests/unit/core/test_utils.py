@@ -60,3 +60,4 @@ def test_normalize_different_strings():
     assert result1 != result2
 
 
+
