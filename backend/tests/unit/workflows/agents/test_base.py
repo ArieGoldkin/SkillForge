@@ -94,8 +94,8 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_success(
     mock_save_finding,
     mock_emit_progress,
@@ -126,7 +126,7 @@ async def test_run_agent_with_tracking_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_no_structured_response(
     mock_emit_progress,
     mock_session,
@@ -169,8 +169,8 @@ async def test_save_agent_finding(mock_session):
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_non_uuid_analysis_id(
     mock_save_finding,
     mock_emit_progress,
@@ -208,8 +208,8 @@ async def test_run_agent_with_tracking_non_uuid_analysis_id(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_valid_uuid_string(
     mock_save_finding,
     mock_emit_progress,
@@ -242,8 +242,8 @@ async def test_run_agent_with_tracking_valid_uuid_string(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_content_truncation(
     mock_save_finding,
     mock_emit_progress,
@@ -285,8 +285,8 @@ async def test_run_agent_with_tracking_content_truncation(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming(
     mock_save_finding,
     mock_emit_progress,
@@ -320,8 +320,8 @@ async def test_run_agent_with_tracking_streaming(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_uuid_object(
     mock_save_finding,
     mock_emit_progress,
@@ -354,8 +354,8 @@ async def test_run_agent_with_tracking_uuid_object(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_throttling(
     mock_save_finding,
     mock_emit_progress,
@@ -398,8 +398,8 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_early_response(
     mock_save_finding,
     mock_emit_progress,
