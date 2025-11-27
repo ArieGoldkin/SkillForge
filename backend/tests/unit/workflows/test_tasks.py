@@ -1,6 +1,6 @@
 """Unit tests for workflow task functions."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -33,46 +33,39 @@ async def test_execute_agents_creates_separate_sessions(
         "findings": {"test": "finding3"},
     }
 
-    # Mock AsyncSessionLocal to track session creation
-    session_call_count = 0
+    # Create mock session factory that returns mock context managers
+    mock_contexts = []
+    for _ in range(3):
+        mock_context = AsyncMock()
+        mock_context.__aenter__ = AsyncMock(return_value=AsyncMock())
+        mock_context.__aexit__ = AsyncMock(return_value=None)
+        mock_contexts.append(mock_context)
 
-    async def mock_session_context():
-        """Mock session context manager."""
-        nonlocal session_call_count
-        session_call_count += 1
-        mock_session = AsyncMock()
-        return mock_session
+    # Mock AsyncSessionLocal - this is imported lazily inside execute_agents
+    mock_session_local = MagicMock()
+    mock_session_local.side_effect = mock_contexts
 
-    with patch("app.db.session.AsyncSessionLocal") as mock_session_local:
-        # Create mock context managers for each session
-        mock_contexts = []
-        for _ in range(3):
-            mock_context = AsyncMock()
-            mock_context.__aenter__ = AsyncMock(return_value=AsyncMock())
-            mock_context.__aexit__ = AsyncMock(return_value=None)
-            mock_contexts.append(mock_context)
+    analysis_id: AnalysisID = str(uuid4())
+    content = "Test content"
+    content_type = "article"
+    selected_agents = ["tech_comparator", "integration_feasibility", "implementation_planner"]
 
-        mock_session_local.side_effect = mock_contexts
-
-        analysis_id: AnalysisID = str(uuid4())
-        content = "Test content"
-        content_type = "article"
-        selected_agents = ["tech_comparator", "integration_feasibility", "implementation_planner"]
-
+    # Patch at the session module level (where it's imported from)
+    with patch("app.db.session.AsyncSessionLocal", mock_session_local):
         # Execute agents
         results = await execute_agents(content, content_type, analysis_id, selected_agents)
 
-        # Verify results
-        assert len(results) == 3
-        assert all("agent_type" in r for r in results)
+    # Verify results
+    assert len(results) == 3
+    assert all("agent_type" in r for r in results)
 
-        # Verify each agent was called
-        assert mock_comparator.called
-        assert mock_feasibility.called
-        assert mock_planner.called
+    # Verify each agent was called
+    assert mock_comparator.called
+    assert mock_feasibility.called
+    assert mock_planner.called
 
-        # Verify AsyncSessionLocal was called 3 times (once per agent)
-        assert mock_session_local.call_count == 3
+    # Verify AsyncSessionLocal was called 3 times (once per agent)
+    assert mock_session_local.call_count == 3
 
 
 @pytest.mark.asyncio

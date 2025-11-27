@@ -1,12 +1,23 @@
 """Tests for configuration management."""
 
+import os
+
 import pytest
 
 from app.core.config import Settings, get_settings
 
 
-def test_settings_loads_defaults():
-    """Test settings load with defaults."""
+def test_settings_loads_defaults(monkeypatch):
+    """Test settings load with defaults.
+
+    Note: This test removes env vars that conftest autouse fixtures may set
+    to test true default behavior.
+    """
+    # Clean up env vars that autouse fixtures might set
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    get_settings.cache_clear()
+
     settings = Settings()
     assert settings.ENVIRONMENT == "development"
     assert settings.LOG_LEVEL == "DEBUG"
@@ -23,8 +34,11 @@ def test_settings_validates_environment():
 
 def test_settings_loads_from_env(monkeypatch):
     """Test settings load from environment variables."""
+    # Clean up env vars that autouse fixtures might set
+    monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost/db")
     # Clear cache to pick up new env vars
     get_settings.cache_clear()
     settings = Settings()
@@ -36,6 +50,8 @@ def test_settings_loads_from_env(monkeypatch):
 
 def test_settings_production_validation_requires_database_url(monkeypatch):
     """Test production environment requires DATABASE_URL."""
+    # Clean up env vars that autouse fixtures might set
+    monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.delenv("DATABASE_URL", raising=False)
     # Clear cache to pick up new env vars
@@ -48,6 +64,8 @@ def test_settings_production_validation_requires_database_url(monkeypatch):
 
 def test_settings_production_validation_with_database_url(monkeypatch):
     """Test production environment passes validation with DATABASE_URL."""
+    # Clean up env vars that autouse fixtures might set
+    monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
     # Clear cache to pick up new env vars
@@ -73,8 +91,12 @@ def test_settings_caching_returns_same_instance():
     get_settings.cache_clear()
 
 
-def test_settings_helper_methods():
+def test_settings_helper_methods(monkeypatch):
     """Test helper methods for environment checks."""
+    # Clean up env vars that autouse fixtures might set
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    get_settings.cache_clear()
+
     dev_settings = Settings(ENVIRONMENT="development")
     assert dev_settings.is_development() is True
     assert dev_settings.is_production() is False
