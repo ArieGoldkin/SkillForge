@@ -85,4 +85,3 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             status="failed",
             error=str(e),
         )
-
