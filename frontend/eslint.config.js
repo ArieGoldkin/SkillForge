@@ -9,7 +9,15 @@ import importPlugin from 'eslint-plugin-import'
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist', 'node_modules', 'build', '.next', 'coverage'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'build',
+      '.next',
+      'coverage',
+      '../.claude/**',
+      '../.squad/**',
+    ],
   },
 
   // Recommended configs
