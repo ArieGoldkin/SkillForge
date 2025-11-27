@@ -1,12 +1,14 @@
-"""Database layer."""
+"""Database layer.
+
+This module provides the SQLAlchemy Base class for model definitions.
+
+Note: AsyncSessionLocal, engine, and other session objects are intentionally
+NOT re-exported here to avoid DATABASE_URL validation at import time.
+Import them directly from app.db.session when needed at runtime.
+"""
 
 from app.db.base import Base
-from app.db.session import AsyncSessionLocal, engine, get_async_database_url, get_db
 
 __all__ = [
-    "AsyncSessionLocal",
     "Base",
-    "engine",
-    "get_async_database_url",
-    "get_db",
 ]
