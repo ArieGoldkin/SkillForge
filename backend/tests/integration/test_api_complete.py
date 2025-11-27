@@ -134,7 +134,7 @@ async def test_full_workflow_e2e(reset_engine_connections):
                 if analysis:
                     # SQLAlchemy typing limitation: Column[str] descriptors return str at runtime,
                     # but mypy's type stubs see them as Column[str]. This is a known SQLAlchemy
-                    # typing limitation with the Column-based style. The assignment is safe at runtime.
+                    # typing limitation with Column-based style. Assignment is safe at runtime.
                     analysis.status = "complete"  # type: ignore[assignment]
                     await db.commit()
             finally:

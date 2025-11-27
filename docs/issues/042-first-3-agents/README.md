@@ -40,9 +40,10 @@ Implement the first 3 specialized content analysis agents (Tech Comparator, Inte
 ### Files Created/Modified
 
 **New Files:**
+
 - `backend/app/workflows/agents/__init__.py` (16 lines) - Agent module exports
 - `backend/app/workflows/agents/base.py` (386 lines) - Base agent utilities and structured output
-- `backend/app/workflows/agents/schemas.py` (150+ lines) - Pydantic schemas for agent responses
+- `backend/app/workflows/agents/schemas/` directory - Pydantic schemas for agent responses (8 individual schema files, one per agent)
 - `backend/app/workflows/agents/tech_comparator.py` (100+ lines) - Tech Comparator agent
 - `backend/app/workflows/agents/integration_feasibility.py` (100+ lines) - Integration Feasibility agent
 - `backend/app/workflows/agents/implementation_planner.py` (100+ lines) - Implementation Planner agent
@@ -55,6 +56,7 @@ Implement the first 3 specialized content analysis agents (Tech Comparator, Inte
 - `backend/tests/integration/workflows/agents/test_agents.py` (300+ lines) - Integration tests for all 3 agents
 
 **Modified Files:**
+
 - `backend/app/workflows/tasks.py` - Added `execute_agents` task for parallel agent execution
 - `backend/app/workflows/analysis.py` - Integrated `execute_agents` into main workflow
 - `backend/app/workflows/nodes/supervisor.py` - Fixed async generator cleanup (PEP 525 compliance)
@@ -67,7 +69,8 @@ Implement the first 3 specialized content analysis agents (Tech Comparator, Inte
 ### Architecture
 
 **Agent Execution Flow:**
-```
+
+```text
 supervisor_route → execute_agents → [tech_comparator, integration_feasibility, implementation_planner] (parallel)
 ```
 
@@ -133,12 +136,12 @@ supervisor_route → execute_agents → [tech_comparator, integration_feasibilit
 
 ### File Structure
 
-```
+```text
 backend/app/workflows/
 ├── agents/
 │   ├── __init__.py                    # Agent exports
 │   ├── base.py                        # Base agent utilities (create_structured_agent, run_agent_with_tracking)
-│   ├── schemas.py                     # Pydantic schemas for agent responses
+│   ├── schemas/                       # Pydantic schemas for agent responses (one file per agent)
 │   ├── tech_comparator.py             # Tech Comparator agent
 │   ├── integration_feasibility.py    # Integration Feasibility agent
 │   └── implementation_planner.py     # Implementation Planner agent
@@ -164,12 +167,14 @@ backend/tests/
 ## Verification
 
 See detailed verification documents:
+
 - [Test Verification Summary](./TEST_VERIFICATION_SUMMARY.md) - Unit and integration test results
 - [End-to-End Verification Results](./VERIFICATION_RESULTS.md) - Real article analysis verification
 
 ### Tests
 
 **Unit Tests:**
+
 - ✅ `test_base.py` - Base agent utilities (create_structured_agent, run_agent_with_tracking)
 - ✅ `test_tech_comparator.py` - Tech Comparator agent (3 tests)
 - ✅ `test_integration_feasibility.py` - Integration Feasibility agent (3 tests)
@@ -177,20 +182,24 @@ See detailed verification documents:
 - ✅ `test_tasks.py` - execute_agents function (3 tests: session isolation, exception handling, empty agents)
 
 **Integration Tests** (`tests/integration/workflows/agents/test_agents.py`):
+
 - ✅ `test_tech_comparator_integration` - Real LLM + database
 - ✅ `test_integration_feasibility_integration` - Real LLM + database
 - ✅ `test_implementation_planner_integration` - Real LLM + database
 - ✅ `test_execute_agents_parallel_execution` - All 3 agents in parallel with session isolation
 
 **Baseline Integration Test:**
+
 - ✅ Real article analysis test with Claude Opus 4.5 article
 - ✅ Verifies end-to-end workflow: extraction → supervisor → agents → findings
 
 **Workflow Integration Tests** (`tests/integration/workflows/test_analysis.py`):
+
 - ✅ `test_analysis_workflow_end_to_end` - Full workflow with real services
 - ✅ `test_analysis_workflow_with_checkpointer` - Workflow with database checkpointer
 
 **Test Results:**
+
 - ✅ All 9 unit tests passing
 - ✅ All 4 integration tests passing (when LLM available)
 - ✅ Baseline integration test passing
@@ -200,6 +209,7 @@ See detailed verification documents:
 ### Test Fixes Applied (November 27, 2025)
 
 **Issues Fixed:**
+
 1. **Foreign Key Constraint Violation** - Integration tests now create `Analysis` record before running workflow (required for `agent_findings` foreign key)
 2. **LangSmith Logging Errors** - Suppressed background thread logging to prevent VS Code Test Explorer from showing tests as failed
 3. **Timeout Issues** - Increased timeouts for checkpointer test (180s per run, 420s total) to account for rate limiting
@@ -207,14 +217,16 @@ See detailed verification documents:
 ### Standards Compliance
 
 **File Size Limits:** ✅
+
 - `base.py`: 386 lines (< 400 limit for shared utilities)
 - `tech_comparator.py`: ~100 lines (< 200 limit)
 - `integration_feasibility.py`: ~100 lines (< 200 limit)
 - `implementation_planner.py`: ~100 lines (< 200 limit)
-- `schemas.py`: ~150 lines (< 200 limit)
+- `schemas/` directory: 8 individual schema files, each < 50 lines (well under 200 limit per file)
 - Test files: All < 300 line limit
 
 **Code Quality:** ✅
+
 - ✅ No linter errors (ruff check passed)
 - ✅ No type errors (mypy passed)
 - ✅ Code formatted (ruff format passed)
@@ -224,6 +236,7 @@ See detailed verification documents:
 - ✅ Structured logging used
 
 **Testing:** ✅
+
 - ✅ Unit tests created (9 test cases)
 - ✅ Integration tests created (4 test cases)
 - ✅ Error scenarios covered
@@ -231,6 +244,7 @@ See detailed verification documents:
 - ✅ Database session isolation verified
 
 **Async Generator Cleanup:** ✅
+
 - ✅ Proper `AsyncIterator` type annotations
 - ✅ Single cleanup point in `finally` block (PEP 525)
 - ✅ No `GeneratorExit` warnings in logs
@@ -371,7 +385,7 @@ DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
 
 Tests are organized into unit and integration directories:
 
-```
+```text
 tests/
 ├── unit/workflows/agents/
 │   ├── test_base.py              # Base agent utilities

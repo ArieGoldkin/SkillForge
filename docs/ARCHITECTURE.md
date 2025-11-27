@@ -222,10 +222,10 @@ graph TB
                 TechComp["@task run_tech_comparator"]
                 Security["@task run_security_auditor"]
                 ImplPlan["@task run_implementation_planner"]
-                Perf["@task run_performance_auditor"]
-                CodeQual["@task run_code_quality_auditor"]
-                Trends["@task run_trends_analyzer"]
-                Deps["@task run_dependencies_analyzer"]
+                Perf["@task run_performance_analyst"]
+                CodeQual["@task run_code_quality_critic"]
+                Trends["@task run_trend_validator"]
+                Deps["@task run_dependency_mapper"]
             end
             
             Aggregate["@task aggregate_findings"]

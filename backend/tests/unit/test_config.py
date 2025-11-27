@@ -1,7 +1,5 @@
 """Tests for configuration management."""
 
-import os
-
 import pytest
 
 from app.core.config import Settings, get_settings
