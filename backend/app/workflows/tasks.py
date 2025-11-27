@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EmbeddingVector
-from app.db.session import AsyncSessionLocal
 from app.services.embeddings import EmbeddingService
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
@@ -28,6 +27,9 @@ from app.workflows.agents import (
     run_integration_feasibility,
     run_tech_comparator,
 )
+
+# Note: AsyncSessionLocal is imported lazily inside execute_agents() to avoid
+# DATABASE_URL validation at import time (required for CI without database)
 
 logger = get_logger(__name__)
 
@@ -198,6 +200,10 @@ async def execute_agents(
     if not selected_agents:
         logger.debug("workflow_no_agents_selected", analysis_id=analysis_id)
         return []
+
+    # Lazy import to avoid DATABASE_URL validation at module load time
+    # This allows the app to be imported in CI environments without a database
+    from app.db.session import AsyncSessionLocal
 
     logger.info(
         "workflow_agents_starting",
