@@ -126,3 +126,11 @@ markers = [
     "external: marks tests that require external services (OpenAI, Jina, etc.)",
     "timeout: marks tests with specific timeout values (pytest-timeout plugin)",
 ]
+# Filter out warnings from third-party libraries that we cannot control
+filterwarnings = [
+    # LangSmith serialization tries to serialize AsyncMock objects during tracing
+    # This is a known issue when mocking async functions in tests - suppress all such warnings
+    "ignore:coroutine.*was never awaited:RuntimeWarning",
+    # Suppress pytest's unraisable exception wrapper for the same issue
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
