@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures."""
 
+import logging
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -15,6 +16,16 @@ from app.db.session import AsyncSessionLocal, engine
 from app.main import app
 from app.models.analysis import Analysis
 from app.services.event_broadcaster import broadcaster
+
+# Suppress LangSmith background thread logging errors BEFORE any imports
+# These loggers emit DEBUG messages during teardown that fail when stdout is closed
+# This must happen at module load time to catch all logger instances
+for _logger_name in [
+    "langsmith._internal._background_thread",
+    "langsmith.client",
+    "urllib3.connectionpool",
+]:
+    logging.getLogger(_logger_name).setLevel(logging.WARNING)
 
 # Load .env file for tests (same as development)
 # This allows tests to use the same configuration as the running application

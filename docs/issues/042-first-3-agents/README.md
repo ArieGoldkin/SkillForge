@@ -186,11 +186,23 @@ See detailed verification documents:
 - ✅ Real article analysis test with Claude Opus 4.5 article
 - ✅ Verifies end-to-end workflow: extraction → supervisor → agents → findings
 
+**Workflow Integration Tests** (`tests/integration/workflows/test_analysis.py`):
+- ✅ `test_analysis_workflow_end_to_end` - Full workflow with real services
+- ✅ `test_analysis_workflow_with_checkpointer` - Workflow with database checkpointer
+
 **Test Results:**
 - ✅ All 9 unit tests passing
 - ✅ All 4 integration tests passing (when LLM available)
 - ✅ Baseline integration test passing
+- ✅ Workflow integration tests passing
 - ✅ Tests use proper fixtures, mocking, and database session management
+
+### Test Fixes Applied (November 27, 2025)
+
+**Issues Fixed:**
+1. **Foreign Key Constraint Violation** - Integration tests now create `Analysis` record before running workflow (required for `agent_findings` foreign key)
+2. **LangSmith Logging Errors** - Suppressed background thread logging to prevent VS Code Test Explorer from showing tests as failed
+3. **Timeout Issues** - Increased timeouts for checkpointer test (180s per run, 420s total) to account for rate limiting
 
 ### Standards Compliance
 
