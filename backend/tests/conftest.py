@@ -12,14 +12,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.db.session import AsyncSessionLocal, engine
 from app.main import app
-from app.models.analysis import Analysis
 from app.services.event_broadcaster import broadcaster
 
-# Suppress LangSmith background thread logging errors BEFORE any imports
+# Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
+# to avoid DATABASE_URL validation errors in CI environments without database config
+
+# Suppress LangSmith background thread logging errors
 # These loggers emit DEBUG messages during teardown that fail when stdout is closed
-# This must happen at module load time to catch all logger instances
 for _logger_name in [
     "langsmith._internal._background_thread",
     "langsmith.client",
@@ -147,6 +147,7 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
     import asyncio
 
     from app.core.constants import DB_TIMEOUT
+    from app.db.session import AsyncSessionLocal
 
     if timeout is None:
         timeout = DB_TIMEOUT
@@ -241,6 +242,8 @@ async def _dispose_engine_safely(timeout: float) -> None:
     Uses non-blocking approach to prevent hanging if database is unreachable.
     """
     import asyncio
+
+    from app.db.session import engine
 
     # Create a task for dispose operation
     dispose_task = asyncio.create_task(engine.dispose())
@@ -352,12 +355,13 @@ async def create_test_analysis(db_session):
             )
             # Now you can use analysis_id with agents
     """
+    from app.models.analysis import Analysis
 
     async def _create(
         analysis_id: str,
         url: str = "https://example.com",
         content_type: str = "article",
-    ) -> Analysis:
+    ) -> "Analysis":
         """Create an Analysis record in the database."""
         analysis = Analysis(
             id=UUID(analysis_id),
