@@ -43,7 +43,7 @@ async def test_execute_agents_creates_separate_sessions(
         mock_session = AsyncMock()
         return mock_session
 
-    with patch("app.workflows.tasks.AsyncSessionLocal") as mock_session_local:
+    with patch("app.db.session.AsyncSessionLocal") as mock_session_local:
         # Create mock context managers for each session
         mock_contexts = []
         for _ in range(3):
