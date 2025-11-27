@@ -14,14 +14,22 @@ from app.workflows.agents.schemas import IntegrationFeasibility
 INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst.
 Assess technology integration with modern stacks.
 
-For the given content, provide:
-1. compatibility: Score (0.0-1.0) and notes for 2-3 common stacks
-   (nextjs, fastapi, react, docker, etc.)
-2. migration_effort: low/medium/high
-3. breaking_changes: List of potential issues
-4. integration_steps: Actionable steps to integrate
+For the given content, you MUST provide ALL of these fields:
 
-Be concise. Focus on practical, actionable insights."""
+1. **compatibility** (REQUIRED - DO NOT OMIT): A dictionary mapping stack names to scores.
+   Each entry MUST have:
+   - score: A float from 0.0 to 1.0
+   - notes: A brief explanation string
+   Include 2-3 stacks like: react, nextjs, fastapi, docker, etc.
+   Example: {"react": {"score": 0.9, "notes": "Native support"}}
+
+2. **migration_effort**: One of: "low", "medium", or "high"
+
+3. **breaking_changes**: List of potential breaking changes
+
+4. **integration_steps**: List of actionable integration steps
+
+IMPORTANT: The 'compatibility' field is REQUIRED. Do not skip it."""
 
 
 async def run_integration_feasibility(
