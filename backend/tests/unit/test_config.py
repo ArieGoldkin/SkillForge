@@ -9,21 +9,24 @@ def test_settings_loads_defaults(monkeypatch):
     """Test settings load with defaults.
 
     Note: This test removes env vars that conftest autouse fixtures may set
-    to test true default behavior. HOST is not tested because it may come
-    from .env file in local development.
+    to test true default behavior.
     """
-    # Clean up env vars that autouse fixtures might set
+    # Clean up env vars that autouse fixtures might set or come from .env file
     monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("LOG_LEVEL", raising=False)
+    monkeypatch.delenv("RELOAD", raising=False)
     monkeypatch.delenv("LLM_MODEL", raising=False)
     get_settings.cache_clear()
 
-    settings = Settings()
+    # Prevent loading from .env file by passing _env_file=None
+    settings = Settings(_env_file=None)
     assert settings.ENVIRONMENT == "development"
-    assert settings.LOG_LEVEL == "DEBUG"
+    assert settings.LOG_LEVEL == "INFO"  # Changed default from DEBUG to INFO for security
     assert settings.PORT == 8500
-    # HOST varies: 127.0.0.1 (code default) or 0.0.0.0 (from .env in local dev)
-    assert settings.HOST in ("127.0.0.1", "0.0.0.0")
+    assert settings.HOST == "127.0.0.1"  # Changed default from 0.0.0.0 to 127.0.0.1 for security
+    assert settings.RELOAD is False  # Changed default from True to False for security
     assert settings.API_V1_PREFIX == "/api/v1"
+    get_settings.cache_clear()
 
 
 def test_settings_validates_environment():
@@ -38,7 +41,10 @@ def test_settings_loads_from_env(monkeypatch):
     monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost/db")
+    monkeypatch.setenv("HOST", "127.0.0.1")
+    monkeypatch.setenv("RELOAD", "false")
+    # Use strong password to pass production validation
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
     # Set a dummy API key to pass LLM validation (default LLM_MODEL is gpt-5-mini)
     monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
     # Clear cache to pick up new env vars
@@ -69,16 +75,20 @@ def test_settings_production_validation_with_database_url(monkeypatch):
     # Clean up env vars that autouse fixtures might set
     monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
-    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@localhost/db")
+    monkeypatch.setenv("HOST", "127.0.0.1")
+    monkeypatch.setenv("RELOAD", "false")
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    # Use strong password to pass production validation
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
     # Set a dummy API key to pass LLM validation (default LLM_MODEL is gpt-5-mini)
     monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
     # Clear cache to pick up new env vars
     get_settings.cache_clear()
     settings = Settings(
-        ENVIRONMENT="production", DATABASE_URL="postgresql://user:pass@localhost/db"
+        ENVIRONMENT="production", DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db"
     )
     assert settings.ENVIRONMENT == "production"
-    assert settings.DATABASE_URL == "postgresql://user:pass@localhost/db"
+    assert settings.DATABASE_URL == "postgresql://user:StrongP@ssw0rd123@localhost/db"
     # Restore cache
     get_settings.cache_clear()
 
@@ -108,7 +118,14 @@ def test_settings_helper_methods(monkeypatch):
     assert dev_settings.is_production() is False
     assert dev_settings.is_staging() is False
 
-    prod_settings = Settings(ENVIRONMENT="production", DATABASE_URL="postgresql://test")
+    # Use strong password to pass production validation
+    prod_settings = Settings(
+        ENVIRONMENT="production",
+        DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        HOST="127.0.0.1",
+        RELOAD=False,
+        LOG_LEVEL="INFO",
+    )
     assert prod_settings.is_development() is False
     assert prod_settings.is_production() is True
     assert prod_settings.is_staging() is False
@@ -132,3 +149,125 @@ def test_settings_optional_fields():
     # DATABASE_URL and JINA_API_KEY are optional
     assert settings.DATABASE_URL is None or isinstance(settings.DATABASE_URL, str)
     assert settings.JINA_API_KEY is None or isinstance(settings.JINA_API_KEY, str)
+
+
+def test_settings_production_rejects_weak_database_password(monkeypatch):
+    """Test production environment rejects weak database passwords."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    weak_passwords = ["devpass", "password", "pass", "123456", "admin", "test"]
+    for weak_pwd in weak_passwords:
+        db_url = f"postgresql://user:{weak_pwd}@localhost/db"
+        with pytest.raises(ValueError, match="SECURITY: Weak password detected"):
+            Settings(ENVIRONMENT="production", DATABASE_URL=db_url)
+    get_settings.cache_clear()
+
+
+def test_settings_production_rejects_host_0_0_0_0(monkeypatch):
+    """Test production environment rejects HOST=0.0.0.0."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    with pytest.raises(ValueError, match="SECURITY: HOST=0.0.0.0 is not allowed"):
+        Settings(
+            ENVIRONMENT="production",
+            HOST="0.0.0.0",
+            DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        )
+    get_settings.cache_clear()
+
+
+def test_settings_production_rejects_reload_true(monkeypatch):
+    """Test production environment rejects RELOAD=true."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("HOST", "127.0.0.1")  # Override .env value
+    monkeypatch.setenv("LOG_LEVEL", "INFO")  # Override .env value
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    with pytest.raises(ValueError, match="SECURITY: RELOAD=true is not allowed"):
+        Settings(
+            ENVIRONMENT="production",
+            RELOAD=True,
+            DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        )
+    get_settings.cache_clear()
+
+
+def test_settings_production_rejects_debug_log_level(monkeypatch):
+    """Test production environment rejects LOG_LEVEL=DEBUG."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("HOST", "127.0.0.1")  # Override .env value
+    monkeypatch.setenv("RELOAD", "false")  # Override .env value
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    with pytest.raises(ValueError, match="SECURITY: LOG_LEVEL=DEBUG is not allowed"):
+        Settings(
+            ENVIRONMENT="production",
+            LOG_LEVEL="DEBUG",
+            DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        )
+    get_settings.cache_clear()
+
+
+def test_settings_production_rejects_wildcard_cors(monkeypatch):
+    """Test production environment rejects CORS_ORIGINS=['*'] or empty list."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("HOST", "127.0.0.1")  # Override .env value
+    monkeypatch.setenv("RELOAD", "false")  # Override .env value
+    monkeypatch.setenv("LOG_LEVEL", "INFO")  # Override .env value
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    with pytest.raises(ValueError, match="SECURITY: CORS_ORIGINS must specify exact origins"):
+        Settings(
+            ENVIRONMENT="production",
+            CORS_ORIGINS=["*"],
+            DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        )
+
+    with pytest.raises(ValueError, match="SECURITY: CORS_ORIGINS must specify exact origins"):
+        Settings(
+            ENVIRONMENT="production",
+            CORS_ORIGINS=[],
+            DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+        )
+
+    get_settings.cache_clear()
+
+
+def test_settings_production_accepts_secure_config(monkeypatch):
+    """Test production environment accepts secure configuration."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    get_settings.cache_clear()
+
+    settings = Settings(
+        ENVIRONMENT="production",
+        HOST="127.0.0.1",
+        RELOAD=False,
+        LOG_LEVEL="INFO",
+        CORS_ORIGINS=["https://app.example.com"],
+        DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
+    )
+    assert settings.is_production() is True
+    assert settings.HOST == "127.0.0.1"
+    assert settings.RELOAD is False
+    assert settings.LOG_LEVEL == "INFO"
+    assert settings.CORS_ORIGINS == ["https://app.example.com"]
+    get_settings.cache_clear()
