@@ -26,6 +26,10 @@ class TestImportWithoutDatabaseUrl:
             "app.api.v1.workflow_runner",
             "app.workflows.analysis",
             "app.workflows.tasks",
+            # Models should import Base without triggering DATABASE_URL validation
+            "app.models.agent_finding",
+            "app.models.analysis",
+            "app.workflows.agents.base",
         ],
     )
     def test_module_imports_without_database_url(self, module: str):
@@ -44,6 +48,7 @@ class TestImportWithoutDatabaseUrl:
                 "-c",
                 f"import {module}; print('OK')",
             ],
+            check=False,
             capture_output=True,
             text=True,
             env={
@@ -79,6 +84,7 @@ class TestImportWithoutDatabaseUrl:
                 "-c",
                 "from tests.conftest import *; print('OK')",
             ],
+            check=False,
             capture_output=True,
             text=True,
             env={
