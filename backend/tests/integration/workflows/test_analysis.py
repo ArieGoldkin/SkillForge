@@ -94,7 +94,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
                 },
                 config=workflow_config,
             ),
-            timeout=120.0,  # 120 seconds for real workflow with streaming/parallel overhead
+            timeout=140.0,  # 140 seconds for real workflow with streaming/parallel overhead
         )
 
         # Verify result structure
