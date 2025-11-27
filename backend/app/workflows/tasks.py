@@ -23,9 +23,14 @@ from app.services.embeddings import EmbeddingService
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents import (
+    run_code_quality_critic,
+    run_dependency_mapper,
     run_implementation_planner,
     run_integration_feasibility,
+    run_performance_analyst,
+    run_security_auditor,
     run_tech_comparator,
+    run_trend_validator,
 )
 
 # Note: AsyncSessionLocal is imported lazily inside execute_agents() to avoid
@@ -240,6 +245,46 @@ async def execute_agents(
             except (RuntimeError, ValueError, TimeoutError) as e:
                 return e
 
+    async def run_security_auditor_with_session() -> dict[str, object] | BaseException:
+        """Run security auditor with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_security_auditor(content, content_type, analysis_id, session)
+            except (RuntimeError, ValueError, TimeoutError) as e:
+                return e
+
+    async def run_performance_analyst_with_session() -> dict[str, object] | BaseException:
+        """Run performance analyst with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_performance_analyst(content, content_type, analysis_id, session)
+            except (RuntimeError, ValueError, TimeoutError) as e:
+                return e
+
+    async def run_code_quality_critic_with_session() -> dict[str, object] | BaseException:
+        """Run code quality critic with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_code_quality_critic(content, content_type, analysis_id, session)
+            except (RuntimeError, ValueError, TimeoutError) as e:
+                return e
+
+    async def run_trend_validator_with_session() -> dict[str, object] | BaseException:
+        """Run trend validator with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_trend_validator(content, content_type, analysis_id, session)
+            except (RuntimeError, ValueError, TimeoutError) as e:
+                return e
+
+    async def run_dependency_mapper_with_session() -> dict[str, object] | BaseException:
+        """Run dependency mapper with its own database session."""
+        async with AsyncSessionLocal() as session:
+            try:
+                return await run_dependency_mapper(content, content_type, analysis_id, session)
+            except (RuntimeError, ValueError, TimeoutError) as e:
+                return e
+
     # Create tasks for selected agents (each with its own session)
     agent_tasks = []
     if "tech_comparator" in selected_agents:
@@ -248,6 +293,16 @@ async def execute_agents(
         agent_tasks.append(run_integration_feasibility_with_session())
     if "implementation_planner" in selected_agents:
         agent_tasks.append(run_implementation_planner_with_session())
+    if "security_auditor" in selected_agents:
+        agent_tasks.append(run_security_auditor_with_session())
+    if "performance_analyst" in selected_agents:
+        agent_tasks.append(run_performance_analyst_with_session())
+    if "code_quality_critic" in selected_agents:
+        agent_tasks.append(run_code_quality_critic_with_session())
+    if "trend_validator" in selected_agents:
+        agent_tasks.append(run_trend_validator_with_session())
+    if "dependency_mapper" in selected_agents:
+        agent_tasks.append(run_dependency_mapper_with_session())
 
     if not agent_tasks:
         logger.warning(

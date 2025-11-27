@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
-from app.workflows.agents.schemas import TechComparison
+from app.workflows.agents.schemas.tech_comparator import TechComparison
 
 # System prompt for tech comparator agent
 TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist. Your task is to:

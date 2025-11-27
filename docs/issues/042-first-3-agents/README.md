@@ -77,16 +77,19 @@ supervisor_route → execute_agents → [tech_comparator, integration_feasibilit
 **The 3 Core Agents:**
 
 1. **Tech Comparator** (`tech_comparator`)
+
    - Compares primary technologies with modern alternatives
    - Returns structured comparison with alternatives table
    - Output: `{"primary_tech": "...", "alternatives": [...], "comparison": {...}, "recommendation": "..."}`
 
 2. **Integration Feasibility** (`integration_feasibility`)
+
    - Assesses how well tech integrates with modern stacks (Next.js, FastAPI, etc.)
    - Evaluates compatibility, migration effort, breaking changes
    - Output: `{"compatibility": {...}, "migration_effort": "low/medium/high", "breaking_changes": [...], "recommendation": "..."}`
 
 3. **Implementation Planner** (`implementation_planner`)
+
    - Creates step-by-step implementation guides
    - Provides prerequisites, action steps, file structure, testing strategy
    - Output: `{"prerequisites": [...], "steps": [{step: 1, action: "...", files: [...]}], "testing_strategy": "...", "recommendation": "..."}`
@@ -94,42 +97,49 @@ supervisor_route → execute_agents → [tech_comparator, integration_feasibilit
 ### Key Features
 
 1. **Structured Output with Pydantic:**
+
    - All agents use `create_structured_agent` with Pydantic response schemas
    - Automatic validation of LLM responses against schemas
    - ToolStrategy ensures type-safe structured output
    - Validation errors automatically traced by LangSmith
 
 2. **Parallel Execution with Session Isolation:**
+
    - `execute_agents` runs selected agents in parallel using `asyncio.gather`
    - Each agent gets its own database session (`AsyncSessionLocal`) to prevent concurrency issues
    - Wrapper functions manage session lifecycle per agent
    - Exception isolation: one agent failure doesn't block others
 
 3. **Database Persistence:**
+
    - Agent findings stored in `agent_findings` table via `AgentFinding` model
    - Foreign key relationship to `analyses` table
    - Each finding includes: `agent_type`, `findings` (JSON), `processing_time_ms`
    - Findings automatically linked to analysis via `analysis_id`
 
 4. **SSE Event Streaming:**
+
    - Progress events emitted for each agent stage (running, complete, failed)
    - Real-time token streaming during agent execution
    - Error events with detailed error information
    - Events include: `analysis_id`, `stage`, `status`, `agent_type`, `findings`
 
 5. **Async Generator Cleanup (PEP 525):**
+
    - Fixed `GeneratorExit` handling in supervisor streaming
    - Proper `AsyncIterator` type annotations
    - Single cleanup point in `finally` block
    - Prevents context leakage and double-close errors
 
 6. **Timeout and Error Handling:**
+
    - 120s timeout per agent for complex LLM calls
    - Total timeout: `agent_timeout * len(agent_tasks)` for parallel execution
    - Graceful error handling: exceptions logged but don't crash workflow
    - Failed agents return error info in findings list
 
 7. **LangSmith Tracing:**
+
    - All agents traced with `@traceable` decorator
    - Agent-specific tags: `["agent", "tech_comparator"]`, etc.
    - Structured logging with context (analysis_id, agent_type, processing_time)

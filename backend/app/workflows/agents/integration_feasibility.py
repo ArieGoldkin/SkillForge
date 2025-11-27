@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
-from app.workflows.agents.schemas import IntegrationFeasibility
+from app.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
 
 # System prompt for integration feasibility agent
 INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst.

@@ -1,20 +1,16 @@
-"""Integration tests for agent implementations with real LLM."""
+"""Integration tests for first 3 agent implementations with real LLM."""
 
-import asyncio
 import os
 from uuid import UUID, uuid4
 
 import pytest
 
-from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.workflows.agents import (
     run_implementation_planner,
     run_integration_feasibility,
     run_tech_comparator,
 )
-
-EXPECTED_AGENT_COUNT = 3
 
 
 @pytest.fixture
@@ -186,11 +182,15 @@ async def test_agents_parallel_execution_with_separate_sessions(
     requires_database,
     reset_engine_connections,
 ):
-    """Test parallel execution of multiple agents with separate database sessions.
+    """Test parallel execution of first 3 agents with separate database sessions.
 
     This test verifies that each agent gets its own database session,
     preventing concurrency errors when agents run in parallel.
     """
+    import asyncio
+
+    from app.db.session import AsyncSessionLocal
+
     analysis_id = str(uuid4())
     content = """
     React is a JavaScript library for building user interfaces.
@@ -234,7 +234,8 @@ async def test_agents_parallel_execution_with_separate_sessions(
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Verify all agents completed successfully (no concurrency errors)
-    assert len(results) == EXPECTED_AGENT_COUNT
+    expected_count = 3
+    assert len(results) == expected_count
     for result in results:
         assert not isinstance(result, Exception), f"Agent failed with: {result}"
         assert "agent_type" in result
