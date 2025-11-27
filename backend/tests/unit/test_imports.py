@@ -7,8 +7,12 @@ that run linting, type checking, and unit tests without a database.
 
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
+
+# Get the backend directory dynamically (works in both local and CI)
+BACKEND_DIR = Path(__file__).parent.parent.parent.resolve()
 
 
 class TestImportWithoutDatabaseUrl:
@@ -58,7 +62,7 @@ class TestImportWithoutDatabaseUrl:
                 # Python needs these
                 "PYTHONPATH": ".",
             },
-            cwd="/Users/yonatangross/coding/SkillForge/backend",
+            cwd=str(BACKEND_DIR),
             timeout=30,
         )
 
@@ -92,7 +96,7 @@ class TestImportWithoutDatabaseUrl:
                 "HOME": "/tmp",
                 "PYTHONPATH": ".",
             },
-            cwd="/Users/yonatangross/coding/SkillForge/backend",
+            cwd=str(BACKEND_DIR),
             timeout=30,
         )
 
