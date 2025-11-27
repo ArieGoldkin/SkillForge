@@ -1,15 +1,16 @@
 """Background task runner for analysis workflows."""
 
-import uuid
-from typing import Any
+from __future__ import annotations
 
-from sqlalchemy import select
+import uuid
+from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
-from app.models.analysis import Analysis
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.analysis import analysis_workflow
+
+if TYPE_CHECKING:
+    pass
 
 logger = get_logger(__name__)
 
@@ -60,7 +61,13 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
         )
 
         # Update Analysis status to failed
+        # Import DB modules lazily to avoid DATABASE_URL validation at import time
         try:
+            from sqlalchemy import select
+
+            from app.db.session import AsyncSessionLocal
+            from app.models.analysis import Analysis
+
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
                     select(Analysis).where(Analysis.id == analysis_id)
@@ -85,4 +92,3 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             status="failed",
             error=str(e),
         )
-
