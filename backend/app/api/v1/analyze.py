@@ -1,145 +1,146 @@
 """Analysis endpoints for content analysis pipeline."""
 
 import asyncio
-import json
 import uuid
-from collections.abc import AsyncIterator
+from typing import Annotated
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from sse_starlette.sse import EventSourceResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.sse_handler import stream_analysis_progress as stream_analysis_progress_handler
+from app.api.v1.workflow_runner import run_workflow_task
+from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.event_broadcaster import broadcaster
+from app.core.utils import normalize_analysis_id_to_uuid
+from app.db.session import get_db
+from app.models.analysis import Analysis
+from app.schemas.analyze import AnalyzeCreateResponse, AnalyzeRequest
+from app.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
 
+# Store background task references to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
+
 
 @router.get("/analyze/{analysis_id}/stream")
-async def stream_analysis_progress(
+async def stream_analysis_progress_endpoint(
     analysis_id: uuid.UUID,
     request: Request,
-) -> EventSourceResponse:
+):
     """Stream real-time analysis progress via Server-Sent Events (SSE).
 
-    Establishes an SSE connection for the specified analysis and streams
-    progress events as they occur during workflow execution. Events include
-    stage updates, status changes, and completion notifications.
+    See app.api.v1.sse_handler.stream_analysis_progress for full documentation.
+    """
+    return await stream_analysis_progress_handler(analysis_id, request)
 
-    This endpoint maintains a persistent connection that streams events from
-    the workflow execution. The connection is automatically closed when:
-    - A "complete" event is received
-    - The client disconnects
-    - An error occurs
+
+@router.post("/analyze", status_code=status.HTTP_201_CREATED)
+async def create_analysis(
+    request: AnalyzeRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AnalyzeCreateResponse:
+    """Create a new analysis and start the workflow.
+
+    This endpoint accepts a URL, creates an Analysis record in the database,
+    and starts the analysis workflow asynchronously. The endpoint returns
+    immediately with the analysis_id, allowing clients to connect to the SSE
+    endpoint for real-time progress updates.
 
     Args:
-        analysis_id: UUID of the analysis to stream progress for
-        request: FastAPI request object (used for disconnect detection)
+        request: AnalyzeRequest containing URL and optional analysis_id
+        db: Database session dependency
 
     Returns:
-        EventSourceResponse streaming SSE events in the format:
-        ```
-        event: {event_type}
-        data: {json_encoded_event_data}
-        ```
+        AnalyzeCreateResponse with analysis_id, URL, content_type, status, and SSE endpoint
 
     Raises:
-        404: If analysis_id is invalid or not found (handled by FastAPI)
-
-    Event Types:
-        - progress: Stage status updates (running, complete)
-        - error: Error notifications with error details
-        - complete: Final workflow completion
-
-    Example Client Usage:
-        ```javascript
-        const eventSource = new EventSource('/api/v1/analyze/{id}/stream');
-
-        eventSource.addEventListener('progress', (e) => {
-            const data = JSON.parse(e.data);
-            console.log(`Stage: ${data.stage}, Status: ${data.status}`);
-        });
-
-        eventSource.addEventListener('complete', (e) => {
-            eventSource.close();
-        });
-        ```
-
-    Example Server Events:
-        ```
-        event: progress
-        data: {"type": "progress", "stage": "extraction", "status": "running", "timestamp": "..."}
-
-        event: progress
-        data: {"type": "progress", "stage": "extraction", "status": "complete", "word_count": 5234}
-
-        event: complete
-        data: {"type": "complete", "stage": "artifact_generation", "timestamp": "..."}
-        ```
+        HTTPException: 422 if URL validation fails or content type detection fails
+        HTTPException: 500 if database operation fails
 
     """
-    channel = f"workflow:{analysis_id}"
+    url_str = str(request.url)
 
-    logger.info(
-        "sse_connection_started",
-        analysis_id=str(analysis_id),
-        channel=channel,
-    )
+    # Detect content type
+    try:
+        content_type = detect_content_type(url_str)
+    except ContentTypeError as e:
+        logger.warning(
+            "content_type_detection_failed",
+            url=url_str,
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Invalid URL format: {e!s}",
+        ) from e
 
-    async def event_generator() -> AsyncIterator[dict[str, str]]:
-        """Generate SSE events from broadcaster subscription."""
+    # Generate or normalize analysis_id
+    if request.analysis_id:
         try:
-            async for event in broadcaster.subscribe(channel):
-                # Check if client disconnected
-                if await request.is_disconnected():
-                    logger.info(
-                        "sse_client_disconnected",
-                        analysis_id=str(analysis_id),
-                    )
-                    break
-
-                # Format event for SSE
-                event_type = str(event.get("type", "message"))
-                yield {
-                    "event": event_type,
-                    "data": json.dumps(event),
-                }
-
-                # Close connection on complete event
-                if event.get("type") == "complete":
-                    logger.info(
-                        "sse_complete_event_sent",
-                        analysis_id=str(analysis_id),
-                    )
-                    break
-
-        except asyncio.CancelledError:
-            logger.info(
-                "sse_connection_cancelled",
-                analysis_id=str(analysis_id),
-            )
-            raise
+            analysis_uuid = normalize_analysis_id_to_uuid(request.analysis_id)
         except Exception as e:
-            logger.error(
-                "sse_connection_error",
-                analysis_id=str(analysis_id),
+            logger.warning(
+                "analysis_id_normalization_failed",
+                analysis_id=request.analysis_id,
                 error=str(e),
-                exc_info=True,
             )
-            # Send error event before closing
-            yield {
-                "event": "error",
-                "data": json.dumps(
-                    {
-                        "type": "error",
-                        "analysis_id": str(analysis_id),
-                        "error": "Connection error occurred",
-                    }
-                ),
-            }
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Invalid analysis_id format: {e!s}",
+            ) from e
+    else:
+        analysis_uuid = uuid.uuid4()
 
-    return EventSourceResponse(event_generator())
+    # Create Analysis record
+    try:
+        analysis = Analysis(
+            id=analysis_uuid,
+            url=url_str,
+            content_type=content_type,
+            status="pending",
+        )
+        db.add(analysis)
+        await db.commit()
+        await db.refresh(analysis)
+
+        logger.info(
+            "analysis_created",
+            analysis_id=str(analysis_uuid),
+            url=url_str,
+            content_type=content_type,
+        )
+    except Exception as e:
+        logger.error(
+            "analysis_creation_failed",
+            analysis_id=str(analysis_uuid),
+            url=url_str,
+            error=str(e),
+            exc_info=True,
+        )
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create analysis record",
+        ) from e
+
+    # Start workflow asynchronously with proper task lifecycle management
+    task = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+    # Build SSE endpoint URL
+    sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"
+
+    return AnalyzeCreateResponse(
+        analysis_id=str(analysis_uuid),
+        url=url_str,
+        content_type=content_type,
+        status="pending",
+        sse_endpoint=sse_endpoint,
+    )
 
 
 @router.get("/analyze/{analysis_id}")

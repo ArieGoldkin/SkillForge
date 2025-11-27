@@ -8,8 +8,8 @@ from app.services.extraction.jina_reader import JinaReaderError
 from app.workflows.analysis import analysis_workflow
 from app.workflows.types import AnalysisState
 
-# Expected embedding dimensions for nomic-embed-text
-EXPECTED_EMBEDDING_DIMENSIONS = 768
+# Expected embedding dimensions for OpenAI text-embedding-3-small
+EXPECTED_EMBEDDING_DIMENSIONS = 1536
 
 
 @pytest.fixture
@@ -46,11 +46,26 @@ async def test_analysis_workflow_with_mocked_services(
     mock_embedding_service.generate_embedding = AsyncMock(return_value=sample_embedding)
     mock_embedding_service.close = AsyncMock()
 
+    # Mock supervisor to return empty agent selection (no agents to execute)
+    mock_supervisor_result = {
+        "supervisor_decision": {
+            "agents": [],
+            "priority": [],
+            "reasoning": "Test content",
+            "confidence": 0.5,
+        }
+    }
+
     with (
         patch("app.workflows.tasks.JinaReader", return_value=mock_jina),
         patch(
             "app.workflows.tasks.EmbeddingService",
             return_value=mock_embedding_service,
+        ),
+        patch(
+            "app.workflows.analysis.supervisor_route_task",
+            new_callable=AsyncMock,
+            return_value=mock_supervisor_result,
         ),
     ):
         result = await analysis_workflow.ainvoke(
@@ -67,6 +82,8 @@ async def test_analysis_workflow_with_mocked_services(
         assert "raw_content" in result
         assert "extraction_metadata" in result
         assert "content_embedding" in result
+        assert "supervisor_decision" in result
+        assert "agent_findings" in result
 
         # Verify values
         assert result["analysis_id"] == "test-analysis-id"
@@ -74,6 +91,7 @@ async def test_analysis_workflow_with_mocked_services(
         assert result["raw_content"] == sample_extraction_result["content"]
         assert result["extraction_metadata"] == sample_extraction_result["metadata"]
         assert result["content_embedding"] == sample_embedding
+        assert result["agent_findings"] == []
 
         # Verify services were called
         mock_jina.extract_article.assert_called_once_with("https://example.com")

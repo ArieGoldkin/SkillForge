@@ -27,6 +27,17 @@
         "-y",
         "@playwright/mcp@latest"
       ]
+    },
+    "langsmith": {
+      "command": "/opt/homebrew/bin/uvx",
+      "args": [
+        "langsmith-mcp-server"
+      ],
+      "env": {
+        "LANGSMITH_API_KEY": "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",
+        "LANGSMITH_WORKSPACE_ID": "",
+        "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com"
+      }
     }
   }
 }

@@ -58,7 +58,7 @@ from app.core.config import settings
 from app.core.constants import CONTENT_TYPE_ARTICLE
 from app.core.logging import get_logger
 from app.workflows.nodes.supervisor import supervisor_route
-from app.workflows.tasks import extract_content, generate_embedding
+from app.workflows.tasks import execute_agents, extract_content, generate_embedding
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
@@ -80,7 +80,7 @@ if (
     try:
         checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
         logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
-    except (ValueError, ConnectionError, Exception) as e:
+    except (ValueError, ConnectionError) as e:
         logger.warning(
             "workflow_checkpointer_fallback",
             error=str(e),
@@ -97,6 +97,7 @@ else:
 extract_content_task = task(extract_content)
 generate_embedding_task = task(generate_embedding)
 supervisor_route_task = task(supervisor_route)
+execute_agents_task = task(execute_agents)
 
 
 @entrypoint(checkpointer=checkpointer)
@@ -107,7 +108,8 @@ async def analysis_workflow(input_data: dict) -> dict:
     1. Extract content from URL using JinaReader
     2. Generate embeddings for the extracted content
     3. Supervisor analyzes content and selects relevant agents
-    4. Return complete state with all fields populated
+    4. Execute selected agents in parallel
+    5. Return complete state with all fields populated
 
     Args:
         input_data: Dictionary with 'url' and 'analysis_id' keys
@@ -121,6 +123,7 @@ async def analysis_workflow(input_data: dict) -> dict:
         - extraction_metadata
         - content_embedding
         - supervisor_decision
+        - agent_findings
 
     """
     url = input_data["url"]
@@ -198,6 +201,24 @@ async def analysis_workflow(input_data: dict) -> dict:
             )
             raise RuntimeError(msg) from None
 
+        # Execute selected agents in parallel
+        supervisor_decision = supervisor_result.get("supervisor_decision", {})
+        selected_agents = supervisor_decision.get("agents", [])
+
+        agent_findings = []
+        if selected_agents:
+            logger.debug(
+                "workflow_executing_agents",
+                analysis_id=analysis_id,
+                selected_agents=selected_agents,
+            )
+            agent_findings = await execute_agents_task(
+                extraction_result["raw_content"],
+                content_type,
+                analysis_id,
+                selected_agents,
+            )
+
         # Assemble final result
         logger.debug(
             "workflow_assembling_result",
@@ -211,7 +232,8 @@ async def analysis_workflow(input_data: dict) -> dict:
             "raw_content": extraction_result["raw_content"],
             "extraction_metadata": extraction_result["extraction_metadata"],
             "content_embedding": embedding,
-            "supervisor_decision": supervisor_result.get("supervisor_decision", {}),
+            "supervisor_decision": supervisor_decision,
+            "agent_findings": agent_findings,
         }
 
         logger.info(
@@ -220,10 +242,9 @@ async def analysis_workflow(input_data: dict) -> dict:
             url=url,
             content_length=len(extraction_result["raw_content"]),
             embedding_dimensions=len(embedding),
-            agents_selected=len(supervisor_result.get("supervisor_decision", {}).get("agents", [])),
+            agents_selected=len(selected_agents),
+            agents_completed=len(agent_findings),
         )
-
-        return result
     except Exception as e:
         logger.error(
             "workflow_failed",
@@ -232,3 +253,5 @@ async def analysis_workflow(input_data: dict) -> dict:
             exc_info=True,
         )
         raise
+    else:
+        return result

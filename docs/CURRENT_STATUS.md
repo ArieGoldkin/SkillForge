@@ -171,13 +171,13 @@
 - **DeepSeek**: V3.2 ($0.28/$0.42) - Very cheap alternative
 - **xAI**: Grok 3 Mini ($0.30/$0.50) - Very cheap alternative
 - **Anthropic**: Claude 4 Sonnet ($3.00/$15.00) - Strong reasoning
-- **Ollama**: llama3.3:8b (FREE) - Development, local
+- **OpenAI**: GPT-5 Mini ($0.25/$2.00) - Development & Production (recommended)
 
 **Configuration:**
 - `LLM_MODEL` environment variable (primary configuration)
 - `LLM_PROVIDER` optional override for explicit provider
 - Provider API keys validated automatically based on selected provider
-- Default: `ollama:llama3.3:8b` for development
+- Default: `gpt-5-mini` for development and production
 - Production: `gpt-5-mini` recommended (newer + cheaper than GPT-4o Mini)
 
 **Validation:**
@@ -186,14 +186,14 @@
 - ✅ Model factory tested with GPT-5 Mini
 - ✅ Supervisor agent initialized correctly
 - ✅ OpenAI API integration verified working
-- ✅ Test fixed: Updated Ollama default from `llama3.1:8b` to `llama3.3:8b`
+- ✅ Migration complete: Migrated from Ollama to OpenAI (GPT-5 Mini)
 
 **Files Modified:**
 - `backend/app/core/model_factory.py` - Added multi-provider support
 - `backend/app/core/config.py` - Added multi-provider LLM configuration
 - `backend/app/workflows/nodes/supervisor.py` - Updated to use model factory
 - `backend/.env.example` - Updated with verified November 2025 pricing
-- `backend/tests/unit/test_config.py` - Fixed Ollama default test
+- `backend/tests/unit/test_config.py` - Updated for OpenAI configuration
 
 **Issue #42:** Task 2.2.1-2.2.3 - Implement First 3 Core Sub-Agents [8 pts] 🎯 READY
 - **Status:** Open

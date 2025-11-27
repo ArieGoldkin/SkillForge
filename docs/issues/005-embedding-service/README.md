@@ -223,6 +223,8 @@ tests/test_embeddings.py::test_close_client PASSED
 
 ## Verification
 
+**Note:** This issue was originally implemented with Ollama (768 dimensions). A migration to OpenAI (1536 dimensions) was completed later. See [Migration Verification](./MIGRATION_VERIFICATION.md) for details.
+
 ### Manual Testing
 
 **1. Service Initialization:**

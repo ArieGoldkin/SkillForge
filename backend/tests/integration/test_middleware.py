@@ -1,11 +1,14 @@
 """Tests for Request ID middleware."""
 
+import threading
 import uuid
 
 import pytest
 import structlog
 from fastapi.testclient import TestClient
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.constants import HTTP_NOT_FOUND, HTTP_OK
 from app.main import RequestIDMiddleware, app
 
 
@@ -29,7 +32,7 @@ def test_request_id_middleware_adds_header_to_response(client, reset_context):
     """Test Request ID middleware adds X-Request-ID header to all responses."""
     # Use root endpoint to avoid database connection issues
     response = client.get("/")
-    assert response.status_code == 200
+    assert response.status_code == HTTP_OK
     assert "X-Request-ID" in response.headers
     assert response.headers["X-Request-ID"] is not None
     # Should be a valid UUID format
@@ -44,7 +47,7 @@ def test_request_id_middleware_uses_custom_header(client, reset_context):
     custom_id = "custom-request-id-12345"
     # Use root endpoint to avoid database connection issues
     response = client.get("/", headers={"X-Request-ID": custom_id})
-    assert response.status_code == 200
+    assert response.status_code == HTTP_OK
     assert response.headers["X-Request-ID"] == custom_id
 
 
@@ -79,7 +82,7 @@ def test_request_id_middleware_adds_to_all_endpoints(client, reset_context):
 def test_request_id_middleware_adds_to_error_responses(client, reset_context):
     """Test Request ID middleware adds header to error responses."""
     response = client.get("/nonexistent")
-    assert response.status_code == 404
+    assert response.status_code == HTTP_NOT_FOUND
     assert "X-Request-ID" in response.headers
     assert response.headers["X-Request-ID"] is not None
 
@@ -122,15 +125,11 @@ def test_request_id_middleware_stores_in_request_state(client, reset_context):
 
 def test_request_id_middleware_class_structure():
     """Test RequestIDMiddleware is a proper BaseHTTPMiddleware subclass."""
-    from starlette.middleware.base import BaseHTTPMiddleware
-
     assert issubclass(RequestIDMiddleware, BaseHTTPMiddleware)
 
 
 def test_request_id_middleware_multiple_concurrent_requests(client, reset_context):
     """Test Request ID middleware handles concurrent requests correctly."""
-    import threading
-
     ids = []
     errors = []
 
@@ -139,7 +138,7 @@ def test_request_id_middleware_multiple_concurrent_requests(client, reset_contex
             # Use root endpoint to avoid database connection issues
             response = client.get("/")
             ids.append(response.headers["X-Request-ID"])
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError) as e:
             errors.append(str(e))
 
     threads = [threading.Thread(target=make_request) for _ in range(10)]

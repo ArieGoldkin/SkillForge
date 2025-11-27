@@ -1,19 +1,25 @@
 """FastAPI application initialization and middleware."""
 
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 
 import structlog
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api.v1 import analyze, health
-from app.core.config import settings
-from app.core.exceptions import SkillForgeException
-from app.core.logging import get_logger, setup_logging
+# Load .env file BEFORE any other imports to ensure LangSmith env vars are available
+# This is critical for LangChain to detect LANGCHAIN_TRACING_V2 at import time
+load_dotenv()
+
+from app.api.v1 import analyze, health  # noqa: E402
+from app.core.config import settings  # noqa: E402
+from app.core.exceptions import SkillForgeException  # noqa: E402
+from app.core.logging import get_logger, setup_logging  # noqa: E402
 
 # Setup logging first
 setup_logging()
@@ -24,10 +30,15 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
+    langsmith_enabled = os.getenv("LANGCHAIN_TRACING_V2") == "true"
+    langsmith_project = os.getenv("LANGCHAIN_PROJECT", "default")
+
     logger.info(
         "application_startup",
         environment=settings.ENVIRONMENT,
         log_level=settings.LOG_LEVEL,
+        langsmith_enabled=langsmith_enabled,
+        langsmith_project=langsmith_project if langsmith_enabled else None,
     )
     yield
     # Shutdown

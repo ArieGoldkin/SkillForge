@@ -54,7 +54,6 @@ LLM_PROVIDER_ALIAS_MAP: Final[dict[str, str]] = {
     "google": "google_genai",
     "gemini": "google_genai",
     "google_genai": "google_genai",
-    "ollama": "ollama",
     "grok": "xai",
     "xai": "xai",
     "composer": "perplexity",
@@ -170,11 +169,11 @@ class Settings(BaseSettings):
 
     # Multi-provider LLM configuration
     LLM_MODEL: str = Field(
-        default="ollama:llama3.3:8b",
+        default="gpt-5-mini",
         description=(
             "Primary LLM identifier. Supports formats like 'gpt-5-mini', "
             "'claude-sonnet-4', 'gemini-2.0-flash', or provider-prefixed "
-            "values. Default uses Ollama (free, local) for development. "
+            "values. Default uses GPT-5 Mini for development. "
             "For production, use 'gpt-5-mini' ($0.25/$2.00 - recommended, "
             "newer + cheaper than GPT-4o Mini) or 'gpt-5' ($1.25/$10.00 - "
             "5x more expensive but maximum quality). Verified November 24, 2025."
@@ -184,7 +183,7 @@ class Settings(BaseSettings):
         default=None,
         description=(
             "Optional override for the LLM provider (e.g., openai, anthropic, "
-            "google_genai, ollama). When omitted, the provider is inferred "
+            "google_genai). When omitted, the provider is inferred "
             "from LLM_MODEL."
         ),
     )
@@ -223,9 +222,10 @@ class Settings(BaseSettings):
         ),
     )
     LLM_TIMEOUT: float | None = Field(
-        default=None,
+        default=60.0,
         description=(
-            "Timeout in seconds for LLM API calls. Defaults to model provider's default if not set."
+            "Timeout in seconds for LLM API calls. Defaults to 60s. "
+            "Set to None to use model provider's default."
         ),
     )
     LLM_RETRY_DELAY_BASE: float = Field(
@@ -237,27 +237,10 @@ class Settings(BaseSettings):
         ),
     )
 
-    # Legacy Ollama configuration retained for backwards compatibility / embeddings
-    OLLAMA_BASE_URL: str = Field(
-        default="http://localhost:11434",
-        description="Ollama API base URL (used when provider is Ollama).",
-    )
-    OLLAMA_MODEL: str = Field(
-        default="llama3.1:8b",
-        description="Legacy Ollama model name (prefer configuring via LLM_MODEL).",
-    )
-
-    # Embedding Configuration (to be used in Task 1.5.2)
-    OLLAMA_EMBEDDING_MODEL: str = Field(
-        default="nomic-embed-text",
-        description="Ollama embedding model for vector generation",
-    )
+    # Embedding Configuration
     EMBEDDING_DIMENSIONS: int = Field(
-        default=768,
-        description=(
-            "Expected embedding dimensions "
-            "(768 for nomic-embed-text, 1536 for OpenAI text-embedding-3-small)"
-        ),
+        default=1536,
+        description=("Expected embedding dimensions (1536 for OpenAI text-embedding-3-small)"),
     )
 
     # Content Extraction (to be used in Task 1.4.2)
@@ -300,10 +283,13 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_llm_configuration(self) -> "Settings":
         """Ensure LLM provider/API key configuration is valid."""
+        # Skip validation in development if API key is not set (allows local dev without API keys)
+        if self.is_development():
+            return self
+
         provider = self.resolved_llm_provider()
         api_field = LLM_PROVIDER_API_FIELDS.get(provider)
-        # Ollama doesn't require API key (local)
-        if api_field and provider != "ollama" and not getattr(self, api_field):
+        if api_field and not getattr(self, api_field):
             msg = (
                 f"{api_field} is required when using provider '{provider}'. "
                 "Set it via environment variables or in the .env file."

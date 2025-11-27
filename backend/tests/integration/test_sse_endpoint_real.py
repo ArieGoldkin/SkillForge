@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sse_starlette.sse import EventSourceResponse
 
-from app.api.v1.analyze import stream_analysis_progress
+from app.api.v1.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.event_broadcaster import broadcaster
@@ -35,19 +35,96 @@ def requires_test_env():
         pytest.skip("JINA_API_KEY not set in .env.test - skipping real API test")
 
 
+async def _run_workflow_task(analysis_id: str, channel: str) -> None:
+    """Run workflow and emit SSE events."""
+    try:
+        await analysis_workflow.ainvoke(
+            {
+                "url": "https://react.dev",
+                "analysis_id": analysis_id,
+            },
+            config={"configurable": {"thread_id": analysis_id}},
+        )
+        # Emit complete event
+        await broadcaster.publish(
+            channel,
+            {
+                "type": "complete",
+                "analysis_id": analysis_id,
+                "stage": "artifact_generation",
+                "status": "complete",
+                "timestamp": "2025-01-01T00:00:00Z",
+            },
+        )
+    except (RuntimeError, ValueError, TimeoutError, KeyError) as e:
+        # Emit error event on failure
+        await broadcaster.publish(
+            channel,
+            {
+                "type": "error",
+                "analysis_id": analysis_id,
+                "stage": "workflow",
+                "status": "failed",
+                "error": str(e),
+                "timestamp": "2025-01-01T00:00:00Z",
+            },
+        )
+        raise
+
+
+async def _collect_sse_events(
+    response: EventSourceResponse,
+    events_received: list[dict[str, str]],
+) -> None:
+    """Collect events from SSE stream."""
+    try:
+        async for event_dict in response.body_iterator:
+            events_received.append(event_dict)
+
+            # Stop on complete event
+            if event_dict.get("event") == "complete":
+                break
+    except (asyncio.CancelledError, GeneratorExit, StopAsyncIteration):
+        # Expected exceptions during cleanup - ignore
+        pass
+    except (RuntimeError, ValueError, KeyError) as e:
+        # Log but don't fail on other exceptions
+        logger = get_logger(__name__)
+        logger.debug("event_collection_error", error=str(e))
+
+
+async def _cleanup_tasks(*tasks: asyncio.Task | None) -> None:
+    """Cancel and await cancellation for all tasks."""
+    cleanup_tasks_list = [t for t in tasks if t and not t.done()]
+
+    # Cancel all remaining tasks
+    for task in cleanup_tasks_list:
+        task.cancel()
+
+    # Await cancellation with proper error suppression
+    for task in cleanup_tasks_list:
+        with contextlib.suppress(
+            TimeoutError,
+            asyncio.CancelledError,
+            RuntimeError,
+            GeneratorExit,
+        ):
+            await asyncio.wait_for(task, timeout=2.0)
+
+
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(60)  # 1 minute max timeout - fail fast if hanging
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls and workflow execution
 async def test_sse_endpoint_with_real_workflow(requires_test_env):
     """Test SSE endpoint with real workflow execution.
 
     This test requires:
-    - Ollama running on localhost:11434 with nomic-embed-text model
+    - OpenAI API key configured
     - Jina API key configured
     - Database connection
 
-    Can take 2+ minutes due to Ollama embedding generation.
+    Can take 2+ minutes due to OpenAI embedding generation and agent execution.
 
     This test:
     1. Connects to SSE endpoint
@@ -66,106 +143,35 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
     response = await stream_analysis_progress(uuid.UUID(analysis_id), mock_request)
     assert isinstance(response, EventSourceResponse)
 
-    # Start workflow in background task
-    async def run_workflow():
-        """Run workflow and emit SSE events."""
-        try:
-            await analysis_workflow.ainvoke(
-                {
-                    "url": "https://react.dev",
-                    "analysis_id": analysis_id,
-                },
-                config={"configurable": {"thread_id": analysis_id}},
-            )
-            # Emit complete event
-            await broadcaster.publish(
-                channel,
-                {
-                    "type": "complete",
-                    "analysis_id": analysis_id,
-                    "stage": "artifact_generation",
-                    "status": "complete",
-                    "timestamp": "2025-01-01T00:00:00Z",
-                },
-            )
-        except Exception as e:
-            # Emit error event on failure
-            await broadcaster.publish(
-                channel,
-                {
-                    "type": "error",
-                    "analysis_id": analysis_id,
-                    "stage": "workflow",
-                    "status": "failed",
-                    "error": str(e),
-                    "timestamp": "2025-01-01T00:00:00Z",
-                },
-            )
-            raise
-
     # Start workflow task
-    workflow_task = asyncio.create_task(run_workflow())
+    workflow_task = asyncio.create_task(_run_workflow_task(analysis_id, channel))
 
     # Collect events from SSE stream with timeout
     events_received = []
-    event_gen = None
-    event_collection_task = None
+    event_collection_task = asyncio.create_task(_collect_sse_events(response, events_received))
 
-    async def collect_events():
-        """Collect events from SSE stream."""
-        nonlocal events_received, event_gen
-        event_gen = response.body_iterator
-
-        try:
-            async for event_dict in event_gen:
-                events_received.append(event_dict)
-
-                # Stop on complete event
-                if event_dict.get("event") == "complete":
-                    break
-        except (asyncio.CancelledError, GeneratorExit):
-            # Ensure we break out of the loop on cancellation
-            pass
-        except Exception as e:
-            # Log but don't fail on other exceptions
-            logger = get_logger(__name__)
-            logger.debug("event_collection_error", error=str(e))
-
-    event_collection_task = None
     try:
-        # Start event collection as a task
-        event_collection_task = asyncio.create_task(collect_events())
-
-        # Wait for either events to complete or timeout (shorter timeout)
+        # Wait for either events to complete or timeout
         _done, pending = await asyncio.wait(
-            [event_collection_task],
-            timeout=30.0,  # 30 seconds max - fail fast
+            [event_collection_task, workflow_task],
+            timeout=120.0,  # 2 minutes max for workflow + events
             return_when=asyncio.FIRST_COMPLETED,
         )
 
-        # Cancel event collection if it's still pending
-        if event_collection_task in pending:
-            event_collection_task.cancel()
-            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
-                await asyncio.wait_for(event_collection_task, timeout=1.0)
-    except Exception:
-        # Ensure event collection is cancelled on any error
-        if event_collection_task and not event_collection_task.done():
-            event_collection_task.cancel()
-            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
-                await asyncio.wait_for(event_collection_task, timeout=1.0)
+        # Cancel pending tasks
+        for task in pending:
+            if not task.done():
+                task.cancel()
+                with contextlib.suppress(TimeoutError, asyncio.CancelledError, RuntimeError):
+                    await asyncio.wait_for(task, timeout=1.0)
+    except (RuntimeError, ValueError, KeyError, TimeoutError) as e:
+        # Ensure all tasks are cancelled on any error
+        logger = get_logger(__name__)
+        logger.debug("test_error_during_execution", error=str(e))
+        await _cleanup_tasks(event_collection_task, workflow_task)
     finally:
-        # Cancel and await workflow task to ensure proper cleanup
-        if workflow_task and not workflow_task.done():
-            workflow_task.cancel()
-            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
-                await asyncio.wait_for(workflow_task, timeout=2.0)
-
-        # Ensure event collection is cancelled
-        if event_collection_task and not event_collection_task.done():
-            event_collection_task.cancel()
-            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
-                await asyncio.wait_for(event_collection_task, timeout=1.0)
+        # Final cleanup - ensure all tasks are properly cancelled and awaited
+        await _cleanup_tasks(event_collection_task, workflow_task)
 
     # Verify we received events
     # If no events received, the test should still complete (not hang)
@@ -198,19 +204,18 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
 @pytest.mark.asyncio
 @pytest.mark.slow
 @pytest.mark.external
-@pytest.mark.timeout(
-    90
-)  # 90 seconds max timeout - accounts for streaming/parallel execution overhead
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls and workflow execution
 async def test_sse_endpoint_real_workflow_events(requires_test_env):
     """Test that real workflow execution emits SSE events.
 
     This test verifies that when a workflow runs, it emits SSE events
     that can be received via the SSE endpoint.
 
-    Timeout is set to 90s to account for:
+    Timeout is set to 180s to account for:
     - Streaming overhead from agent.astream()
     - Parallel execution of embedding and supervisor
-    - Real external service response times (OpenAI, Jina, Ollama)
+    - Real external service response times (OpenAI, Jina)
+    - Agent execution with LLM calls (can take 60-120s)
     - SSE event emission and processing
     """
     analysis_id = str(uuid.uuid4())
@@ -236,14 +241,20 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
 
     # Wait for workflow to complete with timeout (increased for streaming/parallel overhead)
     try:
-        result = await asyncio.wait_for(workflow_task, timeout=60.0)
+        result = await asyncio.wait_for(workflow_task, timeout=150.0)
         assert "analysis_id" in result
         assert result["analysis_id"] == analysis_id
         assert "raw_content" in result
         assert "content_embedding" in result
     except TimeoutError:
-        workflow_task.cancel()
-        # Await cancellation to ensure proper cleanup
-        with contextlib.suppress(TimeoutError, asyncio.CancelledError):
-            await asyncio.wait_for(workflow_task, timeout=2.0)
+        # Cancel and await cancellation to ensure proper cleanup
+        if not workflow_task.done():
+            workflow_task.cancel()
+            with contextlib.suppress(
+                TimeoutError,
+                asyncio.CancelledError,
+                RuntimeError,
+                GeneratorExit,
+            ):
+                await asyncio.wait_for(workflow_task, timeout=2.0)
         pytest.fail("Workflow did not complete within timeout")

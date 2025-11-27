@@ -8,7 +8,7 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
 
 - **Python 3.13** (required)
 - **Poetry** (for dependency management)
-- **Docker Desktop** (for local PostgreSQL and Ollama)
+- **Docker Desktop** (for local PostgreSQL)
 
 ### Installation
 
@@ -44,6 +44,32 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
    - API: http://localhost:8500
    - OpenAPI Docs: http://localhost:8500/docs
    - Health Check: http://localhost:8500/api/v1/health
+
+### Docker Compose (Alternative)
+
+The backend service is also available in Docker Compose for easier development:
+
+```bash
+# From project root, start backend service
+docker-compose up -d backend
+
+# View logs
+docker-compose logs -f backend
+
+# Stop backend
+docker-compose stop backend
+
+# Rebuild after code changes
+docker-compose up -d --build backend
+```
+
+The backend service will:
+- Automatically wait for PostgreSQL to be ready
+- Run Alembic migrations on startup
+- Start with hot reload enabled (code changes are reflected automatically)
+- Connect to PostgreSQL service in Docker network
+
+**Note:** Make sure to set `OPENAI_API_KEY` in your host environment or `.env` file for LLM features to work.
 
 ## Project Structure
 
@@ -190,11 +216,11 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 - `DATABASE_URL`: PostgreSQL connection string (required in production)
 
 **Multi-Provider LLM Configuration:**
-- `LLM_MODEL`: Primary LLM identifier (supports 6 providers)
-  - Development: `ollama:llama3.3:8b` (free, local)
+- `LLM_MODEL`: Primary LLM identifier (supports 5 providers)
+  - Development: `gpt-5-mini` (recommended, requires OpenAI API key)
   - Production (recommended): `gpt-5-mini` ($0.25/$2.00 per 1M tokens)
   - Other options: `claude-sonnet-4`, `gemini-2.0-flash`, `grok-3-mini`, `deepseek-v3.2`
-- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `ollama`, `xai`, `deepseek`)
+- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `xai`, `deepseek`)
 
 **Provider API Keys (set based on selected provider):**
 - `OPENAI_API_KEY`: Required for OpenAI models (GPT-5 Mini, GPT-5, GPT-4o, etc.)
@@ -203,20 +229,18 @@ All configuration is loaded from environment variables or `.env` file. See `.env
 - `XAI_API_KEY`: Required for xAI models (Grok 3 Mini, Grok 3 Std)
 - `DEEPSEEK_API_KEY`: Required for DeepSeek models (V3.2)
 
-**Legacy Ollama Configuration (for embeddings / backwards compatibility):**
-- `OLLAMA_BASE_URL`: Ollama API base URL (default: `http://localhost:11434`)
-- `OLLAMA_MODEL`: Ollama model name (default: `llama3.3:8b`)
-- `OLLAMA_EMBEDDING_MODEL`: Embedding model (default: `nomic-embed-text`)
+**Embedding Configuration:**
+- `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `1536` for OpenAI text-embedding-3-small)
 
 **Content Extraction:**
 - `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
 
 **Example Configuration:**
 
-Development (with Ollama - free):
+Development (with GPT-5 Mini):
 ```env
-LLM_MODEL=ollama:llama3.3:8b
-OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
 ```
 
 Production (with GPT-5 Mini - recommended):
@@ -340,7 +364,7 @@ Tests are categorized with markers for selective execution:
 
 - `@pytest.mark.slow`: Slow-running tests (deselect with `-m "not slow"`)
 - `@pytest.mark.integration`: Integration tests requiring real services
-- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.external`: Tests requiring external services (OpenAI, Jina, etc.)
 - `@pytest.mark.timeout(N)`: Override default timeout for specific test
 
 ### Running Tests
@@ -484,17 +508,16 @@ Application-wide constants are centralized in `app/core/constants.py`:
 
 - **HTTP Status Codes**: `HTTP_OK`, `HTTP_NOT_FOUND`, `HTTP_ERROR_THRESHOLD`
 - **Timeouts**: `DEFAULT_TIMEOUT`, `EMBEDDING_TIMEOUT`, `DB_TIMEOUT`
-- **Text Limits**: `MAX_TEXT_LENGTH`, `MAX_ERROR_MESSAGE_LENGTH`
+- **Text Limits**: `MAX_ERROR_MESSAGE_LENGTH`
 - **Retry Configuration**: `MAX_RETRY_ATTEMPTS`, retry wait times
 - **Database Pool**: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`
 - **Content Types**: `CONTENT_TYPE_ARTICLE`, `CONTENT_TYPE_VIDEO`, `CONTENT_TYPE_REPO`
 
 **Usage:**
 ```python
-from app.core.constants import MAX_TEXT_LENGTH, HTTP_ERROR_THRESHOLD
+from app.core.constants import HTTP_ERROR_THRESHOLD
 
-if len(text) > MAX_TEXT_LENGTH:
-    text = text[:MAX_TEXT_LENGTH]
+# Text truncation handled by EmbeddingService (32,000 char limit)
 
 if response.status_code >= HTTP_ERROR_THRESHOLD:
     raise Error("HTTP error")

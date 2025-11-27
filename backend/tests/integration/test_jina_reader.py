@@ -212,7 +212,8 @@ async def test_extract_article_retry_on_failure(jina_reader: JinaReader) -> None
 
         # Should succeed after retry
         assert result["title"] == "Success"
-        assert mock_get.call_count == 2
+        expected_retry_call_count = 2
+        assert mock_get.call_count == expected_retry_call_count
 
 
 @pytest.mark.asyncio
