@@ -1,16 +1,14 @@
 """Agent modules for specialized content analysis.
 
-This module will contain the 8 specialized sub-agents:
-- tech_comparator
-- security_auditor
-- integration_feasibility
-- implementation_planner
-- performance_analyst
-- code_quality_critic
-- trend_validator
-- dependency_mapper
-
-Agents will be implemented in Issue #42.
+This module contains the specialized sub-agents for content analysis.
 """
 
-__all__ = []
+from app.workflows.agents.implementation_planner import run_implementation_planner
+from app.workflows.agents.integration_feasibility import run_integration_feasibility
+from app.workflows.agents.tech_comparator import run_tech_comparator
+
+__all__ = [
+    "run_implementation_planner",
+    "run_integration_feasibility",
+    "run_tech_comparator",
+]

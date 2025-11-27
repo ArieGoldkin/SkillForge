@@ -20,11 +20,6 @@ def test_should_strip_provider_prefix_google_genai():
     assert _should_strip_provider_prefix("google_genai") is True
 
 
-def test_should_strip_provider_prefix_ollama():
-    """Test _should_strip_provider_prefix returns True for Ollama."""
-    assert _should_strip_provider_prefix("ollama") is True
-
-
 def test_should_strip_provider_prefix_xai():
     """Test _should_strip_provider_prefix returns False for xAI (custom provider)."""
     assert _should_strip_provider_prefix("xai") is False
@@ -104,36 +99,6 @@ def test_get_chat_model_with_anthropic(mock_settings, mock_init_chat_model):
     call_kwargs = mock_init_chat_model.call_args[1]
     assert call_kwargs["model_provider"] == "anthropic"
     assert call_kwargs["api_key"] == "sk-ant-test-key"
-    assert result == mock_model
-
-
-@patch("app.core.model_factory.init_chat_model")
-@patch("app.core.model_factory.settings")
-def test_get_chat_model_with_ollama(mock_settings, mock_init_chat_model):
-    """Test get_chat_model with Ollama provider (no API key required)."""
-    # Setup mock settings
-    mock_settings.LLM_MODEL = "ollama:llama3.3:8b"
-    mock_settings.resolved_llm_provider = MagicMock(return_value="ollama")
-    mock_settings.resolved_llm_model_name = MagicMock(return_value="llama3.3:8b")
-    mock_settings.OPENAI_API_KEY = None
-    mock_settings.ANTHROPIC_API_KEY = None
-    mock_settings.GOOGLE_API_KEY = None
-    mock_settings.XAI_API_KEY = None
-    mock_settings.DEEPSEEK_API_KEY = None
-
-    # Mock the chat model
-    mock_model = MagicMock()
-    mock_init_chat_model.return_value = mock_model
-
-    # Call get_chat_model
-    result = get_chat_model()
-
-    # Verify init_chat_model was called correctly
-    mock_init_chat_model.assert_called_once()
-    call_kwargs = mock_init_chat_model.call_args[1]
-    assert call_kwargs["model_provider"] == "ollama"
-    assert "api_key" not in call_kwargs  # Ollama doesn't require API key
-    assert mock_init_chat_model.call_args[0][0] == "llama3.3:8b"  # Stripped model name
     assert result == mock_model
 
 
@@ -292,7 +257,7 @@ def test_get_chat_model_strips_whitespace(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.init_chat_model")
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_missing_api_key(mock_settings, mock_init_chat_model):
-    """Test get_chat_model when API key is not set (should still work for Ollama)."""
+    """Test get_chat_model when API key is not set (should raise error)."""
     # Setup mock settings with OpenAI but no API key
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")

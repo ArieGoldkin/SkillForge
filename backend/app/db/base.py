@@ -4,12 +4,12 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
+    """Base class for all SQLAlchemy models.
 
+    Note: Model imports are NOT done here to avoid circular imports.
+    Models import Base from this module, and if we import models here,
+    we create a circular dependency.
 
-# Import all models here for Alembic autogenerate support
-from app.models.agent_finding import AgentFinding  # noqa: E402, F401
-from app.models.analysis import Analysis  # noqa: E402, F401
-from app.models.artifact import Artifact  # noqa: E402, F401
-from app.models.progress import AnalysisProgress  # noqa: E402, F401
-from app.models.tutoring import TutoringMessage, TutoringSession  # noqa: E402, F401
+    For Alembic autogenerate support, models are imported directly in
+    alembic/env.py after Base is imported.
+    """

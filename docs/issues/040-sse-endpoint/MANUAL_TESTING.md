@@ -52,10 +52,10 @@ The current integration tests (`tests/integration/test_sse_endpoint.py`) have th
    docker-compose up -d postgres
    ```
 
-3. **Ollama Running (for embeddings):**
+3. **OpenAI API Key Configured:**
    ```bash
-   docker-compose up -d ollama
-   # Pull model: ollama pull nomic-embed-text
+   # Set in .env file
+   OPENAI_API_KEY=sk-...
    ```
 
 4. **Environment Variables:**
@@ -63,8 +63,7 @@ The current integration tests (`tests/integration/test_sse_endpoint.py`) have th
    # backend/.env
    DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
    JINA_API_KEY=your_jina_api_key
-   OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-   EMBEDDING_DIMENSIONS=768
+   EMBEDDING_DIMENSIONS=1536
    ```
 
 ### Test 1: SSE Connection (Browser)
@@ -159,8 +158,9 @@ curl -X POST http://localhost:8500/api/v1/analyze \
 ## Known Issues
 
 1. **No API Endpoint to Trigger Workflow:**
-   - Workflow exists but no `POST /api/v1/analyze` endpoint yet
-   - Need to create endpoint that triggers workflow and returns analysis_id
+   - ✅ `POST /api/v1/analyze` endpoint implemented
+   - ✅ Endpoint triggers workflow and returns analysis_id
+   - ✅ SSE endpoint streams progress events
 
 2. **ASGITransport Limitation:**
    - `httpx.ASGITransport` doesn't support streaming responses

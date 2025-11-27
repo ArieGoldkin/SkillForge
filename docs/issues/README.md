@@ -45,6 +45,8 @@ docs/issues/
 │   └── SSE_SCHEMA.md
 ├── 041-supervisor-pattern/
 │   └── README.md                         # Issue #41 complete doc
+├── 042-first-3-agents/
+│   └── README.md                         # Issue #42 complete doc
 ├── 043-sse-client-hook/
 │   └── ISSUE_43_VALIDATION_COMPLETE.md   # Issue #43 complete doc
 ├── 044-progress-tracker/
@@ -55,9 +57,9 @@ docs/issues/
 
 ---
 
-## 📊 Sprint 1 Issues Status
+## 📊 Sprint 1 & 2 Issues Status
 
-### ✅ Completed Issues (11 total - 56 pts)
+### ✅ Completed Issues (15 total)
 
 | Issue | Title | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|----------|------|--------|
@@ -72,6 +74,7 @@ docs/issues/
 | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) | Create Basic LangGraph Workflow | ✅ Complete | Yonatan | [📄 Docs](./039-langgraph-workflow/README.md) | [#39](https://github.com/ArieGoldkin/SkillForge/issues/39) |
 | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) | SSE Endpoint for Real-Time Progress | ✅ Complete | Yonatan | [📄 Docs](./040-sse-endpoint/README.md) | [#40](https://github.com/ArieGoldkin/SkillForge/issues/40) |
 | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) | Implement Supervisor Pattern | ✅ Complete (PR #57) | Yonatan | [📄 Docs](./041-supervisor-pattern/README.md) | [#41](https://github.com/ArieGoldkin/SkillForge/issues/41) |
+| [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) | Implement First 3 Core Sub-Agents | ✅ Complete (PR #58) | Yonatan | [📄 Docs](./042-first-3-agents/README.md) | [#42](https://github.com/ArieGoldkin/SkillForge/issues/42) |
 | [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) | Create SSE Client Hook [5 pts] | ✅ Complete | Arie | [📄 Docs](./043-sse-client-hook/ISSUE_43_VALIDATION_COMPLETE.md) | [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) |
 | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) | Build ProgressTracker Component [5 pts] | ✅ Complete | Arie | [📄 Docs](./044-progress-tracker/ISSUE_44_VALIDATION_COMPLETE.md) | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) |
 | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) | Build Analysis View Page [3 pts] | ✅ Complete | Arie | [📄 Docs](./045-analysis-view-page/ISSUE_45_VALIDATION_COMPLETE.md) | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) |
@@ -100,8 +103,8 @@ _No backend issues in progress_
 - **Arie Progress:** 17/23 pts (74%) - *6pts from Issue #32*
 
 **Sprint 2:**
-- **Completed:** 29 pts (Issues #39 ✅, #40 ✅, #41 ✅, #43 ✅, #44 ✅, #45 ✅)
-- **Yonatan Progress:** 16/18 pts (89%)
+- **Completed:** 35 pts (Issues #39 ✅, #40 ✅, #41 ✅, #42 ✅, #43 ✅, #44 ✅, #45 ✅)
+- **Yonatan Progress:** 22/24 pts (92%)
 - **Arie Progress:** 13/13 pts (100%) ✅
 
 ---

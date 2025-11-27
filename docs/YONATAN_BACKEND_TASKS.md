@@ -165,7 +165,7 @@ poetry add langgraph@^1.0.0 langgraph-checkpoint@^3.0.0
 poetry add langchain@^1.0.0 langchain-core@^1.0.0 langchain-community@^1.0.0
 
 # 7. Add LLM providers
-poetry add langchain-openai@^1.0.0 langchain-anthropic@^1.0.0 langchain-ollama@^1.0.0 ollama@^0.4.3
+poetry add langchain-openai@^1.0.0 langchain-anthropic@^1.0.0
 
 # 8. Add database dependencies
 poetry add "psycopg[binary,pool]@^3.2.3" pgvector@^0.4.1 "sqlalchemy[asyncio]@^2.0.36" alembic@^1.13.3
@@ -288,14 +288,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = Field(default="postgresql://dev:devpass@localhost:5432/skillforge")
 
-    # LLM (Dev)
-    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434")
-    OLLAMA_MODEL: str = Field(default="llama3.1:8b")
-    OLLAMA_EMBEDDING_MODEL: str = Field(default="nomic-embed-text")
-
-    # LLM (Prod)
+    # LLM Configuration
+    LLM_MODEL: str = Field(default="gpt-5-mini")
     OPENAI_API_KEY: str | None = None
-    OPENAI_MODEL: str = Field(default="gpt-4-turbo-preview")
 
     # Content Extraction
     JINA_API_KEY: str | None = None
@@ -329,9 +324,8 @@ Create `.env.example` and `.env` files for configuration.
 ```.env
 # .env.example (commit this)
 DATABASE_URL=postgresql://dev:devpass@localhost:5432/skillforge
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=
 JINA_API_KEY=
 ENVIRONMENT=development
 LOG_LEVEL=DEBUG
@@ -800,10 +794,11 @@ class JinaReader:
 
 ### ✅ Task 1.4.3: Create Analysis Endpoint [3 pts]
 
-**Status:** Not Started  
+**Status:** ✅ Complete  
 **GitHub Issue:** [#4](https://github.com/ArieGoldkin/SkillForge/issues/4) (tasks 1.4.1-1.4.5)  
 **Dependencies:** Task 1.4.2
 **Integration Point:** API contract meeting with Arie (Day 3)
+**Completed:** 2025-11-25
 
 #### Description
 Create POST `/api/v1/analyze` endpoint to start analysis.
@@ -985,22 +980,17 @@ Create migration to update `content_embedding` column from `Vector(1536)` to `Ve
 
 ---
 
-### ✅ Task 1.5.1: Install Ollama Models [1 pt]
+### ✅ Task 1.5.1: Install Ollama Models [1 pt] (Historical - Migrated to OpenAI)
 
-**Status:** ✅ Complete  
+**Status:** ✅ Complete (Migrated to OpenAI)  
 **GitHub Issue:** [#5](https://github.com/ArieGoldkin/SkillForge/issues/5) (tasks 1.5.1-1.5.2)  
-**Dependencies:** Ollama running on host  
-**Completed:** November 23, 2025
+**Dependencies:** ~~Ollama running on host~~ (No longer required)  
+**Completed:** November 23, 2025  
+**Migration:** Migrated to OpenAI embeddings (1536 dimensions) - see Issue #5 migration docs
 
 #### Description
-Pull required Ollama models for dev environment.
-
-#### Commands
-```bash
-# Assuming Ollama running in Docker
-docker exec -it ollama ollama pull llama3.1:8b
-docker exec -it ollama ollama pull nomic-embed-text
-```
+~~Pull required Ollama models for dev environment.~~  
+**Note:** This task is historical. The project now uses OpenAI for embeddings (1536 dimensions).
 
 #### Verify
 ```bash
@@ -1018,7 +1008,7 @@ curl http://localhost:11434/api/tags
 **Completed:** November 23, 2025
 
 #### Description
-Implement service to generate embeddings using Ollama with dimension handling and normalization.
+Implement service to generate embeddings using OpenAI with dimension handling and normalization.
 
 #### Implementation
 - Created `app/services/embeddings.py` (209 lines)
@@ -1026,8 +1016,8 @@ Implement service to generate embeddings using Ollama with dimension handling an
 - L2 normalization for cosine similarity search
 - Retry logic with exponential backoff (tenacity)
 - Comprehensive error handling with custom `EmbeddingError`
-- Health check integration (Ollama availability)
-- Configuration: `EMBEDDING_DIMENSIONS=768`, `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`
+- Health check integration (OpenAI API key validation)
+- Configuration: `EMBEDDING_DIMENSIONS=1536` (OpenAI text-embedding-3-small)
 
 #### Testing
 - Created `tests/test_embeddings.py` (15 tests, 100% pass rate)
@@ -1037,56 +1027,83 @@ Implement service to generate embeddings using Ollama with dimension handling an
 
 ### ✅ Task 1.6.1: Create Docker Compose Configuration [3 pts]
 
-**Status:** Not Started
+**Status:** ✅ Completed
 **Dependencies:** Task 1.5.2
 
 #### Description
-Setup Docker Compose for PostgreSQL, PGVector, and Ollama.
+Setup Docker Compose for PostgreSQL, PGVector, and Backend service.
 
 #### File: docker-compose.yml
 ```yaml
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
-    container_name: skillforge_postgres
+    container_name: skillforge-postgres-dev
     environment:
       POSTGRES_DB: skillforge
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: devpass
     ports:
-      - "5432:5432"
+      - "5437:5432"  # Using 5437 to avoid conflicts
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-dev-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dev"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: skillforge_ollama
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-dev
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://dev:devpass@postgres:5432/skillforge
+      API_V1_PREFIX: /api/v1
+      HOST: 0.0.0.0
+      PORT: 8500
+      CORS_ORIGINS: '["http://localhost:5173"]'
+      LLM_MODEL: ${LLM_MODEL:-gpt-5-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
     ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
+      - "8500:8500"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:8500/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h postgres -U dev; do sleep 2; done &&
+        echo 'Running migrations...' &&
+        /app/.venv/bin/alembic upgrade head &&
+        echo 'Starting backend...' &&
+        /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
+      "
 
 volumes:
-  postgres_data:
-  ollama_data:
+  postgres-dev-data:
 ```
 
 #### Commands
 ```bash
 docker-compose up -d
 docker-compose ps  # Verify all services running
+docker-compose logs backend  # View backend logs
 ```
 
 ---
@@ -1137,10 +1154,11 @@ pip install -r requirements.txt
 echo "🗄️ Running database migrations..."
 alembic upgrade head
 
-# Pull Ollama models
-echo "🤖 Pulling Ollama models..."
-docker exec -it ollama ollama pull llama3.1:8b
-docker exec -it ollama ollama pull nomic-embed-text
+# Verify OpenAI API key is configured
+echo "🔑 Verifying OpenAI API key..."
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "⚠️  Warning: OPENAI_API_KEY not set in .env file"
+fi
 
 echo "✅ Setup complete!"
 echo ""
@@ -1456,7 +1474,7 @@ def security_auditor_tool(content: str) -> str:
     return security_auditor_agent.invoke({"messages": [content]})
 
 # Create supervisor agent using LangChain v1.0
-model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+model = init_chat_model(settings.LLM_MODEL)
 
 supervisor_agent = create_agent(
     model,
@@ -1469,12 +1487,32 @@ supervisor_agent = create_agent(
 @task
 async def supervisor_route(content: str, content_type: str) -> dict:
     """Supervisor decides which agents to invoke."""
-    result = supervisor_agent.invoke({
-        "messages": [{
-            "role": "user",
-            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
-        }]
-    })
+    # Use async invoke with timeout to prevent blocking
+    supervisor_timeout = 60.0  # 60 seconds max
+    if hasattr(supervisor_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            supervisor_agent.ainvoke({
+                "messages": [{
+                    "role": "user",
+                    "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                }]
+            }),
+            timeout=supervisor_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                supervisor_agent.invoke,
+                {
+                    "messages": [{
+                        "role": "user",
+                        "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                    }]
+                }
+            ),
+            timeout=supervisor_timeout,
+        )
     
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
@@ -1510,7 +1548,7 @@ def security_auditor_tool(content: str) -> str:
 # ... 6 more agent tools
 
 # Create supervisor agent using LangChain v1.0 create_agent
-model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+model = init_chat_model(settings.LLM_MODEL)
 
 supervisor_agent = create_agent(
     model,
@@ -1527,12 +1565,32 @@ supervisor_agent = create_agent(
 @task
 async def supervisor_route(content: str, content_type: str) -> dict:
     """Supervisor decides which agents to invoke."""
-    result = supervisor_agent.invoke({
-        "messages": [{
-            "role": "user",
-            "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
-        }]
-    })
+    # Use async invoke with timeout to prevent blocking
+    supervisor_timeout = 60.0  # 60 seconds max
+    if hasattr(supervisor_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            supervisor_agent.ainvoke({
+                "messages": [{
+                    "role": "user",
+                    "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                }]
+            }),
+            timeout=supervisor_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                supervisor_agent.invoke,
+                {
+                    "messages": [{
+                        "role": "user",
+                        "content": f"Content Type: {content_type}\nContent: {content[:2000]}"
+                    }]
+                }
+            ),
+            timeout=supervisor_timeout,
+        )
     
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
@@ -1576,7 +1634,7 @@ def find_alternatives(tech_name: str) -> list[str]:
     return ["alt1", "alt2"]
 
 # Create agent using LangChain v1.0
-model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+model = init_chat_model(settings.LLM_MODEL)
 
 tech_comparator_agent = create_agent(
     model,
@@ -1594,9 +1652,24 @@ Your task:
 @task
 async def run_tech_comparator(content: str) -> dict:
     """Run tech comparator agent."""
-    result = tech_comparator_agent.invoke({
-        "messages": [{"role": "user", "content": content}]
-    })
+    # Use async invoke with timeout to prevent blocking
+    agent_timeout = 60.0  # 60 seconds max per agent
+    if hasattr(tech_comparator_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            tech_comparator_agent.ainvoke({
+                "messages": [{"role": "user", "content": content}]
+            }),
+            timeout=agent_timeout,
+        )
+    else:
+        # Fallback: run sync invoke in thread pool
+        result = await asyncio.wait_for(
+            asyncio.to_thread(
+                tech_comparator_agent.invoke,
+                {"messages": [{"role": "user", "content": content}]}
+            ),
+            timeout=agent_timeout,
+        )
     return parse_agent_result(result)
 ```
 
@@ -1616,8 +1689,18 @@ async def run_tech_comparator(content: str, analysis_id: str) -> dict:
         agent="tech_comparator",
     )
     
-    # Run agent
-    result = tech_comparator_agent.invoke({"messages": [content]})
+    # Run agent (async with timeout to prevent blocking)
+    agent_timeout = 60.0  # 60 seconds max
+    if hasattr(tech_comparator_agent, "ainvoke"):
+        result = await asyncio.wait_for(
+            tech_comparator_agent.ainvoke({"messages": [content]}),
+            timeout=agent_timeout,
+        )
+    else:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(tech_comparator_agent.invoke, {"messages": [content]}),
+            timeout=agent_timeout,
+        )
     
     # Emit complete event
     await emit_streaming_event(
@@ -1653,7 +1736,7 @@ def find_alternatives(tech_name: str) -> list[str]:
     return ["alt1", "alt2"]
 
 # Create agent using LangChain v1.0
-model = init_chat_model(f"ollama:{settings.OLLAMA_MODEL}")
+model = init_chat_model(settings.LLM_MODEL)
 
 tech_comparator_agent = create_agent(
     model,
@@ -1686,19 +1769,21 @@ Respond in JSON:
 
 async def run_tech_comparator(state: AnalysisState) -> dict:
     """Compare technologies mentioned in content."""
-    client = ollama.AsyncClient(host=settings.OLLAMA_BASE_URL)
+    from langchain.chat_models import init_chat_model
+    from langchain.agents import create_agent
+    
+    model = init_chat_model(settings.LLM_MODEL)
+    agent = create_agent(model, tools=[...])
 
     prompt = TECH_COMPARATOR_PROMPT.format(
         content=state["raw_content"][:4000]
     )
 
-    response = await client.chat(
-        model=settings.OLLAMA_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        format="json",
-    )
+    response = await agent.ainvoke({
+        "messages": [{"role": "user", "content": prompt}]
+    })
 
-    findings = json.loads(response["message"]["content"])
+    findings = json.loads(response["messages"][-1].content)
 
     return {
         "agent_type": "tech_comparator",
@@ -1777,7 +1862,7 @@ def workflow(url: str) -> dict:
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
 
-model = init_chat_model("ollama:llama3.1:8b")
+model = init_chat_model("gpt-5-mini")
 agent = create_agent(model, tools=[tool1, tool2])
 ```
 
@@ -1862,7 +1947,7 @@ pytest tests/ -v --cov=app
 # Docker
 docker-compose up -d
 docker-compose logs -f
-docker exec -it ollama ollama list
+# Verify OpenAI API key is configured in .env file
 ```
 
 ### When Blocked

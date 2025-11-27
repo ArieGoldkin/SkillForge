@@ -136,7 +136,7 @@ Tests are categorized with markers for selective execution:
 
 - `@pytest.mark.slow`: Slow-running tests
 - `@pytest.mark.integration`: Integration tests requiring real services
-- `@pytest.mark.external`: Tests requiring external services (Ollama, Jina, etc.)
+- `@pytest.mark.external`: Tests requiring external services (OpenAI, Jina, etc.)
 - `@pytest.mark.timeout(N)`: Override default timeout for specific test
 
 ### Writing Tests

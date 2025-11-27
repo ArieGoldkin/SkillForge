@@ -25,13 +25,13 @@ Create supervisor node that routes to sub-agents dynamically using LangChain v1.
 
 - [x] **Create supervisor node module structure** - Created nodes/ and agents/ directories
 - [x] **Define 8 stub tools** - One tool per agent (tech_comparator, security_auditor, etc.)
-- [x] **Create supervisor agent** - Using `create_agent` with Ollama model
+- [x] **Create supervisor agent** - Using `create_agent` with OpenAI model
 - [x] **Implement supervisor_route task** - Analyzes content and selects relevant agents
 - [x] **Parse tool calls** - Extracts selected agents from supervisor agent response
 - [x] **Workflow integration** - Integrated into analysis workflow after embedding generation
 - [x] **SSE event emission** - Emits progress events for supervisor stage
 - [x] **Unit tests** - 9 tests with mocked LLM responses
-- [x] **Integration tests** - 6 tests with real Ollama model
+- [x] **Integration tests** - 6 tests with real OpenAI model
 
 ### Files Created/Modified
 
@@ -84,8 +84,8 @@ extract_content → generate_embedding → supervisor_route → return state
 
 1. **LangChain v1.0 create_agent with Multi-Provider LLM Support:**
    - Supervisor agent uses flexible model factory (`app/core/model_factory.py`)
-   - Supports multiple providers: OpenAI, Anthropic, Google, xAI, DeepSeek, Ollama
-   - Default: `ollama:llama3.3:8b` for development (free, local)
+   - Supports multiple providers: OpenAI, Anthropic, Google, xAI, DeepSeek
+   - Default: `gpt-5-mini` for development and production (recommended)
    - Production: `gpt-5-mini` recommended ($0.25/$2.00 per 1M tokens - verified November 24, 2025)
    - Model selection via `LLM_MODEL` environment variable
    - Provider auto-inference from model name or explicit `LLM_PROVIDER` setting
@@ -150,14 +150,14 @@ backend/tests/
 - ✅ Content truncation testing
 
 **Integration Tests** (`tests/integration/workflows/nodes/test_supervisor.py`):
-- ✅ 6 test cases with real Ollama model
+- ✅ 6 test cases with real OpenAI model
 - ✅ Different content types (tech, security, implementation)
 - ✅ Long content handling
 - ✅ Simple content edge cases
 
 **Test Results:**
 - ✅ All 9 unit tests passing
-- ✅ All 6 integration tests passing (when Ollama available)
+- ✅ All 6 integration tests passing (when OpenAI API key configured)
 - ✅ Tests use proper fixtures and mocking
 
 ### Multi-Provider LLM Integration (November 24, 2025)
@@ -258,7 +258,7 @@ The supervisor supports multiple LLM providers through a unified configuration s
 ```bash
 # Multi-Provider LLM (recommended)
 LLM_MODEL=gpt-5-mini              # Production: GPT-5 Mini ($0.25/$2.00)
-# LLM_MODEL=ollama:llama3.3:8b    # Development: Ollama (free, local)
+# LLM_MODEL=gpt-5-mini             # Development: GPT-5 Mini (recommended)
 # LLM_MODEL=claude-sonnet-4       # Anthropic Claude 4 Sonnet
 # LLM_MODEL=gemini-2.0-flash      # Google Gemini 2.0 Flash
 # LLM_PROVIDER=openai             # Optional: explicit provider override
@@ -272,7 +272,7 @@ DEEPSEEK_API_KEY=...              # Required for DeepSeek models
 ```
 
 **Supported Providers & Models (Verified November 24, 2025):**
-- **Ollama** (FREE): `ollama:llama3.3:8b` - Development, local
+- **OpenAI**: `gpt-5-mini` ($0.25/$2.00) - Development & Production (recommended)
 - **OpenAI**: `gpt-5-mini` ($0.25/$2.00) - **RECOMMENDED** for production
 - **OpenAI**: `gpt-5-nano` ($0.05/$0.40) - Cheapest OpenAI option
 - **Google**: `gemini-2.0-flash` ($0.075/$0.30) - Cheapest input pricing
@@ -286,13 +286,6 @@ DEEPSEEK_API_KEY=...              # Required for DeepSeek models
 - Automatic provider detection from model name
 - Explicit provider override via `LLM_PROVIDER` environment variable
 
-**Legacy Ollama Configuration (for embeddings):**
-```bash
-# Legacy Ollama config (used for embeddings / backwards compatibility)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.3:8b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-```
 
 **Database Configuration:**
 ```bash
@@ -303,9 +296,8 @@ DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/skillforge
 **Notes:** 
 - `LLM_MODEL` is the primary configuration (supports all providers)
 - Provider API keys are validated automatically based on selected provider
-- Ollama doesn't require API key (local deployment)
 - Database is optional - workflow uses MemorySaver if not configured
-- Default model: `ollama:llama3.3:8b` for development
+- Default model: `gpt-5-mini` for development and production
 - Production recommendation: `gpt-5-mini` (newer + cheaper than GPT-4o Mini)
 
 ---
@@ -340,7 +332,7 @@ tests/
 ├── unit/workflows/nodes/
 │   └── test_supervisor.py      # Unit tests (mocked LLM)
 └── integration/workflows/nodes/
-    └── test_supervisor.py      # Integration tests (real Ollama)
+    └── test_supervisor.py      # Integration tests (real OpenAI)
 ```
 
 This structure follows project standards for test organization and allows for clear separation between isolated unit tests and end-to-end integration tests.
