@@ -77,7 +77,6 @@ function mapStageStatus(status: StageStatus): AnalysisStepStatus {
       return 'in-progress'
     case 'failed':
       return 'failed'
-    case 'pending':
     default:
       return 'pending'
   }
