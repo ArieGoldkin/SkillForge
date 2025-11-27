@@ -235,7 +235,7 @@ async def test_api_error_handling_invalid_url(reset_engine_connections):
             json={"url": "not-a-valid-url"},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert "detail" in response.json()
 
 
@@ -249,7 +249,7 @@ async def test_api_error_handling_missing_url(reset_engine_connections):
             json={},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 @pytest.mark.asyncio
@@ -557,7 +557,7 @@ async def test_api_error_response_format(reset_engine_connections):
             json={"url": "invalid-url"},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         # FastAPI validation errors use "detail" field
         data = response.json()
         assert "detail" in data

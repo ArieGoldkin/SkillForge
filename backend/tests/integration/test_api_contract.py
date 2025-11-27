@@ -177,7 +177,7 @@ async def test_error_response_format_consistency():
             json={"url": "invalid-url"},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         data = response.json()
         # FastAPI validation errors use "detail" field
         assert "detail" in data
@@ -382,3 +382,4 @@ async def test_uuid_format_in_responses(reset_engine_connections):
             # Should be valid UUID string
             parsed_uuid = uuid.UUID(analysis_id)
             assert str(parsed_uuid) == analysis_id
+

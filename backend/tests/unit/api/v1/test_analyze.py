@@ -63,7 +63,7 @@ class TestCreateAnalysis:
             json={"url": "not-a-valid-url"},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     @patch("app.api.v1.analyze.detect_content_type")
     def test_create_analysis_content_type_detection_fails(
@@ -79,7 +79,7 @@ class TestCreateAnalysis:
             json={"url": "https://example.com/article"},
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert "Invalid URL format" in response.json()["detail"]
 
     @pytest.mark.asyncio
@@ -132,7 +132,7 @@ class TestCreateAnalysis:
             },
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert "Invalid analysis_id format" in response.json()["detail"]
 
     @pytest.mark.asyncio
@@ -210,3 +210,4 @@ class TestCreateAnalysis:
         assert response.sse_endpoint.startswith("/api/v1/analyze/")
         assert response.sse_endpoint.endswith("/stream")
         assert str(analysis_uuid) in response.sse_endpoint
+
