@@ -48,8 +48,6 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
     assert "response_format" in call_args.kwargs
 
 
-
-
 @pytest.mark.asyncio
 async def test_save_agent_finding(mock_session):
     """Test saving agent finding to database."""
@@ -68,5 +66,3 @@ async def test_save_agent_finding(mock_session):
     mock_session.add.assert_called_once()
     mock_session.commit.assert_awaited_once()
     mock_session.refresh.assert_awaited_once()
-
-

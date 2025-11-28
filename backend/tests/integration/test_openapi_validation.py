@@ -305,5 +305,3 @@ def test_openapi_response_examples(openapi_schema):
     # This test just verifies the structure allows examples
     assert "content" in response_201
     assert "application/json" in response_201["content"]
-
-

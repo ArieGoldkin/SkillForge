@@ -137,5 +137,3 @@ async def stream_analysis_progress(
             }
 
     return EventSourceResponse(event_generator())
-
-

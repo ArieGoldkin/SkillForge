@@ -6,7 +6,7 @@ import pytest
 
 from app.services.extraction.jina_reader import JinaReaderError
 from app.workflows.analysis import analysis_workflow
-from app.workflows.types import AnalysisState
+from app.workflows.state import AnalysisState
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -57,15 +57,20 @@ async def test_analysis_workflow_with_mocked_services(
     }
 
     with (
-        patch("app.workflows.tasks.JinaReader", return_value=mock_jina),
+        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.tasks.EmbeddingService",
+            "app.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
         ),
         patch(
-            "app.workflows.analysis.supervisor_route_task",
+            "app.workflows.graph_builder.supervisor_route",
             new_callable=AsyncMock,
             return_value=mock_supervisor_result,
+        ),
+        patch(
+            "app.workflows.nodes.parallel_agents.execute_agents",
+            new_callable=AsyncMock,
+            return_value=[],  # No agent findings since no agents selected
         ),
     ):
         result = await analysis_workflow.ainvoke(
@@ -109,7 +114,7 @@ async def test_analysis_workflow_error_handling() -> None:
     mock_jina.close = AsyncMock()
 
     with (
-        patch("app.workflows.tasks.JinaReader", return_value=mock_jina),
+        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         pytest.raises(JinaReaderError, match="Extraction failed"),
     ):
         await analysis_workflow.ainvoke(

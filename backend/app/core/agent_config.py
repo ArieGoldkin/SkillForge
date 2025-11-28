@@ -189,4 +189,3 @@ def get_stage_name(agent_type: str) -> StageName:
         'tech_comparison'
     """
     return get_agent_config(agent_type).stage_name
-

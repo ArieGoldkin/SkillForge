@@ -42,9 +42,12 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
         )
 
         # Run workflow with checkpointing
-        # LangGraph's Pregel.ainvoke has complex state/config types that mypy can't resolve
+        # StateGraph.ainvoke expects AnalysisState TypedDict
         config: dict[str, object] = {"configurable": {"thread_id": str(analysis_id)}}
-        input_state: dict[str, str] = {"url": url, "analysis_id": str(analysis_id)}
+        input_state: dict[str, str] = {
+            "url": url,
+            "analysis_id": str(analysis_id),
+        }
         await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
 
         logger.info(

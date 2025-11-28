@@ -105,8 +105,8 @@ async def test_run_tech_comparator_error_handling(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.create_structured_agent")
-@patch("app.workflows.agents.base.emit_agent_progress")
-@patch("app.workflows.agents.base.save_agent_finding")
+@patch("app.workflows.agents.result_processing.emit_agent_progress")
+@patch("app.workflows.agents.result_processing.save_agent_finding")
 async def test_tech_comparator_structured_output(
     mock_save_finding,
     mock_emit_progress,

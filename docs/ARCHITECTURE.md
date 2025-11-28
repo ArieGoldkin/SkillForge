@@ -1,7 +1,7 @@
 # 🏗️ SkillForge - Architecture & Workflow Diagrams
 
-**Version:** 1.1  
-**Last Updated:** November 25, 2025  
+**Version:** 1.2  
+**Last Updated:** December 2024  
 **Project:** SkillForge - Research-to-Implementation Pipeline
 
 ---
@@ -198,7 +198,7 @@ graph TB
 
 ---
 
-## Backend Workflow (LangGraph v1.0)
+## Backend Workflow (LangGraph v1.0 StateGraph)
 
 ```mermaid
 graph TB
@@ -210,26 +210,30 @@ graph TB
         ReturnID[Return analysis_id]
     end
     
-    subgraph "LangGraph v1.0 Functional API"
-        EntryPoint["@entrypoint checkpointer"]
+    subgraph "LangGraph v1.0 StateGraph"
+        EntryPoint[StateGraph Entry: extract]
         
-        subgraph "Workflow Tasks"
-            Extract["@task extract_content"]
-            Embed["@task generate_embedding"]
-            Supervisor["@task supervisor_route"]
+        subgraph "Workflow Nodes"
+            Extract[extract node]
             
-            subgraph "Sub-Agents"
-                TechComp["@task run_tech_comparator"]
-                Security["@task run_security_auditor"]
-                ImplPlan["@task run_implementation_planner"]
-                Perf["@task run_performance_analyst"]
-                CodeQual["@task run_code_quality_critic"]
-                Trends["@task run_trend_validator"]
-                Deps["@task run_dependency_mapper"]
+            subgraph "Parallel Execution (Fan-Out)"
+                Embed[embedding node]
+                Supervisor[supervisor node]
             end
             
-            Aggregate["@task aggregate_findings"]
-            Artifact["@task generate_artifact"]
+            ParallelAgents[parallel_agents node]
+            
+            subgraph "Sub-Agents (Internal Parallel)"
+                TechComp[tech_comparator]
+                Security[security_auditor]
+                ImplPlan[implementation_planner]
+                Perf[performance_analyst]
+                CodeQual[code_quality_critic]
+                Trends[trend_validator]
+                Deps[dependency_mapper]
+            end
+            
+            Aggregate[aggregate node]
         end
     end
     
@@ -253,16 +257,20 @@ graph TB
     EntryPoint --> Extract
     Extract -->|"SSE: extraction running"| SSEProgress
     Extract --> Embed
-    Embed --> Supervisor
-    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
+    Extract --> Supervisor
     
-    Supervisor --> TechComp
-    Supervisor --> Security
-    Supervisor --> ImplPlan
-    Supervisor --> Perf
-    Supervisor --> CodeQual
-    Supervisor --> Trends
-    Supervisor --> Deps
+    Embed -->|"SSE: embedding complete"| SSEProgress
+    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
+    Embed --> ParallelAgents
+    Supervisor --> ParallelAgents
+    
+    ParallelAgents --> TechComp
+    ParallelAgents --> Security
+    ParallelAgents --> ImplPlan
+    ParallelAgents --> Perf
+    ParallelAgents --> CodeQual
+    ParallelAgents --> Trends
+    ParallelAgents --> Deps
     
     TechComp -->|"SSE: tech_comparison"| SSEProgress
     Security -->|"SSE: security_audit"| SSEProgress
@@ -280,8 +288,7 @@ graph TB
     Trends --> Aggregate
     Deps --> Aggregate
     
-    Aggregate --> Artifact
-    Artifact -->|"SSE: artifact_generation complete"| SSEComplete
+    Aggregate -->|"SSE: aggregation complete"| SSEComplete
     
     Extract --> SaveProgress
     TechComp --> SaveFindings

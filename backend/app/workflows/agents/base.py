@@ -158,7 +158,23 @@ async def save_agent_finding(  # noqa: PLR0913
     Returns:
         Created AgentFinding instance
 
+    Raises:
+        ValueError: If Analysis record does not exist (foreign key constraint)
+
     """
+    # Verify Analysis exists before saving finding (prevents foreign key violations)
+    from sqlalchemy import select
+
+    from app.models.analysis import Analysis
+
+    result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
+    analysis = result.scalar_one_or_none()
+    if not analysis:
+        raise ValueError(
+            f"Analysis record with id={analysis_id} does not exist. "
+            "Analysis must be created before agents can save findings."
+        )
+
     finding = AgentFinding(
         analysis_id=analysis_id,
         agent_type=agent_type,

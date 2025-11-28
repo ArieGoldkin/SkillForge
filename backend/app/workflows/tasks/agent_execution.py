@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.workflows.tasks.agent_runners import (
+from app.workflows.tasks.runners import (
     run_code_quality_critic_with_session,
     run_dependency_mapper_with_session,
     run_implementation_planner_with_session,

@@ -99,7 +99,7 @@ async def test_supervisor_route_success(mock_agent_selection):
         # Verify SSE events were emitted
         assert mock_emit.call_count >= 2  # Start and complete events
         start_call = mock_emit.call_args_list[0]
-        assert start_call[1]["stage"] == "supervisor"
+        assert start_call[1]["stage"] == "supervisor_routing"
         assert start_call[1]["status"] == "running"
 
 

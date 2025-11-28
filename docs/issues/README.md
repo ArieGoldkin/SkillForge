@@ -93,7 +93,8 @@ docs/issues/
 
 | Issue | Title | Points | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|--------|----------|------|--------|
-| [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) | Fix Embedding Token Limit Violation | 5 | 🔄 Open | Yonatan | [📄 Docs](./090-embedding-token-fix/README.md) | [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) |
+| [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) | Fix Embedding Token Limit Violation | 5 | ✅ Complete | Yonatan | [📄 Docs](./090-embedding-token-fix/README.md) | [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) |
+| [#93](https://github.com/ArieGoldkin/SkillForge/issues/93) | Implement Similarity Search Using Embeddings | 8 | 🔄 Open | TBD | [📄 Docs](./093-embeddings-similarity-search/README.md) | TBD |
 | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) | Fix Workflow Status Not Updated to Complete | 3 | 🔄 Open | Yonatan | [📄 Docs](./091-workflow-status-fix/README.md) | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) |
 | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) | Improve Content Extraction Error Handling | 2 | 🔄 Open | Yonatan | [📄 Docs](./092-extraction-error-handling/README.md) | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) |
 

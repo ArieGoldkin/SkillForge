@@ -12,8 +12,8 @@ from app.workflows.agents.execution import run_agent_with_tracking
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_success(
     mock_save_finding,
     mock_emit_progress,
@@ -46,7 +46,7 @@ async def test_run_agent_with_tracking_success(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_no_structured_response(
     mock_emit_progress,
     mock_get_stage_name,
@@ -71,8 +71,8 @@ async def test_run_agent_with_tracking_no_structured_response(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_non_uuid_analysis_id(
     mock_save_finding,
     mock_emit_progress,
@@ -111,8 +111,8 @@ async def test_run_agent_with_tracking_non_uuid_analysis_id(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_valid_uuid_string(
     mock_save_finding,
     mock_emit_progress,
@@ -147,8 +147,8 @@ async def test_run_agent_with_tracking_valid_uuid_string(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_content_truncation(
     mock_save_finding,
     mock_emit_progress,
@@ -192,8 +192,8 @@ async def test_run_agent_with_tracking_content_truncation(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_uuid_object(
     mock_save_finding,
     mock_emit_progress,
@@ -221,6 +221,6 @@ async def test_run_agent_with_tracking_uuid_object(
     call_args = mock_save_finding.call_args
     called_analysis_id = call_args.kwargs["analysis_id"]
     assert isinstance(called_analysis_id, UUID)
-    assert called_analysis_id == analysis_id  # Should match exactly
+    assert str(called_analysis_id) == analysis_id  # Compare string representations
 
     assert result["agent_type"] == "test_agent"

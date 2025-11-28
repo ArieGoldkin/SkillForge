@@ -1,6 +1,6 @@
 """Unit tests for workflow task functions."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -10,9 +10,17 @@ from app.workflows.tasks import execute_agents
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.agent_runners.run_tech_comparator_with_session")
-@patch("app.workflows.tasks.agent_runners.run_integration_feasibility_with_session")
-@patch("app.workflows.tasks.agent_runners.run_implementation_planner_with_session")
+@patch(
+    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+)
+@patch(
+    "app.workflows.tasks.agent_execution.run_integration_feasibility_with_session",
+    new_callable=AsyncMock,
+)
+@patch(
+    "app.workflows.tasks.agent_execution.run_implementation_planner_with_session",
+    new_callable=AsyncMock,
+)
 async def test_execute_agents_creates_separate_sessions(
     mock_planner,
     mock_feasibility,
@@ -52,7 +60,9 @@ async def test_execute_agents_creates_separate_sessions(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.agent_runners.run_tech_comparator_with_session")
+@patch(
+    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+)
 async def test_execute_agents_handles_exceptions(mock_comparator):
     """Test that execute_agents handles agent exceptions gracefully."""
     # Setup mock to raise exception
@@ -84,7 +94,9 @@ async def test_execute_agents_returns_empty_for_no_agents():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.agent_runners.run_tech_comparator_with_session")
+@patch(
+    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+)
 async def test_execute_agents_handles_generatorexit(mock_comparator):
     """Test that execute_agents handles GeneratorExit gracefully."""
     # Setup mock to raise GeneratorExit

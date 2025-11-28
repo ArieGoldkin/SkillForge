@@ -97,12 +97,14 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
             timeout=140.0,  # 140 seconds for real workflow with streaming/parallel overhead
         )
 
-        # Verify result structure
+        # Verify result structure (StateGraph should populate all state fields)
         assert "analysis_id" in result
         assert "url" in result
         assert "raw_content" in result
         assert "extraction_metadata" in result
         assert "content_embedding" in result
+        assert "supervisor_decision" in result
+        assert "agent_findings" in result
 
         # Verify values
         assert result["analysis_id"] == analysis_id
@@ -111,6 +113,8 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         assert isinstance(result["extraction_metadata"], dict)
         assert len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS
         assert all(isinstance(x, float) for x in result["content_embedding"])
+        assert isinstance(result["supervisor_decision"], dict)
+        assert isinstance(result["agent_findings"], list)
     finally:
         # Ensure engine connections are disposed
         await engine.dispose()
@@ -209,10 +213,15 @@ async def test_analysis_workflow_with_checkpointer(
             timeout=180.0,  # 3 minutes for real workflow with streaming/parallel overhead
         )
 
-        # Verify both results are consistent
+        # Verify both results are consistent (StateGraph checkpointing)
         assert result1["analysis_id"] == result2["analysis_id"]
         assert result1["url"] == result2["url"]
         assert len(result1["content_embedding"]) == len(result2["content_embedding"])
+        # Verify state structure is consistent
+        assert "supervisor_decision" in result1
+        assert "supervisor_decision" in result2
+        assert "agent_findings" in result1
+        assert "agent_findings" in result2
     finally:
         # Ensure engine connections are disposed
         await engine.dispose()

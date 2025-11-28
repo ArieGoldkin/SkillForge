@@ -12,8 +12,8 @@ from tests.unit.workflows.agents.conftest import MockAgentSchema
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_generatorexit_handling(
     mock_save_finding,
     mock_emit_progress,
@@ -56,8 +56,8 @@ async def test_run_agent_with_tracking_generatorexit_handling(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_generatorexit_with_partial_result(
     mock_save_finding,
     mock_emit_progress,
