@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
 from app.services.sse_helpers import emit_streaming_event
@@ -43,8 +43,8 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
 
         # Run workflow with checkpointing
         # LangGraph's Pregel.ainvoke has complex state/config types that mypy can't resolve
-        config: dict[str, Any] = {"configurable": {"thread_id": str(analysis_id)}}
-        input_state = {"url": url, "analysis_id": str(analysis_id)}
+        config: dict[str, object] = {"configurable": {"thread_id": str(analysis_id)}}
+        input_state: dict[str, str] = {"url": url, "analysis_id": str(analysis_id)}
         await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
 
         logger.info(
@@ -52,11 +52,51 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             analysis_id=str(analysis_id),
         )
 
-    except Exception as e:
+        # Update Analysis status to complete
+        # Import DB modules lazily to avoid DATABASE_URL validation at import time
+        try:
+            from sqlalchemy import select
+
+            from app.db.session import AsyncSessionLocal
+            from app.models.analysis import Analysis
+
+            async with AsyncSessionLocal() as db_session:
+                result = await db_session.execute(
+                    select(Analysis).where(Analysis.id == analysis_id)
+                )
+                analysis = result.scalar_one_or_none()
+                if analysis:
+                    analysis.status = "complete"  # type: ignore[assignment]
+                    await db_session.commit()
+                    logger.info(
+                        "workflow_task_status_updated",
+                        analysis_id=str(analysis_id),
+                        status="complete",
+                    )
+        except Exception as db_error:
+            logger.error(
+                "workflow_task_status_update_failed",
+                analysis_id=str(analysis_id),
+                error=str(db_error),
+                exc_info=True,
+            )
+            # Don't raise - workflow completed successfully, status update is secondary
+
+        # Emit completion event
+        await emit_streaming_event(
+            "progress",
+            analysis_id=str(analysis_id),
+            stage="workflow",
+            status="complete",
+        )
+
+    except BaseException as e:
+        # Handle both Exception and BaseException (including GeneratorExit)
         logger.error(
             "workflow_task_failed",
             analysis_id=str(analysis_id),
             error=str(e),
+            error_type=type(e).__name__,
             exc_info=True,
         )
 
@@ -92,5 +132,3 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             status="failed",
             error=str(e),
         )
-
-
