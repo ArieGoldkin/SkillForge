@@ -231,7 +231,11 @@ async def test_agents_parallel_execution_with_separate_sessions(
         run_with_session_3(),
     ]
 
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # Use timeout to prevent hanging if agents never complete
+    results = await asyncio.wait_for(
+        asyncio.gather(*tasks, return_exceptions=True),
+        timeout=60.0,  # 60 second timeout for parallel agent execution
+    )
 
     # Verify all agents completed successfully (no concurrency errors)
     expected_count = 3

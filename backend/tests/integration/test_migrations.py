@@ -8,7 +8,9 @@ from app.db.session import AsyncSessionLocal
 
 
 @pytest.mark.asyncio
-async def test_vector_extension_exists(requires_database, reset_engine_connections):
+async def test_vector_extension_exists(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test PGVector extension is enabled in database."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -19,7 +21,9 @@ async def test_vector_extension_exists(requires_database, reset_engine_connectio
 
 
 @pytest.mark.asyncio
-async def test_all_tables_exist(requires_database, reset_engine_connections):
+async def test_all_tables_exist(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test all 6 tables exist in database."""
     expected_tables = [
         "analyses",
@@ -41,7 +45,9 @@ async def test_all_tables_exist(requires_database, reset_engine_connections):
 
 
 @pytest.mark.asyncio
-async def test_analyses_table_columns(requires_database, reset_engine_connections):
+async def test_analyses_table_columns(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test analyses table has all required columns."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -67,7 +73,9 @@ async def test_analyses_table_columns(requires_database, reset_engine_connection
 
 
 @pytest.mark.asyncio
-async def test_analyses_table_has_vector_column(requires_database, reset_engine_connections):
+async def test_analyses_table_has_vector_column(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test analyses table has vector embedding column."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -85,7 +93,9 @@ async def test_analyses_table_has_vector_column(requires_database, reset_engine_
 
 
 @pytest.mark.asyncio
-async def test_foreign_key_constraints_exist(requires_database, reset_engine_connections):
+async def test_foreign_key_constraints_exist(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test all foreign key constraints are created correctly."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -123,7 +133,7 @@ async def test_foreign_key_constraints_exist(requires_database, reset_engine_con
 
 
 @pytest.mark.asyncio
-async def test_indexes_exist(requires_database, reset_engine_connections):
+async def test_indexes_exist(requires_database, reset_engine_connections, check_database_available):
     """Test all expected indexes are created."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -151,7 +161,9 @@ async def test_indexes_exist(requires_database, reset_engine_connections):
 
 
 @pytest.mark.asyncio
-async def test_cascade_delete_foreign_keys(requires_database, reset_engine_connections):
+async def test_cascade_delete_foreign_keys(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test foreign keys have CASCADE delete where appropriate."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -177,7 +189,9 @@ async def test_cascade_delete_foreign_keys(requires_database, reset_engine_conne
 
 
 @pytest.mark.asyncio
-async def test_set_null_delete_foreign_key(requires_database, reset_engine_connections):
+async def test_set_null_delete_foreign_key(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test tutoring_sessions foreign key has SET NULL delete."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -198,7 +212,9 @@ async def test_set_null_delete_foreign_key(requires_database, reset_engine_conne
 
 
 @pytest.mark.asyncio
-async def test_models_match_schema(requires_database, reset_engine_connections):
+async def test_models_match_schema(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test SQLAlchemy models match database schema."""
     async with AsyncSessionLocal() as session:
         # Get all model tables
@@ -221,7 +237,9 @@ async def test_models_match_schema(requires_database, reset_engine_connections):
 
 
 @pytest.mark.asyncio
-async def test_uuid_primary_keys(requires_database, reset_engine_connections):
+async def test_uuid_primary_keys(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test all tables use UUID primary keys."""
     async with AsyncSessionLocal() as session:
         tables = [

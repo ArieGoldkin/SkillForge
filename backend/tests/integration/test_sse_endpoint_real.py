@@ -76,16 +76,20 @@ async def _collect_sse_events(
     response: EventSourceResponse,
     events_received: list[dict[str, str]],
 ) -> None:
-    """Collect events from SSE stream."""
+    """Collect events from SSE stream with timeout protection."""
     try:
-        async for event_dict in response.body_iterator:
-            events_received.append(event_dict)
+        # Use timeout to prevent infinite hanging if stream never completes
+        async def collect_with_timeout():
+            async for event_dict in response.body_iterator:
+                events_received.append(event_dict)
+                # Stop on complete event
+                if event_dict.get("event") == "complete":
+                    break
 
-            # Stop on complete event
-            if event_dict.get("event") == "complete":
-                break
-    except (asyncio.CancelledError, GeneratorExit, StopAsyncIteration):
-        # Expected exceptions during cleanup - ignore
+        # Wrap collection in timeout (120s matches test timeout)
+        await asyncio.wait_for(collect_with_timeout(), timeout=120.0)
+    except (asyncio.CancelledError, GeneratorExit, StopAsyncIteration, TimeoutError):
+        # Expected exceptions during cleanup or timeout - ignore
         pass
     except (RuntimeError, ValueError, KeyError) as e:
         # Log but don't fail on other exceptions
@@ -152,11 +156,21 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
 
     try:
         # Wait for either events to complete or timeout
-        _done, pending = await asyncio.wait(
-            [event_collection_task, workflow_task],
-            timeout=120.0,  # 2 minutes max for workflow + events
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        # Wrap asyncio.wait in asyncio.wait_for to ensure timeout is enforced
+        try:
+            _done, pending = await asyncio.wait_for(
+                asyncio.wait(
+                    [event_collection_task, workflow_task],
+                    return_when=asyncio.FIRST_COMPLETED,
+                ),
+                timeout=120.0,  # 2 minutes max for workflow + events
+            )
+        except TimeoutError:
+            # Timeout reached - cancel all tasks
+            event_collection_task.cancel()
+            workflow_task.cancel()
+            pending = {event_collection_task, workflow_task}
+            _done = set()
 
         # Cancel pending tasks
         for task in pending:
@@ -218,6 +232,7 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     - Agent execution with LLM calls (can take 60-120s)
     - SSE event emission and processing
     """
+    import asyncio
     from uuid import UUID
 
     from app.db.session import AsyncSessionLocal
@@ -226,15 +241,33 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     analysis_id = str(uuid.uuid4())
 
     # Create Analysis record before running workflow (required for agent foreign keys)
-    async with AsyncSessionLocal() as session:
-        analysis = Analysis(
-            id=UUID(analysis_id),
-            url="https://python.org",
-            content_type="article",
-            status="pending",
-        )
-        session.add(analysis)
-        await session.commit()
+    # Use timeout protection to prevent hanging if database is unavailable
+    try:
+        # Create session with timeout protection (1.0s timeout for fast failure)
+        session = AsyncSessionLocal()
+        enter_task = asyncio.create_task(session.__aenter__())
+        try:
+            await asyncio.wait_for(enter_task, timeout=1.0)
+            try:
+                analysis = Analysis(
+                    id=UUID(analysis_id),
+                    url="https://python.org",
+                    content_type="article",
+                    status="pending",
+                )
+                session.add(analysis)
+                await session.commit()
+            finally:
+                await session.__aexit__(None, None, None)
+        except TimeoutError:
+            enter_task.cancel()
+            try:
+                await enter_task
+            except asyncio.CancelledError:
+                pass
+            pytest.skip("Database connection timeout - database may be unreachable")
+    except Exception as e:
+        pytest.skip(f"Database not available: {e}")
 
     # Run workflow (which should emit SSE events)
     workflow_task = asyncio.create_task(

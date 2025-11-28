@@ -24,6 +24,7 @@ class AnalysisState(TypedDict, total=False):
         content_embedding: Vector embedding of the content
         supervisor_decision: Supervisor's agent selection decision
         agent_findings: List of findings from executed agents
+        aggregated_insights: Synthesized insights from all agents (Issue #71)
         evaluation_results: Agent quality evaluation results (NEW)
         metrics: Performance and quality metrics (NEW)
 
@@ -37,5 +38,6 @@ class AnalysisState(TypedDict, total=False):
     content_embedding: EmbeddingVector
     supervisor_decision: dict[str, object]
     agent_findings: list[dict[str, object]]
+    aggregated_insights: dict[str, object]  # Issue #71: Synthesized insights
     evaluation_results: dict[str, object]  # NEW: Agent quality scores
     metrics: dict[str, object]  # NEW: Performance metrics

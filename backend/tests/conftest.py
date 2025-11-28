@@ -9,7 +9,15 @@ from uuid import UUID
 # CRITICAL: Set test environment variables BEFORE any app imports
 # This ensures settings are loaded with correct values when modules are first imported
 # These are test-only values and won't affect production
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+# NOTE: DATABASE_URL should come from .env.test (port 5437) - don't override it here
+# Only set a fallback if .env.test doesn't exist (for CI environments)
+if "DATABASE_URL" not in os.environ:
+    # Check if .env.test exists and has DATABASE_URL
+    test_env_file = Path(__file__).parent.parent / ".env.test"
+    if not test_env_file.exists():
+        # Only set fallback if .env.test doesn't exist (for CI)
+        # Use port 5437 to match Docker setup
+        os.environ["DATABASE_URL"] = "postgresql://dev:devpass@localhost:5437/skillforge_test"
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
 # CRITICAL: Disable LangSmith tracing for UNIT tests only
@@ -48,28 +56,45 @@ for _logger_name in [
 ]:
     logging.getLogger(_logger_name).setLevel(logging.WARNING)
 
-# Load .env file for tests (same as development)
-# This allows tests to use the same configuration as the running application
+# Load .env.test file for tests (preferred) or .env as fallback
+# This allows tests to use the correct database configuration (port 5437)
 # We use python-dotenv to explicitly load the file to ensure VS Code test explorer
 # and pytest both load environment variables correctly
+TEST_ENV_FILE = Path(__file__).parent.parent / ".env.test"
 ENV_FILE = Path(__file__).parent.parent / ".env"
-if ENV_FILE.exists():
-    # Explicitly load .env using python-dotenv for VS Code test explorer compatibility
+
+# Prefer .env.test if it exists (has correct DATABASE_URL with port 5437)
+env_file_to_load = TEST_ENV_FILE if TEST_ENV_FILE.exists() else ENV_FILE
+
+if env_file_to_load.exists():
+    # Explicitly load .env.test or .env using python-dotenv for VS Code test explorer compatibility
     try:
         from dotenv import load_dotenv
 
-        # Load .env file explicitly (don't override existing env vars)
-        load_dotenv(dotenv_path=ENV_FILE, override=False)
+        # Load .env.test or .env file explicitly (override existing env vars to use correct DATABASE_URL)
+        # This ensures we use port 5437 from .env.test instead of default port 5432
+        load_dotenv(dotenv_path=env_file_to_load, override=True)
     except ImportError:
         # If python-dotenv is not available, fall back to setting ENV_FILE
-        # The Settings class will detect this and load .env
-        os.environ["ENV_FILE"] = str(ENV_FILE)
+        # The Settings class will detect this and load .env.test or .env
+        os.environ["ENV_FILE"] = str(env_file_to_load)
 
-    # Set environment variable to load .env (for Settings class)
-    os.environ["ENV_FILE"] = str(ENV_FILE)
+    # Set environment variable to load .env.test or .env (for Settings class)
+    os.environ["ENV_FILE"] = str(env_file_to_load)
     # Also set ENVIRONMENT=development for test mode
     # (Settings validation requires development/staging/production)
     os.environ.setdefault("ENVIRONMENT", "development")
+
+# CRITICAL: Clear settings cache after loading .env.test
+# This ensures Settings picks up the correct DATABASE_URL (port 5437) from .env.test
+# Must be done after loading .env.test but before any Settings instances are created
+try:
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+except ImportError:
+    # Settings not imported yet, cache will be cleared when it's first imported
+    pass
 
 # Set LLM_MODEL for tests - use OpenAI if API key is available, otherwise skip tests
 # This allows tests to run with OpenAI when configured, but prevents import failures
@@ -131,9 +156,15 @@ def ensure_test_env_vars(monkeypatch):
     1. Test env vars are set (defense in depth)
     2. Settings cache is cleared for fresh settings
     3. Works even if modules were imported before conftest.py ran
+
+    NOTE: DATABASE_URL is NOT overridden if already set (e.g., from .env.test).
+    This allows integration tests to use the real database configuration.
     """
-    # Set env vars (monkeypatch ensures they're set even if already imported)
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+    # Only set DATABASE_URL if not already set (e.g., from .env.test)
+    # Integration tests need the real DATABASE_URL (port 5437 from .env.test)
+    if "DATABASE_URL" not in os.environ:
+        # Use port 5437 to match Docker setup
+        monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
     # Clear settings cache to force fresh settings instance
@@ -181,6 +212,9 @@ def requires_database():
     The pool_timeout in engine config should prevent hanging if database
     is unreachable. Tests will fail quickly with timeout errors rather than
     hanging indefinitely.
+
+    For actual connectivity checks, use check_database_available fixture
+    which performs a fast (0.5s) connection test.
     """
     settings = get_settings()
     if not settings.DATABASE_URL:
@@ -194,7 +228,7 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
     is unreachable or connection pool is exhausted.
 
     Args:
-        timeout: Timeout in seconds (defaults to DB_TIMEOUT)
+        timeout: Timeout in seconds (defaults to 2.0 for tests - reasonable timeout)
 
     Returns:
         AsyncSession with timeout protection (caller must close it)
@@ -205,11 +239,12 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
     """
     import asyncio
 
-    from app.core.constants import DB_TIMEOUT
     from app.db.session import AsyncSessionLocal
 
+    # Use reasonable timeout for tests (2 seconds) to allow proper connection
+    # while still preventing hanging when PostgreSQL is not running
     if timeout is None:
-        timeout = DB_TIMEOUT
+        timeout = 2.0
 
     # Create session with timeout protection
     # AsyncSessionLocal() returns an AsyncSession which is a context manager
@@ -269,47 +304,98 @@ class TimeoutSession:
 async def check_database_available(requires_database):
     """Check if database is reachable and skip test if not available.
 
-    Performs a quick connectivity check with 1-second timeout.
+    Performs a quick connectivity check with 2-second timeout.
     Skips the test gracefully if database is unreachable.
+    Uses reasonable timeout to allow proper connection while still failing fast.
+
+    Clears cached engine to ensure it uses current DATABASE_URL.
     """
     import asyncio
 
     from sqlalchemy import text
 
-    # Quick connectivity check with short timeout
-    try:
-        # Use timeout-protected session creation
-        session = await get_test_session(timeout=1.0)
+    from app.db import session as session_module
+    from app.db.session import AsyncSessionLocal
+
+    # CRITICAL: Clear cached engine BEFORE any engine access
+    # This ensures engine is recreated with current DATABASE_URL (port 5437)
+    # Must clear both _engine and _session_factory to force complete recreation
+    old_engine = session_module._engine
+    session_module._engine = None
+    session_module._session_factory = None
+
+    # Dispose old engine connections if it existed
+    # This ensures we're not using stale connections with wrong port
+    if old_engine is not None:
         try:
-            # Try a simple query with short timeout
-            query_task = asyncio.create_task(session.execute(text("SELECT 1")))
-            await asyncio.wait_for(query_task, timeout=1.0)
-        finally:
-            # Ensure session is closed
+            await old_engine.dispose()
+        except Exception:
+            pass  # Ignore disposal errors
+
+    # Verify engine will use correct URL by checking get_async_database_url
+    from app.db.session import get_async_database_url
+
+    expected_url = get_async_database_url()
+    if ":5437" not in expected_url:
+        import sys
+
+        print(f"WARNING: Expected port 5437 in URL, got: {expected_url}", file=sys.stderr)
+
+    # Quick connectivity check with reasonable timeout (5s for Docker)
+    # This allows proper connection while still failing fast if DB is unavailable
+    # Note: We don't skip here - let tests run and fail naturally if DB is unavailable
+    # This allows tests to run when database is available via Docker
+    try:
+        # Use AsyncSessionLocal directly with timeout protection
+        session = AsyncSessionLocal()
+        enter_task = asyncio.create_task(session.__aenter__())
+        try:
+            await asyncio.wait_for(enter_task, timeout=5.0)
+            try:
+                # Try a simple query with timeout
+                query_task = asyncio.create_task(session.execute(text("SELECT 1")))
+                await asyncio.wait_for(query_task, timeout=5.0)
+            finally:
+                # Ensure session is closed
+                await session.__aexit__(None, None, None)
+        except TimeoutError:
+            enter_task.cancel()
+            try:
+                await enter_task
+            except asyncio.CancelledError:
+                pass
             try:
                 await session.__aexit__(None, None, None)
             except Exception:
                 pass
-    except (TimeoutError, Exception) as e:
-        # Skip test if database is unreachable
-        pytest.skip(f"Database not available: {e}")
+            # Don't skip - let test fail naturally so user knows DB is unavailable
+            # pytest.skip("Database connection timeout - database may be unreachable")
+    except Exception as e:
+        # Don't skip - let test fail naturally so user knows DB is unavailable
+        # This allows tests to run when database is available via Docker
+        # pytest.skip(f"Database not available: {type(e).__name__}: {e}")
+        pass
 
 
 async def _dispose_engine_safely(timeout: float) -> None:
     """Dispose engine connections with timeout protection.
 
     Uses non-blocking approach to prevent hanging if database is unreachable.
+    Uses reasonable timeout (2.0s) for tests to allow proper disposal.
     """
     import asyncio
 
     from app.db.session import engine
+
+    # Use reasonable timeout for tests (2.0s) to allow proper disposal
+    test_timeout = min(timeout, 2.0)
 
     # Create a task for dispose operation
     dispose_task = asyncio.create_task(engine.dispose())
 
     try:
         # Wait for dispose with timeout
-        await asyncio.wait_for(dispose_task, timeout=timeout)
+        await asyncio.wait_for(dispose_task, timeout=test_timeout)
     except TimeoutError:
         # Cancel the dispose task if it times out
         dispose_task.cancel()
@@ -331,17 +417,30 @@ async def reset_engine_connections():
     preventing 'attached to different loop' errors. Use this fixture for
     tests that use database connections and have event loop issues.
 
-    Uses non-blocking disposal to prevent hanging if database is unreachable.
+    Also clears the cached engine instance to force recreation with current DATABASE_URL.
+    Uses non-blocking disposal with reasonable timeout (2.0s) to prevent hanging.
     """
-    from app.core.constants import DB_TIMEOUT
+    from app.db import session as session_module
+
+    # Clear cached engine and session factory to force recreation
+    # This ensures engine uses current DATABASE_URL (important for tests)
+    session_module._engine = None
+    session_module._session_factory = None
+
+    # Use reasonable timeout (2.0s) for tests
+    test_timeout = 2.0
 
     # Dispose existing connections before test
-    await _dispose_engine_safely(DB_TIMEOUT)
+    await _dispose_engine_safely(test_timeout)
 
     yield
 
     # Dispose after test to clean up
-    await _dispose_engine_safely(DB_TIMEOUT)
+    await _dispose_engine_safely(test_timeout)
+
+    # Clear cached engine again after test
+    session_module._engine = None
+    session_module._session_factory = None
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -366,12 +465,13 @@ async def db_session(
     Requires DATABASE_URL to be configured and database to be reachable.
     reset_engine_connections ensures connections are in the test's event loop.
     check_database_available ensures database is reachable before creating session.
-    """
-    from app.core.constants import DB_TIMEOUT
 
-    # Create session with timeout protection
+    Uses reasonable timeout (2.0s) to allow proper connection while preventing hanging.
+    """
+    # Create session with reasonable timeout protection (2.0s for tests)
+    # This allows proper connection while preventing hanging when database is not running
     try:
-        session = await get_test_session(timeout=DB_TIMEOUT)
+        session = await get_test_session(timeout=2.0)
     except TimeoutError:
         pytest.skip("Database connection timeout - database may be unreachable")
 

@@ -155,7 +155,11 @@ async def test_post_analyze_concurrent_requests(reset_engine_connections):
                 )
                 for i in range(3)
             ]
-            responses = await asyncio.gather(*tasks)
+            # Use timeout to prevent hanging if requests never complete
+            responses = await asyncio.wait_for(
+                asyncio.gather(*tasks),
+                timeout=30.0,  # 30 second timeout for concurrent requests
+            )
 
     # Verify all requests succeeded
     for response in responses:
@@ -265,7 +269,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     # Mock workflow to raise GeneratorExit (simulating stream closure)
     async def mock_workflow_ainvoke(input_state, config):
         """Mock workflow execution that raises GeneratorExit."""
-        raise GeneratorExit("Stream closed externally")
+        raise GeneratorExit()
 
     with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
         # Run workflow task
