@@ -9,6 +9,11 @@ import pytest
 # Set DATABASE_URL before importing to avoid validation errors
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
 
+# Clear settings cache to ensure fresh settings with DATABASE_URL
+from app.core.config import get_settings
+
+get_settings.cache_clear()
+
 from app.api.v1.workflow_runner import run_workflow_task
 
 

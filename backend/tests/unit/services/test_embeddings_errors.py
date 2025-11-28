@@ -9,6 +9,11 @@ import pytest_asyncio
 # Set OPENAI_API_KEY before importing to avoid validation errors
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
+# Clear settings cache to ensure fresh settings with OPENAI_API_KEY
+from app.core.config import get_settings
+
+get_settings.cache_clear()
+
 from app.services.embeddings import EmbeddingError, EmbeddingService
 
 
