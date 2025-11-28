@@ -41,9 +41,14 @@ async def check_database() -> dict[str, str] | None:
         # Add timeout to prevent hanging on unavailable database
         # Use longer timeout in tests (detected via PYTEST_CURRENT_TEST)
         timeout_seconds = DB_TEST_TIMEOUT if os.environ.get("PYTEST_CURRENT_TEST") else DB_TIMEOUT
-        async with asyncio.timeout(timeout_seconds):
+
+        # Wrap engine.begin() in asyncio.wait_for() for additional timeout protection
+        # This ensures timeout works even if connection hangs before entering context manager
+        async def check_connection():
             async with engine.begin() as conn:
                 await conn.execute(text("SELECT 1"))
+
+        await asyncio.wait_for(check_connection(), timeout=timeout_seconds)
     except TimeoutError:
         return {"status": "timeout", "error": "Connection timeout"}
     except SQLAlchemyError as e:
