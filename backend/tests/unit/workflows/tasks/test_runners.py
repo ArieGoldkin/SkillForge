@@ -1,18 +1,9 @@
 """Unit tests for agent runner functions with session management."""
 
-import os
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Set DATABASE_URL before importing to avoid validation errors
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
-
-# Clear settings cache to ensure fresh settings with DATABASE_URL
-from app.core.config import get_settings
-
-get_settings.cache_clear()
 
 from app.workflows.tasks.runners import (
     run_code_quality_critic_with_session,
