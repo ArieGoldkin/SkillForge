@@ -1,0 +1,40 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema.json",
+  "_comment": "MCP Server Configuration for SkillForge Project",
+  "_naming_convention": "Project-specific servers use 'skillforge-*' prefix. Generic tools keep their original names.",
+  "mcpServers": {
+    "sequential-thinking": {
+      "_comment": "Generic tool - reasoning and problem-solving",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "skillforge-postgres-dev": {
+      "_comment": "Project-specific: Development database (localhost:5437/skillforge)",
+      "command": "./scripts/mcp/run-postgres-mcp.sh",
+      "args": ["dev"]
+    },
+    "playwright": {
+      "_comment": "Generic tool - E2E testing automation",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "context7": {
+      "_comment": "Generic tool - library/documentation lookup",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "memory": {
+      "_comment": "Generic tool - project state tracking",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "skillforge-langsmith": {
+      "_comment": "Project-specific: LangGraph observability for SkillForge project",
+      "command": "./scripts/mcp/run-langsmith-mcp.sh",
+      "env": {
+        "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com",
+        "LANGSMITH_PROJECT": "skillforge"
+      }
+    }
+  }
+}

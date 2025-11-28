@@ -147,13 +147,31 @@ class Settings(BaseSettings):
 
     # Application
     ENVIRONMENT: str = Field(default="development", description="Runtime environment")
-    LOG_LEVEL: str = Field(default="DEBUG", description="Logging level")
+    LOG_LEVEL: str = Field(
+        default="INFO",
+        description=(
+            "Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL. "
+            "SECURITY: DEBUG can expose sensitive information. Use INFO or higher in production."
+        ),
+    )
     API_V1_PREFIX: str = Field(default="/api/v1", description="API v1 prefix")
 
     # Server
-    HOST: str = Field(default="127.0.0.1", description="Server host")
+    HOST: str = Field(
+        default="127.0.0.1",
+        description=(
+            "Server host address. "
+            "SECURITY: 0.0.0.0 allows external connections and is not allowed in production."
+        ),
+    )
     PORT: int = Field(default=8500, description="Server port")
-    RELOAD: bool = Field(default=True, description="Enable auto-reload")
+    RELOAD: bool = Field(
+        default=False,
+        description=(
+            "Enable auto-reload on code changes. "
+            "SECURITY: Must be false in production (security risk if enabled)."
+        ),
+    )
 
     # CORS
     CORS_ORIGINS: list[str] = Field(
@@ -274,10 +292,60 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_requirements(self) -> "Settings":
-        """Validate required variables in production environment."""
-        if self.ENVIRONMENT == "production" and not self.DATABASE_URL:
+        """Validate required variables and security settings in production environment."""
+        if not self.is_production():
+            return self
+
+        # Require DATABASE_URL in production
+        if not self.DATABASE_URL:
             error_msg = "DATABASE_URL is required in production environment"
             raise ValueError(error_msg)
+
+        # Validate database URL doesn't contain weak passwords
+        if self.DATABASE_URL:
+            weak_passwords = ["devpass", "password", "pass", "123456", "admin", "test"]
+            url_lower = self.DATABASE_URL.lower()
+            for weak_pwd in weak_passwords:
+                if weak_pwd in url_lower:
+                    error_msg = (
+                        f"SECURITY: Weak password detected in DATABASE_URL. "
+                        f"Production databases must use strong passwords. "
+                        f"Found weak pattern: '{weak_pwd}'"
+                    )
+                    raise ValueError(error_msg)
+
+        # Validate HOST is not 0.0.0.0 in production (security risk)
+        if self.HOST == "0.0.0.0":
+            error_msg = (
+                "SECURITY: HOST=0.0.0.0 is not allowed in production. "
+                "Use 127.0.0.1 or a specific IP address with proper firewall rules."
+            )
+            raise ValueError(error_msg)
+
+        # Validate RELOAD is disabled in production
+        if self.RELOAD:
+            error_msg = (
+                "SECURITY: RELOAD=true is not allowed in production. "
+                "Auto-reload is a security risk in production environments."
+            )
+            raise ValueError(error_msg)
+
+        # Validate LOG_LEVEL is not DEBUG in production
+        if self.LOG_LEVEL == "DEBUG":
+            error_msg = (
+                "SECURITY: LOG_LEVEL=DEBUG is not allowed in production. "
+                "DEBUG logging can expose sensitive information. Use INFO or higher."
+            )
+            raise ValueError(error_msg)
+
+        # Validate CORS_ORIGINS doesn't allow all origins in production
+        if "*" in self.CORS_ORIGINS or len(self.CORS_ORIGINS) == 0:
+            error_msg = (
+                "SECURITY: CORS_ORIGINS must specify exact origins in production. "
+                "Never use ['*'] or empty list. Specify your frontend URL(s)."
+            )
+            raise ValueError(error_msg)
+
         return self
 
     @model_validator(mode="after")

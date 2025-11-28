@@ -194,3 +194,86 @@ async def test_post_analyze_content_types(reset_engine_connections):
                     )
                     assert response.status_code == status.HTTP_201_CREATED
                     assert response.json()["content_type"] == expected_type
+
+
+@pytest.mark.asyncio
+async def test_workflow_status_updates_to_complete(
+    requires_database, reset_engine_connections, db_session
+):
+    """Test that workflow status is updated to 'complete' after successful execution."""
+    from app.api.v1.workflow_runner import run_workflow_task
+    from app.workflows.analysis import analysis_workflow
+
+    analysis_uuid = uuid.uuid4()
+
+    # Create analysis record
+    analysis = Analysis(
+        id=analysis_uuid,
+        url="https://example.com/article",
+        content_type="article",
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    # Mock workflow to succeed
+    async def mock_workflow_ainvoke(input_state, config):
+        """Mock successful workflow execution."""
+        return {
+            "analysis_id": str(analysis_uuid),
+            "url": "https://example.com/article",
+            "content_type": "article",
+            "raw_content": "Test content",
+            "extraction_metadata": {},
+            "content_embedding": [0.0] * 1536,
+            "supervisor_decision": {},
+            "agent_findings": [],
+        }
+
+    with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
+        # Run workflow task
+        await run_workflow_task(analysis_uuid, "https://example.com/article")
+
+        # Wait a bit for status update
+        await asyncio.sleep(0.1)
+
+        # Verify status was updated to complete
+        await db_session.refresh(analysis)
+        assert analysis.status == "complete", "Status should be updated to 'complete'"
+
+
+@pytest.mark.asyncio
+async def test_workflow_status_updates_to_failed_on_generatorexit(
+    requires_database, reset_engine_connections, db_session
+):
+    """Test that workflow status is updated to 'failed' when GeneratorExit occurs."""
+    from app.api.v1.workflow_runner import run_workflow_task
+    from app.workflows.analysis import analysis_workflow
+
+    analysis_uuid = uuid.uuid4()
+
+    # Create analysis record
+    analysis = Analysis(
+        id=analysis_uuid,
+        url="https://example.com/article",
+        content_type="article",
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    # Mock workflow to raise GeneratorExit (simulating stream closure)
+    async def mock_workflow_ainvoke(input_state, config):
+        """Mock workflow execution that raises GeneratorExit."""
+        raise GeneratorExit("Stream closed externally")
+
+    with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
+        # Run workflow task
+        await run_workflow_task(analysis_uuid, "https://example.com/article")
+
+        # Wait a bit for status update
+        await asyncio.sleep(0.1)
+
+        # Verify status was updated to failed
+        await db_session.refresh(analysis)
+        assert analysis.status == "failed", "Status should be updated to 'failed' on GeneratorExit"

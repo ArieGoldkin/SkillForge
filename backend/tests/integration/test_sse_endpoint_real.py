@@ -218,7 +218,23 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     - Agent execution with LLM calls (can take 60-120s)
     - SSE event emission and processing
     """
+    from uuid import UUID
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.analysis import Analysis
+
     analysis_id = str(uuid.uuid4())
+
+    # Create Analysis record before running workflow (required for agent foreign keys)
+    async with AsyncSessionLocal() as session:
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url="https://python.org",
+            content_type="article",
+            status="pending",
+        )
+        session.add(analysis)
+        await session.commit()
 
     # Run workflow (which should emit SSE events)
     workflow_task = asyncio.create_task(

@@ -1,0 +1,245 @@
+"""Unit tests for agent runner functions with session management."""
+
+import uuid
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from app.workflows.tasks.runners import (
+    run_code_quality_critic_with_session,
+    run_dependency_mapper_with_session,
+    run_implementation_planner_with_session,
+    run_integration_feasibility_with_session,
+    run_performance_analyst_with_session,
+    run_security_auditor_with_session,
+    run_tech_comparator_with_session,
+    run_trend_validator_with_session,
+)
+
+
+@pytest.fixture
+def mock_analysis_id():
+    """Create a test analysis ID."""
+    return uuid.uuid4()
+
+
+@pytest.fixture
+def test_content():
+    """Create test content."""
+    return "Test article content about React and Vue.js"
+
+
+@pytest.fixture
+def test_content_type():
+    """Create test content type."""
+    return "article"
+
+
+@pytest.fixture
+def mock_session():
+    """Create a mock database session."""
+    session = MagicMock()
+    session.__aenter__ = AsyncMock(return_value=session)
+    session.__aexit__ = AsyncMock(return_value=False)
+    return session
+
+
+@patch("app.workflows.tasks.runners.run_tech_comparator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_tech_comparator_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test tech comparator runner with session management."""
+    # Make AsyncSessionLocal return our mock session when called
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent):
+        result = await run_tech_comparator_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_integration_feasibility")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_integration_feasibility_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test integration feasibility runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_integration_feasibility", mock_run_agent):
+        result = await run_integration_feasibility_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_implementation_planner")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_implementation_planner_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test implementation planner runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_implementation_planner", mock_run_agent):
+        result = await run_implementation_planner_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_security_auditor")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_security_auditor_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test security auditor runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_security_auditor", mock_run_agent):
+        result = await run_security_auditor_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_performance_analyst")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_performance_analyst_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test performance analyst runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_performance_analyst", mock_run_agent):
+        result = await run_performance_analyst_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_code_quality_critic")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_code_quality_critic_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test code quality critic runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_code_quality_critic", mock_run_agent):
+        result = await run_code_quality_critic_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_trend_validator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_trend_validator_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test trend validator runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_trend_validator", mock_run_agent):
+        result = await run_trend_validator_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )
+
+
+@patch("app.workflows.tasks.runners.run_dependency_mapper")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_dependency_mapper_with_session(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test dependency mapper runner with session management."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_dependency_mapper", mock_run_agent):
+        result = await run_dependency_mapper_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    assert result == {"findings": "test"}
+    mock_run_agent.assert_called_once_with(
+        test_content, test_content_type, mock_analysis_id, mock_session
+    )

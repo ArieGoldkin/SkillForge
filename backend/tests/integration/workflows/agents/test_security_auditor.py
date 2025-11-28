@@ -1,0 +1,68 @@
+"""Integration tests for security auditor agent with real LLM."""
+
+import os
+from uuid import UUID, uuid4
+
+import pytest
+
+from app.models.analysis import Analysis
+from app.workflows.agents import run_security_auditor
+
+
+@pytest.fixture
+def requires_llm():
+    """Skip test if LLM is not configured."""
+    llm_model = os.environ.get("LLM_MODEL", "")
+    if not llm_model:
+        pytest.skip("LLM_MODEL not configured")
+    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+    if not openai_key:
+        pytest.skip("OpenAI API key not available")
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(180)  # 3 minutes for real LLM calls
+async def test_security_auditor_integration(
+    requires_llm,
+    requires_database,
+    db_session,
+    reset_engine_connections,
+    create_test_analysis,
+):
+    """Test security auditor agent with real LLM."""
+    analysis_id = str(uuid4())
+    content = """
+    This article explains authentication best practices. It covers JWT tokens,
+    password hashing, and rate limiting. The guide mentions OWASP Top 10
+    security risks and how to mitigate them.
+    """
+    content_type = "article"
+
+    # Create Analysis record before calling agent (required for foreign key)
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    result = await run_security_auditor(
+        content=content,
+        content_type=content_type,
+        analysis_id=analysis_id,
+        session=db_session,
+    )
+
+    assert result["agent_type"] == "security_auditor"
+    assert "findings" in result
+    findings = result["findings"]
+    assert "security_risks" in findings
+    assert "best_practices" in findings
+    assert "compliance_notes" in findings
+    assert "recommendation" in findings
+    assert isinstance(findings["security_risks"], list)
+    assert result["processing_time_ms"] > 0

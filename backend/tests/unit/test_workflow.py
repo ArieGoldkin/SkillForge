@@ -45,7 +45,7 @@ async def test_analysis_workflow_structure():
 
 def test_analysis_state_typeddict():
     """Test AnalysisState TypedDict structure."""
-    from app.workflows.types import AnalysisState
+    from app.workflows.state import AnalysisState
 
     # Verify TypedDict structure
     state: AnalysisState = {

@@ -7,7 +7,10 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.workflows.agents.integration_feasibility import run_integration_feasibility
-from app.workflows.agents.schemas import CompatibilityScore, IntegrationFeasibility
+from app.workflows.agents.schemas.integration_feasibility import (
+    CompatibilityScore,
+    IntegrationFeasibility,
+)
 
 
 @pytest.fixture

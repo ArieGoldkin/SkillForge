@@ -6,6 +6,27 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from uuid import UUID
 
+# CRITICAL: Set test environment variables BEFORE any app imports
+# This ensures settings are loaded with correct values when modules are first imported
+# These are test-only values and won't affect production
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+
+# CRITICAL: Disable LangSmith tracing for UNIT tests only
+# Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
+# This must be set before importing any modules that use langsmith.traceable
+# Setting these env vars prevents LangSmith from initializing background threads for unit tests
+# Integration tests will override this in their conftest.py which runs AFTER this one
+# (pytest loads conftest.py files in order: root conftest, then subdirectory conftest)
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGSMITH_TRACING"] = "false"
+# Also unset API key to prevent any initialization attempts in unit tests
+# Integration tests will restore it in their conftest.py
+if "LANGSMITH_API_KEY" in os.environ:
+    del os.environ["LANGSMITH_API_KEY"]
+if "LANGCHAIN_API_KEY" in os.environ:
+    del os.environ["LANGCHAIN_API_KEY"]
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -100,6 +121,35 @@ def test_settings():
 def auto_clear_config_cache(clear_config_cache):
     """Automatically clear config cache for all tests."""
     pass
+
+
+@pytest.fixture(autouse=True)
+def ensure_test_env_vars(monkeypatch):
+    """Ensure test environment variables are set before each test.
+
+    This fixture runs automatically for every test and ensures:
+    1. Test env vars are set (defense in depth)
+    2. Settings cache is cleared for fresh settings
+    3. Works even if modules were imported before conftest.py ran
+    """
+    # Set env vars (monkeypatch ensures they're set even if already imported)
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+
+    # Clear settings cache to force fresh settings instance
+    get_settings.cache_clear()
+
+    # Force reload of settings module's settings object
+    # This is necessary because module-level `settings = get_settings()`
+    # creates a reference that persists even after cache clear
+    import app.core.config
+
+    app.core.config.settings = get_settings()
+
+    yield
+
+    # Cleanup: clear cache after test
+    get_settings.cache_clear()
 
 
 @pytest.fixture(autouse=True)

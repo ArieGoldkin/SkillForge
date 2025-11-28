@@ -2,7 +2,6 @@
 
 import logging
 import sys
-from typing import Any
 
 import structlog
 import structlog.dev
@@ -41,7 +40,7 @@ def setup_logging() -> None:
         )
 
         # Configure structlog processors
-        processors: list[Any] = [
+        processors: list[object] = [
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
@@ -57,7 +56,7 @@ def setup_logging() -> None:
 
         # Configure structlog with stdlib integration
         structlog.configure(
-            processors=processors,
+            processors=processors,  # type: ignore[arg-type]
             wrapper_class=structlog.stdlib.BoundLogger,
             logger_factory=structlog.stdlib.LoggerFactory(),
             cache_logger_on_first_use=True,

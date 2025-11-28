@@ -147,50 +147,76 @@ async def test_extract_article_without_api_key(
 
 @pytest.mark.asyncio
 async def test_extract_article_404_error(jina_reader: JinaReader) -> None:
-    """Test 404 error handling."""
+    """Test 404 error handling with detailed error message."""
     mock_response = MagicMock()
     mock_response.status_code = 404
-    mock_response.text = "Not Found"
+    mock_response.text = "Not Found - The requested URL was not found on this server."
 
     with patch.object(jina_reader.client, "get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_response
 
-        with pytest.raises(JinaReaderError, match="URL not found"):
+        with pytest.raises(JinaReaderError) as exc_info:
             await jina_reader.extract_article("https://nonexistent.com")
+
+        # Verify error message includes URL and response preview
+        error_msg = str(exc_info.value)
+        assert "404" in error_msg
+        assert "https://nonexistent.com" in error_msg
+        assert "Not Found" in error_msg
 
 
 @pytest.mark.asyncio
 async def test_extract_article_http_error(jina_reader: JinaReader) -> None:
-    """Test HTTP error handling for non-404 errors."""
+    """Test HTTP error handling for non-404 errors with detailed error message."""
     mock_response = MagicMock()
     mock_response.status_code = 500
-    mock_response.text = "Internal Server Error"
+    mock_response.text = "Internal Server Error - Something went wrong"
+    mock_response.headers = {"Content-Type": "text/html"}
 
     with patch.object(jina_reader.client, "get", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_response
 
-        with pytest.raises(JinaReaderError, match="HTTP 500"):
+        with pytest.raises(JinaReaderError) as exc_info:
             await jina_reader.extract_article("https://example.com")
+
+        # Verify error message includes status code, URL, and response preview
+        error_msg = str(exc_info.value)
+        assert "500" in error_msg
+        assert "https://example.com" in error_msg
+        assert "Internal Server Error" in error_msg
 
 
 @pytest.mark.asyncio
 async def test_extract_article_timeout(jina_reader: JinaReader) -> None:
-    """Test timeout error handling."""
+    """Test timeout error handling with detailed error message."""
+    from app.core.constants import DEFAULT_TIMEOUT
+
     with patch.object(jina_reader.client, "get", new_callable=AsyncMock) as mock_get:
         mock_get.side_effect = httpx.TimeoutException("Request timed out")
 
-        with pytest.raises(JinaReaderError, match="Request timed out"):
+        with pytest.raises(JinaReaderError) as exc_info:
             await jina_reader.extract_article("https://example.com")
+
+        # Verify error message includes timeout duration and URL
+        error_msg = str(exc_info.value)
+        assert str(DEFAULT_TIMEOUT) in error_msg
+        assert "https://example.com" in error_msg
+        assert "timed out" in error_msg.lower()
 
 
 @pytest.mark.asyncio
 async def test_extract_article_generic_error(jina_reader: JinaReader) -> None:
-    """Test generic exception handling."""
+    """Test generic exception handling with detailed error message."""
     with patch.object(jina_reader.client, "get", new_callable=AsyncMock) as mock_get:
-        mock_get.side_effect = Exception("Unexpected error")
+        mock_get.side_effect = ValueError("Connection error occurred")
 
-        with pytest.raises(JinaReaderError, match="Extraction failed"):
+        with pytest.raises(JinaReaderError) as exc_info:
             await jina_reader.extract_article("https://example.com")
+
+        # Verify error message includes error type, URL, and error details
+        error_msg = str(exc_info.value)
+        assert "https://example.com" in error_msg
+        assert "ValueError" in error_msg or "Connection error" in error_msg
 
 
 @pytest.mark.asyncio

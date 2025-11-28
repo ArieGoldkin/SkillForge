@@ -7,7 +7,10 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.workflows.agents.implementation_planner import run_implementation_planner
-from app.workflows.agents.schemas import ImplementationPlan, ImplementationStep
+from app.workflows.agents.schemas.implementation_planner import (
+    ImplementationPlan,
+    ImplementationStep,
+)
 
 
 @pytest.fixture

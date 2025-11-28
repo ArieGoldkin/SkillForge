@@ -6,10 +6,12 @@ and agent execution with proper session isolation.
 """
 
 import os
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
+from app.db.session import AsyncSessionLocal
+from app.models.analysis import Analysis
 from app.workflows.analysis import analysis_workflow
 
 
@@ -46,6 +48,17 @@ async def test_real_article_analysis_claude_opus_4_5(
         "anthropic-bolsters-ai-model-claudes-coding-agentic-abilities-with-opus-45-2025-11-24/"
     )
     analysis_id = str(uuid4())
+
+    # Create Analysis record before running workflow (required for agent foreign keys)
+    async with AsyncSessionLocal() as session:
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url=test_url,
+            content_type="article",
+            status="pending",
+        )
+        session.add(analysis)
+        await session.commit()
 
     # Run workflow with LangSmith configuration
     workflow_config = {

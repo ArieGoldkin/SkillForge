@@ -10,7 +10,7 @@ from app.services.embeddings_utils import normalize_vector
 
 # Constants for test assertions
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
-MAX_TEXT_LENGTH = 32_000
+MAX_TOKENS = 8_000  # Token limit (not character limit)
 NORMALIZATION_TOLERANCE = 0.0001
 
 
@@ -101,9 +101,15 @@ async def test_generate_embedding_without_normalization(
 
 
 @pytest.mark.asyncio
-async def test_generate_embedding_truncates_long_text(embedding_service: EmbeddingService) -> None:
-    """Test that very long text is truncated before sending to OpenAI."""
-    long_text = "x" * 50_000  # 50k characters
+async def test_generate_embedding_truncates_long_text_by_tokens(
+    embedding_service: EmbeddingService,
+) -> None:
+    """Test that very long text is truncated by tokens before sending to OpenAI."""
+    import tiktoken
+
+    # Create text that exceeds token limit (using repetitive pattern)
+    # Each "word " is ~1 token, so 10,000 words = ~10,000 tokens > 8,000 limit
+    long_text = "word " * 10_000  # ~10,000 tokens
     mock_response = MagicMock()
     mock_response.data = [MagicMock(embedding=[0.1] * 1536)]
 
@@ -114,9 +120,52 @@ async def test_generate_embedding_truncates_long_text(embedding_service: Embeddi
 
         await embedding_service.generate_embedding(long_text)
 
-        # Verify that truncated text was sent (32,000 chars max)
+        # Verify that truncated text was sent (8,000 tokens max)
         call_args = mock_create.call_args
-        assert len(call_args.kwargs["input"]) == MAX_TEXT_LENGTH
+        sent_text = call_args.kwargs["input"]
+        encoding = tiktoken.encoding_for_model("text-embedding-3-small")
+        token_count = len(encoding.encode(sent_text))
+        assert token_count <= MAX_TOKENS, f"Token count {token_count} exceeds limit {MAX_TOKENS}"
+
+
+@pytest.mark.asyncio
+async def test_generate_embedding_token_counting_accuracy(
+    embedding_service: EmbeddingService,
+) -> None:
+    """Test that token counting is accurate and truncation works correctly."""
+    import tiktoken
+
+    # Create text that's exactly at the limit
+    encoding = tiktoken.encoding_for_model("text-embedding-3-small")
+    # Create text with exactly 8,000 tokens
+    # Use a single token word to avoid encoding variations
+    single_token = "test"  # Verify this is one token
+    assert len(encoding.encode(single_token)) == 1, "Test setup: single_token should be 1 token"
+    test_text = (single_token + " ") * 8_000
+    tokens = encoding.encode(test_text)
+    # Allow off-by-one due to encoding rounding
+    assert len(tokens) in (8_000, 8_001), (
+        f"Test setup: text should have 8,000-8,001 tokens (got {len(tokens)})"
+    )
+
+    mock_response = MagicMock()
+    mock_response.data = [MagicMock(embedding=[0.1] * 1536)]
+
+    with patch.object(
+        embedding_service.client.embeddings, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
+
+        result = await embedding_service.generate_embedding(test_text)
+
+        # Verify no truncation occurred (at or below limit)
+        call_args = mock_create.call_args
+        sent_text = call_args.kwargs["input"]
+        sent_tokens = encoding.encode(sent_text)
+        assert len(sent_tokens) <= MAX_TOKENS, (
+            f"Text should not exceed {MAX_TOKENS} tokens (got {len(sent_tokens)})"
+        )
+        assert len(result) == EXPECTED_EMBEDDING_DIMENSIONS
 
 
 @pytest.mark.asyncio

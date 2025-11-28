@@ -7,29 +7,45 @@ it to relevant alternatives, providing pros, cons, use cases, and recommendation
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
-from app.workflows.agents.schemas import TechComparison
+from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.execution import run_agent_with_tracking
+from app.workflows.agents.schemas.tech_comparator import TechComparison
 
 # System prompt for tech comparator agent
-TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist. Your task is to:
-1. Identify the primary technology/framework discussed in the content
-2. Compare it to 2-3 relevant alternatives that serve similar purposes
-3. Create a structured comparison table with pros, cons, and use cases for each technology
-4. Provide a clear recommendation based on the comparison
+TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist.
 
-CRITICAL: You MUST include a "comparison" field with entries for:
-- The primary technology (identified in step 1)
-- Each alternative technology (from step 2)
-Each comparison entry must contain: pros (list), cons (list), and use_cases (list).
+CRITICAL: You MUST provide ALL required fields. Missing fields will cause validation errors.
 
-Focus on:
-- Technical capabilities and features
-- Performance characteristics
-- Ecosystem and community support
-- Learning curve and developer experience
-- Use case suitability
+Required Output Structure:
+{
+  "primary_tech": "LangGraph",
+  "alternatives": ["LangChain Agents", "Temporal", "Ray"],
+  "comparison": {
+    "LangGraph": {
+      "pros": ["Pros list"],
+      "cons": ["Cons list"],
+      "use_cases": ["Use cases list"]
+    },
+    "LangChain Agents": {
+      "pros": ["Pros list"],
+      "cons": ["Cons list"],
+      "use_cases": ["Use cases list"]
+    }
+  },
+  "recommendation": "Clear recommendation text"
+}
 
-Be objective and provide balanced comparisons."""
+Field Requirements:
+1. **primary_tech** (REQUIRED): String - primary technology name
+2. **alternatives** (REQUIRED): List of 2-3 alternative technology names
+3. **comparison** (REQUIRED): Dictionary mapping tech names to comparison entries
+   - MUST include entry for primary_tech
+   - MUST include entry for each alternative
+   - Each entry: {"pros": [], "cons": [], "use_cases": []}
+4. **recommendation** (REQUIRED): String with clear recommendation
+
+IMPORTANT: The "comparison" field must include entries for primary_tech AND "
+    "all alternatives. Do not omit any required fields."""
 
 
 async def run_tech_comparator(

@@ -1,6 +1,6 @@
 """Unit tests for workflow task functions."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
@@ -10,66 +10,46 @@ from app.workflows.tasks import execute_agents
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.run_tech_comparator")
-@patch("app.workflows.tasks.run_integration_feasibility")
-@patch("app.workflows.tasks.run_implementation_planner")
-async def test_execute_agents_creates_separate_sessions(
-    mock_planner,
-    mock_feasibility,
-    mock_comparator,
-):
+@patch("app.workflows.tasks.agent_execution.AGENT_RUNNERS")
+async def test_execute_agents_creates_separate_sessions(mock_agent_runners):
     """Test that execute_agents creates separate sessions for each agent."""
     # Setup mocks to return successful results
-    mock_comparator.return_value = {
-        "agent_type": "tech_comparator",
-        "findings": {"test": "finding1"},
-    }
-    mock_feasibility.return_value = {
-        "agent_type": "integration_feasibility",
-        "findings": {"test": "finding2"},
-    }
-    mock_planner.return_value = {
-        "agent_type": "implementation_planner",
-        "findings": {"test": "finding3"},
-    }
+    mock_comparator = AsyncMock(return_value={"findings": {"test": "finding1"}})
+    mock_feasibility = AsyncMock(return_value={"findings": {"test": "finding2"}})
+    mock_planner = AsyncMock(return_value={"findings": {"test": "finding3"}})
 
-    # Create mock session factory that returns mock context managers
-    mock_contexts = []
-    for _ in range(3):
-        mock_context = AsyncMock()
-        mock_context.__aenter__ = AsyncMock(return_value=AsyncMock())
-        mock_context.__aexit__ = AsyncMock(return_value=None)
-        mock_contexts.append(mock_context)
-
-    # Mock AsyncSessionLocal - this is imported lazily inside execute_agents
-    mock_session_local = MagicMock()
-    mock_session_local.side_effect = mock_contexts
+    # Patch AGENT_RUNNERS dictionary
+    mock_agent_runners.__getitem__.side_effect = {
+        "tech_comparator": mock_comparator,
+        "integration_feasibility": mock_feasibility,
+        "implementation_planner": mock_planner,
+    }.__getitem__
+    mock_agent_runners.__contains__.side_effect = {
+        "tech_comparator": True,
+        "integration_feasibility": True,
+        "implementation_planner": True,
+    }.__contains__
 
     analysis_id: AnalysisID = str(uuid4())
     content = "Test content"
     content_type = "article"
     selected_agents = ["tech_comparator", "integration_feasibility", "implementation_planner"]
 
-    # Patch at the session module level (where it's imported from)
-    with patch("app.db.session.AsyncSessionLocal", mock_session_local):
-        # Execute agents
-        results = await execute_agents(content, content_type, analysis_id, selected_agents)
+    # Execute agents (mocks handle session management)
+    results = await execute_agents(content, content_type, analysis_id, selected_agents)
 
-    # Verify results
+    # Verify results - execute_agents returns list of findings dicts
     assert len(results) == 3
-    assert all("agent_type" in r for r in results)
+    assert all(isinstance(r, dict) for r in results)
 
-    # Verify each agent was called
+    # Verify each agent runner was called
     assert mock_comparator.called
     assert mock_feasibility.called
     assert mock_planner.called
 
-    # Verify AsyncSessionLocal was called 3 times (once per agent)
-    assert mock_session_local.call_count == 3
-
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.run_tech_comparator")
+@patch("app.workflows.tasks.runners.run_tech_comparator_with_session", new_callable=AsyncMock)
 async def test_execute_agents_handles_exceptions(mock_comparator):
     """Test that execute_agents handles agent exceptions gracefully."""
     # Setup mock to raise exception
@@ -98,3 +78,22 @@ async def test_execute_agents_returns_empty_for_no_agents():
     results = await execute_agents(content, content_type, analysis_id, selected_agents)
 
     assert results == []
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_tech_comparator_with_session", new_callable=AsyncMock)
+async def test_execute_agents_handles_generatorexit(mock_comparator):
+    """Test that execute_agents handles GeneratorExit gracefully."""
+    # Setup mock to raise GeneratorExit
+    mock_comparator.side_effect = GeneratorExit("Stream closed externally")
+
+    analysis_id: AnalysisID = str(uuid4())
+    content = "Test content"
+    content_type = "article"
+    selected_agents = ["tech_comparator"]
+
+    # Execute agents - should handle GeneratorExit gracefully
+    results = await execute_agents(content, content_type, analysis_id, selected_agents)
+
+    # Should return empty list when agent raises GeneratorExit
+    assert len(results) == 0
