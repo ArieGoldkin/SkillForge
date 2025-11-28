@@ -53,17 +53,13 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
             DATABASE_URL=None,  # Explicitly set to None
         )
         
-        # Patch get_settings() in health module and settings in config module
-        # This ensures both check_database() and get_async_database_url() see None
-        # Note: session module imports settings from app.core.config, so we patch there
-        with (
-            patch("app.api.v1.health.get_settings", return_value=mock_settings),
-            patch("app.core.config.settings", mock_settings),
-        ):
-            # Reload modules to pick up the patches
-            importlib.reload(health_module)
-            importlib.reload(session_module)
-            
+        # Patch get_settings() in health module to return mock_settings with DATABASE_URL=None
+        # check_database() uses get_settings() and should return None early before using engine
+        # We don't need to patch session module because check_database() returns None before
+        # it tries to use the engine
+        with patch("app.api.v1.health.get_settings", return_value=mock_settings):
+            # Don't reload modules - the patch is applied at runtime
+            # Reloading would reset the patch
             result = await health_module.check_database()
             assert result is None, f"check_database() should return None when DATABASE_URL is None, got: {result}"
     finally:
