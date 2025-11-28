@@ -197,7 +197,7 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
     is unreachable or connection pool is exhausted.
 
     Args:
-        timeout: Timeout in seconds (defaults to 1.0 for tests - faster failure)
+        timeout: Timeout in seconds (defaults to 2.0 for tests - reasonable timeout)
 
     Returns:
         AsyncSession with timeout protection (caller must close it)
@@ -210,10 +210,10 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
 
     from app.db.session import AsyncSessionLocal
 
-    # Use shorter timeout for tests (1 second) to fail fast when DB unavailable
-    # This prevents tests from hanging when PostgreSQL is not running
+    # Use reasonable timeout for tests (2 seconds) to allow proper connection
+    # while still preventing hanging when PostgreSQL is not running
     if timeout is None:
-        timeout = 1.0
+        timeout = 2.0
 
     # Create session with timeout protection
     # AsyncSessionLocal() returns an AsyncSession which is a context manager
@@ -273,30 +273,42 @@ class TimeoutSession:
 async def check_database_available(requires_database):
     """Check if database is reachable and skip test if not available.
 
-    Performs a quick connectivity check with 0.5-second timeout.
+    Performs a quick connectivity check with 2-second timeout.
     Skips the test gracefully if database is unreachable.
-    Faster timeout prevents hanging when database is not running.
+    Uses reasonable timeout to allow proper connection while still failing fast.
     """
     import asyncio
 
+    from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
 
-    # Quick connectivity check with very short timeout (0.5s)
-    # This ensures tests skip quickly when database is unavailable
+    # Quick connectivity check with reasonable timeout (2s)
+    # This allows proper connection while still failing fast if DB is unavailable
     try:
-        # Use timeout-protected session creation with fast timeout
-        session = await get_test_session(timeout=0.5)
+        # Use AsyncSessionLocal directly with timeout protection
+        session = AsyncSessionLocal()
+        enter_task = asyncio.create_task(session.__aenter__())
         try:
-            # Try a simple query with short timeout
-            query_task = asyncio.create_task(session.execute(text("SELECT 1")))
-            await asyncio.wait_for(query_task, timeout=0.5)
-        finally:
-            # Ensure session is closed
+            await asyncio.wait_for(enter_task, timeout=2.0)
+            try:
+                # Try a simple query with timeout
+                query_task = asyncio.create_task(session.execute(text("SELECT 1")))
+                await asyncio.wait_for(query_task, timeout=2.0)
+            finally:
+                # Ensure session is closed
+                await session.__aexit__(None, None, None)
+        except asyncio.TimeoutError:
+            enter_task.cancel()
+            try:
+                await enter_task
+            except asyncio.CancelledError:
+                pass
             try:
                 await session.__aexit__(None, None, None)
             except Exception:
                 pass
-    except (TimeoutError, Exception) as e:
+            pytest.skip("Database connection timeout - database may be unreachable")
+    except Exception as e:
         # Skip test if database is unreachable - fail fast
         pytest.skip(f"Database not available: {e}")
 
@@ -379,12 +391,12 @@ async def db_session(
     reset_engine_connections ensures connections are in the test's event loop.
     check_database_available ensures database is reachable before creating session.
 
-    Uses fast timeout (1.0s) to prevent hanging when database is unavailable.
+    Uses reasonable timeout (2.0s) to allow proper connection while preventing hanging.
     """
-    # Create session with fast timeout protection (1.0s for tests)
-    # This prevents hanging when database is not running
+    # Create session with reasonable timeout protection (2.0s for tests)
+    # This allows proper connection while preventing hanging when database is not running
     try:
-        session = await get_test_session(timeout=1.0)
+        session = await get_test_session(timeout=2.0)
     except TimeoutError:
         pytest.skip("Database connection timeout - database may be unreachable")
 
