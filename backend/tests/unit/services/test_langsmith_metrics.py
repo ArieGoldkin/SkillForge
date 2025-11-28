@@ -53,7 +53,7 @@ async def test_get_agent_metrics_no_client() -> None:
     """Test metrics service handles missing LangSmith client gracefully."""
     with patch(
         "app.services.langsmith_metrics.Client",
-        side_effect=Exception("Client unavailable"),
+        side_effect=ConnectionError("Client unavailable"),
     ):
         service = LangSmithMetricsService()
         result = await service.get_agent_metrics("tech_comparator")
@@ -78,7 +78,7 @@ async def test_get_workflow_metrics_no_client() -> None:
     """Test workflow metrics handles missing client gracefully."""
     with patch(
         "app.services.langsmith_metrics.Client",
-        side_effect=Exception("Client unavailable"),
+        side_effect=ConnectionError("Client unavailable"),
     ):
         service = LangSmithMetricsService()
         result = await service.get_workflow_metrics("test-id")

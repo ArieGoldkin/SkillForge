@@ -11,14 +11,14 @@ from app.workflows.tasks import execute_agents
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+    "app.workflows.tasks.runners.run_tech_comparator_with_session", new_callable=AsyncMock
 )
 @patch(
-    "app.workflows.tasks.agent_execution.run_integration_feasibility_with_session",
+    "app.workflows.tasks.runners.run_integration_feasibility_with_session",
     new_callable=AsyncMock,
 )
 @patch(
-    "app.workflows.tasks.agent_execution.run_implementation_planner_with_session",
+    "app.workflows.tasks.runners.run_implementation_planner_with_session",
     new_callable=AsyncMock,
 )
 async def test_execute_agents_creates_separate_sessions(
@@ -61,7 +61,7 @@ async def test_execute_agents_creates_separate_sessions(
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+    "app.workflows.tasks.runners.run_tech_comparator_with_session", new_callable=AsyncMock
 )
 async def test_execute_agents_handles_exceptions(mock_comparator):
     """Test that execute_agents handles agent exceptions gracefully."""
@@ -95,7 +95,7 @@ async def test_execute_agents_returns_empty_for_no_agents():
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.tasks.agent_execution.run_tech_comparator_with_session", new_callable=AsyncMock
+    "app.workflows.tasks.runners.run_tech_comparator_with_session", new_callable=AsyncMock
 )
 async def test_execute_agents_handles_generatorexit(mock_comparator):
     """Test that execute_agents handles GeneratorExit gracefully."""

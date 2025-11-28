@@ -32,6 +32,14 @@ class LangSmithMetricsService:
                 error=str(e),
                 fallback="metrics_disabled",
             )
+        except Exception as e:  # noqa: BLE001
+            # Catch any other initialization errors (e.g., config errors, network issues)
+            # This is acceptable here since we gracefully degrade when client is unavailable
+            logger.warning(
+                "langsmith_metrics_service_init_failed",
+                error=str(e),
+                fallback="metrics_disabled",
+            )
 
     async def get_agent_metrics(
         self,
