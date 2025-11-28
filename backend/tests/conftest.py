@@ -156,10 +156,15 @@ def ensure_test_env_vars(monkeypatch):
     1. Test env vars are set (defense in depth)
     2. Settings cache is cleared for fresh settings
     3. Works even if modules were imported before conftest.py ran
+
+    NOTE: DATABASE_URL is NOT overridden if already set (e.g., from .env.test).
+    This allows integration tests to use the real database configuration.
     """
-    # Set env vars (monkeypatch ensures they're set even if already imported)
-    # Use port 5437 to match Docker setup
-    monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
+    # Only set DATABASE_URL if not already set (e.g., from .env.test)
+    # Integration tests need the real DATABASE_URL (port 5437 from .env.test)
+    if "DATABASE_URL" not in os.environ:
+        # Use port 5437 to match Docker setup
+        monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
     # Clear settings cache to force fresh settings instance
