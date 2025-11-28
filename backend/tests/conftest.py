@@ -311,7 +311,11 @@ async def check_database_available(requires_database):
             pytest.skip("Database connection timeout - database may be unreachable")
     except Exception as e:
         # Skip test if database is unreachable - fail fast
-        pytest.skip(f"Database not available: {e}")
+        # Log the actual error for debugging
+        import sys
+
+        print(f"DEBUG: Database check failed: {type(e).__name__}: {e}", file=sys.stderr)
+        pytest.skip(f"Database not available: {type(e).__name__}: {e}")
 
 
 async def _dispose_engine_safely(timeout: float) -> None:
@@ -354,11 +358,18 @@ async def reset_engine_connections():
     preventing 'attached to different loop' errors. Use this fixture for
     tests that use database connections and have event loop issues.
 
-    Uses non-blocking disposal with fast timeout (1.0s) to prevent hanging
-    if database is unreachable.
+    Also clears the cached engine instance to force recreation with current DATABASE_URL.
+    Uses non-blocking disposal with reasonable timeout (2.0s) to prevent hanging.
     """
-    # Use fast timeout (1.0s) for tests to prevent hanging
-    test_timeout = 1.0
+    from app.db import session as session_module
+
+    # Clear cached engine and session factory to force recreation
+    # This ensures engine uses current DATABASE_URL (important for tests)
+    session_module._engine = None
+    session_module._session_factory = None
+
+    # Use reasonable timeout (2.0s) for tests
+    test_timeout = 2.0
 
     # Dispose existing connections before test
     await _dispose_engine_safely(test_timeout)
@@ -367,6 +378,10 @@ async def reset_engine_connections():
 
     # Dispose after test to clean up
     await _dispose_engine_safely(test_timeout)
+    
+    # Clear cached engine again after test
+    session_module._engine = None
+    session_module._session_factory = None
 
 
 @pytest_asyncio.fixture(autouse=True)
