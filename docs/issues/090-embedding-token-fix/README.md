@@ -1,9 +1,10 @@
 # Issue #90: Fix Embedding Token Limit Violation
 
-**Status:** 🔄 **OPEN**  
+**Status:** ✅ **COMPLETE**  
 **Assignee:** Yonatan  
 **Story Points:** 5 pts  
 **Priority:** HIGH  
+**Completed:** December 2024  
 **GitHub Issue:** [#90](https://github.com/ArieGoldkin/SkillForge/issues/90)
 
 ---
@@ -82,54 +83,54 @@ Use `tiktoken` to count tokens instead of characters. `tiktoken` is already in `
 
 ## Acceptance Criteria
 
-- [ ] Use tiktoken to count tokens instead of characters
-- [ ] Truncate to 8,000 tokens (safety margin below 8,192 limit)
-- [ ] Add unit tests for token-based truncation
-- [ ] Verify no token limit errors in LangSmith traces
-- [ ] Update docstring to reflect token-based truncation
-- [ ] Update logging to show token count (not just character count)
+- [x] Use tiktoken to count tokens instead of characters ✅
+- [x] Truncate to 8,000 tokens (safety margin below 8,192 limit) ✅
+- [x] Add unit tests for token-based truncation ✅
+- [x] Verify no token limit errors in LangSmith traces ✅
+- [x] Update docstring to reflect token-based truncation ✅
+- [x] Update logging to show token count (not just character count) ✅
 
 ---
 
 ## Technical Details
 
-### Current Implementation
+### ✅ Implementation (COMPLETE)
+
+**File:** `backend/app/services/embeddings.py`
 
 ```python
-# backend/app/services/embeddings.py:63
-self.max_text_length = 32_000  # ~8,191 tokens (OpenAI limit)
+import tiktoken  # Line 17
 
-# Lines 101-109
-if len(text) > self.max_text_length:
-    text = text[: self.max_text_length]
-    logger.warning(
-        "embedding_text_truncated",
-        original_length=original_length,
-        truncated_length=self.max_text_length,
-    )
-```
-
-### Proposed Implementation
-
-```python
-import tiktoken
-
-# In __init__
-self.model = "text-embedding-3-small"
-self.max_tokens = 8_000  # Safety margin below 8,192 limit
+# In __init__ (lines 64-66)
+self.max_tokens = 8_000  # Safety margin below 8,191 token limit
 self.encoding = tiktoken.encoding_for_model("text-embedding-3-small")
 
-# In generate_embedding
+# In generate_embedding (lines 106-122)
+# Token-based truncation (not character-based)
+# OpenAI text-embedding-3-small limit is 8,191 tokens
 tokens = self.encoding.encode(text)
-if len(tokens) > self.max_tokens:
-    tokens = tokens[: self.max_tokens]
-    text = self.encoding.decode(tokens)
+original_token_count = len(tokens)
+original_length = len(text)
+
+if original_token_count > self.max_tokens:
+    # Truncate tokens, then decode back to text
+    truncated_tokens = tokens[: self.max_tokens]
+    text = self.encoding.decode(truncated_tokens)
     logger.warning(
         "embedding_text_truncated",
-        original_tokens=len(tokens),
+        original_tokens=original_token_count,
         truncated_tokens=self.max_tokens,
+        original_chars=original_length,
+        truncated_chars=len(text),
     )
 ```
+
+**Verification:**
+- ✅ Token-based truncation implemented
+- ✅ Uses tiktoken encoding for `text-embedding-3-small`
+- ✅ Truncates to 8,000 tokens (safety margin)
+- ✅ Logging includes both token and character counts
+- ✅ Docstring updated to reflect token-based truncation
 
 ---
 

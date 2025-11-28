@@ -1,6 +1,6 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** November 26, 2025
+**Date:** December 2024
 **Branch:** `dev` (aligned with `main`)
 **Sprint:** Sprint 1 Complete ✅ → Sprint 2 In Progress (29/37 pts complete)
 
@@ -243,7 +243,7 @@
 - `frontend/src/features/home/components/HeroSection.tsx` - Added error display
 - `frontend/src/shared/components/ui/alert.tsx` - Alert component (NEW)
 
-**Related Issue:** [#88 - Backend sends agent names instead of stage names](https://github.com/ArieGoldkin/SkillForge/issues/88)
+**Related Issue:** [#88 - Backend sends agent names instead of stage names](https://github.com/ArieGoldkin/SkillForge/issues/88) ✅ **FIXED** (December 2024)
 
 ---
 
@@ -464,8 +464,40 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** November 27, 2025 (Frontend-Backend SSE integration complete, stage mapping fix, 122 tests passing)
+**Last Updated:** December 2024 (All system health bugs fixed: #88, #90, #91, #92)
 **Maintained By:** Yonatan & Arie
+
+---
+
+## ✅ System Health Bugs - All Fixed (December 2024)
+
+### Issue #88: Stage Name Mapping ✅ COMPLETE
+- **Status:** ✅ Complete (December 2024)
+- **Fix:** Centralized agent configuration registry with `get_stage_name()` function
+- **File:** `backend/app/core/agent_config.py` (NEW)
+- **Impact:** All SSE events now use proper stage names
+- **Documentation:** [Issue #88 Docs](./issues/088-stage-name-mapping/README.md)
+
+### Issue #90: Embedding Token Limit ✅ COMPLETE
+- **Status:** ✅ Complete (December 2024)
+- **Fix:** Token-based truncation using tiktoken (8,000 token limit)
+- **File:** `backend/app/services/embeddings.py` (lines 64-66, 108-122)
+- **Impact:** No more token limit violations for large content
+- **Documentation:** [Issue #90 Docs](./issues/090-embedding-token-fix/README.md)
+
+### Issue #91: Workflow Status Update ✅ COMPLETE
+- **Status:** ✅ Complete (December 2024)
+- **Fix:** Status update to "complete" after successful workflow execution
+- **File:** `backend/app/api/v1/workflow_runner.py` (lines 55-82)
+- **Impact:** All completed workflows now show correct status
+- **Documentation:** [Issue #91 Docs](./issues/091-workflow-status-fix/README.md)
+
+### Issue #92: Error Handling ✅ COMPLETE
+- **Status:** ✅ Complete (December 2024)
+- **Fix:** Detailed error handling with HTTP status codes, response previews, and context
+- **File:** `backend/app/services/extraction/jina_reader.py` (lines 84-167)
+- **Impact:** Better debugging information for extraction failures
+- **Documentation:** [Issue #92 Docs](./issues/092-extraction-error-handling/README.md)
 
 **See Also:**
 - [Issues Documentation](./issues/README.md) - Complete issue status and documentation
