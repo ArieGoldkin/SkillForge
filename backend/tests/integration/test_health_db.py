@@ -33,7 +33,7 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     """Test check_database returns None when DATABASE_URL is not configured.
     
     Note: This test is challenging because Settings loads from .env.test in test mode.
-    We mock the Settings class to return None for DATABASE_URL to test the behavior.
+    We mock get_settings() in both health and session modules to return None for DATABASE_URL.
     """
     from app.db import session as session_module
     from app.core.config import get_settings, Settings
@@ -53,10 +53,15 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
             DATABASE_URL=None,  # Explicitly set to None
         )
         
-        # Patch get_settings() to return our mock settings
-        with patch("app.api.v1.health.get_settings", return_value=mock_settings):
-            # Reload module to pick up the patch
+        # Patch get_settings() in both health and session modules
+        # This ensures both check_database() and get_async_database_url() see None
+        with (
+            patch("app.api.v1.health.get_settings", return_value=mock_settings),
+            patch("app.db.session.get_settings", return_value=mock_settings),
+        ):
+            # Reload modules to pick up the patches
             importlib.reload(health_module)
+            importlib.reload(session_module)
             
             result = await health_module.check_database()
             assert result is None, f"check_database() should return None when DATABASE_URL is None, got: {result}"
@@ -67,6 +72,7 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
         session_module._engine = None
         session_module._session_factory = None
         importlib.reload(health_module)
+        importlib.reload(session_module)
 
 
 @pytest.mark.asyncio
