@@ -1,7 +1,7 @@
 import type { Analysis } from '@app-types/api'
 import { useQuery } from '@tanstack/react-query'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8500'
 
 /**
  * Fetch analysis data by ID

@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { mockAnalyzeAPI } from '@services/mock.service'
+import { analyzeAPI } from '@services/api.service'
+import { mockAnalyses } from '@services/mock.service'
 
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
@@ -24,7 +25,15 @@ export default function Library() {
 
   const { data: analyses, isLoading } = useQuery({
     queryKey: ['analyses'],
-    queryFn: () => mockAnalyzeAPI.listAnalyses(),
+    queryFn: async () => {
+      // Try real API first, fall back to mock data if not available
+      const realAnalyses = await analyzeAPI.listAnalyses()
+      if (realAnalyses.length > 0) {
+        return realAnalyses
+      }
+      // Fallback to mock data until backend implements list endpoint
+      return mockAnalyses
+    },
   })
 
   const skills = useSkillsData(analyses)
