@@ -1,9 +1,13 @@
 """Unit tests for embedding service error handling."""
 
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
+
+# Set OPENAI_API_KEY before importing to avoid validation errors
+os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
 
@@ -19,6 +23,7 @@ async def embedding_service():
         mock_openai_class.return_value = mock_client
 
         # Create service (will use mocked AsyncOpenAI)
+        # OPENAI_API_KEY is set in environment above
         service = EmbeddingService()
         # Replace client with our mock for easier testing
         service.client = mock_client
