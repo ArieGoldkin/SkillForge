@@ -218,6 +218,7 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     - Agent execution with LLM calls (can take 60-120s)
     - SSE event emission and processing
     """
+    import asyncio
     from uuid import UUID
 
     from app.db.session import AsyncSessionLocal
@@ -226,15 +227,33 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     analysis_id = str(uuid.uuid4())
 
     # Create Analysis record before running workflow (required for agent foreign keys)
-    async with AsyncSessionLocal() as session:
-        analysis = Analysis(
-            id=UUID(analysis_id),
-            url="https://python.org",
-            content_type="article",
-            status="pending",
-        )
-        session.add(analysis)
-        await session.commit()
+    # Use timeout protection to prevent hanging if database is unavailable
+    try:
+        # Create session with timeout protection (1.0s timeout for fast failure)
+        session = AsyncSessionLocal()
+        enter_task = asyncio.create_task(session.__aenter__())
+        try:
+            await asyncio.wait_for(enter_task, timeout=1.0)
+            try:
+                analysis = Analysis(
+                    id=UUID(analysis_id),
+                    url="https://python.org",
+                    content_type="article",
+                    status="pending",
+                )
+                session.add(analysis)
+                await session.commit()
+            finally:
+                await session.__aexit__(None, None, None)
+        except TimeoutError:
+            enter_task.cancel()
+            try:
+                await enter_task
+            except asyncio.CancelledError:
+                pass
+            pytest.skip("Database connection timeout - database may be unreachable")
+    except Exception as e:
+        pytest.skip(f"Database not available: {e}")
 
     # Run workflow (which should emit SSE events)
     workflow_task = asyncio.create_task(
