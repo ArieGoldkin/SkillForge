@@ -1,0 +1,250 @@
+"""Unit tests for supervisor node."""
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from app.workflows.nodes.supervisor import _get_content_for_supervisor, supervisor_route
+from app.workflows.nodes.supervisor_schema import AgentSelection
+
+
+@pytest.fixture
+def mock_agent_selection():
+    """Mock AgentSelection with selected agents."""
+    return AgentSelection(
+        agents=["tech_comparator", "security_auditor"],
+        reasoning="Tech content needs comparison and security analysis",
+        confidence=0.9,
+    )
+
+
+@pytest.fixture
+def mock_agent_selection_empty():
+    """Mock AgentSelection with no agents."""
+    return AgentSelection(
+        agents=[],
+        reasoning="Simple content doesn't need analysis",
+        confidence=0.5,
+    )
+
+
+def test_get_content_for_supervisor_small():
+    """Test dynamic content sizing for small content (<5K)."""
+    content = "x" * 3000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 3000  # All content used
+
+
+def test_get_content_for_supervisor_medium():
+    """Test dynamic content sizing for medium content (5K-15K)."""
+    content = "x" * 12000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 10000  # Truncated to 10K
+
+
+def test_get_content_for_supervisor_large():
+    """Test dynamic content sizing for large content (15K+)."""
+    content = "x" * 25000
+    result = _get_content_for_supervisor(content, "article")
+    # Should be 10K + 2K middle section + separator text
+    assert len(result) > 10000
+    assert len(result) <= 15000
+
+
+def test_get_content_for_supervisor_very_large():
+    """Test dynamic content sizing for very large content (>50K)."""
+    content = "x" * 60000
+    result = _get_content_for_supervisor(content, "article")
+    assert len(result) == 12000  # Truncated to 12K
+
+
+@pytest.mark.asyncio
+async def test_supervisor_route_success(mock_agent_selection):
+    """Test supervisor_route with successful agent selection."""
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch(
+            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+        ) as mock_emit,
+    ):
+        result = await supervisor_route(
+            content="This is a test article about React and security best practices.",
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        # Verify supervisor decision structure
+        assert "supervisor_decision" in result
+        decision = result["supervisor_decision"]
+        assert "agents" in decision
+        assert "priority" in decision
+        assert "reasoning" in decision
+        assert "confidence" in decision
+
+        # Verify agents were selected
+        assert len(decision["agents"]) == 2
+        assert "tech_comparator" in decision["agents"]
+        assert "security_auditor" in decision["agents"]
+        assert len(decision["priority"]) == len(decision["agents"])
+        assert decision["confidence"] == 0.9
+
+        # Verify SSE events were emitted
+        assert mock_emit.call_count >= 2  # Start and complete events
+        start_call = mock_emit.call_args_list[0]
+        assert start_call[1]["stage"] == "supervisor_routing"
+        assert start_call[1]["status"] == "running"
+
+
+@pytest.mark.asyncio
+async def test_supervisor_route_no_agents_selected(mock_agent_selection_empty):
+    """Test supervisor_route when no agents are selected."""
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_empty)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch(
+            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+        ) as mock_emit,
+    ):
+        result = await supervisor_route(
+            content="Simple content that doesn't need analysis.",
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        # Verify decision structure even when no agents selected
+        assert "supervisor_decision" in result
+        decision = result["supervisor_decision"]
+        assert decision["agents"] == []
+        assert decision["priority"] == []
+        assert decision["confidence"] == 0.5
+
+        # Verify complete event was emitted with agent_count=0
+        complete_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "complete"]
+        assert len(complete_calls) > 0
+        complete_call = complete_calls[0]
+        assert complete_call[1]["agent_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_supervisor_route_error_handling():
+    """Test supervisor_route handles errors gracefully."""
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(side_effect=Exception("Model invocation failed"))
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch(
+            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+        ) as mock_emit,
+        pytest.raises(Exception, match="Model invocation failed"),
+    ):
+        await supervisor_route(
+            content="Test content",
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        # Verify error event was emitted
+        error_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "failed"]
+        assert len(error_calls) > 0
+        error_call = error_calls[0]
+        assert error_call[1]["stage"] == "supervisor"
+        assert "error" in error_call[1]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_route_content_dynamic_sizing():
+    """Test that content is dynamically sized based on length."""
+    mock_selection = AgentSelection(
+        agents=["tech_comparator"],
+        reasoning="Test",
+        confidence=0.8,
+    )
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Create content of different sizes
+    small_content = "x" * 3000  # <5K: use all
+    medium_content = "x" * 12000  # 5K-15K: use 10K
+    large_content = "x" * 25000  # 15K+: use 12K-15K
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        # Test small content (uses all)
+        await supervisor_route(
+            content=small_content,
+            content_type="article",
+            analysis_id="test-small",
+        )
+        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        assert len(call_args) > 3000  # Includes prompt + all content
+
+        # Test medium content (truncated to 10K)
+        await supervisor_route(
+            content=medium_content,
+            content_type="article",
+            analysis_id="test-medium",
+        )
+        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        # Should contain ~10K chars of content (plus prompt)
+        assert "Content Type: article" in call_args
+
+
+@pytest.mark.asyncio
+async def test_supervisor_route_decision_structure(mock_agent_selection):
+    """Test that supervisor decision has correct structure."""
+    # Mock the structured model that with_structured_output returns
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
+
+    # Mock the base model that get_chat_model returns
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(
+            content="Test content about React and security.",
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        decision = result["supervisor_decision"]
+        assert isinstance(decision, dict)
+        assert isinstance(decision["agents"], list)
+        assert isinstance(decision["priority"], list)
+        assert isinstance(decision["reasoning"], str)
+        assert isinstance(decision["confidence"], float)
+        assert len(decision["agents"]) == len(decision["priority"])
+        # Priorities should match confidence
+        assert all(p == decision["confidence"] for p in decision["priority"])
+        assert decision["confidence"] == 0.9

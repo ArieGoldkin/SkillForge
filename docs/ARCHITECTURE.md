@@ -1,8 +1,33 @@
 # 🏗️ SkillForge - Architecture & Workflow Diagrams
 
-**Version:** 1.0  
-**Last Updated:** November 20, 2025  
+**Version:** 1.2  
+**Last Updated:** November 28, 2025  
 **Project:** SkillForge - Research-to-Implementation Pipeline
+
+---
+
+## 📖 Viewing Mermaid Diagrams
+
+This document contains Mermaid diagrams that require a compatible viewer to render properly.
+
+### ✅ Recommended Viewers
+
+1. **VS Code**: Install the "Markdown Preview Mermaid Support" extension
+   - Extension ID: `bierner.markdown-mermaid`
+   - Press `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows/Linux) to preview
+
+2. **GitHub**: Diagrams render automatically when viewing on GitHub.com
+
+3. **Online Viewer**: Copy diagram code to [Mermaid Live Editor](https://mermaid.live/)
+
+4. **Cursor/VS Code**: Use the built-in markdown preview (may require extension)
+
+### 🔧 Quick Fix
+
+If diagrams don't render:
+- Open the file in VS Code with the Mermaid extension installed
+- Or view on GitHub.com
+- Or copy the ```mermaid code blocks to [mermaid.live](https://mermaid.live/)
 
 ---
 
@@ -17,6 +42,7 @@
 7. [Component Relationships](#component-relationships)
 8. [Data Flow](#data-flow)
 9. [Deployment Architecture](#deployment-architecture)
+10. [Prompt Templating](#prompt-templating)
 
 ---
 
@@ -140,7 +166,7 @@ graph TB
     subgraph "Business Logic [Yonatan]"
         Services[Services]
         Workflows[LangGraph Workflows]
-        Agents[LangChain Agents]
+        Agents[LangChain Agents<br/>Async with Timeouts]
         
         Repos --> Services
         Services --> Workflows
@@ -159,11 +185,9 @@ graph TB
     
     subgraph "External Services"
         JinaAI[Jina AI Reader]
-        Ollama[Ollama LLM]
         OpenAI[OpenAI API]
         
         Services --> JinaAI
-        Agents --> Ollama
         Agents --> OpenAI
     end
     
@@ -175,7 +199,7 @@ graph TB
 
 ---
 
-## Backend Workflow (LangGraph v1.0)
+## Backend Workflow (LangGraph v1.0 StateGraph)
 
 ```mermaid
 graph TB
@@ -187,26 +211,30 @@ graph TB
         ReturnID[Return analysis_id]
     end
     
-    subgraph "LangGraph v1.0 Functional API"
-        EntryPoint["@entrypoint checkpointer"]
+    subgraph "LangGraph v1.0 StateGraph"
+        EntryPoint[StateGraph Entry: extract]
         
-        subgraph "Workflow Tasks"
-            Extract["@task extract_content"]
-            Embed["@task generate_embedding"]
-            Supervisor["@task supervisor_route"]
+        subgraph "Workflow Nodes"
+            Extract[extract node]
             
-            subgraph "Sub-Agents"
-                TechComp["@task run_tech_comparator"]
-                Security["@task run_security_auditor"]
-                ImplPlan["@task run_implementation_planner"]
-                Perf["@task run_performance_auditor"]
-                CodeQual["@task run_code_quality_auditor"]
-                Trends["@task run_trends_analyzer"]
-                Deps["@task run_dependencies_analyzer"]
+            subgraph "Parallel Execution (Fan-Out)"
+                Embed[embedding node]
+                Supervisor[supervisor node]
             end
             
-            Aggregate["@task aggregate_findings"]
-            Artifact["@task generate_artifact"]
+            ParallelAgents[parallel_agents node]
+            
+            subgraph "Sub-Agents (Internal Parallel)"
+                TechComp[tech_comparator]
+                Security[security_auditor]
+                ImplPlan[implementation_planner]
+                Perf[performance_analyst]
+                CodeQual[code_quality_critic]
+                Trends[trend_validator]
+                Deps[dependency_mapper]
+            end
+            
+            Aggregate[aggregate node]
         end
     end
     
@@ -230,16 +258,20 @@ graph TB
     EntryPoint --> Extract
     Extract -->|"SSE: extraction running"| SSEProgress
     Extract --> Embed
-    Embed --> Supervisor
-    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
+    Extract --> Supervisor
     
-    Supervisor --> TechComp
-    Supervisor --> Security
-    Supervisor --> ImplPlan
-    Supervisor --> Perf
-    Supervisor --> CodeQual
-    Supervisor --> Trends
-    Supervisor --> Deps
+    Embed -->|"SSE: embedding complete"| SSEProgress
+    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
+    Embed --> ParallelAgents
+    Supervisor --> ParallelAgents
+    
+    ParallelAgents --> TechComp
+    ParallelAgents --> Security
+    ParallelAgents --> ImplPlan
+    ParallelAgents --> Perf
+    ParallelAgents --> CodeQual
+    ParallelAgents --> Trends
+    ParallelAgents --> Deps
     
     TechComp -->|"SSE: tech_comparison"| SSEProgress
     Security -->|"SSE: security_audit"| SSEProgress
@@ -257,8 +289,7 @@ graph TB
     Trends --> Aggregate
     Deps --> Aggregate
     
-    Aggregate --> Artifact
-    Artifact -->|"SSE: artifact_generation complete"| SSEComplete
+    Aggregate -->|"SSE: aggregation complete"| SSEComplete
     
     Extract --> SaveProgress
     TechComp --> SaveFindings
@@ -627,12 +658,12 @@ graph TB
         DevFrontend[Frontend Dev Server<br/>localhost:5173]
         DevBackend[Backend Dev Server<br/>localhost:8000]
         DevDB[(PostgreSQL Dev<br/>localhost:5432)]
-        DevOllama[Ollama Local<br/>localhost:11434]
+        DevOpenAI[OpenAI API<br/>GPT-5 Mini]
         
         DevUser --> DevFrontend
         DevFrontend --> DevBackend
         DevBackend --> DevDB
-        DevBackend --> DevOllama
+        DevBackend --> DevOpenAI
     end
     
     subgraph "Production"
@@ -641,13 +672,13 @@ graph TB
         ProdAPI[Backend API<br/>FastAPI + Uvicorn]
         ProdDB[(PostgreSQL<br/>Production)]
         ProdRedis[(Redis<br/>Event Broadcasting)]
-        ProdOllama[Ollama Cloud<br/>or OpenAI]
+        ProdOpenAI[OpenAI API<br/>GPT-5 Mini]
         
         ProdUser --> ProdCDN
         ProdCDN --> ProdAPI
         ProdAPI --> ProdDB
         ProdAPI --> ProdRedis
-        ProdAPI --> ProdOllama
+        ProdAPI --> ProdOpenAI
     end
     
     subgraph "CI/CD"
@@ -747,7 +778,256 @@ graph TB
 
 ---
 
+## Backend Architecture Patterns
+
+This section documents the key architectural patterns and best practices used in the SkillForge backend.
+
+### Repository Pattern
+
+**Purpose:** Abstract database access and provide a clean interface for data operations.
+
+**Implementation:**
+- Repository interfaces define contracts for data operations
+- Implementations use SQLAlchemy AsyncSession for database access
+- Dependency injection via FastAPI Depends for testability
+
+**Example:**
+```python
+from app.db.repositories.analysis import IAnalysisRepository, get_analysis_repository
+
+@router.post("/analyze")
+async def create_analysis(
+    request: AnalyzeRequest,
+    repo: IAnalysisRepository = Depends(get_analysis_repository)
+) -> AnalyzeResponse:
+    analysis = await repo.create(url=request.url)
+    return AnalyzeResponse.from_orm(analysis)
+```
+
+**Benefits:**
+- Testability: Easy to mock repositories in tests
+- Maintainability: Database logic isolated from business logic
+- Flexibility: Can swap implementations without changing business logic
+
+**Status:** Pattern defined, implementation pending (Issue #41)
+
+### Service Layer
+
+**Purpose:** Encapsulate business logic and coordinate between repositories and external services.
+
+**Responsibilities:**
+- Business logic implementation
+- External API integration (Jina Reader, OpenAI)
+- Data transformation and validation
+- Error handling and retry logic
+
+**Current Services:**
+- `EmbeddingService`: Generates semantic embeddings using OpenAI (text-embedding-3-small, 1536 dimensions)
+- `JinaReader`: Extracts content from URLs
+- `EventBroadcaster`: Pub/sub messaging for SSE events
+
+**Pattern:**
+```python
+class EmbeddingService:
+    """Service for generating semantic embeddings."""
+    
+    async def generate_embedding(self, text: str) -> EmbeddingVector:
+        # Business logic here
+        # Retry logic, error handling, normalization
+        pass
+```
+
+### Workflow Orchestration (LangGraph v1.0)
+
+**Purpose:** Orchestrate multi-step analysis workflows with state management and checkpointing.
+
+**Implementation:**
+- Uses LangGraph v1.0 Functional API (`@entrypoint`, `@task`)
+- PostgreSQL checkpointer for persistent state (production)
+- MemorySaver fallback for development
+- Thread-based isolation per analysis
+
+**Pattern:**
+```python
+@task
+async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
+    """Extract content task."""
+    # Task implementation
+    pass
+
+@entrypoint(checkpointer=checkpointer)
+async def analysis_workflow(input_data: dict) -> dict:
+    """Main workflow orchestration."""
+    result = await extract_content(input_data["url"], input_data["analysis_id"])
+    return result
+```
+
+**Benefits:**
+- Automatic state persistence
+- Workflow resumption after failures
+- Clear task boundaries
+- Easy to add new tasks
+
+### SSE Event Broadcasting
+
+**Purpose:** Provide real-time progress updates to clients during long-running workflows.
+
+**Architecture:**
+- `EventBroadcaster`: In-memory pub/sub using asyncio.Queue
+- Channel-based messaging: `workflow:{analysis_id}`
+- Automatic cleanup on client disconnect
+- Thread-safe with asyncio.Lock
+
+**Flow:**
+1. Workflow emits events via `emit_streaming_event()`
+2. Events published to broadcaster channel
+3. SSE endpoint subscribes to channel
+4. Events streamed to connected clients
+
+**Pattern:**
+```python
+# In workflow
+from app.services.sse_helpers import emit_streaming_event
+
+await emit_streaming_event(
+    "progress",
+    analysis_id=analysis_id,
+    stage="extraction",
+    status="running",
+)
+
+# In SSE endpoint
+from app.services.event_broadcaster import broadcaster
+
+async for event in broadcaster.subscribe(f"workflow:{analysis_id}"):
+    yield {"event": event["type"], "data": json.dumps(event)}
+```
+
+**Event Schema:** See [`docs/issues/040-sse-endpoint/SSE_SCHEMA.md`](../docs/issues/040-sse-endpoint/SSE_SCHEMA.md) for complete event type definitions and TypeScript types.
+
+**Benefits:**
+- Real-time user feedback
+- No polling required
+- Automatic connection management
+- Scalable (in-memory, can be extended to Redis)
+
+### Error Handling Strategy
+
+**Purpose:** Provide consistent error handling across the application.
+
+**Exception Hierarchy:**
+```
+SkillForgeException (base)
+├── ServiceException
+│   ├── EmbeddingError
+│   └── JinaReaderError
+├── WorkflowError
+└── DatabaseError
+```
+
+**Pattern:**
+- Custom exceptions inherit from `SkillForgeException`
+- Service layer raises specific exceptions
+- Global exception handler in FastAPI middleware
+- Structured error responses with request IDs
+
+**Implementation:**
+```python
+# Service raises specific exception
+raise EmbeddingError("Embedding generation failed")
+
+# Global handler catches and formats
+@app.exception_handler(SkillForgeException)
+async def skillforge_exception_handler(request: Request, exc: SkillForgeException):
+    return JSONResponse(
+        status_code=500,
+        content={"error": {"code": type(exc).__name__, "message": str(exc)}}
+    )
+```
+
+**Benefits:**
+- Consistent error responses
+- Easy error categorization
+- Better debugging with exception types
+- Client-friendly error messages
+
+### Database Connection Pooling
+
+**Purpose:** Efficiently manage database connections and prevent connection exhaustion.
+
+**Configuration:**
+- `pool_size`: 5 connections maintained
+- `max_overflow`: 10 additional connections
+- `pool_recycle`: 3600 seconds (1 hour)
+- `pool_pre_ping`: Verify connections before use
+
+**Pattern:**
+```python
+engine = create_async_engine(
+    database_url,
+    pool_size=DB_POOL_SIZE,
+    max_overflow=DB_MAX_OVERFLOW,
+    pool_recycle=DB_POOL_RECYCLE,
+    pool_pre_ping=True,
+)
+```
+
+**Benefits:**
+- Connection reuse (performance)
+- Automatic connection health checks
+- Prevents connection leaks
+- Handles connection failures gracefully
+
+### Constants Management
+
+**Purpose:** Centralize magic numbers and configuration values.
+
+**Location:** `app/core/constants.py`
+
+**Categories:**
+- HTTP status codes
+- Timeout values
+- Text and message limits
+- Retry configuration
+- Database pool settings
+- Content type constants
+
+**Benefits:**
+- Single source of truth
+- Easy to update values
+- Better code readability
+- Type safety
+
+### Type Aliases
+
+**Purpose:** Improve code readability and maintainability with semantic type names.
+
+**Location:** `app/core/types.py`
+
+**Aliases:**
+- `EmbeddingVector`: `list[float]`
+- `AnalysisID`: `str`
+- `ChannelName`: `str`
+- `EventData`: `dict[str, object]`
+- `ExtractionResult`: `dict[str, str | int | dict[str, str]]`
+
+**Benefits:**
+- Self-documenting code
+- Easier refactoring
+- Better IDE support
+- Type safety
+
+---
+
 **Document Maintained By:** Yonatan & Arie  
-**Last Updated:** November 20, 2025  
-**View in:** GitHub, VS Code (Mermaid Preview), or any Mermaid-compatible viewer
+**Last Updated:** November 28, 2025  
+
+### Viewing Instructions
+
+**To view Mermaid diagrams:**
+- **VS Code/Cursor**: Install "Markdown Preview Mermaid Support" extension, then press `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows/Linux)
+- **GitHub**: View on GitHub.com - diagrams render automatically
+- **Online**: Copy any ```mermaid code block to [Mermaid Live Editor](https://mermaid.live/)
+
+**Note**: Plain text editors and some markdown viewers do not support Mermaid rendering. Use one of the recommended viewers above.
 

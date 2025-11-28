@@ -23,7 +23,7 @@
 ```bash
 # Fast, selective (only changed files)
 ruff check --select=E,F,I,N,W,UP .
-black --check .
+ruff format --check .
 mypy app
 pytest tests/ --cov=app --cov-fail-under=80
 ```
@@ -32,7 +32,7 @@ pytest tests/ --cov=app --cov-fail-under=80
 ```bash
 # Comprehensive (full test suite)
 ruff check .
-black --check .
+ruff format --check .
 mypy app
 pytest tests/ -v --cov=app --cov-report=html --cov-fail-under=80
 ```
@@ -129,26 +129,32 @@ logging.info(f"Extraction complete")
 
 All LangGraph workflow nodes MUST emit SSE events:
 ```python
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
-async def emit_streaming_event(
-    event_type: str,
-    analysis_id: str,
-    stage: str,
-    **kwargs
-) -> None:
-    """Emit SSE event during workflow execution."""
-    event_data = {
-        "type": event_type,
-        "analysis_id": analysis_id,
-        "stage": stage,
-        "timestamp": datetime.now(UTC).isoformat(),
-        **kwargs
-    }
-    await broadcaster.publish(
-        channel=f"workflow:{analysis_id}",
-        message=event_data
+@task
+async def extract_content(url: str, analysis_id: str) -> dict:
+    """Extract content with SSE events."""
+    # Emit start event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
     )
+    
+    # Do work
+    content = await jina_reader.extract(url)
+    
+    # Emit complete event
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="complete",
+        word_count=len(content.split()),
+    )
+    
+    return {"content": content}
 ```
 
 ---
@@ -376,11 +382,112 @@ def test_health_check(client: TestClient):
 - Validate at startup
 - Provide sensible defaults for development
 
+### Settings Caching (MANDATORY)
+
+**✅ GOOD: Cached settings with helper methods**
+```python
+from functools import lru_cache
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    ENVIRONMENT: str = "development"
+    
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT == "development"
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+
+settings = get_settings()
+```
+
+**❌ BAD: Creating new instance every time**
+```python
+# Settings loaded on every access - inefficient!
+settings = Settings()
+```
+
+**Key Requirements:**
+- Use `@lru_cache()` to cache Settings instance
+- Clear cache in test fixtures: `get_settings.cache_clear()`
+- Add helper methods for environment checks (is_development, is_production)
+- Validate required variables in production via model_validator
+
 ### Logging
 - Use structlog for structured logging
-- Include request_id in all logs
+- Include request_id in all logs (automatically added by middleware)
 - Different formats for dev (readable) vs prod (JSON)
 - Never log sensitive data (API keys, passwords, tokens)
+
+### Request ID Middleware (MANDATORY)
+
+**✅ GOOD: BaseHTTPMiddleware with proper cleanup**
+```python
+from starlette.middleware.base import BaseHTTPMiddleware
+import structlog
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Check for existing X-Request-ID (distributed tracing)
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+        
+        # Bind to context vars for logging
+        structlog.contextvars.bind_contextvars(request_id=request_id)
+        
+        try:
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = request_id
+            return response
+        finally:
+            # Always cleanup context vars (prevents context leakage)
+            structlog.contextvars.unbind_contextvars("request_id")
+```
+
+**❌ BAD: Function middleware without cleanup**
+```python
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    structlog.contextvars.bind_contextvars(request_id=request_id)
+    response = await call_next(request)
+    # Missing cleanup - context leakage in async code!
+    return response
+```
+
+**Key Requirements:**
+- Use `BaseHTTPMiddleware` class pattern (more maintainable)
+- Check for existing `X-Request-ID` header (distributed tracing support)
+- Always unbind contextvars in `finally` block (prevents context leakage)
+- Add request ID to response headers
+- Store request ID in `request.state` for access in handlers
+
+### Context Variables Cleanup (CRITICAL)
+
+**When using structlog.contextvars:**
+- **ALWAYS** unbind in `finally` blocks
+- **NEVER** bind without cleanup in async code
+- **ALWAYS** clear existing context before binding new values
+- Use `try/finally` pattern for guaranteed cleanup
+
+**✅ GOOD: Proper cleanup**
+```python
+structlog.contextvars.clear_contextvars()
+structlog.contextvars.bind_contextvars(request_id=request_id)
+try:
+    # Your code here
+    pass
+finally:
+    structlog.contextvars.unbind_contextvars("request_id")
+```
+
+**❌ BAD: Missing cleanup**
+```python
+structlog.contextvars.bind_contextvars(request_id=request_id)
+# Missing finally block - context leaks between requests!
+```
 
 ---
 
@@ -388,7 +495,7 @@ def test_health_check(client: TestClient):
 
 - [ ] All tests pass: `pytest tests/`
 - [ ] No linting errors: `ruff check .`
-- [ ] Code formatted: `black --check .`
+- [ ] Code formatted: `ruff format --check .`
 - [ ] Type checking passes: `mypy app`
 - [ ] Coverage ≥80%: `pytest --cov=app --cov-fail-under=80`
 - [ ] Docstrings added for new functions

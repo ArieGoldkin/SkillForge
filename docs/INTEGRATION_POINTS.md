@@ -129,29 +129,36 @@ async def stream_analysis_progress(
     return EventSourceResponse(event_generator())
 ```
 
+**Note:** Full SSE event schema documented in `docs/issues/040-sse-endpoint/SSE_SCHEMA.md`
+
 ### LangGraph Workflow Pattern (v1.0 Functional API)
 
 **SSE Instrumentation in Nodes:**
 ```python
 from langgraph.func import entrypoint, task
-from app.services.event_broadcaster import broadcaster
+from app.services.sse_helpers import emit_streaming_event
 
 @task
 async def extract_content(url: str, analysis_id: str) -> dict:
     """Extract content with SSE events."""
     # Emit start event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {"type": "progress", "stage": "extraction", "status": "running"}
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="running",
     )
     
     # Do work
     content = await jina_reader.extract(url)
     
     # Emit complete event
-    await broadcaster.publish(
-        f"workflow:{analysis_id}",
-        {"type": "progress", "stage": "extraction", "status": "complete"}
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="extraction",
+        status="complete",
+        word_count=len(content.split()),
     )
     
     return {"content": content}
@@ -159,7 +166,7 @@ async def extract_content(url: str, analysis_id: str) -> dict:
 @entrypoint(checkpointer=checkpointer)
 async def analysis_workflow(url: str, analysis_id: str) -> dict:
     """Main workflow with SSE instrumentation."""
-    result = extract_content(url, analysis_id).result()
+    result = await extract_content(url, analysis_id)
     return result
 ```
 
@@ -808,15 +815,16 @@ pytest tests/e2e/
 
 ---
 
-### Issue: Ollama Model Not Found
+### Issue: OpenAI API Key Not Configured
 
-**Symptoms:** Backend LLM calls fail
+**Symptoms:** Backend LLM calls fail, embedding generation fails
 
 **Solution:**
 ```bash
-docker exec -it ollama ollama list
-# If model missing:
-docker exec -it ollama ollama pull llama3.1:8b
+# Set OpenAI API key in .env file
+OPENAI_API_KEY=sk-...
+
+# Verify key is loaded (check backend logs)
 ```
 
 ---

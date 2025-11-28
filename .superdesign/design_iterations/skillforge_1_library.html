@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Library - SkillForge</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Theme Variables */
+        :root {
+            --background: oklch(0.9911 0 0);
+            --foreground: oklch(0.2046 0 0);
+            --card: oklch(0.9911 0 0);
+            --card-foreground: oklch(0.2046 0 0);
+            --primary: oklch(0.8348 0.1302 160.9080);
+            --primary-foreground: oklch(0.2626 0.0147 166.4589);
+            --muted: oklch(0.9461 0 0);
+            --muted-foreground: oklch(0.2435 0 0);
+            --border: oklch(0.9037 0 0);
+            --ring: oklch(0.8348 0.1302 160.9080);
+            --radius: 0.5rem;
+        }
+
+        .dark {
+            --background: oklch(0.1822 0 0);
+            --foreground: oklch(0.9288 0.0126 255.5078);
+            --card: oklch(0.2046 0 0);
+            --card-foreground: oklch(0.9288 0.0126 255.5078);
+            --primary: oklch(0.4365 0.1044 156.7556);
+            --primary-foreground: oklch(0.9213 0.0135 167.1556);
+            --muted: oklch(0.2393 0 0);
+            --muted-foreground: oklch(0.7122 0 0);
+            --border: oklch(0.2809 0 0);
+            --ring: oklch(0.8003 0.1821 151.7110);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif !important;
+            background-color: var(--background) !important;
+            color: var(--foreground) !important;
+            letter-spacing: 0.025em !important;
+            line-height: 1.6 !important;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        /* Custom Utilities */
+        @layer utilities {
+            .text-primary {
+                color: var(--primary);
+            }
+            .bg-primary {
+                background-color: var(--primary);
+            }
+            .text-primary-foreground {
+                color: var(--primary-foreground);
+            }
+            .bg-card {
+                background-color: var(--card);
+            }
+            .text-card-foreground {
+                color: var(--card-foreground);
+            }
+            .text-muted-foreground {
+                color: var(--muted-foreground);
+            }
+            .bg-muted {
+                background-color: var(--muted);
+            }
+            .border-border {
+                border-color: var(--border);
+            }
+        }
+
+        .card {
+            background-color: var(--card);
+            color: var(--card-foreground);
+            border-radius: var(--radius);
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
+        }
+
+        .nav-link {
+            color: var(--muted-foreground);
+            font-weight: 500;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: var(--primary);
+            transition: width 0.2s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background-color: var(--background);
+            color: var(--foreground);
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: 0 0 0 3px oklch(0.8348 0.1302 160.9080 / 0.1);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.625rem;
+            background-color: var(--muted);
+            color: var(--muted-foreground);
+            border-radius: calc(var(--radius) / 2);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--muted);
+            color: var(--foreground);
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.8;
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--muted-foreground);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            background-color: var(--muted);
+            color: var(--foreground);
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: calc(var(--radius) / 2);
+            background-color: var(--muted);
+            color: var(--muted-foreground);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border-color: var(--ring);
+        }
+
+        .content-type-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-article {
+            background-color: oklch(0.8348 0.1302 160.9080 / 0.1);
+            color: var(--primary);
+        }
+
+        .icon-video {
+            background-color: oklch(0.6231 0.1880 259.8145 / 0.1);
+            color: oklch(0.6231 0.1880 259.8145);
+        }
+
+        .icon-repo {
+            background-color: oklch(0.7686 0.1647 70.0804 / 0.1);
+            color: oklch(0.7686 0.1647 70.0804);
+        }
+
+        .dark .icon-article {
+            background-color: oklch(0.4365 0.1044 156.7556 / 0.15);
+        }
+
+        .dark .icon-video {
+            background-color: oklch(0.7137 0.1434 254.6240 / 0.15);
+        }
+
+        .dark .icon-repo {
+            background-color: oklch(0.8369 0.1644 84.4286 / 0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="py-6 px-8 border-b border-border">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+                    <i data-lucide="graduation-cap" class="w-8 h-8"></i>
+                    SkillForge
+                </h1>
+                <div class="hidden md:flex gap-6">
+                    <a href="skillforge_1.html" class="nav-link">Home</a>
+                    <a href="skillforge_1_library.html" class="nav-link" style="color: var(--primary);">Library</a>
+                    <a href="#" class="nav-link">About</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="theme-toggle p-2" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <i data-lucide="moon" class="w-6 h-6"></i>
+                </button>
+                <button class="p-2">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="py-8 px-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Page Header -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 animate-fade-in-up">
+                <div>
+                    <h2 class="text-3xl font-bold mb-2">Analysis Library</h2>
+                    <p class="text-muted-foreground">Browse your saved analyses and implementation guides</p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="relative flex-1 md:flex-initial md:w-80">
+                        <i data-lucide="search" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+                        <input
+                            type="text"
+                            class="search-input"
+                            placeholder="Search analyses..."
+                            id="search-input"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-2 mb-8 animate-fade-in-up delay-100">
+                <button class="filter-btn active" onclick="filterContent('all')">All</button>
+                <button class="filter-btn" onclick="filterContent('article')">Articles</button>
+                <button class="filter-btn" onclick="filterContent('video')">Videos</button>
+                <button class="filter-btn" onclick="filterContent('repo')">Repositories</button>
+            </div>
+
+            <!-- Analysis Cards Grid -->
+            <div class="space-y-4" id="analysis-grid">
+                <!-- Analysis Card 1 -->
+                <div class="card p-6 animate-scale-in delay-100" data-type="article">
+                    <div class="flex gap-4">
+                        <div class="content-type-icon icon-article">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2">Introduction to React Server Components</h3>
+                            <p class="text-muted-foreground text-sm mb-3">
+                                Comprehensive guide covering RSC fundamentals, streaming SSR, and integration with Next.js App Router
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="tag">Article</span>
+                                <span class="tag">Intermediate</span>
+                                <span class="tag">2,500 words</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">React</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Server Components</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Next.js</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                <span>Jan 22, 2025</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    View Guide
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                    Start Tutoring
+                                </button>
+                                <button class="btn btn-ghost">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Card 2 -->
+                <div class="card p-6 animate-scale-in delay-200" data-type="video">
+                    <div class="flex gap-4">
+                        <div class="content-type-icon icon-video">
+                            <i data-lucide="video" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2">Advanced TypeScript Patterns</h3>
+                            <p class="text-muted-foreground text-sm mb-3">
+                                Deep dive into advanced TypeScript features including generics, conditional types, and type inference
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="tag">Video</span>
+                                <span class="tag">Advanced</span>
+                                <span class="tag">45 min</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">TypeScript</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Generics</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Type Safety</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                <span>Jan 20, 2025</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    View Guide
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                    Start Tutoring
+                                </button>
+                                <button class="btn btn-ghost">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Card 3 -->
+                <div class="card p-6 animate-scale-in delay-300" data-type="repo">
+                    <div class="flex gap-4">
+                        <div class="content-type-icon icon-repo">
+                            <i data-lucide="github" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2">Building a REST API with FastAPI</h3>
+                            <p class="text-muted-foreground text-sm mb-3">
+                                Complete implementation guide for building production-ready REST APIs using FastAPI with PostgreSQL
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="tag">Repository</span>
+                                <span class="tag">Beginner</span>
+                                <span class="tag">150 files</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Python</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">FastAPI</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">REST</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">PostgreSQL</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                <span>Jan 18, 2025</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    View Guide
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                    Start Tutoring
+                                </button>
+                                <button class="btn btn-ghost">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Card 4 -->
+                <div class="card p-6 animate-scale-in delay-300" data-type="article">
+                    <div class="flex gap-4">
+                        <div class="content-type-icon icon-article">
+                            <i data-lucide="file-text" class="w-6 h-6"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold mb-2">Understanding Database Indexing Strategies</h3>
+                            <p class="text-muted-foreground text-sm mb-3">
+                                Learn how to optimize database performance with proper indexing strategies and query optimization
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="tag">Article</span>
+                                <span class="tag">Intermediate</span>
+                                <span class="tag">3,200 words</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Database</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">PostgreSQL</span>
+                                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Performance</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                                <i data-lucide="calendar" class="w-4 h-4"></i>
+                                <span>Jan 15, 2025</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    View Guide
+                                </button>
+                                <button class="btn btn-secondary">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                                    Start Tutoring
+                                </button>
+                                <button class="btn btn-ghost">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State (hidden by default) -->
+            <div id="empty-state" class="text-center py-20 hidden">
+                <i data-lucide="inbox" class="w-16 h-16 mx-auto text-muted-foreground mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">No analyses found</h3>
+                <p class="text-muted-foreground mb-6">Try adjusting your search or filters</p>
+                <a href="skillforge_1.html" class="btn btn-primary">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Create New Analysis
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.querySelector('.theme-toggle i');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        // Filter content
+        function filterContent(type) {
+            const cards = document.querySelectorAll('[data-type]');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const emptyState = document.getElementById('empty-state');
+            const grid = document.getElementById('analysis-grid');
+
+            // Update active filter button
+            filterBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Filter cards
+            let visibleCount = 0;
+            cards.forEach(card => {
+                if (type === 'all' || card.dataset.type === type) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state
+            if (visibleCount === 0) {
+                grid.style.display = 'none';
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.style.display = 'block';
+                emptyState.classList.add('hidden');
+            }
+
+            // Re-initialize icons
+            lucide.createIcons();
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('[data-type]');
+            const emptyState = document.getElementById('empty-state');
+            const grid = document.getElementById('analysis-grid');
+
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state
+            if (visibleCount === 0) {
+                grid.style.display = 'none';
+                emptyState.classList.remove('hidden');
+            } else {
+                grid.style.display = 'block';
+                emptyState.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

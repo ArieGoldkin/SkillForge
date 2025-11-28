@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: skillforge-postgres-dev
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: skillforge
+    ports:
+      - "5437:5432"  # Using 5437 to avoid conflicts with reporter-accuracy (5433, 5436)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-dev
+    env_file:
+      - ./backend/.env
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      DATABASE_URL: postgresql+asyncpg://dev:devpass@postgres:5432/skillforge
+      API_V1_PREFIX: /api/v1
+      HOST: 0.0.0.0
+      PORT: 8500
+      CORS_ORIGINS: '["http://localhost:5173"]'
+      # Note: DATABASE_URL is overridden above for container-internal connection
+      # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
+    ports:
+      - "8500:8500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      # Mount code for hot reload (development)
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        until pg_isready -h postgres -U dev; do sleep 2; done &&
+        echo 'Running migrations...' &&
+        /app/.venv/bin/alembic upgrade head &&
+        echo 'Starting backend...' &&
+        /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
+      "
+
+volumes:
+  postgres-dev-data:

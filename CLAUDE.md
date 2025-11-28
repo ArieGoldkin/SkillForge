@@ -1,7 +1,7 @@
 ---
 name: claude-main
 description: AI Agent Hub - Modular Intelligence System
-version: 3.5.9
+version: 3.7.1
 ---
 
 # 🚀 AI Agent Hub - Intelligent Orchestration
@@ -30,6 +30,7 @@ version: 3.5.9
 - Evidence-based verification (exit codes, test logs) → Quality gates at 80%+ coverage
 
 **Codebase Structure**: `backend/` (FastAPI + LangGraph) | `frontend/` (React 19) | `docs/` (specs & tasks)
+
 
 ## 📋 Modular Instruction System
 
@@ -120,7 +121,7 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 
 ## 📚 Claude Code Skills
 
-**14 specialized knowledge modules** installed in `.claude/skills/` directory:
+**18 specialized knowledge modules** installed in `.claude/skills/` directory:
 
 | Skill | Use When |
 |-------|----------|
@@ -138,6 +139,9 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 | **streaming-api-patterns** | SSE, WebSockets, ReadableStream, real-time APIs |
 | **testing-strategy-builder** | Building test plans and coverage strategies |
 | **type-safety-validation** | End-to-end type safety with Zod, tRPC, Prisma |
+| **performance-optimization** | Database queries, bundle size, Core Web Vitals, caching (v3.7.0) |
+| **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (v3.7.0) |
+| **observability-monitoring** | Logging, metrics, tracing, alerting (v3.7.0) |
 
 **How to use skills:**
 - **PROACTIVELY read** `.claude/skills/<skill-name>/SKILL.md` when the user's task matches the skill description
@@ -173,7 +177,7 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 ├── instructions/        # Orchestration & context rules
 │   ├── ...              # Core instructions
 │   └── supervisor-rules.md, squad-roster.md, ... # Squad coordination
-├── skills/              # 14 specialized knowledge modules
+├── skills/              # 18 specialized knowledge modules
 ├── context/             # Shared context & session data
 │   └── shared-context.json
 ├── commands/            # Squad parallel execution commands
@@ -185,4 +189,4 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
 
-*📦 v3.5.9: All Claude resources unified under `.claude/` following Anthropic's recommended patterns.*
+*📦 v3.7.1: All Claude resources unified under `.claude/` following Anthropic's recommended patterns.*

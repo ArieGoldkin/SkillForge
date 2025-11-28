@@ -6,17 +6,22 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend-ci.yml'
-  workflow_dispatch:
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  workflow_dispatch: # Allow manual runs
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -26,16 +31,17 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         working-directory: ./frontend
-        run: npm run test:coverage || npm run test -- --coverage
+        run: npm run test:coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./frontend/coverage/coverage-final.json
           flags: frontend
-          fail_ci_if_error: true
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -49,10 +55,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -64,20 +70,20 @@ jobs:
 
       - name: Run ESLint
         working-directory: ./frontend
-        run: npm run lint || npx eslint .
+        run: npm run lint
 
-      - name: Check Prettier
+      - name: Check Biome formatting
         working-directory: ./frontend
-        run: npm run format:check || npx prettier --check .
+        run: npm run format:check
 
   type-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -89,38 +95,19 @@ jobs:
 
       - name: Run TypeScript check
         working-directory: ./frontend
-        run: npm run type-check || npx tsc --noEmit
+        run: npx tsc --noEmit
 
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Run npm audit
-        working-directory: ./frontend
-        run: npm audit --audit-level=moderate
-        continue-on-error: false
+  # NOTE: Security scanning moved to dedicated security-scan.yml workflow
+  # which runs on every push and weekly schedule to avoid redundancy
 
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'

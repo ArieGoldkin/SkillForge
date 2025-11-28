@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillForge - Intelligent Learning Integration Platform</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Theme Variables */
+        :root {
+            --background: oklch(0.9911 0 0);
+            --foreground: oklch(0.2046 0 0);
+            --card: oklch(0.9911 0 0);
+            --card-foreground: oklch(0.2046 0 0);
+            --primary: oklch(0.8348 0.1302 160.9080);
+            --primary-foreground: oklch(0.2626 0.0147 166.4589);
+            --muted: oklch(0.9461 0 0);
+            --muted-foreground: oklch(0.2435 0 0);
+            --border: oklch(0.9037 0 0);
+            --ring: oklch(0.8348 0.1302 160.9080);
+            --radius: 0.5rem;
+        }
+
+        .dark {
+            --background: oklch(0.1822 0 0);
+            --foreground: oklch(0.9288 0.0126 255.5078);
+            --card: oklch(0.2046 0 0);
+            --card-foreground: oklch(0.9288 0.0126 255.5078);
+            --primary: oklch(0.4365 0.1044 156.7556);
+            --primary-foreground: oklch(0.9213 0.0135 167.1556);
+            --muted: oklch(0.2393 0 0);
+            --muted-foreground: oklch(0.7122 0 0);
+            --border: oklch(0.2809 0 0);
+            --ring: oklch(0.8003 0.1821 151.7110);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif !important;
+            background-color: var(--background) !important;
+            color: var(--foreground) !important;
+            letter-spacing: 0.025em !important;
+            line-height: 1.6 !important;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .animate-fade-in-slide {
+            animation: fadeInSlide 0.7s ease-out;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.6s ease-out;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-pulse-soft {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-400 {
+            animation-delay: 0.4s;
+        }
+
+        /* Custom Tailwind Config */
+        @layer utilities {
+            .text-primary {
+                color: var(--primary);
+            }
+            .bg-primary {
+                background-color: var(--primary);
+            }
+            .text-primary-foreground {
+                color: var(--primary-foreground);
+            }
+            .bg-card {
+                background-color: var(--card);
+            }
+            .text-card-foreground {
+                color: var(--card-foreground);
+            }
+            .text-muted-foreground {
+                color: var(--muted-foreground);
+            }
+            .bg-muted {
+                background-color: var(--muted);
+            }
+            .border-border {
+                border-color: var(--border);
+            }
+        }
+
+        /* Component Styles */
+        .card {
+            background-color: var(--card);
+            color: var(--card-foreground);
+            border-radius: var(--radius);
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 2px 4px -1px hsl(0 0% 0% / 0.17);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border-radius: var(--radius);
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 0% / 0.17), 0px 4px 6px -1px hsl(0 0% 0% / 0.17);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background-color: var(--background);
+            color: var(--foreground);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: 0 0 0 3px oklch(0.8348 0.1302 160.9080 / 0.1);
+            transform: scale(1.02);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: calc(var(--radius) / 2);
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: var(--muted);
+            color: var(--muted-foreground);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .badge:hover {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            transform: scale(1.05);
+        }
+
+        .badge.active {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            border-color: var(--ring);
+            box-shadow: 0 0 0 3px oklch(0.8348 0.1302 160.9080 / 0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .nav-link {
+            color: var(--muted-foreground);
+            font-weight: 500;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: var(--primary);
+            transition: width 0.2s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+
+        .theme-toggle:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Dark mode styles */
+        .dark .card {
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 100% / 0.05), 0px 2px 4px -1px hsl(0 0% 100% / 0.05);
+        }
+
+        .dark .card:hover {
+            box-shadow: 0px 1px 3px 0px hsl(0 0% 100% / 0.08), 0px 4px 6px -1px hsl(0 0% 100% / 0.08);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="py-6 px-8 border-b border-border animate-fade-in-up">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+                    <i data-lucide="graduation-cap" class="w-8 h-8"></i>
+                    SkillForge
+                </h1>
+                <div class="hidden md:flex gap-6">
+                    <a href="#" class="nav-link">Home</a>
+                    <a href="#" class="nav-link">Library</a>
+                    <a href="#" class="nav-link">About</a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="theme-toggle p-2" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <i data-lucide="moon" class="w-6 h-6"></i>
+                </button>
+                <button class="p-2">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="py-20 px-8">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-5xl md:text-6xl font-bold mb-6 animate-fade-in-up delay-100">
+                Intelligent Learning<br>Integration Platform
+            </h2>
+            <p class="text-xl text-muted-foreground mb-12 animate-fade-in-up delay-200">
+                Analyze technical content and generate AI-ready implementation guides with expert tutoring
+            </p>
+
+            <!-- URL Input -->
+            <div class="max-w-2xl mx-auto mb-8 animate-scale-in delay-300">
+                <div class="relative">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2">
+                        <i data-lucide="link" class="w-5 h-5 text-muted-foreground"></i>
+                    </div>
+                    <input
+                        type="text"
+                        class="input-field pl-12"
+                        placeholder="Enter URL, video link, or repository..."
+                    >
+                </div>
+            </div>
+
+            <!-- Content Type Badges -->
+            <div class="flex justify-center gap-3 mb-8 animate-fade-in-up delay-400">
+                <button class="badge active" onclick="selectBadge(this)">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                    Article
+                </button>
+                <button class="badge" onclick="selectBadge(this)">
+                    <i data-lucide="video" class="w-4 h-4 mr-2"></i>
+                    Video
+                </button>
+                <button class="badge" onclick="selectBadge(this)">
+                    <i data-lucide="github" class="w-4 h-4 mr-2"></i>
+                    Repository
+                </button>
+            </div>
+
+            <!-- CTA Button -->
+            <button class="btn-primary flex items-center gap-2 mx-auto animate-fade-in-up delay-400">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                Analyze Content
+            </button>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 px-8 bg-muted">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Feature 1 -->
+                <div class="card p-8 text-center animate-scale-in delay-100">
+                    <div class="feature-icon animate-float">
+                        <i data-lucide="bot" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Multi-Agent Analysis</h3>
+                    <p class="text-muted-foreground">
+                        8 specialized agents analyze content from multiple perspectives
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="card p-8 text-center animate-scale-in delay-200">
+                    <div class="feature-icon animate-float delay-100">
+                        <i data-lucide="book-open" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Implementation Guides</h3>
+                    <p class="text-muted-foreground">
+                        AI-ready markdown guides with code examples and best practices
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="card p-8 text-center animate-scale-in delay-300">
+                    <div class="feature-icon animate-float delay-200">
+                        <i data-lucide="message-circle" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Socratic Tutoring</h3>
+                    <p class="text-muted-foreground">
+                        Interactive AI tutor guides you through implementation step-by-step
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="card p-8 text-center animate-scale-in delay-400">
+                    <div class="feature-icon animate-float delay-300">
+                        <i data-lucide="library" class="w-16 h-16 mx-auto"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Library Management</h3>
+                    <p class="text-muted-foreground">
+                        Save, organize, and search your analyzed content and guides
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 px-8">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-16">How It Works</h2>
+            <div class="space-y-8">
+                <!-- Step 1 -->
+                <div class="flex gap-6 items-start animate-fade-in-slide">
+                    <div class="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+                        1
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-2">Submit Content</h3>
+                        <p class="text-muted-foreground">
+                            Enter a URL, video link, or GitHub repository to analyze technical content
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="flex gap-6 items-start animate-fade-in-slide delay-100">
+                    <div class="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+                        2
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-2">Multi-Agent Analysis</h3>
+                        <p class="text-muted-foreground">
+                            8 specialized agents work in parallel to extract insights, compare technologies, audit security, and plan implementation
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="flex gap-6 items-start animate-fade-in-slide delay-200">
+                    <div class="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+                        3
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-2">Get Implementation Guide</h3>
+                        <p class="text-muted-foreground">
+                            Receive a comprehensive markdown guide with code examples, best practices, and step-by-step instructions
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="flex gap-6 items-start animate-fade-in-slide delay-300">
+                    <div class="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+                        4
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-2">Interactive Tutoring</h3>
+                        <p class="text-muted-foreground">
+                            Chat with an AI tutor that uses Socratic questioning to guide your learning and implementation
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-8 border-t border-border mt-20">
+        <div class="max-w-7xl mx-auto text-center text-muted-foreground">
+            <p>&copy; 2025 SkillForge. Intelligent Learning Integration Platform.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.querySelector('.theme-toggle i');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        // Badge selection
+        function selectBadge(element) {
+            // Remove active class from all badges
+            document.querySelectorAll('.badge').forEach(badge => {
+                badge.classList.remove('active');
+            });
+            // Add active class to clicked badge
+            element.classList.add('active');
+        }
+
+        // Add ripple effect to buttons
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple');
+
+                this.appendChild(ripple);
+
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+</body>
+</html>

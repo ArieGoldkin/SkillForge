@@ -1,7 +1,7 @@
 # 🚀 SkillForge - Parallel Development Roadmap
 
 **Version:** 2.0 (Parallel-Optimized)
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025
 **Team:** Arie (Frontend Specialist) + Yonatan (Backend Specialist)
 **Timeline:** 11 weeks (6 sprints of 2 weeks, 1 sprint of 1 week)
 
@@ -50,7 +50,7 @@
 
 | Developer | Tasks | Story Points | Status |
 |-----------|-------|--------------|--------|
-| **Yonatan (Backend)** | 1.1.1-1.1.4: Backend scaffolding<br>1.2.1-1.2.5: Database schema + migrations<br>1.4.1-1.4.5: Jina AI content extraction<br>1.5.1-1.5.2: Embedding service<br>1.6.1-1.6.4: Docker Compose setup | **21 pts**<br>(5 + 8 + 5 + 3) | Sprint 1 |
+| **Yonatan (Backend)** | 1.1.1-1.1.4: Backend scaffolding<br>1.2.1-1.2.5: Database schema + migrations<br>1.4.1-1.4.5: Jina AI content extraction<br>1.5.0-1.5.2: Embedding service ✅<br>1.6.1-1.6.4: Docker Compose setup | **24 pts**<br>(5 + 8 + 5 + 5 + 1) | Sprint 1 |
 | **GitHub** | [Milestone #1](https://github.com/ArieGoldkin/SkillForge/milestone/1) | [Issues #1-5](https://github.com/ArieGoldkin/SkillForge/issues?q=is%3Aissue+milestone%3A%22Sprint+1%3A+Backend+Foundation%22) | ✅ Created |
 | **Arie (Frontend)** | 1.3.1-1.3.5: Frontend scaffolding<br>Create mock API responses<br>Design component library<br>Implement URL input form | **13 pts**<br>(8 + 3 + 2) | Sprint 1 |
 | **Integration Point** | API Contract Definition (Day 3) | - | 🔗 |
@@ -245,7 +245,7 @@ graph TD
 | 1.1.1 | Create FastAPI project structure | 2 | None | `uvicorn app.main:app --reload` starts server |
 | 1.1.2 | Setup environment configuration | 1 | 1.1.1 | `.env.example` exists, settings load correctly |
 | 1.1.3 | Implement logging & error handling | 1 | 1.1.1 | Structured JSON logs output |
-| 1.1.4 | Write basic health check endpoint | 1 | 1.1.1 | `/health` returns 200 with DB/Ollama status |
+| 1.1.4 | Write basic health check endpoint | 1 | 1.1.1 | `/health` returns 200 with DB/OpenAI status |
 
 **Arie Involvement:** None (fully independent)
 
@@ -279,15 +279,15 @@ graph TD
 
 ---
 
-#### 1.4 Content Extraction - Jina AI [BACKEND - Yonatan]
+#### 1.4 Content Extraction - Jina AI [BACKEND - Yonatan] ✅ COMPLETE
 
-| Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
-|---------|------|--------------|--------------|---------------------|
-| 1.4.1 | Research & obtain Jina AI API key | 1 | None | API key in `.env`, tested with curl |
-| 1.4.2 | Create extraction service | 2 | 1.1.1 | `extract_article(url)` returns dict |
-| 1.4.3 | Create extraction endpoint | 1 | 1.2.5, 1.4.2 | `POST /api/v1/analyze` accepts URL, creates Analysis record |
-| 1.4.4 | Add retry logic with Tenacity | 1 | 1.4.3 | Max 3 retries with exponential backoff |
-| 1.4.5 | Write tests | 0 (deferred) | - | (Move to Sprint 7) |
+| Task ID | Task | Story Points | Dependencies | Acceptance Criteria | Status |
+|---------|------|--------------|--------------|---------------------|--------|
+| 1.4.1 | Research & obtain Jina AI API key | 1 | None | API key in `.env`, tested with curl | ✅ Complete |
+| 1.4.2 | Create extraction service | 3 | 1.1.1 | `extract_article(url)` returns dict | ✅ Complete |
+| 1.4.3 | Content type detection utility | 1 | 1.4.2 | Detects article/video/repo types | ✅ Complete |
+| 1.4.4 | Add retry logic with Tenacity | 1 | 1.4.2 | Max 3 retries with exponential backoff | ✅ Complete |
+| 1.4.5 | Write tests | 1 | 1.4.2 | Unit, integration, and extended tests | ✅ Complete |
 
 **Arie Involvement:** None initially. On Day 7, integrate UI form with this endpoint.
 
@@ -297,8 +297,8 @@ graph TD
 
 | Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
 |---------|------|--------------|--------------|---------------------|
-| 1.5.1 | Install Ollama & pull models | 1 | 1.6.1 (Docker Compose) | `llama3.1:8b` and `nomic-embed-text` available |
-| 1.5.2 | Create embedding service | 2 | 1.5.1 | `generate_embedding(text)` returns 768-dim vector |
+| 1.5.1 | ~~Install Ollama & pull models~~ (Migrated to OpenAI) | 1 | N/A | OpenAI API key configured |
+| 1.5.2 | Create embedding service | 2 | 1.5.1 | `generate_embedding(text)` returns 1536-dim vector (OpenAI) |
 | 1.5.3 | Create basic LangGraph workflow | 3 | 1.4.3, 1.5.2 | Single-node workflow: extract → embed → done |
 | 1.5.4 | Integrate workflow with API | 2 | 1.5.3 | `POST /api/v1/analyze` triggers workflow in background |
 | 1.5.5 | Add SSE endpoint for progress | 2 | 1.5.4 | `GET /api/v1/analyze/{id}/stream` emits SSE events |
@@ -313,7 +313,7 @@ graph TD
 
 | Task ID | Task | Story Points | Dependencies | Acceptance Criteria |
 |---------|------|--------------|--------------|---------------------|
-| 1.6.1 | Create `docker-compose.yml` | 1 | None | All 4 services defined (postgres, ollama, backend, frontend) |
+| 1.6.1 | Create `docker-compose.yml` | 1 | None | All 3 services defined (postgres, backend, frontend) |
 | 1.6.2 | Write Dockerfiles | 1 | 1.6.1 | Multi-stage builds work |
 | 1.6.3 | Create setup scripts | 1 | 1.6.2 | `./scripts/setup.sh` brings up entire stack |
 | 1.6.4 | Write developer documentation | 0 | - | (Inline in setup script comments) |
@@ -834,7 +834,8 @@ type SSEEvent =
 ```bash
 # Backend
 DATABASE_URL=postgresql://user:pass@localhost:5432/skillforge
-OLLAMA_BASE_URL=http://localhost:11434
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
 JINA_API_KEY=your_jina_key
 
 # Frontend
@@ -1009,7 +1010,7 @@ VITE_API_BASE_URL=http://localhost:8000
 - **LangGraph Docs:** https://langchain-ai.github.io/langgraph/
 - **FastAPI Best Practices:** https://fastapi.tiangolo.com
 - **PGVector Guide:** https://github.com/pgvector/pgvector
-- **Ollama API Docs:** https://github.com/ollama/ollama/blob/main/docs/api.md
+- **OpenAI API Docs:** https://platform.openai.com/docs/api-reference
 
 ### For Both
 - **API Contract First Design:** https://swagger.io/resources/articles/adopting-an-api-first-approach/
@@ -1047,4 +1048,4 @@ VITE_API_BASE_URL=http://localhost:8000
 **Document Version:** 2.0 (Parallel-Optimized)
 **Maintained By:** Arie + Yonatan
 **Review Cycle:** End of each sprint
-**Last Updated:** November 20, 2025
+**Last Updated:** November 23, 2025

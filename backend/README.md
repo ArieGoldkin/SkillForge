@@ -8,7 +8,7 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
 
 - **Python 3.13** (required)
 - **Poetry** (for dependency management)
-- **Docker Desktop** (for local PostgreSQL and Ollama)
+- **Docker Desktop** (for local PostgreSQL)
 
 ### Installation
 
@@ -44,6 +44,32 @@ Backend API for the SkillForge Research-to-Implementation Pipeline built with Fa
    - API: http://localhost:8500
    - OpenAPI Docs: http://localhost:8500/docs
    - Health Check: http://localhost:8500/api/v1/health
+
+### Docker Compose (Alternative)
+
+The backend service is also available in Docker Compose for easier development:
+
+```bash
+# From project root, start backend service
+docker-compose up -d backend
+
+# View logs
+docker-compose logs -f backend
+
+# Stop backend
+docker-compose stop backend
+
+# Rebuild after code changes
+docker-compose up -d --build backend
+```
+
+The backend service will:
+- Automatically wait for PostgreSQL to be ready
+- Run Alembic migrations on startup
+- Start with hot reload enabled (code changes are reflected automatically)
+- Connect to PostgreSQL service in Docker network
+
+**Note:** Make sure to set `OPENAI_API_KEY` in your host environment or `.env` file for LLM features to work.
 
 ## Project Structure
 
@@ -82,18 +108,39 @@ backend/
 │   │
 │   ├── services/                 # Business logic layer
 │   │   ├── __init__.py
-│   │   └── extraction/           # Content extraction services (future)
-│   │       └── __init__.py
+│   │   └── extraction/           # Content extraction services
+│   │       ├── __init__.py
+│   │       ├── jina_reader.py    # Jina AI Reader service
+│   │       └── content_type.py   # Content type detection
 │   │
-│   └── workflows/                # LangGraph workflows (future)
-│       └── __init__.py
+│   └── workflows/                # LangGraph workflows
+│       ├── __init__.py
+│       └── analysis.py           # Analysis workflow (extract → embed)
 │
-├── alembic/                      # Database migrations (future)
+├── alembic/                      # Database migrations
 ├── tests/                        # Test suite
 │   ├── __init__.py
 │   ├── conftest.py               # Pytest fixtures
+│   ├── unit/                     # Unit tests (mocked services)
+│   │   ├── __init__.py
+│   │   ├── workflows/
+│   │   │   ├── __init__.py
+│   │   │   └── test_analysis.py  # Workflow unit tests
+│   │   └── services/
+│   │       └── __init__.py
+│   ├── integration/              # Integration tests (real services)
+│   │   ├── __init__.py
+│   │   ├── workflows/
+│   │   │   ├── __init__.py
+│   │   │   └── test_analysis.py  # Workflow integration tests
+│   │   └── services/
+│   │       └── __init__.py
 │   ├── test_main.py              # Endpoint tests
-│   └── test_config.py            # Configuration tests
+│   ├── test_config.py            # Configuration tests
+│   ├── test_jina_reader.py       # Jina Reader service unit tests
+│   ├── test_jina_integration.py  # Jina Reader integration tests
+│   ├── test_jina_extended.py     # Jina Reader extended tests
+│   └── test_anthropic_article.py # Specific article integration test
 │
 ├── .env.example                  # Environment variable template
 ├── pyproject.toml                # Poetry configuration
@@ -132,17 +179,14 @@ poetry run pytest -v
 ### Code Quality Checks
 
 ```bash
-# Format code with Black
-poetry run black app tests
+# Format code with Ruff (replaces Black - 30x faster!)
+poetry run ruff format app tests
 
 # Lint with Ruff
 poetry run ruff check app tests
 
 # Type check with mypy
 poetry run mypy app
-
-# Sort imports with isort
-poetry run isort app tests
 ```
 
 ### Pre-commit Checks (Recommended)
@@ -154,26 +198,113 @@ You can set up pre-commit hooks to run these checks automatically:
 poetry add --group dev pre-commit
 
 # Create .pre-commit-config.yaml
-# Add hooks for black, ruff, mypy, isort
+# Add hooks for ruff (format + lint), mypy
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-All configuration is loaded from environment variables or `.env` file. See `.env.example` for all available options.
+All configuration is loaded from environment variables or `.env` file. See `.env.example` for all available options with verified November 2025 pricing.
 
-Key variables:
+**Application Settings:**
 - `ENVIRONMENT`: Runtime environment (`development`, `staging`, `production`)
 - `LOG_LEVEL`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
 - `CORS_ORIGINS`: Allowed CORS origins (JSON array)
-- `DATABASE_URL`: PostgreSQL connection string (future)
-- `OLLAMA_BASE_URL`: Ollama API base URL (future)
-- `JINA_API_KEY`: Jina AI API key (future, optional for dev)
+
+**Database:**
+- `DATABASE_URL`: PostgreSQL connection string (required in production)
+
+**Multi-Provider LLM Configuration:**
+- `LLM_MODEL`: Primary LLM identifier (supports 5 providers)
+  - Development: `gpt-5-mini` (recommended, requires OpenAI API key)
+  - Production (recommended): `gpt-5-mini` ($0.25/$2.00 per 1M tokens)
+  - Other options: `claude-sonnet-4`, `gemini-2.0-flash`, `grok-3-mini`, `deepseek-v3.2`
+- `LLM_PROVIDER`: Optional explicit provider override (`openai`, `anthropic`, `google_genai`, `xai`, `deepseek`)
+
+**Provider API Keys (set based on selected provider):**
+- `OPENAI_API_KEY`: Required for OpenAI models (GPT-5 Mini, GPT-5, GPT-4o, etc.)
+- `ANTHROPIC_API_KEY`: Required for Anthropic models (Claude 4 Sonnet, Claude 4 Opus)
+- `GOOGLE_API_KEY`: Required for Google models (Gemini 2.0 Flash, Gemini 2.5 Pro)
+- `XAI_API_KEY`: Required for xAI models (Grok 3 Mini, Grok 3 Std)
+- `DEEPSEEK_API_KEY`: Required for DeepSeek models (V3.2)
+
+**Embedding Configuration:**
+- `EMBEDDING_DIMENSIONS`: Expected embedding dimensions (default: `1536` for OpenAI text-embedding-3-small)
+
+**Content Extraction:**
+- `JINA_API_KEY`: Jina AI API key for content extraction (optional for dev)
+
+**Example Configuration:**
+
+Development (with GPT-5 Mini):
+```env
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
+```
+
+Production (with GPT-5 Mini - recommended):
+```env
+LLM_MODEL=gpt-5-mini
+OPENAI_API_KEY=sk-...
+```
+
+See `.env.example` for complete configuration options and verified November 2025 pricing.
 
 ### CORS Configuration
 
 CORS is configured for the frontend dev server by default (`http://localhost:5173`). Update `CORS_ORIGINS` in `.env` for production.
+
+## Workflows
+
+The application uses LangGraph v1.0 Functional API for workflow orchestration.
+
+### Analysis Workflow
+
+The `analysis_workflow` performs content extraction and embedding generation:
+
+```python
+from app.workflows import analysis_workflow
+
+# Run workflow
+result = await analysis_workflow.ainvoke({
+    "url": "https://example.com/article",
+    "analysis_id": "unique-analysis-id",
+})
+
+# Result contains:
+# - analysis_id: str
+# - url: str
+# - content_type: str
+# - raw_content: str
+# - extraction_metadata: dict
+# - content_embedding: list[float]
+```
+
+### Workflow Structure
+
+- **Extract Content**: Uses JinaReader to extract content from URL
+- **Generate Embedding**: Uses EmbeddingService to create vector embeddings
+- **Checkpointing**: Automatically saves state to PostgreSQL (or MemorySaver in dev)
+
+### Test Structure
+
+Tests are organized into unit and integration tests:
+
+```
+tests/
+├── unit/
+│   ├── workflows/
+│   │   └── test_analysis.py      # Unit tests (mocked services)
+│   └── services/
+│       └── test_*.py             # Service unit tests
+├── integration/
+│   ├── workflows/
+│   │   └── test_analysis.py     # Integration tests (real services)
+│   └── services/
+│       └── test_*.py             # Service integration tests
+└── conftest.py                   # Shared fixtures
+```
 
 ## Logging
 
@@ -216,9 +347,51 @@ FastAPI automatically generates OpenAPI documentation:
 - `tests/conftest.py`: Pytest fixtures and configuration
 - `tests/test_main.py`: Endpoint integration tests
 - `tests/test_config.py`: Configuration unit tests
+- `pytest.ini`: Pytest configuration (timeouts, markers, asyncio mode)
+
+### Test Configuration
+
+The project uses `pytest-timeout` to prevent tests from hanging indefinitely:
+
+- **Default timeout**: 5 minutes (300 seconds) for all tests
+- **Test-level timeouts**: Use `@pytest.mark.timeout(seconds)` to override
+- **Timeout method**: Thread-based (works with async tests)
+- **Asyncio mode**: Auto (allows mixing sync and async fixtures/tests)
+
+### Test Markers
+
+Tests are categorized with markers for selective execution:
+
+- `@pytest.mark.slow`: Slow-running tests (deselect with `-m "not slow"`)
+- `@pytest.mark.integration`: Integration tests requiring real services
+- `@pytest.mark.external`: Tests requiring external services (OpenAI, Jina, etc.)
+- `@pytest.mark.timeout(N)`: Override default timeout for specific test
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=app --cov-report=html
+
+# Run specific test file
+poetry run pytest tests/test_main.py
+
+# Run only fast tests (exclude slow)
+poetry run pytest -m "not slow"
+
+# Run with verbose output
+poetry run pytest -v
+
+# Run with specific timeout
+poetry run pytest --timeout=60
+```
 
 ### Writing Tests
 
+**Sync Test Example:**
 ```python
 from fastapi.testclient import TestClient
 from app.main import app
@@ -231,6 +404,39 @@ def test_health_check(client):
     data = response.json()
     assert data["status"] == "healthy"
 ```
+
+**Async Test Example:**
+```python
+import pytest
+import pytest_asyncio
+
+@pytest.mark.asyncio
+async def test_async_operation():
+    result = await some_async_function()
+    assert result is not None
+```
+
+**Async Fixture Example:**
+```python
+import pytest_asyncio
+
+@pytest_asyncio.fixture
+async def async_resource():
+    resource = await create_resource()
+    try:
+        yield resource
+    finally:
+        await cleanup_resource(resource)
+```
+
+### Test Best Practices
+
+1. **Use `@pytest_asyncio.fixture` for async fixtures** (not `@pytest.fixture`)
+2. **Add timeouts to slow/integration tests** with `@pytest.mark.timeout(seconds)`
+3. **Clean up resources** in `finally` blocks or fixture teardown
+4. **Cancel background tasks** explicitly to prevent hanging
+5. **Use `reset_engine_connections` fixture** for database tests
+6. **Mark slow/external tests** appropriately for selective execution
 
 ## Troubleshooting
 
@@ -275,6 +481,142 @@ If imports fail:
 1. Ensure you're in Poetry shell: `poetry shell`
 2. Or prefix commands with `poetry run`
 3. Verify dependencies installed: `poetry install`
+
+## Architecture
+
+The backend follows a layered architecture with clear separation of concerns:
+
+- **API Layer**: FastAPI routers and endpoints (`app/api/`)
+- **Service Layer**: Business logic and external integrations (`app/services/`)
+- **Workflow Layer**: LangGraph orchestration (`app/workflows/`)
+- **Database Layer**: SQLAlchemy models and repositories (`app/db/`, `app/models/`)
+- **Core Layer**: Configuration, logging, exceptions, constants (`app/core/`)
+
+For detailed architecture documentation, see [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md).
+
+### Key Patterns
+
+- **Repository Pattern**: Abstract database access (see `docs/ARCHITECTURE.md`)
+- **Service Layer**: Encapsulate business logic
+- **Dependency Injection**: FastAPI Depends() for testability
+- **Structured Logging**: structlog with request ID tracking
+- **Error Handling**: Custom exception hierarchy (see Error Handling section)
+
+## Constants
+
+Application-wide constants are centralized in `app/core/constants.py`:
+
+- **HTTP Status Codes**: `HTTP_OK`, `HTTP_NOT_FOUND`, `HTTP_ERROR_THRESHOLD`
+- **Timeouts**: `DEFAULT_TIMEOUT`, `EMBEDDING_TIMEOUT`, `DB_TIMEOUT`
+- **Text Limits**: `MAX_ERROR_MESSAGE_LENGTH`
+- **Retry Configuration**: `MAX_RETRY_ATTEMPTS`, retry wait times
+- **Database Pool**: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`
+- **Content Types**: `CONTENT_TYPE_ARTICLE`, `CONTENT_TYPE_VIDEO`, `CONTENT_TYPE_REPO`
+
+**Usage:**
+```python
+from app.core.constants import HTTP_ERROR_THRESHOLD
+
+# Text truncation handled by EmbeddingService (32,000 char limit)
+
+if response.status_code >= HTTP_ERROR_THRESHOLD:
+    raise Error("HTTP error")
+```
+
+## Error Handling
+
+The application uses a structured exception hierarchy for consistent error handling:
+
+```
+SkillForgeException (base)
+├── ServiceException
+│   ├── EmbeddingError
+│   └── JinaReaderError
+├── WorkflowError
+└── DatabaseError
+```
+
+**Raising Exceptions:**
+```python
+from app.core.exceptions import EmbeddingError
+
+if embedding is None:
+    raise EmbeddingError("Embedding generation failed")
+```
+
+**Handling Exceptions:**
+- Custom exceptions are caught by `SkillForgeException` handler in `main.py`
+- All exceptions include request ID for tracing
+- Error responses follow consistent format:
+  ```json
+  {
+    "error": {
+      "code": "EmbeddingError",
+      "message": "Error message",
+      "request_id": "abc-123"
+    }
+  }
+  ```
+
+See `app/core/exceptions.py` for the full exception hierarchy.
+
+## Type Safety
+
+Type aliases are defined in `app/core/types.py` for better code readability:
+
+- `EmbeddingVector`: `list[float]` - Embedding vectors
+- `AnalysisID`: `str` - Analysis identifiers
+- `ChannelName`: `str` - SSE channel names
+- `EventData`: `dict[str, object]` - SSE event data
+- `ExtractionResult`: `dict[str, str | int | dict[str, str]]` - Extraction results
+
+**Usage:**
+```python
+from app.core.types import EmbeddingVector, AnalysisID
+
+async def generate_embedding(text: str) -> EmbeddingVector:
+    # Returns list[float]
+    pass
+```
+
+## Contributing
+
+### Code Quality Standards
+
+- **File Size Limits**: 200 lines (source), 300 lines (tests)
+- **Type Coverage**: 100% type hints, use type aliases from `app/core/types.py`
+- **Constants**: Use constants from `app/core/constants.py`, no magic numbers
+- **Exceptions**: Use custom exceptions from `app/core/exceptions.py`
+- **Documentation**: Comprehensive docstrings for all public functions/classes
+
+### Pre-Commit Checklist
+
+- [ ] All tests pass: `poetry run pytest`
+- [ ] No linting errors: `poetry run ruff check .`
+- [ ] Code formatted: `poetry run ruff format .`
+- [ ] Type checking passes: `poetry run mypy app`
+- [ ] Coverage ≥80%: `poetry run pytest --cov=app --cov-fail-under=80`
+- [ ] Docstrings added for new functions
+- [ ] Constants used instead of magic numbers
+- [ ] Custom exceptions used instead of generic Exception
+
+### Development Workflow
+
+1. **Create feature branch**: `git checkout -b feature/issue-XX-description`
+2. **Make changes**: Follow code quality standards
+3. **Run tests**: `poetry run pytest`
+4. **Check quality**: `poetry run ruff check . && poetry run mypy app`
+5. **Commit**: Use conventional commits format
+6. **Push**: `git push origin feature/issue-XX-description`
+
+### Code Style
+
+- **Imports**: Standard library → Third-party → Local (ruff auto-formats)
+- **Naming**: snake_case for functions/variables, PascalCase for classes
+- **Docstrings**: Google-style with Args, Returns, Raises sections
+- **Type Hints**: Required for all function parameters and return values
+
+See `docs/DEVELOPMENT.md` for detailed development guidelines.
 
 ## Next Steps
 

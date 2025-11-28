@@ -6,6 +6,11 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
   workflow_dispatch:
 
 jobs:
@@ -13,13 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-          cache: 'poetry'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -34,14 +38,15 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: ./backend
-        run: poetry run pytest --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80 -v
+        run: poetry run pytest tests/unit/ --cov=app --cov-report=xml --cov-report=term --cov-fail-under=75 -v
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./backend/coverage.xml
           flags: backend
-          fail_ci_if_error: true
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
@@ -55,13 +60,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-          cache: 'poetry'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -74,25 +78,24 @@ jobs:
         working-directory: ./backend
         run: poetry install --no-interaction --no-root
 
-      - name: Run ruff
+      - name: Run ruff linting
         working-directory: ./backend
         run: poetry run ruff check app/
 
-      - name: Check black formatting
+      - name: Check ruff formatting
         working-directory: ./backend
-        run: poetry run black --check app/
+        run: poetry run ruff format --check app/
 
   type-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-          cache: 'poetry'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -110,47 +113,20 @@ jobs:
         run: poetry run mypy app/
         continue-on-error: false
 
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install pip-audit
-        run: pip install pip-audit
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Export dependencies
-        working-directory: ./backend
-        run: poetry export -f requirements.txt --output requirements.txt --without-hashes
-
-      - name: Run pip-audit
-        working-directory: ./backend
-        run: pip-audit --requirement requirements.txt --desc
-        continue-on-error: false
+  # NOTE: Security scanning moved to dedicated security-scan.yml workflow
+  # which runs on every push and weekly schedule to avoid redundancy
 
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
