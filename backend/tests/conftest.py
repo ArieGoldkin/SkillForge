@@ -276,12 +276,20 @@ async def check_database_available(requires_database):
     Performs a quick connectivity check with 2-second timeout.
     Skips the test gracefully if database is unreachable.
     Uses reasonable timeout to allow proper connection while still failing fast.
+    
+    Clears cached engine to ensure it uses current DATABASE_URL.
     """
     import asyncio
 
     from sqlalchemy import text
 
+    from app.db import session as session_module
     from app.db.session import AsyncSessionLocal
+
+    # Clear cached engine to ensure it uses current DATABASE_URL
+    # This is important when DATABASE_URL changes or engine was created with wrong URL
+    session_module._engine = None
+    session_module._session_factory = None
 
     # Quick connectivity check with reasonable timeout (2s)
     # This allows proper connection while still failing fast if DB is unavailable
