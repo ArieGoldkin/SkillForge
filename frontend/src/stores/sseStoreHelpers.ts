@@ -186,7 +186,7 @@ export function createConnection(analysisId: string, store: StoreAPI): void {
   }
 
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8500'
     const url = `${apiUrl}/api/v1/analyze/${analysisId}/stream`
 
     eventSource = new EventSource(url)

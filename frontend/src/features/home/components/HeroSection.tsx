@@ -1,5 +1,6 @@
-import { FileText, Github, Link, Sparkles, Video } from 'lucide-react'
+import { AlertCircle, FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
+import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 import { Input } from '@shared/components/ui/input'
@@ -15,6 +16,7 @@ interface HeroSectionProps {
   setSelectedContentType: (type: ContentType) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
+  error?: string | null
 }
 
 export function HeroSection({
@@ -24,6 +26,7 @@ export function HeroSection({
   setSelectedContentType,
   isSubmitting,
   handleSubmit,
+  error,
 }: HeroSectionProps) {
   return (
     <section className="py-20 px-8">
@@ -44,6 +47,7 @@ export function HeroSection({
           setSelectedContentType={setSelectedContentType}
           isSubmitting={isSubmitting}
           handleSubmit={handleSubmit}
+          error={error}
         />
       </div>
     </section>
@@ -57,6 +61,7 @@ interface ContentAnalysisFormProps {
   setSelectedContentType: (type: ContentType) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
+  error?: string | null
 }
 
 function ContentAnalysisForm({
@@ -66,6 +71,7 @@ function ContentAnalysisForm({
   setSelectedContentType,
   isSubmitting,
   handleSubmit,
+  error,
 }: ContentAnalysisFormProps) {
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-8">
@@ -87,6 +93,13 @@ function ContentAnalysisForm({
         selectedContentType={selectedContentType}
         setSelectedContentType={setSelectedContentType}
       />
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Button type="submit" disabled={isSubmitting || !url.trim()} size="lg" className="gap-2">
         <Sparkles className="w-5 h-5" />

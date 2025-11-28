@@ -213,6 +213,40 @@
 - **GitHub:** [#43](https://github.com/ArieGoldkin/SkillForge/issues/43)
 - **Implementation:** Zustand store + useSSE hook + 16 tests passing
 
+### Frontend-Backend SSE Integration & Stage Mapping Fix (November 27, 2025) ✅ COMPLETE
+
+**Status:** ✅ Complete
+**Date:** November 27, 2025
+**Enhancement:** Real SSE integration with stage name mapping and comprehensive tests
+
+**What Was Done:**
+- ✅ Connected frontend to real backend SSE stream (replaced mock data)
+- ✅ Fixed stage name mismatch: Backend sends agent names (e.g., `implementation_planner`), frontend expects stage names (e.g., `implementation_planning`)
+- ✅ Created `normalizeStageNameFromBackend()` function to map agent names → stage names
+- ✅ Added mapping for `integration_feasibility` agent (discovered during testing)
+- ✅ Created GitHub Issue #88 for backend to standardize stage names
+- ✅ Added 73 new unit tests (122 total tests now passing)
+- ✅ Refactored `useAnalysisProgress.ts` into smaller modules (stageConfig.ts, stageHelpers.ts)
+- ✅ Added Alert UI component for error display
+
+**New Test Files:**
+- `stageConfig.test.ts` (29 tests) - Stage configuration and name normalization
+- `stageHelpers.test.ts` (29 tests) - Stage status mapping and display helpers
+- `api.service.test.ts` (15 tests) - API service URL construction and error handling
+
+**Files Modified/Created:**
+- `frontend/src/features/analysis/hooks/stageConfig.ts` - Stage config + name mapping (NEW)
+- `frontend/src/features/analysis/hooks/stageHelpers.ts` - Display helper functions (NEW)
+- `frontend/src/features/analysis/hooks/useAnalysisProgress.ts` - Refactored to use new modules
+- `frontend/src/features/analysis/AnalyzeResult.tsx` - Updated for real SSE
+- `frontend/src/features/home/Home.tsx` - Added error prop passing
+- `frontend/src/features/home/components/HeroSection.tsx` - Added error display
+- `frontend/src/shared/components/ui/alert.tsx` - Alert component (NEW)
+
+**Related Issue:** [#88 - Backend sends agent names instead of stage names](https://github.com/ArieGoldkin/SkillForge/issues/88)
+
+---
+
 ### Frontend Architecture Restructuring (November 26, 2025) ✅ COMPLETE
 
 **Status:** ✅ Complete
@@ -384,9 +418,9 @@
 **Total Story Points:** 37
 **Backend:** 24 pts (Issues #39, #40, #41, #42)
 **Frontend:** 13 pts (Issues #43, #44, #45)
-**Completed:** 21 pts (Issues #39 ✅, #40 ✅, #41 ✅, #43 ✅)
+**Completed:** 29 pts (Issues #39 ✅, #40 ✅, #41 ✅, #43 ✅, #44 ✅, #45 ✅)
 **In Progress:** 0 pts
-**Remaining:** 16 pts (Issue #42 + Frontend issues #44-45)
+**Remaining:** 8 pts (Issue #42)
 
 ### Backend/Frontend Alignment ✅
 
@@ -430,7 +464,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** November 25, 2025 (Issue #43 SSE Client Hook complete - 16 tests passing)
+**Last Updated:** November 27, 2025 (Frontend-Backend SSE integration complete, stage mapping fix, 122 tests passing)
 **Maintained By:** Yonatan & Arie
 
 **See Also:**
