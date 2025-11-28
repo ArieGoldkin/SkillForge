@@ -41,7 +41,8 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     runtime_model = runtime_config.get("model")
 
     # Use runtime model if provided, otherwise use settings
-    model_identifier = (runtime_model or settings.LLM_MODEL).strip()
+    model_identifier_raw = runtime_model or settings.LLM_MODEL
+    model_identifier = str(model_identifier_raw).strip()
 
     # Re-resolve provider/model if runtime model was provided
     if runtime_model:
@@ -76,19 +77,19 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     if temperature is None:
         temperature = settings.LLM_TEMPERATURE
     if temperature is not None:
-        init_kwargs["temperature"] = temperature
+        init_kwargs["temperature"] = temperature  # type: ignore[assignment]
 
     max_tokens = runtime_config.get("max_tokens") if runtime_config else None
     if max_tokens is None:
         max_tokens = settings.LLM_MAX_TOKENS
     if max_tokens is not None:
-        init_kwargs["max_tokens"] = max_tokens
+        init_kwargs["max_tokens"] = max_tokens  # type: ignore[assignment]
 
     timeout = runtime_config.get("timeout") if runtime_config else None
     if timeout is None:
         timeout = settings.LLM_TIMEOUT
     if timeout is not None:
-        init_kwargs["timeout"] = timeout
+        init_kwargs["timeout"] = timeout  # type: ignore[assignment]
 
     # Remove provider prefix when LangChain expects bare model names
     if _should_strip_provider_prefix(provider):
@@ -111,4 +112,4 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     # Create configurable model that can be switched at invocation time
     # If no runtime model was provided, the model is still configurable via config at invoke time
     # LangChain's init_chat_model has complex overloads that mypy can't resolve
-    return init_chat_model(model_identifier_to_use, **init_kwargs)  # type: ignore[call-overload]
+    return init_chat_model(model_identifier_to_use, **init_kwargs)  # type: ignore[call-overload,no-any-return]

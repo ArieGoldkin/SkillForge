@@ -228,9 +228,8 @@ def test_get_chat_model_without_provider(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_strips_whitespace(mock_settings, mock_init_chat_model):
     """Test get_chat_model strips whitespace from LLM_MODEL."""
-    # Setup mock settings with whitespace - use a MagicMock for LLM_MODEL to track strip() calls
-    mock_settings.LLM_MODEL = MagicMock()
-    mock_settings.LLM_MODEL.strip.return_value = "gpt-5-mini"
+    # Setup mock settings with whitespace in model name
+    mock_settings.LLM_MODEL = "  gpt-5-mini  "
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
     mock_settings.OPENAI_API_KEY = "sk-test-key"
@@ -249,8 +248,11 @@ def test_get_chat_model_strips_whitespace(mock_settings, mock_init_chat_model):
     # Call get_chat_model
     result = get_chat_model()
 
-    # Verify strip() was called (model name should be clean)
-    mock_settings.LLM_MODEL.strip.assert_called_once()
+    # Verify the model identifier passed to init_chat_model is stripped (no whitespace)
+    call_args = mock_init_chat_model.call_args
+    assert call_args is not None
+    # First positional arg should be the model identifier (stripped)
+    assert call_args[0][0] == "gpt-5-mini"
     assert result == mock_model
 
 

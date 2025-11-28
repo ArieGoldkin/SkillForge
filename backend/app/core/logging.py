@@ -56,7 +56,7 @@ def setup_logging() -> None:
 
         # Configure structlog with stdlib integration
         structlog.configure(
-            processors=processors,
+            processors=processors,  # type: ignore[arg-type]
             wrapper_class=structlog.stdlib.BoundLogger,
             logger_factory=structlog.stdlib.LoggerFactory(),
             cache_logger_on_first_use=True,
