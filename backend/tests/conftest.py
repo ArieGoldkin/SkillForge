@@ -158,7 +158,8 @@ def ensure_test_env_vars(monkeypatch):
     3. Works even if modules were imported before conftest.py ran
     """
     # Set env vars (monkeypatch ensures they're set even if already imported)
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+    # Use port 5437 to match Docker setup
+    monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
     # Clear settings cache to force fresh settings instance
