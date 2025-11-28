@@ -32,28 +32,36 @@ async def test_check_database_returns_connected_when_database_available(requires
 async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     """Test check_database returns None when DATABASE_URL is not configured."""
     from app.db import session as session_module
-
+    from app.core.config import get_settings
+    
     original_url = settings.DATABASE_URL
     try:
         # Clear engine cache to ensure engine is recreated with None DATABASE_URL
         # This is critical because engine is cached globally
         session_module._engine = None
         session_module._session_factory = None
-
-        monkeypatch.setattr(settings, "DATABASE_URL", None)
-        # Clear settings cache to pick up change
-        from app.core.config import get_settings
+        
+        # Clear settings cache first
         get_settings.cache_clear()
-
+        
+        # Monkeypatch settings.DATABASE_URL to None
+        monkeypatch.setattr(settings, "DATABASE_URL", None)
+        
+        # Also monkeypatch the module-level settings in health module
+        # This ensures check_database() sees None
+        monkeypatch.setattr(health_module, "settings", settings)
+        
         # Reload module to pick up change
         importlib.reload(health_module)
+        
+        # Verify settings.DATABASE_URL is None
+        assert health_module.settings.DATABASE_URL is None
 
         result = await health_module.check_database()
         assert result is None
     finally:
         # Restore original URL and clear cache again
         monkeypatch.setattr(settings, "DATABASE_URL", original_url)
-        from app.core.config import get_settings
         get_settings.cache_clear()
         # Clear engine cache again to ensure fresh engine with restored URL
         session_module._engine = None

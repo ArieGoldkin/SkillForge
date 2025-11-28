@@ -21,7 +21,7 @@ async def test_multiple_urls(requires_jina_api_key):
     results = []
 
     try:
-        for url, expected_type in test_urls:
+        for url, _expected_type in test_urls:
             detected_type = detect_content_type(url)
 
             try:
@@ -49,7 +49,7 @@ async def test_multiple_urls(requires_jina_api_key):
 @pytest.mark.asyncio
 async def test_retry_behavior(requires_jina_api_key):
     """Test retry behavior (manual verification).
-    
+
     Note: Retry behavior is tested with invalid URLs that fail.
     Retries should occur automatically (3 attempts with exponential backoff).
     The error handling test already verified retries work.

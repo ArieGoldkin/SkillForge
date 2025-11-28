@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.config import settings
+from app.core.config import get_settings, settings
 from app.core.constants import DB_TEST_TIMEOUT, DB_TIMEOUT, MAX_ERROR_MESSAGE_LENGTH
 from app.core.logging import get_logger
 from app.db.session import engine
@@ -34,7 +34,10 @@ async def check_database() -> dict[str, str] | None:
         Dictionary with database status, or None if DATABASE_URL is not configured.
 
     """
-    if not settings.DATABASE_URL:
+    # Use get_settings() to get fresh settings instance (respects cache clearing)
+    # This ensures monkeypatched DATABASE_URL is picked up in tests
+    current_settings = get_settings()
+    if not current_settings.DATABASE_URL:
         return None
 
     try:
@@ -72,6 +75,6 @@ async def health_check() -> HealthStatus:
     return HealthStatus(
         status="healthy",
         version="0.1.0",
-        environment=settings.ENVIRONMENT,
+        environment=get_settings().ENVIRONMENT,
         database=database_status,
     )
