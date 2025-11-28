@@ -14,6 +14,7 @@ Architecture:
 
 from typing import cast
 
+import tiktoken
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -60,12 +61,16 @@ class EmbeddingService:
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = "text-embedding-3-small"
         self.expected_dimensions = 1536
-        self.max_text_length = 32_000  # ~8,191 tokens (OpenAI limit)
+        self.max_tokens = 8_000  # Safety margin below 8,191 token limit
+        # Cache encoding for performance (text-embedding-3-small uses cl100k_base)
+        self.encoding = tiktoken.encoding_for_model("text-embedding-3-small")
 
         logger.info(
             "embedding_service_initialized",
             model=self.model,
             dimensions=self.expected_dimensions,
+            max_tokens=self.max_tokens,
+            encoding=self.encoding.name,
             provider="openai",
         )
 
@@ -82,7 +87,7 @@ class EmbeddingService:
         """Generate embedding vector for text using OpenAI.
 
         Args:
-            text: Text to embed (max 32,000 characters)
+            text: Text to embed (max 8,000 tokens)
             normalize: If True, apply L2 normalization (default: True)
 
         Returns:
@@ -98,14 +103,22 @@ class EmbeddingService:
             logger.error("embedding_empty_text")
             raise ValueError(msg)
 
-        # Truncate text if too long (OpenAI limit: 8,191 tokens ≈ 32,000 chars)
+        # Token-based truncation (not character-based)
+        # OpenAI text-embedding-3-small limit is 8,191 tokens
+        tokens = self.encoding.encode(text)
+        original_token_count = len(tokens)
         original_length = len(text)
-        if len(text) > self.max_text_length:
-            text = text[: self.max_text_length]
+
+        if original_token_count > self.max_tokens:
+            # Truncate tokens, then decode back to text
+            truncated_tokens = tokens[: self.max_tokens]
+            text = self.encoding.decode(truncated_tokens)
             logger.warning(
                 "embedding_text_truncated",
-                original_length=original_length,
-                truncated_length=self.max_text_length,
+                original_tokens=original_token_count,
+                truncated_tokens=self.max_tokens,
+                original_chars=original_length,
+                truncated_chars=len(text),
             )
 
         try:
@@ -139,7 +152,8 @@ class EmbeddingService:
 
             logger.info(
                 "embedding_generated",
-                text_length=original_length,
+                text_length=len(text),
+                token_count=original_token_count,
                 embedding_dimensions=len(embedding),
                 normalized=normalize,
             )

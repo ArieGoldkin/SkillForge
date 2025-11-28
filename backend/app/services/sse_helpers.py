@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from app.core.logging import get_logger
-from app.core.types import AnalysisID
+from app.core.types import AnalysisID, EventData
 from app.services.event_broadcaster import broadcaster
 
 logger = get_logger(__name__)
@@ -42,7 +42,7 @@ async def emit_streaming_event(
     """
     channel = f"workflow:{analysis_id}"
 
-    event_data = {
+    event_data: EventData = {
         "type": event_type,
         "analysis_id": analysis_id,
         "stage": stage,

@@ -12,10 +12,11 @@ Architecture:
 
 import asyncio
 import time
-from typing import Any
 
+from langchain_core.runnables import Runnable
 from langsmith import traceable
 
+from app.core.agent_config import get_stage_name
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
@@ -77,7 +78,7 @@ def _get_content_for_supervisor(
 
 
 async def _invoke_supervisor_with_retry(
-    model: Any,
+    model: Runnable,
     prompt: str,
     analysis_id: AnalysisID,
     max_attempts: int = 3,
@@ -118,7 +119,10 @@ async def _invoke_supervisor_with_retry(
                 timeout=timeout,
             )
             # Type assertion: structured output guarantees AgentSelection
-            return result  # type: ignore[no-any-return]
+            if not isinstance(result, AgentSelection):
+                msg = f"Supervisor returned unexpected type: {type(result)}"
+                raise TypeError(msg)
+            return result
         except TimeoutError:
             if attempt == max_attempts - 1:
                 # Last attempt failed
@@ -164,7 +168,7 @@ async def supervisor_route(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Supervisor decides which agents should analyze the content.
 
     Uses structured output for faster inference (no tool calling overhead).
@@ -192,7 +196,7 @@ async def supervisor_route(
     await emit_streaming_event(
         "progress",
         analysis_id=analysis_id,
-        stage="supervisor",
+        stage=get_stage_name("supervisor"),
         status="running",
     )
 
@@ -238,7 +242,7 @@ async def supervisor_route(
         await emit_streaming_event(
             "progress",
             analysis_id=analysis_id,
-            stage="supervisor",
+            stage=get_stage_name("supervisor"),
             status="complete",
             agent_count=len(selection.agents),
             selected_agents=selection.agents,
@@ -262,7 +266,7 @@ async def supervisor_route(
         await emit_streaming_event(
             "error",
             analysis_id=analysis_id,
-            stage="supervisor",
+            stage=get_stage_name("supervisor"),
             status="failed",
             error=str(e),
             error_code="SUPERVISOR_FAILED",

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from langchain.chat_models import init_chat_model
+from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.core.config import _infer_provider_from_model, _split_provider_from_model, settings
 from app.core.logging import get_logger
@@ -19,7 +18,7 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     return provider in {"openai", "anthropic", "google_genai"}
 
 
-def get_chat_model(config: dict[str, Any] | None = None):  # noqa: PLR0912
+def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
@@ -38,7 +37,7 @@ def get_chat_model(config: dict[str, Any] | None = None):  # noqa: PLR0912
 
     """
     # Check for runtime model override in config
-    runtime_config = config.get("configurable", {}) if config else {}
+    runtime_config: dict[str, object] = config.get("configurable", {}) if config else {}  # type: ignore[union-attr]
     runtime_model = runtime_config.get("model")
 
     # Use runtime model if provided, otherwise use settings

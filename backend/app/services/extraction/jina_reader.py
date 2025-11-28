@@ -82,24 +82,28 @@ class JinaReader:
 
             # Handle 404 specifically
             if response.status_code == HTTP_NOT_FOUND:
+                response_preview = response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]
+                error_msg = f"URL not found (404): {url}. Response preview: {response_preview}"
                 logger.error(
                     "jina_extraction_not_found",
                     url=url,
                     status_code=HTTP_NOT_FOUND,
+                    response_preview=response_preview,
                 )
-                msg = f"URL not found ({HTTP_NOT_FOUND})"
-                raise JinaReaderError(msg)
+                raise JinaReaderError(error_msg)
 
             # Handle other HTTP errors
             if response.status_code >= HTTP_ERROR_THRESHOLD:
+                response_preview = response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]
                 error_msg = (
-                    f"HTTP {response.status_code}: {response.text[:MAX_ERROR_MESSAGE_LENGTH_LONG]}"
+                    f"HTTP {response.status_code} error for {url}. Response: {response_preview}"
                 )
                 logger.error(
                     "jina_extraction_http_error",
                     url=url,
                     status_code=response.status_code,
-                    error=error_msg,
+                    response_preview=response_preview,
+                    response_headers=dict(response.headers),
                 )
                 raise JinaReaderError(error_msg)
 
@@ -135,20 +139,32 @@ class JinaReader:
             }
 
         except httpx.TimeoutException as e:
-            logger.exception("jina_extraction_timeout", url=url, error=str(e))
-            msg = "Request timed out"
-            raise JinaReaderError(msg) from e
+            error_msg = (
+                f"Request timed out after {DEFAULT_TIMEOUT}s: {url}. Error type: {type(e).__name__}"
+            )
+            logger.exception(
+                "jina_extraction_timeout",
+                url=url,
+                timeout=DEFAULT_TIMEOUT,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise JinaReaderError(error_msg) from e
 
         except JinaReaderError:
             # Re-raise JinaReaderError without modification
             raise
 
         except Exception as e:
+            error_msg = f"Extraction failed for {url}: {type(e).__name__}: {str(e)}"
             logger.exception(
-                "jina_extraction_failed", url=url, error=str(e), error_type=type(e).__name__
+                "jina_extraction_failed",
+                url=url,
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
             )
-            msg = f"Extraction failed: {e!s}"
-            raise JinaReaderError(msg) from e
+            raise JinaReaderError(error_msg) from e
 
     async def close(self) -> None:
         """Close the HTTP client."""
