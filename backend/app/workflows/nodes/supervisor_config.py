@@ -1,7 +1,5 @@
 """Configuration constants for supervisor agent."""
 
-from functools import lru_cache
-
 from app.core.agent_config import AGENT_REGISTRY
 
 # Workflow stage agent types (excluded from analysis agent list)
