@@ -379,7 +379,11 @@ async def test_api_concurrent_requests(reset_engine_connections):
             urls = [f"https://example.com/article{i}" for i in range(3)]
             tasks = [client.post("/api/v1/analyze", json={"url": url}) for url in urls]
 
-            responses = await asyncio.gather(*tasks)
+            # Use timeout to prevent hanging if requests never complete
+            responses = await asyncio.wait_for(
+                asyncio.gather(*tasks),
+                timeout=30.0,  # 30 second timeout for concurrent requests
+            )
 
             # All should succeed - collect analysis_ids
             analysis_ids = []

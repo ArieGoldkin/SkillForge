@@ -152,11 +152,21 @@ async def test_sse_endpoint_with_real_workflow(requires_test_env):
 
     try:
         # Wait for either events to complete or timeout
-        _done, pending = await asyncio.wait(
-            [event_collection_task, workflow_task],
-            timeout=120.0,  # 2 minutes max for workflow + events
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        # Wrap asyncio.wait in asyncio.wait_for to ensure timeout is enforced
+        try:
+            _done, pending = await asyncio.wait_for(
+                asyncio.wait(
+                    [event_collection_task, workflow_task],
+                    return_when=asyncio.FIRST_COMPLETED,
+                ),
+                timeout=120.0,  # 2 minutes max for workflow + events
+            )
+        except TimeoutError:
+            # Timeout reached - cancel all tasks
+            event_collection_task.cancel()
+            workflow_task.cancel()
+            pending = {event_collection_task, workflow_task}
+            _done = set()
 
         # Cancel pending tasks
         for task in pending:
