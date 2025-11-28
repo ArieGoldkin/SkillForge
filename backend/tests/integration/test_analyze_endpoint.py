@@ -269,7 +269,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     # Mock workflow to raise GeneratorExit (simulating stream closure)
     async def mock_workflow_ainvoke(input_state, config):
         """Mock workflow execution that raises GeneratorExit."""
-        raise GeneratorExit("Stream closed externally")
+        raise GeneratorExit()
 
     with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
         # Run workflow task

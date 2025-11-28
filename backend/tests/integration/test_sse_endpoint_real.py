@@ -76,16 +76,20 @@ async def _collect_sse_events(
     response: EventSourceResponse,
     events_received: list[dict[str, str]],
 ) -> None:
-    """Collect events from SSE stream."""
+    """Collect events from SSE stream with timeout protection."""
     try:
-        async for event_dict in response.body_iterator:
-            events_received.append(event_dict)
+        # Use timeout to prevent infinite hanging if stream never completes
+        async def collect_with_timeout():
+            async for event_dict in response.body_iterator:
+                events_received.append(event_dict)
+                # Stop on complete event
+                if event_dict.get("event") == "complete":
+                    break
 
-            # Stop on complete event
-            if event_dict.get("event") == "complete":
-                break
-    except (asyncio.CancelledError, GeneratorExit, StopAsyncIteration):
-        # Expected exceptions during cleanup - ignore
+        # Wrap collection in timeout (120s matches test timeout)
+        await asyncio.wait_for(collect_with_timeout(), timeout=120.0)
+    except (asyncio.CancelledError, GeneratorExit, StopAsyncIteration, TimeoutError):
+        # Expected exceptions during cleanup or timeout - ignore
         pass
     except (RuntimeError, ValueError, KeyError) as e:
         # Log but don't fail on other exceptions
