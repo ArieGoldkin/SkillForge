@@ -247,6 +247,7 @@ secrets.json
 credentials.json
 service-account.json
 .mcp.json
+.mcp.env
 
 # API Keys
 *_api_key.txt
@@ -287,6 +288,7 @@ models/
 # Generated artifacts (outputs from analysis)
 artifacts/
 generated/
+assets/
 
 # Cache directories
 .cache/

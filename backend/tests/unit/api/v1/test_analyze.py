@@ -210,3 +210,5 @@ class TestCreateAnalysis:
         assert response.sse_endpoint.startswith("/api/v1/analyze/")
         assert response.sse_endpoint.endswith("/stream")
         assert str(analysis_uuid) in response.sse_endpoint
+
+
