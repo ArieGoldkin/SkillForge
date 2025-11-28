@@ -9,7 +9,15 @@ from uuid import UUID
 # CRITICAL: Set test environment variables BEFORE any app imports
 # This ensures settings are loaded with correct values when modules are first imported
 # These are test-only values and won't affect production
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+# NOTE: DATABASE_URL should come from .env.test (port 5437) - don't override it here
+# Only set a fallback if .env.test doesn't exist (for CI environments)
+if "DATABASE_URL" not in os.environ:
+    # Check if .env.test exists and has DATABASE_URL
+    test_env_file = Path(__file__).parent.parent / ".env.test"
+    if not test_env_file.exists():
+        # Only set fallback if .env.test doesn't exist (for CI)
+        # Use port 5437 to match Docker setup
+        os.environ["DATABASE_URL"] = "postgresql://dev:devpass@localhost:5437/skillforge_test"
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
 # CRITICAL: Disable LangSmith tracing for UNIT tests only
@@ -48,25 +56,31 @@ for _logger_name in [
 ]:
     logging.getLogger(_logger_name).setLevel(logging.WARNING)
 
-# Load .env file for tests (same as development)
-# This allows tests to use the same configuration as the running application
+# Load .env.test file for tests (preferred) or .env as fallback
+# This allows tests to use the correct database configuration (port 5437)
 # We use python-dotenv to explicitly load the file to ensure VS Code test explorer
 # and pytest both load environment variables correctly
+TEST_ENV_FILE = Path(__file__).parent.parent / ".env.test"
 ENV_FILE = Path(__file__).parent.parent / ".env"
-if ENV_FILE.exists():
-    # Explicitly load .env using python-dotenv for VS Code test explorer compatibility
+
+# Prefer .env.test if it exists (has correct DATABASE_URL with port 5437)
+env_file_to_load = TEST_ENV_FILE if TEST_ENV_FILE.exists() else ENV_FILE
+
+if env_file_to_load.exists():
+    # Explicitly load .env.test or .env using python-dotenv for VS Code test explorer compatibility
     try:
         from dotenv import load_dotenv
 
-        # Load .env file explicitly (don't override existing env vars)
-        load_dotenv(dotenv_path=ENV_FILE, override=False)
+        # Load .env.test or .env file explicitly (override existing env vars to use correct DATABASE_URL)
+        # This ensures we use port 5437 from .env.test instead of default port 5432
+        load_dotenv(dotenv_path=env_file_to_load, override=True)
     except ImportError:
         # If python-dotenv is not available, fall back to setting ENV_FILE
-        # The Settings class will detect this and load .env
-        os.environ["ENV_FILE"] = str(ENV_FILE)
+        # The Settings class will detect this and load .env.test or .env
+        os.environ["ENV_FILE"] = str(env_file_to_load)
 
-    # Set environment variable to load .env (for Settings class)
-    os.environ["ENV_FILE"] = str(ENV_FILE)
+    # Set environment variable to load .env.test or .env (for Settings class)
+    os.environ["ENV_FILE"] = str(env_file_to_load)
     # Also set ENVIRONMENT=development for test mode
     # (Settings validation requires development/staging/production)
     os.environ.setdefault("ENVIRONMENT", "development")
@@ -286,18 +300,27 @@ async def check_database_available(requires_database):
     from app.db import session as session_module
     from app.db.session import AsyncSessionLocal
 
-    # Clear cached engine to ensure it uses current DATABASE_URL
-    # This is important when DATABASE_URL changes or engine was created with wrong URL
+    # CRITICAL: Clear cached engine BEFORE any engine access
+    # This ensures engine is recreated with current DATABASE_URL (port 5437)
+    # Must clear both _engine and _session_factory to force complete recreation
+    old_engine = session_module._engine
     session_module._engine = None
     session_module._session_factory = None
-    
-    # Also dispose any existing engine connections to force fresh connection
+
+    # Dispose old engine connections if it existed
     # This ensures we're not using stale connections with wrong port
-    try:
-        if session_module._engine is not None:
-            await session_module._engine.dispose()
-    except Exception:
-        pass  # Ignore disposal errors
+    if old_engine is not None:
+        try:
+            await old_engine.dispose()
+        except Exception:
+            pass  # Ignore disposal errors
+
+    # Verify engine will use correct URL by checking get_async_database_url
+    from app.db.session import get_async_database_url
+    expected_url = get_async_database_url()
+    if ':5437' not in expected_url:
+        import sys
+        print(f"WARNING: Expected port 5437 in URL, got: {expected_url}", file=sys.stderr)
 
     # Quick connectivity check with reasonable timeout (5s for Docker)
     # This allows proper connection while still failing fast if DB is unavailable
@@ -395,7 +418,7 @@ async def reset_engine_connections():
 
     # Dispose after test to clean up
     await _dispose_engine_safely(test_timeout)
-    
+
     # Clear cached engine again after test
     session_module._engine = None
     session_module._session_factory = None
