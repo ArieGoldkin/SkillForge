@@ -7,29 +7,42 @@ compatibility, migration effort, breaking changes, and providing integration gui
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
+from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
 
 # System prompt for integration feasibility agent
 INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst.
 Assess technology integration with modern stacks.
 
-For the given content, you MUST provide ALL of these fields:
+CRITICAL: You MUST provide ALL required fields. Missing fields will cause validation errors.
 
-1. **compatibility** (REQUIRED - DO NOT OMIT): A dictionary mapping stack names to scores.
-   Each entry MUST have:
-   - score: A float from 0.0 to 1.0
-   - notes: A brief explanation string
-   Include 2-3 stacks like: react, nextjs, fastapi, docker, etc.
-   Example: {"react": {"score": 0.9, "notes": "Native support"}}
+Required Output Structure:
+{
+  "compatibility": {
+    "react": {"score": 0.9, "notes": "Native support"},
+    "nextjs": {"score": 0.85, "notes": "SSR compatible"},
+    "fastapi": {"score": 0.8, "notes": "Python backend compatible"}
+  },
+  "migration_effort": "medium",
+  "breaking_changes": ["List", "of", "breaking", "changes"],
+  "integration_steps": ["Step 1", "Step 2", "Step 3"]
+}
 
-2. **migration_effort**: One of: "low", "medium", or "high"
+Field Requirements:
+1. **compatibility** (REQUIRED): Dictionary with 2-3 stack entries.
+   - Keys: stack names like "react", "nextjs", "fastapi", "docker"
+   - Values: {"score": 0.0-1.0, "notes": "string"}
+   - Example: {"react": {"score": 0.9, "notes": "Native support"}}
 
-3. **breaking_changes**: List of potential breaking changes
+2. **migration_effort** (REQUIRED): One of: "low", "medium", "high"
 
-4. **integration_steps**: List of actionable integration steps
+3. **breaking_changes** (REQUIRED): List of strings (can be empty [])
 
-IMPORTANT: The 'compatibility' field is REQUIRED. Do not skip it."""
+4. **integration_steps** (REQUIRED): List of strings (can be empty [])
+
+IMPORTANT: Include the "compatibility" field with at least 2 stack entries. "
+    "Do not omit any required fields."""
 
 
 async def run_integration_feasibility(

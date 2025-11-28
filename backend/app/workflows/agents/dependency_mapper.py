@@ -7,7 +7,8 @@ dependency management recommendations.
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
+from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
 
 # System prompt for dependency mapper agent

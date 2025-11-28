@@ -31,10 +31,28 @@ class TechComparison(BaseModel):
     )
     comparison: dict[str, TechComparisonEntry] = Field(
         description=(
-            "REQUIRED: Comparison table with pros, cons, and use_cases for each technology. "
+            "REQUIRED FIELD - DO NOT OMIT: Comparison table with pros, cons, "
+            "and use_cases for each technology. "
             "MUST include an entry for primary_tech and each alternative. "
             "Each entry contains three lists: pros (advantages), "
-            "cons (disadvantages), and use_cases (recommended scenarios)."
-        )
+            "cons (disadvantages), and use_cases (recommended scenarios). "
+            "Example: {'LangGraph': {'pros': ['...'], 'cons': ['...'], 'use_cases': ['...']}, "
+            "'LangChain Agents': {'pros': ['...'], 'cons': ['...'], 'use_cases': ['...']}}. "
+            "This field is REQUIRED and cannot be omitted."
+        ),
+        examples=[
+            {
+                "LangGraph": {
+                    "pros": ["Low-level control", "Durable execution"],
+                    "cons": ["Steeper learning curve"],
+                    "use_cases": ["Long-running agents", "Stateful workflows"],
+                },
+                "LangChain Agents": {
+                    "pros": ["High-level abstraction", "Easy to use"],
+                    "cons": ["Less control"],
+                    "use_cases": ["Quick prototypes", "Simple agents"],
+                },
+            }
+        ],
     )
     recommendation: str = Field(description="Recommendation based on the comparison analysis")

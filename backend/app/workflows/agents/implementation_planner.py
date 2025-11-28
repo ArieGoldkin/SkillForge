@@ -7,7 +7,8 @@ steps, file structure recommendations, and testing strategies.
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
+from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.implementation_planner import ImplementationPlan
 
 # System prompt for implementation planner agent

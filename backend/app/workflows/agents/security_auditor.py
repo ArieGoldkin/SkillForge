@@ -8,7 +8,8 @@ and compliance considerations.
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent, run_agent_with_tracking
+from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.security_auditor import SecurityAudit
 
 # System prompt for security auditor agent
