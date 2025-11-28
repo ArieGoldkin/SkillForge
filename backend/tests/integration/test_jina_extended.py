@@ -61,10 +61,10 @@ async def test_retry_behavior(requires_jina_api_key):
 
 @pytest.fixture
 def requires_jina_api_key():
-    """Skip test if JINA_API_KEY is not set or is placeholder."""
+    """Skip test if JINA_API_KEY is not set."""
     settings = get_settings()
-    if not settings.JINA_API_KEY or settings.JINA_API_KEY == "your_real_jina_api_key_here":
-        pytest.skip("JINA_API_KEY not set or is placeholder in .env.test - skipping test")
+    if not settings.JINA_API_KEY:
+        pytest.skip("JINA_API_KEY not set in .env.test - skipping test")
 
 
 @pytest.mark.asyncio
@@ -126,5 +126,3 @@ async def test_metadata_structure(requires_jina_api_key):
         raise
     finally:
         await reader.close()
-
-

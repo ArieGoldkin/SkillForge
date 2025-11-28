@@ -31,20 +31,21 @@ async def test_check_database_returns_connected_when_database_available(requires
 @pytest.mark.asyncio
 async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     """Test check_database returns None when DATABASE_URL is not configured.
-    
+
     Note: This test is challenging because Settings loads from .env.test in test mode.
     We mock get_settings() in both health and session modules to return None for DATABASE_URL.
     """
-    from app.db import session as session_module
-    from app.core.config import get_settings, Settings
     from unittest.mock import patch
-    
+
+    from app.core.config import Settings, get_settings
+    from app.db import session as session_module
+
     original_url = settings.DATABASE_URL
     try:
         # Clear engine cache to ensure engine is recreated
         session_module._engine = None
         session_module._session_factory = None
-        
+
         # Create a mock Settings instance with DATABASE_URL=None
         # This simulates the scenario where DATABASE_URL is not configured
         mock_settings = Settings(
@@ -52,7 +53,7 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
             LOG_LEVEL=settings.LOG_LEVEL,
             DATABASE_URL=None,  # Explicitly set to None
         )
-        
+
         # Patch get_settings() in health module to return mock_settings with DATABASE_URL=None
         # check_database() uses get_settings() and should return None early before using engine
         # We don't need to patch session module because check_database() returns None before
@@ -61,7 +62,9 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
             # Don't reload modules - the patch is applied at runtime
             # Reloading would reset the patch
             result = await health_module.check_database()
-            assert result is None, f"check_database() should return None when DATABASE_URL is None, got: {result}"
+            assert result is None, (
+                f"check_database() should return None when DATABASE_URL is None, got: {result}"
+            )
     finally:
         # Restore original state
         get_settings.cache_clear()
