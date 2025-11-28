@@ -46,6 +46,7 @@ class AgentConfig:
         stage_name: External stage name for SSE events (e.g., "tech_comparison")
         display_name: Human-readable name for UI (e.g., "Tech Comparison")
         description: Brief description of agent purpose
+
     """
 
     agent_type: str
@@ -157,6 +158,7 @@ def get_agent_config(agent_type: str) -> AgentConfig:
         'tech_comparison'
         >>> config.display_name
         'Tech Comparison'
+
     """
     if agent_type not in AGENT_REGISTRY:
         from app.core.logging import get_logger
@@ -187,5 +189,6 @@ def get_stage_name(agent_type: str) -> StageName:
     Example:
         >>> get_stage_name("tech_comparator")
         'tech_comparison'
+
     """
     return get_agent_config(agent_type).stage_name

@@ -91,7 +91,6 @@ def log_agent_before_model(
             analysis_id=analysis_id,
             message_count=message_count,
         )
-    return None
 
 
 @wrap_model_call

@@ -9,8 +9,8 @@ from app.workflows.tasks.extract_content import extract_content
 from app.workflows.tasks.generate_embedding import generate_embedding
 
 __all__ = [
+    "aggregate_findings",
+    "execute_agents",
     "extract_content",
     "generate_embedding",
-    "execute_agents",
-    "aggregate_findings",
 ]

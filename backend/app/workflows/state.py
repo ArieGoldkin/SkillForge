@@ -26,6 +26,7 @@ class AnalysisState(TypedDict, total=False):
         agent_findings: List of findings from executed agents
         evaluation_results: Agent quality evaluation results (NEW)
         metrics: Performance and quality metrics (NEW)
+
     """
 
     analysis_id: AnalysisID

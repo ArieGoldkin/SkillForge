@@ -24,7 +24,7 @@ from app.workflows.agents.result_processing import (
 logger = get_logger(__name__)
 
 
-async def _run_agent_with_tracking_impl(  # noqa: PLR0913, PLR0915
+async def _run_agent_with_tracking_impl(  # noqa: PLR0913
     agent: Runnable,
     content: str,
     content_type: str,

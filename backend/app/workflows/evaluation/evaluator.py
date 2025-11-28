@@ -49,7 +49,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
 
     try:
         # LangSmith client available for future enhancements
-        _ = Client()  # noqa: F841
+        _ = Client()
         evaluation_results: dict[str, object] = {}
 
         for finding in agent_findings:

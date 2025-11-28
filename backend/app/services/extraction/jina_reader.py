@@ -156,7 +156,7 @@ class JinaReader:
             raise
 
         except Exception as e:
-            error_msg = f"Extraction failed for {url}: {type(e).__name__}: {str(e)}"
+            error_msg = f"Extraction failed for {url}: {type(e).__name__}: {e!s}"
             logger.exception(
                 "jina_extraction_failed",
                 url=url,

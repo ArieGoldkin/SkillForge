@@ -22,7 +22,6 @@ __all__ = [
     "create_structured_agent",
     "emit_agent_progress",
     "run_agent_with_tracking",
-    "save_agent_finding",
     "run_code_quality_critic",
     "run_dependency_mapper",
     "run_implementation_planner",
@@ -31,4 +30,5 @@ __all__ = [
     "run_security_auditor",
     "run_tech_comparator",
     "run_trend_validator",
+    "save_agent_finding",
 ]
