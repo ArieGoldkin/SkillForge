@@ -279,8 +279,9 @@ async def check_database_available(requires_database):
     """
     import asyncio
 
-    from app.db.session import AsyncSessionLocal
     from sqlalchemy import text
+
+    from app.db.session import AsyncSessionLocal
 
     # Quick connectivity check with reasonable timeout (2s)
     # This allows proper connection while still failing fast if DB is unavailable
@@ -297,7 +298,7 @@ async def check_database_available(requires_database):
             finally:
                 # Ensure session is closed
                 await session.__aexit__(None, None, None)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             enter_task.cancel()
             try:
                 await enter_task
