@@ -17,9 +17,7 @@ class TestBuildSupervisorPrompt:
 
         # Get analysis agents (exclude workflow stages)
         analysis_agents = [
-            config
-            for config in AGENT_REGISTRY.values()
-            if config.agent_type not in WORKFLOW_STAGES
+            config for config in AGENT_REGISTRY.values() if config.agent_type not in WORKFLOW_STAGES
         ]
 
         # Verify all analysis agents are in prompt
@@ -36,7 +34,9 @@ class TestBuildSupervisorPrompt:
             # Stage names might appear in examples, but agent_type shouldn't be listed
             # Check that it's not in the "Agents:" section
             agents_section = prompt.split("Agents:")[1].split("Examples:")[0]
-            assert stage not in agents_section, f"Workflow stage {stage} should not be in agents list"
+            assert stage not in agents_section, (
+                f"Workflow stage {stage} should not be in agents list"
+            )
 
     def test_build_supervisor_prompt_has_correct_structure(self):
         """Test prompt has correct structure."""
@@ -48,14 +48,14 @@ class TestBuildSupervisorPrompt:
         assert "Select based on:" in prompt
         assert "Examples:" in prompt
 
-    def test_build_supervisor_prompt_is_cached(self):
-        """Test that prompt building is cached (same object returned)."""
+    def test_build_supervisor_prompt_is_consistent(self):
+        """Test that prompt building returns consistent results."""
         prompt1 = build_supervisor_prompt()
         prompt2 = build_supervisor_prompt()
 
-        # Should be same string (cached)
-        assert prompt1 is prompt2
+        # Should be same string (consistent results from same registry)
         assert prompt1 == prompt2
+        assert len(prompt1) == len(prompt2)
 
     def test_supervisor_prompt_constant(self):
         """Test SUPERVISOR_PROMPT constant is set correctly."""

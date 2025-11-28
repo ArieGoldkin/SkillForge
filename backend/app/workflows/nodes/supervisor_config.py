@@ -8,7 +8,6 @@ from app.core.agent_config import AGENT_REGISTRY
 WORKFLOW_STAGES = {"supervisor", "extraction", "embedding", "aggregation", "artifact_generation"}
 
 
-@lru_cache(maxsize=1)
 def build_supervisor_prompt() -> str:
     """Build supervisor prompt from agent registry (single source of truth).
 
@@ -19,12 +18,14 @@ def build_supervisor_prompt() -> str:
     Returns:
         Supervisor system prompt string
 
+    Note:
+        This function is not cached to ensure tests can run in isolation.
+        The prompt is built from a constant registry, so performance impact is minimal.
+
     """
     # Filter to analysis agents only (exclude workflow stages)
     analysis_agents = [
-        config
-        for config in AGENT_REGISTRY.values()
-        if config.agent_type not in WORKFLOW_STAGES
+        config for config in AGENT_REGISTRY.values() if config.agent_type not in WORKFLOW_STAGES
     ]
 
     # Sort by agent_type for consistent ordering
@@ -32,8 +33,7 @@ def build_supervisor_prompt() -> str:
 
     # Build agent list from registry
     agent_list = "\n".join(
-        f"- {config.agent_type}: {config.description}"
-        for config in sorted_agents
+        f"- {config.agent_type}: {config.description}" for config in sorted_agents
     )
 
     return f"""Analyze content and select relevant agents. Output JSON:
@@ -56,5 +56,6 @@ Examples:
   "confidence": 0.85}}"""
 
 
-# Cached supervisor prompt (built from registry, cached for performance)
+# Supervisor prompt (built from registry at module load time)
+# Not cached to ensure test isolation - registry is constant so performance is fine
 SUPERVISOR_PROMPT = build_supervisor_prompt()
