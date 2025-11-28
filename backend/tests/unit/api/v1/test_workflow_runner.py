@@ -48,6 +48,8 @@ async def test_run_workflow_task_success(
     mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
     mock_db_session.__aexit__ = AsyncMock(return_value=False)
 
+    # Patch AsyncSessionLocal at the source (app.db.session)
+    # AsyncSessionLocal is a callable, so we make it return our mock session when called
     with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
         await run_workflow_task(mock_analysis_id, test_url)
 
@@ -89,6 +91,8 @@ async def test_run_workflow_task_workflow_error(
     mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
     mock_db_session.__aexit__ = AsyncMock(return_value=False)
 
+    # Patch AsyncSessionLocal at the source (app.db.session)
+    # AsyncSessionLocal is a callable, so we make it return our mock session when called
     with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
         await run_workflow_task(mock_analysis_id, test_url)
 
@@ -161,6 +165,8 @@ async def test_run_workflow_task_generatorexit(
     mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
     mock_db_session.__aexit__ = AsyncMock(return_value=False)
 
+    # Patch AsyncSessionLocal at the source (app.db.session)
+    # AsyncSessionLocal is a callable, so we make it return our mock session when called
     with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
         await run_workflow_task(mock_analysis_id, test_url)
 

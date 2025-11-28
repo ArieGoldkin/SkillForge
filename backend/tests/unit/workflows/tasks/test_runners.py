@@ -59,6 +59,7 @@ async def test_run_tech_comparator_with_session(
     mock_session,
 ):
     """Test tech comparator runner with session management."""
+    # Make AsyncSessionLocal return our mock session when called
     mock_session_local.return_value = mock_session
     mock_run_agent = AsyncMock(return_value={"findings": "test"})
 

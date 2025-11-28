@@ -116,25 +116,47 @@ ValueError: OPENAI_API_KEY is required for embedding generation
 
 ## Solution Strategy
 
-### Fix 1: Mock DATABASE_URL for workflow_runner tests
-- Patch `settings.DATABASE_URL` or mock `AsyncSessionLocal` import
+### Fix 1: Set DATABASE_URL before imports in workflow_runner tests
+- Set `os.environ["DATABASE_URL"]` before importing `run_workflow_task`
+- Prevents validation error during module import
 - Tests don't need real database, just need to avoid validation error
 
-### Fix 2: Mock OPENAI_API_KEY for embeddings_errors tests
-- Patch `settings.OPENAI_API_KEY` in fixture before creating service
-- Or mock `EmbeddingService.__init__` to skip validation
+### Fix 2: Set OPENAI_API_KEY before imports in embeddings_errors tests
+- Set `os.environ["OPENAI_API_KEY"]` before importing `EmbeddingService`
+- Prevents validation error during `EmbeddingService.__init__()`
+- Fixture can then create service without errors
 
-### Fix 3: Mock AsyncSessionLocal for runners tests
-- Patch `app.db.session.AsyncSessionLocal` in each test
+### Fix 3: Set DATABASE_URL before imports in runners tests
+- Set `os.environ["DATABASE_URL"]` before importing runner functions
+- Prevents validation error when `AsyncSessionLocal` is imported
 - Tests already mock the runner functions, just need to avoid import-time validation
 
 ---
 
-## Files to Fix
+## Files Fixed
 
-1. `backend/tests/unit/api/v1/test_workflow_runner.py` - Add DATABASE_URL mock
-2. `backend/tests/unit/services/test_embeddings_errors.py` - Add OPENAI_API_KEY mock
-3. `backend/tests/unit/workflows/tasks/test_runners.py` - Add DATABASE_URL mock
+1. ✅ `backend/tests/unit/api/v1/test_workflow_runner.py` - Added `os.environ.setdefault("DATABASE_URL", ...)` before imports
+2. ✅ `backend/tests/unit/services/test_embeddings_errors.py` - Added `os.environ.setdefault("OPENAI_API_KEY", ...)` before imports
+3. ✅ `backend/tests/unit/workflows/tasks/test_runners.py` - Added `os.environ.setdefault("DATABASE_URL", ...)` before imports
+
+---
+
+## Implementation Details
+
+### Pattern Used:
+```python
+import os
+
+# Set environment variable before importing to avoid validation errors
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+
+from app.module import function  # Now safe to import
+```
+
+### Why `setdefault()`?
+- Only sets if not already present (respects existing env vars)
+- Allows tests to work in both local (with .env) and CI (without env vars)
+- Prevents overriding real database URLs in local development
 
 ---
 
@@ -144,3 +166,4 @@ ValueError: OPENAI_API_KEY is required for embedding generation
 - ✅ Coverage maintained at 76%+
 - ✅ CI pipeline green
 - ✅ No environment variable dependencies in unit tests
+- ✅ Tests work in both local and CI environments
