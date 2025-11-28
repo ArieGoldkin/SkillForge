@@ -33,14 +33,10 @@ async def read_sse_event(response, timeout: float = SSE_TEST_TIMEOUT) -> dict | 
     """
 
     async def _read_one():
-        # Use timeout to prevent hanging if stream never responds
-        async def read_with_timeout():
-            async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    return json.loads(line[5:].strip())
-            return None
-
-        return await asyncio.wait_for(read_with_timeout(), timeout=10.0)
+        async for line in response.aiter_lines():
+            if line.startswith("data:"):
+                return json.loads(line[5:].strip())
+        return None
 
     try:
         return await asyncio.wait_for(_read_one(), timeout=timeout)
@@ -63,16 +59,12 @@ async def read_sse_events(response, count: int, timeout: float = SSE_TEST_TIMEOU
 
     async def _read_multiple():
         events = []
-        # Use timeout to prevent hanging if stream never responds
-        async def collect_with_timeout():
-            async for line in response.aiter_lines():
-                if line.startswith("data:"):
-                    data = json.loads(line[5:].strip())
-                    events.append(data)
-                    if len(events) >= count:
-                        break
-
-        await asyncio.wait_for(collect_with_timeout(), timeout=30.0)
+        async for line in response.aiter_lines():
+            if line.startswith("data:"):
+                data = json.loads(line[5:].strip())
+                events.append(data)
+                if len(events) >= count:
+                    break
         return events
 
     try:
