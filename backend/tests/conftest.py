@@ -290,19 +290,29 @@ async def check_database_available(requires_database):
     # This is important when DATABASE_URL changes or engine was created with wrong URL
     session_module._engine = None
     session_module._session_factory = None
+    
+    # Also dispose any existing engine connections to force fresh connection
+    # This ensures we're not using stale connections with wrong port
+    try:
+        if session_module._engine is not None:
+            await session_module._engine.dispose()
+    except Exception:
+        pass  # Ignore disposal errors
 
-    # Quick connectivity check with reasonable timeout (2s)
+    # Quick connectivity check with reasonable timeout (5s for Docker)
     # This allows proper connection while still failing fast if DB is unavailable
+    # Note: We don't skip here - let tests run and fail naturally if DB is unavailable
+    # This allows tests to run when database is available via Docker
     try:
         # Use AsyncSessionLocal directly with timeout protection
         session = AsyncSessionLocal()
         enter_task = asyncio.create_task(session.__aenter__())
         try:
-            await asyncio.wait_for(enter_task, timeout=2.0)
+            await asyncio.wait_for(enter_task, timeout=5.0)
             try:
                 # Try a simple query with timeout
                 query_task = asyncio.create_task(session.execute(text("SELECT 1")))
-                await asyncio.wait_for(query_task, timeout=2.0)
+                await asyncio.wait_for(query_task, timeout=5.0)
             finally:
                 # Ensure session is closed
                 await session.__aexit__(None, None, None)
@@ -316,28 +326,27 @@ async def check_database_available(requires_database):
                 await session.__aexit__(None, None, None)
             except Exception:
                 pass
-            pytest.skip("Database connection timeout - database may be unreachable")
+            # Don't skip - let test fail naturally so user knows DB is unavailable
+            # pytest.skip("Database connection timeout - database may be unreachable")
     except Exception as e:
-        # Skip test if database is unreachable - fail fast
-        # Log the actual error for debugging
-        import sys
-
-        print(f"DEBUG: Database check failed: {type(e).__name__}: {e}", file=sys.stderr)
-        pytest.skip(f"Database not available: {type(e).__name__}: {e}")
+        # Don't skip - let test fail naturally so user knows DB is unavailable
+        # This allows tests to run when database is available via Docker
+        # pytest.skip(f"Database not available: {type(e).__name__}: {e}")
+        pass
 
 
 async def _dispose_engine_safely(timeout: float) -> None:
     """Dispose engine connections with timeout protection.
 
     Uses non-blocking approach to prevent hanging if database is unreachable.
-    Uses shorter timeout (1.0s) for tests to fail fast.
+    Uses reasonable timeout (2.0s) for tests to allow proper disposal.
     """
     import asyncio
 
     from app.db.session import engine
 
-    # Use shorter timeout for tests (1.0s) to prevent hanging
-    test_timeout = min(timeout, 1.0)
+    # Use reasonable timeout for tests (2.0s) to allow proper disposal
+    test_timeout = min(timeout, 2.0)
 
     # Create a task for dispose operation
     dispose_task = asyncio.create_task(engine.dispose())
