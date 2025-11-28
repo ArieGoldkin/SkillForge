@@ -181,7 +181,7 @@ def requires_database():
     The pool_timeout in engine config should prevent hanging if database
     is unreachable. Tests will fail quickly with timeout errors rather than
     hanging indefinitely.
-    
+
     For actual connectivity checks, use check_database_available fixture
     which performs a fast (0.5s) connection test.
     """
@@ -378,7 +378,7 @@ async def db_session(
     Requires DATABASE_URL to be configured and database to be reachable.
     reset_engine_connections ensures connections are in the test's event loop.
     check_database_available ensures database is reachable before creating session.
-    
+
     Uses fast timeout (1.0s) to prevent hanging when database is unavailable.
     """
     # Create session with fast timeout protection (1.0s for tests)
