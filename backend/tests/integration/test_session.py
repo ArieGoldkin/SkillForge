@@ -20,23 +20,34 @@ def test_get_async_database_url_converts_postgresql_to_asyncpg():
 
 def test_get_async_database_url_raises_without_database_url(monkeypatch):
     """Test get_async_database_url raises ValueError when DATABASE_URL is None."""
-    from app.db import session as session_module
+    from app.core.config import get_settings
 
-    original_url = settings.DATABASE_URL
+    # Get fresh settings instance to avoid cached values
+    test_settings = get_settings()
+    original_url = test_settings.DATABASE_URL
+
     try:
         # Mock DATABASE_URL to None
-        monkeypatch.setattr(settings, "DATABASE_URL", None)
-        # Clear cache
-        session_module.get_async_database_url.__wrapped__ = None
+        monkeypatch.setattr(test_settings, "DATABASE_URL", None)
+        # Clear settings cache to ensure fresh instance
+        from app.core.config import get_settings as _get_settings
+
+        _get_settings.cache_clear()
+
         with pytest.raises(ValueError, match="DATABASE_URL is not set"):
             get_async_database_url()
     finally:
-        # Restore
-        monkeypatch.setattr(settings, "DATABASE_URL", original_url)
+        # Restore original URL and clear cache again
+        monkeypatch.setattr(test_settings, "DATABASE_URL", original_url)
+        from app.core.config import get_settings as _get_settings
+
+        _get_settings.cache_clear()
 
 
 @pytest.mark.asyncio
-async def test_async_session_local_creates_session(requires_database, reset_engine_connections):
+async def test_async_session_local_creates_session(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test AsyncSessionLocal creates valid async sessions."""
     async with AsyncSessionLocal() as session:
         assert isinstance(session, AsyncSession)
@@ -46,7 +57,9 @@ async def test_async_session_local_creates_session(requires_database, reset_engi
 
 
 @pytest.mark.asyncio
-async def test_get_db_dependency_yields_session(requires_database, reset_engine_connections):
+async def test_get_db_dependency_yields_session(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test get_db dependency yields async session."""
     async for session in get_db():
         assert isinstance(session, AsyncSession)
@@ -57,7 +70,9 @@ async def test_get_db_dependency_yields_session(requires_database, reset_engine_
 
 
 @pytest.mark.asyncio
-async def test_get_db_commits_on_success(requires_database, reset_engine_connections):
+async def test_get_db_commits_on_success(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test get_db commits session on successful operation."""
     from app.models import Analysis
 
@@ -92,7 +107,9 @@ async def test_get_db_commits_on_success(requires_database, reset_engine_connect
 
 
 @pytest.mark.asyncio
-async def test_get_db_rolls_back_on_exception(requires_database, reset_engine_connections):
+async def test_get_db_rolls_back_on_exception(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test get_db rolls back session on exception."""
     from app.models import Analysis
 
@@ -132,7 +149,9 @@ async def test_get_db_closes_session_in_finally():
 
 
 @pytest.mark.asyncio
-async def test_engine_connection_pool(requires_database, reset_engine_connections):
+async def test_engine_connection_pool(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test async engine connection pool works correctly."""
     async with engine.begin() as conn:
         result = await conn.execute(text("SELECT version()"))
@@ -150,7 +169,9 @@ async def test_engine_echo_in_development():
 
 
 @pytest.mark.asyncio
-async def test_multiple_sessions_work_independently(requires_database, reset_engine_connections):
+async def test_multiple_sessions_work_independently(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test multiple sessions work independently."""
     async with AsyncSessionLocal() as session1, AsyncSessionLocal() as session2:
         # Both sessions should work independently
@@ -162,7 +183,9 @@ async def test_multiple_sessions_work_independently(requires_database, reset_eng
 
 
 @pytest.mark.asyncio
-async def test_session_expire_on_commit_false(requires_database, reset_engine_connections):
+async def test_session_expire_on_commit_false(
+    requires_database, reset_engine_connections, check_database_available
+):
     """Test session expire_on_commit is False (objects don't expire after commit)."""
     from app.models import Analysis
 
