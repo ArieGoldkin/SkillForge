@@ -245,6 +245,13 @@ async def analysis_workflow(input_data: dict) -> dict:
             agents_selected=len(selected_agents),
             agents_completed=len(agent_findings),
         )
+    except GeneratorExit:
+        logger.warning(
+            "workflow_cancelled",
+            analysis_id=analysis_id,
+            url=url,
+        )
+        raise  # Re-raise to propagate cancellation
     except Exception as e:
         logger.error(
             "workflow_failed",
