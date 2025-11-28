@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.config import get_settings, settings
+from app.core.config import get_settings
 from app.core.constants import DB_TEST_TIMEOUT, DB_TIMEOUT, MAX_ERROR_MESSAGE_LENGTH
 from app.core.logging import get_logger
 from app.db.session import engine

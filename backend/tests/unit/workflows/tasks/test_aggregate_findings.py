@@ -1,6 +1,6 @@
 """Unit tests for aggregate_findings task."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

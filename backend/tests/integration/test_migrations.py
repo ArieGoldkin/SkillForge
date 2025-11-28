@@ -133,9 +133,7 @@ async def test_foreign_key_constraints_exist(
 
 
 @pytest.mark.asyncio
-async def test_indexes_exist(
-    requires_database, reset_engine_connections, check_database_available
-):
+async def test_indexes_exist(requires_database, reset_engine_connections, check_database_available):
     """Test all expected indexes are created."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(

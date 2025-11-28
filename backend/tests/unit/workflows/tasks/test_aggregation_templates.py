@@ -1,8 +1,6 @@
 """Unit tests for aggregation Jinja2 templates."""
 
-import json
 
-import pytest
 
 from app.core.template_utils import render_jinja_template
 

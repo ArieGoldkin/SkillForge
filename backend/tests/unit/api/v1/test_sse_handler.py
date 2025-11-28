@@ -1,6 +1,5 @@
 """Unit tests for SSE handler endpoint."""
 
-import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 

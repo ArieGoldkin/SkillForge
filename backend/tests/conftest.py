@@ -307,7 +307,7 @@ async def check_database_available(requires_database):
     Performs a quick connectivity check with 2-second timeout.
     Skips the test gracefully if database is unreachable.
     Uses reasonable timeout to allow proper connection while still failing fast.
-    
+
     Clears cached engine to ensure it uses current DATABASE_URL.
     """
     import asyncio
@@ -334,9 +334,11 @@ async def check_database_available(requires_database):
 
     # Verify engine will use correct URL by checking get_async_database_url
     from app.db.session import get_async_database_url
+
     expected_url = get_async_database_url()
-    if ':5437' not in expected_url:
+    if ":5437" not in expected_url:
         import sys
+
         print(f"WARNING: Expected port 5437 in URL, got: {expected_url}", file=sys.stderr)
 
     # Quick connectivity check with reasonable timeout (5s for Docker)
