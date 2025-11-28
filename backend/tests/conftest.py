@@ -85,6 +85,17 @@ if env_file_to_load.exists():
     # (Settings validation requires development/staging/production)
     os.environ.setdefault("ENVIRONMENT", "development")
 
+# CRITICAL: Clear settings cache after loading .env.test
+# This ensures Settings picks up the correct DATABASE_URL (port 5437) from .env.test
+# Must be done after loading .env.test but before any Settings instances are created
+try:
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+except ImportError:
+    # Settings not imported yet, cache will be cleared when it's first imported
+    pass
+
 # Set LLM_MODEL for tests - use OpenAI if API key is available, otherwise skip tests
 # This allows tests to run with OpenAI when configured, but prevents import failures
 # when langchain-openai isn't available in IDE's Python environment
