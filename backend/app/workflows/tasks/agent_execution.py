@@ -5,6 +5,7 @@ proper error isolation, timeout handling, and GeneratorExit support.
 """
 
 import asyncio
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from langsmith import traceable
@@ -24,6 +25,18 @@ from app.workflows.tasks.runners import (
     run_tech_comparator_with_session,
     run_trend_validator_with_session,
 )
+
+# Agent runner mapping for parallel execution
+AGENT_RUNNERS: dict[str, Callable] = {
+    "tech_comparator": run_tech_comparator_with_session,
+    "integration_feasibility": run_integration_feasibility_with_session,
+    "implementation_planner": run_implementation_planner_with_session,
+    "security_auditor": run_security_auditor_with_session,
+    "performance_analyst": run_performance_analyst_with_session,
+    "code_quality_critic": run_code_quality_critic_with_session,
+    "trend_validator": run_trend_validator_with_session,
+    "dependency_mapper": run_dependency_mapper_with_session,
+}
 
 logger = get_logger(__name__)
 
@@ -63,27 +76,12 @@ async def execute_agents(
     )
 
     # Create tasks for selected agents (each with its own session)
-    agent_tasks = []
-    if "tech_comparator" in selected_agents:
-        agent_tasks.append(run_tech_comparator_with_session(content, content_type, analysis_id))
-    if "integration_feasibility" in selected_agents:
-        agent_tasks.append(
-            run_integration_feasibility_with_session(content, content_type, analysis_id)
-        )
-    if "implementation_planner" in selected_agents:
-        agent_tasks.append(
-            run_implementation_planner_with_session(content, content_type, analysis_id)
-        )
-    if "security_auditor" in selected_agents:
-        agent_tasks.append(run_security_auditor_with_session(content, content_type, analysis_id))
-    if "performance_analyst" in selected_agents:
-        agent_tasks.append(run_performance_analyst_with_session(content, content_type, analysis_id))
-    if "code_quality_critic" in selected_agents:
-        agent_tasks.append(run_code_quality_critic_with_session(content, content_type, analysis_id))
-    if "trend_validator" in selected_agents:
-        agent_tasks.append(run_trend_validator_with_session(content, content_type, analysis_id))
-    if "dependency_mapper" in selected_agents:
-        agent_tasks.append(run_dependency_mapper_with_session(content, content_type, analysis_id))
+    # Use dictionary mapping to reduce branch complexity
+    agent_tasks = [
+        AGENT_RUNNERS[agent](content, content_type, analysis_id)
+        for agent in selected_agents
+        if agent in AGENT_RUNNERS
+    ]
 
     if not agent_tasks:
         logger.warning(

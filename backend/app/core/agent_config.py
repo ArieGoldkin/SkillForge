@@ -164,14 +164,14 @@ def get_agent_config(agent_type: str) -> AgentConfig:
         from app.core.logging import get_logger
 
         logger = get_logger(__name__)
+        available_agents_list = list(AGENT_REGISTRY.keys())
         logger.error(
             "unknown_agent_type",
             agent_type=agent_type,
-            available_agents=list(AGENT_REGISTRY.keys()),
+            available_agents=available_agents_list,
         )
-        raise KeyError(
-            f"Unknown agent_type: {agent_type}. Available: {list(AGENT_REGISTRY.keys())}"
-        )
+        error_msg = f"Unknown agent_type: {agent_type}. Available: {available_agents_list}"
+        raise KeyError(error_msg)
     return AGENT_REGISTRY[agent_type]
 
 

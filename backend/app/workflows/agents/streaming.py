@@ -20,6 +20,31 @@ from app.workflows.agents.base import emit_agent_progress
 logger = get_logger(__name__)
 
 
+def _should_emit_progress_event(
+    current_time: float,
+    last_event_time: float,
+    accumulated_content: str,
+    last_event_chars: int,
+) -> bool:
+    """Check if SSE progress event should be emitted based on throttling.
+
+    Args:
+        current_time: Current timestamp
+        last_event_time: Timestamp of last emitted event
+        accumulated_content: Full accumulated content so far
+        last_event_chars: Character count at last event
+
+    Returns:
+        True if event should be emitted (throttle conditions met)
+
+    """
+    chars_since_last = len(accumulated_content) - last_event_chars
+    time_since_last_ms = (current_time - last_event_time) * 1000
+    return (
+        time_since_last_ms >= SSE_EVENT_THROTTLE_MS or chars_since_last >= SSE_EVENT_THROTTLE_CHARS
+    )
+
+
 async def stream_agent_response(
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
@@ -95,12 +120,11 @@ async def stream_agent_response(
                                 # Emit only if enough time has passed OR
                                 # enough characters accumulated
                                 current_time = time.time()
-                                chars_since_last = len(accumulated_content) - last_event_chars
-                                time_since_last_ms = (current_time - last_event_time) * 1000
-
-                                should_emit = (
-                                    time_since_last_ms >= SSE_EVENT_THROTTLE_MS
-                                    or chars_since_last >= SSE_EVENT_THROTTLE_CHARS
+                                should_emit = _should_emit_progress_event(
+                                    current_time,
+                                    last_event_time,
+                                    accumulated_content,
+                                    last_event_chars,
                                 )
 
                                 if should_emit:
@@ -127,7 +151,7 @@ async def stream_agent_response(
             # Otherwise, final_result is preserved
         except Exception as e:
             # Other streaming errors
-            logger.error(
+            logger.exception(
                 "agent_stream_error",
                 agent_type=agent_type,
                 analysis_id=analysis_id,

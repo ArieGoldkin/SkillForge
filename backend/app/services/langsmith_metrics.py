@@ -26,7 +26,7 @@ class LangSmithMetricsService:
         try:
             self.client = Client()
             logger.info("langsmith_metrics_service_initialized")
-        except Exception as e:
+        except (ImportError, ConnectionError, ValueError) as e:
             logger.warning(
                 "langsmith_metrics_service_init_failed",
                 error=str(e),

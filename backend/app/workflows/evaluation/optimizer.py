@@ -8,6 +8,9 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Threshold for low-quality scores that trigger optimization suggestions
+LOW_SCORE_THRESHOLD = 0.7
+
 
 async def optimize_agent_strategy(
     agent_type: str,
@@ -61,7 +64,7 @@ async def optimize_agent_strategy(
         "expected_improvement": 0.0,
     }
 
-    if avg_score < 0.7:
+    if avg_score < LOW_SCORE_THRESHOLD:
         optimizations["suggested_prompt_changes"] = [
             "Add more specific instructions for structured output",
             "Include examples of high-quality findings",

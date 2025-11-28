@@ -169,10 +169,11 @@ async def save_agent_finding(  # noqa: PLR0913
     result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
     analysis = result.scalar_one_or_none()
     if not analysis:
-        raise ValueError(
+        error_msg = (
             f"Analysis record with id={analysis_id} does not exist. "
             "Analysis must be created before agents can save findings."
         )
+        raise ValueError(error_msg)
 
     finding = AgentFinding(
         analysis_id=analysis_id,
