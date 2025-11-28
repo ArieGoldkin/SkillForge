@@ -126,7 +126,7 @@ def auto_clear_config_cache(clear_config_cache):
 @pytest.fixture(autouse=True)
 def ensure_test_env_vars(monkeypatch):
     """Ensure test environment variables are set before each test.
-    
+
     This fixture runs automatically for every test and ensures:
     1. Test env vars are set (defense in depth)
     2. Settings cache is cleared for fresh settings
@@ -135,18 +135,19 @@ def ensure_test_env_vars(monkeypatch):
     # Set env vars (monkeypatch ensures they're set even if already imported)
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
-    
+
     # Clear settings cache to force fresh settings instance
     get_settings.cache_clear()
-    
+
     # Force reload of settings module's settings object
-    # This is necessary because module-level `settings = get_settings()` 
+    # This is necessary because module-level `settings = get_settings()`
     # creates a reference that persists even after cache clear
     import app.core.config
+
     app.core.config.settings = get_settings()
-    
+
     yield
-    
+
     # Cleanup: clear cache after test
     get_settings.cache_clear()
 
