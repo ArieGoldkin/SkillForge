@@ -1,7 +1,7 @@
 # 🏗️ SkillForge - Architecture & Workflow Diagrams
 
 **Version:** 1.2  
-**Last Updated:** December 2024  
+**Last Updated:** November 28, 2025  
 **Project:** SkillForge - Research-to-Implementation Pipeline
 
 ---
@@ -42,6 +42,7 @@ If diagrams don't render:
 7. [Component Relationships](#component-relationships)
 8. [Data Flow](#data-flow)
 9. [Deployment Architecture](#deployment-architecture)
+10. [Prompt Templating](#prompt-templating)
 
 ---
 
@@ -1019,7 +1020,7 @@ engine = create_async_engine(
 ---
 
 **Document Maintained By:** Yonatan & Arie  
-**Last Updated:** November 24, 2025  
+**Last Updated:** November 28, 2025  
 
 ### Viewing Instructions
 
