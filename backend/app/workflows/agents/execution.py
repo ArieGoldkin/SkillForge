@@ -14,6 +14,7 @@ from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.workflows.agents.base import emit_agent_progress
 from app.workflows.agents.invocation import invoke_agent
+from app.workflows.agents.prompt_builders import build_agent_user_prompt
 from app.workflows.agents.response_processing import extract_structured_response
 from app.workflows.agents.result_processing import (
     handle_agent_cancellation,
@@ -68,12 +69,12 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
     )
 
     try:
-        # Prepare content for agent (limit length for prompt efficiency)
-        if len(content) > max_content_length:
-            content_preview = content[:max_content_length]
-        else:
-            content_preview = content
-        user_prompt = f"Content Type: {content_type}\n\nContent:\n{content_preview}"
+        # Build user prompt using prompt builder
+        user_prompt = build_agent_user_prompt(
+            content=content,
+            content_type=content_type,
+            max_length=max_content_length,
+        )
 
         # Invoke agent with structured output (async with timeout)
         input_messages = {

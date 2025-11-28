@@ -21,6 +21,7 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
 from app.services.sse_helpers import emit_streaming_event
+from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.workflows.nodes.supervisor_schema import AgentSelection
 
@@ -211,9 +212,11 @@ async def supervisor_route(
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
-        # Build prompt with compressed system prompt and content
-        user_prompt = (
-            f"{SUPERVISOR_PROMPT}\n\nContent Type: {content_type}\n\nContent:\n{sized_content}"
+        # Build prompt using prompt builder
+        user_prompt = build_supervisor_user_prompt(
+            system_prompt=SUPERVISOR_PROMPT,
+            content=sized_content,
+            content_type=content_type,
         )
 
         # Get model with structured output (no tools, faster inference)

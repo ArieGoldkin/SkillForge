@@ -23,7 +23,10 @@ from app.workflows.tasks.aggregation_helpers import (
     format_findings_for_llm,
     validate_and_parse_findings,
 )
-from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
+from app.workflows.tasks.aggregation_postprocessing import (
+    validate_and_format_aggregated_insights,
+)
+from app.workflows.tasks.prompt_builders import build_synthesis_user_prompt
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
 logger = get_logger(__name__)
@@ -152,14 +155,8 @@ async def aggregate_findings(  # noqa: PLR0915
             response_schema=AggregatedInsights,
         )
 
-        # Invoke LLM synthesis
-        user_prompt = f"""Analyze and synthesize the following agent findings:
-
-{formatted_findings}
-
-Generate a cohesive synthesis following the output format requirements.
-Ensure the executive summary is 2-3 sentences and key findings are 3-7 items.
-"""
+        # Build user prompt using prompt builder
+        user_prompt = build_synthesis_user_prompt(formatted_findings=formatted_findings)
 
         # Calculate metadata values for use in both success and fallback paths
         confidence_values = list(confidence_scores.values())

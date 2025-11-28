@@ -1,0 +1,21 @@
+AGENT FINDINGS:
+
+{% for finding in agent_findings %}
+--- {{ finding.agent_type.upper().replace('_', ' ') }} ---
+Confidence: {{ "%.2f" | format(confidence_scores.get(finding.agent_type, 0.0)) }}
+Findings: {{ finding.findings | tojson(indent=2) }}
+
+{% endfor %}
+
+{% if conflicts %}
+CONFLICTS DETECTED:
+{% for conflict in conflicts %}
+- {{ conflict.conflict }}
+  Agents: {{ conflict.agent_1 }} vs {{ conflict.agent_2 }}
+{% endfor %}
+{% endif %}
+
+CONFIDENCE SCORES:
+{% for item in confidence_scores.items() | sort(attribute='1', reverse=true) %}
+- {{ item[0] }}: {{ "%.2f" | format(item[1]) }}
+{% endfor %}

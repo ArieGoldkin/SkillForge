@@ -1,9 +1,9 @@
 """Helper functions for aggregation processing."""
 
-import json
 from typing import Any
 
 from app.core.logging import get_logger
+from app.core.template_utils import render_jinja_template
 
 logger = get_logger(__name__)
 
@@ -125,7 +125,7 @@ def format_findings_for_llm(
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
 ) -> str:
-    """Format agent findings for LLM synthesis prompt.
+    """Format agent findings for LLM synthesis prompt using Jinja2 template.
 
     Args:
         agent_findings: List of validated agent findings
@@ -136,25 +136,12 @@ def format_findings_for_llm(
         Formatted string for LLM prompt
 
     """
-    formatted = "AGENT FINDINGS:\n\n"
+    # Precompute all data for template
+    context = {
+        "agent_findings": agent_findings,
+        "conflicts": conflicts,
+        "confidence_scores": confidence_scores,
+    }
 
-    for finding in agent_findings:
-        agent_type = finding.get("agent_type", "unknown")
-        findings_data = finding.get("findings", {})
-        confidence = confidence_scores.get(agent_type, 0.0)
-
-        formatted += f"--- {agent_type.upper().replace('_', ' ')} ---\n"
-        formatted += f"Confidence: {confidence:.2f}\n"
-        formatted += f"Findings: {json.dumps(findings_data, indent=2)}\n\n"
-
-    if conflicts:
-        formatted += "\nCONFLICTS DETECTED:\n"
-        for conflict in conflicts:
-            formatted += f"- {conflict['conflict']}\n"
-            formatted += f"  Agents: {conflict['agent_1']} vs {conflict['agent_2']}\n"
-
-    formatted += "\nCONFIDENCE SCORES:\n"
-    for agent_type, score in sorted(confidence_scores.items(), key=lambda x: x[1], reverse=True):
-        formatted += f"- {agent_type}: {score:.2f}\n"
-
-    return formatted
+    # Render using Jinja2 template
+    return render_jinja_template("aggregation_findings.j2", context)
