@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 26, 2025
+**Last Updated:** November 28, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -51,8 +51,16 @@ docs/issues/
 │   └── ISSUE_43_VALIDATION_COMPLETE.md   # Issue #43 complete doc
 ├── 044-progress-tracker/
 │   └── ISSUE_44_VALIDATION_COMPLETE.md   # Issue #44 complete doc
-└── 045-analysis-view-page/
-    └── ISSUE_45_VALIDATION_COMPLETE.md   # Issue #45 complete doc
+├── 045-analysis-view-page/
+│   └── ISSUE_45_VALIDATION_COMPLETE.md   # Issue #45 complete doc
+├── 070-remaining-5-agents/
+│   └── README.md                         # Issue #70 complete doc
+├── 090-embedding-token-fix/
+│   └── README.md                         # Issue #90 open doc
+├── 091-workflow-status-fix/
+│   └── README.md                         # Issue #91 open doc
+└── 092-extraction-error-handling/
+    └── README.md                         # Issue #92 open doc
 ```
 
 ---
@@ -79,11 +87,15 @@ docs/issues/
 | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) | Build ProgressTracker Component [5 pts] | ✅ Complete | Arie | [📄 Docs](./044-progress-tracker/ISSUE_44_VALIDATION_COMPLETE.md) | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) |
 | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) | Build Analysis View Page [3 pts] | ✅ Complete | Arie | [📄 Docs](./045-analysis-view-page/ISSUE_45_VALIDATION_COMPLETE.md) | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) |
 
-### 🔄 In Progress / Ready (4 total - 13 pts)
+### 🔄 In Progress / Ready (7 total - 20 pts)
 
 #### Backend (Yonatan)
 
-_No backend issues in progress_
+| Issue | Title | Points | Status | Assignee | Docs | GitHub |
+|-------|-------|--------|--------|----------|------|--------|
+| [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) | Fix Embedding Token Limit Violation | 5 | 🔄 Open | Yonatan | [📄 Docs](./090-embedding-token-fix/README.md) | [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) |
+| [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) | Fix Workflow Status Not Updated to Complete | 3 | 🔄 Open | Yonatan | [📄 Docs](./091-workflow-status-fix/README.md) | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) |
+| [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) | Improve Content Extraction Error Handling | 2 | 🔄 Open | Yonatan | [📄 Docs](./092-extraction-error-handling/README.md) | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) |
 
 #### Frontend (Arie)
 
