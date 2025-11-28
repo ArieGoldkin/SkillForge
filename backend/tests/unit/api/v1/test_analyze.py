@@ -18,7 +18,7 @@ def create_mock_task():
 
 def create_mock_db_session() -> AsyncMock:
     """Create a mocked AsyncSession for unit tests.
-    
+
     This avoids requiring a real database connection in unit tests.
     The mock session supports:
     - db.add() - no-op
