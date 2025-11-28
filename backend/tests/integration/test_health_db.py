@@ -33,35 +33,37 @@ async def test_check_database_returns_none_when_no_database_url(monkeypatch):
     """Test check_database returns None when DATABASE_URL is not configured."""
     from app.db import session as session_module
     from app.core.config import get_settings
+    import os
     
-    original_url = settings.DATABASE_URL
+    original_url = os.environ.get("DATABASE_URL")
     try:
         # Clear engine cache to ensure engine is recreated with None DATABASE_URL
         # This is critical because engine is cached globally
         session_module._engine = None
         session_module._session_factory = None
         
-        # Clear settings cache first
+        # Monkeypatch environment variable (source of truth for Settings)
+        # This is the proper way to test Settings behavior
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        
+        # Clear settings cache to force fresh Settings instance
         get_settings.cache_clear()
-        
-        # Monkeypatch settings.DATABASE_URL to None
-        monkeypatch.setattr(settings, "DATABASE_URL", None)
-        
-        # Also monkeypatch the module-level settings in health module
-        # This ensures check_database() sees None
-        monkeypatch.setattr(health_module, "settings", settings)
         
         # Reload module to pick up change
         importlib.reload(health_module)
         
-        # Verify settings.DATABASE_URL is None
-        assert health_module.settings.DATABASE_URL is None
+        # Verify get_settings() returns None for DATABASE_URL
+        fresh_settings = get_settings()
+        assert fresh_settings.DATABASE_URL is None, "Settings should have None DATABASE_URL after env var removal"
 
         result = await health_module.check_database()
-        assert result is None
+        assert result is None, f"check_database() should return None when DATABASE_URL is None, got: {result}"
     finally:
-        # Restore original URL and clear cache again
-        monkeypatch.setattr(settings, "DATABASE_URL", original_url)
+        # Restore original environment variable
+        if original_url:
+            monkeypatch.setenv("DATABASE_URL", original_url)
+        else:
+            monkeypatch.delenv("DATABASE_URL", raising=False)
         get_settings.cache_clear()
         # Clear engine cache again to ensure fresh engine with restored URL
         session_module._engine = None
