@@ -6,6 +6,21 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from uuid import UUID
 
+# CRITICAL: Disable LangSmith tracing for UNIT tests only
+# Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
+# This must be set before importing any modules that use langsmith.traceable
+# Setting these env vars prevents LangSmith from initializing background threads for unit tests
+# Integration tests will override this in their conftest.py which runs AFTER this one
+# (pytest loads conftest.py files in order: root conftest, then subdirectory conftest)
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGSMITH_TRACING"] = "false"
+# Also unset API key to prevent any initialization attempts in unit tests
+# Integration tests will restore it in their conftest.py
+if "LANGSMITH_API_KEY" in os.environ:
+    del os.environ["LANGSMITH_API_KEY"]
+if "LANGCHAIN_API_KEY" in os.environ:
+    del os.environ["LANGCHAIN_API_KEY"]
+
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
