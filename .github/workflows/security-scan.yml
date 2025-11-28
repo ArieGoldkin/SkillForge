@@ -5,11 +5,38 @@ on:
     - cron: "0 0 * * 0" # Weekly on Sunday at 00:00 UTC
   push:
     branches: [main, dev]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/security-scan.yml'
   workflow_dispatch:
 
 jobs:
+  # Detect which paths changed (only for push events)
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+
   backend-security:
     runs-on: ubuntu-latest
+    needs: changes
+    # Run on schedule/manual, or if backend files changed on push
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.backend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -63,6 +90,12 @@ jobs:
 
   frontend-security:
     runs-on: ubuntu-latest
+    needs: changes
+    # Run on schedule/manual, or if frontend files changed on push
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -104,6 +137,11 @@ jobs:
 
   dependabot-alerts:
     runs-on: ubuntu-latest
+    needs: changes
+    # Run on schedule/manual only (Dependabot alerts are repo-wide, not path-specific)
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -135,7 +173,8 @@ jobs:
 
   security-report:
     runs-on: ubuntu-latest
-    needs: [backend-security, frontend-security, dependabot-alerts]
+    needs: [changes, backend-security, frontend-security, dependabot-alerts]
+    # Always run to generate report (handles skipped jobs gracefully)
     if: always()
     steps:
       - name: Download security reports
