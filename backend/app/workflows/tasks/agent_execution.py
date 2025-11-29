@@ -135,13 +135,24 @@ async def execute_agents(
             successful_count=len(agent_findings),
             total_count=len(agent_tasks),
         )
-    except TimeoutError:
-        logger.exception(
-            "workflow_agents_timeout",
-            analysis_id=analysis_id,
-            timeout=agent_timeout * len(agent_tasks),
-            agent_count=len(agent_tasks),
-        )
+    except (TimeoutError, GeneratorExit) as e:
+        if isinstance(e, GeneratorExit):
+            # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
+            # This closes async generators in LangGraph's astream, which raises GeneratorExit.
+            # We handle it as a timeout for consistent error handling.
+            logger.warning(
+                "workflow_agents_timeout_generator_exit",
+                analysis_id=analysis_id,
+                timeout=agent_timeout * len(agent_tasks),
+                agent_count=len(agent_tasks),
+            )
+        else:
+            logger.exception(
+                "workflow_agents_timeout",
+                analysis_id=analysis_id,
+                timeout=agent_timeout * len(agent_tasks),
+                agent_count=len(agent_tasks),
+            )
         # Return any findings that completed before timeout
         return []
     else:

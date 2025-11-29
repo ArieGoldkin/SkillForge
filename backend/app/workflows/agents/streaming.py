@@ -166,8 +166,18 @@ async def stream_agent_response(
             timeout=timeout,
         )
     except GeneratorExit:
-        # Re-raise GeneratorExit to propagate to outer handler
-        raise
+        # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
+        # This closes the async generator in LangGraph's astream, which raises GeneratorExit.
+        # We convert it to TimeoutError for consistent error handling and to prevent
+        # workflow failures (since we have graceful fallbacks).
+        msg = f"Agent {agent_type} exceeded timeout of {timeout}s (generator closed)"
+        logger.warning(
+            "agent_timeout_generator_exit",
+            agent_type=agent_type,
+            analysis_id=analysis_id,
+            timeout=timeout,
+        )
+        raise TimeoutError(msg) from None
     except TimeoutError:
         msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
         logger.exception(

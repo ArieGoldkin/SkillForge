@@ -23,16 +23,16 @@ from app.workflows.tasks.aggregation_helpers import (
     format_findings_for_llm,
     validate_and_parse_findings,
 )
-from app.workflows.tasks.aggregation_postprocessing import (
-    validate_and_format_aggregated_insights,
-)
+from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
 from app.workflows.tasks.prompt_builders import build_synthesis_user_prompt
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
 logger = get_logger(__name__)
 
 # LLM Synthesis System Prompt
-SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical analyst synthesizing findings from 8 specialized analysis agents. Your task is to create a cohesive, actionable narrative from potentially conflicting or overlapping insights.
+SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical analyst synthesizing findings from 8
+specialized analysis agents. Your task is to create a cohesive, actionable narrative
+from potentially conflicting or overlapping insights.
 
 AGENTS PROVIDED:
 1. Tech Comparator - Technology comparisons and alternatives
@@ -52,7 +52,8 @@ YOUR TASKS:
 5. Provide unified recommendations
 
 CONFIDENCE SCORES:
-Each agent provides a confidence_score (0.0-1.0). When agents disagree, prioritize findings from agents with higher confidence scores.
+Each agent provides a confidence_score (0.0-1.0). When agents disagree,
+prioritize findings from agents with higher confidence scores.
 
 OUTPUT REQUIREMENTS:
 - Executive summary must be exactly 2-3 sentences
@@ -208,6 +209,30 @@ async def aggregate_findings(  # noqa: PLR0915
 
             aggregated_insights_dict["metadata"] = metadata
 
+        except (TimeoutError, GeneratorExit) as timeout_error:
+            # Timeout or cancellation during LLM synthesis
+            # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
+            # This closes the async generator in LangGraph's astream, which raises GeneratorExit.
+            # We handle it as a timeout for consistent error handling.
+            if isinstance(timeout_error, GeneratorExit):
+                logger.warning(
+                    "workflow_aggregation_llm_timeout_generator_exit",
+                    analysis_id=analysis_id,
+                )
+            else:
+                logger.error(
+                    "workflow_aggregation_llm_timeout",
+                    analysis_id=analysis_id,
+                    timeout=str(timeout_error),
+                )
+            # Graceful fallback: return basic aggregation without LLM synthesis
+            aggregated_insights_dict = create_fallback_aggregated_insights(
+                validated_findings=validated_findings,
+                agent_types=agent_types,
+                confidence_scores=confidence_scores,
+                conflicts=conflicts,
+                start_time=start_time,
+            )
         except Exception as llm_error:
             logger.error(
                 "workflow_aggregation_llm_failed",

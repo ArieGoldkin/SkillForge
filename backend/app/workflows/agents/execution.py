@@ -99,9 +99,17 @@ async def _run_agent_with_tracking_impl(  # noqa: PLR0913
                 timeout=agent_timeout,
             )
         except GeneratorExit:
-            # Re-raise GeneratorExit to propagate to outer handler
-            # Don't check for structured_response if GeneratorExit occurred
-            raise
+            # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
+            # This closes the async generator in LangGraph's astream, which raises GeneratorExit.
+            # We convert it to TimeoutError for consistent error handling and to prevent
+            # workflow failures (since we have graceful fallbacks).
+            msg = f"Agent {agent_type} execution was cancelled (likely timeout)"
+            logger.warning(
+                "agent_cancelled_generator_exit",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+            )
+            raise TimeoutError(msg) from None
         except TimeoutError:
             msg = f"Agent {agent_type} exceeded timeout of {agent_timeout}s"
             logger.exception(

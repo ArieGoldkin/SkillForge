@@ -453,7 +453,9 @@ class TestAggregateFindings:
         """Test executive summary is validated to 2-3 sentences."""
         # LLM returns 4 sentences
         mock_structured_response = {
-            "executive_summary": "First sentence. Second sentence. Third sentence. Fourth sentence.",
+            "executive_summary": (
+                "First sentence. Second sentence. Third sentence. Fourth sentence."
+            ),
             "key_findings": ["F1", "F2", "F3"],
             "synthesis": {
                 "technical_analysis": "Analysis",
@@ -532,3 +534,34 @@ class TestAggregateFindings:
             # Should be padded to at least 3 items
             assert len(insights["key_findings"]) >= 3
 
+
+@pytest.mark.asyncio
+async def test_aggregate_findings_handles_generatorexit_gracefully(sample_state):
+    """Test that GeneratorExit during LLM synthesis triggers fallback."""
+    with patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke:
+        # Mock invoke_agent to raise GeneratorExit (simulating timeout cancellation)
+        mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
+
+        result = await aggregate_findings(sample_state)
+
+        # Should use fallback aggregated insights
+        assert "aggregated_insights" in result
+        assert isinstance(result["aggregated_insights"], dict)
+        # Fallback should have basic structure
+        assert "executive_summary" in result["aggregated_insights"]
+
+
+@pytest.mark.asyncio
+async def test_aggregate_findings_handles_timeouterror_gracefully(sample_state):
+    """Test that TimeoutError during LLM synthesis triggers fallback."""
+    with patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke:
+        # Mock invoke_agent to raise TimeoutError
+        mock_invoke.side_effect = TimeoutError("LLM synthesis exceeded timeout")
+
+        result = await aggregate_findings(sample_state)
+
+        # Should use fallback aggregated insights
+        assert "aggregated_insights" in result
+        assert isinstance(result["aggregated_insights"], dict)
+        # Fallback should have basic structure
+        assert "executive_summary" in result["aggregated_insights"]
