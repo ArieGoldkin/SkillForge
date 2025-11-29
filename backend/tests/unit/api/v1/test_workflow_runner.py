@@ -321,7 +321,8 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     # Verify stage (third positional arg: stage) - check if passed as positional or kwarg
     stage_value = call_args[2] if len(call_args) > 2 else call_kwargs.get("stage")
     assert stage_value == "artifact_generation", (
-        f"Stage should be 'artifact_generation', got {stage_value} in args={call_args}, kwargs={call_kwargs}"
+        f"Stage should be 'artifact_generation', got {stage_value} "
+        f"in args={call_args}, kwargs={call_kwargs}"
     )
     # Verify status (fourth positional arg: status) - check if passed as positional or kwarg
     status_value = call_args[3] if len(call_args) > 3 else call_kwargs.get("status")
