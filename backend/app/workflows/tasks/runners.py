@@ -1,10 +1,12 @@
 """Agent runner functions with database session management.
 
 This module provides wrapper functions for each agent that manage
-their own database sessions, enabling parallel execution.
+their own database sessions, enabling parallel execution as separate
+LangGraph nodes via Send API.
 
-Note: Exceptions are allowed to propagate naturally. The execute_agents
-function handles exceptions via asyncio.gather(return_exceptions=True).
+Note: Exceptions are allowed to propagate naturally. Each agent node
+handles its own exceptions and returns empty findings on error, allowing
+other agents to continue.
 """
 
 from app.core.types import AnalysisID
