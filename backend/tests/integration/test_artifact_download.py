@@ -61,11 +61,18 @@ async def test_download_endpoint_returns_markdown(
     )
     assert "# Test Artifact" in response.text
 
-    # Verify download_count incremented
+    # Verify download_count incremented (endpoint uses separate session, need to refresh)
+    # The endpoint commits in its own session, so we need to expire and refresh
     result = await db_session.execute(select(Artifact).where(Artifact.id == artifact_id))
     updated_artifact = result.scalar_one_or_none()
     assert updated_artifact is not None
-    assert updated_artifact.download_count == 1
+    # Expire the object to force a fresh query
+    db_session.expire(updated_artifact)
+    await db_session.refresh(updated_artifact)
+    # Should be 1 (0 initial + 1 from download)
+    assert updated_artifact.download_count == 1, (
+        f"Expected download_count to be 1, got {updated_artifact.download_count}"
+    )
 
 
 @pytest.mark.asyncio
@@ -122,7 +129,7 @@ async def test_download_increments_count(requires_database, reset_engine_connect
     # the current object and re-query to see the updated value
     db_session.expire(artifact)
     await db_session.refresh(artifact)
-    
+
     # Should be 6 (5 initial + 1 from download)
     assert artifact.download_count == initial_count + 1, (
         f"Expected download_count to be {initial_count + 1}, got {artifact.download_count}"
