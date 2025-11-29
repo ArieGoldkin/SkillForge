@@ -1,6 +1,7 @@
 """Artifact download endpoints."""
 
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
@@ -16,7 +17,7 @@ logger = get_logger(__name__)
 @router.get("/artifacts/{artifact_id}/download")
 async def download_artifact(
     artifact_id: uuid.UUID,
-    repo: IArtifactRepository = Depends(get_artifact_repository),
+    repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> Response:
     """Download artifact as markdown file.
 

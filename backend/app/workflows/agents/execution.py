@@ -154,7 +154,7 @@ async def _run_agent_with_tracking_impl(
         raise
 
 
-async def run_agent_with_tracking(
+async def run_agent_with_tracking(  # noqa: PLR0913
     agent: Runnable,
     content: str,
     content_type: str,
@@ -166,6 +166,10 @@ async def run_agent_with_tracking(
     """Run an agent with progress tracking, error handling, and database persistence.
 
     This function is wrapped with @traceable to create LangSmith traces for each agent execution.
+
+    Note: This function accepts 7 parameters for backward compatibility with existing callers.
+    Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig dataclasses
+    to reduce complexity. Future refactoring could change the signature to accept dataclasses directly.
 
     Args:
         agent: Agent instance to run
@@ -196,8 +200,11 @@ async def run_agent_with_tracking(
         max_content_length=max_content_length,
     )
 
-    # Use @traceable with dynamic name, tags, and metadata based on agent_type
-    traced_func = traceable(
+    # Use @traceable on the wrapper function, not the internal one
+    # This avoids LangSmith trying to serialize dataclass arguments
+    # The internal function (_run_agent_with_tracking_impl) is not traced
+    # to avoid serialization issues with dataclass arguments
+    traced_wrapper = traceable(
         name=agent_type,
         run_type="chain",
         tags=["agent", agent_type],
@@ -206,6 +213,11 @@ async def run_agent_with_tracking(
             "agent_type": agent_type,
             "content_type": content_type,
         },
-    )(_run_agent_with_tracking_impl)
+    )
 
-    return await traced_func(params=params, config=config)
+    @traced_wrapper
+    async def traced_run() -> dict[str, object]:
+        """Traced wrapper that calls the internal implementation."""
+        return await _run_agent_with_tracking_impl(params=params, config=config)
+
+    return await traced_run()

@@ -108,7 +108,7 @@ class ArtifactRepository:
 
 
 def get_artifact_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],  # noqa: B008
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> IArtifactRepository:
     """Dependency injection function for artifact repository."""
     return ArtifactRepository(session=db)

@@ -16,7 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 # This is critical for LangChain to detect LANGCHAIN_TRACING_V2 at import time
 load_dotenv()
 
-from app.api.v1 import analyze, artifacts, health  # noqa: E402
+from app.api.v1 import analyze, artifacts, health, search  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
 from app.core.logging import get_logger, setup_logging  # noqa: E402
@@ -189,6 +189,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
 app.include_router(artifacts.router, prefix=settings.API_V1_PREFIX)
+app.include_router(search.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")
