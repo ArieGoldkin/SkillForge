@@ -1,6 +1,5 @@
 """Integration tests for dependency mapper agent with real LLM."""
 
-import os
 from uuid import UUID, uuid4
 
 import pytest
@@ -8,16 +7,8 @@ import pytest
 from app.models.analysis import Analysis
 from app.workflows.agents import run_dependency_mapper
 
-
-@pytest.fixture
-def requires_llm():
-    """Skip test if LLM is not configured."""
-    llm_model = os.environ.get("LLM_MODEL", "")
-    if not llm_model:
-        pytest.skip("LLM_MODEL not configured")
-    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
-    if not openai_key:
-        pytest.skip("OpenAI API key not available")
+# Note: requires_llm fixture is provided by backend/tests/conftest.py
+# It automatically checks for the correct API key based on LLM_MODEL configuration
 
 
 @pytest.mark.asyncio

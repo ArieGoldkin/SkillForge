@@ -1,6 +1,5 @@
 """Integration tests for first 3 agent implementations with real LLM."""
 
-import os
 from uuid import UUID, uuid4
 
 import pytest
@@ -12,17 +11,8 @@ from app.workflows.agents import (
     run_tech_comparator,
 )
 
-
-@pytest.fixture
-def requires_llm():
-    """Skip test if LLM is not configured."""
-    llm_model = os.environ.get("LLM_MODEL", "")
-    if not llm_model:
-        pytest.skip("LLM_MODEL not configured")
-    # Skip if OpenAI API key is not available
-    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
-    if not openai_key:
-        pytest.skip("OpenAI API key not available")
+# Note: requires_llm fixture is provided by backend/tests/conftest.py
+# It automatically checks for the correct API key based on LLM_MODEL configuration
 
 
 @pytest.mark.asyncio
@@ -232,9 +222,10 @@ async def test_agents_parallel_execution_with_separate_sessions(
     ]
 
     # Use timeout to prevent hanging if agents never complete
+    # Note: 3 agents in parallel can take 20-40 seconds due to rate limiting
     results = await asyncio.wait_for(
         asyncio.gather(*tasks, return_exceptions=True),
-        timeout=60.0,  # 60 second timeout for parallel agent execution
+        timeout=90.0,  # 90 seconds - accounts for rate limiting delays
     )
 
     # Verify all agents completed successfully (no concurrency errors)
