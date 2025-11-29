@@ -18,12 +18,13 @@ from uuid import uuid4
 # Add backend to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from unittest.mock import MagicMock
+
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.workflows.agents.streaming import stream_agent_response
 from app.workflows.tasks.agent_execution import execute_agents
-from unittest.mock import MagicMock
 
 logger = get_logger(__name__)
 
@@ -31,15 +32,15 @@ logger = get_logger(__name__)
 async def test_streaming_timeout_conversion():
     """Test that GeneratorExit from timeout is converted to TimeoutError."""
     print("\n=== Test 1: Streaming Timeout Conversion ===")
-    
+
     mock_agent = MagicMock()
-    
+
     async def slow_stream(*args, **kwargs):
         await asyncio.sleep(10)  # Longer than timeout
         yield {"messages": []}
-    
+
     mock_agent.astream = slow_stream
-    
+
     try:
         await stream_agent_response(
             agent=mock_agent,
@@ -61,11 +62,11 @@ async def test_streaming_timeout_conversion():
 async def test_agent_execution_error_isolation():
     """Test that one agent timeout doesn't crash the entire workflow."""
     print("\n=== Test 2: Agent Execution Error Isolation ===")
-    
+
     analysis_id = str(uuid4())
     content = "Test content for error isolation verification"
     content_type = "article"
-    
+
     # Create Analysis record (required for foreign key)
     try:
         async with AsyncSessionLocal() as session:
@@ -81,7 +82,7 @@ async def test_agent_execution_error_isolation():
     except Exception as e:
         print(f"⚠️  Could not create Analysis record: {e}")
         print("   (This is okay for timeout isolation test)")
-    
+
     # Execute with agents - should return list even if timeouts occur
     try:
         result = await execute_agents(
@@ -90,7 +91,7 @@ async def test_agent_execution_error_isolation():
             analysis_id=analysis_id,
             selected_agents=["tech_comparator"],  # Single agent
         )
-        
+
         print(f"✅ PASS: execute_agents returned list (length: {len(result)})")
         print(f"   Result type: {type(result)}")
         print(f"   Result: {result[:100] if result else '[]'}...")
@@ -103,11 +104,12 @@ async def test_agent_execution_error_isolation():
 async def test_aggregate_findings_timeout_handling():
     """Test that aggregate_findings handles timeout gracefully."""
     print("\n=== Test 3: Aggregate Findings Timeout Handling ===")
-    
-    from app.workflows.tasks.aggregate_findings import aggregate_findings
-    from app.workflows.state import AnalysisState
+
     from unittest.mock import patch
-    
+
+    from app.workflows.state import AnalysisState
+    from app.workflows.tasks.aggregate_findings import aggregate_findings
+
     # Create sample state
     state = AnalysisState(
         analysis_id="test-aggregate-timeout",
@@ -125,21 +127,21 @@ async def test_aggregate_findings_timeout_handling():
             }
         ],
     )
-    
+
     # Mock invoke_agent to raise GeneratorExit (simulating timeout)
     with patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke:
         mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
-        
+
         try:
             result = await aggregate_findings(state)
-            
+
             # Should use fallback aggregated insights
             assert "aggregated_insights" in result
             assert isinstance(result["aggregated_insights"], dict)
             assert "executive_summary" in result["aggregated_insights"]
-            
+
             print("✅ PASS: aggregate_findings handled GeneratorExit gracefully")
-            print(f"   Returned fallback insights with executive_summary")
+            print("   Returned fallback insights with executive_summary")
             return True
         except Exception as e:
             print(f"❌ FAIL: aggregate_findings raised exception: {type(e).__name__}: {e}")
@@ -151,18 +153,18 @@ async def main():
     print("=" * 60)
     print("GeneratorExit Timeout Handling Verification")
     print("=" * 60)
-    
+
     results = []
-    
+
     # Test 1: Streaming timeout conversion
     results.append(await test_streaming_timeout_conversion())
-    
+
     # Test 2: Agent execution error isolation
     results.append(await test_agent_execution_error_isolation())
-    
+
     # Test 3: Aggregate findings timeout handling
     results.append(await test_aggregate_findings_timeout_handling())
-    
+
     # Summary
     print("\n" + "=" * 60)
     print("Verification Summary")
@@ -170,7 +172,7 @@ async def main():
     passed = sum(results)
     total = len(results)
     print(f"Tests Passed: {passed}/{total}")
-    
+
     if all(results):
         print("✅ ALL TESTS PASSED - Timeout handling verified!")
         return 0

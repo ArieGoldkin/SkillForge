@@ -113,7 +113,10 @@ def detect_conflicts(
                     {
                         "agent_1": tech_agent,
                         "agent_2": sec_agent,
-                        "conflict": f"{tech_agent} recommends adoption, {sec_agent} raises security concerns",
+                        "conflict": (
+                            f"{tech_agent} recommends adoption, "
+                            f"{sec_agent} raises security concerns"
+                        ),
                     }
                 )
 

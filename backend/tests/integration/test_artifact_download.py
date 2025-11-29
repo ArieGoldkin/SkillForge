@@ -48,7 +48,8 @@ async def test_download_endpoint_returns_markdown(
         response = await client.get(f"/api/v1/artifacts/{artifact_id}/download")
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers["content-type"] == "text/markdown"
+    # FastAPI automatically adds charset=utf-8 to text/markdown
+    assert response.headers["content-type"] in ("text/markdown", "text/markdown; charset=utf-8")
     assert "attachment" in response.headers["content-disposition"]
     content_disposition = response.headers["content-disposition"]
     assert "test-artifact.md" in content_disposition or "analysis-" in content_disposition
