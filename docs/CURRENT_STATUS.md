@@ -1,8 +1,8 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 2024
+**Date:** November 2024
 **Branch:** `dev` (aligned with `main`)
-**Sprint:** Sprint 1 Complete ✅ → Sprint 2 In Progress (29/37 pts complete)
+**Sprint:** Sprint 2 Complete ✅ → Sprint 3 In Progress (1/13 pts complete)
 
 ---
 
@@ -293,6 +293,50 @@
 - **Milestone:** Sprint 2: LangGraph Workflow & SSE
 - **Dependencies:** Issue #44
 - **GitHub:** [#45](https://github.com/ArieGoldkin/SkillForge/issues/45)
+
+---
+
+## 📋 Issues Status (Sprint 3)
+
+### Frontend Sprint 3 Issues
+
+**Issue #60:** Task 3.1 - Install Markdown Rendering Dependencies [1 pt] ✅ COMPLETE
+- **Status:** ✅ Complete
+- **Assignee:** ArieGoldkin
+- **Completed:** November 29, 2024
+- **Milestone:** Sprint 3: Artifact Viewer
+- **PR:** [#148](https://github.com/ArieGoldkin/SkillForge/pull/148)
+- **Documentation:** [Issue #60 Docs](./issues/060-markdown-dependencies/README.md)
+- **GitHub:** [#60](https://github.com/ArieGoldkin/SkillForge/issues/60)
+- **Implementation:**
+  - react-markdown@9.1.0
+  - remark-gfm@4.0.1
+  - prismjs@1.30.0 + @types/prismjs
+  - prism-tomorrow.css theme
+
+**Issue #61:** Task 3.2 - Create MarkdownPreview Component [5 pts] 🎯 NEXT
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Dependencies:** Issue #60 ✅
+- **GitHub:** [#61](https://github.com/ArieGoldkin/SkillForge/issues/61)
+
+**Issue #62:** Task 3.3 - Create Artifact Download Handler [2 pts]
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Dependencies:** Issue #61
+- **GitHub:** [#62](https://github.com/ArieGoldkin/SkillForge/issues/62)
+
+**Issue #63:** Task 3.4 - Build Preview Modal [3 pts]
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Dependencies:** Issue #62
+- **GitHub:** [#63](https://github.com/ArieGoldkin/SkillForge/issues/63)
+
+**Issue #64:** Task 3.5 - Add Copy-to-Clipboard for Prompts [2 pts]
+- **Status:** Open
+- **Assignee:** ArieGoldkin
+- **Dependencies:** Issue #63
+- **GitHub:** [#64](https://github.com/ArieGoldkin/SkillForge/issues/64)
 
 ---
 
