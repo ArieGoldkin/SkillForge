@@ -209,9 +209,9 @@ def ensure_llm_model_set(monkeypatch):
             openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
             if openai_key:
                 monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
-    # Reduce retry delays for faster tests (0.1s base instead of 1.0s)
-    if "LLM_RETRY_DELAY_BASE" not in os.environ:
-        monkeypatch.setenv("LLM_RETRY_DELAY_BASE", "0.1")
+    # Reduce retry attempts for faster tests (1 instead of 3)
+    if "LLM_MAX_RETRIES" not in os.environ:
+        monkeypatch.setenv("LLM_MAX_RETRIES", "1")
     # Clear settings cache to pick up env vars
     get_settings.cache_clear()
 

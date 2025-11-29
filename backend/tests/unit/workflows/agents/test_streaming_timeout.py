@@ -1,7 +1,7 @@
-"""Unit tests for streaming timeout and GeneratorExit handling.
+"""Unit tests for streaming and GeneratorExit handling.
 
-These tests verify the clean timeout handling pattern that avoids
-asyncio.wait_for cancellation (which causes GeneratorExit errors in LangGraph).
+These tests verify that streaming works correctly without application-level timeouts.
+Timeout handling is managed by LangGraph's step_timeout on the compiled graph.
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -29,21 +29,21 @@ def mock_emit_progress():
 
 
 @pytest.mark.asyncio
-async def test_streaming_timeout_uses_clean_break_not_cancellation(mock_agent):
-    """Test that timeout uses clean break instead of asyncio cancellation.
+async def test_streaming_completes_successfully(mock_agent):
+    """Test that streaming completes successfully without application-level timeout.
 
-    The new implementation checks timeout manually and breaks the loop,
-    which avoids GeneratorExit from asyncio.wait_for cancellation.
+    With the new implementation, timeout is handled by LangGraph's step_timeout.
+    The function should complete successfully and return results.
     """
     import asyncio
 
     chunk_count = 0
 
-    # Mock agent.astream to be an async generator that yields slowly
+    # Mock agent.astream to be an async generator that yields chunks
     async def mock_astream_generator(*args, **kwargs):
         nonlocal chunk_count
-        for i in range(100):  # Many chunks
-            await asyncio.sleep(0.02)  # 20ms per chunk
+        for i in range(5):  # 5 chunks
+            await asyncio.sleep(0.01)  # 10ms per chunk
             chunk_count += 1
             yield {"messages": [{"role": "assistant", "content": f"chunk {i}"}]}
 
@@ -52,18 +52,18 @@ async def test_streaming_timeout_uses_clean_break_not_cancellation(mock_agent):
 
     input_messages = {"messages": [{"role": "user", "content": "test"}]}
 
-    # Should raise TimeoutError via clean timeout check (not asyncio cancellation)
-    with pytest.raises(TimeoutError, match="exceeded timeout"):
-        await stream_agent_response(
-            agent=mock_agent,
-            input_messages=input_messages,
-            analysis_id="test-id",
-            agent_type="test_agent",
-            timeout=0.05,  # 50ms timeout - should process ~2-3 chunks
-        )
+    # Should complete successfully (timeout handled by step_timeout)
+    result = await stream_agent_response(
+        agent=mock_agent,
+        input_messages=input_messages,
+        analysis_id="test-id",
+        agent_type="test_agent",
+        timeout=5.0,  # Reference timeout (not used - step_timeout handles it)
+    )
 
-    # Verify some chunks were processed before timeout
-    assert chunk_count > 0
+    # Verify chunks were processed and result returned
+    assert chunk_count == 5
+    assert result is not None
 
 
 @pytest.mark.asyncio
@@ -102,33 +102,35 @@ async def test_streaming_generatorexit_still_handled_gracefully(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_streaming_timeout_handles_slow_iteration(mock_agent):
-    """Test that timeout works when iteration is slow."""
+async def test_streaming_handles_slow_iteration(mock_agent):
+    """Test that streaming handles slow iteration gracefully.
+
+    With step_timeout handling timeouts, slow iteration will be cancelled
+    by LangGraph's step_timeout. The function should handle this gracefully.
+    """
     import asyncio
 
-    # Mock agent.astream to be an async generator that never yields
+    # Mock agent.astream to be an async generator that yields after delay
     async def mock_astream_generator(*args, **kwargs):
-        await asyncio.sleep(10)  # Very long sleep before first yield
-        yield {"messages": []}
+        await asyncio.sleep(0.1)  # 100ms delay before first yield
+        yield {"messages": [{"role": "assistant", "content": "result"}]}
 
     # Set astream to return the async generator
     mock_agent.astream = mock_astream_generator
 
     input_messages = {"messages": [{"role": "user", "content": "test"}]}
 
-    # Note: With the new implementation, timeout is checked between chunks.
-    # If the first chunk takes too long, the timeout won't trigger until
-    # after the chunk is received. For truly blocking operations, we may
-    # need asyncio.timeout (Python 3.11+) or different approach.
-    # This test verifies current behavior.
-    with pytest.raises((TimeoutError, asyncio.TimeoutError)):
-        await stream_agent_response(
-            agent=mock_agent,
-            input_messages=input_messages,
-            analysis_id="test-id",
-            agent_type="test_agent",
-            timeout=0.05,  # Very short timeout
-        )
+    # Should complete successfully (step_timeout will handle actual timeout)
+    result = await stream_agent_response(
+        agent=mock_agent,
+        input_messages=input_messages,
+        analysis_id="test-id",
+        agent_type="test_agent",
+        timeout=5.0,  # Reference timeout (not used - step_timeout handles it)
+    )
+
+    # Should return result
+    assert result is not None
 
 
 @pytest.mark.asyncio

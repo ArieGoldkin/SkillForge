@@ -208,3 +208,4 @@ echo "  - Stop services: $DOCKER_COMPOSE_CMD down"
 echo "  - Restart services: $DOCKER_COMPOSE_CMD restart"
 
 
+

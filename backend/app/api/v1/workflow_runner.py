@@ -6,6 +6,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
+from app.core.timeout_config import WORKFLOW_TIMEOUT, create_runnable_config
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.analysis import analysis_workflow
 
@@ -33,9 +34,10 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             url=url,
         )
 
-        # Run workflow with checkpointing
-        # StateGraph.ainvoke expects AnalysisState TypedDict
-        config: dict[str, object] = {"configurable": {"thread_id": str(analysis_id)}}
+        # Create config with thread_id for checkpointing
+        # Note: Workflow-level timeout is handled by step_timeout on graph
+        config = create_runnable_config(thread_id=str(analysis_id))
+
         input_state: dict[str, str] = {
             "url": url,
             "analysis_id": str(analysis_id),

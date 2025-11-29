@@ -22,7 +22,8 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
-    Configures temperature, max_tokens, and timeout from settings.
+    Configures temperature, max_tokens, timeout, and max_retries from settings.
+    Uses LangChain's built-in retry mechanism (max_retries) for automatic retry handling.
 
     Args:
         config: Optional runtime config dict. If provided, can override model:
@@ -30,10 +31,16 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
             - config.get("configurable", {}).get("temperature") - override temperature
             - config.get("configurable", {}).get("max_tokens") - override max_tokens
             - config.get("configurable", {}).get("timeout") - override timeout
+            - config.get("configurable", {}).get("max_retries") - override max_retries
 
     Returns:
         Configured chat model instance that can be further customized via config
         at invocation time for runtime model switching.
+
+    Note:
+        LangChain's built-in retry (max_retries) handles retries automatically with
+        proper async behavior. The timeout parameter applies to both streaming and
+        non-streaming calls. Timeout is enforced at the model level by LangChain.
 
     """
     # Check for runtime model override in config
@@ -91,6 +98,13 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     if timeout is not None:
         init_kwargs["timeout"] = timeout  # type: ignore[assignment]
 
+    # Add LangChain's built-in retry configuration
+    max_retries = runtime_config.get("max_retries") if runtime_config else None
+    if max_retries is None:
+        max_retries = settings.LLM_MAX_RETRIES
+    if max_retries is not None:
+        init_kwargs["max_retries"] = max_retries  # type: ignore[assignment]
+
     # Remove provider prefix when LangChain expects bare model names
     if _should_strip_provider_prefix(provider):
         model_identifier_to_use = model_name
@@ -106,6 +120,7 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
         temperature=temperature,
         max_tokens=max_tokens,
         timeout=timeout,
+        max_retries=max_retries,
         runtime_override=runtime_model is not None,
     )
 

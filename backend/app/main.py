@@ -34,12 +34,73 @@ async def lifespan(app: FastAPI):
     langsmith_enabled = os.getenv("LANGCHAIN_TRACING_V2") == "true"
     langsmith_project = os.getenv("LANGCHAIN_PROJECT", "default")
 
+    # LangSmith API key diagnostics and automatic fallback
+    langchain_api_key = os.getenv("LANGCHAIN_API_KEY")
+    langsmith_api_key = os.getenv("LANGSMITH_API_KEY")
+    api_key_fallback_used = False
+
+    if langsmith_enabled:
+        if not langchain_api_key and langsmith_api_key:
+            # Automatic fallback: use LANGSMITH_API_KEY if LANGCHAIN_API_KEY is missing
+            os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
+            langchain_api_key = langsmith_api_key
+            api_key_fallback_used = True
+            logger.warning(
+                "langsmith_api_key_fallback",
+                message="LANGCHAIN_API_KEY not set, using LANGSMITH_API_KEY as fallback",
+                langsmith_enabled=True,
+            )
+        elif not langchain_api_key and not langsmith_api_key:
+            logger.error(
+                "langsmith_api_key_missing",
+                message="LangSmith tracing enabled but neither LANGCHAIN_API_KEY nor LANGSMITH_API_KEY is set",
+                langsmith_enabled=True,
+            )
+
+        # Test LangSmith connection if API key is available
+        if langchain_api_key:
+            try:
+                from langsmith import Client
+
+                client = Client()
+                # Access info attribute (it's a property, not a callable)
+                info = client.info
+                logger.info(
+                    "langsmith_connection_success",
+                    langsmith_enabled=True,
+                    langsmith_project=langsmith_project,
+                    api_key_set=True,
+                    api_key_fallback_used=api_key_fallback_used,
+                    endpoint=os.getenv("LANGCHAIN_ENDPOINT", "default (api.smith.langchain.com)"),
+                )
+            except Exception as e:
+                logger.error(
+                    "langsmith_connection_failed",
+                    langsmith_enabled=True,
+                    langsmith_project=langsmith_project,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    api_key_set=bool(langchain_api_key),
+                    api_key_fallback_used=api_key_fallback_used,
+                    exc_info=True,
+                )
+        else:
+            logger.warning(
+                "langsmith_no_api_key",
+                langsmith_enabled=True,
+                langsmith_project=langsmith_project,
+                message="LangSmith tracing enabled but no API key available for connection test",
+            )
+
     logger.info(
         "application_startup",
         environment=settings.ENVIRONMENT,
         log_level=settings.LOG_LEVEL,
         langsmith_enabled=langsmith_enabled,
         langsmith_project=langsmith_project if langsmith_enabled else None,
+        langchain_api_key_set=bool(langchain_api_key),
+        langsmith_api_key_set=bool(langsmith_api_key),
+        api_key_fallback_used=api_key_fallback_used if langsmith_enabled else None,
     )
     yield
     # Shutdown

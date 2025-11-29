@@ -149,7 +149,10 @@ docker-compose.override.yml
 # ============================================================================
 
 # VSCode
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
 .history/
 
 # JetBrains (PyCharm, WebStorm, etc.)

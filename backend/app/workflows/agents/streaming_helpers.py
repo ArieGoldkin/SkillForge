@@ -44,3 +44,4 @@ async def emit_progress_if_needed(
     return last_event_time, last_event_chars
 
 
+

@@ -1,7 +1,14 @@
-"""Timeout handling utilities for agent execution.
+"""DEPRECATED: Timeout error handling utilities.
 
-This module provides centralized timeout error handling to eliminate
-duplication across workflow modules.
+This module is deprecated. Use LangGraph's built-in timeout mechanisms
+via RunnableConfig instead. This module is kept for migration period only.
+
+New code should use:
+- RunnableConfig with timeout for agent/model invocations
+- step_timeout on compiled graph for node-level timeouts
+- create_runnable_config() helper from app.core.timeout_config
+
+This module will be removed in a future version.
 """
 
 from typing import TYPE_CHECKING

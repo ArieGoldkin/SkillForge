@@ -72,8 +72,8 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
     mock_save_finding.return_value = MagicMock()
 
-    # Mock time to control throttling behavior
-    with mock_patch("app.workflows.agents.streaming.time.time") as mock_time:
+    # Mock time.time() used inside emit_progress_if_needed to control throttling behavior
+    with mock_patch("time.time") as mock_time:
         # Simulate time progression
         mock_time.side_effect = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 

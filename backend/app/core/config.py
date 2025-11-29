@@ -246,12 +246,12 @@ class Settings(BaseSettings):
             "Set to None to use model provider's default."
         ),
     )
-    LLM_RETRY_DELAY_BASE: float = Field(
-        default=1.0,
+    LLM_MAX_RETRIES: int = Field(
+        default=3,
         description=(
-            "Base delay in seconds for retry exponential backoff. "
-            "Smaller values = faster retries. Default 1.0s (1s, 2s, 4s). "
-            "Use 0.1 for test environments (0.1s, 0.2s, 0.4s)."
+            "Maximum number of retry attempts for LLM API calls. "
+            "Uses LangChain's built-in retry mechanism via max_retries parameter. "
+            "Defaults to 3. Set to 0 to disable retries."
         ),
     )
 

@@ -5,18 +5,10 @@ including agent creation with structured output, database persistence, and
 SSE event emission.
 """
 
-import time
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from langchain.agents import create_agent
-from langchain.agents.middleware import (
-    AgentState,
-    ModelRequest,
-    ModelResponse,
-    before_model,
-    wrap_model_call,
-)
 from langchain.agents.structured_output import ToolStrategy
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
@@ -24,7 +16,6 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.agent_config import get_stage_name
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
@@ -68,72 +59,6 @@ def create_structured_agent(
     # The validation errors will appear in LangSmith traces automatically.
 
     return agent
-
-
-@before_model
-def log_agent_before_model(
-    state: AgentState,
-    runtime: object,
-) -> None:
-    """Log agent invocation before model call."""
-    if hasattr(runtime, "context"):
-        context = runtime.context
-        agent_type = context.get("agent_type", "unknown")
-        analysis_id = context.get("analysis_id", "unknown")
-        message_count = (
-            len(state.get("messages", []))  # type: ignore[union-attr]
-            if isinstance(state, dict)
-            else 0
-        )
-        logger.debug(
-            "agent_invoking",
-            agent_type=agent_type,
-            analysis_id=analysis_id,
-            message_count=message_count,
-        )
-
-
-@wrap_model_call
-def retry_agent_model(
-    request: ModelRequest,
-    handler: Callable[[ModelRequest], ModelResponse],
-) -> ModelResponse:
-    """Wrap model calls with retry logic and exponential backoff.
-
-    Retries up to 3 times with exponential backoff for transient failures.
-    Handles both sync and async handlers.
-    """
-    max_attempts = 3
-
-    for attempt in range(max_attempts):
-        try:
-            # Handler is always sync for wrap_model_call
-            return handler(request)
-        except Exception as e:
-            if attempt == max_attempts - 1:
-                # Last attempt failed, re-raise
-                logger.exception(
-                    "agent_model_call_failed",
-                    attempt=attempt + 1,
-                    error=str(e),
-                )
-                raise
-
-            # Exponential backoff: base_delay * (2^attempt)
-            base_delay = settings.LLM_RETRY_DELAY_BASE
-            wait_time = base_delay * (2**attempt)
-            logger.warning(
-                "agent_model_call_retry",
-                attempt=attempt + 1,
-                max_attempts=max_attempts,
-                wait_time=wait_time,
-                error=str(e),
-            )
-            time.sleep(wait_time)
-
-    # Should never reach here, but just in case
-    msg = "Retry loop exhausted without success"
-    raise RuntimeError(msg)
 
 
 async def save_agent_finding(  # noqa: PLR0913

@@ -11,6 +11,7 @@ from langgraph.graph import END, StateGraph
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.timeout_config import STEP_TIMEOUT
 from app.workflows.nodes.agent_router import route_to_agents
 from app.workflows.nodes.agents import (
     code_quality_critic_node,
@@ -201,4 +202,15 @@ def build_analysis_graph():
 
     # Compile with checkpointer
     checkpointer = _get_checkpointer()
-    return graph.compile(checkpointer=checkpointer)
+    compiled_graph = graph.compile(checkpointer=checkpointer)
+
+    # Set step timeout (in seconds) - LangGraph handles cancellation gracefully
+    # This prevents any single node from running indefinitely
+    compiled_graph.step_timeout = STEP_TIMEOUT
+
+    logger.info(
+        "workflow_graph_compiled_with_timeout",
+        step_timeout=STEP_TIMEOUT,
+    )
+
+    return compiled_graph

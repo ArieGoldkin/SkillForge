@@ -114,6 +114,8 @@ async def _run_agent_with_tracking_impl(
                 timeout=config.timeout,
             )
         except (TimeoutError, GeneratorExit) as exc:
+            # GeneratorExit should not occur with RunnableConfig timeout,
+            # but kept as safety net for edge cases
             raise handle_timeout_error(
                 exc=exc,
                 context=f"Agent {params.agent_type} execution",
@@ -136,7 +138,8 @@ async def _run_agent_with_tracking_impl(
         )
 
     except GeneratorExit:
-        # Generator was closed externally (timeout, cancellation, etc.)
+        # GeneratorExit should not occur with RunnableConfig timeout,
+        # but kept as safety net for edge cases
         await handle_agent_cancellation(
             analysis_id=params.analysis_id,
             agent_type=params.agent_type,

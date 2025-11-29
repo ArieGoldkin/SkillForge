@@ -10,7 +10,6 @@ Architecture:
     - Returns structured decision: {"agents": [...], "reasoning": "...", "confidence": 0.0-1.0}
 """
 
-import asyncio
 import time
 
 from langchain_core.runnables import Runnable
@@ -19,6 +18,7 @@ from langsmith import traceable
 from app.core.agent_config import get_stage_name
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.core.types import AnalysisID
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
@@ -84,12 +84,15 @@ async def _invoke_supervisor_with_retry(
     analysis_id: AnalysisID,
     max_attempts: int = 3,
 ) -> AgentSelection:
-    """Invoke supervisor model with progressive timeout and retry logic.
+    """Invoke supervisor model with retry logic - timeout handled by step_timeout.
 
-    Progressive timeout strategy:
-    - Attempt 1: 60s (fast path)
-    - Attempt 2: 120s (fallback)
-    - Attempt 3: 180s (last resort)
+    Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
+    This avoids nested timeout conflicts and PEP 789 violations.
+
+    Retry strategy:
+    - Attempt 1: First attempt
+    - Attempt 2: Retry if first fails
+    - Attempt 3: Final attempt
 
     Args:
         model: Chat model with structured output
@@ -101,59 +104,48 @@ async def _invoke_supervisor_with_retry(
         AgentSelection with selected agents
 
     Raises:
-        TimeoutError: If all attempts exceed their timeouts
+        Exception: If all attempts fail (timeout handled by step_timeout)
 
     """
-    timeouts = [60.0, 120.0, 180.0]
-
     for attempt in range(max_attempts):
-        timeout = timeouts[attempt]
+        # Create RunnableConfig (timeout handled by step_timeout on graph)
+        config = create_runnable_config()
+
         try:
             logger.debug(
                 "supervisor_attempt",
                 analysis_id=analysis_id,
                 attempt=attempt + 1,
-                timeout=timeout,
+                max_attempts=max_attempts,
             )
-            result = await asyncio.wait_for(
-                model.ainvoke(prompt),
-                timeout=timeout,
-            )
+
+            # Invoke model - no timeout wrapper (step_timeout handles it)
+            result = await model.ainvoke(prompt, config=config)
+
             # Type assertion: structured output guarantees AgentSelection
             if not isinstance(result, AgentSelection):
                 msg = f"Supervisor returned unexpected type: {type(result)}"
                 raise TypeError(msg)
             return result
-        except TimeoutError:
+        except Exception as e:
+            # Retry on any error (timeout will be handled by step_timeout)
             if attempt == max_attempts - 1:
-                # Last attempt failed
                 logger.warning(
-                    "supervisor_timeout_all_attempts",
+                    "supervisor_failed_all_attempts",
                     analysis_id=analysis_id,
                     max_attempts=max_attempts,
-                    final_timeout=timeout,
+                    error=str(e),
                 )
-                msg = f"Supervisor exceeded all timeouts (final: {timeout}s)"
-                raise TimeoutError(msg) from None
+                raise
 
             logger.warning(
-                "supervisor_timeout_retry",
+                "supervisor_error_retry",
                 analysis_id=analysis_id,
                 attempt=attempt + 1,
-                timeout=timeout,
-                next_timeout=timeouts[attempt + 1],
-            )
-            # Continue to next attempt with longer timeout
-        except Exception as e:
-            # Non-timeout errors: log and re-raise
-            logger.error(
-                "supervisor_invocation_error",
-                analysis_id=analysis_id,
-                attempt=attempt + 1,
+                max_attempts=max_attempts,
                 error=str(e),
-                exc_info=True,
             )
-            raise
+            # Continue to next attempt
 
     # Should never reach here
     msg = "Retry loop exhausted without success"
