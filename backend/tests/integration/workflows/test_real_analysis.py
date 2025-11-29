@@ -107,5 +107,10 @@ async def test_real_article_analysis_claude_opus_4_5(
     # Note: Agents may timeout in integration tests, but structure should be correct
     assert isinstance(agent_findings, list)
 
-    # Verify LangSmith tracing is enabled
+    # Verify LangSmith tracing is enabled and give time for traces to send
     assert os.getenv("LANGCHAIN_TRACING_V2") == "true", "LangSmith tracing should be enabled"
+
+    # Give async traces time to send before test completes
+    import time
+
+    time.sleep(3)

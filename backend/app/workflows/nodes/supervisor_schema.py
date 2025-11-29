@@ -17,8 +17,8 @@ class AgentSelection(BaseModel):
     )
     reasoning: str = Field(
         ...,
-        description="Brief explanation for agent selection (max 100 chars)",
-        max_length=100,
+        description="Brief explanation for agent selection (max 500 chars)",
+        max_length=500,
     )
     confidence: float = Field(
         ...,
