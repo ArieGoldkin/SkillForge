@@ -112,6 +112,21 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 check_untyped_defs = true
+# Performance optimizations
+incremental = true
+cache_dir = ".mypy_cache"
+show_error_codes = true
+# Exclude test files and unnecessary directories for faster checks
+exclude = [
+    "tests/",
+    "alembic/",
+    "scripts/",
+    ".*/__pycache__/",
+    ".*\\.pyc$",
+]
+# Optimize import checking (follows imports but doesn't check their bodies if not needed)
+follow_imports = "normal"
+follow_imports_for_stubs = false
 [[tool.mypy.overrides]]
 module = "langgraph.checkpoint.postgres"
 ignore_missing_imports = true

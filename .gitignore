@@ -294,6 +294,8 @@ assets/
 # Cache directories
 .cache/
 *.cache
+.mypy_cache/
+*.mypy_cache/
 
 # Uploads (user-uploaded content)
 uploads/
