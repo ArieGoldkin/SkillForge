@@ -35,6 +35,7 @@ Each lesson should cover one key concept with:
 - Practice exercise/question
 
 Return as JSON matching the Syllabus schema."""
+)
 
 LESSON_DELIVERY_PROMPT = """Deliver a lesson on the following concept:
 

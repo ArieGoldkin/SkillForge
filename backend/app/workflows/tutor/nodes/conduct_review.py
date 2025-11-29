@@ -101,7 +101,8 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
             SystemMessage(
                 content=(
                     "You are an expert educator. "
-                    "Create effective quizzes that assess understanding and provide learning feedback."
+                    "Create effective quizzes that assess understanding "
+                    "and provide learning feedback."
                 )
             ),
             HumanMessage(content=prompt),
