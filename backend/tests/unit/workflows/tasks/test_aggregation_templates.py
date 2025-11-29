@@ -1,5 +1,7 @@
 """Unit tests for aggregation Jinja2 templates."""
 
+
+
 from app.core.template_utils import render_jinja_template
 
 
@@ -125,8 +127,7 @@ class TestAggregationFindingsTemplate:
         scores_section = result.split("CONFIDENCE SCORES:")[1]
         lines = [line.strip() for line in scores_section.split("\n") if line.strip()]
 
-        # Should be sorted: security_auditor (0.90), implementation_planner (0.80),
-        # tech_comparator (0.75)
+        # Should be sorted: security_auditor (0.90), implementation_planner (0.80), tech_comparator (0.75)
         assert "security_auditor: 0.90" in lines[0]
         assert "implementation_planner: 0.80" in lines[1]
         assert "tech_comparator: 0.75" in lines[2]
@@ -156,7 +157,7 @@ class TestAggregationFindingsTemplate:
         assert '"LangGraph"' in result
         assert '"alternatives"' in result
         # Verify it's valid JSON structure
-        json_start = result.find("Findings: {")
+        json_start = result.find('Findings: {')
         assert json_start > 0
 
     def test_template_agent_type_formatting(self):

@@ -71,8 +71,7 @@ if env_file_to_load.exists():
     try:
         from dotenv import load_dotenv
 
-        # Load .env.test or .env file explicitly
-        # (override existing env vars to use correct DATABASE_URL)
+        # Load .env.test or .env file explicitly (override existing env vars to use correct DATABASE_URL)
         # This ensures we use port 5437 from .env.test instead of default port 5432
         load_dotenv(dotenv_path=env_file_to_load, override=True)
     except ImportError:

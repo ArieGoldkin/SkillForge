@@ -161,7 +161,9 @@ class TestCreateAnalysis:
     @pytest.mark.asyncio
     @patch("app.api.v1.analyze.asyncio.create_task")
     @patch("app.api.v1.analyze.detect_content_type")
-    async def test_create_analysis_content_type_detection(self, mock_detect_type, mock_create_task):
+    async def test_create_analysis_content_type_detection(
+        self, mock_detect_type, mock_create_task
+    ):
         """Test content type detection for different URL types."""
         from app.api.v1.analyze import create_analysis
         from app.schemas.analyze import AnalyzeRequest

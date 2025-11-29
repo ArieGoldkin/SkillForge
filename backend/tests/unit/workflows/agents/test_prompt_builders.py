@@ -1,5 +1,6 @@
 """Unit tests for agent prompt builders."""
 
+
 from app.workflows.agents.prompt_builders import (
     build_agent_user_prompt,
     build_supervisor_user_prompt,

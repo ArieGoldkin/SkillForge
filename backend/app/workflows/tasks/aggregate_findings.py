@@ -23,16 +23,16 @@ from app.workflows.tasks.aggregation_helpers import (
     format_findings_for_llm,
     validate_and_parse_findings,
 )
-from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
+from app.workflows.tasks.aggregation_postprocessing import (
+    validate_and_format_aggregated_insights,
+)
 from app.workflows.tasks.prompt_builders import build_synthesis_user_prompt
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
 logger = get_logger(__name__)
 
 # LLM Synthesis System Prompt
-SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical analyst synthesizing findings from 8
-specialized analysis agents. Your task is to create a cohesive, actionable narrative
-from potentially conflicting or overlapping insights.
+SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical analyst synthesizing findings from 8 specialized analysis agents. Your task is to create a cohesive, actionable narrative from potentially conflicting or overlapping insights.
 
 AGENTS PROVIDED:
 1. Tech Comparator - Technology comparisons and alternatives
@@ -52,8 +52,7 @@ YOUR TASKS:
 5. Provide unified recommendations
 
 CONFIDENCE SCORES:
-Each agent provides a confidence_score (0.0-1.0). When agents disagree,
-prioritize findings from agents with higher confidence scores.
+Each agent provides a confidence_score (0.0-1.0). When agents disagree, prioritize findings from agents with higher confidence scores.
 
 OUTPUT REQUIREMENTS:
 - Executive summary must be exactly 2-3 sentences

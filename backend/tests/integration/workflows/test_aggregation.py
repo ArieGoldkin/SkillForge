@@ -236,3 +236,4 @@ async def test_aggregation_with_empty_state():
 
         # Should still emit SSE events
         assert mock_sse.call_count >= 1
+
