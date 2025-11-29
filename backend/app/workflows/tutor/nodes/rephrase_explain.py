@@ -13,7 +13,8 @@ from langsmith import traceable
 
 logger = get_logger(__name__)
 
-REPHRASE_EXPLANATION_PROMPT = """Rephrase the explanation to help the user understand better.
+REPHRASE_EXPLANATION_PROMPT = (
+    """Rephrase the explanation to help the user understand better.
 
 Original Concept: {concept}
 User's Response: {user_response}
