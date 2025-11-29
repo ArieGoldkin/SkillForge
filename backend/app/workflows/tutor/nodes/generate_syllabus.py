@@ -10,8 +10,6 @@ from langsmith import traceable
 
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
-from app.core.types import AnalysisID
-from app.db.repositories.tutor_session_repository import ITutorSessionRepository
 from app.db.session import get_session_factory
 from app.workflows.tutor.config import SYLLABUS_GENERATION_PROMPT
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
@@ -83,7 +81,10 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:
         # Generate syllabus with structured output
         messages = [
             SystemMessage(
-                content="You are an expert curriculum designer. Generate structured, personalized learning curricula."
+                content=(
+                    "You are an expert curriculum designer. "
+                    "Generate structured, personalized learning curricula."
+                )
             ),
             HumanMessage(content=prompt),
         ]

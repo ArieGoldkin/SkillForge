@@ -9,7 +9,6 @@ from langsmith import traceable
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
-from app.db.session import get_session_factory
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -100,7 +99,10 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
         # Generate review quiz
         messages = [
             SystemMessage(
-                content="You are an expert educator. Create effective quizzes that assess understanding and provide learning feedback."
+                content=(
+                    "You are an expert educator. "
+                    "Create effective quizzes that assess understanding and provide learning feedback."
+                )
             ),
             HumanMessage(content=prompt),
         ]

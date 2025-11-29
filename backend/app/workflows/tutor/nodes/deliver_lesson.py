@@ -99,7 +99,10 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
         # Generate lesson content
         messages = [
             SystemMessage(
-                content="You are an expert tutor. Deliver clear, engaging lessons adapted to the user's level."
+                content=(
+                    "You are an expert tutor. "
+                    "Deliver clear, engaging lessons adapted to the user's level."
+                )
             ),
             HumanMessage(content=prompt),
         ]
@@ -120,7 +123,6 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
             )
 
         # Save assistant message to database
-        from datetime import UTC, datetime
         from uuid import UUID
 
         from app.db.repositories.tutor_message_repository import TutorMessageRepository

@@ -5,7 +5,7 @@ context management within token budget.
 """
 
 from app.core.logging import get_logger
-from app.workflows.tutor.config import SLIDING_WINDOW_SIZE, SUMMARY_THRESHOLD, TOKEN_BUDGET
+from app.workflows.tutor.config import SLIDING_WINDOW_SIZE, SUMMARY_THRESHOLD
 from app.workflows.tutor.state import TutorState
 
 logger = get_logger(__name__)

@@ -44,7 +44,6 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
     syllabus = state.get("syllabus")
     current_section = state.get("current_section", 0)
     current_lesson = state.get("current_lesson", 0)
-    user_level = state.get("user_level", "intermediate")
     last_user_message = state.get("last_user_message", "")
     understanding_scores = state.get("understanding_scores", {})
     attempts = state.get("attempts_current_lesson", 0)
@@ -95,7 +94,10 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
         # Generate assessment with structured output
         messages = [
             SystemMessage(
-                content="You are an expert educational assessor. Evaluate understanding accurately and provide actionable feedback."
+                content=(
+                    "You are an expert educational assessor. "
+                    "Evaluate understanding accurately and provide actionable feedback."
+                )
             ),
             HumanMessage(content=f"{prompt}\n\n{parser.get_format_instructions()}"),
         ]

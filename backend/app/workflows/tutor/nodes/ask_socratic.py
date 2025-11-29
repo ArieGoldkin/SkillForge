@@ -83,7 +83,10 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:
         # Generate Socratic question
         messages = [
             SystemMessage(
-                content="You are a Socratic tutor. Ask thoughtful questions that guide learning through discovery."
+                content=(
+                    "You are a Socratic tutor. "
+                    "Ask thoughtful questions that guide learning through discovery."
+                )
             ),
             HumanMessage(content=prompt),
         ]
