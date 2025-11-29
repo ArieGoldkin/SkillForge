@@ -1,7 +1,7 @@
 # 🏗️ SkillForge - Architecture & Workflow Diagrams
 
-**Version:** 1.2  
-**Last Updated:** November 28, 2025  
+**Version:** 1.3  
+**Last Updated:** December 20, 2025  
 **Project:** SkillForge - Research-to-Implementation Pipeline
 
 ---
@@ -222,16 +222,17 @@ graph TB
                 Supervisor[supervisor node]
             end
             
-            ParallelAgents[parallel_agents node]
+            Router[route_to_agents<br/>Send API]
             
-            subgraph "Sub-Agents (Internal Parallel)"
-                TechComp[tech_comparator]
-                Security[security_auditor]
-                ImplPlan[implementation_planner]
-                Perf[performance_analyst]
-                CodeQual[code_quality_critic]
-                Trends[trend_validator]
-                Deps[dependency_mapper]
+            subgraph "Agent Nodes (Native LangGraph Parallel via Send API)"
+                TechComp[tech_comparator node]
+                Security[security_auditor node]
+                ImplPlan[implementation_planner node]
+                Perf[performance_analyst node]
+                CodeQual[code_quality_critic node]
+                Trends[trend_validator node]
+                Deps[dependency_mapper node]
+                IntFeas[integration_feasibility node]
             end
             
             Aggregate[aggregate node]
@@ -262,16 +263,17 @@ graph TB
     
     Embed -->|"SSE: embedding complete"| SSEProgress
     Supervisor -->|"SSE: supervisor_routing"| SSEProgress
-    Embed --> ParallelAgents
-    Supervisor --> ParallelAgents
+    Embed --> Router
+    Supervisor --> Router
     
-    ParallelAgents --> TechComp
-    ParallelAgents --> Security
-    ParallelAgents --> ImplPlan
-    ParallelAgents --> Perf
-    ParallelAgents --> CodeQual
-    ParallelAgents --> Trends
-    ParallelAgents --> Deps
+    Router -->|"Send API<br/>Dynamic Routing"| TechComp
+    Router -->|"Send API"| Security
+    Router -->|"Send API"| ImplPlan
+    Router -->|"Send API"| Perf
+    Router -->|"Send API"| CodeQual
+    Router -->|"Send API"| Trends
+    Router -->|"Send API"| Deps
+    Router -->|"Send API"| IntFeas
     
     TechComp -->|"SSE: tech_comparison"| SSEProgress
     Security -->|"SSE: security_audit"| SSEProgress
@@ -280,14 +282,16 @@ graph TB
     CodeQual -->|"SSE: code_quality"| SSEProgress
     Trends -->|"SSE: trends_analysis"| SSEProgress
     Deps -->|"SSE: dependencies"| SSEProgress
+    IntFeas -->|"SSE: integration_feasibility"| SSEProgress
     
-    TechComp --> Aggregate
+    TechComp -->|"Fan-In<br/>State Reducer"| Aggregate
     Security --> Aggregate
     ImplPlan --> Aggregate
     Perf --> Aggregate
     CodeQual --> Aggregate
     Trends --> Aggregate
     Deps --> Aggregate
+    IntFeas --> Aggregate
     
     Aggregate -->|"SSE: aggregation complete"| SSEComplete
     
@@ -295,7 +299,12 @@ graph TB
     TechComp --> SaveFindings
     Security --> SaveFindings
     ImplPlan --> SaveFindings
-    Artifact --> SaveArtifact
+    Perf --> SaveFindings
+    CodeQual --> SaveFindings
+    Trends --> SaveFindings
+    Deps --> SaveFindings
+    IntFeas --> SaveFindings
+    Aggregate --> SaveArtifact
     
     End([Analysis Complete])
     SSEComplete --> End
@@ -303,7 +312,16 @@ graph TB
     style EntryPoint fill:#e1f5ff,stroke:#0077cc
     style Extract fill:#e1f5ff,stroke:#0077cc
     style Supervisor fill:#ffd700,stroke:#ff8c00
+    style Router fill:#ffd700,stroke:#ff8c00
     style TechComp fill:#90ee90,stroke:#228b22
+    style Security fill:#90ee90,stroke:#228b22
+    style ImplPlan fill:#90ee90,stroke:#228b22
+    style Perf fill:#90ee90,stroke:#228b22
+    style CodeQual fill:#90ee90,stroke:#228b22
+    style Trends fill:#90ee90,stroke:#228b22
+    style Deps fill:#90ee90,stroke:#228b22
+    style IntFeas fill:#90ee90,stroke:#228b22
+    style Aggregate fill:#e1f5ff,stroke:#0077cc
     style SSEProgress fill:#ffe1f5,stroke:#cc0077
     style SSEComplete fill:#90ee90,stroke:#228b22
 ```
@@ -345,7 +363,8 @@ sequenceDiagram
     W->>SSE: Emit progress supervisor_routing
     SSE-->>F: Event: supervisor_routing
     
-    W->>W: task run_tech_comparator
+    W->>W: route_to_agents (Send API)
+    W->>W: Parallel agent nodes (tech_comparator, security_auditor, ...)
     W->>SSE: Emit progress tech_comparison running
     SSE-->>F: Event: tech_comparison running
     W->>DB: Save Findings
