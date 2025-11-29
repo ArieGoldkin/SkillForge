@@ -590,8 +590,8 @@ Submit GitHub URL → README analyzed → architecture summary generated
 | Task ID | Task | Story Points | Owner | Dependencies | Acceptance Criteria |
 |---------|------|--------------|-------|--------------|---------------------|
 | 6.3.1 | Frontend deployment (Vercel) | 2 | Arie | 6.2.4 | Frontend live at production URL |
-| 6.3.2 | Backend deployment | 3 | Yonatan | 6.2.3 | Backend live with health check passing |
-| 6.3.3 | Database setup | 2 | Yonatan | None | Managed PostgreSQL with PGVector |
+| 6.3.2 | Backend deployment (Railway) | 3 | Yonatan | 6.2.3 | Backend live with health check passing |
+| 6.3.3 | Database setup (Supabase) | 2 | Yonatan | None | Supabase PostgreSQL with PGVector enabled |
 | 6.3.4 | Switch to production LLM | 1 | Yonatan | 6.3.2 | Using OpenAI GPT-4 Turbo or Claude 3.5 Sonnet |
 
 **Coordination:** Deploy in sequence: DB (Day 8) → Backend (Day 9) → Frontend (Day 10)
