@@ -192,8 +192,8 @@ def build_analysis_graph():
     for agent_node in agent_nodes:
         graph.add_edge(agent_node, "aggregate")
 
-    # Also allow supervisor to route directly to aggregate if no agents selected
-    # (handled by route_to_agents returning empty list, which routes to aggregate)
+    # When no agents selected, route_to_agents returns Send("aggregate", state)
+    # to explicitly route to aggregate (prevents hanging on empty list)
 
     # Sequential: aggregate -> generate_artifact -> end
     graph.add_edge("aggregate", "generate_artifact")
