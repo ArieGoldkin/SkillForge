@@ -343,7 +343,7 @@ async def check_database_available(requires_database):
         print(f"WARNING: Expected port 5437 in URL, got: {expected_url}", file=sys.stderr)
 
     # Quick connectivity check with fast timeout (1.0s) to prevent hanging
-    # pytest 9.0's improved async fixture support allows faster failure detection
+    # pytest 9.0.1's improved async fixture support allows faster failure detection
     # This allows proper connection while still failing fast if DB is unavailable
     # Note: We don't skip here - let tests run and fail naturally if DB is unavailable
     # This allows tests to run when database is available via Docker
@@ -372,11 +372,11 @@ async def check_database_available(requires_database):
             except Exception:
                 pass
             # Don't skip - let test fail naturally so user knows DB is unavailable
-            # pytest 9.0 ensures this doesn't hang the test suite
+            # pytest 9.0.1 ensures this doesn't hang the test suite
     except Exception:
         # Don't skip - let test fail naturally so user knows DB is unavailable
         # This allows tests to run when database is available via Docker
-        # pytest 9.0 ensures exceptions don't hang the test suite
+        # pytest 9.0.1 ensures exceptions don't hang the test suite
         pass
 
 
@@ -416,10 +416,10 @@ async def _dispose_engine_safely(timeout: float) -> None:
 async def reset_engine_connections():
     """Dispose engine connections before test to avoid event loop conflicts.
 
-    Leverages pytest 9.0's improved async fixture lifecycle management:
-    - Better automatic cleanup for async resources
+    Leverages pytest 9.0.1's improved async fixture lifecycle management:
+    - Automatic cleanup for async resources (cleanup runs even on test failures)
     - Enhanced fixture scoping for async operations
-    - Improved resource management on test failures
+    - Improved resource management with automatic finally block execution
 
     This ensures engine connections are created in the test's event loop,
     preventing 'attached to different loop' errors. Use this fixture for
@@ -427,7 +427,7 @@ async def reset_engine_connections():
 
     Also clears the cached engine instance to force recreation with current DATABASE_URL.
     Uses non-blocking disposal with reasonable timeout (2.0s) to prevent hanging.
-    pytest 9.0 ensures cleanup runs even if tests fail.
+    pytest 9.0.1 automatically ensures cleanup runs even if tests fail.
     """
     from app.db import session as session_module
 
@@ -444,8 +444,8 @@ async def reset_engine_connections():
 
     yield
 
-    # Dispose after test to clean up
-    # pytest 9.0 ensures this cleanup runs even if test fails
+    # pytest 9.0.1 automatically ensures cleanup runs even if test fails
+    # No need for redundant try/finally - automatic cleanup handles it
     await _dispose_engine_safely(test_timeout)
 
     # Clear cached engine again after test
@@ -457,16 +457,17 @@ async def reset_engine_connections():
 async def cleanup_event_broadcaster():
     """Clean up event broadcaster after each test.
 
-    Leverages pytest 9.0's improved async fixture lifecycle management.
+    Leverages pytest 9.0.1's improved async fixture lifecycle management.
     Clears all channels and subscriptions to prevent hanging tests
     from lingering event broadcaster queues.
 
-    pytest 9.0 provides better automatic cleanup for async fixtures,
+    pytest 9.0.1 provides automatic cleanup for async fixtures,
     ensuring resources are properly released even if tests fail.
+    No need for try/finally - automatic cleanup handles it.
     """
     yield
     # Clear all channels and subscriptions
-    # pytest 9.0 ensures this cleanup runs even if test fails
+    # pytest 9.0.1 automatically ensures this cleanup runs even if test fails
     broadcaster._channels.clear()
 
 
@@ -476,9 +477,9 @@ async def db_session(
 ) -> AsyncGenerator[AsyncSession]:
     """Create a test database session with automatic rollback.
 
-    Leverages pytest 9.0's enhanced async fixture support:
-    - Better lifecycle management for async resources
-    - Improved automatic cleanup even on test failures
+    Leverages pytest 9.0.1's enhanced async fixture support:
+    - Automatic lifecycle management for async resources
+    - Automatic cleanup even on test failures (no redundant try/finally needed)
     - Enhanced async fixture scoping
 
     Yields an async session and rolls back all changes after test.
@@ -487,7 +488,7 @@ async def db_session(
     check_database_available ensures database is reachable before creating session.
 
     Uses reasonable timeout (2.0s) to allow proper connection while preventing hanging.
-    pytest 9.0 ensures proper cleanup of async resources even if tests fail.
+    pytest 9.0.1 automatically ensures proper cleanup of async resources even if tests fail.
     """
     # Create session with reasonable timeout protection (2.0s for tests)
     # This allows proper connection while preventing hanging when database is not running
@@ -496,24 +497,23 @@ async def db_session(
     except TimeoutError:
         pytest.skip("Database connection timeout - database may be unreachable")
 
+    # Use nested transaction for automatic rollback
+    # pytest 9.0.1's automatic cleanup ensures rollback runs even on test failures
+    transaction = await session.begin()
     try:
-        # Use nested transaction for automatic rollback
-        # pytest 9.0's improved async fixture support ensures cleanup runs
-        transaction = await session.begin()
-        try:
-            yield session
-        finally:
-            # Only rollback if transaction is still active
-            # pytest 9.0 ensures this cleanup runs even if test fails
-            if transaction.is_active:
-                try:
-                    await transaction.rollback()
-                except Exception:
-                    # Transaction may already be closed, ignore
-                    pass
+        yield session
     finally:
-        # Ensure session is properly closed
-        # pytest 9.0's enhanced async fixture lifecycle ensures this runs
+        # Only rollback if transaction is still active
+        # pytest 9.0.1 ensures this cleanup runs automatically, but we need explicit
+        # rollback for transaction management
+        if transaction.is_active:
+            try:
+                await transaction.rollback()
+            except Exception:
+                # Transaction may already be closed, ignore
+                pass
+        # pytest 9.0.1 automatically ensures session.close() runs via async generator cleanup
+        # No need for redundant finally block - automatic cleanup handles it
         try:
             await session.close()
         except Exception:

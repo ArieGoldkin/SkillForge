@@ -98,6 +98,7 @@ docs/issues/
 | [#68](https://github.com/ArieGoldkin/SkillForge/issues/68) | Docker Compose Configuration | 3 | ✅ Complete | Yonatan | [📄 Docs](./068-docker-compose/README.md) | [#68](https://github.com/ArieGoldkin/SkillForge/issues/68) |
 | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) | Aggregator Node | 5 | ✅ Complete | Yonatan | [📄 Docs](./071-aggregator-node/README.md) | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) |
 | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) | Artifact Generation | 8 | ✅ Complete | Yonatan | [📄 Docs](./072-artifact-generation/README.md) | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) |
+| [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) | Fix Agent Type Mismatch and SSE Workflow Completion | 3 | ✅ Complete | Yonatan | [📄 Docs](./143-sse-workflow-completion-fix/README.md) | [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) |
 
 ### 🔄 In Progress / Ready (7 total - 20 pts)
 
@@ -106,6 +107,8 @@ docs/issues/
 | Issue | Title | Points | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|--------|----------|------|--------|
 | [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) | Fix Embedding Token Limit Violation | 5 | ✅ Complete | Yonatan | [📄 Docs](./090-embedding-token-fix/README.md) | [#90](https://github.com/ArieGoldkin/SkillForge/issues/90) |
+| [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) | Fix Workflow Status Not Updated to Complete | 3 | ✅ Complete | Yonatan | [📄 Docs](./091-workflow-status-fix/README.md) | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) |
+| [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) | Improve Content Extraction Error Handling | 2 | ✅ Complete | Yonatan | [📄 Docs](./092-extraction-error-handling/README.md) | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) |
 | [#93](https://github.com/ArieGoldkin/SkillForge/issues/93) | Implement Similarity Search Using Embeddings | 8 | 🔄 Open | TBD | [📄 Docs](./093-embeddings-similarity-search/README.md) | TBD |
 | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) | Fix Workflow Status Not Updated to Complete | 3 | 🔄 Open | Yonatan | [📄 Docs](./091-workflow-status-fix/README.md) | [#91](https://github.com/ArieGoldkin/SkillForge/issues/91) |
 | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) | Improve Content Extraction Error Handling | 2 | 🔄 Open | Yonatan | [📄 Docs](./092-extraction-error-handling/README.md) | [#92](https://github.com/ArieGoldkin/SkillForge/issues/92) |

@@ -105,12 +105,12 @@ async def synthesize_with_llm(
         agent=synthesis_agent,
         input_messages=input_messages,
         analysis_id=analysis_id,
-        agent_type="aggregator",
+        agent_type="aggregation",
         timeout=SYNTHESIS_TIMEOUT,
     )
 
     # Extract structured response (validated Pydantic model)
-    structured_response = extract_structured_response(final_result, "aggregator")
+    structured_response = extract_structured_response(final_result, "aggregation")
 
     # structured_response is already a dict from extract_structured_response
     return structured_response

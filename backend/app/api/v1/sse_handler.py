@@ -3,7 +3,9 @@
 import asyncio
 import json
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, MutableMapping
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import Request
 from sse_starlette.sse import EventSourceResponse
@@ -84,25 +86,35 @@ async def stream_analysis_progress(
         channel=channel,
     )
 
+    async def client_close_handler(message: MutableMapping[str, Any]) -> None:
+        """Handle client disconnect with cleanup logging.
+
+        Called automatically by sse-starlette 3.0.3 when client disconnects.
+        Performs cleanup logging for monitoring and debugging.
+
+        Args:
+            message: Disconnect message from sse-starlette library
+
+        """
+        logger.info(
+            "sse_client_disconnected",
+            analysis_id=str(analysis_id),
+            channel=channel,
+            message=str(message),
+        )
+
     async def event_generator() -> AsyncIterator[dict[str, str]]:
         """Generate SSE events from broadcaster subscription.
 
         Leverages sse-starlette 3.0.3 features:
+        - Automatic disconnect detection (no manual checks needed)
         - Better exception propagation for clearer error messages
         - Improved cancellation handling with asyncio.CancelledError
-        - Library's enhanced disconnect detection (still check manually for logging)
+        - Library handles disconnect detection automatically via _listen_for_disconnect
+
         """
         try:
             async for event in broadcaster.subscribe(channel):
-                # sse-starlette 3.0 has better disconnect detection, but we still
-                # check manually for logging purposes and early exit
-                if await request.is_disconnected():
-                    logger.info(
-                        "sse_client_disconnected",
-                        analysis_id=str(analysis_id),
-                    )
-                    break
-
                 # Format event for SSE
                 event_type = str(event.get("type", "message"))
                 yield {
@@ -115,27 +127,31 @@ async def stream_analysis_progress(
                     logger.info(
                         "sse_complete_event_sent",
                         analysis_id=str(analysis_id),
+                        channel=channel,
                     )
                     break
 
         except asyncio.CancelledError:
-            # sse-starlette 3.0 has improved cancellation handling
+            # sse-starlette 3.0.3 automatically cancels on client disconnect
             # This exception is properly propagated by the library
+            # No manual cleanup needed - library handles it
             logger.info(
                 "sse_connection_cancelled",
                 analysis_id=str(analysis_id),
+                channel=channel,
             )
             raise
         except ConnectionError as e:
             # Granular error type for connection issues
-            # sse-starlette 3.0 provides better error propagation
+            # sse-starlette 3.0.3 provides better error propagation
             logger.warning(
                 "sse_connection_error",
                 analysis_id=str(analysis_id),
+                channel=channel,
                 error_type="ConnectionError",
                 error=str(e),
             )
-            # Send structured error event with error type
+            # Send structured error event with error type for client debugging
             yield {
                 "event": "error",
                 "data": json.dumps(
@@ -145,6 +161,7 @@ async def stream_analysis_progress(
                         "analysis_id": str(analysis_id),
                         "error": "Connection error occurred",
                         "message": str(e),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 ),
             }
@@ -153,6 +170,7 @@ async def stream_analysis_progress(
             logger.warning(
                 "sse_timeout_error",
                 analysis_id=str(analysis_id),
+                channel=channel,
                 error_type="TimeoutError",
                 error=str(e),
             )
@@ -165,15 +183,17 @@ async def stream_analysis_progress(
                         "analysis_id": str(analysis_id),
                         "error": "Connection timeout occurred",
                         "message": str(e),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 ),
             }
         except Exception as e:
             # Catch-all for other exceptions with full error details
-            # sse-starlette 3.0 has better exception propagation
+            # sse-starlette 3.0.3 has better exception propagation
             logger.error(
-                "sse_connection_error",
+                "sse_unexpected_error",
                 analysis_id=str(analysis_id),
+                channel=channel,
                 error_type=type(e).__name__,
                 error=str(e),
                 exc_info=True,
@@ -188,8 +208,25 @@ async def stream_analysis_progress(
                         "analysis_id": str(analysis_id),
                         "error": "Unexpected error occurred",
                         "message": str(e),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 ),
             }
+        finally:
+            # Resource cleanup: unsubscribe from broadcaster if needed
+            # EventBroadcaster automatically cleans up on subscription end,
+            # but we log for monitoring
+            logger.debug(
+                "sse_event_generator_exiting",
+                analysis_id=str(analysis_id),
+                channel=channel,
+            )
 
-    return EventSourceResponse(event_generator())
+    # Configure EventSourceResponse with sse-starlette 3.0.3 enhancements
+    # - client_close_handler_callable: Automatic cleanup logging on disconnect
+    # - send_timeout: Prevent hanging connections from unresponsive clients (30 seconds)
+    return EventSourceResponse(
+        event_generator(),
+        client_close_handler_callable=client_close_handler,
+        send_timeout=30.0,  # 30 seconds timeout for unresponsive clients
+    )
