@@ -239,6 +239,8 @@ backend/app/models/
 2. final_challenge node (integrative problem)
 3. guide_reflection node (real-world applications)
 4. Session completion logic
+   - **Resume Session Logic (US-2.3)**: When user returns, `GET /api/v1/tutor/sessions/{id}` loads full conversation history from `tutoring_messages` table, restores StateGraph checkpoint state, allows user to continue from where they left off
+   - **Exit Session Logic (US-2.4)**: `PATCH /api/v1/tutor/sessions/{id}` marks session as "completed" or "abandoned", sets `completed_at` timestamp, saves final state to checkpoint
 
 ---
 
@@ -351,9 +353,17 @@ await emit_streaming_event(
 - [ ] TutorState TypedDict defined
 - [ ] Pydantic models (Syllabus, Section, Lesson, Message) created
 - [ ] Repository interface and implementation
+  - `create_session()` - Create new tutoring session
+  - `get_session()` - Get session with messages (for resume)
+  - `save_message()` - Save user/assistant messages
+  - `update_session_state()` - Update session progress
 - [ ] Graph builder with 4 core nodes
 - [ ] All 4 core nodes implemented with SSE events
-- [ ] API endpoints (POST/GET/PATCH)
+- [ ] API endpoints:
+  - `POST /api/v1/tutor/sessions` - Start session (US-2.1)
+  - `POST /api/v1/tutor/sessions/{id}/messages` - Send message (US-2.2)
+  - `GET /api/v1/tutor/sessions/{id}` - Get session + history (US-2.3 resume)
+  - `PATCH /api/v1/tutor/sessions/{id}` - Update session status (US-2.4 exit)
 - [ ] Router registered in main.py
 - [ ] Unit tests (≥80% coverage)
 - [ ] Integration test: Basic flow
@@ -371,10 +381,12 @@ await emit_streaming_event(
 - [ ] conduct_review node
 - [ ] final_challenge node
 - [ ] guide_reflection node
-- [ ] Session completion logic
+- [ ] Session completion logic:
+  - Resume session: Load checkpoint state, restore conversation history, continue workflow
+  - Exit session: Mark as completed/abandoned, save final checkpoint, update `completed_at`
 - [ ] Graph builder updated
 - [ ] Unit tests for Phase 3
-- [ ] Integration test: Full flow
+- [ ] Integration test: Full flow (including resume/exit scenarios)
 
 ### Quality Gates
 - [ ] All tests pass (100% pass rate)
@@ -450,6 +462,43 @@ POST /api/v1/tutor/sessions/{id}/messages
 SSE Stream:
 data: {"type": "chunk", "content": "Let me explain..."}
 data: {"type": "done", "phase": "lesson_delivery", "progress": {"section": 1, "lesson": 2}}
+```
+
+### Resume Session (US-2.3)
+
+```bash
+GET /api/v1/tutor/sessions/{id}
+
+Response:
+{
+  "session_id": "uuid",
+  "status": "active",
+  "syllabus": {...},
+  "current_section": 1,
+  "current_lesson": 2,
+  "messages": [
+    {"role": "user", "content": "...", "created_at": "..."},
+    {"role": "assistant", "content": "...", "created_at": "..."}
+  ]
+}
+
+# Frontend loads conversation history and continues from checkpoint
+```
+
+### Exit Session (US-2.4)
+
+```bash
+PATCH /api/v1/tutor/sessions/{id}
+{
+  "status": "completed"  # or "abandoned"
+}
+
+Response:
+{
+  "session_id": "uuid",
+  "status": "completed",
+  "completed_at": "2025-11-29T10:30:00Z"
+}
 ```
 
 ---
