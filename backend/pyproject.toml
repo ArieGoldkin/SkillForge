@@ -90,6 +90,7 @@ ignore = [
 # Allow magic values, simpler assertions, and cleanup patterns in tests
 "tests/**/*.py" = [
     "PLR2004",  # Magic value in comparison - common in test assertions
+    "PLR0913",  # Too many arguments - common in test functions with many mocks
     "PLR0915",  # Too many statements - e2e tests can be long
     "D100",     # Missing module docstring
     "D103",     # Missing function docstring
