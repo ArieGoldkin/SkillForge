@@ -34,7 +34,11 @@ def route_to_agents(state: AnalysisState) -> list[Send]:
         ]
     """
     supervisor_decision = state.get("supervisor_decision", {})
-    selected_agents = supervisor_decision.get("agents", [])
+    selected_agents_raw = supervisor_decision.get("agents", [])
+    # Ensure selected_agents is a list (type narrowing for mypy)
+    selected_agents: list[str] = (
+        selected_agents_raw if isinstance(selected_agents_raw, list) else []
+    )
 
     if not selected_agents:
         logger.debug(
