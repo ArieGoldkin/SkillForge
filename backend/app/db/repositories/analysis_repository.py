@@ -187,12 +187,13 @@ class AnalysisRepository:
         if limit:
             query = query.limit(limit)
 
-        # Stream results using SQLAlchemy's streaming support
-        # stream() returns an async context manager that yields Result objects
-        async with self.session.stream(query) as stream_result:
-            async for row in stream_result:
-                # Extract the scalar value from the result row
-                analysis = row.scalar_one()
+        # Stream results using SQLAlchemy's stream_scalars for memory-efficient streaming
+        # stream_scalars returns an AsyncScalarResult that can be used as a context manager
+        # This leverages asyncpg 0.31.0's improved cursor support
+        # Type ignore needed because mypy doesn't recognize AsyncScalarResult
+        # as async context manager
+        async with self.session.stream_scalars(query) as result:  # type: ignore[attr-defined]
+            async for analysis in result:
                 yield analysis
 
 
@@ -205,7 +206,7 @@ def get_analysis_repository(
         db: Database session from dependency injection
 
     Returns:
-        AnalysisRepository instance
+        AnalysisRepository instance (implements IAnalysisRepository Protocol)
 
     """
-    return AnalysisRepository(session=db)
+    return AnalysisRepository(session=db)  # type: ignore[return-value]

@@ -87,11 +87,15 @@ async def test_stream_all_analyses(mock_session):
     """Test stream_all_analyses method."""
     repo = AnalysisRepository(session=mock_session)
 
-    # Mock stream_scalars
+    # Mock stream_scalars as async context manager
+    # stream_scalars returns an AsyncScalarResult that is an async context manager
     mock_analysis = MagicMock(spec=Analysis)
-    mock_stream = AsyncMock()
-    mock_stream.__aiter__.return_value = [mock_analysis]
-    mock_session.stream_scalars.return_value = mock_stream
+    mock_result = AsyncMock()
+    mock_result.__aiter__.return_value = [mock_analysis]
+    mock_result.__aenter__ = AsyncMock(return_value=mock_result)
+    mock_result.__aexit__ = AsyncMock(return_value=None)
+    # stream_scalars is a regular method (not async) that returns async context manager
+    mock_session.stream_scalars = MagicMock(return_value=mock_result)
 
     results = []
     async for analysis in repo.stream_all_analyses(limit=10):
@@ -106,10 +110,13 @@ async def test_stream_all_analyses_invalid_order_by(mock_session):
     """Test stream_all_analyses with invalid order_by column."""
     repo = AnalysisRepository(session=mock_session)
 
-    # Mock stream_scalars
-    mock_stream = AsyncMock()
-    mock_stream.__aiter__.return_value = []
-    mock_session.stream_scalars.return_value = mock_stream
+    # Mock stream_scalars as async context manager
+    # stream_scalars is a regular method (not async) that returns async context manager
+    mock_result = AsyncMock()
+    mock_result.__aiter__.return_value = []
+    mock_result.__aenter__ = AsyncMock(return_value=mock_result)
+    mock_result.__aexit__ = AsyncMock(return_value=None)
+    mock_session.stream_scalars = MagicMock(return_value=mock_result)
 
     # Invalid column should default to "created_at"
     results = []

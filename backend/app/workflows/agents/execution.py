@@ -168,8 +168,9 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     This function is wrapped with @traceable to create LangSmith traces for each agent execution.
 
     Note: This function accepts 7 parameters for backward compatibility with existing callers.
-    Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig dataclasses
-    to reduce complexity. Future refactoring could change the signature to accept dataclasses directly.
+    Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig
+    dataclasses to reduce complexity. Future refactoring could change the signature to accept
+    dataclasses directly.
 
     Args:
         agent: Agent instance to run

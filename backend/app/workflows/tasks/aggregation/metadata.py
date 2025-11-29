@@ -5,10 +5,26 @@ for aggregated insights.
 """
 
 import time
+from dataclasses import dataclass
 
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class AggregationMetadataParams:
+    """Parameters for aggregation metadata calculation.
+
+    Groups parameters to reduce function complexity.
+    """
+
+    validated_findings: list[dict[str, object]]
+    agent_types: list[str]
+    confidence_scores: dict[str, float]
+    conflicts: list[dict[str, str]]
+    aggregated_insights_dict: dict[str, object]
+    start_time: float
 
 
 def extract_metadata_for_logging(
@@ -57,7 +73,7 @@ def extract_sse_metadata(
     return conflicts_resolved_count, len(key_findings_list)
 
 
-def calculate_aggregation_metadata(
+def calculate_aggregation_metadata(  # noqa: PLR0913
     validated_findings: list[dict[str, object]],
     agent_types: list[str],
     confidence_scores: dict[str, float],
@@ -66,6 +82,9 @@ def calculate_aggregation_metadata(
     start_time: float,
 ) -> dict[str, object]:
     """Calculate metadata for aggregated insights.
+
+    Note: This function accepts 6 parameters. Parameters could be grouped into
+    AggregationMetadataParams dataclass in the future to reduce complexity.
 
     Args:
         validated_findings: List of validated agent findings

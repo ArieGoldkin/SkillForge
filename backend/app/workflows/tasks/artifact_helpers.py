@@ -12,6 +12,13 @@ from app.core.tech_keywords import TECH_KEYWORDS
 
 logger = get_logger(__name__)
 
+# Complexity calculation constants
+MIN_AGENTS_FOR_ADVANCED = 6
+MIN_CONFIDENCE_FOR_ADVANCED = 0.85
+MAX_AGENTS_FOR_SIMPLE = 5
+MIN_CONFIDENCE_FOR_SIMPLE = 0.7
+MAX_FILENAME_LENGTH = 100
+
 
 def extract_artifact_metadata(
     aggregated_insights: dict[str, Any],
@@ -58,12 +65,12 @@ def extract_artifact_metadata(
     avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.0
 
     # Complexity logic:
-    # - Simple: <5 agents or avg_confidence <0.7
-    # - Advanced: >6 agents and avg_confidence >0.85
+    # - Simple: <MAX_AGENTS_FOR_SIMPLE agents or avg_confidence <MIN_CONFIDENCE_FOR_SIMPLE
+    # - Advanced: >MIN_AGENTS_FOR_ADVANCED agents and avg_confidence >MIN_CONFIDENCE_FOR_ADVANCED
     # - Intermediate: everything else
-    if agent_count < 5 or avg_confidence < 0.7:
+    if agent_count < MAX_AGENTS_FOR_SIMPLE or avg_confidence < MIN_CONFIDENCE_FOR_SIMPLE:
         complexity = "simple"
-    elif agent_count > 6 and avg_confidence > 0.85:
+    elif agent_count > MIN_AGENTS_FOR_ADVANCED and avg_confidence > MIN_CONFIDENCE_FOR_ADVANCED:
         complexity = "advanced"
     else:
         complexity = "intermediate"
@@ -102,8 +109,8 @@ def generate_filename(title: str | None, analysis_id: str) -> str:
         slug = re.sub(r"[-\s]+", "-", slug)  # Replace spaces/multiple hyphens with single hyphen
         slug = slug.strip("-")  # Remove leading/trailing hyphens
 
-        # Limit length to 100 chars
-        slug = slug[:100] if len(slug) > 100 else slug
+        # Limit length to MAX_FILENAME_LENGTH chars
+        slug = slug[:MAX_FILENAME_LENGTH] if len(slug) > MAX_FILENAME_LENGTH else slug
 
         if slug:  # Only use if slug is not empty after processing
             return f"{slug}.md"
