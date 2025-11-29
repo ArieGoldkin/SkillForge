@@ -41,7 +41,8 @@ def route_to_agents(state: AnalysisState) -> list[Send]:
             "agent_router_no_agents_selected",
             analysis_id=state.get("analysis_id"),
         )
-        return []  # No agents selected, skip to aggregate
+        # Return Send to aggregate when no agents selected (explicit routing)
+        return [Send("aggregate", state)]
 
     # Map agent types to node names (must match node names in graph_builder)
     agent_node_map = {
