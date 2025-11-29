@@ -37,11 +37,21 @@ def mock_agent():
 
 @pytest.fixture
 def mock_session():
-    """Mock database session."""
+    """Mock database session.
+
+    Note: session.add() is synchronous, not async, so it's a MagicMock.
+    session.execute(), commit(), and refresh() are async, so they're AsyncMock.
+    """
     session = AsyncMock(spec=AsyncSession)
-    session.add = MagicMock()
-    session.commit = AsyncMock()
-    session.refresh = AsyncMock()
+    # session.add() is synchronous, not async
+    session.add = MagicMock(return_value=None)
+    session.commit = AsyncMock(return_value=None)
+    session.refresh = AsyncMock(return_value=None)
+    # Mock async methods that return results
+    # Note: scalar_one_or_none() is synchronous, not async
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none = MagicMock(return_value=MagicMock())  # Return mock Analysis
+    session.execute = AsyncMock(return_value=mock_result)
     return session
 
 

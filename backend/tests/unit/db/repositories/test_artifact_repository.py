@@ -10,11 +10,17 @@ from app.db.repositories.artifact_repository import ArtifactRepository
 
 @pytest.fixture
 def mock_session():
-    """Mock database session."""
+    """Mock database session.
+
+    Note: session.add() is synchronous, not async, so it's a MagicMock.
+    session.execute(), commit(), and refresh() are async, so they're AsyncMock.
+    """
     session = AsyncMock()
+    # session.add() is synchronous, not async
+    session.add = MagicMock(return_value=None)
     session.execute = AsyncMock()
-    session.commit = AsyncMock()
-    session.refresh = AsyncMock()
+    session.commit = AsyncMock(return_value=None)
+    session.refresh = AsyncMock(return_value=None)
     return session
 
 

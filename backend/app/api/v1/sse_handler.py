@@ -85,10 +85,17 @@ async def stream_analysis_progress(
     )
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
-        """Generate SSE events from broadcaster subscription."""
+        """Generate SSE events from broadcaster subscription.
+
+        Leverages sse-starlette 3.0.3 features:
+        - Better exception propagation for clearer error messages
+        - Improved cancellation handling with asyncio.CancelledError
+        - Library's enhanced disconnect detection (still check manually for logging)
+        """
         try:
             async for event in broadcaster.subscribe(channel):
-                # Check if client disconnected
+                # sse-starlette 3.0 has better disconnect detection, but we still
+                # check manually for logging purposes and early exit
                 if await request.is_disconnected():
                     logger.info(
                         "sse_client_disconnected",
@@ -112,26 +119,75 @@ async def stream_analysis_progress(
                     break
 
         except asyncio.CancelledError:
+            # sse-starlette 3.0 has improved cancellation handling
+            # This exception is properly propagated by the library
             logger.info(
                 "sse_connection_cancelled",
                 analysis_id=str(analysis_id),
             )
             raise
-        except Exception as e:
-            logger.error(
+        except ConnectionError as e:
+            # Granular error type for connection issues
+            # sse-starlette 3.0 provides better error propagation
+            logger.warning(
                 "sse_connection_error",
                 analysis_id=str(analysis_id),
+                error_type="ConnectionError",
                 error=str(e),
-                exc_info=True,
             )
-            # Send error event before closing
+            # Send structured error event with error type
             yield {
                 "event": "error",
                 "data": json.dumps(
                     {
                         "type": "error",
+                        "error_type": "ConnectionError",
                         "analysis_id": str(analysis_id),
                         "error": "Connection error occurred",
+                        "message": str(e),
+                    }
+                ),
+            }
+        except TimeoutError as e:
+            # Granular error type for timeout issues
+            logger.warning(
+                "sse_timeout_error",
+                analysis_id=str(analysis_id),
+                error_type="TimeoutError",
+                error=str(e),
+            )
+            yield {
+                "event": "error",
+                "data": json.dumps(
+                    {
+                        "type": "error",
+                        "error_type": "TimeoutError",
+                        "analysis_id": str(analysis_id),
+                        "error": "Connection timeout occurred",
+                        "message": str(e),
+                    }
+                ),
+            }
+        except Exception as e:
+            # Catch-all for other exceptions with full error details
+            # sse-starlette 3.0 has better exception propagation
+            logger.error(
+                "sse_connection_error",
+                analysis_id=str(analysis_id),
+                error_type=type(e).__name__,
+                error=str(e),
+                exc_info=True,
+            )
+            # Send error event with error type for better client debugging
+            yield {
+                "event": "error",
+                "data": json.dumps(
+                    {
+                        "type": "error",
+                        "error_type": type(e).__name__,
+                        "analysis_id": str(analysis_id),
+                        "error": "Unexpected error occurred",
+                        "message": str(e),
                     }
                 ),
             }

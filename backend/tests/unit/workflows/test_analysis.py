@@ -1,6 +1,7 @@
 """Unit tests for analysis workflow."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -10,6 +11,9 @@ from app.workflows.state import AnalysisState
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
+
+# Test UUID for analysis_id (must be valid UUID for artifact generation)
+TEST_ANALYSIS_ID = str(uuid4())
 
 
 @pytest.fixture
@@ -56,6 +60,12 @@ async def test_analysis_workflow_with_mocked_services(
         }
     }
 
+    # Mock artifact repository to avoid database foreign key violations
+    mock_artifact = MagicMock()
+    mock_artifact.id = UUID(TEST_ANALYSIS_ID)
+    mock_artifact_repo = AsyncMock()
+    mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
@@ -72,11 +82,15 @@ async def test_analysis_workflow_with_mocked_services(
             new_callable=AsyncMock,
             return_value=[],  # No agent findings since no agents selected
         ),
+        patch(
+            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            return_value=mock_artifact_repo,
+        ),
     ):
         result = await analysis_workflow.ainvoke(
             {
                 "url": "https://example.com",
-                "analysis_id": "test-analysis-id",
+                "analysis_id": TEST_ANALYSIS_ID,
             },
             config={"configurable": {"thread_id": "test-thread"}},
         )
@@ -91,7 +105,7 @@ async def test_analysis_workflow_with_mocked_services(
         assert "agent_findings" in result
 
         # Verify values
-        assert result["analysis_id"] == "test-analysis-id"
+        assert result["analysis_id"] == TEST_ANALYSIS_ID
         assert result["url"] == "https://example.com"
         assert result["raw_content"] == sample_extraction_result["content"]
         assert result["extraction_metadata"] == sample_extraction_result["metadata"]
@@ -120,7 +134,7 @@ async def test_analysis_workflow_error_handling() -> None:
         await analysis_workflow.ainvoke(
             {
                 "url": "https://example.com",
-                "analysis_id": "test-analysis-id",
+                "analysis_id": TEST_ANALYSIS_ID,
             },
             config={"configurable": {"thread_id": "test-thread"}},
         )
@@ -129,8 +143,9 @@ async def test_analysis_workflow_error_handling() -> None:
 @pytest.mark.asyncio
 async def test_analysis_state_structure() -> None:
     """Test AnalysisState TypedDict structure."""
+    test_id = str(uuid4())
     state: AnalysisState = {
-        "analysis_id": "test-id",
+        "analysis_id": test_id,
         "url": "https://example.com",
         "content_type": "article",
         "raw_content": "Test content",
@@ -138,7 +153,7 @@ async def test_analysis_state_structure() -> None:
         "content_embedding": [0.1] * EXPECTED_EMBEDDING_DIMENSIONS,
     }
 
-    assert state["analysis_id"] == "test-id"
+    assert state["analysis_id"] == test_id
     assert state["url"] == "https://example.com"
     assert state["content_type"] == "article"
     assert state["raw_content"] == "Test content"

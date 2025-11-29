@@ -62,7 +62,13 @@ async def test_find_similar_analyses_two_stage_search(
 
     # Mock the subquery and final query
     mock_subquery = MagicMock()
-    mock_select.return_value.where.return_value.order_by.return_value.limit.return_value.subquery.return_value = mock_subquery
+    # Chain mock return values for subquery construction
+    # Break long chain into multiple lines for readability
+    where_result = mock_select.return_value.where.return_value
+    order_by_result = where_result.order_by.return_value
+    limit_result = order_by_result.limit.return_value
+    mock_subquery_chain = limit_result.subquery
+    mock_subquery_chain.return_value = mock_subquery
 
     mock_final_query = MagicMock()
     mock_select.return_value.order_by.return_value.limit.return_value = mock_final_query
