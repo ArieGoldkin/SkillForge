@@ -77,10 +77,11 @@ async def test_analysis_workflow_with_mocked_services(
             new_callable=AsyncMock,
             return_value=mock_supervisor_result,
         ),
+        # Agents now execute as separate nodes via Send API
+        # Mock router to return no agents (empty list)
         patch(
-            "app.workflows.nodes.parallel_agents.execute_agents",
-            new_callable=AsyncMock,
-            return_value=[],  # No agent findings since no agents selected
+            "app.workflows.nodes.agent_router.route_to_agents",
+            return_value=[],  # No agents selected
         ),
         patch(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
