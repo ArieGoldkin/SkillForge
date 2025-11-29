@@ -80,3 +80,5 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         raise
     finally:
         await jina.close()
+
+
