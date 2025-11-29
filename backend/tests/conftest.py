@@ -97,15 +97,21 @@ except ImportError:
     # Settings not imported yet, cache will be cleared when it's first imported
     pass
 
-# Set LLM_MODEL for tests - use OpenAI if API key is available, otherwise skip tests
-# This allows tests to run with OpenAI when configured, but prevents import failures
-# when langchain-openai isn't available in IDE's Python environment
+# Set LLM_MODEL for tests - prefer Gemini 2.5 Flash if Google API key is available,
+# otherwise use OpenAI if API key is available, otherwise skip tests
+# This allows tests to run with Gemini/OpenAI when configured, but prevents import failures
+# when langchain-google-genai/langchain-openai isn't available in IDE's Python environment
 if "LLM_MODEL" not in os.environ:
-    # Check if OpenAI API key is available
-    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
-    if openai_key:
-        os.environ["LLM_MODEL"] = "gpt-5-mini"  # Use OpenAI when key is available
-    # If no OpenAI key, tests that require LLM will be skipped
+    # Prefer Gemini if Google API key is available (faster, cheaper)
+    google_key = os.environ.get("GOOGLE_API_KEY")
+    if google_key:
+        os.environ["LLM_MODEL"] = "gemini-2.5-flash"  # Use Gemini when key is available
+    else:
+        # Fallback to OpenAI if OpenAI key is available
+        openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+        if openai_key:
+            os.environ["LLM_MODEL"] = "gpt-4o-mini"  # Use OpenAI when key is available
+    # If no API keys, tests that require LLM will be skipped
 
 
 @pytest.fixture
@@ -188,16 +194,21 @@ def ensure_test_env_vars(monkeypatch):
 def ensure_llm_model_set(monkeypatch):
     """Ensure LLM_MODEL is set for tests (if not already set in environment).
 
-    This ensures tests default to OpenAI when API key is available
-    even if LLM_MODEL is not set in the environment. Individual tests
-    can override this by setting their own LLM_MODEL.
+    This ensures tests default to Gemini 2.5 Flash when Google API key is available,
+    or OpenAI when OpenAI key is available, even if LLM_MODEL is not set in the environment.
+    Individual tests can override this by setting their own LLM_MODEL.
     """
     # Only set if not already in environment (module-level setenv takes precedence)
     if "LLM_MODEL" not in os.environ:
-        # Only set if OpenAI key is available
-        openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
-        if openai_key:
-            monkeypatch.setenv("LLM_MODEL", "gpt-5-mini")
+        # Prefer Gemini if Google API key is available (faster, cheaper)
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        if google_key:
+            monkeypatch.setenv("LLM_MODEL", "gemini-2.5-flash")
+        else:
+            # Fallback to OpenAI if OpenAI key is available
+            openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+            if openai_key:
+                monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
     # Reduce retry delays for faster tests (0.1s base instead of 1.0s)
     if "LLM_RETRY_DELAY_BASE" not in os.environ:
         monkeypatch.setenv("LLM_RETRY_DELAY_BASE", "0.1")
@@ -558,3 +569,61 @@ async def create_test_analysis(db_session):
         return analysis
 
     return _create
+
+
+@pytest.fixture
+def requires_llm():
+    """Skip test if LLM is not configured or required API key is missing.
+
+    This fixture intelligently checks for the correct API key based on the
+    configured LLM_MODEL. It uses the Settings class to determine which
+    provider is being used and checks for the appropriate API key.
+
+    Supports:
+    - Gemini models → checks GOOGLE_API_KEY
+    - OpenAI models → checks OPENAI_API_KEY
+    - Claude models → checks ANTHROPIC_API_KEY
+    - Other providers → checks corresponding API key
+
+    This is configurable via LLM_MODEL environment variable - no code changes needed
+    when switching models. Just update your .env file:
+
+        LLM_MODEL=gemini-2.5-flash
+        GOOGLE_API_KEY=your_key_here
+
+    Or:
+
+        LLM_MODEL=gpt-4o-mini
+        OPENAI_API_KEY=your_key_here
+    """
+    from app.core.config import LLM_PROVIDER_API_FIELDS, get_settings
+
+    settings = get_settings()
+    llm_model = settings.LLM_MODEL
+
+    if not llm_model:
+        pytest.skip("LLM_MODEL not configured")
+
+    # Determine provider from model name using Settings class
+    try:
+        provider = settings.resolved_llm_provider()
+    except ValueError as e:
+        pytest.skip(f"Cannot determine LLM provider for model '{llm_model}': {e}")
+
+    # Get the required API key field name for this provider
+    api_field = LLM_PROVIDER_API_FIELDS.get(provider)
+
+    if not api_field:
+        pytest.skip(
+            f"Unknown LLM provider '{provider}' for model '{llm_model}'. "
+            "Cannot determine required API key."
+        )
+
+    # Check if the required API key is available
+    api_key = getattr(settings, api_field, None)
+
+    if not api_key:
+        pytest.skip(
+            f"{api_field} not available (required for {provider} model '{llm_model}'). "
+            f"Set {api_field} in your .env file or environment variables."
+        )
