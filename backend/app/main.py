@@ -17,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 load_dotenv()
 
 from app.api.v1 import analyze, artifacts, health, search  # noqa: E402
+from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
 from app.core.logging import get_logger, setup_logging  # noqa: E402
@@ -190,6 +191,7 @@ app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
 app.include_router(artifacts.router, prefix=settings.API_V1_PREFIX)
 app.include_router(search.router, prefix=settings.API_V1_PREFIX)
+app.include_router(tutor_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")
