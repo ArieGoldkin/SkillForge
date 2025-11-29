@@ -1,8 +1,4 @@
-"""Streaming logic for agent execution.
-
-This module handles streaming agent responses with progress updates,
-throttling, and structured response detection.
-"""
+"""Streaming logic for agent execution with progress updates and throttling."""
 
 import time
 from typing import TYPE_CHECKING
@@ -12,38 +8,106 @@ from langchain_core.runnables import Runnable
 if TYPE_CHECKING:
     pass
 
-from app.core.constants import SSE_EVENT_THROTTLE_CHARS, SSE_EVENT_THROTTLE_MS
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.workflows.agents.base import emit_agent_progress
+from app.workflows.agents.streaming_helpers import emit_progress_if_needed
 from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
 
 
-def _should_emit_progress_event(
-    current_time: float,
-    last_event_time: float,
-    accumulated_content: str,
-    last_event_chars: int,
-) -> bool:
-    """Check if SSE progress event should be emitted based on throttling.
+def _check_timeout_remaining(
+    start_time: float, timeout: float, agent_type: str, analysis_id: AnalysisID
+) -> float:
+    """Check remaining timeout and raise if exceeded."""
+    elapsed = time.time() - start_time
+    remaining_timeout = timeout - elapsed
+    if remaining_timeout <= 0:
+        msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
+        logger.warning(
+            "agent_stream_timeout",
+            agent_type=agent_type,
+            analysis_id=analysis_id,
+            timeout=timeout,
+            elapsed=elapsed,
+        )
+        raise TimeoutError(msg)
+    return remaining_timeout
 
-    Args:
-        current_time: Current timestamp
-        last_event_time: Timestamp of last emitted event
-        accumulated_content: Full accumulated content so far
-        last_event_chars: Character count at last event
 
-    Returns:
-        True if event should be emitted (throttle conditions met)
+async def _get_next_chunk_with_timeout(
+    stream_iter,
+    remaining_timeout: float,
+    timeout_info: tuple[str, AnalysisID, float, float],
+) -> dict[str, object] | None:
+    """Get next chunk from stream with per-chunk timeout.
 
+    Uses asyncio.timeout (Python 3.11+) which raises TimeoutError
+    without cancelling the generator, avoiding GeneratorExit issues.
     """
-    chars_since_last = len(accumulated_content) - last_event_chars
-    time_since_last_ms = (current_time - last_event_time) * 1000
-    return (
-        time_since_last_ms >= SSE_EVENT_THROTTLE_MS or chars_since_last >= SSE_EVENT_THROTTLE_CHARS
-    )
+    import asyncio
+    from typing import cast
+
+    try:
+        async with asyncio.timeout(remaining_timeout):
+            chunk = await stream_iter.__anext__()
+            return cast(dict[str, object], chunk)
+    except TimeoutError:
+        # asyncio.timeout raises TimeoutError without cancelling generator
+        agent_type, analysis_id, start_time, timeout = timeout_info
+        msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
+        logger.warning(
+            "agent_stream_chunk_timeout",
+            agent_type=agent_type,
+            analysis_id=analysis_id,
+            timeout=timeout,
+            elapsed=time.time() - start_time,
+        )
+        raise TimeoutError(msg) from None
+    except StopAsyncIteration:
+        return None
+    except (AttributeError, GeneratorExit, RuntimeError) as exc:
+        logger.debug("stream_closed", error=str(exc))
+        return None
+
+
+def _process_chunk(
+    chunk: dict[str, object],
+    final_result: dict[str, object] | None,
+    accumulated_content: str,
+    analysis_id: AnalysisID,
+    agent_type: str,
+) -> tuple[dict[str, object] | None, str, bool]:
+    """Process chunk and update state."""
+    should_break = False
+    if isinstance(chunk, dict) and chunk.get("structured_response"):
+        final_result = chunk
+        logger.debug(
+            "agent_structured_response_found", agent_type=agent_type, analysis_id=analysis_id
+        )
+        should_break = True
+    elif final_result is None or not (
+        isinstance(final_result, dict) and final_result.get("structured_response")
+    ):
+        final_result = chunk
+    if isinstance(chunk, dict) and chunk.get("messages"):
+        messages = chunk["messages"]
+        if messages and isinstance(messages, list) and len(messages) > 0:
+            latest_message = messages[-1]
+            if hasattr(latest_message, "content") and latest_message.content:
+                new_content = latest_message.content[len(accumulated_content) :]
+                if new_content:
+                    accumulated_content = latest_message.content
+    return final_result, accumulated_content, should_break
+
+
+async def _cleanup_stream(stream) -> None:
+    """Clean up async stream with proper error handling."""
+    try:
+        if hasattr(stream, "aclose"):
+            await stream.aclose()
+    except (AttributeError, GeneratorExit, RuntimeError):
+        pass
 
 
 async def stream_agent_response(
@@ -54,6 +118,9 @@ async def stream_agent_response(
     timeout: float,
 ) -> dict[str, object]:
     """Stream agent execution with progress updates and structured response detection.
+
+    Uses a clean timeout pattern that avoids asyncio.wait_for task cancellation,
+    which causes GeneratorExit errors in LangGraph's internal astream implementation.
 
     Args:
         agent: Agent instance with streaming support
@@ -66,107 +133,43 @@ async def stream_agent_response(
         Final chunk dictionary with structured_response if found
 
     Raises:
-        GeneratorExit: If stream is closed externally
         TimeoutError: If streaming exceeds timeout
         Exception: For other streaming errors
 
     """
-    import asyncio
-
     accumulated_content = ""
     final_result: dict[str, object] | None = None
     last_event_time = 0.0
     last_event_chars = 0
+    start_time = time.time()
 
-    async def stream_with_timeout():
-        nonlocal final_result, accumulated_content, last_event_time, last_event_chars
+    stream = agent.astream(input_messages, stream_mode="values")
+    stream_iter = stream.__aiter__()
 
-        try:
-            async for chunk in agent.astream(
-                input_messages,
-                stream_mode="values",
-            ):
-                # Check for structured_response early (robustness)
-                # Preserve chunk with structured_response,
-                # even if later chunks don't have it
-                if isinstance(chunk, dict) and chunk.get("structured_response"):
-                    # Found structured_response - preserve this chunk and exit
-                    # The agent has completed its task, no need to continue streaming
-                    final_result = chunk
-                    logger.debug(
-                        "agent_structured_response_found",
-                        agent_type=agent_type,
-                        analysis_id=analysis_id,
-                    )
-                    break  # Exit streaming loop - we have the result
-                elif final_result is None or not (
-                    isinstance(final_result, dict) and final_result.get("structured_response")
-                ):
-                    # Update final_result only if we haven't found structured_response yet
-                    # This ensures we preserve the chunk with structured_response
-                    final_result = chunk
-
-                # Extract content from messages for progress updates
-                if isinstance(chunk, dict) and chunk.get("messages"):
-                    messages = chunk["messages"]
-                    if messages:
-                        latest_message = messages[-1]
-                        # Extract text content for streaming preview
-                        if hasattr(latest_message, "content") and latest_message.content:
-                            new_content = latest_message.content[len(accumulated_content) :]
-                            if new_content:
-                                accumulated_content = latest_message.content
-
-                                # Throttle SSE events to prevent overwhelming frontend
-                                # Emit only if enough time has passed OR
-                                # enough characters accumulated
-                                current_time = time.time()
-                                should_emit = _should_emit_progress_event(
-                                    current_time,
-                                    last_event_time,
-                                    accumulated_content,
-                                    last_event_chars,
-                                )
-
-                                if should_emit:
-                                    # Emit SSE so frontend sees progress
-                                    await emit_agent_progress(
-                                        analysis_id,
-                                        agent_type,
-                                        "streaming",
-                                        token_preview=accumulated_content[-100:],  # Last 100 chars
-                                    )
-                                    # Update throttling tracking
-                                    last_event_time = current_time
-                                    last_event_chars = len(accumulated_content)
-        except GeneratorExit:
-            # Stream was closed externally
-            logger.warning(
-                "agent_stream_closed",
-                agent_type=agent_type,
-                analysis_id=analysis_id,
-            )
-            # If we have partial result, preserve it
-            if final_result is None:
-                raise  # Re-raise if no result available
-            # Otherwise, final_result is preserved
-        except Exception as e:
-            # Other streaming errors
-            logger.exception(
-                "agent_stream_error",
-                agent_type=agent_type,
-                analysis_id=analysis_id,
-                error=str(e),
-            )
-            raise
-
-    # Stream with timeout
     try:
-        await asyncio.wait_for(
-            stream_with_timeout(),
-            timeout=timeout,
-        )
-    except (TimeoutError, GeneratorExit) as exc:
+        while True:
+            remaining_timeout = _check_timeout_remaining(
+                start_time, timeout, agent_type, analysis_id
+            )
+
+            timeout_info = (agent_type, analysis_id, start_time, timeout)
+            chunk = await _get_next_chunk_with_timeout(stream_iter, remaining_timeout, timeout_info)
+
+            if chunk is None:
+                break
+
+            final_result, accumulated_content, should_break = _process_chunk(
+                chunk, final_result, accumulated_content, analysis_id, agent_type
+            )
+
+            if should_break:
+                break
+
+            last_event_time, last_event_chars = await emit_progress_if_needed(
+                accumulated_content, last_event_time, last_event_chars, analysis_id, agent_type
+            )
+
+    except TimeoutError as exc:
         raise handle_timeout_error(
             exc=exc,
             context=f"Agent {agent_type}",
@@ -174,7 +177,27 @@ async def stream_agent_response(
             logger=logger,
             agent_type=agent_type,
             analysis_id=analysis_id,
-        ) from None
+        ) from exc
+    except GeneratorExit:
+        logger.warning(
+            "agent_stream_generator_exit", agent_type=agent_type, analysis_id=analysis_id
+        )
+        if final_result is None:
+            raise handle_timeout_error(
+                exc=GeneratorExit(),
+                context=f"Agent {agent_type}",
+                timeout=timeout,
+                logger=logger,
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+            ) from None
+    except Exception as e:
+        logger.exception(
+            "agent_stream_error", agent_type=agent_type, analysis_id=analysis_id, error=str(e)
+        )
+        raise
+    finally:
+        await _cleanup_stream(stream)
 
     if final_result is None:
         msg = f"Agent {agent_type} stream completed with no result"

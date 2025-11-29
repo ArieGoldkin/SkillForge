@@ -72,3 +72,5 @@ async def invoke_agent(
         )
         # LangChain returns Any, but we know it's a dict[str, object] for our use case
         return cast(dict[str, object], result)
+
+

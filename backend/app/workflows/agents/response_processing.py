@@ -49,3 +49,5 @@ def extract_structured_response(
     findings = cast(dict[str, object], structured_response.model_dump())  # type: ignore[attr-defined]
 
     return findings
+
+
