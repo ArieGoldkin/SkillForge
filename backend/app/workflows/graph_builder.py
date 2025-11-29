@@ -1,7 +1,7 @@
 """StateGraph workflow builder for analysis pipeline.
 
 This module constructs the LangGraph StateGraph workflow with native
-parallel execution patterns using fan-out and fan-in.
+parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
@@ -11,7 +11,17 @@ from langgraph.graph import END, StateGraph
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.workflows.nodes.parallel_agents import execute_parallel_agents
+from app.workflows.nodes.agent_router import route_to_agents
+from app.workflows.nodes.agents import (
+    code_quality_critic_node,
+    dependency_mapper_node,
+    implementation_planner_node,
+    integration_feasibility_node,
+    performance_analyst_node,
+    security_auditor_node,
+    tech_comparator_node,
+    trend_validator_node,
+)
 from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.state import AnalysisState
 from app.workflows.tasks import (
@@ -106,14 +116,15 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
 
 
 def build_analysis_graph():
-    """Build StateGraph workflow with native parallel execution.
+    """Build StateGraph workflow with native parallel execution using Send API.
 
     Workflow structure:
     1. Extract content (sequential)
     2. Fan-out: Embedding + Supervisor (parallel)
-    3. Fan-out: Parallel agents (native LangGraph parallel)
-    4. Fan-in: Aggregate findings
-    5. End
+    3. Fan-out: Selected agents (native LangGraph parallel via Send API)
+    4. Fan-in: Aggregate findings (waits for all agent nodes)
+    5. Generate artifact
+    6. End
 
     Returns:
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
@@ -122,13 +133,22 @@ def build_analysis_graph():
     # Create graph with AnalysisState
     graph = StateGraph(AnalysisState)
 
-    # Add nodes
+    # Add workflow nodes
     graph.add_node("extract", _extract_content_node)
     graph.add_node("embedding", _generate_embedding_node)
     graph.add_node("supervisor", _supervisor_node)
-    graph.add_node("parallel_agents", execute_parallel_agents)
     graph.add_node("aggregate", aggregate_findings)
     graph.add_node("generate_artifact", generate_artifact)
+
+    # Add all agent nodes (each executes independently in parallel)
+    graph.add_node("tech_comparator", tech_comparator_node)
+    graph.add_node("security_auditor", security_auditor_node)
+    graph.add_node("implementation_planner", implementation_planner_node)
+    graph.add_node("performance_analyst", performance_analyst_node)
+    graph.add_node("code_quality_critic", code_quality_critic_node)
+    graph.add_node("trend_validator", trend_validator_node)
+    graph.add_node("dependency_mapper", dependency_mapper_node)
+    graph.add_node("integration_feasibility", integration_feasibility_node)
 
     # Define edges
     # Sequential: extract must complete first
@@ -138,13 +158,44 @@ def build_analysis_graph():
     graph.add_edge("extract", "embedding")
     graph.add_edge("extract", "supervisor")
 
-    # Fan-in: Both embedding and supervisor must complete before parallel_agents
-    # StateGraph automatically waits for all incoming edges
-    graph.add_edge("embedding", "parallel_agents")
-    graph.add_edge("supervisor", "parallel_agents")
+    # Fan-out: Supervisor routes to selected agents dynamically using Send API
+    # Conditional edge returns list[Send] objects for parallel execution
+    # All agent nodes are potential targets
+    graph.add_conditional_edges(
+        "supervisor",
+        route_to_agents,
+        [
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "code_quality_critic",
+            "trend_validator",
+            "dependency_mapper",
+            "integration_feasibility",
+            "aggregate",  # Fallback if no agents selected
+        ],
+    )
 
-    # Sequential: parallel_agents -> aggregate -> generate_artifact -> end
-    graph.add_edge("parallel_agents", "aggregate")
+    # Fan-in: All agent nodes route to aggregate
+    # LangGraph automatically waits for all incoming edges before executing aggregate
+    agent_nodes = [
+        "tech_comparator",
+        "security_auditor",
+        "implementation_planner",
+        "performance_analyst",
+        "code_quality_critic",
+        "trend_validator",
+        "dependency_mapper",
+        "integration_feasibility",
+    ]
+    for agent_node in agent_nodes:
+        graph.add_edge(agent_node, "aggregate")
+
+    # Also allow supervisor to route directly to aggregate if no agents selected
+    # (handled by route_to_agents returning empty list, which routes to aggregate)
+
+    # Sequential: aggregate -> generate_artifact -> end
     graph.add_edge("aggregate", "generate_artifact")
     graph.add_edge("generate_artifact", END)
 
