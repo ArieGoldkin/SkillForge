@@ -44,8 +44,10 @@ Implement artifact generation service that creates comprehensive markdown artifa
 ### Workflow Integration
 
 ```
-START → EXTRACT → [EMBEDDING, SUPERVISOR] → PARALLEL_AGENTS → AGGREGATE → GENERATE_ARTIFACT → END
+START → EXTRACT → [EMBEDDING, SUPERVISOR] → [AGENT NODES via Send API] → AGGREGATE → GENERATE_ARTIFACT → END
 ```
+
+**Note:** As of December 2025, the workflow uses native LangGraph parallel execution with Send API. Individual agent nodes execute in parallel, replacing the previous `parallel_agents` node pattern.
 
 The artifact generation node runs after aggregation, creating a comprehensive markdown document from all agent findings.
 
@@ -72,7 +74,8 @@ The artifact generation node runs after aggregation, creating a comprehensive ma
 - `test_streaming_timeout.py` - 4 tests for streaming timeout conversion
 - Enhanced `test_execution.py` - 2 tests for execution timeout handling
 - Enhanced `test_aggregate_findings.py` - 2 tests for aggregate timeout handling
-- Enhanced `test_parallel_execution.py` - 1 integration test for error isolation
+- Enhanced `test_parallel_execution.py` - Integration tests for node-based parallel execution (Send API)
+- `test_agent_routing.py` - Integration tests for Send API routing
 - `test_analyze_endpoint.py::test_workflow_status_updates_to_failed_on_generatorexit` - Workflow status handling
 
 ### Real Data Verification
