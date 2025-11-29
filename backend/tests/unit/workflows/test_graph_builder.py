@@ -1,6 +1,7 @@
 """Unit tests for graph builder."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -10,12 +11,15 @@ from app.workflows.state import AnalysisState
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
 
+# Test UUID for analysis_id (must be valid UUID for artifact generation)
+TEST_ANALYSIS_ID = str(uuid4())
+
 
 @pytest.fixture
 def sample_state() -> AnalysisState:
     """Sample initial state for testing."""
     return {
-        "analysis_id": "test-analysis-id",
+        "analysis_id": TEST_ANALYSIS_ID,
         "url": "https://example.com",
     }
 
@@ -82,6 +86,14 @@ async def test_graph_execution_with_mocks(
     mock_embedding_service.generate_embedding = AsyncMock(return_value=sample_embedding)
     mock_embedding_service.close = AsyncMock()
 
+    # Mock artifact repository to avoid database foreign key violations
+    from uuid import UUID
+
+    mock_artifact = MagicMock()
+    mock_artifact.id = UUID(TEST_ANALYSIS_ID)
+    mock_artifact_repo = AsyncMock()
+    mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
@@ -97,6 +109,10 @@ async def test_graph_execution_with_mocks(
             "app.workflows.nodes.parallel_agents.execute_agents",
             new_callable=AsyncMock,
             return_value=[],
+        ),
+        patch(
+            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            return_value=mock_artifact_repo,
         ),
     ):
         graph = build_analysis_graph()
@@ -159,6 +175,14 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
         }
     }
 
+    # Mock artifact repository to avoid database foreign key violations
+    from uuid import UUID
+
+    mock_artifact = MagicMock()
+    mock_artifact.id = UUID(TEST_ANALYSIS_ID)
+    mock_artifact_repo = AsyncMock()
+    mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
@@ -174,6 +198,10 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
             "app.workflows.nodes.parallel_agents.execute_agents",
             new_callable=AsyncMock,
             return_value=[],
+        ),
+        patch(
+            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            return_value=mock_artifact_repo,
         ),
     ):
         graph = build_analysis_graph()

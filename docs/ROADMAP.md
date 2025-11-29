@@ -1167,16 +1167,18 @@ logger.info(
   - Configure environment variables (VITE_API_BASE_URL)
   - Setup custom domain (optional)
   - Enable preview deployments for PRs
-- [ ] **6.3.2** Backend deployment
-  - Choose host: Railway, Render, AWS ECS, or DigitalOcean App Platform
-  - Create production `Dockerfile`
+- [ ] **6.3.2** Backend deployment (Railway)
+  - Create Railway project and connect GitHub repo
+  - Configure service: root directory `backend/`, build/start commands
   - Configure environment variables (DATABASE_URL, OPENAI_API_KEY, etc.)
   - Setup health check endpoint for monitoring
-- [ ] **6.3.3** Database setup
-  - Provision managed PostgreSQL (Neon, Supabase, or AWS RDS)
+  - Configure CORS for Vercel frontend domain
+- [ ] **6.3.3** Database setup (Supabase)
+  - Create Supabase project `skillforge-production`
   - Enable PGVector extension
+  - Get connection string (Transaction Mode pooler for Railway)
   - Run migrations: `alembic upgrade head`
-  - Setup daily backups
+  - Configure connection pooling in SQLAlchemy
 - [ ] **6.3.4** Switch to production LLM
   - Update `OPENAI_API_KEY` in backend env
   - Use `gpt-5-mini` (recommended) or `claude-sonnet-4` for production
@@ -1374,7 +1376,7 @@ This roadmap is designed to be imported into your project management system. Eac
 - **Architecture Decisions:** See `/docs/ARCHITECTURE.md` (to be created)
 - **API Reference:** See `/docs/API.md` (to be created)
 - **Developer Guide:** See `/docs/DEVELOPMENT.md` (Phase 1.6)
-- **Deployment Guide:** See `/docs/DEPLOYMENT.md` (Phase 6.3)
+- **Deployment Guide:** See `/docs/issues/072-artifact-generation/DEPLOYMENT_STRATEGY.md` (Option 2: Vercel + Railway + Supabase)
 
 ---
 

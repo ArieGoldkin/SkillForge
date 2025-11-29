@@ -6,11 +6,8 @@ import pytest
 
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregate_findings import aggregate_findings
-from app.workflows.tasks.aggregation_helpers import (
-    detect_conflicts,
-    format_findings_for_llm,
-    validate_and_parse_findings,
-)
+from app.workflows.tasks.aggregation import validate_and_parse_findings
+from app.workflows.tasks.aggregation_helpers import detect_conflicts, format_findings_for_llm
 
 
 @pytest.fixture
@@ -264,14 +261,15 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
             patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event") as mock_sse,
+                "app.workflows.tasks.aggregate_findings.emit_aggregation_started"
+            ) as mock_sse_start,
+            patch(
+                "app.workflows.tasks.aggregate_findings.emit_aggregation_complete"
+            ) as mock_sse_complete,
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
@@ -315,14 +313,11 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(state)
 
@@ -342,7 +337,10 @@ class TestAggregateFindings:
             agent_findings=[],
         )
 
-        with patch("app.workflows.tasks.aggregate_findings.emit_streaming_event") as mock_sse:
+        with (
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+        ):
             result = await aggregate_findings(state)
 
             assert "aggregated_insights" in result
@@ -382,14 +380,11 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
@@ -412,14 +407,11 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
@@ -433,11 +425,12 @@ class TestAggregateFindings:
     async def test_aggregate_llm_error_handling(self, sample_state):
         """Test graceful fallback when LLM synthesis fails."""
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             # Simulate LLM error
-            mock_invoke.side_effect = Exception("LLM API error")
+            mock_synthesize.side_effect = Exception("LLM API error")
 
             result = await aggregate_findings(sample_state)
 
@@ -453,7 +446,9 @@ class TestAggregateFindings:
         """Test executive summary is validated to 2-3 sentences."""
         # LLM returns 4 sentences
         mock_structured_response = {
-            "executive_summary": "First sentence. Second sentence. Third sentence. Fourth sentence.",
+            "executive_summary": (
+                "First sentence. Second sentence. Third sentence. Fourth sentence."
+            ),
             "key_findings": ["F1", "F2", "F3"],
             "synthesis": {
                 "technical_analysis": "Analysis",
@@ -465,14 +460,11 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
@@ -498,14 +490,11 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
@@ -517,18 +506,14 @@ class TestAggregateFindings:
         mock_structured_response["key_findings"] = ["F1", "F2"]
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-            patch(
-                "app.workflows.tasks.aggregate_findings.extract_structured_response"
-            ) as mock_extract,
-            patch("app.workflows.tasks.aggregate_findings.emit_streaming_event"),
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
-            mock_invoke.return_value = {"structured_response": mock_structured_response}
-            mock_extract.return_value = mock_structured_response
+            mock_synthesize.return_value = mock_structured_response
 
             result = await aggregate_findings(sample_state)
 
             insights = result["aggregated_insights"]
             # Should be padded to at least 3 items
             assert len(insights["key_findings"]) >= 3
-

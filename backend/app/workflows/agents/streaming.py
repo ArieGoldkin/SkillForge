@@ -16,6 +16,7 @@ from app.core.constants import SSE_EVENT_THROTTLE_CHARS, SSE_EVENT_THROTTLE_MS
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.workflows.agents.base import emit_agent_progress
+from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
 
@@ -165,18 +166,15 @@ async def stream_agent_response(
             stream_with_timeout(),
             timeout=timeout,
         )
-    except GeneratorExit:
-        # Re-raise GeneratorExit to propagate to outer handler
-        raise
-    except TimeoutError:
-        msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
-        logger.exception(
-            "agent_timeout",
+    except (TimeoutError, GeneratorExit) as exc:
+        raise handle_timeout_error(
+            exc=exc,
+            context=f"Agent {agent_type}",
+            timeout=timeout,
+            logger=logger,
             agent_type=agent_type,
             analysis_id=analysis_id,
-            timeout=timeout,
-        )
-        raise TimeoutError(msg) from None
+        ) from None
 
     if final_result is None:
         msg = f"Agent {agent_type} stream completed with no result"

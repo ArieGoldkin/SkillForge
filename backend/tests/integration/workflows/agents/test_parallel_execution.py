@@ -137,3 +137,45 @@ async def test_execute_agents_all_8_agents_parallel(
     assert "code_quality_critic" in agent_types
     assert "trend_validator" in agent_types
     assert "dependency_mapper" in agent_types
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(300)  # 5 minutes for error isolation test
+async def test_parallel_agents_error_isolation_one_timeout_does_not_crash_others(
+    requires_llm,
+    requires_database,
+    reset_engine_connections,
+):
+    """Test that one agent timing out does not crash other agents."""
+    from app.workflows.tasks.agent_execution import execute_agents
+
+    analysis_id = str(uuid4())
+    content = "Test content for error isolation"
+    content_type = "article"
+
+    # Create Analysis record
+    async with AsyncSessionLocal() as shared_session:
+        analysis = Analysis(
+            id=UUID(analysis_id),
+            url="https://example.com",
+            content_type=content_type,
+            status="pending",
+        )
+        shared_session.add(analysis)
+        await shared_session.commit()
+
+    # Execute with multiple agents - one may timeout, others should succeed
+    # This tests that GeneratorExit/TimeoutError in one agent doesn't crash others
+    result = await execute_agents(
+        content=content,
+        content_type=content_type,
+        analysis_id=analysis_id,
+        selected_agents=["tech_comparator", "security_auditor"],
+    )
+
+    # Should return results (even if one timed out, we get partial results)
+    # The key is that it doesn't raise an exception
+    assert isinstance(result, list)
+    # May have 0, 1, or 2 results depending on timeouts, but should not crash

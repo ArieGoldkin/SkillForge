@@ -1,0 +1,162 @@
+"""Generate markdown artifact from aggregated insights.
+
+This module implements the artifact generation node that creates a
+comprehensive markdown document from aggregated agent findings.
+"""
+
+import time
+import uuid
+
+from langsmith import traceable
+
+from app.core.agent_config import get_stage_name
+from app.core.logging import get_logger
+from app.core.template_utils import render_jinja_template
+from app.db.repositories.artifact_repository import ArtifactRepository
+from app.db.session import get_session_factory
+from app.services.sse_helpers import emit_streaming_event
+from app.workflows.state import AnalysisState
+from app.workflows.tasks.artifact_helpers import build_claude_code_prompt, extract_artifact_metadata
+
+logger = get_logger(__name__)
+
+
+@traceable(
+    name="generate_artifact",
+    run_type="chain",
+    tags=["workflow", "node", "artifact_generation"],
+)
+async def generate_artifact(
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Generate markdown artifact from aggregated insights.
+
+    Creates a comprehensive markdown document from aggregated agent findings,
+    stores it in the database, and returns the artifact ID.
+
+    Args:
+        state: Current workflow state with aggregated_insights populated
+
+    Returns:
+        Dictionary with artifact_id field (to avoid LangGraph concurrent update errors)
+
+    Raises:
+        ValueError: If aggregated_insights is missing or invalid
+        Exception: If database operation fails
+
+    """
+    analysis_id = state["analysis_id"]
+    aggregated_insights = state.get("aggregated_insights", {})
+    agent_findings = state.get("agent_findings", [])
+    extraction_metadata = state.get("extraction_metadata", {})
+    url = state.get("url", "")
+
+    start_time = time.time()
+
+    # Emit SSE event: artifact generation started
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage=get_stage_name("artifact_generation"),
+        status="running",
+    )
+
+    logger.info(
+        "workflow_artifact_generation_started",
+        analysis_id=analysis_id,
+    )
+
+    try:
+        # Validate aggregated_insights exists
+        if not aggregated_insights or not isinstance(aggregated_insights, dict):
+            error_msg = "aggregated_insights is missing or invalid"
+            logger.error(
+                "workflow_artifact_generation_missing_insights",
+                analysis_id=analysis_id,
+            )
+            raise ValueError(error_msg)
+
+        # Prepare template context
+        title = extraction_metadata.get("title") or "Technical Analysis"
+        generated_date = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+
+        analysis_metadata = {
+            "title": title,
+            "url": url,
+            "generated_date": generated_date,
+            "analysis_id": str(analysis_id),
+        }
+
+        # Build Claude Code prompt
+        claude_code_prompt = build_claude_code_prompt(aggregated_insights, analysis_metadata)
+
+        # Render markdown template
+        template_context = {
+            "aggregated_insights": aggregated_insights,
+            "agent_findings": agent_findings,
+            "analysis_metadata": analysis_metadata,
+            "claude_code_prompt": claude_code_prompt,
+        }
+
+        markdown_content = render_jinja_template("artifact.j2", template_context)
+
+        # Extract metadata (topics, complexity)
+        artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
+
+        # Store artifact in database using repository pattern
+        session_factory = get_session_factory()
+        async with session_factory() as db_session:
+            repository = ArtifactRepository(session=db_session)
+            artifact = await repository.create_artifact(
+                {
+                    "id": uuid.uuid4(),
+                    "analysis_id": analysis_id,
+                    "markdown_content": markdown_content,
+                    "version": 1,
+                    "artifact_metadata": artifact_metadata,
+                    "download_count": 0,
+                }
+            )
+            artifact_id = str(artifact.id)
+
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        logger.info(
+            "workflow_artifact_generation_complete",
+            analysis_id=analysis_id,
+            artifact_id=artifact_id,
+            markdown_length=len(markdown_content),
+            processing_time_ms=processing_time_ms,
+        )
+
+        # Emit SSE event: artifact generation complete
+        await emit_streaming_event(
+            "progress",
+            analysis_id=analysis_id,
+            stage=get_stage_name("artifact_generation"),
+            status="complete",
+            artifact_id=artifact_id,
+            markdown_length=len(markdown_content),
+        )
+
+        # Return only updated fields, not entire state
+        return {"artifact_id": artifact_id}
+
+    except Exception as e:
+        # Emit SSE event: artifact generation failed
+        await emit_streaming_event(
+            "error",
+            analysis_id=analysis_id,
+            stage=get_stage_name("artifact_generation"),
+            status="failed",
+            error=str(e),
+            error_code="ARTIFACT_GENERATION_FAILED",
+        )
+
+        logger.error(
+            "workflow_artifact_generation_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise

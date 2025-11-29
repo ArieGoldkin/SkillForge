@@ -526,13 +526,14 @@ interface GitHubAnalysis extends Analysis {
 
 #### 🔗 Integration Point 13: Production Deployment (Day 10)
 
-**Coordinated deployment:**
-1. **Yonatan:** Deploy backend to production
-2. **Yonatan:** Run database migrations
-3. **Arie:** Update frontend env vars (VITE_API_BASE_URL)
-4. **Arie:** Deploy frontend to Vercel
-5. **Both:** Smoke test all features
-6. **Both:** Monitor error tracking (Sentry)
+**Coordinated deployment (Option 2: Vercel + Railway + Supabase):**
+1. **Yonatan:** Setup Supabase project and enable PGVector
+2. **Yonatan:** Deploy backend to Railway
+3. **Yonatan:** Run database migrations on Supabase
+4. **Arie:** Update frontend env vars (VITE_API_BASE_URL → Railway URL)
+5. **Arie:** Deploy frontend to Vercel
+6. **Both:** Smoke test all features end-to-end
+7. **Both:** Monitor error tracking (Sentry) and health checks
 
 ---
 

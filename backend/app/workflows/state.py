@@ -25,6 +25,7 @@ class AnalysisState(TypedDict, total=False):
         supervisor_decision: Supervisor's agent selection decision
         agent_findings: List of findings from executed agents
         aggregated_insights: Synthesized insights from all agents (Issue #71)
+        artifact_id: UUID of generated artifact (Issue #72)
         evaluation_results: Agent quality evaluation results (NEW)
         metrics: Performance and quality metrics (NEW)
 
@@ -39,5 +40,6 @@ class AnalysisState(TypedDict, total=False):
     supervisor_decision: dict[str, object]
     agent_findings: list[dict[str, object]]
     aggregated_insights: dict[str, object]  # Issue #71: Synthesized insights
+    artifact_id: str | None  # Issue #72: Generated artifact ID
     evaluation_results: dict[str, object]  # NEW: Agent quality scores
     metrics: dict[str, object]  # NEW: Performance metrics

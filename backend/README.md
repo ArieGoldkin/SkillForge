@@ -93,12 +93,17 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── config.py             # Pydantic Settings
 │   │   ├── logging.py            # structlog configuration
-│   │   └── exceptions.py         # Custom exception handlers (future)
+│   │   ├── exceptions.py         # Custom exception handlers
+│   │   ├── timeout_config.py     # Centralized timeout constants
+│   │   └── tech_keywords.py      # Technology keywords for metadata
 │   │
 │   ├── db/                       # Database layer
 │   │   ├── __init__.py
 │   │   ├── base.py               # SQLAlchemy Base class
-│   │   └── session.py            # AsyncSession factory (future)
+│   │   ├── session.py            # AsyncSession factory
+│   │   └── repositories/         # Repository pattern implementations
+│   │       ├── __init__.py
+│   │       └── artifact_repository.py  # Artifact repository
 │   │
 │   ├── models/                   # SQLAlchemy ORM models (future)
 │   │   └── __init__.py
@@ -115,7 +120,16 @@ backend/
 │   │
 │   └── workflows/                # LangGraph workflows
 │       ├── __init__.py
-│       └── analysis.py           # Analysis workflow (extract → embed)
+│       ├── analysis.py           # Analysis workflow (extract → embed)
+│       ├── tasks/                # Workflow task nodes
+│       │   ├── aggregation/      # Aggregation modules
+│       │   │   ├── validation.py # Findings validation
+│       │   │   ├── synthesis.py  # LLM synthesis
+│       │   │   ├── metadata.py   # Metadata processing
+│       │   │   └── events.py     # SSE event helpers
+│       │   └── ...
+│       └── utils/                # Workflow utilities
+│           └── timeout_handling.py  # Centralized timeout handling
 │
 ├── alembic/                      # Database migrations
 ├── tests/                        # Test suite
@@ -496,32 +510,55 @@ For detailed architecture documentation, see [docs/ARCHITECTURE.md](../docs/ARCH
 
 ### Key Patterns
 
-- **Repository Pattern**: Abstract database access (see `docs/ARCHITECTURE.md`)
+- **Repository Pattern**: Abstract database access with Protocol interfaces
+  - Example: `IArtifactRepository` Protocol, `ArtifactRepository` implementation
+  - Dependency injection: `get_artifact_repository()` function
+  - See `app/db/repositories/artifact_repository.py` for reference
 - **Service Layer**: Encapsulate business logic
 - **Dependency Injection**: FastAPI Depends() for testability
 - **Structured Logging**: structlog with request ID tracking
-- **Error Handling**: Custom exception hierarchy (see Error Handling section)
+- **Error Handling**: Custom exception hierarchy + centralized timeout handling
+  - Timeout utilities: `app/workflows/utils/timeout_handling.py`
+  - Converts `GeneratorExit` to `TimeoutError` for consistent handling
+- **Module Organization**: Files split to stay under size limits (200 lines source, 150 lines repositories)
+  - Example: `aggregate_findings.py` split into `aggregation/` submodules
 
-## Constants
+## Constants & Configuration
 
-Application-wide constants are centralized in `app/core/constants.py`:
+Application-wide constants are centralized in configuration modules:
+
+### Timeout Configuration (`app/core/timeout_config.py`)
+
+- **`AGENT_TIMEOUT`**: 120.0 seconds - Agent execution timeout
+- **`SYNTHESIS_TIMEOUT`**: 120.0 seconds - LLM synthesis timeout
+- **`STREAMING_TIMEOUT`**: 300.0 seconds - Long-running stream timeout
+
+**Usage:**
+```python
+from app.core.timeout_config import AGENT_TIMEOUT
+
+result = await asyncio.wait_for(agent_call(), timeout=AGENT_TIMEOUT)
+```
+
+### Technology Keywords (`app/core/tech_keywords.py`)
+
+- **`TECH_KEYWORDS`**: List of technology keywords for metadata extraction
+
+**Usage:**
+```python
+from app.core.tech_keywords import TECH_KEYWORDS
+
+if keyword in TECH_KEYWORDS:
+    # Extract topic
+```
+
+### Other Constants
 
 - **HTTP Status Codes**: `HTTP_OK`, `HTTP_NOT_FOUND`, `HTTP_ERROR_THRESHOLD`
-- **Timeouts**: `DEFAULT_TIMEOUT`, `EMBEDDING_TIMEOUT`, `DB_TIMEOUT`
 - **Text Limits**: `MAX_ERROR_MESSAGE_LENGTH`
 - **Retry Configuration**: `MAX_RETRY_ATTEMPTS`, retry wait times
 - **Database Pool**: `DB_POOL_SIZE`, `DB_MAX_OVERFLOW`, `DB_POOL_RECYCLE`
 - **Content Types**: `CONTENT_TYPE_ARTICLE`, `CONTENT_TYPE_VIDEO`, `CONTENT_TYPE_REPO`
-
-**Usage:**
-```python
-from app.core.constants import HTTP_ERROR_THRESHOLD
-
-# Text truncation handled by EmbeddingService (32,000 char limit)
-
-if response.status_code >= HTTP_ERROR_THRESHOLD:
-    raise Error("HTTP error")
-```
 
 ## Error Handling
 

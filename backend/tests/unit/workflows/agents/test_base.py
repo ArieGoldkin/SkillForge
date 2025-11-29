@@ -6,10 +6,7 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel
 
-from app.workflows.agents.base import (
-    create_structured_agent,
-    save_agent_finding,
-)
+from app.workflows.agents.base import create_structured_agent, save_agent_finding
 
 
 class MockAgentSchema(BaseModel):
@@ -21,11 +18,22 @@ class MockAgentSchema(BaseModel):
 
 @pytest.fixture
 def mock_session():
-    """Mock database session."""
+    """Mock database session.
+
+    Note: session.add() is not async, so it's a MagicMock, not AsyncMock.
+    session.commit() and session.refresh() are async, so they're AsyncMock.
+    session.execute() and session.scalar_one_or_none() are async.
+    """
     session = AsyncMock()
-    session.add = MagicMock()
-    session.commit = AsyncMock()
-    session.refresh = AsyncMock()
+    # session.add() is synchronous, not async
+    session.add = MagicMock(return_value=None)
+    session.commit = AsyncMock(return_value=None)
+    session.refresh = AsyncMock(return_value=None)
+    # Mock async methods that return results
+    # Note: scalar_one_or_none() is synchronous, not async
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none = MagicMock(return_value=MagicMock())  # Return mock Analysis
+    session.execute = AsyncMock(return_value=mock_result)
     return session
 
 

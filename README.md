@@ -228,7 +228,7 @@ VITE_API_BASE_URL=http://localhost:8500
                              ↕
 ┌──────────────────────────────────────────────────────────┐
 │                    BACKEND (Python)                      │
-│                FastAPI + LangGraph                       │
+│         Railway (FastAPI + LangGraph)                    │
 │  ┌────────────────────────────────────────────────────┐ │
 │  │         LangGraph Multi-Agent Workflow             │ │
 │  │  Extract → Supervisor → 8 Agents → Aggregate      │ │
@@ -240,7 +240,7 @@ VITE_API_BASE_URL=http://localhost:8500
 └──────────────────────────────────────────────────────────┘
                              ↕
 ┌──────────────────────────────────────────────────────────┐
-│              PostgreSQL + PGVector                       │
+│         Supabase (PostgreSQL + PGVector)                │
 │  • Analyses  • Artifacts  • Tutoring  • Embeddings     │
 └──────────────────────────────────────────────────────────┘
 ```
