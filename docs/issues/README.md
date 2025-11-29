@@ -55,6 +55,10 @@ docs/issues/
 │   └── ISSUE_45_VALIDATION_COMPLETE.md   # Issue #45 complete doc
 ├── 070-remaining-5-agents/
 │   └── README.md                         # Issue #70 complete doc
+├── 071-aggregator-node/
+│   └── README.md                         # Issue #71 complete doc
+├── 072-artifact-generation/
+│   └── README.md                         # Issue #72 complete doc
 ├── 090-embedding-token-fix/
 │   └── README.md                         # Issue #90 open doc
 ├── 091-workflow-status-fix/
@@ -86,6 +90,13 @@ docs/issues/
 | [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) | Create SSE Client Hook [5 pts] | ✅ Complete | Arie | [📄 Docs](./043-sse-client-hook/ISSUE_43_VALIDATION_COMPLETE.md) | [#43](https://github.com/ArieGoldkin/SkillForge/issues/43) |
 | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) | Build ProgressTracker Component [5 pts] | ✅ Complete | Arie | [📄 Docs](./044-progress-tracker/ISSUE_44_VALIDATION_COMPLETE.md) | [#44](https://github.com/ArieGoldkin/SkillForge/issues/44) |
 | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) | Build Analysis View Page [3 pts] | ✅ Complete | Arie | [📄 Docs](./045-analysis-view-page/ISSUE_45_VALIDATION_COMPLETE.md) | [#45](https://github.com/ArieGoldkin/SkillForge/issues/45) |
+
+### ✅ Recently Completed
+
+| Issue | Title | Points | Status | Assignee | Docs | GitHub |
+|-------|-------|--------|--------|----------|------|--------|
+| [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) | Aggregator Node | 5 | ✅ Complete | Yonatan | [📄 Docs](./071-aggregator-node/README.md) | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) |
+| [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) | Artifact Generation | 8 | ✅ Complete | Yonatan | [📄 Docs](./072-artifact-generation/README.md) | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) |
 
 ### 🔄 In Progress / Ready (7 total - 20 pts)
 
