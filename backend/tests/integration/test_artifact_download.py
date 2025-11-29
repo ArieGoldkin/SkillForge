@@ -52,7 +52,13 @@ async def test_download_endpoint_returns_markdown(
     assert response.headers["content-type"] in ("text/markdown", "text/markdown; charset=utf-8")
     assert "attachment" in response.headers["content-disposition"]
     content_disposition = response.headers["content-disposition"]
-    assert "test-artifact.md" in content_disposition or "analysis-" in content_disposition
+    # Filename is generated from title "Test Article" -> "test-article.md"
+    # or falls back to analysis ID if no title
+    assert (
+        "test-article.md" in content_disposition
+        or "test-artifact.md" in content_disposition
+        or "analysis-" in content_disposition
+    )
     assert "# Test Artifact" in response.text
 
     # Verify download_count incremented
@@ -101,18 +107,26 @@ async def test_download_increments_count(requires_database, reset_engine_connect
     db_session.add(artifact)
     await db_session.commit()
 
-    # Download artifact
+    # Get initial count before download
+    initial_count = artifact.download_count
+    assert initial_count == 5, f"Expected initial count to be 5, got {initial_count}"
+
+    # Download artifact (this happens in a separate request/transaction)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get(f"/api/v1/artifacts/{artifact_id}/download")
 
     assert response.status_code == status.HTTP_200_OK
 
-    # Verify count incremented
-    result = await db_session.execute(select(Artifact).where(Artifact.id == artifact_id))
-    updated_artifact = result.scalar_one_or_none()
-    assert updated_artifact is not None
-    assert updated_artifact.download_count == 6
+    # The endpoint uses its own db session and commits, so we need to expire
+    # the current object and re-query to see the updated value
+    db_session.expire(artifact)
+    await db_session.refresh(artifact)
+    
+    # Should be 6 (5 initial + 1 from download)
+    assert artifact.download_count == initial_count + 1, (
+        f"Expected download_count to be {initial_count + 1}, got {artifact.download_count}"
+    )
 
 
 @pytest.mark.asyncio
