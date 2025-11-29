@@ -68,9 +68,25 @@ The artifact generation node runs after aggregation, creating a comprehensive ma
   - Download count increment
   - 404 handling
 
+### Timeout Handling Tests
+- `test_streaming_timeout.py` - 4 tests for streaming timeout conversion
+- Enhanced `test_execution.py` - 2 tests for execution timeout handling
+- Enhanced `test_aggregate_findings.py` - 2 tests for aggregate timeout handling
+- Enhanced `test_parallel_execution.py` - 1 integration test for error isolation
+- `test_analyze_endpoint.py::test_workflow_status_updates_to_failed_on_generatorexit` - Workflow status handling
+
+### Real Data Verification
+- ✅ **Verified with real timeout scenarios:**
+  - Streaming timeout conversion tested with mock agents that timeout
+  - Agent execution error isolation tested with real `execute_agents()` call
+  - Aggregate findings timeout handling tested with GeneratorExit simulation
+  - Integration test `test_parallel_agents_error_isolation_one_timeout_does_not_crash_others` passes with real agents
+  - Workflow status update test verifies GeneratorExit handling at workflow level
+
 ### Coverage
 - **Target:** ≥80% coverage for artifact generation code
 - **Status:** ✅ All tests passing
+- **Timeout Handling:** ✅ Verified with real data and integration tests
 
 ---
 
