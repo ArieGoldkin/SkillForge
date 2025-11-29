@@ -14,8 +14,7 @@ from langsmith import traceable
 
 logger = get_logger(__name__)
 
-REFLECTION_PROMPT = (
-    """Guide the user in reflecting on their learning and applying concepts.
+REFLECTION_PROMPT = """Guide the user in reflecting on their learning and applying concepts.
 
 Syllabus: {syllabus_summary}
 Understanding Scores: {understanding_scores}
