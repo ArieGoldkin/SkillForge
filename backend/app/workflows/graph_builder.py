@@ -14,7 +14,12 @@ from app.core.logging import get_logger
 from app.workflows.nodes.parallel_agents import execute_parallel_agents
 from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.state import AnalysisState
-from app.workflows.tasks import aggregate_findings, extract_content, generate_embedding
+from app.workflows.tasks import (
+    aggregate_findings,
+    extract_content,
+    generate_artifact,
+    generate_embedding,
+)
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
@@ -123,6 +128,7 @@ def build_analysis_graph():
     graph.add_node("supervisor", _supervisor_node)
     graph.add_node("parallel_agents", execute_parallel_agents)
     graph.add_node("aggregate", aggregate_findings)
+    graph.add_node("generate_artifact", generate_artifact)
 
     # Define edges
     # Sequential: extract must complete first
@@ -137,9 +143,10 @@ def build_analysis_graph():
     graph.add_edge("embedding", "parallel_agents")
     graph.add_edge("supervisor", "parallel_agents")
 
-    # Sequential: parallel_agents -> aggregate -> end
+    # Sequential: parallel_agents -> aggregate -> generate_artifact -> end
     graph.add_edge("parallel_agents", "aggregate")
-    graph.add_edge("aggregate", END)
+    graph.add_edge("aggregate", "generate_artifact")
+    graph.add_edge("generate_artifact", END)
 
     # Compile with checkpointer
     checkpointer = _get_checkpointer()

@@ -668,16 +668,14 @@ graph TB
     
     subgraph "Production"
         ProdUser[End Users]
-        ProdCDN[CDN / Vercel<br/>Frontend]
-        ProdAPI[Backend API<br/>FastAPI + Uvicorn]
-        ProdDB[(PostgreSQL<br/>Production)]
-        ProdRedis[(Redis<br/>Event Broadcasting)]
+        ProdCDN[Vercel<br/>Frontend (React 19)]
+        ProdAPI[Railway<br/>Backend API (FastAPI)]
+        ProdDB[(Supabase<br/>PostgreSQL + PGVector)]
         ProdOpenAI[OpenAI API<br/>GPT-5 Mini]
         
         ProdUser --> ProdCDN
-        ProdCDN --> ProdAPI
+        ProdCDN -->|SSE + REST| ProdAPI
         ProdAPI --> ProdDB
-        ProdAPI --> ProdRedis
         ProdAPI --> ProdOpenAI
     end
     

@@ -224,3 +224,71 @@ async def test_run_agent_with_tracking_uuid_object(
     assert str(called_analysis_id) == analysis_id  # Compare string representations
 
     assert result["agent_type"] == "test_agent"
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+async def test_agent_execution_converts_generatorexit_to_timeouterror(
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that GeneratorExit from invoke_agent is converted to TimeoutError."""
+    from app.workflows.agents.execution import _run_agent_with_tracking_impl
+
+    mock_agent = MagicMock()
+    mock_agent.astream = None  # Disable streaming to use ainvoke path
+
+    with patch("app.workflows.agents.execution.invoke_agent") as mock_invoke:
+        # Mock invoke_agent to raise GeneratorExit (simulating timeout cancellation)
+        mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
+
+        # Should convert GeneratorExit to TimeoutError
+        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="test content",
+            content_type="article",
+            analysis_id=AnalysisID("test-id"),
+            agent_type="test_agent",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        with pytest.raises(TimeoutError, match="execution"):
+            await _run_agent_with_tracking_impl(params=params, config=config)
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+async def test_agent_execution_handles_timeouterror(
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that TimeoutError from invoke_agent is handled correctly."""
+    from app.workflows.agents.execution import _run_agent_with_tracking_impl
+
+    mock_agent = MagicMock()
+    mock_agent.astream = None  # Disable streaming to use ainvoke path
+
+    with patch("app.workflows.agents.execution.invoke_agent") as mock_invoke:
+        # Mock invoke_agent to raise TimeoutError
+        mock_invoke.side_effect = TimeoutError("Agent exceeded timeout")
+
+        # Should re-raise TimeoutError
+        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="test content",
+            content_type="article",
+            analysis_id=AnalysisID("test-id"),
+            agent_type="test_agent",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        with pytest.raises(TimeoutError, match="exceeded timeout"):
+            await _run_agent_with_tracking_impl(params=params, config=config)
