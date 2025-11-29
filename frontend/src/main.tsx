@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 
+// Prism.js syntax highlighting theme
+import 'prismjs/themes/prism-tomorrow.css'
+
 import './index.css'
 import { router } from './router'
 
