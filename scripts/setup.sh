@@ -53,7 +53,13 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+# Determine which Docker Compose command to use
+DOCKER_COMPOSE_CMD=""
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE_CMD="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE_CMD="docker compose"
+else
     error "Docker Compose not found. Please install Docker Compose."
     exit 1
 fi
@@ -80,10 +86,10 @@ echo ""
 # Step 3: Start Docker services
 info "Starting Docker services..."
 cd "$PROJECT_ROOT"
-if docker compose ps | grep -q "skillforge-postgres-dev.*Up"; then
+if $DOCKER_COMPOSE_CMD ps | grep -q "skillforge-postgres-dev.*Up"; then
     success "Docker services already running"
 else
-    docker compose up -d
+    $DOCKER_COMPOSE_CMD up -d
     success "Docker services started"
 fi
 echo ""
@@ -92,10 +98,10 @@ echo ""
 info "Waiting for PostgreSQL to be ready..."
 MAX_WAIT=60
 WAIT_COUNT=0
-while ! docker compose exec -T postgres pg_isready -U dev &> /dev/null; do
+while ! $DOCKER_COMPOSE_CMD exec -T postgres pg_isready -U dev &> /dev/null; do
     if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
         error "PostgreSQL did not become ready within $MAX_WAIT seconds"
-        error "Check logs with: docker compose logs postgres"
+        error "Check logs with: $DOCKER_COMPOSE_CMD logs postgres"
         exit 1
     fi
     sleep 2
@@ -197,6 +203,6 @@ echo "     poetry run uvicorn app.main:app --reload"
 echo "  3. Visit http://localhost:8500/docs for API documentation"
 echo ""
 echo "Useful commands:"
-echo "  - View logs: docker compose logs -f backend"
-echo "  - Stop services: docker compose down"
-echo "  - Restart services: docker compose restart"
+echo "  - View logs: $DOCKER_COMPOSE_CMD logs -f backend"
+echo "  - Stop services: $DOCKER_COMPOSE_CMD down"
+echo "  - Restart services: $DOCKER_COMPOSE_CMD restart"
