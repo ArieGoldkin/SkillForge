@@ -1,12 +1,29 @@
 ---
 name: claude-main
 description: AI Agent Hub - Modular Intelligence System
-version: 3.7.1
+version: 3.7.2
 ---
 
 # 🚀 AI Agent Hub - Intelligent Orchestration
 
 **Mode**: ⚡ Squad (Parallel)
+
+## 🔄 MANDATORY: New Context Window Initialization
+
+**EVERY TIME a new conversation/context window starts, YOU MUST:**
+
+1. **Read** `.claude/instructions/context-initialization.md` for the full protocol
+2. **Execute** the initialization steps before doing any work
+
+**Quick Summary (read full protocol for details):**
+- Read `docs/CURRENT_STATUS.md` → Sprint progress, blockers, completed work
+- Read `docs/ROADMAP.md` → Tech stack, phases, task breakdown
+- Read `.claude/context/shared-context.json` → Decisions from previous sessions
+- Check `git log --oneline -10` and `git status` → Recent changes
+
+**Full Protocol:** `.claude/instructions/context-initialization.md`
+
+---
 
 ## 📦 Project: SkillForge
 
@@ -42,6 +59,7 @@ This project uses specialized instruction files to optimize tokens while maintai
 
 | File | Contains |
 |------|----------|
+| `.claude/instructions/context-initialization.md` | **NEW CONTEXT WINDOW PROTOCOL** - Must read first |
 | `.claude/instructions/orchestration.md` | Agent routing & coordination rules |
 | `.claude/instructions/agents.md` | Full agent capabilities & specializations |
 | `.claude/instructions/context.md` | Context persistence system details |
