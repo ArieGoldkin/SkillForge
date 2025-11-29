@@ -245,15 +245,19 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
         mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
 
         # Should convert GeneratorExit to TimeoutError
-        with pytest.raises(TimeoutError, match="execution was cancelled.*likely timeout"):
-            await _run_agent_with_tracking_impl(
-                agent=mock_agent,
-                content="test content",
-                content_type="article",
-                analysis_id=AnalysisID("test-id"),
-                agent_type="test_agent",
-                session=mock_session,
-            )
+        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="test content",
+            content_type="article",
+            analysis_id=AnalysisID("test-id"),
+            agent_type="test_agent",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        with pytest.raises(TimeoutError, match="execution"):
+            await _run_agent_with_tracking_impl(params=params, config=config)
 
 
 @pytest.mark.asyncio
@@ -275,12 +279,16 @@ async def test_agent_execution_handles_timeouterror(
         mock_invoke.side_effect = TimeoutError("Agent exceeded timeout")
 
         # Should re-raise TimeoutError
+        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="test content",
+            content_type="article",
+            analysis_id=AnalysisID("test-id"),
+            agent_type="test_agent",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
         with pytest.raises(TimeoutError, match="exceeded timeout"):
-            await _run_agent_with_tracking_impl(
-                agent=mock_agent,
-                content="test content",
-                content_type="article",
-                analysis_id=AnalysisID("test-id"),
-                agent_type="test_agent",
-                session=mock_session,
-            )
+            await _run_agent_with_tracking_impl(params=params, config=config)

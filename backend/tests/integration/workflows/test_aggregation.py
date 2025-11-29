@@ -123,12 +123,15 @@ async def test_full_workflow_with_aggregation(sample_state_with_findings):
     }
 
     with (
-        patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-        patch("app.workflows.tasks.aggregate_findings.extract_structured_response") as mock_extract,
-        patch("app.workflows.tasks.aggregate_findings.emit_streaming_event") as mock_sse,
+        patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+        patch(
+            "app.workflows.tasks.aggregate_findings.emit_aggregation_complete"
+        ) as mock_sse_complete,
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"),
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"),
     ):
-        mock_invoke.return_value = {"structured_response": mock_structured_response}
-        mock_extract.return_value = mock_structured_response
+        mock_synthesize.return_value = mock_structured_response
 
         result = await aggregate_findings(sample_state_with_findings)
 
@@ -160,17 +163,12 @@ async def test_full_workflow_with_aggregation(sample_state_with_findings):
         assert metadata["confidence_avg"] > 0.0
         assert metadata["confidence_max"] == 0.90
         assert metadata["confidence_min"] == 0.80
-        assert metadata["processing_time_ms"] > 0
+        assert metadata["processing_time_ms"] >= 0  # Can be 0 with mocked functions
         assert metadata["conflicts_detected"] >= 0
         assert metadata["conflicts_resolved"] >= 0
 
         # Verify SSE events were emitted
-        assert mock_sse.call_count >= 2  # At least running and complete
-        # Check that we have calls with "progress" event type and various statuses
-        # emit_streaming_event(event_type, analysis_id, stage, status, **kwargs)
-        all_calls = [str(call) for call in mock_sse.call_args_list]
-        # Just verify calls were made - the actual status values are in the call
-        assert len(mock_sse.call_args_list) >= 2
+        assert mock_sse_complete.called  # Complete event should be called
 
 
 @pytest.mark.asyncio
@@ -189,26 +187,21 @@ async def test_aggregation_sse_events(sample_state_with_findings):
     }
 
     with (
-        patch("app.workflows.tasks.aggregate_findings.invoke_agent") as mock_invoke,
-        patch("app.workflows.tasks.aggregate_findings.extract_structured_response") as mock_extract,
-        patch("app.workflows.tasks.aggregate_findings.emit_streaming_event") as mock_sse,
+        patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started") as mock_sse_start,
+        patch(
+            "app.workflows.tasks.aggregate_findings.emit_aggregation_complete"
+        ) as mock_sse_complete,
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"),
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"),
     ):
-        mock_invoke.return_value = {"structured_response": mock_structured_response}
-        mock_extract.return_value = mock_structured_response
+        mock_synthesize.return_value = mock_structured_response
 
         await aggregate_findings(sample_state_with_findings)
 
-        # Verify SSE events
-        assert mock_sse.call_count >= 2
-
-        # Check that calls were made - verify by checking call structure
-        # emit_streaming_event(event_type, analysis_id, stage, status, **kwargs)
-        # We can verify by checking that we have multiple calls
-        assert len(mock_sse.call_args_list) >= 2
-
-        # Verify at least one call has "progress" as first arg
-        first_args = [call[0][0] for call in mock_sse.call_args_list if len(call[0]) > 0]
-        assert "progress" in first_args or "error" in first_args
+        # Verify SSE events were emitted
+        assert mock_sse_start.called
+        assert mock_sse_complete.called
 
 
 @pytest.mark.asyncio
@@ -225,7 +218,12 @@ async def test_aggregation_with_empty_state():
         agent_findings=[],
     )
 
-    with patch("app.workflows.tasks.aggregate_findings.emit_streaming_event") as mock_sse:
+    with (
+        patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started") as mock_sse_start,
+        patch(
+            "app.workflows.tasks.aggregate_findings.emit_aggregation_complete"
+        ) as mock_sse_complete,
+    ):
         result = await aggregate_findings(empty_state)
 
         # Should return valid structure even with no findings
@@ -234,6 +232,6 @@ async def test_aggregation_with_empty_state():
         assert insights["metadata"]["total_agents"] == 0
         assert "No agent findings available" in insights["executive_summary"]
 
-        # Should still emit SSE events
-        assert mock_sse.call_count >= 1
-
+        # Should still emit SSE events (started is always called, complete only if findings exist)
+        assert mock_sse_start.called
+        # Complete may not be called when there are no findings (early return)

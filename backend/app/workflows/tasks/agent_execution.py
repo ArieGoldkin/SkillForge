@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     pass  # BaseException and GeneratorExit are builtins, no import needed
 
 from app.core.logging import get_logger
+from app.core.timeout_config import AGENT_TIMEOUT
 from app.core.types import AnalysisID
 from app.workflows.tasks.runners import (
     run_code_quality_critic_with_session,
@@ -25,6 +26,7 @@ from app.workflows.tasks.runners import (
     run_tech_comparator_with_session,
     run_trend_validator_with_session,
 )
+from app.workflows.utils.timeout_handling import handle_timeout_error
 
 # Agent runner mapping for parallel execution
 AGENT_RUNNERS: dict[str, Callable] = {
@@ -93,7 +95,7 @@ async def execute_agents(
 
     # Execute agents in parallel with timeout and error isolation
     # Each agent manages its own database session independently
-    agent_timeout = 120.0  # 120 seconds (2 minutes) per agent for complex LLM calls
+    agent_timeout = AGENT_TIMEOUT
     try:
         # asyncio.gather returns a tuple, convert to list for type consistency
         # return_exceptions=True means results can be Exception or BaseException
@@ -136,24 +138,20 @@ async def execute_agents(
             total_count=len(agent_tasks),
         )
     except (TimeoutError, GeneratorExit) as e:
-        if isinstance(e, GeneratorExit):
-            # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
-            # This closes async generators in LangGraph's astream, which raises GeneratorExit.
-            # We handle it as a timeout for consistent error handling.
-            logger.warning(
-                "workflow_agents_timeout_generator_exit",
+        # Use timeout utility for consistent error handling
+        # Note: We don't re-raise here, just log and return empty list
+        total_timeout = agent_timeout * len(agent_tasks)
+        try:
+            raise handle_timeout_error(
+                exc=e,
+                context="Parallel agent execution",
+                timeout=total_timeout,
+                logger=logger,
                 analysis_id=analysis_id,
-                timeout=agent_timeout * len(agent_tasks),
                 agent_count=len(agent_tasks),
             )
-        else:
-            logger.exception(
-                "workflow_agents_timeout",
-                analysis_id=analysis_id,
-                timeout=agent_timeout * len(agent_tasks),
-                agent_count=len(agent_tasks),
-            )
-        # Return any findings that completed before timeout
-        return []
+        except TimeoutError:
+            # Logged by utility, return empty list (findings completed before timeout)
+            return []
     else:
         return agent_findings

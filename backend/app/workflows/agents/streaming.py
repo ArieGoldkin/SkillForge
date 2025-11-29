@@ -16,6 +16,7 @@ from app.core.constants import SSE_EVENT_THROTTLE_CHARS, SSE_EVENT_THROTTLE_MS
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.workflows.agents.base import emit_agent_progress
+from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
 
@@ -165,28 +166,15 @@ async def stream_agent_response(
             stream_with_timeout(),
             timeout=timeout,
         )
-    except GeneratorExit:
-        # GeneratorExit occurs when asyncio.wait_for times out and cancels the task.
-        # This closes the async generator in LangGraph's astream, which raises GeneratorExit.
-        # We convert it to TimeoutError for consistent error handling and to prevent
-        # workflow failures (since we have graceful fallbacks).
-        msg = f"Agent {agent_type} exceeded timeout of {timeout}s (generator closed)"
-        logger.warning(
-            "agent_timeout_generator_exit",
+    except (TimeoutError, GeneratorExit) as exc:
+        raise handle_timeout_error(
+            exc=exc,
+            context=f"Agent {agent_type}",
+            timeout=timeout,
+            logger=logger,
             agent_type=agent_type,
             analysis_id=analysis_id,
-            timeout=timeout,
-        )
-        raise TimeoutError(msg) from None
-    except TimeoutError:
-        msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
-        logger.exception(
-            "agent_timeout",
-            agent_type=agent_type,
-            analysis_id=analysis_id,
-            timeout=timeout,
-        )
-        raise TimeoutError(msg) from None
+        ) from None
 
     if final_result is None:
         msg = f"Agent {agent_type} stream completed with no result"

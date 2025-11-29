@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 28, 2025
+**Last Updated:** November 29, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -95,6 +95,7 @@ docs/issues/
 
 | Issue | Title | Points | Status | Assignee | Docs | GitHub |
 |-------|-------|--------|--------|----------|------|--------|
+| [#68](https://github.com/ArieGoldkin/SkillForge/issues/68) | Docker Compose Configuration | 3 | ✅ Complete | Yonatan | [📄 Docs](./068-docker-compose/README.md) | [#68](https://github.com/ArieGoldkin/SkillForge/issues/68) |
 | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) | Aggregator Node | 5 | ✅ Complete | Yonatan | [📄 Docs](./071-aggregator-node/README.md) | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) |
 | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) | Artifact Generation | 8 | ✅ Complete | Yonatan | [📄 Docs](./072-artifact-generation/README.md) | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) |
 
@@ -145,6 +146,73 @@ docs/issues/
 | [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) | Task 3.4 - Preview Modal | 3 | 🎯 Ready | Arie | [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) |
 | [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) | Task 3.5 - Copy-to-Clipboard | 2 | 🎯 Ready | Arie | [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) |
 | [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) | Task 3.6 - Frontend-Backend Integration | 3 | ⏳ Blocked | Arie | [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) |
+
+---
+
+## 🎓 Sprint 4: Interactive Tutoring (13 pts)
+
+### Frontend Issues (Arie)
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) | Task 4.1 - Create TutorChat Component | 5 | 🔄 Open | Arie | [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) |
+| [#114](https://github.com/ArieGoldkin/SkillForge/issues/114) | Task 4.2 - Create Topic Selection Modal | 3 | 🔄 Open | Arie | [#114](https://github.com/ArieGoldkin/SkillForge/issues/114) |
+| [#115](https://github.com/ArieGoldkin/SkillForge/issues/115) | Task 4.3 - Implement Session Resume Logic | 3 | 🔄 Open | Arie | [#115](https://github.com/ArieGoldkin/SkillForge/issues/115) |
+| [#116](https://github.com/ArieGoldkin/SkillForge/issues/116) | Task 4.4 - Add Exit Tutoring Functionality | 2 | 🔄 Open | Arie | [#116](https://github.com/ArieGoldkin/SkillForge/issues/116) |
+
+---
+
+## 📚 Sprint 5: Library & Search (13 pts)
+
+### Frontend Issues (Arie)
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) | Task 5.1 - Create Library Page | 5 | 🔄 Open | Arie | [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) |
+| [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) | Task 5.2 - Implement Search with Debounce | 3 | 🔄 Open | Arie | [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) |
+| [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) | Task 5.3 - Build Filter UI | 3 | 🔄 Open | Arie | [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) |
+| [#120](https://github.com/ArieGoldkin/SkillForge/issues/120) | Task 5.4 - Add Sort Selector | 2 | 🔄 Open | Arie | [#120](https://github.com/ArieGoldkin/SkillForge/issues/120) |
+
+---
+
+## 🌐 Sprint 6: Content Expansion (8 pts)
+
+### Frontend Issues (Arie)
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#121](https://github.com/ArieGoldkin/SkillForge/issues/121) | Task 6.1 - Add Content Type Indicators | 3 | 🔄 Open | Arie | [#121](https://github.com/ArieGoldkin/SkillForge/issues/121) |
+| [#122](https://github.com/ArieGoldkin/SkillForge/issues/122) | Task 6.2 - Update Artifact Template for Videos | 3 | 🔄 Open | Arie | [#122](https://github.com/ArieGoldkin/SkillForge/issues/122) |
+| [#123](https://github.com/ArieGoldkin/SkillForge/issues/123) | Task 6.3 - Update Artifact Template for Repos | 2 | 🔄 Open | Arie | [#123](https://github.com/ArieGoldkin/SkillForge/issues/123) |
+
+---
+
+## 🚀 Sprint 7: Testing & Deployment (21 pts)
+
+### Frontend Issues (Arie)
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#125](https://github.com/ArieGoldkin/SkillForge/issues/125) | Task 7.1 - Write E2E Tests with Playwright | 8 | 🔄 Open | Arie | [#125](https://github.com/ArieGoldkin/SkillForge/issues/125) |
+| [#126](https://github.com/ArieGoldkin/SkillForge/issues/126) | Task 7.2 - Performance Optimization | 5 | 🔄 Open | Arie | [#126](https://github.com/ArieGoldkin/SkillForge/issues/126) |
+| [#127](https://github.com/ArieGoldkin/SkillForge/issues/127) | Task 7.3 - Deploy to Vercel | 3 | 🔄 Open | Arie | [#127](https://github.com/ArieGoldkin/SkillForge/issues/127) |
+| [#124](https://github.com/ArieGoldkin/SkillForge/issues/124) | Task 7.4 - UI Polish | 5 | 🔄 Open | Arie | [#124](https://github.com/ArieGoldkin/SkillForge/issues/124) |
+
+---
+
+## 📝 Sprint 1: Missing Foundation Tasks (13 pts)
+
+### Frontend Issues (Arie) - Created for Tracking
+
+| Issue | Title | Points | Status | Assignee | GitHub |
+|-------|-------|--------|--------|----------|--------|
+| [#128](https://github.com/ArieGoldkin/SkillForge/issues/128) | Task 1.3.1 - Initialize Vite + React 19 Project | 3 | 🔄 Open | Arie | [#128](https://github.com/ArieGoldkin/SkillForge/issues/128) |
+| [#129](https://github.com/ArieGoldkin/SkillForge/issues/129) | Task 1.3.2 - Setup Tailwind CSS + Radix UI | 2 | 🔄 Open | Arie | [#129](https://github.com/ArieGoldkin/SkillForge/issues/129) |
+| [#130](https://github.com/ArieGoldkin/SkillForge/issues/130) | Task 1.3.3 - Configure React Router | 2 | 🔄 Open | Arie | [#130](https://github.com/ArieGoldkin/SkillForge/issues/130) |
+| [#131](https://github.com/ArieGoldkin/SkillForge/issues/131) | Task 1.3.4 - Setup State Management | 3 | 🔄 Open | Arie | [#131](https://github.com/ArieGoldkin/SkillForge/issues/131) |
+| [#132](https://github.com/ArieGoldkin/SkillForge/issues/132) | Task 1.3.5 - Create Page Shells & Basic Components | 3 | 🔄 Open | Arie | [#132](https://github.com/ArieGoldkin/SkillForge/issues/132) |
+
+**Note:** These tasks appear to be completed (setup exists in codebase), but issues were created for tracking purposes.
 
 ### Backend Blockers
 

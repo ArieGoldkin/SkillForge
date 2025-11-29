@@ -1,5 +1,6 @@
 """Unit tests for generate_artifact task."""
 
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -197,33 +198,36 @@ class TestGenerateArtifact:
         """Test successful artifact generation."""
         with (
             patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.AsyncSessionLocal") as mock_session_local,
+            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
             patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             # Setup mocks
             mock_render.return_value = "# Test Artifact\n\nContent here."
             mock_db_session = AsyncMock()
-            mock_db_session.add = MagicMock()  # add is not async
             mock_db_session.commit = AsyncMock()
             mock_db_session.refresh = AsyncMock()
-            mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            mock_session_factory = MagicMock()
+            mock_session_factory.return_value.__aenter__.return_value = mock_db_session
+            mock_factory.return_value = mock_session_factory
 
-            # Create mock artifact
-            mock_artifact = MagicMock()
-            mock_artifact.id = "test-artifact-id"
-            mock_db_session.add.return_value = None
-
-            # Mock Artifact creation
-            with patch("app.workflows.tasks.generate_artifact.Artifact") as mock_artifact_class:
-                mock_artifact_instance = MagicMock()
-                mock_artifact_instance.id = "test-artifact-id"
-                mock_artifact_class.return_value = mock_artifact_instance
+            # Mock repository
+            with patch(
+                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+            ) as mock_repo_class:
+                mock_repo = AsyncMock()
+                mock_artifact = MagicMock()
+                mock_artifact.id = uuid.UUID("123e4567-e89b-12d3-a456-426614174000")
+                mock_repo.create_artifact = AsyncMock(return_value=mock_artifact)
+                mock_repo_class.return_value = mock_repo
 
                 result = await generate_artifact(sample_state)
 
             # Verify result
             assert "artifact_id" in result
-            assert result["artifact_id"] == "test-artifact-id"
+            assert result["artifact_id"] == str(mock_artifact.id)
+
+            # Verify repository was used
+            mock_repo.create_artifact.assert_called_once()
 
             # Verify SSE events
             assert mock_sse.call_count >= 2  # running and complete
@@ -264,17 +268,22 @@ class TestGenerateArtifact:
         """Test artifact generation handles database errors."""
         with (
             patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.AsyncSessionLocal") as mock_session_local,
+            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
             patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             mock_render.return_value = "# Test\n\nContent."
             mock_db_session = AsyncMock()
-            mock_db_session.add = MagicMock()  # add is not async
-            mock_db_session.commit = AsyncMock()
-            mock_db_session.commit.side_effect = Exception("Database error")
-            mock_session_local.return_value.__aenter__.return_value = mock_db_session
+            mock_session_factory = MagicMock()
+            mock_session_factory.return_value.__aenter__.return_value = mock_db_session
+            mock_factory.return_value = mock_session_factory
 
-            with patch("app.workflows.tasks.generate_artifact.Artifact"):
+            with patch(
+                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+            ) as mock_repo_class:
+                mock_repo = AsyncMock()
+                mock_repo.create_artifact.side_effect = Exception("Database error")
+                mock_repo_class.return_value = mock_repo
+
                 with pytest.raises(Exception):
                     await generate_artifact(sample_state)
 

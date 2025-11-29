@@ -1,17 +1,12 @@
 """Artifact download endpoints."""
 
 import uuid
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.db.session import get_db
-from app.models.analysis import Analysis
-from app.models.artifact import Artifact
+from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
 from app.workflows.tasks.artifact_helpers import generate_filename
 
 router = APIRouter(tags=["artifacts"])
@@ -21,7 +16,7 @@ logger = get_logger(__name__)
 @router.get("/artifacts/{artifact_id}/download")
 async def download_artifact(
     artifact_id: uuid.UUID,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    repo: IArtifactRepository = Depends(get_artifact_repository),
 ) -> Response:
     """Download artifact as markdown file.
 
@@ -30,7 +25,7 @@ async def download_artifact(
 
     Args:
         artifact_id: UUID of the artifact to download
-        db: Database session dependency
+        repo: Artifact repository dependency
 
     Returns:
         Response with markdown content and Content-Disposition header
@@ -41,11 +36,10 @@ async def download_artifact(
 
     """
     try:
-        # Get artifact from database
-        result = await db.execute(select(Artifact).where(Artifact.id == artifact_id))
-        artifact = result.scalar_one_or_none()
+        # Get artifact with analysis in optimized single query
+        result = await repo.get_artifact_with_analysis(artifact_id)
 
-        if not artifact:
+        if not result:
             logger.warning(
                 "artifact_download_not_found",
                 artifact_id=str(artifact_id),
@@ -55,12 +49,11 @@ async def download_artifact(
                 detail=f"Artifact {artifact_id} not found",
             )
 
-        # Get analysis for title (for filename generation)
-        result = await db.execute(select(Analysis).where(Analysis.id == artifact.analysis_id))
-        analysis = result.scalar_one_or_none()
+        artifact, analysis = result
+
+        # Extract title from analysis metadata
         title: str | None = None
-        if analysis is not None:
-            # extraction_metadata is JSONB column, type checker needs help
+        if analysis.extraction_metadata:  # type: ignore[attr-defined]
             extraction_metadata = analysis.extraction_metadata  # type: ignore[attr-defined]
             if isinstance(extraction_metadata, dict):
                 title = extraction_metadata.get("title")  # type: ignore[assignment]
@@ -68,15 +61,18 @@ async def download_artifact(
         # Generate filename
         filename = generate_filename(title, str(artifact.analysis_id))
 
-        # Increment download_count
-        artifact.download_count = artifact.download_count + 1  # type: ignore[assignment]
-        await db.commit()
+        # Increment download_count using repository
+        await repo.increment_download_count(artifact_id)
 
+        # Get updated artifact for logging
+        updated_artifact = await repo.get_artifact_by_id(artifact_id)
+
+        download_count = updated_artifact.download_count if updated_artifact else 0
         logger.info(
             "artifact_downloaded",
             artifact_id=str(artifact_id),
             analysis_id=str(artifact.analysis_id),
-            download_count=artifact.download_count,
+            download_count=download_count,
         )
 
         # Return markdown with proper headers

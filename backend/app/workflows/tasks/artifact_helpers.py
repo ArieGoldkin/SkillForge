@@ -8,6 +8,7 @@ import re
 from typing import Any
 
 from app.core.logging import get_logger
+from app.core.tech_keywords import TECH_KEYWORDS
 
 logger = get_logger(__name__)
 
@@ -38,21 +39,9 @@ def extract_artifact_metadata(
         for finding in key_findings:
             if isinstance(finding, str):
                 # Simple keyword extraction: capitalize first word, extract tech names
-                # Look for common tech keywords
-                tech_keywords = [
-                    "react",
-                    "next.js",
-                    "langgraph",
-                    "langchain",
-                    "python",
-                    "typescript",
-                    "fastapi",
-                    "postgresql",
-                    "docker",
-                    "kubernetes",
-                ]
+                # Look for common tech keywords from centralized config
                 finding_lower = finding.lower()
-                for keyword in tech_keywords:
+                for keyword in TECH_KEYWORDS:
                     if keyword in finding_lower and keyword.title() not in topics:
                         topics.append(keyword.title())
 

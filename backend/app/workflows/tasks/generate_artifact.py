@@ -12,8 +12,8 @@ from langsmith import traceable
 from app.core.agent_config import get_stage_name
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
-from app.db.session import AsyncSessionLocal
-from app.models.artifact import Artifact
+from app.db.repositories.artifact_repository import ArtifactRepository
+from app.db.session import get_session_factory
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.artifact_helpers import build_claude_code_prompt, extract_artifact_metadata
@@ -103,20 +103,20 @@ async def generate_artifact(
         # Extract metadata (topics, complexity)
         artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
 
-        # Store artifact in database
-        async with AsyncSessionLocal() as db_session:
-            artifact = Artifact(
-                id=uuid.uuid4(),
-                analysis_id=uuid.UUID(str(analysis_id)),
-                markdown_content=markdown_content,
-                version=1,
-                artifact_metadata=artifact_metadata,
-                download_count=0,
+        # Store artifact in database using repository pattern
+        session_factory = get_session_factory()
+        async with session_factory() as db_session:
+            repository = ArtifactRepository(session=db_session)
+            artifact = await repository.create_artifact(
+                {
+                    "id": uuid.uuid4(),
+                    "analysis_id": analysis_id,
+                    "markdown_content": markdown_content,
+                    "version": 1,
+                    "artifact_metadata": artifact_metadata,
+                    "download_count": 0,
+                }
             )
-            db_session.add(artifact)
-            await db_session.commit()
-            await db_session.refresh(artifact)
-
             artifact_id = str(artifact.id)
 
         processing_time_ms = int((time.time() - start_time) * 1000)
