@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
-from app.models.tutoring import TutoringMessage, TutoringSession
 
 
 @pytest.mark.asyncio

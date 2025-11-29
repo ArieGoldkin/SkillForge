@@ -20,11 +20,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from unittest.mock import MagicMock
 
+from app.workflows.tasks.agent_execution import execute_agents
+
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.workflows.agents.streaming import stream_agent_response
-from app.workflows.tasks.agent_execution import execute_agents
 
 logger = get_logger(__name__)
 
