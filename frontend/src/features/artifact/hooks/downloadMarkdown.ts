@@ -1,5 +1,8 @@
 /**
  * Download markdown content as a file
+ *
+ * Uses a delayed cleanup to ensure the browser has time to initiate
+ * the download before the object URL is revoked.
  */
 export function downloadMarkdown(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'text/markdown' })
@@ -10,6 +13,10 @@ export function downloadMarkdown(content: string, filename: string): void {
   link.download = filename
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+
+  // Delay cleanup to ensure download starts before revoking URL
+  setTimeout(() => {
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, 100)
 }
