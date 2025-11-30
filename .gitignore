@@ -294,6 +294,8 @@ models/
 artifacts/
 generated/
 assets/
+*_latest.md
+artifact_*.md
 
 # Cache directories
 .cache/
