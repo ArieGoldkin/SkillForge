@@ -1,6 +1,8 @@
 """Utility functions for common operations across the application."""
 
+import inspect
 import uuid
+from typing import Any
 from uuid import UUID
 
 from app.core.constants import UUID_NAMESPACE_DNS
@@ -48,4 +50,22 @@ def normalize_analysis_id_to_uuid(analysis_id: str | UUID) -> UUID:
         return uuid.uuid5(namespace, str(analysis_id))
 
 
+def is_generator(obj: Any) -> bool:
+    """Check if object is a generator or async generator.
 
+    This utility function helps detect generator objects that should not
+    be stored in LangGraph state or serialized by LangSmith.
+
+    Args:
+        obj: Object to check
+
+    Returns:
+        True if object is a generator, async generator, or generator function
+
+    Example:
+        >>> is_generator((x for x in range(5)))
+        True
+        >>> is_generator([1, 2, 3])
+        False
+    """
+    return inspect.isgenerator(obj) or inspect.isasyncgen(obj) or inspect.isgeneratorfunction(obj)
