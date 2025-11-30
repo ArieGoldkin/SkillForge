@@ -37,7 +37,9 @@ async def load_state_from_session(
         current_state = {}
 
     # Load conversation history from database
-    _, messages = await repo.get_session_with_messages(session.id)
+    # session.id is a UUID when accessed from instance, not Column[UUID]
+    session_id: uuid.UUID = session.id  # type: ignore[assignment]
+    _, messages = await repo.get_session_with_messages(session_id)
     conversation_history = [
         {
             "role": msg.role,
@@ -49,22 +51,27 @@ async def load_state_from_session(
     ]
 
     # Build complete state
+    # SQLAlchemy Column types return actual values when accessed from instances
     return {
-        "session_id": str(session.id),
-        "analysis_id": str(session.analysis_id) if session.analysis_id else None,
-        "syllabus": session.syllabus or current_state.get("syllabus"),
-        "current_section": session.current_section,
-        "current_lesson": session.current_lesson,
-        "current_phase": session.current_phase,
-        "user_level": session.user_level,
-        "understanding_scores": session.understanding_scores or {},
+        "session_id": str(session.id),  # type: ignore[arg-type]
+        "analysis_id": str(session.analysis_id) if session.analysis_id else None,  # type: ignore[arg-type]
+        "syllabus": (dict(session.syllabus) if session.syllabus else current_state.get("syllabus")),  # type: ignore[arg-type]
+        "current_section": int(session.current_section),  # type: ignore[arg-type]
+        "current_lesson": int(session.current_lesson),  # type: ignore[arg-type]
+        "current_phase": str(session.current_phase),  # type: ignore[arg-type]
+        "user_level": str(session.user_level),  # type: ignore[arg-type]
+        "understanding_scores": (
+            dict(session.understanding_scores) if session.understanding_scores else {}
+        ),  # type: ignore[arg-type]
         "conversation_history": conversation_history,
-        "conversation_summary": session.conversation_summary,
+        "conversation_summary": (
+            str(session.conversation_summary) if session.conversation_summary else None
+        ),  # type: ignore[arg-type]
         "last_user_message": None,
         "last_assistant_response": current_state.get("last_assistant_response"),
         "user_ready": current_state.get("user_ready", False),
         "attempts_current_lesson": current_state.get("attempts_current_lesson", 0),
-        "session_metadata": session.session_metadata,
+        "session_metadata": (dict(session.session_metadata) if session.session_metadata else None),  # type: ignore[arg-type]
     }
 
 

@@ -43,7 +43,10 @@ async def get_analysis_summary(
         "title": analysis.title,
         "url": analysis.url,
         "content_type": analysis.content_type,
-        "findings": [{"agent_type": f.agent_type, "findings": f.findings} for f in findings],
+        "findings": [
+            {"agent_type": str(f.agent_type), "findings": f.findings}  # type: ignore[attr-defined]
+            for f in findings
+        ],
     }
 
     return summary
