@@ -156,7 +156,7 @@ async def _wrapped_ainvoke(*args, **kwargs):
             )
             result = await _original_ainvoke(*args, **kwargs)
             workflow_completed = True  # Mark as completed successfully
-            
+
             # Validate result - LangGraph should always return a dict (state)
             if result is None:
                 logger.error(
@@ -171,7 +171,7 @@ async def _wrapped_ainvoke(*args, **kwargs):
                     "Workflow returned None - this indicates an internal error. "
                     "Check workflow node implementations and exception handling."
                 )
-            
+
             logger.debug(
                 "workflow_ainvoke_success",
                 result_type=type(result).__name__,
