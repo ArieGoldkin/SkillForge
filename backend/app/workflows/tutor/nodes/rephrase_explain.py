@@ -8,8 +8,8 @@ from langsmith import get_current_run_tree
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
+from app.core.tracing import robust_traceable
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event

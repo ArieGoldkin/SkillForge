@@ -12,8 +12,8 @@ from langsmith import get_current_run_tree
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.tracing import robust_traceable
 from app.core.template_utils import render_jinja_template
+from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
 from app.services.sse_helpers import emit_streaming_event

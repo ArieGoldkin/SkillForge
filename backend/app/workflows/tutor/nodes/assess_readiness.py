@@ -12,8 +12,8 @@ from langsmith import get_current_run_tree
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
+from app.core.tracing import robust_traceable
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
 from app.db.session import get_session_factory
 from app.workflows.tutor.config import READINESS_ASSESSMENT_PROMPT
