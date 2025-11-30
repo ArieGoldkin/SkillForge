@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from app.models.tutoring import TutoringSession
 
 
-def update_session_fields(
+def update_session_fields(  # noqa: PLR0913 - Repository method needs many optional parameters
     session: TutoringSession,
     syllabus: dict[str, object] | None = None,
     current_section: int | None = None,

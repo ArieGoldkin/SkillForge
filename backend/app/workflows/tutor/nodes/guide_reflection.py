@@ -156,13 +156,14 @@ async def guide_reflection(state: TutorState) -> dict[str, object]:
 
         # Update conversation history
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": reflection,
                 "created_at": saved_message.created_at.isoformat(),
                 "metadata": {"phase": "reflection"},
-            }
+            },
         ]
 
         await _emit_tutor_event(

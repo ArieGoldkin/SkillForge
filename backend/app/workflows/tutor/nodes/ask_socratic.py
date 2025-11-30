@@ -28,7 +28,7 @@ logger = get_logger(__name__)
         "component": "tutor_node",
     },
 )
-async def ask_socratic(state: TutorState) -> dict[str, object]:
+async def ask_socratic(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
     """Generate Socratic question based on lesson and user response.
 
     Questions are adaptive:
@@ -165,7 +165,8 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:
 
         # Update conversation history in state
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": question,
@@ -175,7 +176,7 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:
                     "section": current_section,
                     "lesson": current_lesson,
                 },
-            }
+            },
         ]
 
         # Return only updated fields

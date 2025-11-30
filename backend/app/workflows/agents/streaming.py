@@ -60,7 +60,7 @@ def _process_chunk(
 # Removed _cleanup_stream - aclosing() context manager handles cleanup automatically
 
 
-async def stream_agent_response(
+async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming logic with multiple branches
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,

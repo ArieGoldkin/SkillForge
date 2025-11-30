@@ -10,12 +10,12 @@ from app.workflows.tutor.nodes.guide_reflection import guide_reflection  # Phase
 from app.workflows.tutor.nodes.rephrase_explain import rephrase_explain  # Phase 2
 
 __all__ = [
-    "generate_syllabus",
-    "deliver_lesson",
     "ask_socratic",
     "assess_readiness",
-    "rephrase_explain",  # Phase 2
     "conduct_review",  # Phase 3
+    "deliver_lesson",
     "final_challenge",  # Phase 3
+    "generate_syllabus",
     "guide_reflection",  # Phase 3
+    "rephrase_explain",  # Phase 2
 ]

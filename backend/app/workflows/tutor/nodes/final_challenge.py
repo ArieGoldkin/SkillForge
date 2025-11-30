@@ -149,13 +149,14 @@ async def final_challenge(state: TutorState) -> dict[str, object]:
 
         # Update conversation history
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": challenge,
                 "created_at": saved_message.created_at.isoformat(),
                 "metadata": {"phase": "final_challenge"},
-            }
+            },
         ]
 
         await _emit_tutor_event(

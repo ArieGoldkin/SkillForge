@@ -35,7 +35,7 @@ logger = get_logger(__name__)
         "component": "tutor_node",
     },
 )
-async def assess_readiness(state: TutorState) -> dict[str, object]:
+async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR0912, PLR0915 - Complex assessment logic
     """Assess user readiness using LLM-based evaluation.
 
     Evaluates understanding based on user response and updates
@@ -142,7 +142,8 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
                     response_text = response_text[json_start:json_end].strip()
 
             if not isinstance(response_text, str):
-                raise ValueError("Response text must be a string")
+                msg = "Response text must be a string"
+                raise TypeError(msg)
             assessment_dict = json.loads(response_text)
             assessment = ReadinessAssessment(**assessment_dict)
         except (json.JSONDecodeError, Exception) as e:  # noqa: BLE001 - Catch JSON parsing errors and other exceptions for fallback
@@ -201,16 +202,17 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
         # Update conversation history if user message exists
         conversation_history = state.get("conversation_history", [])
         if state.get("last_user_message"):
-            updated_history = conversation_history + [
+            updated_history: list[dict[str, object]] = [
+                *conversation_history,  # type: ignore[list-item]
                 {
                     "role": "user",
                     "content": state["last_user_message"],
                     "created_at": datetime.now(UTC).isoformat(),
                     "metadata": {"phase": "readiness_assessment"},
-                }
+                },
             ]
         else:
-            updated_history = conversation_history
+            updated_history = conversation_history  # type: ignore[assignment]
 
         # Return only updated fields
         return {

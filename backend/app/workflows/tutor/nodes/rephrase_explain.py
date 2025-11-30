@@ -47,7 +47,7 @@ Return the rephrased explanation."""
         "component": "tutor_node",
     },
 )
-async def rephrase_explain(state: TutorState) -> dict[str, object]:
+async def rephrase_explain(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
     """Rephrase explanation with hints when user is not ready.
 
     Provides simpler re-explanation with progressive hints based on
@@ -189,7 +189,8 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
 
         # Update conversation history in state
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": rephrased,
@@ -200,7 +201,7 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
                     "lesson": current_lesson,
                     "attempts": attempts,
                 },
-            }
+            },
         ]
 
         # Return only updated fields

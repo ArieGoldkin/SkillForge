@@ -87,8 +87,8 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
     except GeneratorExit:
-        # GeneratorExit during execution (cancellation/timeout) - return empty for graceful degradation
-        # Cleanup GeneratorExit is handled by robust_traceable wrapper
+        # GeneratorExit during execution (cancellation/timeout) - return empty for
+        # graceful degradation. Cleanup GeneratorExit is handled by robust_traceable wrapper
         duration = time.time() - start_time
         logger.warning(
             "agent_node_cancelled",

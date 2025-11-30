@@ -70,7 +70,8 @@ class TutorMessageRepository:
         )
         session = result.scalar_one_or_none()
         if not session:
-            raise ValueError(f"Session {session_id} not found")
+            msg = f"Session {session_id} not found"
+            raise ValueError(msg)
 
         # Get messages ordered by created_at
         result = await self.session.execute(
@@ -123,7 +124,7 @@ class TutorMessageRepository:
 
 
 def get_tutor_message_repository(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
 ) -> ITutorMessageRepository:
     """Dependency injection for message repository.
 

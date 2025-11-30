@@ -60,7 +60,7 @@ class ITutorRepository(Protocol):
         """Get analysis summary for context (from aggregated_insights)."""
         ...
 
-    async def update_session_state(
+    async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
         session_id: UUID,
         syllabus: dict[str, object] | None = None,
@@ -143,7 +143,7 @@ class TutorRepository:
 
         return await get_analysis_summary(self.session, analysis_id)
 
-    async def update_session_state(
+    async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
         session_id: UUID,
         syllabus: dict[str, object] | None = None,
@@ -168,7 +168,7 @@ class TutorRepository:
 
 
 def get_tutor_repository(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
 ) -> ITutorRepository:
     """Dependency injection for tutor repository (backwards compatible).
 

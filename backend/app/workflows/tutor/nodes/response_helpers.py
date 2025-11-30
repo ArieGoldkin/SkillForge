@@ -3,7 +3,7 @@
 from typing import Any
 
 
-def extract_string_content(response: Any) -> str:
+def extract_string_content(response: Any) -> str:  # noqa: PLR0911 - Multiple return paths needed for different response types
     """Extract string content from LLM response.
 
     LLM responses can have content as:

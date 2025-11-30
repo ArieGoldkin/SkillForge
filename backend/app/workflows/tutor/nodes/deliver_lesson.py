@@ -30,7 +30,7 @@ logger = get_logger(__name__)
         "component": "tutor_node",
     },
 )
-async def deliver_lesson(state: TutorState) -> dict[str, object]:
+async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
     """Deliver lesson content for current section/lesson.
 
     Teaches the concept with explanation, analogy, example, and exercise.
@@ -84,23 +84,28 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
     try:
         # Get current lesson from syllabus
         if not syllabus or not isinstance(syllabus, dict):
-            raise ValueError("Syllabus not found or invalid")
+            msg = "Syllabus not found or invalid"
+            raise ValueError(msg)
 
         sections = syllabus.get("sections", [])
         if not isinstance(sections, list) or current_section >= len(sections):
-            raise ValueError(f"Section {current_section} not found in syllabus")
+            msg = f"Section {current_section} not found in syllabus"
+            raise ValueError(msg)
 
         section = sections[current_section]
         if not isinstance(section, dict):
-            raise ValueError(f"Section {current_section} is invalid")
+            msg = f"Section {current_section} is invalid"
+            raise TypeError(msg)
 
         lessons = section.get("lessons", [])
         if not isinstance(lessons, list) or current_lesson >= len(lessons):
-            raise ValueError(f"Lesson {current_lesson} not found in section {current_section}")
+            msg = f"Lesson {current_lesson} not found in section {current_section}"
+            raise ValueError(msg)
 
         lesson = lessons[current_lesson]
         if not isinstance(lesson, dict):
-            raise ValueError(f"Lesson {current_lesson} is invalid")
+            msg = f"Lesson {current_lesson} is invalid"
+            raise TypeError(msg)
 
         concept = lesson.get("concept", "Unknown concept")
         section_title = section.get("title", "Unknown section")
@@ -184,7 +189,8 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
 
         # Update conversation history in state
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": lesson_content,
@@ -194,7 +200,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
                     "section": current_section,
                     "lesson": current_lesson,
                 },
-            }
+            },
         ]
 
         # Return only updated fields

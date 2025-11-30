@@ -134,7 +134,7 @@ async def _workflow_cleanup_context():
 
 
 async def _wrapped_ainvoke(*args, **kwargs):
-    """Wrapper around workflow.ainvoke to catch and log GeneratorExit.
+    """Wrap workflow.ainvoke to catch and log GeneratorExit.
 
     This wrapper catches GeneratorExit at multiple levels:
     1. During workflow execution (treats as error, re-raises)
@@ -167,10 +167,11 @@ async def _wrapped_ainvoke(*args, **kwargs):
                         "This may indicate an internal LangGraph error or exception handling issue."
                     ),
                 )
-                raise RuntimeError(
+                error_msg = (
                     "Workflow returned None - this indicates an internal error. "
                     "Check workflow node implementations and exception handling."
                 )
+                raise RuntimeError(error_msg)
 
             logger.debug(
                 "workflow_ainvoke_success",
@@ -250,7 +251,8 @@ async def _wrapped_ainvoke(*args, **kwargs):
                     traceback=traceback.format_exc(),
                     context="workflow_ainvoke_wrapper_cleanup",
                     note=(
-                        "GeneratorExit caught during cleanup (converted to RuntimeError) after successful workflow completion. "
+                        "GeneratorExit caught during cleanup (converted to RuntimeError) "
+                        "after successful workflow completion. "
                         "This is normal generator lifecycle behavior when LangGraph's pregel "
                         "module closes async generators during cleanup. "
                         "Suppressing to prevent false errors."
@@ -268,7 +270,8 @@ async def _wrapped_ainvoke(*args, **kwargs):
                     traceback=traceback.format_exc(),
                     context="workflow_ainvoke_wrapper_execution",
                     note=(
-                        "GeneratorExit caught during workflow execution (converted to RuntimeError, before completion). "
+                        "GeneratorExit caught during workflow execution "
+                        "(converted to RuntimeError, before completion). "
                         "This indicates the workflow was interrupted or cancelled. "
                         "Check LangGraph streaming and timeout configuration."
                     ),

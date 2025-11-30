@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 ContentType = Literal["code", "changelog", "documentation", "article", "video", "repo", "unknown"]
 
 
-def detect_content_type(content: str, content_type_hint: str | None = None) -> ContentType:
+def detect_content_type(content: str, content_type_hint: str | None = None) -> ContentType:  # noqa: PLR0911 - Multiple return paths for content type detection
     """Detect content type from content string.
 
     Uses heuristics to identify content type:
@@ -34,7 +34,7 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         Detected content type
 
     """
-    if not content or len(content.strip()) < 50:
+    if not content or len(content.strip()) < 50:  # noqa: PLR2004 - Minimum content length threshold
         return "unknown"
 
     content_lower = content.lower()
@@ -87,21 +87,21 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         hint_lower = content_type_hint.lower()
         if hint_lower in ("code", "changelog", "documentation", "article", "video", "repo"):
             # Validate hint matches patterns
-            if hint_lower == "code" and code_score >= 2:
+            if hint_lower == "code" and code_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
                 return "code"
-            if hint_lower == "changelog" and changelog_score >= 2:
+            if hint_lower == "changelog" and changelog_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
                 return "changelog"
-            if hint_lower == "documentation" and doc_score >= 2:
+            if hint_lower == "documentation" and doc_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
                 return "documentation"
             if hint_lower in ("article", "video", "repo"):
                 return hint_lower  # type: ignore[return-value]
 
     # Score-based detection
-    if code_score >= 3:
+    if code_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
         return "code"
-    if changelog_score >= 3:
+    if changelog_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
         return "changelog"
-    if doc_score >= 3:
+    if doc_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
         return "documentation"
 
     # Default to article for general text

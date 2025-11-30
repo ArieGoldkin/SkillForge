@@ -33,7 +33,7 @@ class ITutorSessionRepository(Protocol):
         """Get a tutoring session by ID."""
         ...
 
-    async def update_session_state(
+    async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
         session_id: UUID,
         syllabus: dict[str, object] | None = None,
@@ -93,7 +93,7 @@ class TutorSessionRepository:
         )
         return result.scalar_one_or_none()
 
-    async def update_session_state(
+    async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
         session_id: UUID,
         syllabus: dict[str, object] | None = None,
@@ -109,7 +109,8 @@ class TutorSessionRepository:
 
         session = await self.get_session(session_id)
         if not session:
-            raise ValueError(f"Session {session_id} not found")
+            msg = f"Session {session_id} not found"
+            raise ValueError(msg)
 
         update_session_fields(
             session,
@@ -137,7 +138,7 @@ class TutorSessionRepository:
 
 
 def get_tutor_session_repository(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
 ) -> ITutorSessionRepository:
     """Dependency injection for session repository."""
     return TutorSessionRepository(session)

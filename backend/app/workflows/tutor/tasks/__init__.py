@@ -12,9 +12,9 @@ from app.workflows.tutor.tasks.lesson_delivery import generate_lesson_prompt
 from app.workflows.tutor.tasks.syllabus_generation import generate_syllabus_prompt
 
 __all__ = [
-    "generate_syllabus_prompt",
-    "generate_lesson_prompt",
     "build_conversation_context",
+    "generate_lesson_prompt",
+    "generate_syllabus_prompt",
     "should_summarize",
     "summarize_conversation",
 ]

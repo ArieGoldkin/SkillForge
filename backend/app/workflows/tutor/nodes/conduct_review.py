@@ -43,7 +43,7 @@ Return as structured quiz with questions and answer keys."""
         "component": "tutor_node",
     },
 )
-async def conduct_review(state: TutorState) -> dict[str, object]:
+async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
     """Conduct section review quiz with feedback.
 
     Creates a quiz covering section concepts and evaluates user responses.
@@ -93,15 +93,18 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
     try:
         # Get section information
         if not syllabus or not isinstance(syllabus, dict):
-            raise ValueError("Syllabus not found or invalid")
+            msg = "Syllabus not found or invalid"
+            raise ValueError(msg)
 
         sections = syllabus.get("sections", [])
         if not isinstance(sections, list) or current_section >= len(sections):
-            raise ValueError(f"Section {current_section} not found")
+            msg = f"Section {current_section} not found"
+            raise ValueError(msg)
 
         section = sections[current_section]
         if not isinstance(section, dict):
-            raise ValueError(f"Section {current_section} is invalid")
+            msg = f"Section {current_section} is invalid"
+            raise TypeError(msg)
 
         section_title = section.get("title", "Unknown Section")
         lessons = section.get("lessons", [])
@@ -165,13 +168,14 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
 
         # Update conversation history
         conversation_history = state.get("conversation_history", [])
-        updated_history = conversation_history + [
+        updated_history = [
+            *conversation_history,
             {
                 "role": "assistant",
                 "content": review_content,
                 "created_at": saved_message.created_at.isoformat(),
                 "metadata": {"phase": "section_review", "section": current_section},
-            }
+            },
         ]
 
         # Emit SSE event: review complete

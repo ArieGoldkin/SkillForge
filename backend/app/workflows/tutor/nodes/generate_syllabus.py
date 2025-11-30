@@ -30,7 +30,7 @@ logger = get_logger(__name__)
         "component": "tutor_node",
     },
 )
-async def generate_syllabus(state: TutorState) -> dict[str, object]:
+async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
     """Generate syllabus from analysis context.
 
     Creates a personalized curriculum with 2-4 sections, each containing
@@ -130,10 +130,11 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:
                     syllabus_text = syllabus_text[json_start:json_end].strip()
 
             if not isinstance(syllabus_text, str):
-                raise ValueError("Syllabus text must be a string")
+                msg = "Syllabus text must be a string"
+                raise TypeError(msg)
             syllabus = json.loads(syllabus_text)
         except json.JSONDecodeError as e:
-            logger.error(
+            logger.exception(
                 "tutor_syllabus_parse_error",
                 session_id=session_id,
                 error=str(e),
