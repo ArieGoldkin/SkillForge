@@ -32,7 +32,7 @@ export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({ language, code
           style={{ backgroundColor: languageColor }}
           aria-hidden="true"
         />
-        <span className="font-mono text-xs text-muted-foreground lowercase">{language}</span>
+        <span className="font-mono text-xs text-zinc-400 lowercase">{language}</span>
       </div>
 
       <CopyButton text={code} />

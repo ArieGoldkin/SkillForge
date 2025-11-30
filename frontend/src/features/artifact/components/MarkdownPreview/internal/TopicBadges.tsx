@@ -17,7 +17,7 @@ export const TopicBadges: React.FC<TopicBadgesProps> = ({ topics }) => {
   return (
     <div className="flex flex-wrap gap-2">
       {topics.map((topic) => (
-        <Badge key={topic} variant="default" className="text-xs">
+        <Badge key={topic} variant="default" className="text-xs rounded-full px-3 py-0.5">
           {topic}
         </Badge>
       ))}

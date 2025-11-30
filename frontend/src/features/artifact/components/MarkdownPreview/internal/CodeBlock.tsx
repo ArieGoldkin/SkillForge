@@ -42,7 +42,7 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
       className={cn(
         'relative bg-(--code-bg) border border-(--code-border)',
         'rounded-lg my-6 overflow-hidden',
-        'transition-shadow duration-200 hover:shadow-md',
+        'transition-shadow duration-200 hover:shadow-lg',
         className
       )}
     >
@@ -54,7 +54,8 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
             ref={codeRef}
             className={cn(
               `language-${language.toLowerCase()}`,
-              'font-mono text-sm leading-relaxed'
+              'font-mono text-sm leading-relaxed',
+              'text-(--code-text)'
             )}
           >
             {code}
