@@ -33,6 +33,13 @@ Enhance the artifact Jinja2 template with GitHub Flavored Markdown (GFM) element
 - [x] Add `examples` field documentation for complex dict structures
 - [x] Prevent Pydantic validation errors when LLM returns empty/null dicts
 
+### Backend: Schema Formatting Instructions
+- [x] Add markdown formatting instructions to all 8 agent schemas
+- [x] Update `aggregated_insights.py` synthesis fields with format requirements
+- [x] Add "2-3 cohesive sentences" guidance for recommendation fields
+- [x] Add "single concise sentence" guidance for list[str] fields
+- [x] Add "start with verb" guidance for action items
+
 ### Frontend: CodeRenderer Fix
 - [x] Fix inline code detection for react-markdown v9+ compatibility
 - [x] Handle deprecated `inline` prop by detecting language class + newlines
@@ -91,8 +98,15 @@ Frontend: npm run test - Passed
 ### Backend: Pydantic Schemas
 | File | Changes |
 |------|---------|
-| `backend/app/workflows/agents/schemas/tech_comparator.py` | Added `default_factory=dict` to `comparison` field |
-| `backend/app/workflows/agents/schemas/integration_feasibility.py` | Added `default_factory=dict` to `compatibility` field |
+| `backend/app/workflows/agents/schemas/tech_comparator.py` | Added `default_factory=dict`, formatting instructions |
+| `backend/app/workflows/agents/schemas/integration_feasibility.py` | Added `default_factory=dict`, formatting instructions |
+| `backend/app/workflows/agents/schemas/code_quality_critic.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/agents/schemas/dependency_mapper.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/agents/schemas/implementation_planner.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/agents/schemas/performance_analyst.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/agents/schemas/security_auditor.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/agents/schemas/trend_validator.py` | Added formatting instructions for text fields |
+| `backend/app/workflows/tasks/schemas/aggregated_insights.py` | Added formatting instructions to synthesis fields |
 
 ### Frontend: React Components
 | File | Changes |
@@ -143,6 +157,36 @@ comparison: dict[str, TechComparisonEntry] = Field(
 )
 ```
 
+### Schema Field Descriptions as LLM Prompts
+
+Pydantic field descriptions guide LLM output formatting. Adding explicit format instructions ensures proper markdown rendering:
+
+```python
+# For recommendation fields (paragraph format)
+recommendation: str = Field(
+    description=(
+        "Overall security recommendation and priority actions. "
+        "Write as 2-3 cohesive sentences summarizing critical fixes."
+    )
+)
+
+# For list[str] fields (bullet-point friendly)
+best_practices: list[str] = Field(
+    description=(
+        "Security best practices to follow. "
+        "Each item should be a single concise sentence or phrase."
+    )
+)
+
+# For action items (verb-first format)
+refactoring_suggestions: list[str] = Field(
+    description=(
+        "Refactoring recommendations to improve code quality. "
+        "Each item should start with a verb (e.g., 'Extract method...', 'Rename...')."
+    )
+)
+```
+
 ---
 
 ## GFM Elements in Artifact Template
@@ -169,6 +213,7 @@ comparison: dict[str, TechComparisonEntry] = Field(
 ## Commits
 
 ```
+9792d54 fix(backend): add markdown formatting instructions to all agent schemas
 686d50a fix(frontend): improve markdown inline code and task list rendering
 78aa618 fix(backend): add default_factory to agent schemas for validation resilience
 9a1ae37 feat(backend): enhance artifact template with GFM elements
