@@ -19,6 +19,16 @@ describe('downloadMarkdown', () => {
   const mockRemoveChild = vi.fn()
 
   beforeEach(() => {
+    // Use fake timers for setTimeout in downloadMarkdown
+    vi.useFakeTimers()
+
+    // Clear all mocks before each test
+    mockCreateObjectURL.mockClear()
+    mockRevokeObjectURL.mockClear()
+    mockClick.mockClear()
+    mockAppendChild.mockClear()
+    mockRemoveChild.mockClear()
+
     // Mock URL methods
     URL.createObjectURL = mockCreateObjectURL
     URL.revokeObjectURL = mockRevokeObjectURL
@@ -39,6 +49,7 @@ describe('downloadMarkdown', () => {
     // Restore original implementations
     URL.createObjectURL = originalCreateObjectURL
     URL.revokeObjectURL = originalRevokeObjectURL
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -69,17 +80,27 @@ describe('downloadMarkdown', () => {
     expect(mockLink.download).toBe('my-file.md')
   })
 
-  it('appends link to body, clicks it, then removes it', () => {
+  it('appends link to body, clicks it, then removes it after delay', () => {
     downloadMarkdown('content', 'test.md')
 
+    // Immediate actions
     expect(mockAppendChild).toHaveBeenCalled()
     expect(mockClick).toHaveBeenCalled()
+
+    // Cleanup happens after 100ms delay
+    expect(mockRemoveChild).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(100)
     expect(mockRemoveChild).toHaveBeenCalled()
   })
 
-  it('revokes object URL to prevent memory leaks', () => {
+  it('revokes object URL after delay to prevent memory leaks', () => {
     downloadMarkdown('content', 'test.md')
 
+    // URL is not revoked immediately (allows download to start)
+    expect(mockRevokeObjectURL).not.toHaveBeenCalled()
+
+    // After delay, URL is revoked
+    vi.advanceTimersByTime(100)
     expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url')
   })
 })
