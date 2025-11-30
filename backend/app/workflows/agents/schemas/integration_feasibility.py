@@ -13,9 +13,7 @@ class CompatibilityScore(BaseModel):
         ge=0.0,
         le=1.0,
     )
-    notes: str = Field(
-        description="Single sentence explaining the compatibility assessment."
-    )
+    notes: str = Field(description="Single sentence explaining the compatibility assessment.")
 
 
 class IntegrationFeasibility(BaseModel):

@@ -11,9 +11,7 @@ class Dependency(BaseModel):
     name: str = Field(description="Dependency name (package, library, framework)")
     version: str = Field(description="Version or version range (e.g., '^1.0.0', '>=2.0.0')")
     purpose: str = Field(
-        description=(
-            "Single sentence describing the purpose of this dependency in the project."
-        )
+        description=("Single sentence describing the purpose of this dependency in the project.")
     )
     compatibility: Literal["compatible", "incompatible", "unknown"] = Field(
         description="Compatibility status with other dependencies"

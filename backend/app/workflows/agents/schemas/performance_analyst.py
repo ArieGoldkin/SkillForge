@@ -12,9 +12,7 @@ class PerformanceMetric(BaseModel):
     current_value: str = Field(description="Current or expected value for this metric")
     target_value: str = Field(description="Recommended target value for optimal performance")
     notes: str = Field(
-        description=(
-            "Single sentence providing analysis notes and context for this metric."
-        )
+        description=("Single sentence providing analysis notes and context for this metric.")
     )
 
 

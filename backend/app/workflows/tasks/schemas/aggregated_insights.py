@@ -30,8 +30,7 @@ class Synthesis(BaseModel):
     )
     risk_assessment: str = Field(
         description=(
-            "Consolidated risk analysis. "
-            "Format as markdown with bullet points for each risk."
+            "Consolidated risk analysis. Format as markdown with bullet points for each risk."
         )
     )
     recommendations: str = Field(
