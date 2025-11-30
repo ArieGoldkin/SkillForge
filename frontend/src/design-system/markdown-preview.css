@@ -33,6 +33,7 @@
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .markdown-metadata-card {
@@ -43,6 +44,8 @@
 
 .markdown-content-area {
   padding: 2rem 2.5rem;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -63,6 +66,9 @@
   color: var(--foreground);
   line-height: 1.7;
   letter-spacing: 0.025em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 /* Headings */
@@ -161,6 +167,8 @@
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
   font-size: 0.875em;
   font-weight: 500;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 /* ============================================================================
@@ -194,16 +202,24 @@
 }
 
 .markdown-preview .task-list-item {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+/* Handle paragraph inside task list item - flex layout for checkbox alignment */
+.markdown-preview .task-list-item > p {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0;
 }
 
 .markdown-preview .task-checkbox {
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
   border: 2px solid var(--border);
   border-radius: 0.375rem;
   cursor: pointer;
@@ -223,6 +239,37 @@
 
 .markdown-preview .task-checkbox:hover {
   border-color: var(--primary);
+}
+
+/* Fallback for checkboxes in list items not detected as task lists */
+.markdown-preview li > p > input[type="checkbox"] {
+  appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.2rem;
+  margin-right: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.markdown-preview li > p > input[type="checkbox"]:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Style paragraphs containing checkboxes - keep inline flow */
+.markdown-preview li > p:has(input[type="checkbox"]) {
+  display: block;
+  text-indent: -1.625rem;
+  padding-left: 1.625rem;
 }
 
 /* ============================================================================
