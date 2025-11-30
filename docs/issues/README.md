@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 29, 2025
+**Last Updated:** November 30, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -53,6 +53,10 @@ docs/issues/
 │   └── ISSUE_44_VALIDATION_COMPLETE.md   # Issue #44 complete doc
 ├── 045-analysis-view-page/
 │   └── ISSUE_45_VALIDATION_COMPLETE.md   # Issue #45 complete doc
+├── 060-markdown-dependencies/
+│   └── README.md                         # Issue #60 complete doc
+├── 061-artifact-page/
+│   └── README.md                         # Issue #61 complete doc
 ├── 070-remaining-5-agents/
 │   └── README.md                         # Issue #70 complete doc
 ├── 071-aggregator-node/
@@ -139,14 +143,14 @@ docs/issues/
 
 ### Frontend Issues (Arie)
 
-| Issue | Title | Points | Status | Assignee | GitHub |
-|-------|-------|--------|--------|----------|--------|
-| [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) | Task 3.1 - Install Markdown Dependencies | 1 | 🎯 Ready | Arie | [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) |
-| [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) | Task 3.2 - MarkdownPreview Component | 5 | 🎯 Ready | Arie | [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) |
-| [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) | Task 3.3 - Artifact Download Handler | 2 | 🎯 Ready | Arie | [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) |
-| [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) | Task 3.4 - Preview Modal | 3 | 🎯 Ready | Arie | [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) |
-| [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) | Task 3.5 - Copy-to-Clipboard | 2 | 🎯 Ready | Arie | [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) |
-| [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) | Task 3.6 - Frontend-Backend Integration | 3 | ⏳ Blocked | Arie | [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) |
+| Issue | Title | Points | Status | Assignee | Docs | GitHub |
+|-------|-------|--------|--------|----------|------|--------|
+| [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) | Task 3.1 - Install Markdown Dependencies | 1 | ✅ Complete | Arie | [📄 Docs](./060-markdown-dependencies/README.md) | [#60](https://github.com/ArieGoldkin/SkillForge/issues/60) |
+| [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) | Task 3.2 - Artifact Page with Markdown Preview | 5 | ✅ Complete | Arie | [📄 Docs](./061-artifact-page/README.md) | [#61](https://github.com/ArieGoldkin/SkillForge/issues/61) |
+| [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) | Task 3.3 - Artifact Download Handler | 2 | ✅ Included in #61 | Arie | — | [#62](https://github.com/ArieGoldkin/SkillForge/issues/62) |
+| [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) | Task 3.4 - Preview Modal | 3 | 🎯 Ready | Arie | — | [#63](https://github.com/ArieGoldkin/SkillForge/issues/63) |
+| [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) | Task 3.5 - Copy-to-Clipboard | 2 | ✅ Included in #61 | Arie | — | [#64](https://github.com/ArieGoldkin/SkillForge/issues/64) |
+| [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) | Task 3.6 - Frontend-Backend Integration | 3 | ⏳ Blocked | Arie | — | [#65](https://github.com/ArieGoldkin/SkillForge/issues/65) |
 
 ---
 
