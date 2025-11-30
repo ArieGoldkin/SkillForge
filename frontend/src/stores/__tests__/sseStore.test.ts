@@ -107,7 +107,7 @@ describe('SSE Store', () => {
       stage: 'artifact_generation',
       status: 'complete',
       timestamp: new Date().toISOString(),
-      details: { artifact_id: 'artifact-123' },
+      artifact_id: 'artifact-123',
     }
 
     getMockEventSource()?.simulateEvent('complete', event)

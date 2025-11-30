@@ -39,9 +39,8 @@ export interface SSECompleteEvent {
   stage: 'artifact_generation'
   status: 'complete'
   timestamp: string
-  details: {
-    artifact_id: string
-  }
+  artifact_id: string
+  details?: Record<string, unknown>
 }
 
 export interface SSEErrorEvent {

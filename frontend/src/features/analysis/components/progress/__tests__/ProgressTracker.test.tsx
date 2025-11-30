@@ -173,7 +173,7 @@ describe('ProgressTracker Component', () => {
         stage: 'artifact_generation',
         status: 'complete',
         timestamp: new Date().toISOString(),
-        details: { artifact_id: 'artifact-456' },
+        artifact_id: 'artifact-456',
       }
 
       getMockEventSource()?.simulateEvent('complete', completeEvent)
@@ -195,7 +195,7 @@ describe('ProgressTracker Component', () => {
         stage: 'artifact_generation',
         status: 'complete',
         timestamp: new Date().toISOString(),
-        details: { artifact_id: 'artifact-456' },
+        artifact_id: 'artifact-456',
       }
 
       getMockEventSource()?.simulateEvent('complete', completeEvent)

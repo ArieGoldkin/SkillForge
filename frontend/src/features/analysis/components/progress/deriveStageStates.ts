@@ -33,7 +33,7 @@ export function deriveStageStates(
     }
 
     if (isCompleteEvent(event)) {
-      onComplete?.(event.details.artifact_id)
+      onComplete?.(event.artifact_id)
     }
 
     if (isErrorEvent(event)) {

@@ -14,6 +14,7 @@ import { Route as LibraryRouteImport } from './routes/library'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorSessionIdRouteImport } from './routes/tutor.$sessionId'
+import { Route as ArtifactArtifactIdRouteImport } from './routes/artifact.$artifactId'
 import { Route as AnalyzeIdRouteImport } from './routes/analyze.$id'
 
 const ShowcaseRoute = ShowcaseRouteImport.update({
@@ -41,6 +42,11 @@ const TutorSessionIdRoute = TutorSessionIdRouteImport.update({
   path: '/tutor/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArtifactArtifactIdRoute = ArtifactArtifactIdRouteImport.update({
+  id: '/artifact/$artifactId',
+  path: '/artifact/$artifactId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyzeIdRoute = AnalyzeIdRouteImport.update({
   id: '/analyze/$id',
   path: '/analyze/$id',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
+  '/artifact/$artifactId': typeof ArtifactArtifactIdRoute
   '/tutor/$sessionId': typeof TutorSessionIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
+  '/artifact/$artifactId': typeof ArtifactArtifactIdRoute
   '/tutor/$sessionId': typeof TutorSessionIdRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
+  '/artifact/$artifactId': typeof ArtifactArtifactIdRoute
   '/tutor/$sessionId': typeof TutorSessionIdRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/showcase'
     | '/analyze/$id'
+    | '/artifact/$artifactId'
     | '/tutor/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/showcase'
     | '/analyze/$id'
+    | '/artifact/$artifactId'
     | '/tutor/$sessionId'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/showcase'
     | '/analyze/$id'
+    | '/artifact/$artifactId'
     | '/tutor/$sessionId'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   ShowcaseRoute: typeof ShowcaseRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
+  ArtifactArtifactIdRoute: typeof ArtifactArtifactIdRoute
   TutorSessionIdRoute: typeof TutorSessionIdRoute
 }
 
@@ -145,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TutorSessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/artifact/$artifactId': {
+      id: '/artifact/$artifactId'
+      path: '/artifact/$artifactId'
+      fullPath: '/artifact/$artifactId'
+      preLoaderRoute: typeof ArtifactArtifactIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analyze/$id': {
       id: '/analyze/$id'
       path: '/analyze/$id'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   ShowcaseRoute: ShowcaseRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,
+  ArtifactArtifactIdRoute: ArtifactArtifactIdRoute,
   TutorSessionIdRoute: TutorSessionIdRoute,
 }
 export const routeTree = rootRouteImport

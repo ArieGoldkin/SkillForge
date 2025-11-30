@@ -9,6 +9,8 @@
  * - activity/: Agent activity feed (AgentActivityFeed, ActivityColumn)
  * - steps/: Analysis step visualization (AnalysisProgressCard, AnalysisStepList)
  * - states/: Loading and error states (LoadingState, NotFoundState)
+ *
+ * Note: MarkdownPreview has been moved to the artifact feature
  */
 
 // Progress Components
@@ -44,4 +46,4 @@ export {
 } from './steps'
 
 // States Components
-export { LoadingState, NotFoundState } from './states'
+export { AnalysisCompleteCard, ErrorAlert, LoadingState, NotFoundState } from './states'

@@ -14,8 +14,51 @@ import {
   AnalysisProgressCard,
   AnalysisStepList,
 } from '@features/analysis/components'
+import { MarkdownPreview } from '@features/artifact'
 
 import { createAgentActivities, createAnalysisSteps } from './showcase-data'
+
+// Sample markdown content for MarkdownPreview showcase
+const sampleMarkdown = `# Implementation Guide: React API Integration
+
+This guide covers best practices for integrating REST APIs in React applications.
+
+## Key Concepts
+
+- **Data Fetching**: Use \`useEffect\` or React Query for data fetching
+- **Error Handling**: Always handle loading and error states
+- **Type Safety**: Define TypeScript interfaces for API responses
+
+## Code Example
+
+\`\`\`typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+async function fetchUsers(): Promise<User[]> {
+  const response = await fetch('/api/users');
+  if (!response.ok) throw new Error('Failed to fetch');
+  return response.json();
+}
+\`\`\`
+
+## Best Practices
+
+1. Centralize API logic in dedicated service files
+2. Use environment variables for API base URLs
+3. Implement request/response interceptors for auth
+
+> **Note**: Always validate API responses at runtime using Zod or similar libraries.
+
+| Feature | Recommended Tool |
+|---------|-----------------|
+| Data Fetching | React Query / SWR |
+| State Management | Zustand / Jotai |
+| Type Validation | Zod |
+`
 
 /**
  * AnalysisTab component
@@ -53,6 +96,21 @@ export const AnalysisTab: React.FC = () => {
         <div>
           <h3 className="text-lg font-medium mb-3">AgentActivityFeed</h3>
           <AgentActivityFeed activities={agentActivities} isLive={true} maxItems={10} />
+        </div>
+
+        {/* Markdown Preview */}
+        <div>
+          <h3 className="text-lg font-medium mb-3">MarkdownPreview</h3>
+          <MarkdownPreview
+            content={sampleMarkdown}
+            metadata={{
+              topics: ['React', 'TypeScript', 'API Design'],
+              complexity: 'intermediate',
+              word_count: 450,
+              agent_count: 5,
+              avg_confidence: 0.87,
+            }}
+          />
         </div>
       </div>
     </div>

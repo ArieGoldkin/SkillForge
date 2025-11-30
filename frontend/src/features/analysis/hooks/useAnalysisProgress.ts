@@ -58,12 +58,14 @@ export interface AnalysisProgressData {
   isComplete: boolean
   hasError: boolean
   errorMessage?: string
+  artifactId?: string
 }
 
 interface ProcessedEvents {
   isComplete: boolean
   hasError: boolean
   errorMessage?: string
+  artifactId?: string
   stageStatuses: Map<
     StageName,
     {
@@ -86,6 +88,7 @@ function processEvents(events: SSEEvent[]): ProcessedEvents {
   let isComplete = false
   let hasError = false
   let errorMessage: string | undefined
+  let artifactId: string | undefined
 
   for (const event of events) {
     if (isProgressEvent(event) || isCompleteEvent(event)) {
@@ -102,6 +105,10 @@ function processEvents(events: SSEEvent[]): ProcessedEvents {
 
       if (isCompleteEvent(event)) {
         isComplete = true
+        // Extract artifact_id from complete event (top-level field)
+        if (event.artifact_id) {
+          artifactId = event.artifact_id
+        }
       }
     }
 
@@ -111,7 +118,7 @@ function processEvents(events: SSEEvent[]): ProcessedEvents {
     }
   }
 
-  return { isComplete, hasError, errorMessage, stageStatuses }
+  return { isComplete, hasError, errorMessage, artifactId, stageStatuses }
 }
 
 function buildSteps(stageStatuses: ProcessedEvents['stageStatuses']): ProgressStep[] {
@@ -194,7 +201,7 @@ function calculateOverallProgress(
  */
 export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   return useMemo(() => {
-    const { isComplete, hasError, errorMessage, stageStatuses } = processEvents(events)
+    const { isComplete, hasError, errorMessage, artifactId, stageStatuses } = processEvents(events)
     const steps = buildSteps(stageStatuses)
     const activities = buildActivities(events)
     const overallProgress = calculateOverallProgress(stageStatuses, steps, isComplete)
@@ -206,6 +213,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       isComplete,
       hasError,
       errorMessage,
+      artifactId,
     }
   }, [events])
 }

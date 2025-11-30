@@ -96,6 +96,16 @@
   --sidebar-accent-foreground: oklch(0.2435 0 0);
   --sidebar-border: oklch(0.9037 0 0);
   --sidebar-ring: oklch(0.8348 0.1302 160.9080);
+
+  /* Markdown/Code Block Variables */
+  --code-bg: var(--muted);
+  --code-border: var(--border);
+  --code-header-bg: oklch(0.9311 0 0);
+  --inline-code-bg: var(--muted);
+  --inline-code-text: var(--destructive);
+  --blockquote-border: var(--primary);
+  --blockquote-bg: oklch(0.9731 0.0126 160.908);
+  --copy-success: var(--chart-5);
 }
 
 .dark,
@@ -132,6 +142,16 @@
   --sidebar-accent-foreground: oklch(0.9851 0 0);
   --sidebar-border: oklch(0.2809 0 0);
   --sidebar-ring: oklch(0.8003 0.1821 151.7110);
+
+  /* Markdown/Code Block Variables (Dark) */
+  --code-bg: var(--card);
+  --code-border: var(--border);
+  --code-header-bg: oklch(0.2603 0 0);
+  --inline-code-bg: oklch(0.2603 0 0);
+  --inline-code-text: var(--chart-4);
+  --blockquote-border: var(--primary);
+  --blockquote-bg: oklch(0.2393 0.0126 156.7556);
+  --copy-success: var(--chart-5);
 }
 
 @layer base {
