@@ -1,5 +1,6 @@
-import { AnalysisCompleteCard } from './AnalysisCompleteCard'
 import { AnalysisHeader } from '../steps/AnalysisHeader'
+
+import { AnalysisCompleteCard } from './AnalysisCompleteCard'
 import { CompletedProgressColumn } from './CompletedProgressColumn'
 
 interface CompletedAnalysisViewProps {

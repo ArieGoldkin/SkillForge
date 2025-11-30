@@ -1,7 +1,8 @@
+import type { StageName } from '@app-types/sse'
+
+import { STAGE_CONFIG, TOTAL_STAGES } from '../../hooks/stageConfig'
 import { AnalysisProgressCard } from '../steps/AnalysisProgressCard'
 import { AnalysisStepList } from '../steps/AnalysisStepList'
-import { STAGE_CONFIG, TOTAL_STAGES } from '../../hooks/stageConfig'
-import type { StageName } from '@app-types/sse'
 import type { AnalysisStep } from '../steps/AnalysisStepList'
 
 const completedSteps: AnalysisStep[] = Object.entries(STAGE_CONFIG)
