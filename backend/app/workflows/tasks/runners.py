@@ -376,17 +376,26 @@ async def run_trend_validator_with_session(
     try:
         async with AsyncSessionLocal() as session:
             return await run_trend_validator(content, content_type, analysis_id, session)
-    except GeneratorExit:
+    except GeneratorExit as gen_exit:
+        # GeneratorExit occurs when async generator is closed prematurely
+        # This can happen during LangGraph's internal streaming cleanup or timeout cancellation
         duration = time.time() - start_time
-        logger.warning(
-            "agent_cancelled",
+        logger.error(
+            "agent_generator_exit_runner",
             agent_type="trend_validator",
             analysis_id=analysis_id,
             exception_type="GeneratorExit",
+            error_message=str(gen_exit),
             duration_seconds=duration,
             step_timeout=STEP_TIMEOUT,
             trace_id=trace_id,
-            handled_gracefully=True,
+            exc_info=True,  # Include full stack trace for debugging
+            context="run_trend_validator_with_session",
+            note=(
+                "GeneratorExit caught in runner function. "
+                "This occurs when LangGraph's pregel module closes an async generator. "
+                "Check LangGraph streaming and timeout configuration."
+            ),
         )
         return {}
     except Exception as e:

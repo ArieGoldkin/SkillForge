@@ -77,6 +77,3 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
         await embedding_service.close()
 
     return embedding
-
-
-
