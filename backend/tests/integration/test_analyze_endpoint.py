@@ -267,15 +267,18 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     await db_session.commit()
 
     # Mock workflow to raise GeneratorExit (simulating stream closure)
+    # Note: Python converts GeneratorExit in async functions to RuntimeError
     async def mock_workflow_ainvoke(input_state, config):
         """Mock workflow execution that raises GeneratorExit."""
         raise GeneratorExit()
 
     with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
-        # Run workflow task
-        await run_workflow_task(analysis_uuid, "https://example.com/article")
+        # Run workflow task - expect RuntimeError (converted from GeneratorExit)
+        # The workflow runner should catch it and update status to failed
+        with pytest.raises(RuntimeError, match="coroutine ignored GeneratorExit"):
+            await run_workflow_task(analysis_uuid, "https://example.com/article")
 
-        # Wait a bit for status update
+        # Wait a bit for status update (status update happens in exception handler)
         await asyncio.sleep(0.1)
 
         # Verify status was updated to failed

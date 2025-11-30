@@ -1,0 +1,65 @@
+{
+  // ===========================================
+  // PYTHON/BACKEND TEST CONFIGURATION
+  // ===========================================
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "tests",
+    "-v",
+    "--tb=short"
+  ],
+
+  // Test discovery - CRITICAL: cwd must be backend folder
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.testing.cwd": "${workspaceFolder}/backend",
+
+  // Python path configuration
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/app"
+  ],
+
+  // Python environment - MUST point to backend venv
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+
+  // Pytest path - explicit path to pytest in venv
+  "python.testing.pytestPath": "${workspaceFolder}/backend/.venv/bin/pytest",
+
+  // Environment variables for tests
+  "python.envFile": "${workspaceFolder}/backend/.env",
+
+  // ===========================================
+  // FILE ASSOCIATIONS
+  // ===========================================
+  "files.associations": {
+    "*.py": "python",
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  },
+
+  // ===========================================
+  // PYTHON FORMATTING (Ruff)
+  // ===========================================
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  "ruff.enable": true,
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+
+  // ===========================================
+  // MYPY TYPE CHECKING
+  // ===========================================
+  "mypy-type-checker.enable": true,
+  "mypy-type-checker.args": [
+    "--config-file",
+    "${workspaceFolder}/backend/pyproject.toml"
+  ],
+  "mypy-type-checker.cwd": "${workspaceFolder}/backend"
+}

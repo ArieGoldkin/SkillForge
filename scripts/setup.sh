@@ -206,3 +206,8 @@ echo "Useful commands:"
 echo "  - View logs: $DOCKER_COMPOSE_CMD logs -f backend"
 echo "  - Stop services: $DOCKER_COMPOSE_CMD down"
 echo "  - Restart services: $DOCKER_COMPOSE_CMD restart"
+
+
+
+
+

@@ -1,8 +1,10 @@
 """Content extraction task for workflow."""
 
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
@@ -10,10 +12,16 @@ from app.services.sse_helpers import emit_streaming_event
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="extract_content",
     run_type="tool",
-    tags=["workflow", "node"],
+    tags=["workflow", "node", "extraction"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "task",
+        "task_type": "extraction",
+    },
 )
 async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
     """Extract content from URL using JinaReader.
@@ -36,6 +44,16 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         stage="extraction",
         status="running",
     )
+
+    # Runtime metadata updates
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            run_tree.metadata["analysis_id"] = str(analysis_id)
+            run_tree.metadata["url"] = url
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
+        # LangSmith not available or not in trace context - continue
+        pass
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
     jina = JinaReader()

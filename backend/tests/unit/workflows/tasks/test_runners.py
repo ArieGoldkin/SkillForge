@@ -243,3 +243,204 @@ async def test_run_dependency_mapper_with_session(
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session
     )
+
+
+# GeneratorExit handling tests - verify graceful degradation
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_tech_comparator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_tech_comparator_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in tech comparator runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent):
+        result = await run_tech_comparator_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_implementation_planner")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_implementation_planner_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in implementation planner runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_implementation_planner", mock_run_agent):
+        result = await run_implementation_planner_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_security_auditor")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_security_auditor_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in security auditor runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_security_auditor", mock_run_agent):
+        result = await run_security_auditor_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_integration_feasibility")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_integration_feasibility_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in integration feasibility runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_integration_feasibility", mock_run_agent):
+        result = await run_integration_feasibility_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_performance_analyst")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_performance_analyst_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in performance analyst runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_performance_analyst", mock_run_agent):
+        result = await run_performance_analyst_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_code_quality_critic")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_code_quality_critic_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in code quality critic runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_code_quality_critic", mock_run_agent):
+        result = await run_code_quality_critic_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_trend_validator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_trend_validator_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in trend validator runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_trend_validator", mock_run_agent):
+        result = await run_trend_validator_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_dependency_mapper")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_dependency_mapper_with_session_handles_generatorexit(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that GeneratorExit is handled gracefully in dependency mapper runner."""
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(side_effect=GeneratorExit("Timeout cancellation"))
+
+    with patch("app.workflows.tasks.runners.run_dependency_mapper", mock_run_agent):
+        result = await run_dependency_mapper_with_session(
+            test_content, test_content_type, mock_analysis_id
+        )
+
+    # Should return empty dict on GeneratorExit for graceful degradation
+    assert result == {}
+    mock_run_agent.assert_called_once()

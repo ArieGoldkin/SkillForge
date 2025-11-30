@@ -8,7 +8,7 @@
 
 - **Python 3.13** - Required (released October 2024, stable)
 - **Dependency Management:** Use `pyproject.toml` with Poetry (PEP 518 standard)
-- **LangGraph v1.0** - Use Functional API (`@entrypoint`, `@task`) patterns
+- **LangGraph v1.0** - Use StateGraph API (`StateGraph`, nodes, edges) patterns
 - **LangChain v1.0** - Use `create_agent` (replaces deprecated `create_react_agent`)
 - **FastAPI 0.121.2+** - Latest with CVE fixes
 - **Starlette 0.49.3+** - Required for CVE fixes
@@ -59,9 +59,11 @@ print(f"Extraction complete for {analysis_id}")
 ```python
 from app.services.sse_helpers import emit_streaming_event
 
-@task
-async def extract_content(url: str, analysis_id: str) -> dict:
+async def extract_content_node(state: AnalysisState) -> dict:
     """Extract content with SSE events."""
+    analysis_id = state["analysis_id"]
+    url = state["url"]
+    
     # Emit start event
     await emit_streaming_event(
         "progress",
@@ -82,7 +84,8 @@ async def extract_content(url: str, analysis_id: str) -> dict:
         word_count=len(content.split()),
     )
     
-    return {"content": content}
+    # Return only updated fields
+    return {"raw_content": content}
 ```
 
 **5. File Size Limits**
@@ -1297,11 +1300,11 @@ Implement initial LangGraph workflow (no sub-agents yet).
 pip install langgraph>=1.0.0 langchain>=1.0.0 langchain-core>=1.0.0 langchain-community>=1.0.0 langgraph-checkpoint>=3.0.0
 ```
 
-#### Implementation (LangGraph v1.0 Functional API)
+#### Implementation (LangGraph v1.0 StateGraph API)
 ```python
-# app/workflows/analysis.py
+# app/workflows/graph_builder.py
 from typing import TypedDict
-from langgraph.func import entrypoint, task
+from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.postgres import PostgresSaver
 from app.services.extraction.jina_reader import JinaReader
 from app.services.embeddings import embedding_service
@@ -1323,9 +1326,10 @@ class AnalysisState(TypedDict):
 # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
 checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
 
-@task
-async def extract_content(url: str, analysis_id: str) -> dict:
+async def extract_content_node(state: AnalysisState) -> dict:
     """Extract content from URL."""
+    url = state["url"]
+    analysis_id = state["analysis_id"]
     jina = JinaReader()
     try:
         extracted = await jina.extract_article(url)
@@ -1337,37 +1341,26 @@ async def extract_content(url: str, analysis_id: str) -> dict:
     finally:
         await jina.close()
 
-@task
-async def generate_embedding(content: str) -> list[float]:
+async def generate_embedding_node(state: AnalysisState) -> dict:
     """Generate embedding for content."""
-    embedding = await embedding_service.generate_embedding(content)
-    return embedding
+    content = state["raw_content"]
+    analysis_id = state["analysis_id"]
+    embedding = await embedding_service.generate_embedding(content, analysis_id)
+    return {"content_embedding": embedding}
 
-# Main workflow using Functional API
-@entrypoint(checkpointer=checkpointer)
-async def analysis_workflow(
-    url: str,
-    analysis_id: str,
-    previous: dict | None = None
-) -> dict:
-    """Main analysis workflow using LangGraph v1.0 Functional API."""
-    
-    # Extract content (returns future, can run in parallel)
-    extraction_future = extract_content(url, analysis_id)
-    
-    # Block and get result
-    extraction_result = extraction_future.result()
-    
-    # Generate embedding
-    embedding = generate_embedding(extraction_result["raw_content"]).result()
-    
-    return {
-        "analysis_id": analysis_id,
-        "url": url,
-        "raw_content": extraction_result["raw_content"],
-        "extraction_metadata": extraction_result["extraction_metadata"],
-        "content_embedding": embedding
-    }
+# Build StateGraph workflow
+def build_analysis_graph():
+    """Build and compile StateGraph workflow."""
+    graph = StateGraph(AnalysisState)
+    graph.add_node("extract_content", extract_content_node)
+    graph.add_node("generate_embedding", generate_embedding_node)
+    graph.set_entry_point("extract_content")
+    graph.add_edge("extract_content", "generate_embedding")
+    graph.add_edge("generate_embedding", END)
+    return graph.compile(checkpointer=checkpointer)
+
+# Usage
+workflow = build_analysis_graph()
 ```
 
 ---
@@ -1484,9 +1477,11 @@ supervisor_agent = create_agent(
     Return the agent names to invoke."""
 )
 
-@task
-async def supervisor_route(content: str, content_type: str) -> dict:
+async def supervisor_route_node(state: AnalysisState) -> dict:
     """Supervisor decides which agents to invoke."""
+    content = state["raw_content"]
+    content_type = state["content_type"]
+    
     # Use async invoke with timeout to prevent blocking
     supervisor_timeout = 60.0  # 60 seconds max
     if hasattr(supervisor_agent, "ainvoke"):
@@ -1517,6 +1512,7 @@ async def supervisor_route(content: str, content_type: str) -> dict:
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
     
+    # Return only updated fields
     return {
         "supervisor_decision": {
             "agents": selected_agents,
@@ -1562,9 +1558,11 @@ supervisor_agent = create_agent(
     Return the agent names to invoke."""
 )
 
-@task
-async def supervisor_route(content: str, content_type: str) -> dict:
+async def supervisor_route_node(state: AnalysisState) -> dict:
     """Supervisor decides which agents to invoke."""
+    content = state["raw_content"]
+    content_type = state["content_type"]
+    
     # Use async invoke with timeout to prevent blocking
     supervisor_timeout = 60.0  # 60 seconds max
     if hasattr(supervisor_agent, "ainvoke"):
@@ -1595,6 +1593,7 @@ async def supervisor_route(content: str, content_type: str) -> dict:
     # Parse agent selection from result
     selected_agents = parse_agent_selection(result)
     
+    # Return only updated fields
     return {
         "supervisor_decision": {
             "agents": selected_agents,
@@ -1648,10 +1647,12 @@ Your task:
 """
 )
 
-# Use in workflow
-@task
-async def run_tech_comparator(content: str) -> dict:
+# Use in workflow as StateGraph node
+async def run_tech_comparator_node(state: AnalysisState) -> dict:
     """Run tech comparator agent."""
+    content = state["raw_content"]
+    analysis_id = state["analysis_id"]
+    
     # Use async invoke with timeout to prevent blocking
     agent_timeout = 60.0  # 60 seconds max per agent
     if hasattr(tech_comparator_agent, "ainvoke"):
@@ -1670,16 +1671,21 @@ async def run_tech_comparator(content: str) -> dict:
             ),
             timeout=agent_timeout,
         )
-    return parse_agent_result(result)
+    
+    parsed_result = parse_agent_result(result)
+    # Return only updated fields
+    return {"agent_findings": [parsed_result]}
 ```
 
 **SSE Instrumentation in Agent Nodes:**
 ```python
 from app.services.sse_helpers import emit_streaming_event
 
-@task
-async def run_tech_comparator(content: str, analysis_id: str) -> dict:
+async def run_tech_comparator_node(state: AnalysisState) -> dict:
     """Run tech comparator with SSE events."""
+    content = state["raw_content"]
+    analysis_id = state["analysis_id"]
+    
     # Emit start event
     await emit_streaming_event(
         "progress",
@@ -1711,7 +1717,9 @@ async def run_tech_comparator(content: str, analysis_id: str) -> dict:
         agent="tech_comparator",
     )
     
-    return result
+    # Return only updated fields
+    parsed_result = parse_agent_result(result)
+    return {"agent_findings": [parsed_result]}
 ```
 
 #### Tech Comparator Agent (LangChain v1.0 create_agent)
@@ -1840,21 +1848,25 @@ async def create_analysis(
     return AnalyzeResponse.from_orm(analysis)
 ```
 
-**2. LangGraph v1.0 Functional API:**
+**2. LangGraph v1.0 StateGraph API:**
 ```python
-from langgraph.func import entrypoint, task
+from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.postgres import PostgresSaver
 
 checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
 
-@task
-def extract_content(url: str) -> str:
-    return content
+async def extract_content_node(state: AnalysisState) -> dict:
+    """Extract content node."""
+    url = state["url"]
+    content = await jina_reader.extract(url)
+    return {"raw_content": content}
 
-@entrypoint(checkpointer=checkpointer)
-def workflow(url: str) -> dict:
-    content = extract_content(url).result()
-    return {"content": content}
+# Build StateGraph workflow
+graph = StateGraph(AnalysisState)
+graph.add_node("extract_content", extract_content_node)
+graph.set_entry_point("extract_content")
+graph.add_edge("extract_content", END)
+workflow = graph.compile(checkpointer=checkpointer)
 ```
 
 **3. LangChain v1.0 create_agent:**
@@ -1990,7 +2002,7 @@ docker-compose logs -f
 
 **For Yonatan:**
 1. **Day 1:** Provide SSE event schema to Arie (BLOCKER)
-2. **Day 2-5:** Implement LangGraph v1.0 Functional API workflow
+2. **Day 2-5:** Implement LangGraph v1.0 StateGraph API workflow
 3. **Day 6-7:** Implement supervisor pattern with create_agent
 4. **Day 8:** Integration test with Arie (SSE connection)
 5. **Day 9-10:** Implement first 3 sub-agents

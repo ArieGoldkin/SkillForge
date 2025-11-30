@@ -187,14 +187,14 @@ class Settings(BaseSettings):
 
     # Multi-provider LLM configuration
     LLM_MODEL: str = Field(
-        default="gpt-5-mini",
+        default="gemini-2.5-flash",
         description=(
-            "Primary LLM identifier. Supports formats like 'gpt-5-mini', "
-            "'claude-sonnet-4', 'gemini-2.0-flash', or provider-prefixed "
-            "values. Default uses GPT-5 Mini for development. "
-            "For production, use 'gpt-5-mini' ($0.25/$2.00 - recommended, "
-            "newer + cheaper than GPT-4o Mini) or 'gpt-5' ($1.25/$10.00 - "
-            "5x more expensive but maximum quality). Verified November 24, 2025."
+            "Primary LLM identifier. Supports formats like 'gemini-2.5-flash', "
+            "'gpt-5-mini', 'claude-sonnet-4', or provider-prefixed "
+            "values. Default uses Gemini 2.5 Flash for development (fast, cost-effective). "
+            "For production, use 'gemini-2.5-flash' ($0.15/$0.30 per 1M tokens - recommended, "
+            "fastest response times) or 'claude-opus-4-5-20251101' ($5/$25 - best for agents, "
+            "48-76% fewer tokens). Verified from reporter-accuracy project."
         ),
     )
     LLM_PROVIDER: str | None = Field(
@@ -246,12 +246,12 @@ class Settings(BaseSettings):
             "Set to None to use model provider's default."
         ),
     )
-    LLM_RETRY_DELAY_BASE: float = Field(
-        default=1.0,
+    LLM_MAX_RETRIES: int = Field(
+        default=3,
         description=(
-            "Base delay in seconds for retry exponential backoff. "
-            "Smaller values = faster retries. Default 1.0s (1s, 2s, 4s). "
-            "Use 0.1 for test environments (0.1s, 0.2s, 0.4s)."
+            "Maximum number of retry attempts for LLM API calls. "
+            "Uses LangChain's built-in retry mechanism via max_retries parameter. "
+            "Defaults to 3. Set to 0 to disable retries."
         ),
     )
 

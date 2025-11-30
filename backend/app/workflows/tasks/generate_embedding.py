@@ -1,9 +1,11 @@
 """Embedding generation task for workflow."""
 
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
 from app.core.agent_config import get_stage_name
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID, EmbeddingVector
 from app.services.embeddings import EmbeddingService
 from app.services.sse_helpers import emit_streaming_event
@@ -11,10 +13,16 @@ from app.services.sse_helpers import emit_streaming_event
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="generate_embedding",
     run_type="tool",
-    tags=["workflow", "node"],
+    tags=["workflow", "node", "embedding"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "task",
+        "task_type": "embedding",
+    },
 )
 async def generate_embedding(content: str, analysis_id: AnalysisID) -> EmbeddingVector:
     """Generate embedding vector for content.
@@ -37,6 +45,15 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
         stage=get_stage_name("embedding"),
         status="running",
     )
+
+    # Runtime metadata updates
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            run_tree.metadata["analysis_id"] = str(analysis_id)
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
+        # LangSmith not available or not in trace context - continue
+        pass
 
     logger.info("workflow_embedding_started", content_length=len(content))
     embedding_service = EmbeddingService()

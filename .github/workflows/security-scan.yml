@@ -150,25 +150,36 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const alerts = await github.rest.dependabot.listAlertsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open'
-            });
-
-            const criticalHigh = alerts.data.filter(
-              alert => alert.security_advisory.severity === 'critical' || 
-                      alert.security_advisory.severity === 'high'
-            );
-
-            if (criticalHigh.length > 0) {
-              console.log(`Found ${criticalHigh.length} critical/high alerts:`);
-              criticalHigh.forEach(alert => {
-                console.log(`- ${alert.security_advisory.ghsa_id}: ${alert.security_advisory.summary}`);
+            try {
+              const alerts = await github.rest.dependabot.listAlertsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open'
               });
-              core.setFailed(`Found ${criticalHigh.length} critical/high security alerts`);
-            } else {
-              console.log('No critical/high security alerts found');
+
+              const criticalHigh = alerts.data.filter(
+                alert => alert.security_advisory.severity === 'critical' || 
+                        alert.security_advisory.severity === 'high'
+              );
+
+              if (criticalHigh.length > 0) {
+                console.log(`Found ${criticalHigh.length} critical/high alerts:`);
+                criticalHigh.forEach(alert => {
+                  console.log(`- ${alert.security_advisory.ghsa_id}: ${alert.security_advisory.summary}`);
+                });
+                core.setFailed(`Found ${criticalHigh.length} critical/high security alerts`);
+              } else {
+                console.log('No critical/high security alerts found');
+              }
+            } catch (error) {
+              if (error.status === 403 && error.message.includes('Dependabot alerts are disabled')) {
+                console.log('⚠️  Dependabot alerts are disabled for this repository.');
+                console.log('   To enable: Go to repository Settings > Security > Code security and analysis > Enable Dependabot alerts');
+                console.log('   Skipping Dependabot alert check.');
+              } else {
+                console.error('Error checking Dependabot alerts:', error.message);
+                core.setFailed(`Failed to check Dependabot alerts: ${error.message}`);
+              }
             }
 
   security-report:

@@ -4,7 +4,8 @@ This module defines TypedDict state structures for the analysis workflow.
 State is managed by LangGraph's StateGraph and automatically checkpointed.
 """
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
 from app.core.types import AnalysisID, EmbeddingVector
 
@@ -23,11 +24,16 @@ class AnalysisState(TypedDict, total=False):
         extraction_metadata: Metadata from extraction (title, word_count, etc.)
         content_embedding: Vector embedding of the content
         supervisor_decision: Supervisor's agent selection decision
-        agent_findings: List of findings from executed agents
+        agent_findings: List of findings from executed agents (uses reducer for parallel merge)
         aggregated_insights: Synthesized insights from all agents (Issue #71)
         artifact_id: UUID of generated artifact (Issue #72)
         evaluation_results: Agent quality evaluation results (NEW)
         metrics: Performance and quality metrics (NEW)
+
+    Note:
+        agent_findings uses operator.add reducer to allow parallel agent nodes
+        to append their findings. Each agent node returns {"agent_findings": [result]},
+        and LangGraph automatically concatenates them.
 
     """
 
@@ -38,7 +44,7 @@ class AnalysisState(TypedDict, total=False):
     extraction_metadata: dict[str, object]
     content_embedding: EmbeddingVector
     supervisor_decision: dict[str, object]
-    agent_findings: list[dict[str, object]]
+    agent_findings: Annotated[list[dict[str, object]], operator.add]
     aggregated_insights: dict[str, object]  # Issue #71: Synthesized insights
     artifact_id: str | None  # Issue #72: Generated artifact ID
     evaluation_results: dict[str, object]  # NEW: Agent quality scores

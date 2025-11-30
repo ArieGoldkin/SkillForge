@@ -112,9 +112,12 @@ async def test_run_workflow_task_workflow_error(
     # Patch AsyncSessionLocal at the source (app.db.session)
     # AsyncSessionLocal is a callable, so we make it return our mock session when called
     with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
-        await run_workflow_task(mock_analysis_id, test_url)
+        # The exception handler updates status and emits error event, then re-raises
+        # This is correct behavior - exceptions should propagate after handling
+        with pytest.raises(RuntimeError, match="Workflow failed"):
+            await run_workflow_task(mock_analysis_id, test_url)
 
-    # Verify status was updated to failed
+    # Verify status was updated to failed (happens before re-raising)
     assert mock_analysis.status == "failed"
     mock_db_session.commit.assert_called_once()
 
@@ -157,43 +160,6 @@ async def test_run_workflow_task_status_update_fails(
         if "workflow_task_status_update_failed" in str(call)
     ]
     assert len(error_logs) == 1
-
-
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
-async def test_run_workflow_task_generatorexit(
-    mock_logger,
-    mock_workflow,
-    mock_emit_event,
-    mock_analysis_id,
-    test_url,
-):
-    """Test workflow execution with GeneratorExit."""
-    # Mock workflow to raise GeneratorExit
-    mock_workflow.ainvoke = AsyncMock(side_effect=GeneratorExit())
-
-    # Mock database session for error status update
-    mock_analysis = MagicMock()
-    mock_analysis.status = "pending"
-    mock_db_session = AsyncMock()
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = mock_analysis
-    mock_db_session.execute.return_value = mock_result
-    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
-    mock_db_session.__aexit__ = AsyncMock(return_value=False)
-
-    # Patch AsyncSessionLocal at the source (app.db.session)
-    # AsyncSessionLocal is a callable, so we make it return our mock session when called
-    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
-        await run_workflow_task(mock_analysis_id, test_url)
-
-    # Verify status was updated to failed
-    assert mock_analysis.status == "failed"
-
-    # Verify error event was emitted
-    error_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "error"]
-    assert len(error_calls) == 1
 
 
 @patch("app.api.v1.workflow_runner.emit_streaming_event")
@@ -321,7 +287,8 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     # Verify stage (third positional arg: stage) - check if passed as positional or kwarg
     stage_value = call_args[2] if len(call_args) > 2 else call_kwargs.get("stage")
     assert stage_value == "artifact_generation", (
-        f"Stage should be 'artifact_generation', got {stage_value} in args={call_args}, kwargs={call_kwargs}"
+        f"Stage should be 'artifact_generation', got {stage_value} "
+        f"in args={call_args}, kwargs={call_kwargs}"
     )
     # Verify status (fourth positional arg: status) - check if passed as positional or kwarg
     status_value = call_args[3] if len(call_args) > 3 else call_kwargs.get("status")

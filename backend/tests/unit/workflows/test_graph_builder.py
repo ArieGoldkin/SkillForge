@@ -106,9 +106,8 @@ async def test_graph_execution_with_mocks(
             return_value=sample_supervisor_result,
         ),
         patch(
-            "app.workflows.nodes.parallel_agents.execute_agents",
-            new_callable=AsyncMock,
-            return_value=[],
+            "app.workflows.nodes.agent_router.route_to_agents",
+            return_value=[],  # No agents selected
         ),
         patch(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
@@ -195,9 +194,8 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
             return_value=mock_supervisor_result,
         ),
         patch(
-            "app.workflows.nodes.parallel_agents.execute_agents",
-            new_callable=AsyncMock,
-            return_value=[],
+            "app.workflows.nodes.agent_router.route_to_agents",
+            return_value=[],  # No agents selected
         ),
         patch(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",

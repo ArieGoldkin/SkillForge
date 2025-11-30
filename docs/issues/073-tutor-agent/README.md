@@ -1,6 +1,6 @@
 # Issue #73: Tutor Agent LangGraph Workflow
 
-**Status:** 🚧 **IN PROGRESS**  
+**Status:** ✅ **COMPLETE** (Ready for Review)  
 **Assignee:** Yonatan  
 **Points:** 13 pts (broken into 3 phases)  
 **GitHub:** [#73](https://github.com/ArieGoldkin/SkillForge/issues/73)  
@@ -239,6 +239,8 @@ backend/app/models/
 2. final_challenge node (integrative problem)
 3. guide_reflection node (real-world applications)
 4. Session completion logic
+   - **Resume Session Logic (US-2.3)**: When user returns, `GET /api/v1/tutor/sessions/{id}` loads full conversation history from `tutoring_messages` table, restores StateGraph checkpoint state, allows user to continue from where they left off
+   - **Exit Session Logic (US-2.4)**: `PATCH /api/v1/tutor/sessions/{id}` marks session as "completed" or "abandoned", sets `completed_at` timestamp, saves final state to checkpoint
 
 ---
 
@@ -347,45 +349,55 @@ await emit_streaming_event(
 ## ✅ Acceptance Criteria
 
 ### Phase 1: Core Loop
-- [ ] Database migration created and tested (reversible)
-- [ ] TutorState TypedDict defined
-- [ ] Pydantic models (Syllabus, Section, Lesson, Message) created
-- [ ] Repository interface and implementation
-- [ ] Graph builder with 4 core nodes
-- [ ] All 4 core nodes implemented with SSE events
-- [ ] API endpoints (POST/GET/PATCH)
-- [ ] Router registered in main.py
-- [ ] Unit tests (≥80% coverage)
-- [ ] Integration test: Basic flow
+- [x] Database migration created and tested (reversible)
+- [x] TutorState TypedDict defined
+- [x] Pydantic models (Syllabus, Section, Lesson, Message) created
+- [x] Repository interface and implementation
+  - [x] `create_session()` - Create new tutoring session
+  - [x] `get_session()` - Get session with messages (for resume)
+  - [x] `save_message()` - Save user/assistant messages
+  - [x] `update_session_state()` - Update session progress
+- [x] Graph builder with 4 core nodes
+- [x] All 4 core nodes implemented with SSE events
+- [x] API endpoints:
+  - [x] `POST /api/v1/tutor/sessions` - Start session (US-2.1)
+  - [x] `POST /api/v1/tutor/sessions/{id}/messages` - Send message (US-2.2)
+  - [x] `GET /api/v1/tutor/sessions/{id}` - Get session + history (US-2.3 resume)
+  - [x] `PATCH /api/v1/tutor/sessions/{id}` - Update session status (US-2.4 exit)
+- [x] Router registered in main.py
+- [x] Unit tests (≥80% coverage)
+- [x] Integration test: Basic flow
 
 ### Phase 2: Adaptive Features
-- [ ] rephrase_explain node
-- [ ] Context management (sliding window)
-- [ ] Conversation summarization
-- [ ] Understanding scores tracking
-- [ ] Attempt tracking logic
-- [ ] Tasks module
-- [ ] Unit tests for Phase 2
+- [x] rephrase_explain node
+- [x] Context management (sliding window)
+- [x] Conversation summarization
+- [x] Understanding scores tracking
+- [x] Attempt tracking logic
+- [x] Tasks module
+- [x] Unit tests for Phase 2
 
 ### Phase 3: Completion Flow
-- [ ] conduct_review node
-- [ ] final_challenge node
-- [ ] guide_reflection node
-- [ ] Session completion logic
-- [ ] Graph builder updated
-- [ ] Unit tests for Phase 3
-- [ ] Integration test: Full flow
+- [x] conduct_review node
+- [x] final_challenge node
+- [x] guide_reflection node
+- [x] Session completion logic:
+  - [x] Resume session: Load checkpoint state, restore conversation history, continue workflow
+  - [x] Exit session: Mark as completed/abandoned, save final checkpoint, update `completed_at`
+- [x] Graph builder updated
+- [x] Unit tests for Phase 3
+- [x] Integration test: Full flow (including resume/exit scenarios)
 
 ### Quality Gates
-- [ ] All tests pass (100% pass rate)
-- [ ] Coverage ≥80% (pytest --cov)
-- [ ] No linting errors (ruff check)
-- [ ] No type errors (mypy app)
-- [ ] Code formatted (ruff format)
-- [ ] All docstrings added
-- [ ] Migration tested (upgrade + downgrade)
-- [ ] Frontend integration verified
-- [ ] SSE streaming verified end-to-end
+- [x] All tests pass (100% pass rate)
+- [x] Coverage ≥80% (pytest --cov)
+- [x] No linting errors (ruff check)
+- [x] No type errors (mypy app - with type ignores for SQLAlchemy)
+- [x] Code formatted (ruff format)
+- [x] All docstrings added
+- [x] Migration tested (upgrade + downgrade)
+- [ ] Frontend integration verified (pending frontend implementation)
+- [x] SSE streaming verified end-to-end
 
 ---
 
@@ -452,6 +464,43 @@ data: {"type": "chunk", "content": "Let me explain..."}
 data: {"type": "done", "phase": "lesson_delivery", "progress": {"section": 1, "lesson": 2}}
 ```
 
+### Resume Session (US-2.3)
+
+```bash
+GET /api/v1/tutor/sessions/{id}
+
+Response:
+{
+  "session_id": "uuid",
+  "status": "active",
+  "syllabus": {...},
+  "current_section": 1,
+  "current_lesson": 2,
+  "messages": [
+    {"role": "user", "content": "...", "created_at": "..."},
+    {"role": "assistant", "content": "...", "created_at": "..."}
+  ]
+}
+
+# Frontend loads conversation history and continues from checkpoint
+```
+
+### Exit Session (US-2.4)
+
+```bash
+PATCH /api/v1/tutor/sessions/{id}
+{
+  "status": "completed"  # or "abandoned"
+}
+
+Response:
+{
+  "session_id": "uuid",
+  "status": "completed",
+  "completed_at": "2025-11-29T10:30:00Z"
+}
+```
+
 ---
 
 ## 📚 References
@@ -465,4 +514,4 @@ data: {"type": "done", "phase": "lesson_delivery", "progress": {"section": 1, "l
 ---
 
 **Last Updated:** November 29, 2025  
-**Status:** Planning Complete - Ready for Implementation
+**Status:** Implementation Complete - All phases delivered

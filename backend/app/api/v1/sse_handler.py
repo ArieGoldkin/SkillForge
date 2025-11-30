@@ -4,6 +4,7 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator, MutableMapping
+from contextlib import aclosing
 from datetime import UTC, datetime
 from typing import Any
 
@@ -112,24 +113,30 @@ async def stream_analysis_progress(
         - Improved cancellation handling with asyncio.CancelledError
         - Library handles disconnect detection automatically via _listen_for_disconnect
 
+        Uses aclosing() to ensure proper cleanup of the broadcaster subscription
+        even if streaming is interrupted.
+
         """
         try:
-            async for event in broadcaster.subscribe(channel):
-                # Format event for SSE
-                event_type = str(event.get("type", "message"))
-                yield {
-                    "event": event_type,
-                    "data": json.dumps(event),
-                }
+            # Use aclosing() to ensure proper cleanup of async generator
+            # Type ignore: broadcaster.subscribe returns AsyncIterator which supports aclose()
+            async with aclosing(broadcaster.subscribe(channel)) as subscription:  # type: ignore[type-var]
+                async for event in subscription:
+                    # Format event for SSE
+                    event_type = str(event.get("type", "message"))
+                    yield {
+                        "event": event_type,
+                        "data": json.dumps(event),
+                    }
 
-                # Close connection on complete event
-                if event.get("type") == "complete":
-                    logger.info(
-                        "sse_complete_event_sent",
-                        analysis_id=str(analysis_id),
-                        channel=channel,
-                    )
-                    break
+                    # Close connection on complete event
+                    if event.get("type") == "complete":
+                        logger.info(
+                            "sse_complete_event_sent",
+                            analysis_id=str(analysis_id),
+                            channel=channel,
+                        )
+                        break
 
         except asyncio.CancelledError:
             # sse-starlette 3.0.3 automatically cancels on client disconnect

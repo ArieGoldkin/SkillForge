@@ -6,19 +6,26 @@ improvement of agent performance based on LangSmith evaluation results.
 
 from datetime import UTC, datetime
 
-from langsmith import Client, traceable
+from langsmith import Client
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="evaluate_agent_quality",
     run_type="chain",
     tags=["workflow", "evaluation"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "evaluation",
+        "component": "evaluator",
+    },
 )
 async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
     """Evaluate agent outputs and score quality using LangSmith.

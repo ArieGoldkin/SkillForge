@@ -10,20 +10,25 @@ Architecture:
     - Returns structured decision: {"agents": [...], "reasoning": "...", "confidence": 0.0-1.0}
 """
 
-import asyncio
 import time
 
 from langchain_core.runnables import Runnable
-from langsmith import traceable
 
 from app.core.agent_config import get_stage_name
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
+from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.workflows.nodes.supervisor_schema import AgentSelection
+from app.workflows.utils.content_type_detection import (
+    detect_content_type,
+    filter_agents_by_content_type,
+)
 
 logger = get_logger(__name__)
 
@@ -84,12 +89,15 @@ async def _invoke_supervisor_with_retry(
     analysis_id: AnalysisID,
     max_attempts: int = 3,
 ) -> AgentSelection:
-    """Invoke supervisor model with progressive timeout and retry logic.
+    """Invoke supervisor model with retry logic - timeout handled by step_timeout.
 
-    Progressive timeout strategy:
-    - Attempt 1: 60s (fast path)
-    - Attempt 2: 120s (fallback)
-    - Attempt 3: 180s (last resort)
+    Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
+    This avoids nested timeout conflicts and PEP 789 violations.
+
+    Retry strategy:
+    - Attempt 1: First attempt
+    - Attempt 2: Retry if first fails
+    - Attempt 3: Final attempt
 
     Args:
         model: Chat model with structured output
@@ -101,69 +109,63 @@ async def _invoke_supervisor_with_retry(
         AgentSelection with selected agents
 
     Raises:
-        TimeoutError: If all attempts exceed their timeouts
+        Exception: If all attempts fail (timeout handled by step_timeout)
 
     """
-    timeouts = [60.0, 120.0, 180.0]
-
     for attempt in range(max_attempts):
-        timeout = timeouts[attempt]
+        # Create RunnableConfig (timeout handled by step_timeout on graph)
+        config = create_runnable_config()
+
         try:
             logger.debug(
                 "supervisor_attempt",
                 analysis_id=analysis_id,
                 attempt=attempt + 1,
-                timeout=timeout,
+                max_attempts=max_attempts,
             )
-            result = await asyncio.wait_for(
-                model.ainvoke(prompt),
-                timeout=timeout,
-            )
+
+            # Invoke model - no timeout wrapper (step_timeout handles it)
+            result = await model.ainvoke(prompt, config=config)
+
             # Type assertion: structured output guarantees AgentSelection
             if not isinstance(result, AgentSelection):
                 msg = f"Supervisor returned unexpected type: {type(result)}"
                 raise TypeError(msg)
             return result
-        except TimeoutError:
+        except Exception as e:
+            # Retry on any error (timeout will be handled by step_timeout)
             if attempt == max_attempts - 1:
-                # Last attempt failed
                 logger.warning(
-                    "supervisor_timeout_all_attempts",
+                    "supervisor_failed_all_attempts",
                     analysis_id=analysis_id,
                     max_attempts=max_attempts,
-                    final_timeout=timeout,
+                    error=str(e),
                 )
-                msg = f"Supervisor exceeded all timeouts (final: {timeout}s)"
-                raise TimeoutError(msg) from None
+                raise
 
             logger.warning(
-                "supervisor_timeout_retry",
+                "supervisor_error_retry",
                 analysis_id=analysis_id,
                 attempt=attempt + 1,
-                timeout=timeout,
-                next_timeout=timeouts[attempt + 1],
-            )
-            # Continue to next attempt with longer timeout
-        except Exception as e:
-            # Non-timeout errors: log and re-raise
-            logger.error(
-                "supervisor_invocation_error",
-                analysis_id=analysis_id,
-                attempt=attempt + 1,
+                max_attempts=max_attempts,
                 error=str(e),
-                exc_info=True,
             )
-            raise
+            # Continue to next attempt
 
     # Should never reach here
     msg = "Retry loop exhausted without success"
     raise RuntimeError(msg)
 
 
-@traceable(
+@robust_traceable(
     name="supervisor_route",
     run_type="chain",
     tags=["workflow", "supervisor"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "supervisor",
+    },
 )
 async def supervisor_route(
     content: str,
@@ -209,6 +211,15 @@ async def supervisor_route(
     )
 
     try:
+        # Detect actual content type from content (may differ from extraction metadata)
+        detected_content_type = detect_content_type(content, content_type_hint=content_type)
+        logger.debug(
+            "content_type_detected",
+            analysis_id=analysis_id,
+            detected_type=detected_content_type,
+            hint_type=content_type,
+        )
+
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
@@ -230,14 +241,34 @@ async def supervisor_route(
             analysis_id,
         )
 
+        # Filter agents based on content type capabilities
+        filtered_agents, skipped_agents = filter_agents_by_content_type(
+            selection.agents, detected_content_type
+        )
+
+        if skipped_agents:
+            logger.info(
+                "supervisor_agents_filtered",
+                analysis_id=analysis_id,
+                skipped_agents=skipped_agents,
+                filtered_agents=filtered_agents,
+                content_type=detected_content_type,
+                reason="agents_cannot_process_content_type",
+            )
+
         # Calculate duration for performance monitoring
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # Create supervisor decision (convert to legacy format for compatibility)
+        # Create supervisor decision with filtered agents
         supervisor_decision = {
-            "agents": selection.agents,
-            "priority": [selection.confidence] * len(selection.agents),
-            "reasoning": selection.reasoning,
+            "agents": filtered_agents,  # Use filtered list
+            "priority": [selection.confidence] * len(filtered_agents),
+            "reasoning": (
+                f"{selection.reasoning} "
+                f"(Filtered: {len(skipped_agents)} agents skipped due to content type mismatch)"
+                if skipped_agents
+                else selection.reasoning
+            ),
             "confidence": selection.confidence,
         }
 
@@ -247,20 +278,23 @@ async def supervisor_route(
             analysis_id=analysis_id,
             stage=get_stage_name("supervisor"),
             status="complete",
-            agent_count=len(selection.agents),
-            selected_agents=selection.agents,
+            agent_count=len(filtered_agents),
+            selected_agents=filtered_agents,
+            skipped_agents=skipped_agents if skipped_agents else None,
             confidence=selection.confidence,
         )
 
         logger.info(
             "workflow_supervisor_complete",
             analysis_id=analysis_id,
-            selected_agents=selection.agents,
-            agent_count=len(selection.agents),
+            selected_agents=filtered_agents,
+            agent_count=len(filtered_agents),
+            skipped_agent_count=len(skipped_agents),
             confidence=selection.confidence,
             duration_ms=duration_ms,
             content_sent_chars=len(sized_content),
             content_original_chars=len(content),
+            detected_content_type=detected_content_type,
         )
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)

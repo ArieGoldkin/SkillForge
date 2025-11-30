@@ -6,10 +6,9 @@ results from parallel agent execution using LLM synthesis.
 
 import time
 
-from langsmith import traceable
-
 from app.core.logging import get_logger
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
+from app.core.tracing import robust_traceable
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
@@ -34,19 +33,13 @@ from app.workflows.utils.timeout_handling import handle_timeout_error
 logger = get_logger(__name__)
 
 
-@traceable(
-    name="aggregate_findings",
-    run_type="chain",
-    tags=["workflow", "node", "aggregation"],
-)
-async def aggregate_findings(
+async def _aggregate_findings_impl(
     state: AnalysisState,
 ) -> dict[str, object]:
-    """Aggregate agent findings into coherent results using LLM synthesis.
+    """Aggregate agent findings implementation.
 
-    This function implements the fan-in pattern, collecting results from
-    all parallel agent executions and synthesizing them into a unified structure
-    with conflict resolution and executive summary generation.
+    This function contains the actual implementation logic.
+    GeneratorExit handling is managed by the robust_traceable wrapper.
 
     Args:
         state: Current workflow state with agent_findings populated
@@ -188,3 +181,26 @@ async def aggregate_findings(
             exc_info=True,
         )
         raise
+
+
+@robust_traceable(
+    name="aggregate_findings",
+    run_type="chain",
+    tags=["workflow", "node", "aggregation"],
+)
+async def aggregate_findings(
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Aggregate agent findings into coherent results using LLM synthesis.
+
+    GeneratorExit handling is managed by the robust_traceable wrapper,
+    which intercepts cleanup exceptions before LangSmith captures them.
+
+    Args:
+        state: Current workflow state with agent_findings populated
+
+    Returns:
+        Dictionary with aggregated_insights field (to avoid LangGraph concurrent update errors)
+
+    """
+    return await _aggregate_findings_impl(state)
