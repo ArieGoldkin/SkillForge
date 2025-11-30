@@ -33,7 +33,7 @@
       "command": "./scripts/mcp/run-langsmith-mcp.sh",
       "env": {
         "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com",
-        "LANGSMITH_PROJECT": "skillforge"
+        "LANGSMITH_PROJECT": "skillforge-backend"
       }
     }
   }

@@ -7,11 +7,13 @@ comprehensive markdown document from aggregated agent findings.
 import time
 import uuid
 
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
 from app.core.agent_config import get_stage_name
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
+from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
 from app.services.sse_helpers import emit_streaming_event
@@ -21,10 +23,16 @@ from app.workflows.tasks.artifact_helpers import build_claude_code_prompt, extra
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="generate_artifact",
     run_type="chain",
     tags=["workflow", "node", "artifact_generation"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "task",
+        "task_type": "artifact_generation",
+    },
 )
 async def generate_artifact(
     state: AnalysisState,
@@ -60,6 +68,15 @@ async def generate_artifact(
         stage=get_stage_name("artifact_generation"),
         status="running",
     )
+
+    # Runtime metadata updates
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            run_tree.metadata["analysis_id"] = str(analysis_id)
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
+        # LangSmith not available or not in trace context - continue
+        pass
 
     logger.info(
         "workflow_artifact_generation_started",

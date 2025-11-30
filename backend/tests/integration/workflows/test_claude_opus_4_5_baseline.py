@@ -148,5 +148,8 @@ async def test_claude_opus_4_5_baseline(
 
     # Verify LangSmith tracing is enabled (if configured)
     if os.getenv("LANGCHAIN_TRACING_V2") == "true":
-        # LangSmith tracing should be active
-        pass  # Just verify it's configured, don't fail if not
+        # LangSmith tracing should be active - check if traces were attempted
+        import time
+
+        # Give traces time to send (they're async)
+        time.sleep(2)

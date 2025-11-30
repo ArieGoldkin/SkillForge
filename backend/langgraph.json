@@ -1,0 +1,10 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "analysis": "app.workflows.studio_compat:analysis_workflow",
+    "tutor": "app.workflows.studio_compat:tutor_workflow"
+  },
+  "env": ".env"
+}
+
+

@@ -13,7 +13,7 @@ from tests.unit.workflows.agents.conftest import MockAgentSchema
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.streaming.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming(
@@ -55,7 +55,7 @@ async def test_run_agent_with_tracking_streaming(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.streaming.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_throttling(
@@ -72,8 +72,8 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
     mock_save_finding.return_value = MagicMock()
 
-    # Mock time to control throttling behavior
-    with mock_patch("app.workflows.agents.streaming.time.time") as mock_time:
+    # Mock time.time() used inside emit_progress_if_needed to control throttling behavior
+    with mock_patch("time.time") as mock_time:
         # Simulate time progression
         mock_time.side_effect = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 

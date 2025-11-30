@@ -3,6 +3,7 @@
 import uuid
 from datetime import UTC, datetime
 
+import sqlalchemy as sa
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
@@ -27,6 +28,23 @@ class TutoringSession(Base):
         nullable=True,
         index=True,
     )
+    syllabus = Column(JSONB, nullable=True)  # Generated curriculum structure
+    current_section = Column(
+        sa.Integer, nullable=False, server_default="0"
+    )  # Current section index (0-based)
+    current_lesson = Column(
+        sa.Integer, nullable=False, server_default="0"
+    )  # Current lesson index (0-based)
+    current_phase = Column(
+        String(50), nullable=False, server_default="syllabus_generation", index=True
+    )  # Current workflow phase
+    user_level = Column(
+        String(20), nullable=False, server_default="intermediate"
+    )  # User skill level
+    understanding_scores = Column(
+        JSONB, nullable=False, server_default="{}"
+    )  # Per-concept understanding scores
+    conversation_summary = Column(Text, nullable=True)  # Summarized conversation history
     session_metadata = Column(JSONB)  # Session configuration, preferences
     status = Column(String(50), nullable=False, default="active", index=True)
     started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)

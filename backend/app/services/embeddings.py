@@ -62,15 +62,16 @@ class EmbeddingService:
         self.model = "text-embedding-3-small"
         self.expected_dimensions = 1536
         self.max_tokens = 8_000  # Safety margin below 8,191 token limit
-        # Cache encoding for performance (text-embedding-3-small uses cl100k_base)
-        self.encoding = tiktoken.encoding_for_model("text-embedding-3-small")
+        # Lazy-load encoding to avoid blocking calls in async context
+        # Encoding will be initialized on first use in generate_embedding()
+        self._encoding: tiktoken.Encoding | None = None
 
         logger.info(
             "embedding_service_initialized",
             model=self.model,
             dimensions=self.expected_dimensions,
             max_tokens=self.max_tokens,
-            encoding=self.encoding.name,
+            encoding="cl100k_base",  # text-embedding-3-small uses cl100k_base
             provider="openai",
         )
 
@@ -105,14 +106,23 @@ class EmbeddingService:
 
         # Token-based truncation (not character-based)
         # OpenAI text-embedding-3-small limit is 8,191 tokens
-        tokens = self.encoding.encode(text)
+        # Lazy-load encoding on first use using thread pool to avoid blocking
+        import asyncio
+
+        if self._encoding is None:
+            # Initialize encoding in thread pool to avoid blocking the event loop
+            self._encoding = await asyncio.to_thread(
+                tiktoken.encoding_for_model, "text-embedding-3-small"
+            )
+
+        tokens = self._encoding.encode(text)
         original_token_count = len(tokens)
         original_length = len(text)
 
         if original_token_count > self.max_tokens:
             # Truncate tokens, then decode back to text
             truncated_tokens = tokens[: self.max_tokens]
-            text = self.encoding.decode(truncated_tokens)
+            text = self._encoding.decode(truncated_tokens)
             logger.warning(
                 "embedding_text_truncated",
                 original_tokens=original_token_count,

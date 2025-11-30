@@ -58,3 +58,8 @@ def test_normalize_different_strings():
     result2 = normalize_analysis_id_to_uuid(str2)
 
     assert result1 != result2
+
+
+
+
+

@@ -45,8 +45,8 @@ def test_settings_loads_from_env(monkeypatch):
     monkeypatch.setenv("RELOAD", "false")
     # Use strong password to pass production validation
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
-    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gpt-5-mini)
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gemini-2.5-flash)
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key-for-unit-tests")
     # Clear cache to pick up new env vars
     get_settings.cache_clear()
     settings = Settings()
@@ -80,8 +80,8 @@ def test_settings_production_validation_with_database_url(monkeypatch):
     monkeypatch.setenv("LOG_LEVEL", "INFO")
     # Use strong password to pass production validation
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
-    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gpt-5-mini)
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gemini-2.5-flash)
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key-for-unit-tests")
     # Clear cache to pick up new env vars
     get_settings.cache_clear()
     settings = Settings(
@@ -109,8 +109,8 @@ def test_settings_helper_methods(monkeypatch):
     """Test helper methods for environment checks."""
     # Clean up env vars that autouse fixtures might set
     monkeypatch.delenv("LLM_MODEL", raising=False)
-    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gpt-5-mini)
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    # Set a dummy API key to pass LLM validation (default LLM_MODEL is gemini-2.5-flash)
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key-for-unit-tests")
     get_settings.cache_clear()
 
     dev_settings = Settings(ENVIRONMENT="development")
@@ -119,12 +119,14 @@ def test_settings_helper_methods(monkeypatch):
     assert dev_settings.is_staging() is False
 
     # Use strong password to pass production validation
+    # Set GOOGLE_API_KEY for production settings since default model is gemini-2.5-flash
     prod_settings = Settings(
         ENVIRONMENT="production",
         DATABASE_URL="postgresql://user:StrongP@ssw0rd123@localhost/db",
         HOST="127.0.0.1",
         RELOAD=False,
         LOG_LEVEL="INFO",
+        GOOGLE_API_KEY="test-key-for-unit-tests",
     )
     assert prod_settings.is_development() is False
     assert prod_settings.is_production() is True
@@ -254,7 +256,7 @@ def test_settings_production_accepts_secure_config(monkeypatch):
     monkeypatch.delenv("LLM_MODEL", raising=False)
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:StrongP@ssw0rd123@localhost/db")
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key-for-unit-tests")
     get_settings.cache_clear()
 
     settings = Settings(

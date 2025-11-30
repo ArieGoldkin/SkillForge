@@ -21,3 +21,10 @@ os.environ.setdefault("LANGCHAIN_PROJECT", "skillforge-integration-tests")
 # 2. MCP server configuration
 # 3. Environment variables
 # If not set, LangSmith will log warnings but tests will still run
+#
+# DEBUG: Check if API key is available for tracing
+if os.getenv("LANGSMITH_API_KEY"):
+    print(f"✓ LANGSMITH_API_KEY is set (length: {len(os.getenv('LANGSMITH_API_KEY'))})")
+else:
+    print("✗ LANGSMITH_API_KEY not set - traces will not be sent to LangSmith")
+    print("  Set LANGSMITH_API_KEY in .env or environment to enable tracing")

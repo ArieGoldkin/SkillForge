@@ -72,12 +72,13 @@ def validate_node_return_patterns():
     # Check return type annotations
     import inspect
 
+    from app.workflows.nodes.parallel_agents import execute_parallel_agents
+
     from app.workflows.graph_builder import (
         _extract_content_node,
         _generate_embedding_node,
         _supervisor_node,
     )
-    from app.workflows.nodes.parallel_agents import execute_parallel_agents
     from app.workflows.tasks.aggregate_findings import aggregate_findings
 
     nodes = [
