@@ -118,3 +118,4 @@ This will tell you:
 3. **Null output / Artifact**: ✅ Normal - Background task pattern, artifact in database
 
 The implementation is working correctly. The hidden runs are just LangGraph's internal cleanup traces, which is why LangSmith hides them by default.
+
