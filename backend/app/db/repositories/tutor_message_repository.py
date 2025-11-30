@@ -3,7 +3,7 @@
 Handles message CRUD operations, following repository pattern.
 """
 
-from typing import Protocol
+from typing import Protocol, cast
 from uuid import UUID
 
 from fastapi import Depends
@@ -78,7 +78,8 @@ class TutorMessageRepository:
             .where(TutoringMessage.session_id == session_id)
             .order_by(TutoringMessage.created_at)
         )
-        messages = list(result.scalars().all())
+        # Type cast: SQLAlchemy returns correct type but mypy can't infer it
+        messages = cast(list[TutoringMessage], list(result.scalars().all()))
 
         return session, messages
 
