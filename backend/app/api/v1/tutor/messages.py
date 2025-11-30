@@ -11,6 +11,7 @@ from app.db.repositories.tutor_repository import ITutorRepository, get_tutor_rep
 from app.services.tutor.state_service import load_state_from_session
 from app.services.tutor.workflow_service import continue_workflow_after_message
 from app.workflows.tutor.schemas.api import SendMessageRequest
+from app.workflows.tutor.state import TutorState
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -65,7 +66,7 @@ async def send_message(
     complete_state = await load_state_from_session(session, repo)
 
     # Update state with new user message
-    updated_state = {
+    updated_state: TutorState = {
         **complete_state,
         "last_user_message": request.content,
         "conversation_history": complete_state["conversation_history"]
