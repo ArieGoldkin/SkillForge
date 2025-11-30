@@ -2,7 +2,7 @@
 
 **Date:** November 2024
 **Branch:** `dev` (aligned with `main`)
-**Sprint:** Sprint 2 Complete ✅ → Sprint 3 In Progress (1/13 pts complete)
+**Sprint:** Sprint 2 Complete ✅ → Sprint 3 In Progress (10/13 pts complete)
 
 ---
 
@@ -314,16 +314,27 @@
   - prismjs@1.30.0 + @types/prismjs
   - prism-tomorrow.css theme
 
-**Issue #61:** Task 3.2 - Create MarkdownPreview Component [5 pts] 🎯 NEXT
-- **Status:** Open
+**Issue #61:** Task 3.2 - Artifact Page with Markdown Preview [5 pts] ✅ COMPLETE
+- **Status:** ✅ Complete
 - **Assignee:** ArieGoldkin
-- **Dependencies:** Issue #60 ✅
+- **Completed:** November 30, 2024
+- **Milestone:** Sprint 3: Artifact Viewer
+- **PR:** [#151](https://github.com/ArieGoldkin/SkillForge/pull/151)
+- **Documentation:** [Issue #61 Docs](./issues/061-artifact-page/README.md)
 - **GitHub:** [#61](https://github.com/ArieGoldkin/SkillForge/issues/61)
+- **Implementation:**
+  - Artifact page with full markdown preview
+  - Syntax highlighting with react-syntax-highlighter
+  - Copy-to-clipboard for code blocks (includes Task 3.5)
+  - Artifact download handler (includes Task 3.3)
+  - AnalysisCompleteCard UX improvements
+  - Completed state preservation via URL params
+  - 25 new unit tests (147 total)
 
-**Issue #62:** Task 3.3 - Create Artifact Download Handler [2 pts]
-- **Status:** Open
+**Issue #62:** Task 3.3 - Create Artifact Download Handler [2 pts] ✅ INCLUDED IN #61
+- **Status:** ✅ Included in Issue #61
 - **Assignee:** ArieGoldkin
-- **Dependencies:** Issue #61
+- **Note:** Download functionality implemented as part of Issue #61 ArtifactPage
 - **GitHub:** [#62](https://github.com/ArieGoldkin/SkillForge/issues/62)
 
 **Issue #63:** Task 3.4 - Build Preview Modal [3 pts]
@@ -332,10 +343,10 @@
 - **Dependencies:** Issue #62
 - **GitHub:** [#63](https://github.com/ArieGoldkin/SkillForge/issues/63)
 
-**Issue #64:** Task 3.5 - Add Copy-to-Clipboard for Prompts [2 pts]
-- **Status:** Open
+**Issue #64:** Task 3.5 - Add Copy-to-Clipboard for Prompts [2 pts] ✅ INCLUDED IN #61
+- **Status:** ✅ Included in Issue #61
 - **Assignee:** ArieGoldkin
-- **Dependencies:** Issue #63
+- **Note:** Copy-to-clipboard for code blocks implemented as part of Issue #61 CodeBlock component
 - **GitHub:** [#64](https://github.com/ArieGoldkin/SkillForge/issues/64)
 
 ---

@@ -265,6 +265,60 @@ describe('api.service', () => {
     })
   })
 
+  describe('analyzeAPI.downloadArtifact', () => {
+    it('returns markdown content on success', async () => {
+      const markdownContent = '# Implementation Guide\n\nThis is the content.'
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: async () => markdownContent,
+      })
+
+      const result = await analyzeAPI.downloadArtifact('artifact-123')
+
+      expect(result).toBe(markdownContent)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:8500/api/v1/artifacts/artifact-123/download'
+      )
+    })
+
+    it('returns null on 404 error', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      })
+
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = await analyzeAPI.downloadArtifact('nonexistent-artifact')
+
+      expect(result).toBe(null)
+    })
+
+    it('returns null on network failure', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = await analyzeAPI.downloadArtifact('artifact-123')
+
+      expect(result).toBe(null)
+    })
+
+    it('constructs correct URL with artifact ID', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: async () => 'content',
+      })
+
+      await analyzeAPI.downloadArtifact('my-unique-artifact-id')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:8500/api/v1/artifacts/my-unique-artifact-id/download'
+      )
+    })
+  })
+
   describe('healthAPI.check', () => {
     it('returns health status on success', async () => {
       const mockHealth = {

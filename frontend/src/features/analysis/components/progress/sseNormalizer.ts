@@ -179,9 +179,7 @@ function normalizeCompleteEvent(event: Record<string, unknown>): SSECompleteEven
     stage: 'artifact_generation',
     status: 'complete',
     timestamp: String(event.timestamp),
-    details: {
-      artifact_id: String(artifactId || ''),
-    },
+    artifact_id: String(artifactId || ''),
   }
 }
 

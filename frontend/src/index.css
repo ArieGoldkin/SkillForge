@@ -96,6 +96,18 @@
   --sidebar-accent-foreground: oklch(0.2435 0 0);
   --sidebar-border: oklch(0.9037 0 0);
   --sidebar-ring: oklch(0.8348 0.1302 160.9080);
+
+  /* Markdown/Code Block Variables */
+  /* Code blocks use dark theme in both light/dark modes per design spec */
+  --code-bg: oklch(0.1822 0 0);
+  --code-border: oklch(0.2809 0 0);
+  --code-header-bg: oklch(0.2393 0 0);
+  --code-text: oklch(0.8551 0 0);
+  --inline-code-bg: var(--muted);
+  --inline-code-text: oklch(0.5523 0.1302 32.7272);
+  --blockquote-border: var(--primary);
+  --blockquote-bg: oklch(0.9731 0.0126 160.908);
+  --copy-success: oklch(0.7686 0.1647 142.4953);
 }
 
 .dark,
@@ -132,6 +144,18 @@
   --sidebar-accent-foreground: oklch(0.9851 0 0);
   --sidebar-border: oklch(0.2809 0 0);
   --sidebar-ring: oklch(0.8003 0.1821 151.7110);
+
+  /* Markdown/Code Block Variables (Dark) */
+  /* Code blocks remain dark, consistent with light mode */
+  --code-bg: oklch(0.1822 0 0);
+  --code-border: oklch(0.2809 0 0);
+  --code-header-bg: oklch(0.2393 0 0);
+  --code-text: oklch(0.8551 0 0);
+  --inline-code-bg: oklch(0.2603 0 0);
+  --inline-code-text: oklch(0.8369 0.1644 84.4286);
+  --blockquote-border: var(--primary);
+  --blockquote-bg: oklch(0.2393 0.0126 156.7556);
+  --copy-success: oklch(0.7686 0.1647 142.4953);
 }
 
 @layer base {

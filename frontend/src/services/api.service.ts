@@ -87,6 +87,27 @@ export const analyzeAPI = {
   },
 
   /**
+   * Download artifact markdown content by artifact ID
+   * GET /api/v1/artifacts/{artifact_id}/download
+   * Returns raw markdown content as string
+   */
+  downloadArtifact: async (artifactId: string): Promise<string | null> => {
+    try {
+      const url = `${API_BASE_URL}/api/v1/artifacts/${artifactId}/download`
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(`Failed to download artifact: ${response.status}`)
+      }
+
+      return await response.text()
+    } catch (error) {
+      console.warn(`downloadArtifact failed for ${artifactId}:`, error)
+      return null
+    }
+  },
+
+  /**
    * List all analyses
    * GET /api/v1/analyze
    * Note: Not yet implemented in backend
