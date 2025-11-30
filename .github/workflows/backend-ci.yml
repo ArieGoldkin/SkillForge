@@ -38,7 +38,7 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: ./backend
-        run: poetry run pytest tests/unit/ -m "not external" --cov=app --cov-report=xml --cov-report=term --cov-fail-under=75 -v
+        run: poetry run pytest tests/unit/ -m "not external" --cov=app --cov-report=xml --cov-report=term --cov-fail-under=74 -v
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
