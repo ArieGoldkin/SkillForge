@@ -9,6 +9,7 @@ from langsmith import traceable
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -82,11 +83,11 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
         concept = "the current lesson"
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            if current_section < len(sections):
+            if isinstance(sections, list) and current_section < len(sections):
                 section = sections[current_section]
                 if isinstance(section, dict):
                     lessons = section.get("lessons", [])
-                    if current_lesson < len(lessons):
+                    if isinstance(lessons, list) and current_lesson < len(lessons):
                         lesson = lessons[current_lesson]
                         if isinstance(lesson, dict):
                             concept = lesson.get("concept", concept)
@@ -114,7 +115,7 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        rephrased = response.content if hasattr(response, "content") else str(response)
+        rephrased = extract_string_content(response)
 
         # Stream rephrased explanation via SSE
         chunk_size = 50

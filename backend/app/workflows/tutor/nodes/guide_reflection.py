@@ -10,6 +10,7 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -68,8 +69,9 @@ async def guide_reflection(state: TutorState) -> dict[str, object]:
         syllabus_summary = "All concepts covered"
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
-            syllabus_summary = f"Completed: {', '.join(section_titles)}"
+            if isinstance(sections, list):
+                section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
+                syllabus_summary = f"Completed: {', '.join(section_titles)}"
 
         # Build prompt
         prompt = REFLECTION_PROMPT.format(
@@ -92,7 +94,7 @@ async def guide_reflection(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        reflection = response.content if hasattr(response, "content") else str(response)
+        reflection = extract_string_content(response)
 
         # Stream reflection via SSE
         chunk_size = 50

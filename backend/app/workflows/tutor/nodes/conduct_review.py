@@ -9,6 +9,7 @@ from langsmith import traceable
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -74,7 +75,7 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
             raise ValueError("Syllabus not found or invalid")
 
         sections = syllabus.get("sections", [])
-        if current_section >= len(sections):
+        if not isinstance(sections, list) or current_section >= len(sections):
             raise ValueError(f"Section {current_section} not found")
 
         section = sections[current_section]
@@ -83,6 +84,8 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
 
         section_title = section.get("title", "Unknown Section")
         lessons = section.get("lessons", [])
+        if not isinstance(lessons, list):
+            lessons = []
         concepts = [lesson.get("concept", "") for lesson in lessons if isinstance(lesson, dict)]
 
         # Build prompt
@@ -109,7 +112,7 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        review_content = response.content if hasattr(response, "content") else str(response)
+        review_content = extract_string_content(response)
 
         # Stream review via SSE
         chunk_size = 50

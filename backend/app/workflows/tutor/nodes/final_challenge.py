@@ -9,6 +9,7 @@ from langsmith import traceable
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -69,8 +70,9 @@ async def final_challenge(state: TutorState) -> dict[str, object]:
         syllabus_summary = "All sections completed"
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
-            syllabus_summary = f"Sections: {', '.join(section_titles)}"
+            if isinstance(sections, list):
+                section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
+                syllabus_summary = f"Sections: {', '.join(section_titles)}"
 
         # Build prompt
         prompt = FINAL_CHALLENGE_PROMPT.format(
@@ -94,7 +96,7 @@ async def final_challenge(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        challenge = response.content if hasattr(response, "content") else str(response)
+        challenge = extract_string_content(response)
 
         # Stream challenge via SSE
         chunk_size = 50

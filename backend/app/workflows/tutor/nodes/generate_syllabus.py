@@ -90,20 +90,26 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        syllabus_text = response.content if hasattr(response, "content") else str(response)
+        from app.workflows.tutor.nodes.response_helpers import extract_string_content
+
+        syllabus_text = extract_string_content(response)
 
         # Parse JSON response
         try:
             # Try to extract JSON from markdown code blocks if present
-            if "```json" in syllabus_text:
+            if isinstance(syllabus_text, str) and "```json" in syllabus_text:
                 json_start = syllabus_text.find("```json") + 8
                 json_end = syllabus_text.find("```", json_start)
-                syllabus_text = syllabus_text[json_start:json_end].strip()
-            elif "```" in syllabus_text:
+                if json_end > json_start:
+                    syllabus_text = syllabus_text[json_start:json_end].strip()
+            elif isinstance(syllabus_text, str) and "```" in syllabus_text:
                 json_start = syllabus_text.find("```") + 3
                 json_end = syllabus_text.find("```", json_start)
-                syllabus_text = syllabus_text[json_start:json_end].strip()
+                if json_end > json_start:
+                    syllabus_text = syllabus_text[json_start:json_end].strip()
 
+            if not isinstance(syllabus_text, str):
+                raise ValueError("Syllabus text must be a string")
             syllabus = json.loads(syllabus_text)
         except json.JSONDecodeError as e:
             logger.error(

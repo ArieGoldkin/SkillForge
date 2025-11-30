@@ -11,6 +11,7 @@ from langsmith import traceable
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.workflows.tutor.config import LESSON_DELIVERY_PROMPT
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
@@ -65,7 +66,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
             raise ValueError("Syllabus not found or invalid")
 
         sections = syllabus.get("sections", [])
-        if current_section >= len(sections):
+        if not isinstance(sections, list) or current_section >= len(sections):
             raise ValueError(f"Section {current_section} not found in syllabus")
 
         section = sections[current_section]
@@ -73,7 +74,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
             raise ValueError(f"Section {current_section} is invalid")
 
         lessons = section.get("lessons", [])
-        if current_lesson >= len(lessons):
+        if not isinstance(lessons, list) or current_lesson >= len(lessons):
             raise ValueError(f"Lesson {current_lesson} not found in section {current_section}")
 
         lesson = lessons[current_lesson]
@@ -108,7 +109,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        lesson_content = response.content if hasattr(response, "content") else str(response)
+        lesson_content = extract_string_content(response)
 
         # Stream lesson content via SSE (chunked)
         chunk_size = 50

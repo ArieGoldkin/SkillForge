@@ -15,6 +15,7 @@ from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
 from app.db.session import get_session_factory
 from app.workflows.tutor.config import READINESS_ASSESSMENT_PROMPT
+from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.schemas.assessment import ReadinessAssessment
 from app.workflows.tutor.state import TutorState
@@ -69,11 +70,11 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
         concept = "the current lesson"
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            if current_section < len(sections):
+            if isinstance(sections, list) and current_section < len(sections):
                 section = sections[current_section]
                 if isinstance(section, dict):
                     lessons = section.get("lessons", [])
-                    if current_lesson < len(lessons):
+                    if isinstance(lessons, list) and current_lesson < len(lessons):
                         lesson = lessons[current_lesson]
                         if isinstance(lesson, dict):
                             concept = lesson.get("concept", concept)
@@ -103,20 +104,24 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
         ]
 
         response = await model.ainvoke(messages)
-        response_text = response.content if hasattr(response, "content") else str(response)
+        response_text = extract_string_content(response)
 
         # Parse JSON response
         try:
             # Try to extract JSON from markdown code blocks if present
-            if "```json" in response_text:
+            if isinstance(response_text, str) and "```json" in response_text:
                 json_start = response_text.find("```json") + 8
                 json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
+                if json_end > json_start:
+                    response_text = response_text[json_start:json_end].strip()
+            elif isinstance(response_text, str) and "```" in response_text:
                 json_start = response_text.find("```") + 3
                 json_end = response_text.find("```", json_start)
-                response_text = response_text[json_start:json_end].strip()
+                if json_end > json_start:
+                    response_text = response_text[json_start:json_end].strip()
 
+            if not isinstance(response_text, str):
+                raise ValueError("Response text must be a string")
             assessment_dict = json.loads(response_text)
             assessment = ReadinessAssessment(**assessment_dict)
         except (json.JSONDecodeError, Exception) as e:
