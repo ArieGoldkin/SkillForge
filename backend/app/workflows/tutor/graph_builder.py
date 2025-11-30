@@ -85,11 +85,11 @@ def _route_after_assessment(state: TutorState) -> str:
         # User is ready, check if last lesson in section
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            if current_section < len(sections):
+            if isinstance(sections, list) and current_section < len(sections):
                 section = sections[current_section]
                 if isinstance(section, dict):
                     lessons = section.get("lessons", [])
-                    if current_lesson >= len(lessons) - 1:
+                    if isinstance(lessons, list) and current_lesson >= len(lessons) - 1:
                         # Last lesson in section, move to section review
                         return "section_review"
                     else:
@@ -106,11 +106,11 @@ def _route_after_assessment(state: TutorState) -> str:
         # Check if last lesson - if so, go to section review
         if syllabus and isinstance(syllabus, dict):
             sections = syllabus.get("sections", [])
-            if current_section < len(sections):
+            if isinstance(sections, list) and current_section < len(sections):
                 section = sections[current_section]
                 if isinstance(section, dict):
                     lessons = section.get("lessons", [])
-                    if current_lesson >= len(lessons) - 1:
+                    if isinstance(lessons, list) and current_lesson >= len(lessons) - 1:
                         return "section_review"
         return "end"
     else:
@@ -136,7 +136,7 @@ def _route_after_review(state: TutorState) -> str:
 
     if syllabus and isinstance(syllabus, dict):
         sections = syllabus.get("sections", [])
-        if current_section >= len(sections) - 1:
+        if isinstance(sections, list) and current_section >= len(sections) - 1:
             # Last section, move to final challenge
             return "final_challenge"
         else:

@@ -19,7 +19,7 @@ READINESS_CONFIDENCE_THRESHOLD = 0.7  # Minimum confidence to mark ready
 STREAMING_CHUNK_SIZE = 50  # Characters per chunk for SSE streaming
 
 # Tutor prompts (will be moved to tasks module in Phase 2)
-SYLLABUS_GENERATION_PROMPT = (
+SYLLABUS_GENERATION_PROMPT = (  # noqa: E501
     """Generate a personalized curriculum for teaching the following content.
 
 Content Summary:
