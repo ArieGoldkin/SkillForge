@@ -8,7 +8,8 @@ This guide covers multiple approaches to debug the SkillForge backend.
 2. [Docker Container Debugging](#docker-container-debugging)
 3. [Enhanced Logging for Debugging](#enhanced-logging-for-debugging)
 4. [LangSmith Trace Correlation](#langsmith-trace-correlation)
-5. [Common Debugging Scenarios](#common-debugging-scenarios)
+5. [LangSmith Studio Local Debugging](#langsmith-studio-local-debugging)
+6. [Common Debugging Scenarios](#common-debugging-scenarios)
 
 ---
 

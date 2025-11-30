@@ -42,6 +42,7 @@ pytest-xdist = "^3.6.1"
 ruff = "^0.14.6"
 mypy = "^1.13.0"
 isort = "^7.0.0"
+langgraph-cli = {extras = ["inmem"], version = "^0.2.0"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
