@@ -66,7 +66,7 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
             run_tree.metadata["conversation_id"] = str(session_id)
             # Phase-specific metadata
             run_tree.metadata["tutor_phase"] = "readiness_assessment"
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue
         pass
 
@@ -145,7 +145,7 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
                 raise ValueError("Response text must be a string")
             assessment_dict = json.loads(response_text)
             assessment = ReadinessAssessment(**assessment_dict)
-        except (json.JSONDecodeError, Exception) as e:
+        except (json.JSONDecodeError, Exception) as e:  # noqa: BLE001 - Catch JSON parsing errors and other exceptions for fallback
             logger.warning(
                 "tutor_readiness_assessment_parse_error",
                 session_id=session_id,

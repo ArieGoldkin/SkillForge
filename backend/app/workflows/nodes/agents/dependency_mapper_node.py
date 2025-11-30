@@ -54,8 +54,9 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             # Runtime metadata updates
             run_tree.metadata["analysis_id"] = str(analysis_id)
             run_tree.metadata["content_type"] = content_type
-            run_tree.tags.append("parallel-execution")
-    except Exception:
+            if run_tree.tags is not None:
+                run_tree.tags.append("parallel-execution")
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 

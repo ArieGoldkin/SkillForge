@@ -51,7 +51,8 @@ async def stream_tutor_progress(
         """
         try:
             # Use aclosing() to ensure proper cleanup of async generator
-            async with aclosing(broadcaster.subscribe(channel)) as subscription:
+            # Type ignore: broadcaster.subscribe returns AsyncIterator which supports aclose()
+            async with aclosing(broadcaster.subscribe(channel)) as subscription:  # type: ignore[type-var]
                 async for event in subscription:
                     # Format event for SSE
                     event_type = str(event.get("type", "message"))

@@ -54,6 +54,7 @@ def _build_analysis_graph_no_checkpointer():
 
     Returns:
         Compiled StateGraph without checkpointer
+
     """
     graph = StateGraph(AnalysisState)
 
@@ -139,6 +140,7 @@ def _build_tutor_graph_no_checkpointer():
 
     Returns:
         Compiled StateGraph without checkpointer
+
     """
     graph = StateGraph(TutorState)
 
@@ -204,5 +206,3 @@ def _build_tutor_graph_no_checkpointer():
 # Export Studio-compatible workflows (no checkpointers)
 analysis_workflow = _build_analysis_graph_no_checkpointer()
 tutor_workflow = _build_tutor_graph_no_checkpointer()
-
-

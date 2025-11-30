@@ -63,7 +63,7 @@ async def invoke_agent(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 

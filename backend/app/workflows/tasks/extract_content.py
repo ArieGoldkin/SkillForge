@@ -51,7 +51,7 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         if run_tree:
             run_tree.metadata["analysis_id"] = str(analysis_id)
             run_tree.metadata["url"] = url
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue
         pass
 

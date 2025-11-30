@@ -74,7 +74,7 @@ async def generate_artifact(
         run_tree = get_current_run_tree()
         if run_tree:
             run_tree.metadata["analysis_id"] = str(analysis_id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue
         pass
 

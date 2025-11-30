@@ -64,7 +64,9 @@ def robust_traceable(
     """
 
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        traced_func = traceable(
+        # Use keyword-only arguments for traceable to match LangSmith API
+        # Type ignore: LangSmith traceable has complex overloads that mypy can't resolve
+        traced_func = traceable(  # type: ignore[call-overload, no-any-return]
             run_type=run_type,
             name=name or func.__name__,
             tags=tags or [],
@@ -73,6 +75,7 @@ def robust_traceable(
         )
         # Apply tracing directly - no exception handling wrapper
         # Exceptions propagate naturally to application boundary handlers
-        return traced_func(func)
+        # Type ignore: traced_func returns wrapped function with LangSmith extras
+        return traced_func(func)  # type: ignore[return-value, no-any-return]
 
     return decorator

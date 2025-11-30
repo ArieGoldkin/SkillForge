@@ -141,8 +141,8 @@ async def _handle_workflow_exception(
             # Update status and emit error event before re-raising
             await _update_analysis_status(analysis_id, "failed")
             await _emit_workflow_error(analysis_id, exc)
-            # Re-raise to propagate
-            raise
+            # Re-raise to propagate (explicit re-raise for ruff PLE0704)
+            raise exc
     else:
         # Other exception - handle as error
         logger.error(
@@ -156,8 +156,8 @@ async def _handle_workflow_exception(
         # Update status and emit error event before re-raising
         await _update_analysis_status(analysis_id, "failed")
         await _emit_workflow_error(analysis_id, exc)
-        # Re-raise to propagate
-        raise
+        # Re-raise to propagate (explicit re-raise for ruff PLE0704)
+        raise exc
 
 
 @robust_traceable(
@@ -198,7 +198,7 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             run_tree.metadata["analysis_id"] = str(analysis_id)
             run_tree.metadata["url"] = url
             run_tree.metadata["workflow_version"] = "1.0"
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue
         pass
 
@@ -288,8 +288,9 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             )
             # Don't raise - workflow completed successfully, event emission is secondary
 
-    except (GeneratorExit, RuntimeError, BaseException) as exc:
+    except (GeneratorExit, RuntimeError, BaseException) as exc:  # noqa: BLE001
         # Unified exception handling for all workflow exceptions
         # Python's async runtime converts GeneratorExit to RuntimeError in async functions
         # The handler normalizes both cases and handles them consistently
+        # BaseException needed to catch GeneratorExit which doesn't inherit from Exception
         await _handle_workflow_exception(exc, analysis_id, workflow_completed)

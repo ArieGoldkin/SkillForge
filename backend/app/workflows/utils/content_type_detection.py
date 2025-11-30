@@ -32,6 +32,7 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
 
     Returns:
         Detected content type
+
     """
     if not content or len(content.strip()) < 50:
         return "unknown"
@@ -129,6 +130,7 @@ def can_agent_process_content(agent_name: str, content_type: ContentType) -> boo
 
     Returns:
         True if agent can process this content type, False otherwise
+
     """
     capabilities = AGENT_CAPABILITIES.get(agent_name, [])
     return content_type in capabilities
@@ -145,6 +147,7 @@ def filter_agents_by_content_type(
 
     Returns:
         Tuple of (filtered_agents, skipped_agents)
+
     """
     filtered: list[str] = []
     skipped: list[str] = []

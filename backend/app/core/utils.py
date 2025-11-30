@@ -67,5 +67,6 @@ def is_generator(obj: Any) -> bool:
         True
         >>> is_generator([1, 2, 3])
         False
+
     """
     return inspect.isgenerator(obj) or inspect.isasyncgen(obj) or inspect.isgeneratorfunction(obj)

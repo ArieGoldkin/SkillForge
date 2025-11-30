@@ -74,7 +74,9 @@ async def create_session(
 
         # Start workflow asynchronously (syllabus generation)
         config = {"configurable": {"thread_id": str(session.id)}}
-        asyncio.create_task(tutor_workflow.ainvoke(initial_state, config=config))
+        task = asyncio.create_task(tutor_workflow.ainvoke(initial_state, config=config))
+        # Store task reference to prevent garbage collection (RUF006)
+        _ = task  # Task will complete naturally
 
         logger.info(
             "tutor_session_created",

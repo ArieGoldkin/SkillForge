@@ -30,6 +30,7 @@ def _is_generator(obj: Any) -> bool:
 
     Returns:
         True if object is a generator or async generator, False otherwise
+
     """
     return inspect.isgenerator(obj) or inspect.isasyncgen(obj) or inspect.isgeneratorfunction(obj)
 
@@ -45,6 +46,7 @@ def _filter_generators(obj: Any) -> Any:
 
     Returns:
         Filtered object with generators removed
+
     """
     if _is_generator(obj):
         # Replace generator with a placeholder string
@@ -96,6 +98,7 @@ def hide_inputs_with_generator_filter(inputs: dict[str, Any]) -> dict[str, Any]:
 
     Returns:
         Filtered dictionary with generators removed
+
     """
     filtered = _filter_generators(inputs)
     # Ensure return type is dict[str, Any]
@@ -116,6 +119,7 @@ def hide_outputs_with_generator_filter(outputs: dict[str, Any]) -> dict[str, Any
 
     Returns:
         Filtered dictionary with generators removed
+
     """
     filtered = _filter_generators(outputs)
     # Ensure return type is dict[str, Any]
@@ -135,8 +139,9 @@ def get_langsmith_client() -> Any:
     Returns:
         LangSmith Client instance with generator filtering configured,
         or None if LangSmith is disabled
+
     """
-    global _langsmith_client
+    global _langsmith_client  # noqa: PLW0603 - Module-level singleton pattern for LangSmith client
 
     if _langsmith_client is not None:
         return _langsmith_client
@@ -202,5 +207,6 @@ def configure_langsmith_client() -> None:
         This should be called during application startup, before any LangGraph
         workflows are executed. However, it's safe to call multiple times as
         the Client is cached after first creation.
+
     """
     get_langsmith_client()

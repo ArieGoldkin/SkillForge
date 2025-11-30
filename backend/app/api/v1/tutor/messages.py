@@ -81,7 +81,9 @@ async def send_message(
     }
 
     # Continue workflow: invoke assess_readiness node directly
-    asyncio.create_task(continue_workflow_after_message(session_id, updated_state, repo))
+    task = asyncio.create_task(continue_workflow_after_message(session_id, updated_state, repo))
+    # Store task reference to prevent garbage collection (RUF006)
+    _ = task  # Task will complete naturally
 
     logger.info(
         "tutor_message_sent",

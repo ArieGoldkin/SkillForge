@@ -109,7 +109,7 @@ async def stream_agent_response(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -123,7 +123,8 @@ async def stream_agent_response(
     try:
         # Use aclosing() context manager to ensure generator is fully consumed and closed
         # aclosing() returns the same generator object, ensuring proper cleanup
-        async with aclosing(stream) as stream_gen:
+        # Type ignore: agent.astream returns AsyncIterator which supports aclose()
+        async with aclosing(stream) as stream_gen:  # type: ignore[type-var]
             stream_iter = stream_gen.__aiter__()
 
             try:
@@ -255,6 +256,7 @@ def _check_for_generators_recursive(
         analysis_id: UUID of the analysis
         trace_id: LangSmith trace ID
         path: Current path in nested structure (for logging)
+
     """
     if inspect.isgenerator(obj) or inspect.isasyncgen(obj):
         logger.error(

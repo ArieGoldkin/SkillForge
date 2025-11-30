@@ -71,7 +71,7 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
             run_tree.metadata["conversation_id"] = str(session_id)
             # Phase-specific metadata
             run_tree.metadata["tutor_phase"] = "section_review"
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue
         pass
 

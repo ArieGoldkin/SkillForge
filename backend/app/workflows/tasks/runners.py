@@ -50,7 +50,7 @@ async def run_tech_comparator_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -104,7 +104,7 @@ async def run_integration_feasibility_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -157,7 +157,7 @@ async def run_implementation_planner_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -210,7 +210,7 @@ async def run_security_auditor_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -263,7 +263,7 @@ async def run_performance_analyst_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -316,7 +316,7 @@ async def run_code_quality_critic_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -369,7 +369,7 @@ async def run_trend_validator_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
@@ -431,7 +431,7 @@ async def run_dependency_mapper_with_session(
         run_tree = get_current_run_tree()
         if run_tree and hasattr(run_tree, "id"):
             trace_id = str(run_tree.id)
-    except Exception:
+    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 

@@ -172,7 +172,8 @@ async def create_analysis(
         ) from e
 
     # Start workflow asynchronously with proper task lifecycle management
-    task = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))
+    # Type ignore: mypy strictness - create_task accepts coroutines from async functions
+    task: asyncio.Task[None] = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))  # type: ignore[arg-type]
     _background_tasks.add(task)
     task.add_done_callback(_handle_task_completion)
 
