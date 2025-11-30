@@ -29,15 +29,16 @@ async def invoke_agent(
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float = AGENT_TIMEOUT,  # Kept for logging/reference, but step_timeout handles actual timeout
+    timeout: float = AGENT_TIMEOUT,  # For logging/reference; step_timeout handles actual timeout
 ) -> dict[str, object]:
     """Invoke agent - timeout handled by LangGraph's step_timeout.
 
     Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
     This avoids nested timeout conflicts and PEP 789 violations.
 
-    When streaming returns an empty dict (no result), this function raises TimeoutError
-    to maintain the timeout error contract for callers.
+    When streaming returns an empty dict, this means the agent cannot process the content
+    (e.g., wrong content type), not a timeout. Returns empty dict gracefully to allow
+    workflow to continue with other agents.
 
     Args:
         agent: Agent instance to invoke
@@ -47,10 +48,10 @@ async def invoke_agent(
         timeout: Reference timeout value (for logging only - step_timeout handles actual timeout)
 
     Returns:
-        Result dictionary from agent execution
+        Result dictionary from agent execution, or empty dict if agent cannot process content
 
     Raises:
-        TimeoutError: If invocation returns empty result (timeout/cancellation)
+        TimeoutError: If actual timeout occurred during execution
         Exception: For other invocation errors
 
     """
@@ -81,21 +82,22 @@ async def invoke_agent(
                 agent_type=agent_type,
                 timeout=timeout,
             )
-            # If streaming returned empty dict (no result), raise TimeoutError
+            # Empty dict means agent can't process content, not a timeout
+            # Return gracefully to allow workflow to continue with other agents
             if not result:
                 duration = time.time() - start_time
-                msg = f"Agent {agent_type} exceeded timeout of {timeout}s"
-                logger.warning(
-                    "agent_stream_timeout",
+                logger.info(
+                    "agent_empty_result",
                     agent_type=agent_type,
                     analysis_id=analysis_id,
+                    duration_seconds=duration,
                     timeout_reference=timeout,
                     step_timeout=STEP_TIMEOUT,
-                    duration_seconds=duration,
                     trace_id=trace_id,
-                    handled_gracefully=False,  # Raises TimeoutError
+                    reason="agent_cannot_process_content_type",
+                    handled_gracefully=True,  # Returns empty dict, doesn't break workflow
                 )
-                raise TimeoutError(msg) from None
+                return {}  # Return empty dict gracefully, not raise TimeoutError
             return result
         except TimeoutError:
             # Re-raise TimeoutError as-is (already logged in stream_agent_response)

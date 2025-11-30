@@ -2,11 +2,12 @@
 
 import time
 
+from langsmith import get_current_run_tree, traceable
+
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.runners import run_dependency_mapper_with_session
-from langsmith import get_current_run_tree, traceable
 
 logger = get_logger(__name__)
 
@@ -27,6 +28,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
 
     Returns:
         Dictionary with agent_findings containing single result
+
     """
     analysis_id = state["analysis_id"]
     content = state["raw_content"]

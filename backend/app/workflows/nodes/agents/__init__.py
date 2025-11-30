@@ -23,4 +23,3 @@ __all__ = [
     "tech_comparator_node",
     "trend_validator_node",
 ]
-

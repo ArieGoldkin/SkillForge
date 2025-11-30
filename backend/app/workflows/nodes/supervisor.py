@@ -24,6 +24,10 @@ from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.workflows.nodes.supervisor_schema import AgentSelection
+from app.workflows.utils.content_type_detection import (
+    detect_content_type,
+    filter_agents_by_content_type,
+)
 
 logger = get_logger(__name__)
 
@@ -201,6 +205,15 @@ async def supervisor_route(
     )
 
     try:
+        # Detect actual content type from content (may differ from extraction metadata)
+        detected_content_type = detect_content_type(content, content_type_hint=content_type)
+        logger.debug(
+            "content_type_detected",
+            analysis_id=analysis_id,
+            detected_type=detected_content_type,
+            hint_type=content_type,
+        )
+
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
@@ -222,14 +235,34 @@ async def supervisor_route(
             analysis_id,
         )
 
+        # Filter agents based on content type capabilities
+        filtered_agents, skipped_agents = filter_agents_by_content_type(
+            selection.agents, detected_content_type
+        )
+
+        if skipped_agents:
+            logger.info(
+                "supervisor_agents_filtered",
+                analysis_id=analysis_id,
+                skipped_agents=skipped_agents,
+                filtered_agents=filtered_agents,
+                content_type=detected_content_type,
+                reason="agents_cannot_process_content_type",
+            )
+
         # Calculate duration for performance monitoring
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # Create supervisor decision (convert to legacy format for compatibility)
+        # Create supervisor decision with filtered agents
         supervisor_decision = {
-            "agents": selection.agents,
-            "priority": [selection.confidence] * len(selection.agents),
-            "reasoning": selection.reasoning,
+            "agents": filtered_agents,  # Use filtered list
+            "priority": [selection.confidence] * len(filtered_agents),
+            "reasoning": (
+                f"{selection.reasoning} "
+                f"(Filtered: {len(skipped_agents)} agents skipped due to content type mismatch)"
+                if skipped_agents
+                else selection.reasoning
+            ),
             "confidence": selection.confidence,
         }
 
@@ -239,20 +272,23 @@ async def supervisor_route(
             analysis_id=analysis_id,
             stage=get_stage_name("supervisor"),
             status="complete",
-            agent_count=len(selection.agents),
-            selected_agents=selection.agents,
+            agent_count=len(filtered_agents),
+            selected_agents=filtered_agents,
+            skipped_agents=skipped_agents if skipped_agents else None,
             confidence=selection.confidence,
         )
 
         logger.info(
             "workflow_supervisor_complete",
             analysis_id=analysis_id,
-            selected_agents=selection.agents,
-            agent_count=len(selection.agents),
+            selected_agents=filtered_agents,
+            agent_count=len(filtered_agents),
+            skipped_agent_count=len(skipped_agents),
             confidence=selection.confidence,
             duration_ms=duration_ms,
             content_sent_chars=len(sized_content),
             content_original_chars=len(content),
+            detected_content_type=detected_content_type,
         )
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
