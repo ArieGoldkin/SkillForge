@@ -7,15 +7,24 @@ class TechComparisonEntry(BaseModel):
     """Comparison details for a single technology."""
 
     pros: list[str] = Field(
-        description="List of advantages and strengths of this technology",
+        description=(
+            "List of advantages and strengths of this technology. "
+            "Each item should be a single concise phrase or short sentence."
+        ),
         default_factory=list,
     )
     cons: list[str] = Field(
-        description="List of disadvantages and limitations of this technology",
+        description=(
+            "List of disadvantages and limitations of this technology. "
+            "Each item should be a single concise phrase or short sentence."
+        ),
         default_factory=list,
     )
     use_cases: list[str] = Field(
-        description="List of recommended use cases and scenarios for this technology",
+        description=(
+            "List of recommended use cases and scenarios for this technology. "
+            "Each item should be a single concise phrase describing the scenario."
+        ),
         default_factory=list,
     )
 
@@ -54,4 +63,9 @@ class TechComparison(BaseModel):
             }
         ],
     )
-    recommendation: str = Field(description="Recommendation based on the comparison analysis")
+    recommendation: str = Field(
+        description=(
+            "Recommendation based on the comparison analysis. "
+            "Write as 2-3 cohesive sentences explaining which technology to choose and why."
+        )
+    )

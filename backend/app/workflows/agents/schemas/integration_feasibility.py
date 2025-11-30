@@ -13,7 +13,9 @@ class CompatibilityScore(BaseModel):
         ge=0.0,
         le=1.0,
     )
-    notes: str = Field(description="Compatibility notes")
+    notes: str = Field(
+        description="Single sentence explaining the compatibility assessment."
+    )
 
 
 class IntegrationFeasibility(BaseModel):
@@ -41,9 +43,15 @@ class IntegrationFeasibility(BaseModel):
     )
     breaking_changes: list[str] = Field(
         default_factory=list,
-        description="Potential breaking changes",
+        description=(
+            "Potential breaking changes. "
+            "Each item should be a single sentence describing one breaking change."
+        ),
     )
     integration_steps: list[str] = Field(
         default_factory=list,
-        description="Integration steps",
+        description=(
+            "Integration steps to follow. "
+            "Each item should be a single actionable sentence starting with a verb."
+        ),
     )

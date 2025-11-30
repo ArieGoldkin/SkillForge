@@ -16,8 +16,18 @@ class CodeIssue(BaseModel):
     severity: Literal["low", "medium", "high"] = Field(
         description="Issue severity level based on impact on maintainability"
     )
-    description: str = Field(description="Description of the code quality issue")
-    suggestion: str = Field(description="Recommended fix or improvement")
+    description: str = Field(
+        description=(
+            "Single sentence describing the code quality issue. "
+            "Be specific about the file or component affected."
+        )
+    )
+    suggestion: str = Field(
+        description=(
+            "Single actionable sentence describing the recommended fix. "
+            "Start with a verb (e.g., 'Refactor...', 'Extract...', 'Replace...')."
+        )
+    )
 
 
 class CodeQualityReview(BaseModel):
@@ -28,7 +38,10 @@ class CodeQualityReview(BaseModel):
         default_factory=list,
     )
     best_practices: list[str] = Field(
-        description=("Code quality best practices to follow (SOLID, DRY, clean code principles)"),
+        description=(
+            "Code quality best practices to follow (SOLID, DRY, clean code principles). "
+            "Each item should be a single concise sentence or phrase."
+        ),
         default_factory=list,
     )
     maintainability_score: float = Field(
@@ -37,7 +50,15 @@ class CodeQualityReview(BaseModel):
         le=1.0,
     )
     refactoring_suggestions: list[str] = Field(
-        description="Refactoring recommendations to improve code quality",
+        description=(
+            "Refactoring recommendations to improve code quality. "
+            "Each item should start with a verb (e.g., 'Extract method...', 'Rename...')."
+        ),
         default_factory=list,
     )
-    recommendation: str = Field(description="Overall code quality recommendation")
+    recommendation: str = Field(
+        description=(
+            "Overall code quality recommendation. "
+            "Write as 2-3 cohesive sentences summarizing the assessment and priority actions."
+        )
+    )
