@@ -1,20 +1,24 @@
 """LangSmith tracing utilities for consistent instrumentation.
 
-This module provides helper functions for instrumenting LangGraph nodes,
-agents, and guardrails with proper metadata, tags, and run types for
-observability in LangSmith.
+This module provides the robust_traceable decorator for instrumenting
+LangGraph nodes, agents, and workflows with proper metadata, tags, and
+run types for observability in LangSmith.
+
+The robust_traceable decorator follows LangSmith best practices by supporting:
+- Static metadata at decorator level
+- Runtime metadata updates via get_current_run_tree()
+- Thread grouping for multi-turn conversations
+- Consistent tag and metadata patterns
+
+Note: Exception handling (including GeneratorExit) is done at the application
+boundary (e.g., workflow_runner.py) where we have context (analysis_id, status updates).
+This decorator focuses solely on tracing and lets exceptions propagate naturally.
 """
 
 from collections.abc import Awaitable, Callable
-from functools import wraps
 from typing import Literal, ParamSpec, TypeVar
 
 from langsmith import traceable
-from langsmith.run_trees import RunTree
-
-from app.core.logging import get_logger
-
-logger = get_logger(__name__)
 
 # Type variables for preserving function signatures in decorators
 P = ParamSpec("P")  # Captures parameter types
@@ -24,179 +28,51 @@ R = TypeVar("R")  # Captures return type
 RunType = Literal["tool", "chain", "llm", "retriever", "embedding", "prompt", "parser"]
 
 
-def trace_node(
-    name: str | None = None,
-    run_type: RunType = "tool",
-    tags: list[str] | None = None,
-    metadata: dict[str, str | int | float | bool] | None = None,
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Trace LangGraph node functions.
-
-    Args:
-        name: Name for the trace (defaults to function name)
-        run_type: Run type for LangSmith ("tool", "chain", etc.)
-        tags: List of tags for filtering traces
-        metadata: Additional metadata to attach to trace
-
-    Returns:
-        Decorated function with tracing enabled
-
-    Example:
-        @trace_node(name="extract_content", run_type="tool", tags=["workflow", "node"])
-        async def extract_content(url: str) -> dict:
-            ...
-
-    """
-    default_tags = ["workflow", "node"]
-    combined_tags = (tags or []) + default_tags
-
-    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        traced_func = traceable(
-            run_type=run_type,
-            name=name or func.__name__,
-            tags=combined_tags,
-            metadata=metadata or {},
-        )
-        traced_wrapper = traced_func(func)
-
-        @wraps(func)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            # traced_wrapper preserves the original function signature
-            # SupportsLangsmithExtra has overloads that mypy can't fully resolve
-            # The runtime behavior is correct - it calls the original function
-            # We ignore both call-overload and arg-type because the actual call
-            # signature matches the original function, not the type annotation
-            result: R = await traced_wrapper(*args, **kwargs)  # type: ignore[call-overload, arg-type]
-            return result
-
-        return wrapper
-
-    return decorator
-
-
-def trace_agent(
+def robust_traceable(
     name: str | None = None,
     run_type: RunType = "chain",
     tags: list[str] | None = None,
     metadata: dict[str, str | int | float | bool] | None = None,
+    **traceable_kwargs: object,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Trace agent execution functions.
+    """Production-ready traceable wrapper for LangSmith instrumentation.
+
+    This wrapper provides consistent tracing for LangGraph nodes, agents, and workflows.
+    It follows LangSmith best practices by supporting static metadata, runtime updates,
+    and thread grouping.
+
+    Exception handling (including GeneratorExit) is done at the application boundary
+    (e.g., workflow_runner.py) where we have context (analysis_id, status updates).
+    This decorator focuses solely on tracing and lets exceptions propagate naturally.
 
     Args:
         name: Name for the trace (defaults to function name)
-        run_type: Run type for LangSmith ("chain" for agents)
+        run_type: Run type for LangSmith ("chain", "tool", etc.)
         tags: List of tags for filtering traces
         metadata: Additional metadata to attach to trace
+        **traceable_kwargs: Additional arguments passed to @traceable decorator
 
     Returns:
         Decorated function with tracing enabled
 
     Example:
-        @trace_agent(name="tech_comparator", tags=["agent", "tech_comparator"])
-        async def run_tech_comparator(...) -> dict:
-            ...
+        @robust_traceable(name="my_node", tags=["workflow", "node"])
+        async def my_node(state: AnalysisState) -> dict:
+            # Implementation - exceptions propagate naturally
+            return {"result": "data"}
 
     """
-    default_tags = ["agent"]
-    combined_tags = (tags or []) + default_tags
 
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
         traced_func = traceable(
             run_type=run_type,
             name=name or func.__name__,
-            tags=combined_tags,
+            tags=tags or [],
             metadata=metadata or {},
+            **traceable_kwargs,
         )
-        traced_wrapper = traced_func(func)
-
-        @wraps(func)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            # traced_wrapper preserves the original function signature
-            # SupportsLangsmithExtra has overloads that mypy can't fully resolve
-            # The runtime behavior is correct - it calls the original function
-            # We ignore both call-overload and arg-type because the actual call
-            # signature matches the original function, not the type annotation
-            result: R = await traced_wrapper(*args, **kwargs)  # type: ignore[call-overload, arg-type]
-            return result
-
-        return wrapper
+        # Apply tracing directly - no exception handling wrapper
+        # Exceptions propagate naturally to application boundary handlers
+        return traced_func(func)
 
     return decorator
-
-
-T = TypeVar("T")  # Type variable for validation result
-
-# Type alias for JSON-serializable values
-JSONValue = str | int | float | bool | dict[str, "JSONValue"] | list["JSONValue"] | None
-
-
-async def trace_guardrail[T](
-    name: str,
-    schema_name: str,
-    inputs: dict[str, JSONValue],
-    validation_func: Callable[[dict[str, JSONValue]], T],
-    parent_run: RunTree | None = None,
-) -> T:
-    """Trace Pydantic validation as a guardrail step.
-
-    Args:
-        name: Name for the validation trace
-        schema_name: Name of the Pydantic schema being validated
-        inputs: Input data to validate
-        validation_func: Function that performs validation
-        parent_run: Optional parent RunTree for hierarchy
-
-    Returns:
-        Validated result from validation_func
-
-    Raises:
-        ValidationError: If validation fails (traced in LangSmith)
-
-    Example:
-        result = await trace_guardrail(
-            name="validate_tech_comparison",
-            schema_name="TechComparison",
-            inputs={"primary_tech": "React", ...},
-            validation_func=lambda d: TechComparison(**d),
-        )
-
-    """
-    tags = ["guardrail", "validation"]
-    metadata = {"schema": schema_name}
-
-    # Create guardrail trace
-    guardrail_run = RunTree(
-        name=name,
-        run_type="tool",
-        inputs=inputs,
-        tags=tags,
-        parent_run_id=parent_run.id if parent_run else None,
-    )
-    guardrail_run.post()
-
-    try:
-        # Perform validation
-        result = validation_func(inputs)
-    except Exception as e:
-        # Validation failed - end trace with error
-        error_msg = str(e)
-        guardrail_run.end(
-            error=error_msg,
-            outputs={"validated": False, "error": error_msg},
-        )
-        guardrail_run.patch()
-
-        logger.warning(
-            "guardrail_validation_failed",
-            schema_name=schema_name,
-            error=error_msg,
-        )
-
-        raise
-    else:
-        # Success - end trace with outputs
-        guardrail_run.end(
-            outputs={"validated": True, "schema": schema_name, **metadata},
-        )
-        guardrail_run.patch()
-        return result

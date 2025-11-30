@@ -4,9 +4,11 @@ This node generates contextual Socratic questions based on user level.
 """
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.workflows.tutor.config import SOCRATIC_QUESTION_PROMPT
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
@@ -16,10 +18,15 @@ from app.workflows.tutor.state import TutorState
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="ask_socratic",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def ask_socratic(state: TutorState) -> dict[str, object]:
     """Generate Socratic question based on lesson and user response.
@@ -41,6 +48,20 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:
     current_lesson = state.get("current_lesson", 0)
     user_level = state.get("user_level", "intermediate")
     last_user_message = state.get("last_user_message", "")
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "socratic_questioning"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     # Emit SSE event: Socratic questioning started
     await _emit_tutor_event(

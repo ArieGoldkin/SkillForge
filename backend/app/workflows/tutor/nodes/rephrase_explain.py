@@ -4,9 +4,11 @@ This node provides adaptive re-explanation with hints when user is not ready.
 """
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
@@ -35,10 +37,15 @@ Adapt based on attempt number:
 Return the rephrased explanation."""
 
 
-@traceable(
+@robust_traceable(
     name="rephrase_explain",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def rephrase_explain(state: TutorState) -> dict[str, object]:
     """Rephrase explanation with hints when user is not ready.
@@ -60,6 +67,20 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
     user_level = state.get("user_level", "intermediate")
     last_user_message = state.get("last_user_message", "")
     attempts = state.get("attempts_current_lesson", 0)
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "rephrase_explanation"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     # Emit SSE event: rephrase started
     await _emit_tutor_event(

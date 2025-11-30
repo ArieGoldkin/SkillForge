@@ -22,6 +22,7 @@ def hello_world():
 
 def test_detect_content_type_changelog():
     """Test detection of changelog content."""
+    # Need at least 3 changelog patterns to match (changelog_score >= 3)
     changelog_content = """
 ## [1.2.3] - 2024-01-15
 
@@ -31,6 +32,14 @@ def test_detect_content_type_changelog():
 
 ### Fixed
 - Bug fix Z
+
+## [1.2.4] - 2024-02-20
+
+### Changed
+- Updated feature Y
+
+2024-03-01
+- Removed deprecated feature
 """
     assert detect_content_type(changelog_content) == "changelog"
 
@@ -53,7 +62,16 @@ This is the API documentation.
 
 def test_detect_content_type_with_hint():
     """Test detection respects content type hint when patterns match."""
-    code_content = "def hello(): pass"
+    # Need at least 2 code patterns to match with hint (code_score >= 2)
+    code_content = """import os
+from typing import List
+
+def hello():
+    pass
+
+class Test:
+    pass
+"""
     assert detect_content_type(code_content, content_type_hint="code") == "code"
 
 

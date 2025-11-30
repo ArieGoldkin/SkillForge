@@ -13,6 +13,7 @@ ENV/
 backend/venv/
 backend/env/
 .venv/
+backend/.venv-studio/
 
 # Python
 *.py[cod]

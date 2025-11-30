@@ -1,8 +1,9 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "analysis": "app.workflows.analysis:analysis_workflow",
-    "tutor": "app.workflows.tutor.graph_builder:tutor_workflow"
+    "analysis": "app.workflows.studio_compat:analysis_workflow",
+    "tutor": "app.workflows.studio_compat:tutor_workflow"
   },
   "env": ".env"
 }
+

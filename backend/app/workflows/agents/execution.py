@@ -8,7 +8,6 @@ import time
 from dataclasses import dataclass
 
 from langchain_core.runnables import Runnable
-from langsmith import traceable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -168,7 +167,9 @@ async def run_agent_with_tracking(  # noqa: PLR0913
 ) -> dict[str, object]:
     """Run an agent with progress tracking, error handling, and database persistence.
 
-    This function is wrapped with @traceable to create LangSmith traces for each agent execution.
+    Note: This function is NOT traced with @robust_traceable because the calling
+    node (e.g., tech_comparator_node) is already traced. Adding tracing here would
+    create duplicate traces in LangSmith.
 
     Note: This function accepts 7 parameters for backward compatibility with existing callers.
     Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig
@@ -204,24 +205,5 @@ async def run_agent_with_tracking(  # noqa: PLR0913
         max_content_length=max_content_length,
     )
 
-    # Use @traceable on the wrapper function, not the internal one
-    # This avoids LangSmith trying to serialize dataclass arguments
-    # The internal function (_run_agent_with_tracking_impl) is not traced
-    # to avoid serialization issues with dataclass arguments
-    traced_wrapper = traceable(
-        name=agent_type,
-        run_type="chain",
-        tags=["agent", agent_type],
-        metadata={
-            "analysis_id": str(analysis_id),
-            "agent_type": agent_type,
-            "content_type": content_type,
-        },
-    )
-
-    @traced_wrapper
-    async def traced_run() -> dict[str, object]:
-        """Traced wrapper that calls the internal implementation."""
-        return await _run_agent_with_tracking_impl(params=params, config=config)
-
-    return await traced_run()
+    # Call implementation directly - no tracing here since the node wrapper already traces
+    return await _run_agent_with_tracking_impl(params=params, config=config)

@@ -4,9 +4,11 @@ This node presents an integrative problem combining multiple concepts.
 """
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
@@ -30,10 +32,15 @@ Create a challenging problem that:
 Return a problem statement with clear instructions."""
 
 
-@traceable(
+@robust_traceable(
     name="final_challenge",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def final_challenge(state: TutorState) -> dict[str, object]:
     """Present final integrative challenge.
@@ -52,6 +59,20 @@ async def final_challenge(state: TutorState) -> dict[str, object]:
     syllabus = state.get("syllabus")
     user_level = state.get("user_level", "intermediate")
     understanding_scores = state.get("understanding_scores", {})
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "final_challenge"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     await _emit_tutor_event(
         session_id,

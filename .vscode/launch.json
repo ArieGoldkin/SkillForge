@@ -68,6 +68,27 @@
         "PYTHONPATH": "${workspaceFolder}/backend"
       },
       "justMyCode": false
+    },
+    {
+      "name": "LangGraph Studio Debug",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 2025
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/backend",
+          "remoteRoot": "${workspaceFolder}/backend"
+        }
+      ],
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      }
     }
   ]
 }

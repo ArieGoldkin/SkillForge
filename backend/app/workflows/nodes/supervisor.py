@@ -13,12 +13,13 @@ Architecture:
 import time
 
 from langchain_core.runnables import Runnable
-from langsmith import traceable
 
 from app.core.agent_config import get_stage_name
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
+from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
@@ -156,10 +157,15 @@ async def _invoke_supervisor_with_retry(
     raise RuntimeError(msg)
 
 
-@traceable(
+@robust_traceable(
     name="supervisor_route",
     run_type="chain",
     tags=["workflow", "supervisor"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "supervisor",
+    },
 )
 async def supervisor_route(
     content: str,

@@ -55,12 +55,14 @@ async def test_generate_embedding_token_truncation(embedding_service):
     # Each "word " is ~1 token, so 10,000 words = ~10,000 tokens > 8,000 limit
     large_text = "word " * 10_000  # ~10,000 tokens
 
-    # Mock encoding to return more than max_tokens
+    # Mock _encoding (private attribute) to return more than max_tokens
+    mock_encoding = MagicMock()
     mock_tokens = list(range(9000))  # 9000 tokens > 8000 limit
-    embedding_service.encoding.encode = MagicMock(return_value=mock_tokens)
+    mock_encoding.encode = MagicMock(return_value=mock_tokens)
     # Mock decode to return truncated text
     truncated_text = "word " * 8_000
-    embedding_service.encoding.decode = MagicMock(return_value=truncated_text)
+    mock_encoding.decode = MagicMock(return_value=truncated_text)
+    embedding_service._encoding = mock_encoding
 
     # Mock successful API response
     mock_response = MagicMock()
@@ -72,14 +74,16 @@ async def test_generate_embedding_token_truncation(embedding_service):
 
     # Verify truncation occurred
     assert len(result) == 1536
-    embedding_service.encoding.decode.assert_called_once()
+    mock_encoding.decode.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_generate_embedding_dimension_mismatch(embedding_service):
     """Test embedding generation with dimension mismatch raises EmbeddingError."""
-    # Mock encoding
-    embedding_service.encoding.encode = MagicMock(return_value=[1, 2, 3])
+    # Mock _encoding (private attribute)
+    mock_encoding = MagicMock()
+    mock_encoding.encode = MagicMock(return_value=[1, 2, 3])
+    embedding_service._encoding = mock_encoding
 
     # Mock API response with wrong dimensions
     mock_response = MagicMock()
@@ -93,8 +97,10 @@ async def test_generate_embedding_dimension_mismatch(embedding_service):
 @pytest.mark.asyncio
 async def test_generate_embedding_missing_embedding(embedding_service):
     """Test embedding generation with missing embedding field raises EmbeddingError."""
-    # Mock encoding
-    embedding_service.encoding.encode = MagicMock(return_value=[1, 2, 3])
+    # Mock _encoding (private attribute)
+    mock_encoding = MagicMock()
+    mock_encoding.encode = MagicMock(return_value=[1, 2, 3])
+    embedding_service._encoding = mock_encoding
 
     # Mock API response with empty embedding
     mock_response = MagicMock()
@@ -108,8 +114,10 @@ async def test_generate_embedding_missing_embedding(embedding_service):
 @pytest.mark.asyncio
 async def test_generate_embedding_api_error(embedding_service):
     """Test embedding generation with API error raises EmbeddingError."""
-    # Mock encoding
-    embedding_service.encoding.encode = MagicMock(return_value=[1, 2, 3])
+    # Mock _encoding (private attribute)
+    mock_encoding = MagicMock()
+    mock_encoding.encode = MagicMock(return_value=[1, 2, 3])
+    embedding_service._encoding = mock_encoding
 
     # Mock API to raise an error
     embedding_service.client.embeddings.create = AsyncMock(
@@ -123,8 +131,10 @@ async def test_generate_embedding_api_error(embedding_service):
 @pytest.mark.asyncio
 async def test_generate_embedding_with_normalization(embedding_service):
     """Test embedding generation with normalization enabled."""
-    # Mock encoding
-    embedding_service.encoding.encode = MagicMock(return_value=[1, 2, 3])
+    # Mock _encoding (private attribute)
+    mock_encoding = MagicMock()
+    mock_encoding.encode = MagicMock(return_value=[1, 2, 3])
+    embedding_service._encoding = mock_encoding
 
     # Mock API response
     mock_response = MagicMock()
@@ -145,8 +155,10 @@ async def test_generate_embedding_with_normalization(embedding_service):
 @pytest.mark.asyncio
 async def test_generate_embedding_embedding_error_re_raised(embedding_service):
     """Test that EmbeddingError is re-raised without modification."""
-    # Mock encoding
-    embedding_service.encoding.encode = MagicMock(return_value=[1, 2, 3])
+    # Mock _encoding (private attribute)
+    mock_encoding = MagicMock()
+    mock_encoding.encode = MagicMock(return_value=[1, 2, 3])
+    embedding_service._encoding = mock_encoding
 
     # Mock API to raise EmbeddingError
     original_error = EmbeddingError("Original error")

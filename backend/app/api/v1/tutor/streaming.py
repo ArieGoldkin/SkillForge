@@ -4,6 +4,7 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator
+from contextlib import aclosing
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request
@@ -43,24 +44,30 @@ async def stream_tutor_progress(
     )
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
-        """Generate SSE events from broadcaster subscription."""
-        try:
-            async for event in broadcaster.subscribe(channel):
-                # Format event for SSE
-                event_type = str(event.get("type", "message"))
-                yield {
-                    "event": event_type,
-                    "data": json.dumps(event),
-                }
+        """Generate SSE events from broadcaster subscription.
 
-                # Close connection on done event
-                if event.get("type") == "done":
-                    logger.info(
-                        "tutor_sse_done_event_sent",
-                        session_id=str(session_id),
-                        channel=channel,
-                    )
-                    break
+        Uses aclosing() to ensure proper cleanup of the broadcaster subscription
+        even if streaming is interrupted.
+        """
+        try:
+            # Use aclosing() to ensure proper cleanup of async generator
+            async with aclosing(broadcaster.subscribe(channel)) as subscription:
+                async for event in subscription:
+                    # Format event for SSE
+                    event_type = str(event.get("type", "message"))
+                    yield {
+                        "event": event_type,
+                        "data": json.dumps(event),
+                    }
+
+                    # Close connection on done event
+                    if event.get("type") == "done":
+                        logger.info(
+                            "tutor_sse_done_event_sent",
+                            session_id=str(session_id),
+                            channel=channel,
+                        )
+                        break
 
         except asyncio.CancelledError:
             logger.info(

@@ -2,26 +2,34 @@
 
 import time
 
-from langsmith import get_current_run_tree, traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.core.tracing import robust_traceable
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.runners import run_code_quality_critic_with_session
 
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="code_quality_critic",
     run_type="chain",
     tags=["workflow", "node", "agent", "code_quality_critic"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "agent",
+    },
 )
 async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
     """Code quality critic agent node.
 
     Executes code quality analysis and returns findings.
     Each agent node manages its own database session for parallel execution.
+    GeneratorExit handling is managed by the robust_traceable wrapper.
 
     Args:
         state: Current workflow state with content and analysis_id
@@ -35,12 +43,17 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
+    # Get LangSmith trace ID for correlation and update runtime metadata
     trace_id: str | None = None
     try:
         run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
+        if run_tree:
+            if hasattr(run_tree, "id"):
+                trace_id = str(run_tree.id)
+            # Runtime metadata updates
+            run_tree.metadata["analysis_id"] = str(analysis_id)
+            run_tree.metadata["content_type"] = content_type
+            run_tree.tags.append("parallel-execution")
     except Exception:
         # LangSmith not available or not in trace context - continue without trace_id
         pass
@@ -72,9 +85,8 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
     except GeneratorExit:
-        # GeneratorExit is a BaseException, not Exception - catch explicitly
-        # Safety net: With step_timeout only, this should rarely occur.
-        # If it does, it's handled gracefully for graceful degradation.
+        # GeneratorExit during execution (cancellation/timeout) - return empty for graceful degradation
+        # Cleanup GeneratorExit is handled by robust_traceable wrapper
         duration = time.time() - start_time
         logger.warning(
             "agent_node_cancelled",

@@ -8,9 +8,11 @@ from datetime import UTC, datetime
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
 from app.db.session import get_session_factory
@@ -23,10 +25,15 @@ from app.workflows.tutor.state import TutorState
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="assess_readiness",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def assess_readiness(state: TutorState) -> dict[str, object]:
     """Assess user readiness using LLM-based evaluation.
@@ -48,6 +55,20 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:
     last_user_message = state.get("last_user_message", "")
     understanding_scores = state.get("understanding_scores", {})
     attempts = state.get("attempts_current_lesson", 0)
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "readiness_assessment"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     # Emit SSE event: readiness assessment started
     await _emit_tutor_event(

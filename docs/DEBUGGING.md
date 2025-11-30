@@ -349,6 +349,291 @@ The application will automatically use `LANGSMITH_API_KEY` if `LANGCHAIN_API_KEY
 
 ---
 
+## LangSmith Studio Local Debugging
+
+LangSmith Studio is an interactive IDE for debugging LangGraph workflows locally. It provides visual debugging, step-through execution, state inspection, and trace visualization.
+
+### Architecture
+
+LangSmith Studio runs as a separate development server alongside FastAPI:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              SHARED WORKFLOW LIBRARY                         │
+│  backend/app/workflows/                                      │
+│    ├─ analysis.py → analysis_workflow (StateGraph)          │
+│    └─ tutor/graph_builder.py → tutor_workflow (StateGraph)  │
+└─────────────────────────────────────────────────────────────┘
+           │                              │
+    ┌──────▼──────┐              ┌─────────▼─────────┐
+    │   FastAPI   │              │  LangGraph CLI   │
+    │  (port 8000)│              │  (port 8123)     │
+    │  Production │              │  Studio Debug    │
+    └──────┬──────┘              └─────────┬────────┘
+           │                              │
+    ┌──────▼──────────────────────────────▼──────┐
+    │         PostgreSQL (Shared)                 │
+    │  - Different thread_ids prevent conflicts   │
+    │  - Studio uses test IDs, FastAPI uses       │
+    │    analysis_id/session_id as thread_id      │
+    └─────────────────────────────────────────────┘
+           │                              │
+           └──────────────┬───────────────┘
+                          │
+                  ┌───────▼────────┐
+                  │  LangSmith     │
+                  │  Cloud Tracing │
+                  └─────────────────┘
+
+Studio UI (port 2024) → LangGraph CLI (8123)
+```
+
+**Key Points:**
+- **Separate Servers**: FastAPI (8000) and LangGraph CLI (8123) run independently
+- **Shared Code**: Both import the same StateGraph workflow objects
+- **Shared Database**: Both can use PostgreSQL with different `thread_id` values
+- **No Conflicts**: Different ports and thread isolation prevent conflicts
+
+### Setup
+
+**Prerequisites:**
+- Python 3.13 installed locally
+- Backend dependencies installed (`poetry install` in `backend/` directory)
+- Database accessible (either local PostgreSQL or Docker postgres running)
+- LangSmith API keys configured in `backend/.env`
+
+**Steps:**
+
+1. **Set up Studio debugging environment** (recommended - avoids dependency conflicts):
+   ```bash
+   # From project root
+   ./scripts/setup-studio-env.sh
+   ```
+   
+   This creates a separate virtual environment (`.venv-studio`) with `langgraph-cli` installed, avoiding conflicts with FastAPI's `sse-starlette ^3.0.3` requirement.
+
+2. **Alternative: Manual setup** (if you prefer):
+   ```bash
+   cd backend
+   poetry install
+   poetry run pip install "langgraph-cli[inmem]"
+   ```
+   
+   **Note**: This will downgrade `sse-starlette` from 3.0.3 to 2.1.3, which may break FastAPI. Use the separate environment approach above to avoid this issue.
+
+3. **Verify environment configuration** in `backend/.env`:
+   ```bash
+   # Required for Studio debugging
+   LANGSMITH_API_KEY=lsv2_pt_...
+   LANGCHAIN_API_KEY=lsv2_pt_...  # Can be same as LANGSMITH_API_KEY
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_PROJECT=skillforge-backend
+   DATABASE_URL=postgresql://...  # Optional: Studio can use in-memory checkpointer
+   ```
+
+3. **Start LangGraph dev server**:
+   
+   **Option A: Using the convenience script** (recommended):
+   ```bash
+   # From project root
+   ./scripts/run-studio.sh
+   ```
+   
+   **Option B: Manual activation**:
+   ```bash
+   # Activate Studio environment
+   source backend/.venv-studio/bin/activate
+   
+   # Start dev server
+   cd backend
+   langgraph dev
+   ```
+   
+   This will:
+   - Start the dev server on port 8123 (default)
+   - Automatically open Studio UI at `http://127.0.0.1:2024` in your browser
+   - Load workflows from `langgraph.json` configuration
+
+4. **Connect Studio UI to local endpoint**:
+   - Studio UI should open automatically
+   - If not, navigate to `http://127.0.0.1:2024`
+   - The UI will connect to `http://localhost:8123` by default
+   - Select workflow (analysis or tutor) from the dropdown
+
+### Usage
+
+**Running Workflows:**
+
+1. **Select a workflow** from the dropdown (analysis or tutor)
+
+2. **Provide input** matching the workflow's state schema:
+   - **Analysis workflow**: `{"url": "https://example.com/article", "analysis_id": "test-123"}`
+   - **Tutor workflow**: `{"session_id": "test-session", "artifact_id": "test-artifact", ...}`
+
+3. **Run the workflow**:
+   - Click "Run" to execute the workflow
+   - Use "Step" to execute one node at a time
+   - Use "Continue" to resume after a step
+
+4. **Inspect state**:
+   - View state at each step in the UI
+   - See node inputs and outputs
+   - Inspect checkpoints and state history
+
+5. **View traces**:
+   - Traces automatically appear in LangSmith cloud UI
+   - Same project as FastAPI traces (`LANGCHAIN_PROJECT`)
+   - Full trace correlation with Studio execution
+
+### When to Use Studio vs FastAPI
+
+**Use LangSmith Studio for:**
+- Interactive debugging and step-through execution
+- State inspection at each workflow step
+- Testing workflow logic without full API integration
+- Visualizing workflow execution flow
+- Debugging specific nodes or routing logic
+- Prototyping workflow changes
+
+**Use FastAPI for:**
+- Production API endpoints
+- SSE streaming to frontend
+- Full integration testing with database
+- Testing complete request/response cycle
+- Performance testing under load
+- End-to-end user flow validation
+
+### Thread ID Isolation
+
+Studio and FastAPI can run simultaneously without conflicts:
+
+- **Studio**: Uses auto-generated thread IDs for test runs (e.g., `studio-thread-123`)
+- **FastAPI**: Uses `analysis_id` or `session_id` as thread_id (e.g., `397a1f79-70ea-438b-852c-df28e05ccdf4`)
+- **No Conflicts**: Thread IDs are unique, so checkpoints don't interfere
+- **Same Database**: Both can use PostgreSQL with different thread namespaces
+
+### Cloning Remote Traces for Local Testing
+
+You can replay traces from LangSmith cloud in Studio:
+
+1. **Open trace in LangSmith cloud UI**:
+   - Navigate to https://smith.langchain.com
+   - Open the trace you want to debug
+
+2. **Clone to Studio**:
+   - Click "Run in Studio" button
+   - Enter your local endpoint: `http://localhost:8123`
+   - Click "Clone thread locally"
+   - Studio creates a new thread with the same state history
+
+3. **Debug locally**:
+   - Workflow state is restored from the remote trace
+   - You can step through execution locally
+   - Make changes to workflow code and test
+   - Traces from local execution appear in same LangSmith project
+
+### Dependency Conflict Resolution
+
+**The Issue:**
+- `langgraph-cli` requires `sse-starlette <2.2.0`
+- SkillForge FastAPI requires `sse-starlette ^3.0.3`
+- These cannot coexist in the same Python environment
+
+**The Solution:**
+We use a separate virtual environment (`.venv-studio`) for Studio debugging:
+- Studio environment: Has `langgraph-cli` with `sse-starlette 2.1.3`
+- Main environment: Has FastAPI with `sse-starlette 3.0.3`
+- Both can run simultaneously without conflicts
+
+**If you need to reinstall Studio environment:**
+```bash
+# Remove old environment
+rm -rf backend/.venv-studio
+
+# Recreate it
+./scripts/setup-studio-env.sh
+```
+
+### Troubleshooting
+
+**Port Conflicts:**
+
+If port 8123 is already in use:
+```bash
+# Use a different port
+langgraph dev --port 8124
+```
+
+Then update Studio UI connection to `http://localhost:8124`
+
+**Database Connection Issues:**
+
+If PostgreSQL is not accessible, Studio will fall back to in-memory checkpointer:
+- State is not persisted between runs
+- This is fine for debugging individual workflow executions
+- For persistent state, ensure `DATABASE_URL` is set correctly
+
+**Environment Variable Loading:**
+
+If environment variables aren't loading:
+```bash
+# Verify .env file is in backend/ directory
+ls backend/.env
+
+# Check that langgraph.json points to .env
+cat backend/langgraph.json | grep env
+# Should show: "env": ".env"
+```
+
+**Workflow Import Errors:**
+
+If workflows don't appear in Studio dropdown:
+```bash
+# Test imports manually
+cd backend
+python3 -c "from app.workflows.analysis import analysis_workflow; print('Analysis workflow OK')"
+python3 -c "from app.workflows.tutor.graph_builder import tutor_workflow; print('Tutor workflow OK')"
+```
+
+If imports fail, check:
+- `PYTHONPATH` includes `backend/` directory
+- All dependencies are installed (`poetry install`)
+- Workflow files are in correct locations
+
+**Studio UI Not Opening:**
+
+If Studio UI doesn't open automatically:
+- Manually navigate to `http://127.0.0.1:2024`
+- Check terminal output for the Studio URL
+- Verify no firewall is blocking the port
+
+**Traces Not Appearing in LangSmith:**
+
+If traces from Studio don't appear in LangSmith cloud:
+- Verify `LANGCHAIN_TRACING_V2=true` in `.env`
+- Verify `LANGCHAIN_API_KEY` is set correctly
+- Check Studio terminal output for LangSmith connection errors
+- Ensure `LANGCHAIN_PROJECT` matches your LangSmith project name
+
+### Step-Through Debugging with VS Code
+
+For advanced debugging with breakpoints in VS Code:
+
+1. **Start LangGraph dev server with debug port**:
+   ```bash
+   cd backend
+   langgraph dev --debug-port 2025
+   ```
+
+2. **Attach VS Code debugger**:
+   - Use the "LangGraph Studio Debug" configuration (see `.vscode/launch.json`)
+   - Set breakpoints in workflow code
+   - Debugger will stop at breakpoints during Studio execution
+
+See [VS Code Debugging](#vs-code-debugging) section for more details.
+
+---
+
 ## Common Debugging Scenarios
 
 ### Scenario 1: Workflow Hangs or Times Out

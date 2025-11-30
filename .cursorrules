@@ -204,6 +204,104 @@ agent = create_agent(
 )
 ```
 
+### Async Generator Cleanup (MANDATORY)
+**✅ GOOD: Use aclosing() for all async generator iterations**
+```python
+from contextlib import aclosing
+
+# For SSE event streams
+async def stream_events():
+    async with aclosing(broadcaster.subscribe(channel)) as subscription:
+        async for event in subscription:
+            yield event
+
+# For workflow astream()
+async with aclosing(workflow.astream(input_state, config=config)) as stream:
+    async for chunk in stream:
+        process(chunk)
+
+# For agent streaming
+async with aclosing(agent.astream(input_messages)) as stream:
+    async for chunk in stream:
+        yield chunk
+```
+
+**❌ BAD: Direct iteration without aclosing()**
+```python
+async for event in broadcaster.subscribe(channel):  # Missing cleanup!
+    yield event
+```
+
+### Robust Tracing with GeneratorExit Handling (MANDATORY)
+**✅ GOOD: Use robust_traceable with metadata and runtime updates**
+```python
+from langsmith import get_current_run_tree
+from app.core.config import settings
+from app.core.tracing import robust_traceable
+
+@robust_traceable(
+    name="my_node",
+    run_type="chain",
+    tags=["workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "analysis",
+        "component": "agent",
+    },
+)
+async def my_node(state: AnalysisState) -> dict:
+    analysis_id = state["analysis_id"]
+    
+    # Runtime metadata updates
+    run_tree = get_current_run_tree()
+    if run_tree:
+        run_tree.metadata["analysis_id"] = str(analysis_id)
+        run_tree.tags.append("parallel-execution")
+    
+    # GeneratorExit handling is automatic - no manual handling needed
+    return {"result": "data"}
+```
+
+**✅ GOOD: Thread grouping for tutor conversations**
+```python
+@robust_traceable(
+    name="tutor_node",
+    run_type="chain",
+    tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
+)
+async def tutor_node(state: TutorState) -> dict:
+    session_id = state["session_id"]
+    
+    # Thread grouping for multi-turn conversations
+    run_tree = get_current_run_tree()
+    if run_tree:
+        run_tree.metadata["thread_id"] = str(session_id)
+        run_tree.metadata["session_id"] = str(session_id)
+        run_tree.metadata["conversation_id"] = str(session_id)
+        run_tree.metadata["tutor_phase"] = "socratic_questioning"
+    
+    return {"result": "data"}
+```
+
+**❌ BAD: Direct @traceable without GeneratorExit handling**
+```python
+@traceable(name="my_node")  # GeneratorExit will appear as errors in LangSmith
+async def my_node(state: AnalysisState) -> dict:
+    return {"result": "data"}
+```
+
+**❌ BAD: Missing metadata**
+```python
+@robust_traceable(name="my_node", tags=["workflow"])  # No metadata
+async def my_node(state: AnalysisState) -> dict:
+    return {"result": "data"}
+```
+
 ---
 
 ## 📦 Alembic Migrations (MANDATORY)

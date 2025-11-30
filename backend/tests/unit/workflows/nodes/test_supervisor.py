@@ -75,9 +75,11 @@ async def test_supervisor_route_success(mock_agent_selection):
             "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
     ):
+        # Use "code" content type so both agents can process it
+        # security_auditor can only process "code" and "documentation", not "article"
         result = await supervisor_route(
-            content="This is a test article about React and security best practices.",
-            content_type="article",
+            content="import os\nfrom typing import List\n\ndef hello_world():\n    print('Hello, World!')",
+            content_type="code",
             analysis_id="test-analysis-id",
         )
 
@@ -89,7 +91,7 @@ async def test_supervisor_route_success(mock_agent_selection):
         assert "reasoning" in decision
         assert "confidence" in decision
 
-        # Verify agents were selected
+        # Verify agents were selected (both can process code)
         assert len(decision["agents"]) == 2
         assert "tech_comparator" in decision["agents"]
         assert "security_auditor" in decision["agents"]

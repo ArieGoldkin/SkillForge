@@ -6,9 +6,11 @@ This node creates a personalized curriculum based on analysis context.
 import json
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.db.session import get_session_factory
 from app.workflows.tutor.config import SYLLABUS_GENERATION_PROMPT
@@ -18,10 +20,15 @@ from app.workflows.tutor.state import TutorState
 logger = get_logger(__name__)
 
 
-@traceable(
+@robust_traceable(
     name="generate_syllabus",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def generate_syllabus(state: TutorState) -> dict[str, object]:
     """Generate syllabus from analysis context.
@@ -39,6 +46,20 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:
     session_id = state["session_id"]
     analysis_id = state.get("analysis_id")
     user_level = state.get("user_level", "intermediate")
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "syllabus_generation"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     # Emit SSE event: syllabus generation started
     await _emit_tutor_event(

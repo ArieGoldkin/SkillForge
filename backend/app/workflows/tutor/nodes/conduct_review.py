@@ -4,9 +4,11 @@ This node conducts a section quiz with feedback to evaluate understanding.
 """
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langsmith import traceable
+from langsmith import get_current_run_tree
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import robust_traceable
 from app.core.model_factory import get_chat_model
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
@@ -31,10 +33,15 @@ Create a quiz with 3-5 questions that:
 Return as structured quiz with questions and answer keys."""
 
 
-@traceable(
+@robust_traceable(
     name="conduct_review",
     run_type="chain",
     tags=["tutor", "workflow", "node"],
+    metadata={
+        "environment": settings.ENVIRONMENT,
+        "workflow_type": "tutor",
+        "component": "tutor_node",
+    },
 )
 async def conduct_review(state: TutorState) -> dict[str, object]:
     """Conduct section review quiz with feedback.
@@ -53,6 +60,20 @@ async def conduct_review(state: TutorState) -> dict[str, object]:
     current_section = state.get("current_section", 0)
     user_level = state.get("user_level", "intermediate")
     understanding_scores = state.get("understanding_scores", {})
+
+    # Thread grouping and runtime metadata
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            # Group all tutor messages in one thread
+            run_tree.metadata["thread_id"] = str(session_id)
+            run_tree.metadata["session_id"] = str(session_id)
+            run_tree.metadata["conversation_id"] = str(session_id)
+            # Phase-specific metadata
+            run_tree.metadata["tutor_phase"] = "section_review"
+    except Exception:
+        # LangSmith not available or not in trace context - continue
+        pass
 
     # Emit SSE event: review started
     await _emit_tutor_event(

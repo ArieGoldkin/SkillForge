@@ -42,7 +42,10 @@ pytest-xdist = "^3.6.1"
 ruff = "^0.14.6"
 mypy = "^1.13.0"
 isort = "^7.0.0"
-langgraph-cli = {extras = ["inmem"], version = "^0.2.0"}
+# langgraph-cli is installed separately via pip due to dependency conflict:
+# langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
+# Install with: poetry run pip install "langgraph-cli[inmem]"
+# Note: This will downgrade sse-starlette temporarily - use separate venv for Studio debugging
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
