@@ -7,15 +7,24 @@ class TechComparisonEntry(BaseModel):
     """Comparison details for a single technology."""
 
     pros: list[str] = Field(
-        description="List of advantages and strengths of this technology",
+        description=(
+            "List of advantages and strengths of this technology. "
+            "Each item should be a single concise phrase or short sentence."
+        ),
         default_factory=list,
     )
     cons: list[str] = Field(
-        description="List of disadvantages and limitations of this technology",
+        description=(
+            "List of disadvantages and limitations of this technology. "
+            "Each item should be a single concise phrase or short sentence."
+        ),
         default_factory=list,
     )
     use_cases: list[str] = Field(
-        description="List of recommended use cases and scenarios for this technology",
+        description=(
+            "List of recommended use cases and scenarios for this technology. "
+            "Each item should be a single concise phrase describing the scenario."
+        ),
         default_factory=list,
     )
 
@@ -30,15 +39,14 @@ class TechComparison(BaseModel):
         max_length=5,
     )
     comparison: dict[str, TechComparisonEntry] = Field(
+        default_factory=dict,
         description=(
-            "REQUIRED FIELD - DO NOT OMIT: Comparison table with pros, cons, "
-            "and use_cases for each technology. "
-            "MUST include an entry for primary_tech and each alternative. "
+            "Comparison table with pros, cons, and use_cases for each technology. "
+            "Include an entry for primary_tech and each alternative. "
             "Each entry contains three lists: pros (advantages), "
             "cons (disadvantages), and use_cases (recommended scenarios). "
             "Example: {'LangGraph': {'pros': ['...'], 'cons': ['...'], 'use_cases': ['...']}, "
-            "'LangChain Agents': {'pros': ['...'], 'cons': ['...'], 'use_cases': ['...']}}. "
-            "This field is REQUIRED and cannot be omitted."
+            "'LangChain Agents': {'pros': ['...'], 'cons': ['...'], 'use_cases': ['...']}}."
         ),
         examples=[
             {
@@ -55,4 +63,9 @@ class TechComparison(BaseModel):
             }
         ],
     )
-    recommendation: str = Field(description="Recommendation based on the comparison analysis")
+    recommendation: str = Field(
+        description=(
+            "Recommendation based on the comparison analysis. "
+            "Write as 2-3 cohesive sentences explaining which technology to choose and why."
+        )
+    )

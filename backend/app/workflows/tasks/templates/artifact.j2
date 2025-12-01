@@ -68,31 +68,80 @@
 {% endif %}
 
 {% if finding.findings.primary_tech %}
-**Primary Technology:** {{ finding.findings.primary_tech }}
+**Primary Technology:** `{{ finding.findings.primary_tech }}`
 {% endif %}
 
 {% if finding.findings.alternatives %}
-**Alternatives:** {{ finding.findings.alternatives | join(", ") }}
+**Alternatives:** {% for alt in finding.findings.alternatives %}`{{ alt }}`{% if not loop.last %}, {% endif %}{% endfor %}
+
+{% endif %}
+
+{% if finding.findings.comparison %}
+#### Technology Comparison
+
+| Technology | Pros | Cons | Use Cases |
+|------------|------|------|-----------|
+{% for tech_name, tech_data in finding.findings.comparison.items() %}
+| `{{ tech_name }}` | {{ tech_data.pros | join("; ") if tech_data.pros else "N/A" }} | {{ tech_data.cons | join("; ") if tech_data.cons else "N/A" }} | {{ tech_data.use_cases | join("; ") if tech_data.use_cases else "N/A" }} |
+{% endfor %}
 {% endif %}
 
 {% if finding.findings.security_risks %}
-**Security Risks:**
+#### Security Risks
+
+| Risk Type | Severity | Description | Mitigation |
+|-----------|----------|-------------|------------|
 {% for risk in finding.findings.security_risks %}
-- {{ risk.description | default(risk) }} ({{ risk.severity | default("unknown") }})
+| {{ risk.risk_type | default("Unknown") }} | **{{ risk.severity | default("unknown") | upper }}** | {{ risk.description | default("N/A") }} | {{ risk.mitigation | default("N/A") }} |
 {% endfor %}
 {% endif %}
 
 {% if finding.findings.prerequisites %}
 **Prerequisites:**
 {% for prereq in finding.findings.prerequisites %}
-- {{ prereq }}
+- `{{ prereq }}`
 {% endfor %}
 {% endif %}
 
 {% if finding.findings.steps %}
 **Implementation Steps:**
 {% for step in finding.findings.steps %}
-{{ step.step | default(loop.index) }}. {{ step.action | default(step) }}
+- [ ] **Step {{ step.step | default(loop.index) }}:** {{ step.action | default(step) }}{% if step.files %} _(Files: {% for f in step.files %}`{{ f }}`{% if not loop.last %}, {% endif %}{% endfor %})_{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if finding.findings.required_dependencies %}
+#### Required Dependencies
+
+| Package | Version | Purpose | Compatibility |
+|---------|---------|---------|---------------|
+{% for dep in finding.findings.required_dependencies %}
+| `{{ dep.name }}` | `{{ dep.version }}` | {{ dep.purpose }} | {{ dep.compatibility }} |
+{% endfor %}
+{% endif %}
+
+{% if finding.findings.optional_dependencies %}
+#### Optional Dependencies
+
+| Package | Version | Purpose | Compatibility |
+|---------|---------|---------|---------------|
+{% for dep in finding.findings.optional_dependencies %}
+| `{{ dep.name }}` | `{{ dep.version }}` | {{ dep.purpose }} | {{ dep.compatibility }} |
+{% endfor %}
+{% endif %}
+
+{% if finding.findings.version_conflicts %}
+**Version Conflicts:**
+{% for conflict in finding.findings.version_conflicts %}
+- ⚠️ {{ conflict }}
+{% endfor %}
+{% endif %}
+
+{% if finding.findings.peer_dependencies %}
+**Peer Dependencies:**
+{% for peer in finding.findings.peer_dependencies %}
+- `{{ peer }}`
 {% endfor %}
 {% endif %}
 
@@ -141,7 +190,7 @@ No conflicts detected or resolved.
 {% if aggregated_insights.metadata.agents_executed %}
 **Agents Involved:**
 {% for agent in aggregated_insights.metadata.agents_executed %}
-- {{ agent | replace('_', ' ') | title }}
+- `{{ agent }}`
 {% endfor %}
 {% endif %}
 

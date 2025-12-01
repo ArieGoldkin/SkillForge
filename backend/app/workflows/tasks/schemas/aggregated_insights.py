@@ -15,10 +15,30 @@ class ConflictResolution(BaseModel):
 class Synthesis(BaseModel):
     """Synthesized insights from all agents."""
 
-    technical_analysis: str = Field(description="Combined technical insights from all agents")
-    implementation_guidance: str = Field(description="Unified implementation recommendations")
-    risk_assessment: str = Field(description="Consolidated risk analysis")
-    recommendations: str = Field(description="Final recommendations prioritizing all perspectives")
+    technical_analysis: str = Field(
+        description=(
+            "Combined technical insights from all agents. "
+            "Format as markdown with paragraphs separated by blank lines."
+        )
+    )
+    implementation_guidance: str = Field(
+        description=(
+            "Unified implementation recommendations. "
+            "Format as a markdown numbered list with each step on its own line. "
+            "Example:\n1. First step\n2. Second step\n3. Third step"
+        )
+    )
+    risk_assessment: str = Field(
+        description=(
+            "Consolidated risk analysis. Format as markdown with bullet points for each risk."
+        )
+    )
+    recommendations: str = Field(
+        description=(
+            "Final recommendations prioritizing all perspectives. "
+            "Format as markdown with bullet points for each recommendation."
+        )
+    )
 
 
 class AggregatedInsights(BaseModel):
@@ -30,11 +50,17 @@ class AggregatedInsights(BaseModel):
     """
 
     executive_summary: str = Field(
-        description="2-3 sentence summary of the entire analysis",
+        description=(
+            "2-3 sentence summary of the entire analysis. "
+            "Write as a cohesive paragraph, not a list."
+        ),
         min_length=50,
     )
     key_findings: list[str] = Field(
-        description="3-7 key findings prioritized by impact",
+        description=(
+            "3-7 key findings prioritized by impact. "
+            "Each finding should be a single concise sentence or phrase."
+        ),
         min_length=3,
         max_length=7,
     )

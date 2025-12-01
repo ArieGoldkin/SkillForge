@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.core.template_utils import render_jinja_template
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
@@ -296,3 +297,228 @@ class TestGenerateArtifact:
                 if len(call[0]) > 0 and call[0][0] == "error"
             ]
             assert len(error_calls) > 0
+
+
+class TestGFMTemplateRendering:
+    """Test GitHub Flavored Markdown template rendering."""
+
+    @pytest.fixture
+    def gfm_agent_findings(self):
+        """Agent findings with data for GFM elements testing."""
+        return [
+            {
+                "agent_type": "tech_comparator",
+                "findings": {
+                    "primary_tech": "LangGraph",
+                    "alternatives": ["LangChain Agents", "Temporal", "Ray"],
+                    "comparison": {
+                        "LangGraph": {
+                            "pros": ["Low-level control", "Durable execution"],
+                            "cons": ["Steeper learning curve"],
+                            "use_cases": ["Long-running agents", "Stateful workflows"],
+                        },
+                        "LangChain Agents": {
+                            "pros": ["High-level abstraction", "Easy to use"],
+                            "cons": ["Less control"],
+                            "use_cases": ["Quick prototypes"],
+                        },
+                    },
+                    "recommendation": "Use LangGraph for production workflows",
+                },
+                "confidence_score": 0.92,
+            },
+            {
+                "agent_type": "security_auditor",
+                "findings": {
+                    "security_risks": [
+                        {
+                            "risk_type": "injection",
+                            "severity": "high",
+                            "description": "SQL injection vulnerability",
+                            "mitigation": "Use parameterized queries",
+                        },
+                        {
+                            "risk_type": "xss",
+                            "severity": "medium",
+                            "description": "Cross-site scripting risk",
+                            "mitigation": "Sanitize user input",
+                        },
+                    ],
+                    "recommendation": "Address high severity issues first",
+                },
+                "confidence_score": 0.88,
+            },
+            {
+                "agent_type": "implementation_planner",
+                "findings": {
+                    "prerequisites": ["Python 3.11+", "PostgreSQL 15+", "Redis"],
+                    "steps": [
+                        {"step": 1, "action": "Install dependencies", "files": ["requirements.txt"]},
+                        {"step": 2, "action": "Configure environment", "files": [".env", "config.py"]},
+                        {"step": 3, "action": "Initialize database"},
+                    ],
+                    "recommendation": "Follow steps in order",
+                },
+                "confidence_score": 0.85,
+            },
+            {
+                "agent_type": "dependency_mapper",
+                "findings": {
+                    "required_dependencies": [
+                        {
+                            "name": "langgraph",
+                            "version": "^0.2.0",
+                            "purpose": "Workflow orchestration",
+                            "compatibility": "compatible",
+                        },
+                        {
+                            "name": "fastapi",
+                            "version": "^0.115.0",
+                            "purpose": "API framework",
+                            "compatibility": "compatible",
+                        },
+                    ],
+                    "optional_dependencies": [
+                        {
+                            "name": "redis",
+                            "version": "^5.0.0",
+                            "purpose": "Caching layer",
+                            "compatibility": "compatible",
+                        },
+                    ],
+                    "version_conflicts": ["numpy 1.x conflicts with pandas 2.x"],
+                    "peer_dependencies": ["Node.js 18+", "Python 3.11+"],
+                    "recommendation": "Use exact versions in production",
+                },
+                "confidence_score": 0.90,
+            },
+        ]
+
+    @pytest.fixture
+    def gfm_template_context(self, sample_aggregated_insights, gfm_agent_findings):
+        """Template context with GFM-compatible data."""
+        return {
+            "aggregated_insights": sample_aggregated_insights,
+            "agent_findings": gfm_agent_findings,
+            "analysis_metadata": {
+                "title": "GFM Test Artifact",
+                "url": "https://example.com/test",
+                "generated_date": "2025-11-30",
+                "analysis_id": "test-123",
+            },
+            "claude_code_prompt": "# Test prompt",
+        }
+
+    def test_renders_tech_comparison_table(self, gfm_template_context):
+        """Test that tech comparison renders as markdown table."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Check table structure
+        assert "| Technology | Pros | Cons | Use Cases |" in result
+        assert "|------------|------|------|-----------|" in result
+        # Check inline code in table cells
+        assert "| `LangGraph` |" in result
+        assert "| `LangChain Agents` |" in result
+
+    def test_renders_inline_code_for_tech_names(self, gfm_template_context):
+        """Test that tech names use inline code formatting."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Primary tech should be wrapped in backticks
+        assert "`LangGraph`" in result
+        # Alternatives should be wrapped in backticks
+        assert "`LangChain Agents`" in result
+        assert "`Temporal`" in result
+        assert "`Ray`" in result
+
+    def test_renders_task_list_for_implementation_steps(self, gfm_template_context):
+        """Test that implementation steps render as task list."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Check task list syntax
+        assert "- [ ] **Step 1:**" in result
+        assert "- [ ] **Step 2:**" in result
+        assert "- [ ] **Step 3:**" in result
+        # Check inline code for files
+        assert "`requirements.txt`" in result
+        assert "`config.py`" in result
+
+    def test_renders_security_risks_table(self, gfm_template_context):
+        """Test that security risks render as markdown table."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Check table structure
+        assert "| Risk Type | Severity | Description | Mitigation |" in result
+        assert "|-----------|----------|-------------|------------|" in result
+        # Check severity formatting (bold uppercase)
+        assert "**HIGH**" in result
+        assert "**MEDIUM**" in result
+        # Check risk content
+        assert "SQL injection" in result
+        assert "parameterized queries" in result
+
+    def test_renders_dependency_tables(self, gfm_template_context):
+        """Test that dependencies render as markdown tables."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Check required dependencies table
+        assert "| Package | Version | Purpose | Compatibility |" in result
+        assert "`langgraph`" in result
+        assert "`fastapi`" in result
+        assert "`^0.2.0`" in result
+
+        # Check optional dependencies table
+        assert "#### Optional Dependencies" in result
+        assert "`redis`" in result
+
+    def test_renders_inline_code_for_prerequisites(self, gfm_template_context):
+        """Test that prerequisites use inline code formatting."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        assert "`Python 3.11+`" in result
+        assert "`PostgreSQL 15+`" in result
+        assert "`Redis`" in result
+
+    def test_renders_version_conflicts_with_warning(self, gfm_template_context):
+        """Test that version conflicts are rendered with warning emoji."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        assert "⚠️" in result
+        assert "numpy 1.x conflicts with pandas 2.x" in result
+
+    def test_renders_peer_dependencies_with_inline_code(self, gfm_template_context):
+        """Test that peer dependencies use inline code formatting."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        assert "`Node.js 18+`" in result
+        assert "`Python 3.11+`" in result
+
+    def test_renders_agents_involved_with_inline_code(self, gfm_template_context):
+        """Test that agents involved list uses inline code formatting."""
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        assert "`tech_comparator`" in result
+        assert "`implementation_planner`" in result
+        assert "`security_auditor`" in result
+
+    def test_handles_empty_comparison_gracefully(self, gfm_template_context):
+        """Test that empty comparison dict doesn't break template."""
+        gfm_template_context["agent_findings"][0]["findings"]["comparison"] = {}
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Should still render without errors
+        assert "Tech Comparator" in result
+        # Empty comparison should not render table
+        assert "| Technology | Pros | Cons | Use Cases |" not in result
+
+    def test_handles_missing_optional_fields(self, gfm_template_context):
+        """Test that missing optional fields don't break template."""
+        # Remove optional fields
+        gfm_template_context["agent_findings"][3]["findings"].pop("optional_dependencies")
+        gfm_template_context["agent_findings"][3]["findings"].pop("version_conflicts")
+
+        result = render_jinja_template("artifact.j2", gfm_template_context)
+
+        # Should still render without errors
+        assert "Dependency Mapper" in result
+        assert "`langgraph`" in result

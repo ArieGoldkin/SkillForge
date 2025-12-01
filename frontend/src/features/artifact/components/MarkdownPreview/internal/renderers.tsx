@@ -11,7 +11,12 @@ type CodeProps = CodeComponent extends ElementType<infer P> ? P : never
 
 /**
  * Custom code renderer for ReactMarkdown
- * Renders code blocks with syntax highlighting, inline code as-is
+ * Renders code blocks with syntax highlighting, inline code as simple styled spans
+ *
+ * Detection logic for react-markdown v9+:
+ * - Code blocks have className with "language-" prefix (from ```lang blocks)
+ * - Inline code has no language class and typically no newlines
+ * - The deprecated `inline` prop is checked as fallback for compatibility
  */
 export const CodeRenderer: NonNullable<Components['code']> = (props) => {
   const {
@@ -27,9 +32,25 @@ export const CodeRenderer: NonNullable<Components['code']> = (props) => {
   const language = match ? match[1] : 'text'
   const codeContent = String(children).replace(/\n$/, '')
 
-  if (inline) {
+  // Detect inline code: either explicit inline prop, or no language class and no newlines
+  // This handles react-markdown v9+ which deprecated the inline prop
+  const hasLanguageClass = Boolean(match)
+  const hasNewlines = codeContent.includes('\n')
+  const isInlineCode = inline === true || (!hasLanguageClass && !hasNewlines)
+
+  if (isInlineCode) {
     return (
-      <code className={className} {...rest}>
+      <code
+        className={cn(
+          'inline-code',
+          'px-1.5 py-0.5 mx-0.5',
+          'bg-muted/50 text-foreground',
+          'rounded font-mono text-[0.9em]',
+          'border border-border/50',
+          className
+        )}
+        {...rest}
+      >
         {children}
       </code>
     )

@@ -15,7 +15,10 @@ class TrendAssessment(BaseModel):
         description="Current trend status in 2025 technology landscape"
     )
     evidence: str = Field(
-        description="Evidence for trend status (adoption, community activity, etc.)"
+        description=(
+            "Single sentence providing evidence for trend status "
+            "(e.g., GitHub stars, community activity, industry adoption)."
+        )
     )
     adoption_rate: str = Field(
         description="Adoption rate description (e.g., 'growing', 'stable', 'declining')"
@@ -30,8 +33,21 @@ class TrendValidation(BaseModel):
         default_factory=list,
     )
     modern_alternatives: list[str] = Field(
-        description="Modern alternatives if technology is legacy or declining",
+        description=(
+            "Modern alternatives if technology is legacy or declining. "
+            "Each item should be a single concise phrase naming the alternative."
+        ),
         default_factory=list,
     )
-    future_outlook: str = Field(description="Future outlook and predictions for the technology")
-    recommendation: str = Field(description="Recommendation based on trend analysis")
+    future_outlook: str = Field(
+        description=(
+            "Future outlook and predictions for the technology. "
+            "Write as 2-3 cohesive sentences covering expected trajectory and timeline."
+        )
+    )
+    recommendation: str = Field(
+        description=(
+            "Recommendation based on trend analysis. "
+            "Write as 2-3 cohesive sentences advising whether to adopt, wait, or avoid."
+        )
+    )
