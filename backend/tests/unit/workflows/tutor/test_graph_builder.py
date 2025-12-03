@@ -1,6 +1,5 @@
 """Unit tests for tutor graph builder."""
 
-
 from app.workflows.tutor.graph_builder import build_tutor_graph
 
 

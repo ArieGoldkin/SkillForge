@@ -63,7 +63,7 @@ async def test_streaming_timeout_integration_success(mock_streaming_agent):
 @pytest.mark.asyncio
 async def test_streaming_timeout_integration_timeout_triggered(mock_streaming_agent):
     """Test that timeout handling works correctly with slow streaming.
-    
+
     Note: Timeout is handled by LangGraph's step_timeout on the compiled graph,
     not by application-level timeout in stream_agent_response. This test verifies
     that the function handles slow streams gracefully without raising TimeoutError
@@ -121,7 +121,7 @@ async def test_streaming_timeout_integration_with_invocation(mock_streaming_agen
 @pytest.mark.asyncio
 async def test_streaming_timeout_integration_partial_result_preserved(mock_streaming_agent):
     """Test that partial results are preserved when stream completes.
-    
+
     Note: Timeout is handled by LangGraph's step_timeout on the compiled graph,
     not by application-level timeout in stream_agent_response. This test verifies
     that partial results are returned when the stream completes.
@@ -181,7 +181,3 @@ async def test_streaming_timeout_integration_generatorexit_handled(mock_streamin
     # Should return partial result when GeneratorExit occurs
     assert result is not None
     assert "messages" in result
-
-
-
-

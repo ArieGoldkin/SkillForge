@@ -1,10 +1,54 @@
 # {{ analysis_metadata.title | default("Technical Analysis Artifact") }}
 
-**Source:** {{ analysis_metadata.url | default("N/A") }}  
-**Generated:** {{ analysis_metadata.generated_date | default("N/A") }}  
+**Source:** {{ analysis_metadata.url | default("N/A") }}
+**Generated:** {{ analysis_metadata.generated_date | default("N/A") }}
 **Analysis ID:** {{ analysis_metadata.analysis_id | default("N/A") }}
 
 ---
+
+{% if quick_reference %}
+## 📋 Quick Reference
+
+### At a Glance
+| Property | Value |
+|----------|-------|
+| **Technology** | `{{ quick_reference.primary_technology }}` |
+| **Complexity** | {{ quick_reference.complexity }} |
+{% if quick_reference.estimated_time %}
+| **Estimated Time** | {{ quick_reference.estimated_time }} |
+{% endif %}
+{% for prereq in quick_reference.prerequisites %}
+| **Prerequisite** | {{ prereq }} |
+{% endfor %}
+
+### Critical Commands
+```bash
+{% for cmd in quick_reference.critical_commands %}
+{{ cmd }}
+{% endfor %}
+```
+
+### Files to Create/Modify
+{% for file in quick_reference.files_to_create %}
+- `{{ file }}`
+{% endfor %}
+{% if quick_reference.files_to_modify %}
+{% for file in quick_reference.files_to_modify %}
+- `{{ file }}`
+{% endfor %}
+{% endif %}
+
+{% if quick_reference.gotchas %}
+### ⚠️ Gotchas & Quick Fixes
+| Issue | Symptom | Quick Fix |
+|-------|---------|-----------|
+{% for gotcha in quick_reference.gotchas %}
+| {{ gotcha.issue }} | {{ gotcha.symptom }} | {{ gotcha.quick_fix }} |
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
 
 ## Executive Summary
 

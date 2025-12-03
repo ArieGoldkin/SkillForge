@@ -34,6 +34,7 @@ def mock_agent():
                     ),
                 },
                 recommendation="Use React for complex applications, Vue.js for simpler projects",
+                confidence_score=0.87,
             )
         }
     )

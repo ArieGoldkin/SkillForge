@@ -49,7 +49,7 @@ class AgentExecutionConfig:
     """
 
     session: AsyncSession
-    max_content_length: int = 1500
+    max_content_length: int = 12000
     timeout: float = AGENT_TIMEOUT
 
 
@@ -163,7 +163,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     analysis_id: AnalysisID,
     agent_type: str,
     session: AsyncSession,
-    max_content_length: int = 1500,
+    max_content_length: int = 12000,
 ) -> dict[str, object]:
     """Run an agent with progress tracking, error handling, and database persistence.
 

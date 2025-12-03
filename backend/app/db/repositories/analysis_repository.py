@@ -101,13 +101,19 @@ class AnalysisRepository:
 
         # Stage 1: Fast binary quantization search
         # Convert query embedding to binary quantized vector
-        # pgvector 0.4.1: Use func.cast with Vector type for Python list conversion
-        # Create a literal vector expression from Python list
-        from sqlalchemy import literal
+        # pgvector 0.4.1: Convert Python list to PostgreSQL array format for Vector type
+        from sqlalchemy import text
 
-        # Convert Python list to SQLAlchemy Vector expression
-        query_vector_literal = literal(query_embedding)
-        query_vector_expr = func.cast(query_vector_literal, Vector(EMBEDDING_DIMENSIONS))
+        # Convert Python list to PostgreSQL array format (pgvector-compatible)
+        # pgvector expects array format: '[0.1,0.2,0.3,...]' (square brackets, not curly)
+        # Safe: query_embedding is list[float] from embedding service, not user input
+        vector_array_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        # Cast array string directly to Vector type
+        # Using text() with literal array string is safe here (floats only, no SQL injection)
+        query_vector_expr = func.cast(
+            text(f"'{vector_array_str}'::vector"),
+            Vector(EMBEDDING_DIMENSIONS),
+        )
         binary_query = func.binary_quantize(query_vector_expr)
 
         # Fast search with binary quantization (hamming distance)

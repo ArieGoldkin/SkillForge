@@ -30,6 +30,7 @@ def mock_agent():
                 maintainability_score=0.75,
                 refactoring_suggestions=["Extract methods", "Reduce coupling"],
                 recommendation="Refactor long methods and improve test coverage",
+                confidence_score=0.85,
             )
         }
     )

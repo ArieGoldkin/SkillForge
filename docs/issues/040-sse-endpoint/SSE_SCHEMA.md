@@ -38,6 +38,8 @@ interface SSEProgressEvent {
 ```
 
 **Stage Names:**
+
+*Agent Stages:*
 - `extraction` - Content extraction from URL
 - `supervisor_routing` - Supervisor agent routing decision
 - `tech_comparison` - Technology comparison analysis
@@ -49,6 +51,11 @@ interface SSEProgressEvent {
 - `dependencies_analysis` - Dependencies analysis
 - `aggregation` - Aggregating findings
 - `artifact_generation` - Generating final artifact
+
+*Workflow-level Stages:*
+- `workflow` - Workflow-level events (errors, completion)
+- `pattern_comparison` - A/B testing pattern comparison results
+- `metrics` - Performance and quality metrics
 
 **Example:**
 ```json
@@ -177,6 +184,7 @@ data: {"type": "complete", "analysis_id": "...", ...}
 // frontend/src/types/sse.ts
 
 export type StageName =
+  // Agent stages
   | "extraction"
   | "supervisor_routing"
   | "tech_comparison"
@@ -188,6 +196,10 @@ export type StageName =
   | "dependencies_analysis"
   | "aggregation"
   | "artifact_generation"
+  // Workflow-level stages
+  | "workflow"
+  | "pattern_comparison"
+  | "metrics"
 
 export type StageStatus = "pending" | "running" | "complete" | "failed"
 

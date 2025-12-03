@@ -120,8 +120,3 @@ async def test_fixture_cleanup_on_exception(db_session: AsyncSession):
 
     # Even if exception is raised, cleanup happens automatically
     # Tested by fixture working correctly despite potential exceptions
-
-
-
-
-

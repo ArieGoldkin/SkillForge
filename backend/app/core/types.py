@@ -22,5 +22,5 @@ ChannelName = str
 # Event and message types
 EventData = dict[str, object]
 
-# Extraction result type
-ExtractionResult = dict[str, str | int | dict[str, str]]
+# Extraction result type - metadata can contain str or int values
+ExtractionResult = dict[str, str | int | dict[str, str | int]]

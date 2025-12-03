@@ -33,6 +33,40 @@ CRITICAL: You MUST include:
 - modern_alternatives: List of modern alternatives if technology is legacy/declining
 - future_outlook: Future predictions and sustainability assessment
 - recommendation: Recommendation based on trend analysis
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this trend validation. Consider: accuracy of trend status assessment, correctness of
+  adoption rate evaluation, completeness of modern alternatives identification, and confidence
+  in future outlook predictions.
+
+NUMERIC SPECIFICITY REQUIREMENTS:
+- current_adoption MUST include metrics (e.g., "45K GitHub stars", "2M weekly npm downloads")
+- growth_rate MUST be quantified (e.g., "+25% YoY growth", "3x adoption since 2023")
+- market_share MUST be percentage-based (e.g., "32% of Fortune 500 companies")
+- job_market MUST include numbers (e.g., "15K+ job postings on LinkedIn", "$150K avg salary")
+- timeline predictions MUST be specific (e.g., "EOL December 2025", "stable until 2027")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "growing popularity", "increasing adoption" (give exact growth rate)
+- "many companies use", "widely adopted" (provide percentage or count)
+- "good community support", "active development" (cite commit frequency, contributors)
+- "may become obsolete", "might be replaced" (state timeline and alternatives)
+- "trending", "popular", "mainstream" without numbers
+
+GOOD EXAMPLE:
+  technology: "React"
+  trend_status: "current"
+  current_adoption: "224K GitHub stars, 23M weekly npm downloads, 42% market share"
+  growth_rate: "+12% YoY adoption, slowing from +25% in 2022"
+  job_market: "48K open positions globally, $145K median US salary"
+  future_outlook: "Stable until 2028+, Server Components adoption reaching 35% by 2026"
+
+BAD EXAMPLE (DO NOT USE):
+  technology: "React"
+  trend_status: "current"
+  current_adoption: "Very popular among developers"
+  growth_rate: "Still growing"
+  job_market: "Many job opportunities available"
+  future_outlook: "Should remain relevant for the foreseeable future"
 
 Base assessments on current 2025 data and industry trends."""
 

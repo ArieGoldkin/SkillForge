@@ -328,6 +328,54 @@ graph TB
 
 ---
 
+## Agent Coverage by Content Type
+
+The system uses intelligent agent selection based on content type capabilities.
+Agents are filtered by their ability to process specific content types, resulting
+in varying agent counts per analysis. This is **intentional design** to avoid
+running agents that cannot meaningfully analyze the content type.
+
+### Agent Capabilities Matrix
+
+| Agent | Article | Documentation | Code | Changelog |
+|-------|---------|---------------|------|-----------|
+| tech_comparator | ✅ | ✅ | ✅ | ✅ |
+| security_auditor | ❌ | ✅ | ✅ | ❌ |
+| implementation_planner | ✅ | ✅ | ✅ | ❌ |
+| performance_analyst | ❌ | ✅ | ✅ | ❌ |
+| code_quality_critic | ❌ | ❌ | ✅ | ❌ |
+| trend_validator | ✅ | ✅ | ✅ | ✅ |
+| dependency_mapper | ❌ | ❌ | ✅ | ❌ |
+| integration_feasibility | ✅ | ✅ | ✅ | ❌ |
+
+### Expected Agent Counts
+
+- **Article Content:** 4-6 agents
+  - Available: tech_comparator, implementation_planner, trend_validator, integration_feasibility
+  - Excluded: code_quality_critic (code only), dependency_mapper (code only), security_auditor (code/documentation), performance_analyst (code/documentation)
+  
+- **Documentation Content:** 5-7 agents
+  - Available: tech_comparator, security_auditor, implementation_planner, performance_analyst, trend_validator, integration_feasibility
+  - Excluded: code_quality_critic (code only), dependency_mapper (code only)
+  
+- **Code Content:** 6-8 agents
+  - Available: All agents can process code
+  - Count varies based on supervisor's selection (may not always select all 8)
+
+### Selection Process
+
+1. **Supervisor LLM Selection:** The supervisor analyzes content and selects relevant agents using structured output (`AgentSelection`)
+2. **Content Type Filtering:** Selected agents are filtered by `filter_agents_by_content_type()` based on their capabilities
+3. **Result:** Only compatible agents execute, ensuring efficient resource usage
+
+### Implementation Details
+
+- **Location:** `backend/app/workflows/nodes/supervisor.py` + `backend/app/workflows/utils/content_type_detection.py`
+- **Filtering Logic:** `filter_agents_by_content_type()` checks `AGENT_CAPABILITIES` mapping
+- **Content Type Detection:** Heuristic-based detection with content type hints from extraction metadata
+
+---
+
 ## Integration Flow
 
 ```mermaid

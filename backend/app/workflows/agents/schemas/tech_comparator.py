@@ -69,3 +69,13 @@ class TechComparison(BaseModel):
             "Write as 2-3 cohesive sentences explaining which technology to choose and why."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this technology comparison. Consider: accuracy of technology identification, "
+            "completeness of pros/cons, relevance of alternatives, and confidence in "
+            "recommendation. Higher scores indicate more accurate and comprehensive comparisons."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

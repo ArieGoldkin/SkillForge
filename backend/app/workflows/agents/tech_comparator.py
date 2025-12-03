@@ -36,16 +36,45 @@ Required Output Structure:
 }
 
 Field Requirements:
-1. **primary_tech** (REQUIRED): String - primary technology name
-2. **alternatives** (REQUIRED): List of 2-3 alternative technology names
+1. **primary_tech** (REQUIRED): String - primary technology name with version (e.g., "LangGraph 0.6.7")
+2. **alternatives** (REQUIRED): List of 2-3 alternative technology names with versions
 3. **comparison** (REQUIRED): Dictionary mapping tech names to comparison entries
    - MUST include entry for primary_tech
    - MUST include entry for each alternative
    - Each entry: {"pros": [], "cons": [], "use_cases": []}
 4. **recommendation** (REQUIRED): String with clear recommendation
+5. **confidence_score** (REQUIRED): Float (0.0-1.0) - confidence in quality and certainty
+   of this comparison. Consider: accuracy of identification, completeness of analysis,
+   relevance of alternatives, and confidence in recommendation.
 
-IMPORTANT: The "comparison" field must include entries for primary_tech AND "
-    "all alternatives. Do not omit any required fields."""
+NUMERIC SPECIFICITY REQUIREMENTS:
+- primary_tech MUST include version (e.g., "LangGraph 0.6.7", "React 18.2.0")
+- alternatives MUST include versions (e.g., "LangChain Agents 0.1.0")
+- pros MUST include quantifiable benefits (e.g., "40% faster cold start", "3x better throughput")
+- cons MUST include specific limitations (e.g., "Max 100 concurrent executions", "No TypeScript support")
+- use_cases MUST include scale (e.g., "Best for 10K-100K daily users", "Handles 50K+ req/sec")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "better performance", "faster" (quantify: "2x faster", "150ms vs 450ms")
+- "more features", "richer ecosystem" (list specific features)
+- "good for most projects", "suitable for many use cases" (specify exact use cases)
+- "some limitations", "a few drawbacks" (enumerate each)
+- "popular choice", "widely used" (cite adoption metrics)
+
+GOOD EXAMPLE:
+  primary_tech: "LangGraph 0.6.7"
+  pros: ["Native state persistence with PostgreSQL checkpointing", "Built-in retry with 3x backoff", "50% less boilerplate than LangChain Agents"]
+  cons: ["Requires Python 3.9+", "Max 256MB state size", "No native JavaScript SDK"]
+  use_cases: ["Multi-step agentic workflows processing 1K-50K tasks/day", "RAG pipelines with <500ms latency requirements"]
+
+BAD EXAMPLE (DO NOT USE):
+  primary_tech: "LangGraph"
+  pros: ["Good performance", "Easy to use", "Popular framework"]
+  cons: ["Some learning curve", "Limited documentation"]
+  use_cases: ["Various AI applications", "Building agents"]
+
+IMPORTANT: The "comparison" field must include entries for primary_tech AND all alternatives.
+Do not omit any required fields."""
 
 
 async def run_tech_comparator(

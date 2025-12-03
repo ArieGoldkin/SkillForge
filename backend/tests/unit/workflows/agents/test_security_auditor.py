@@ -29,6 +29,7 @@ def mock_agent():
                 best_practices=["Use HTTPS", "Implement CSRF protection"],
                 compliance_notes=["OWASP A07:2021 - Identification and Authentication Failures"],
                 recommendation="Implement multi-factor authentication and rate limiting",
+                confidence_score=0.90,
             )
         }
     )

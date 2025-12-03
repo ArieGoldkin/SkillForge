@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EventData
 from app.services.event_broadcaster import broadcaster
+from app.services.progress_persistence import persist_progress_event_async
 
 logger = get_logger(__name__)
 
@@ -53,6 +54,10 @@ async def emit_streaming_event(
     }
 
     await broadcaster.publish(channel, event_data)
+
+    # Persist to database (non-blocking, fire-and-forget)
+    # This enables historical progress tracking and audit trails
+    persist_progress_event_async(event_data)
 
     logger.debug(
         "sse_event_emitted",

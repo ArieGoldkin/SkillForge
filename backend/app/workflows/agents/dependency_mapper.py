@@ -35,6 +35,40 @@ CRITICAL: You MUST include:
 - peer_dependencies: List of peer dependencies or system requirements
 - installation_notes: List of installation and setup notes
 - recommendation: Dependency management recommendation
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this dependency mapping. Consider: accuracy of dependency identification, correctness of
+  version compatibility assessment, completeness of conflict detection, and confidence in
+  installation notes.
+
+NUMERIC SPECIFICITY REQUIREMENTS:
+- version MUST be exact or ranged (e.g., "4.2.1", ">=3.0.0 <4.0.0", "^18.0.0")
+- compatibility MUST reference specific versions (e.g., "React 18.x", "Python 3.9+")
+- peer_dependencies MUST include version constraints (e.g., "Node.js >= 18.0.0")
+- installation_notes MUST include exact commands (e.g., "pip install langchain==0.1.0")
+- version_conflicts MUST identify specific conflicting versions (e.g., "react@17 conflicts with @mui/material@5.x which requires react@18")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "latest version", "recent version" (use exact version numbers)
+- "compatible with most", "works with many" (specify exact compatibility)
+- "may conflict", "might cause issues" (state definitively if it conflicts)
+- "appropriate version", "suitable package" (name exact versions)
+- "several dependencies", "various packages" (list each one specifically)
+
+GOOD EXAMPLE:
+  name: "langchain"
+  version: "0.1.0"
+  purpose: "LLM orchestration framework"
+  compatibility: "Python >= 3.9, OpenAI API >= 1.0.0"
+  installation_note: "pip install langchain==0.1.0 --upgrade"
+  conflict: "langchain@0.1.0 requires pydantic>=2.0 which conflicts with fastapi<0.100"
+
+BAD EXAMPLE (DO NOT USE):
+  name: "langchain"
+  version: "latest"
+  purpose: "AI library"
+  compatibility: "Most Python versions"
+  installation_note: "Install the package"
+  conflict: "May have some conflicts with other packages"
 
 Be specific about versions and compatibility."""
 

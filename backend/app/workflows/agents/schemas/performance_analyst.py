@@ -49,3 +49,14 @@ class PerformanceAnalysis(BaseModel):
             "Write as 2-3 cohesive sentences summarizing priority optimizations."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this performance analysis. Consider: accuracy of metric identification, "
+            "correctness of bottleneck analysis, completeness of optimization opportunities, "
+            "and confidence in scaling recommendations. Higher scores indicate more thorough "
+            "and accurate performance assessments."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

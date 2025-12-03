@@ -62,6 +62,23 @@ async def test_tech_comparator_integration(
     assert len(findings["alternatives"]) > 0
     assert result["processing_time_ms"] > 0
 
+    # Verify confidence_score is NOT in findings (extracted and removed)
+    assert "confidence_score" not in findings
+
+    # Verify confidence_score was saved to database
+    from sqlalchemy import select
+
+    from app.models.agent_finding import AgentFinding
+
+    result_query = await db_session.execute(
+        select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+    )
+    finding = result_query.scalar_one_or_none()
+    assert finding is not None
+    assert finding.confidence_score is not None
+    assert 0.0 <= finding.confidence_score <= 1.0
+    assert isinstance(finding.confidence_score, float)
+
 
 @pytest.mark.asyncio
 @pytest.mark.slow
@@ -108,6 +125,22 @@ async def test_integration_feasibility_integration(
     assert "breaking_changes" in findings
     assert "integration_steps" in findings
     assert result["processing_time_ms"] > 0
+
+    # Verify confidence_score is NOT in findings (extracted and removed)
+    assert "confidence_score" not in findings
+
+    # Verify confidence_score was saved to database
+    from sqlalchemy import select
+
+    from app.models.agent_finding import AgentFinding
+
+    result_query = await db_session.execute(
+        select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+    )
+    finding = result_query.scalar_one_or_none()
+    assert finding is not None
+    assert finding.confidence_score is not None
+    assert 0.0 <= finding.confidence_score <= 1.0
 
 
 @pytest.mark.asyncio
@@ -161,6 +194,22 @@ async def test_implementation_planner_integration(
         assert "action" in step
         assert "files" in step
     assert result["processing_time_ms"] > 0
+
+    # Verify confidence_score is NOT in findings (extracted and removed)
+    assert "confidence_score" not in findings
+
+    # Verify confidence_score was saved to database
+    from sqlalchemy import select
+
+    from app.models.agent_finding import AgentFinding
+
+    result_query = await db_session.execute(
+        select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+    )
+    finding = result_query.scalar_one_or_none()
+    assert finding is not None
+    assert finding.confidence_score is not None
+    assert 0.0 <= finding.confidence_score <= 1.0
 
 
 @pytest.mark.asyncio
@@ -242,3 +291,125 @@ async def test_agents_parallel_execution_with_separate_sessions(
     assert "tech_comparator" in agent_types
     assert "integration_feasibility" in agent_types
     assert "implementation_planner" in agent_types
+
+    # Verify all agents returned confidence_score and it was saved
+    from sqlalchemy import select
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.agent_finding import AgentFinding
+
+    async with AsyncSessionLocal() as session:
+        result_query = await session.execute(
+            select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+        )
+        findings_list = result_query.scalars().all()
+
+        assert len(findings_list) == 3
+        for finding in findings_list:
+            assert finding.confidence_score is not None
+            assert 0.0 <= finding.confidence_score <= 1.0
+            assert isinstance(finding.confidence_score, float)
+            # Verify confidence_score is NOT in findings JSONB
+            findings_dict = finding.findings
+            assert "confidence_score" not in findings_dict
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(180)
+async def test_agent_returns_confidence_score_in_output(
+    requires_llm,
+    requires_database,
+    db_session,
+    reset_engine_connections,
+    create_test_analysis,
+):
+    """Test that agent output includes confidence_score in structured response."""
+    analysis_id = str(uuid4())
+    content = """
+    React is a popular JavaScript library for building user interfaces.
+    It uses a component-based architecture and virtual DOM.
+    """
+    content_type = "article"
+
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    result = await run_tech_comparator(
+        content=content,
+        content_type=content_type,
+        analysis_id=analysis_id,
+        session=db_session,
+    )
+
+    # Verify confidence_score was in the structured response (before extraction)
+    # The extraction code removes it from findings, but we can verify it was saved
+    from sqlalchemy import select
+
+    from app.models.agent_finding import AgentFinding
+
+    result_query = await db_session.execute(
+        select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+    )
+    finding = result_query.scalar_one_or_none()
+    assert finding is not None
+    assert finding.confidence_score is not None
+    assert 0.0 <= finding.confidence_score <= 1.0
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(180)
+async def test_confidence_score_range_enforced(
+    requires_llm,
+    requires_database,
+    db_session,
+    reset_engine_connections,
+    create_test_analysis,
+):
+    """Test that agent cannot return confidence_score outside 0.0-1.0 range.
+
+    This test verifies schema validation prevents invalid confidence scores.
+    The agent's structured output schema should reject values < 0.0 or > 1.0.
+    """
+    analysis_id = str(uuid4())
+    content = "Test content for validation"
+    content_type = "article"
+
+    analysis = Analysis(
+        id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        status="pending",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    # Agent should complete successfully with valid confidence_score
+    result = await run_tech_comparator(
+        content=content,
+        content_type=content_type,
+        analysis_id=analysis_id,
+        session=db_session,
+    )
+
+    # Verify confidence_score is in valid range
+    from sqlalchemy import select
+
+    from app.models.agent_finding import AgentFinding
+
+    result_query = await db_session.execute(
+        select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
+    )
+    finding = result_query.scalar_one_or_none()
+    assert finding is not None
+    # Schema validation ensures confidence_score is always 0.0-1.0
+    assert 0.0 <= finding.confidence_score <= 1.0

@@ -62,3 +62,14 @@ class CodeQualityReview(BaseModel):
             "Write as 2-3 cohesive sentences summarizing the assessment and priority actions."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this code quality review. Consider: accuracy of issue identification, "
+            "correctness of maintainability score, completeness of refactoring suggestions, "
+            "and confidence in best practices recommendations. Higher scores indicate "
+            "more thorough and accurate code quality assessments."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

@@ -49,27 +49,10 @@ def mock_agent():
 
 @pytest.fixture
 def mock_streaming_agent():
-    """Mock agent with streaming support."""
-
-    async def create_stream(*args, **kwargs):
-        # Simulate streaming chunks - create new generator each time
-        chunks = [
-            {"messages": [AIMessage(content="Analyzing")]},
-            {"messages": [AIMessage(content="Analyzing integration")]},
-            {
-                "messages": [AIMessage(content="Analyzing integration feasibility")],
-                "structured_response": MockAgentSchema(field1="test", field2=42),
-            },
-        ]
-        for chunk in chunks:
-            yield chunk
-
-    agent = MagicMock()
-
-    # Create a callable that returns async generator (not awaitable itself)
-    def astream_wrapper(*args, **kwargs):
-        return create_stream(*args, **kwargs)
-
-    # Wrap in MagicMock to track calls
-    agent.astream = MagicMock(side_effect=astream_wrapper)
+    """Mock agent with ainvoke support (current implementation uses ainvoke, not astream)."""
+    agent = AsyncMock()
+    # Mock ainvoke to return structured response
+    agent.ainvoke = AsyncMock(
+        return_value={"structured_response": MockAgentSchema(field1="test", field2=42)}
+    )
     return agent

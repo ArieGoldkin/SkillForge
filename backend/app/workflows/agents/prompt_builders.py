@@ -7,7 +7,7 @@ All prompt builders are pure functions for easy testing.
 def build_agent_user_prompt(
     content: str,
     content_type: str,
-    max_length: int = 1500,
+    max_length: int = 12000,
 ) -> str:
     """Build user prompt for agent analysis.
 

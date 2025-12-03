@@ -16,6 +16,7 @@ from app.workflows.tasks.aggregation.metadata import (
     extract_metadata_for_logging,
     extract_sse_metadata,
 )
+from app.workflows.tasks.aggregation.quick_reference import extract_quick_reference
 from app.workflows.tasks.aggregation.synthesis import synthesize_with_llm
 from app.workflows.tasks.aggregation.validation import validate_and_parse_findings
 
@@ -27,6 +28,7 @@ __all__ = [
     "emit_aggregation_started",
     "emit_aggregation_synthesizing",
     "extract_metadata_for_logging",
+    "extract_quick_reference",
     "extract_sse_metadata",
     "synthesize_with_llm",
     "validate_and_parse_findings",

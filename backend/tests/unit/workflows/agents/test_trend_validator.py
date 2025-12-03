@@ -29,6 +29,7 @@ def mock_agent():
                 modern_alternatives=["Next.js", "Remix"],
                 future_outlook="Technology is well-maintained and has strong community support",
                 recommendation="Technology is current and recommended for new projects",
+                confidence_score=0.83,
             )
         }
     )

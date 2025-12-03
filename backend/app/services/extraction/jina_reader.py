@@ -23,6 +23,7 @@ from app.core.constants import (
 from app.core.exceptions import JinaReaderError
 from app.core.logging import get_logger
 from app.core.types import ExtractionResult
+from app.services.extraction.content_cleaner import clean_extracted_content
 
 logger = get_logger(__name__)
 
@@ -108,10 +109,10 @@ class JinaReader:
                 raise JinaReaderError(error_msg)
 
             # Jina returns markdown content
-            content = response.text
+            raw_content = response.text
 
             # Extract title from first line (remove markdown header)
-            lines = content.split("\n")
+            lines = raw_content.split("\n")
             title = DEFAULT_TITLE
             if lines:
                 first_line = lines[0].strip()
@@ -120,10 +121,14 @@ class JinaReader:
                 elif first_line:
                     title = first_line
 
+            # Clean content to remove boilerplate (cookies, nav, footer)
+            content = clean_extracted_content(raw_content)
+
             logger.info(
                 "jina_extraction_success",
                 url=url,
-                content_length=len(content),
+                raw_content_length=len(raw_content),
+                cleaned_content_length=len(content),
                 word_count=len(content.split()),
                 title=title[:MAX_TITLE_PREVIEW_LENGTH] if title else DEFAULT_TITLE,
             )
@@ -135,6 +140,8 @@ class JinaReader:
                 "metadata": {
                     "extractor": "jina_reader",
                     "source_url": url,
+                    "raw_content_length": len(raw_content),
+                    "cleaned_content_length": len(content),
                 },
             }
 

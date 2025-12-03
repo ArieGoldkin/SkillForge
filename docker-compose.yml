@@ -31,7 +31,7 @@ services:
       API_V1_PREFIX: /api/v1
       HOST: 0.0.0.0
       PORT: 8500
-      CORS_ORIGINS: '["http://localhost:5173"]'
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:5175"]'
       # Note: DATABASE_URL is overridden above for container-internal connection
       # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
     ports:

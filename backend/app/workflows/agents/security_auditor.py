@@ -34,6 +34,35 @@ CRITICAL: You MUST include:
 - best_practices: List of security best practices to follow
 - compliance_notes: List of relevant compliance frameworks and considerations
 - recommendation: Overall security recommendation with priority actions
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this security audit. Consider: accuracy of risk identification, severity assessment
+  correctness, completeness of mitigations, and confidence in compliance notes.
+
+NUMERIC SPECIFICITY REQUIREMENTS:
+- Include CVSS score where applicable (e.g., "CVSS 7.5 HIGH")
+- Include CVE references for known vulnerabilities (e.g., "CVE-2024-12345")
+- remediation_effort MUST be specific (e.g., "2-3 hours", "1 day refactoring")
+- affected_users/impact MUST be quantified where possible (e.g., "affects 50K+ users")
+- Include specific line numbers or code locations (e.g., "auth.py:47")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "security risk", "potential vulnerability" (name the exact risk type)
+- "could be exploited", "might allow" (state definitively what can happen)
+- "appropriate security", "suitable measures" (name exact measures)
+- "significant impact", "serious risk" (quantify the impact)
+- "should implement", "consider adding" (be definitive: "implement X")
+
+GOOD EXAMPLE:
+  risk_type: "sql_injection"
+  severity: "critical"
+  description: "Unsanitized user input in query at api/users.py:47 allows SQL injection, affecting 50K+ user records. CVSS 9.8."
+  mitigation: "Use parameterized queries with SQLAlchemy ORM. Estimated fix: 2 hours."
+
+BAD EXAMPLE (DO NOT USE):
+  risk_type: "database issue"
+  severity: "high"
+  description: "There may be some SQL injection vulnerabilities that could potentially be exploited."
+  mitigation: "Consider implementing appropriate security measures."
 
 Be thorough and prioritize critical vulnerabilities."""
 

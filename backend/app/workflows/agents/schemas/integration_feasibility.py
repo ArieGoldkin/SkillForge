@@ -53,3 +53,14 @@ class IntegrationFeasibility(BaseModel):
             "Each item should be a single actionable sentence starting with a verb."
         ),
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this integration feasibility analysis. Consider: accuracy of compatibility "
+            "scores, correctness of migration effort assessment, completeness of breaking "
+            "changes identification, and confidence in integration steps. Higher scores "
+            "indicate more accurate and comprehensive integration assessments."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

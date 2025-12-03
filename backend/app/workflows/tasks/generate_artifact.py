@@ -108,11 +108,17 @@ async def generate_artifact(
         claude_code_prompt = build_claude_code_prompt(aggregated_insights, analysis_metadata)
 
         # Render markdown template
+        # Extract quick_reference from aggregated_insights for template access
+        quick_reference = (
+            aggregated_insights.get("quick_reference") if aggregated_insights else None
+        )
+
         template_context = {
             "aggregated_insights": aggregated_insights,
             "agent_findings": agent_findings,
             "analysis_metadata": analysis_metadata,
             "claude_code_prompt": claude_code_prompt,
+            "quick_reference": quick_reference,  # Pass at top level for template
         }
 
         markdown_content = render_jinja_template("artifact.j2", template_context)
