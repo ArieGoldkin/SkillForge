@@ -5,6 +5,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.types import EventData
 from app.models.progress import AnalysisProgress
@@ -68,7 +69,7 @@ async def test_persist_progress_event_handles_errors(
     mock_session.__aexit__ = AsyncMock(return_value=False)
     mock_session.add = MagicMock(return_value=None)  # add() is synchronous
     mock_session.commit = AsyncMock(return_value=None)  # commit() is async
-    mock_session.commit.side_effect = Exception("Database connection failed")
+    mock_session.commit.side_effect = SQLAlchemyError("Database connection failed")
     mock_session_local.return_value = mock_session
 
     # Should not raise - errors are logged but don't break SSE stream
