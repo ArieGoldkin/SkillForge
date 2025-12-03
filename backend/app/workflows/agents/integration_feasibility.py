@@ -46,8 +46,34 @@ Field Requirements:
    of migration effort assessment, completeness of breaking changes, and confidence in
    integration steps.
 
-IMPORTANT: Include the "compatibility" field with at least 2 stack entries. "
-    "Do not omit any required fields."""
+NUMERIC SPECIFICITY REQUIREMENTS:
+- compatibility score MUST be a specific decimal (e.g., 0.85, not "good")
+- notes MUST include specific version requirements (e.g., "Requires React >= 18.0.0")
+- breaking_changes MUST include version numbers (e.g., "API v2 removes deprecated /users endpoint")
+- integration_steps MUST include time estimates (e.g., "Step 1 (15 min): Install SDK v2.0.0")
+- migration_effort justification MUST cite specific changes (e.g., "medium: 3 API changes, 2 schema migrations")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "generally compatible", "mostly works" (give exact score)
+- "some breaking changes", "a few issues" (list each one)
+- "appropriate configuration", "suitable setup" (specify exact config)
+- "should work", "might integrate" (be definitive)
+- "various steps", "several changes" (enumerate exactly)
+
+GOOD EXAMPLE:
+  compatibility: {"react": {"score": 0.92, "notes": "Full support with React 18.2.0+, uses Suspense"}}
+  migration_effort: "medium"
+  breaking_change: "v3.0 removes legacy REST API - migrate to GraphQL, affects /api/users, /api/posts"
+  integration_step: "Step 1 (30 min): Update package.json with @sdk/core@3.0.0, @sdk/react@3.0.0"
+
+BAD EXAMPLE (DO NOT USE):
+  compatibility: {"react": {"score": 0.9, "notes": "Compatible"}}
+  migration_effort: "medium"
+  breaking_change: "Some API changes"
+  integration_step: "Update dependencies"
+
+IMPORTANT: Include the "compatibility" field with at least 2 stack entries.
+Do not omit any required fields."""
 
 
 async def run_integration_feasibility(

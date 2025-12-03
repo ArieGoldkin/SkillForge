@@ -67,6 +67,8 @@ async def test_process_agent_result_with_confidence_score(
     assert result["agent_type"] == agent_type
     assert result["findings"] == findings  # Original findings preserved in return
     assert "processing_time_ms" in result
+    # Verify confidence_score is at top level for template/validation access
+    assert result["confidence_score"] == 0.85
 
 
 @pytest.mark.asyncio
@@ -347,3 +349,234 @@ async def test_process_agent_result_confidence_score_passed_to_save(
     assert call_kwargs.get("agent_type") == agent_type
     assert "findings" in call_kwargs
     assert "processing_time_ms" in call_kwargs
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+async def test_process_agent_result_confidence_score_at_top_level_for_template(
+    mock_emit, mock_save, mock_session, sample_analysis_id
+):
+    """Test that confidence_score is returned at top level for template/validation access.
+
+    This test verifies the fix for issue #160 where confidence scores showed as 0.00
+    in artifacts because the template expects finding.confidence_score at top level,
+    but it was only nested inside findings dict.
+
+    The result dict must have:
+    - agent_type: str
+    - findings: dict (with original content including confidence_score)
+    - confidence_score: float | None (AT TOP LEVEL for template access)
+    - processing_time_ms: int
+    """
+    findings = {
+        "primary_tech": "LangGraph",
+        "version": "0.6.7",
+        "confidence_score": 0.92,
+    }
+    agent_type = "tech_comparator"
+    start_time = time.time()
+
+    result = await process_agent_result(
+        findings=findings,
+        analysis_id=sample_analysis_id,
+        agent_type=agent_type,
+        session=mock_session,
+        start_time=start_time,
+    )
+
+    # KEY ASSERTION: confidence_score must be at top level of result dict
+    # This is what the template expects: finding.confidence_score
+    assert "confidence_score" in result, "confidence_score must be at top level"
+    assert result["confidence_score"] == 0.92
+
+    # Verify the structure matches what template/validation expects
+    # Template: {{ "%.2f" | format(finding.confidence_score | default(0.0)) }}
+    # Validation: finding.get("confidence_score", 0.0)
+    assert isinstance(result["confidence_score"], float)
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+async def test_process_agent_result_confidence_score_none_at_top_level(
+    mock_emit, mock_save, mock_session, sample_analysis_id
+):
+    """Test that None confidence_score is returned at top level when not present."""
+    findings = {
+        "primary_tech": "React",
+        # No confidence_score
+    }
+    agent_type = "tech_comparator"
+    start_time = time.time()
+
+    result = await process_agent_result(
+        findings=findings,
+        analysis_id=sample_analysis_id,
+        agent_type=agent_type,
+        session=mock_session,
+        start_time=start_time,
+    )
+
+    # confidence_score should be at top level even when None
+    assert "confidence_score" in result
+    assert result["confidence_score"] is None
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.result_processing.score_agent_output")
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+async def test_process_agent_result_specificity_scoring(
+    mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
+):
+    """Test that specificity scoring is performed on agent results."""
+    findings = {
+        "performance_metrics": [
+            {
+                "metric_name": "latency",
+                "current_value": "450ms",
+                "target_value": "<200ms",
+                "notes": "Reduce database query time.",
+            }
+        ],
+        "confidence_score": 0.85,
+    }
+    agent_type = "performance_analyst"
+    start_time = time.time()
+
+    # Mock specificity score result
+    from app.workflows.agents.validation import SpecificityScore
+
+    mock_specificity_score = SpecificityScore(
+        overall_score=0.82,
+        numeric_field_compliance=0.90,
+        numeric_density=0.75,
+        vague_penalty=0.80,
+        vague_phrase_count=2,
+        numeric_value_count=8,
+        expected_numeric_count=10,
+    )
+    mock_score_output.return_value = mock_specificity_score
+
+    result = await process_agent_result(
+        findings=findings,
+        analysis_id=sample_analysis_id,
+        agent_type=agent_type,
+        session=mock_session,
+        start_time=start_time,
+    )
+
+    # Verify specificity scoring was called
+    mock_score_output.assert_called_once_with(findings, agent_type=agent_type)
+
+    # Verify specificity score is included in result
+    assert "specificity_score" in result
+    assert result["specificity_score"] == 0.82
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.result_processing.score_agent_output")
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.logger")
+async def test_process_agent_result_logs_specificity_score(
+    mock_logger, mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
+):
+    """Test that specificity score metrics are logged."""
+    findings = {
+        "primary_tech": "React",
+        "confidence_score": 0.85,
+    }
+    agent_type = "tech_comparator"
+    start_time = time.time()
+
+    # Mock specificity score result
+    from app.workflows.agents.validation import SpecificityScore
+
+    mock_specificity_score = SpecificityScore(
+        overall_score=0.75,
+        numeric_field_compliance=0.80,
+        numeric_density=0.70,
+        vague_penalty=0.75,
+        vague_phrase_count=3,
+        numeric_value_count=7,
+        expected_numeric_count=10,
+    )
+    mock_score_output.return_value = mock_specificity_score
+
+    await process_agent_result(
+        findings=findings,
+        analysis_id=sample_analysis_id,
+        agent_type=agent_type,
+        session=mock_session,
+        start_time=start_time,
+    )
+
+    # Verify logging was called with specificity metrics
+    # Find the info call with agent_specificity_score
+    info_calls = [call for call in mock_logger.info.call_args_list if call[0][0] == "agent_specificity_score"]
+    assert len(info_calls) > 0, "Expected agent_specificity_score to be logged"
+
+    # Check that specificity metrics are in the log call
+    log_call = info_calls[0]
+    assert log_call.kwargs["specificity_score"] == 0.75
+    assert log_call.kwargs["quality_level"] == "good"
+    assert log_call.kwargs["numeric_count"] == 7
+    assert log_call.kwargs["vague_count"] == 3
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.result_processing.score_agent_output")
+@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.workflows.agents.result_processing.logger")
+async def test_process_agent_result_warns_on_low_specificity(
+    mock_logger, mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
+):
+    """Test that low specificity outputs trigger warning logs."""
+    findings = {
+        "description": "Use appropriate caching for better performance.",
+        "confidence_score": 0.70,
+    }
+    agent_type = "performance_analyst"
+    start_time = time.time()
+
+    # Mock low specificity score
+    from app.workflows.agents.validation import SpecificityScore, VaguePhrase
+
+    mock_specificity_score = SpecificityScore(
+        overall_score=0.45,  # Below 0.60 threshold
+        numeric_field_compliance=0.30,
+        numeric_density=0.40,
+        vague_penalty=0.50,
+        vague_phrase_count=8,
+        numeric_value_count=2,
+        expected_numeric_count=10,
+        vague_phrases=[
+            VaguePhrase("appropriate", "qualitative_adjectives", "use appropriate caching"),
+            VaguePhrase("better", "improvement_verbs", "for better performance"),
+            VaguePhrase("suitable", "qualitative_adjectives", "suitable approach"),
+        ],
+    )
+    mock_score_output.return_value = mock_specificity_score
+
+    await process_agent_result(
+        findings=findings,
+        analysis_id=sample_analysis_id,
+        agent_type=agent_type,
+        session=mock_session,
+        start_time=start_time,
+    )
+
+    # Verify warning was logged for low specificity
+    warning_calls = [call for call in mock_logger.warning.call_args_list if call[0][0] == "low_specificity_output"]
+    assert len(warning_calls) > 0, "Expected low_specificity_output warning to be logged"
+
+    # Check warning details
+    warning_call = warning_calls[0]
+    assert warning_call.kwargs["specificity_score"] == 0.45
+    assert warning_call.kwargs["quality_level"] == "poor"
+    assert warning_call.kwargs["vague_phrases"] == 8
+    assert "sample_vague_phrases" in warning_call.kwargs
+    assert len(warning_call.kwargs["sample_vague_phrases"]) <= 3  # Max 3 samples

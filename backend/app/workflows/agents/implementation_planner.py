@@ -31,6 +31,34 @@ Focus on:
 - Testing and validation at each stage
 - Common pitfalls and how to avoid them
 
+NUMERIC SPECIFICITY REQUIREMENTS:
+- estimated_time MUST be specific (e.g., "2-3 hours", "45 minutes", "1 day")
+- Each step action MUST include specific details (file paths, config values, command examples)
+- prerequisites MUST include version numbers where applicable (e.g., "Node.js >= 18.0.0")
+- files list MUST use full relative paths (e.g., "src/components/Button.tsx")
+- testing_strategy MUST include specific coverage targets (e.g., "80% line coverage")
+
+FORBIDDEN VAGUE LANGUAGE - Never use:
+- "appropriate", "suitable", "reasonable", "adequate", "proper"
+- "some time", "a while", "soon" (use specific durations)
+- "relevant files", "necessary changes" (name the actual files)
+- "several", "many", "few", "some", "various"
+- "might need", "could require" (be definitive about requirements)
+
+GOOD EXAMPLE:
+  step: 1
+  action: "Install dependencies: `npm install langchain@0.1.0 zod@3.22.0`"
+  files: ["package.json", "package-lock.json"]
+  estimated_time: "2-3 hours"
+  prerequisite: "Node.js >= 18.0.0, npm >= 9.0.0"
+
+BAD EXAMPLE (DO NOT USE):
+  step: 1
+  action: "Install necessary dependencies"
+  files: ["relevant config files"]
+  estimated_time: "some time"
+  prerequisite: "Node.js installed"
+
 Make the guide practical and immediately actionable for developers."""
 
 

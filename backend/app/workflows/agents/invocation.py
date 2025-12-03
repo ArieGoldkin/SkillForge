@@ -1,9 +1,15 @@
 """Agent invocation logic with fallback strategies.
 
 This module handles different agent invocation methods:
-- Streaming (preferred)
-- Async invoke (fallback)
+- Async invoke (preferred - avoids GeneratorExit issues in LangSmith)
 - Sync invoke in thread pool (last resort)
+
+Note: We intentionally use ainvoke instead of astream to avoid GeneratorExit
+false positives in LangSmith tracing. The astream method creates async generators
+that, when closed during cleanup, trigger GeneratorExit which LangSmith logs as
+errors even though the workflow completed successfully.
+
+See: https://github.com/langchain-ai/langchain/issues/24914
 
 Timeout handling is managed by LangGraph's step_timeout on the compiled graph.
 This is the recommended approach per LangGraph best practices, avoiding
@@ -19,7 +25,6 @@ from langsmith import get_current_run_tree
 from app.core.logging import get_logger
 from app.core.timeout_config import AGENT_TIMEOUT, STEP_TIMEOUT, create_runnable_config
 from app.core.types import AnalysisID
-from app.workflows.agents.streaming import stream_agent_response
 
 logger = get_logger(__name__)
 
@@ -31,14 +36,14 @@ async def invoke_agent(
     agent_type: str,
     timeout: float = AGENT_TIMEOUT,  # For logging/reference; step_timeout handles actual timeout
 ) -> dict[str, object]:
-    """Invoke agent - timeout handled by LangGraph's step_timeout.
+    """Invoke agent using ainvoke - timeout handled by LangGraph's step_timeout.
+
+    Uses ainvoke instead of astream to avoid GeneratorExit false positives in
+    LangSmith tracing. The astream method creates async generators that trigger
+    GeneratorExit during cleanup, which LangSmith incorrectly logs as errors.
 
     Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
     This avoids nested timeout conflicts and PEP 789 violations.
-
-    When streaming returns an empty dict, this means the agent cannot process the content
-    (e.g., wrong content type), not a timeout. Returns empty dict gracefully to allow
-    workflow to continue with other agents.
 
     Args:
         agent: Agent instance to invoke
@@ -70,58 +75,28 @@ async def invoke_agent(
     # Create RunnableConfig (timeout handled by step_timeout on graph)
     config = create_runnable_config()
 
-    # Check if agent supports streaming (must be callable)
-    agent_has_streaming = callable(getattr(agent, "astream", None))
-    if agent_has_streaming:
-        # Stream agent execution (preferred - shows progress)
-        try:
-            result = await stream_agent_response(
-                agent=agent,
-                input_messages=input_messages,
-                analysis_id=analysis_id,
-                agent_type=agent_type,
-                timeout=timeout,
-            )
-            # Empty dict means agent can't process content, not a timeout
-            # Return gracefully to allow workflow to continue with other agents
-            if not result:
-                duration = time.time() - start_time
-                logger.info(
-                    "agent_empty_result",
-                    agent_type=agent_type,
-                    analysis_id=analysis_id,
-                    duration_seconds=duration,
-                    timeout_reference=timeout,
-                    step_timeout=STEP_TIMEOUT,
-                    trace_id=trace_id,
-                    reason="agent_cannot_process_content_type",
-                    handled_gracefully=True,  # Returns empty dict, doesn't break workflow
-                )
-                return {}  # Return empty dict gracefully, not raise TimeoutError
-            return result
-        except TimeoutError:
-            # Re-raise TimeoutError as-is (already logged in stream_agent_response)
-            raise
-        except Exception as e:
-            duration = time.time() - start_time
-            logger.error(
-                "agent_invocation_error",
-                agent_type=agent_type,
-                analysis_id=analysis_id,
-                invocation_method="streaming",
-                error_type=type(e).__name__,
-                error=str(e),
-                duration_seconds=duration,
-                timeout_reference=timeout,
-                step_timeout=STEP_TIMEOUT,
-                trace_id=trace_id,
-                exc_info=True,
-            )
-            raise
-    elif hasattr(agent, "ainvoke"):
+    # Use ainvoke (preferred) - avoids GeneratorExit issues with astream
+    # astream creates async generators that trigger false error logs in LangSmith
+    if hasattr(agent, "ainvoke"):
         # Async invoke - no timeout wrapper (step_timeout handles it)
         try:
+            logger.debug(
+                "agent_invocation_started",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="ainvoke",
+                trace_id=trace_id,
+            )
             result = await agent.ainvoke(input_messages, config=config)
+            duration = time.time() - start_time
+            logger.info(
+                "agent_invocation_success",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="ainvoke",
+                duration_seconds=duration,
+                trace_id=trace_id,
+            )
             return cast(dict[str, object], result)
         except Exception as e:
             duration = time.time() - start_time

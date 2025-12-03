@@ -18,6 +18,7 @@ from app.workflows.tasks.aggregation import (
     emit_aggregation_started,
     emit_aggregation_synthesizing,
     extract_metadata_for_logging,
+    extract_quick_reference,
     extract_sse_metadata,
     synthesize_with_llm,
     validate_and_parse_findings,
@@ -75,12 +76,21 @@ async def _aggregate_findings_impl(
             # Return basic structure with no findings
             return {"aggregated_insights": create_empty_aggregated_insights(start_time)}
 
-        # Step 2: Detect conflicts
+        # Step 2: Extract Quick Reference (before LLM synthesis for efficiency)
+        quick_reference = extract_quick_reference(agent_findings)
+        if quick_reference:
+            logger.info(
+                "workflow_quick_reference_extracted",
+                analysis_id=analysis_id,
+                primary_technology=quick_reference.primary_technology,
+            )
+
+        # Step 3: Detect conflicts
         await emit_aggregation_detecting_conflicts(analysis_id, len(validated_findings))
 
         conflicts = detect_conflicts(validated_findings)
 
-        # Step 3: LLM Synthesis
+        # Step 4: LLM Synthesis
         await emit_aggregation_synthesizing(analysis_id, len(validated_findings), len(conflicts))
 
         logger.info(
@@ -91,7 +101,7 @@ async def _aggregate_findings_impl(
         )
 
         try:
-            # Step 3: LLM Synthesis using extracted function
+            # Step 5: LLM Synthesis using extracted function
             aggregated_insights_dict = await synthesize_with_llm(
                 validated_findings=validated_findings,
                 conflicts=conflicts,
@@ -99,12 +109,16 @@ async def _aggregate_findings_impl(
                 analysis_id=analysis_id,
             )
 
-            # Step 4: Post-processing and validation
+            # Step 6: Post-processing and validation
             aggregated_insights_dict = validate_and_format_aggregated_insights(
                 aggregated_insights_dict
             )
 
-            # Step 5: Calculate metadata using extracted function
+            # Step 7: Add quick_reference to aggregated insights
+            if quick_reference:
+                aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
+
+            # Step 8: Calculate metadata using extracted function
             aggregated_insights_dict = calculate_aggregation_metadata(
                 validated_findings=validated_findings,
                 agent_types=agent_types,
@@ -134,6 +148,9 @@ async def _aggregate_findings_impl(
                     conflicts=conflicts,
                     start_time=start_time,
                 )
+                # Add quick_reference to fallback as well
+                if quick_reference:
+                    aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
         except Exception as llm_error:
             logger.error(
                 "workflow_aggregation_llm_failed",
@@ -149,6 +166,9 @@ async def _aggregate_findings_impl(
                 conflicts=conflicts,
                 start_time=start_time,
             )
+            # Add quick_reference to fallback as well
+            if quick_reference:
+                aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
 
         # Emit SSE event: aggregation complete
         conflicts_resolved_count, key_findings_count = extract_sse_metadata(
