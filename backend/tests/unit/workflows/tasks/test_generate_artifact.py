@@ -353,8 +353,16 @@ class TestGFMTemplateRendering:
                 "findings": {
                     "prerequisites": ["Python 3.11+", "PostgreSQL 15+", "Redis"],
                     "steps": [
-                        {"step": 1, "action": "Install dependencies", "files": ["requirements.txt"]},
-                        {"step": 2, "action": "Configure environment", "files": [".env", "config.py"]},
+                        {
+                            "step": 1,
+                            "action": "Install dependencies",
+                            "files": ["requirements.txt"],
+                        },
+                        {
+                            "step": 2,
+                            "action": "Configure environment",
+                            "files": [".env", "config.py"],
+                        },
                         {"step": 3, "action": "Initialize database"},
                     ],
                     "recommendation": "Follow steps in order",

@@ -109,7 +109,9 @@ async def generate_artifact(
 
         # Render markdown template
         # Extract quick_reference from aggregated_insights for template access
-        quick_reference = aggregated_insights.get("quick_reference") if aggregated_insights else None
+        quick_reference = (
+            aggregated_insights.get("quick_reference") if aggregated_insights else None
+        )
 
         template_context = {
             "aggregated_insights": aggregated_insights,

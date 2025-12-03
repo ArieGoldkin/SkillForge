@@ -193,11 +193,10 @@ def _extract_primary_technology(findings_by_type: dict[str, dict[str, Any]]) -> 
                 name = dep.get("name", "")
                 version = dep.get("version", "")
                 if (
-                    name.lower() in primary_tech.lower()
-                    or primary_tech.lower() in name.lower()
+                    name.lower() in primary_tech.lower() or primary_tech.lower() in name.lower()
                 ) and version:
-                        primary_tech = f"{primary_tech} {version}".strip()
-                        break
+                    primary_tech = f"{primary_tech} {version}".strip()
+                    break
 
     return primary_tech
 

@@ -515,7 +515,9 @@ async def test_process_agent_result_logs_specificity_score(
 
     # Verify logging was called with specificity metrics
     # Find the info call with agent_specificity_score
-    info_calls = [call for call in mock_logger.info.call_args_list if call[0][0] == "agent_specificity_score"]
+    info_calls = [
+        call for call in mock_logger.info.call_args_list if call[0][0] == "agent_specificity_score"
+    ]
     assert len(info_calls) > 0, "Expected agent_specificity_score to be logged"
 
     # Check that specificity metrics are in the log call
@@ -570,7 +572,11 @@ async def test_process_agent_result_warns_on_low_specificity(
     )
 
     # Verify warning was logged for low specificity
-    warning_calls = [call for call in mock_logger.warning.call_args_list if call[0][0] == "low_specificity_output"]
+    warning_calls = [
+        call
+        for call in mock_logger.warning.call_args_list
+        if call[0][0] == "low_specificity_output"
+    ]
     assert len(warning_calls) > 0, "Expected low_specificity_output warning to be logged"
 
     # Check warning details

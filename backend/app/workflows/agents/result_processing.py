@@ -80,9 +80,7 @@ async def process_agent_result(
             numeric_values=specificity_score.numeric_value_count,
             expected_numeric_count=specificity_score.expected_numeric_count,
             # Include sample vague phrases for debugging
-            sample_vague_phrases=[
-                vp.phrase for vp in specificity_score.vague_phrases[:3]
-            ],
+            sample_vague_phrases=[vp.phrase for vp in specificity_score.vague_phrases[:3]],
         )
 
     # Save to database

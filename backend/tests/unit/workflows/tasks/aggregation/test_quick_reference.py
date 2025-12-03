@@ -148,9 +148,7 @@ class TestExtractPrimaryTechnology:
         findings_by_type = {
             "tech_comparator": {"primary_tech": "LangGraph"},
             "dependency_mapper": {
-                "required_dependencies": [
-                    {"name": "langgraph", "version": "0.6.7"}
-                ]
+                "required_dependencies": [{"name": "langgraph", "version": "0.6.7"}]
             },
         }
         result = _extract_primary_technology(findings_by_type)
@@ -162,9 +160,7 @@ class TestExtractPrimaryTechnology:
         findings_by_type = {
             "tech_comparator": {"primary_tech": "React"},
             "dependency_mapper": {
-                "required_dependencies": [
-                    {"name": "react", "version": "19.0.0"}
-                ]
+                "required_dependencies": [{"name": "react", "version": "19.0.0"}]
             },
         }
         result = _extract_primary_technology(findings_by_type)
@@ -175,9 +171,7 @@ class TestExtractPrimaryTechnology:
         """Test fallback when tech_comparator missing."""
         findings_by_type = {
             "dependency_mapper": {
-                "required_dependencies": [
-                    {"name": "fastapi", "version": "0.115.0"}
-                ]
+                "required_dependencies": [{"name": "fastapi", "version": "0.115.0"}]
             },
         }
         result = _extract_primary_technology(findings_by_type)
@@ -196,34 +190,26 @@ class TestExtractComplexity:
 
     def test_extract_from_implementation_planner(self):
         """Test extraction from implementation planner."""
-        findings_by_type = {
-            "implementation_planner": {"estimated_time": "3-4 hours"}
-        }
+        findings_by_type = {"implementation_planner": {"estimated_time": "3-4 hours"}}
         result = _extract_complexity(findings_by_type)
         assert "Intermediate" in result
         assert "3-4 hours" in result
 
     def test_beginner_complexity(self):
         """Test beginner complexity detection."""
-        findings_by_type = {
-            "implementation_planner": {"estimated_time": "1-2 hours"}
-        }
+        findings_by_type = {"implementation_planner": {"estimated_time": "1-2 hours"}}
         result = _extract_complexity(findings_by_type)
         assert "Beginner" in result
 
     def test_advanced_complexity(self):
         """Test advanced complexity detection."""
-        findings_by_type = {
-            "implementation_planner": {"estimated_time": "6-8 hours"}
-        }
+        findings_by_type = {"implementation_planner": {"estimated_time": "6-8 hours"}}
         result = _extract_complexity(findings_by_type)
         assert "Advanced" in result
 
     def test_expert_complexity_days(self):
         """Test expert complexity with days."""
-        findings_by_type = {
-            "implementation_planner": {"estimated_time": "2-3 days"}
-        }
+        findings_by_type = {"implementation_planner": {"estimated_time": "2-3 days"}}
         result = _extract_complexity(findings_by_type)
         assert "Expert" in result
 
@@ -240,9 +226,7 @@ class TestExtractPrerequisites:
     def test_extract_from_dependency_mapper(self):
         """Test extraction from dependency mapper."""
         findings_by_type = {
-            "dependency_mapper": {
-                "peer_dependencies": ["Python 3.11+", "PostgreSQL 14+"]
-            }
+            "dependency_mapper": {"peer_dependencies": ["Python 3.11+", "PostgreSQL 14+"]}
         }
         result = _extract_prerequisites(findings_by_type)
         assert len(result) == 2
@@ -252,9 +236,7 @@ class TestExtractPrerequisites:
     def test_extract_from_implementation_planner(self):
         """Test extraction from implementation planner."""
         findings_by_type = {
-            "implementation_planner": {
-                "prerequisites": ["Node.js 18+", "Docker installed"]
-            }
+            "implementation_planner": {"prerequisites": ["Node.js 18+", "Docker installed"]}
         }
         result = _extract_prerequisites(findings_by_type)
         assert len(result) == 2
@@ -263,12 +245,8 @@ class TestExtractPrerequisites:
     def test_combine_sources(self):
         """Test combining prerequisites from multiple sources."""
         findings_by_type = {
-            "dependency_mapper": {
-                "peer_dependencies": ["Python 3.11+"]
-            },
-            "implementation_planner": {
-                "prerequisites": ["PostgreSQL 14+", "Docker installed"]
-            }
+            "dependency_mapper": {"peer_dependencies": ["Python 3.11+"]},
+            "implementation_planner": {"prerequisites": ["PostgreSQL 14+", "Docker installed"]},
         }
         result = _extract_prerequisites(findings_by_type)
         assert len(result) <= 4
@@ -336,9 +314,7 @@ class TestExtractCriticalCommands:
         """Test max 6 commands enforced."""
         findings_by_type = {
             "dependency_mapper": {
-                "installation_notes": [
-                    f"pip install package{i}" for i in range(10)
-                ]
+                "installation_notes": [f"pip install package{i}" for i in range(10)]
             }
         }
         result = _extract_critical_commands(findings_by_type)
@@ -380,9 +356,7 @@ class TestExtractFilesToModify:
         """Test max 10 files enforced."""
         findings_by_type = {
             "implementation_planner": {
-                "steps": [
-                    {"step": 1, "files": [f"file_{i}.py" for i in range(15)]}
-                ]
+                "steps": [{"step": 1, "files": [f"file_{i}.py" for i in range(15)]}]
             }
         }
         result = _extract_files_to_modify(findings_by_type)
@@ -519,9 +493,7 @@ class TestExtractQuickReference:
 
     def test_extract_invalid_findings(self):
         """Test extraction with invalid findings structure."""
-        findings = [
-            {"invalid": "structure"}
-        ]
+        findings = [{"invalid": "structure"}]
         result = extract_quick_reference(findings)
         assert result is None
 

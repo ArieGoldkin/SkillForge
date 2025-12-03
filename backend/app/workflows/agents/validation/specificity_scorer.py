@@ -216,12 +216,12 @@ class SpecificityScorer:
         expected_numeric_count = self._get_expected_numeric_count(agent_type, agent_output)
 
         # Calculate component scores
-        numeric_field_compliance = self._check_numeric_field_compliance(
-            agent_output, agent_type
-        )
+        numeric_field_compliance = self._check_numeric_field_compliance(agent_output, agent_type)
 
         # Numeric density: ratio of actual to expected
-        numeric_density = min(1.0, numeric_count / expected_numeric_count) if expected_numeric_count > 0 else 0.0
+        numeric_density = (
+            min(1.0, numeric_count / expected_numeric_count) if expected_numeric_count > 0 else 0.0
+        )
 
         # Vague phrase penalty: more vague phrases = lower score
         vague_penalty = max(0.0, 1.0 - (vague_count / VAGUE_PENALTY_THRESHOLD))
@@ -507,6 +507,7 @@ class SpecificityScorer:
 
 
 # Convenience functions for common use cases
+
 
 def score_agent_output(
     agent_output: dict[str, Any],

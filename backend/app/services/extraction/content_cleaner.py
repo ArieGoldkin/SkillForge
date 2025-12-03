@@ -123,7 +123,9 @@ def clean_extracted_content(content: str) -> str:
 
     # Log cleaning metrics
     cleaned_length = len(cleaned)
-    reduction_pct = ((original_length - cleaned_length) / original_length * 100) if original_length > 0 else 0
+    reduction_pct = (
+        ((original_length - cleaned_length) / original_length * 100) if original_length > 0 else 0
+    )
 
     if reduction_pct > SIGNIFICANT_REDUCTION_THRESHOLD:  # Only log if significant cleaning occurred
         logger.info(
