@@ -22,7 +22,9 @@ from dataclasses import dataclass
 from typing import Literal
 
 # Frontend stage names as defined in SSE_SCHEMA.md
+# Includes both agent-specific stages and workflow-level stages
 StageName = Literal[
+    # Agent stages
     "extraction",
     "supervisor_routing",
     "tech_comparison",
@@ -34,6 +36,10 @@ StageName = Literal[
     "dependencies_analysis",
     "aggregation",
     "artifact_generation",
+    # Workflow-level stages (for error handling and metrics)
+    "workflow",
+    "pattern_comparison",
+    "metrics",
 ]
 
 
