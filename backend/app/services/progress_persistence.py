@@ -8,6 +8,8 @@ import asyncio
 import uuid
 from typing import TYPE_CHECKING
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.core.logging import get_logger
 from app.core.types import EventData
 from app.db.session import AsyncSessionLocal
@@ -74,8 +76,11 @@ async def persist_progress_event(event_data: EventData) -> None:
                 stage=event_data["stage"],
                 status=event_data["status"],
             )
-    except Exception as e:
+    except (SQLAlchemyError, ValueError, KeyError) as e:
         # Log but don't raise - persistence failure shouldn't break SSE
+        # SQLAlchemyError: Database errors (connection, constraint violations)
+        # ValueError: UUID conversion errors
+        # KeyError: Missing required event_data fields
         logger.warning(
             "progress_persistence_failed",
             analysis_id=event_data.get("analysis_id"),

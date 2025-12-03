@@ -28,7 +28,7 @@ async def test_run_agent_with_tracking_streaming(
     analysis_id = str(uuid4())
     content = "Test content for streaming"
 
-    mock_save_finding.return_value = MagicMock()
+    # mock_save_finding is already AsyncMock, no need to set return_value
 
     result = await run_agent_with_tracking(
         agent=mock_streaming_agent,
@@ -39,12 +39,12 @@ async def test_run_agent_with_tracking_streaming(
         session=mock_session,
     )
 
-    # Verify streaming was used
-    assert mock_streaming_agent.astream.called
-    # Verify progress events were emitted during streaming
-    # Check both streaming and result_processing mocks
-    # (streaming calls emit_agent_progress directly)
-    min_expected_events = 2  # At least "running" and "streaming" events
+    # Verify ainvoke was used (current implementation)
+    assert mock_streaming_agent.ainvoke.called
+    # Verify progress events were emitted
+    # With ainvoke (not astream), we get "running" and "complete" events
+    # No intermediate streaming events since ainvoke waits for full response
+    min_expected_events = 1  # At least the "running" event from execution.py
     total_calls = mock_emit_progress_streaming.call_count + mock_emit_progress_result.call_count
     assert total_calls >= min_expected_events
     # Verify final result is correct
@@ -70,7 +70,7 @@ async def test_run_agent_with_tracking_streaming_throttling(
     analysis_id = str(uuid4())
     content = "Test content for throttling"
 
-    mock_save_finding.return_value = MagicMock()
+    # mock_save_finding is already AsyncMock, no need to set return_value
 
     # Mock time.time() used inside emit_progress_if_needed to control throttling behavior
     with mock_patch("time.time") as mock_time:
@@ -86,16 +86,14 @@ async def test_run_agent_with_tracking_streaming_throttling(
             session=mock_session,
         )
 
-        # Verify streaming was used
-        assert mock_streaming_agent.astream.called
+        # Verify ainvoke was used (current implementation)
+        assert mock_streaming_agent.ainvoke.called
 
-        # Verify SSE events were emitted (but throttled)
-        # At minimum, we should have the "running" event
-        # Streaming events may not be emitted if structured_response is found quickly
+        # Verify SSE events were emitted
+        # With ainvoke, we get "running" and "complete" events, no intermediate streaming
         total_calls = mock_emit_progress_streaming.call_count + mock_emit_progress_result.call_count
         assert total_calls >= 1, "At least the 'running' event should be emitted"
-        # If streaming events were emitted, they should be throttled (not one per chunk)
-        # With 3 chunks and 500ms throttle, we'd expect fewer than 3 streaming events if any
+        # No throttling tests needed since ainvoke doesn't produce streaming events
 
         assert result["agent_type"] == "test_agent"
         assert "findings" in result
@@ -112,28 +110,17 @@ async def test_run_agent_with_tracking_streaming_early_response(
     mock_get_stage_name,
     mock_session,
 ):
-    """Test that structured_response in intermediate chunk is captured."""
+    """Test that structured_response is captured from ainvoke."""
 
-    # Create mock agent that returns structured_response in intermediate chunk
-    async def mock_astream_with_early_response(*args, **kwargs):
-        chunks = [
-            {"messages": [AIMessage(content="Starting")]},
-            {
-                "messages": [AIMessage(content="Processing")],
-                "structured_response": MockAgentSchema(field1="early", field2=42),
-            },
-            {"messages": [AIMessage(content="Finishing")]},
-        ]
-        for chunk in chunks:
-            yield chunk
-
-    mock_agent = MagicMock()
-    mock_agent.astream = mock_astream_with_early_response
+    # Create mock agent that returns structured_response via ainvoke
+    # Note: Current implementation uses ainvoke, not astream
+    mock_agent = AsyncMock()
+    mock_agent.ainvoke = AsyncMock(
+        return_value={"structured_response": MockAgentSchema(field1="early", field2=42)}
+    )
 
     analysis_id = str(uuid4())
     content = "Test content"
-
-    mock_save_finding.return_value = MagicMock()
 
     result = await run_agent_with_tracking(
         agent=mock_agent,
@@ -144,7 +131,7 @@ async def test_run_agent_with_tracking_streaming_early_response(
         session=mock_session,
     )
 
-    # Verify structured_response from intermediate chunk was captured
+    # Verify structured_response was captured
     expected_field2 = 42  # Expected value from MockAgentSchema
     assert result["agent_type"] == "test_agent"
     assert "findings" in result

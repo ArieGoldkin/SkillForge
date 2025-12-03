@@ -11,6 +11,9 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Minimum reduction percentage to log cleaning metrics
+SIGNIFICANT_REDUCTION_THRESHOLD = 5
+
 # Patterns for content that should be removed (case-insensitive)
 BOILERPLATE_PATTERNS = [
     # Cookie consent / GDPR
@@ -92,7 +95,7 @@ def clean_extracted_content(content: str) -> str:
     trimmed_lines = []
     found_main_content = False
 
-    for i, line in enumerate(lines):
+    for _i, line in enumerate(lines):
         line_lower = line.lower().strip()
 
         # Check if this line indicates end of main content
@@ -122,7 +125,7 @@ def clean_extracted_content(content: str) -> str:
     cleaned_length = len(cleaned)
     reduction_pct = ((original_length - cleaned_length) / original_length * 100) if original_length > 0 else 0
 
-    if reduction_pct > 5:  # Only log if significant cleaning occurred
+    if reduction_pct > SIGNIFICANT_REDUCTION_THRESHOLD:  # Only log if significant cleaning occurred
         logger.info(
             "content_cleaned",
             original_length=original_length,
@@ -160,9 +163,9 @@ def extract_main_content(content: str, min_paragraph_length: int = 100) -> str:
     # Filter to substantial paragraphs
     main_paragraphs = []
     for para in paragraphs:
-        para = para.strip()
+        stripped_para = para.strip()
         # Include headers and substantial paragraphs
-        if para.startswith("#") or len(para) >= min_paragraph_length:
-            main_paragraphs.append(para)
+        if stripped_para.startswith("#") or len(stripped_para) >= min_paragraph_length:
+            main_paragraphs.append(stripped_para)
 
     return "\n\n".join(main_paragraphs)
