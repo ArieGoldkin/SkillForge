@@ -23,4 +23,15 @@ export default defineConfig({
       '@router': path.resolve(__dirname, './src/router'),
     },
   },
+  server: {
+    port: 5175, // SkillForge dev port (avoiding 5173/5174 used by reporter-accuracy)
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8500',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

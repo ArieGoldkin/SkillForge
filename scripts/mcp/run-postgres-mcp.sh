@@ -61,7 +61,17 @@ esac
 
 # Validate that we have a database URL
 if [ -z "$POSTGRES_URL" ]; then
-  echo "Error: POSTGRES_URL_${MCP_ENV^^} not set in .mcp.env" >&2
+  # Construct the expected variable name (uppercase environment)
+  MCP_ENV_UPPER=$(echo "$MCP_ENV" | tr '[:lower:]' '[:upper:]')
+  VAR_NAME="POSTGRES_URL_${MCP_ENV_UPPER}"
+  
+  if [ ! -f "$MCP_ENV_FILE" ]; then
+    echo "Error: .mcp.env file not found at $MCP_ENV_FILE" >&2
+    echo "Please create it from .mcp.env.example and set $VAR_NAME" >&2
+  else
+    echo "Error: $VAR_NAME not set in .mcp.env" >&2
+    echo "Please set $VAR_NAME in $MCP_ENV_FILE" >&2
+  fi
   exit 1
 fi
 
