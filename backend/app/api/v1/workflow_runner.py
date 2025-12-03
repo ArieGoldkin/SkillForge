@@ -238,17 +238,38 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             analysis_id=str(analysis_id),
         )
 
-        # Update Analysis status to complete
+        # Validate artifact exists before marking analysis complete
+        # This ensures data integrity - analyses should not be marked complete without artifacts
+        from app.core.agent_config import get_stage_name
+        from app.db.repositories.artifact_repository import ArtifactRepository
+        from app.db.session import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as db_session:
+            repository = ArtifactRepository(session=db_session)
+            artifact = await repository.get_artifact_by_analysis_id(analysis_id)
+
+            if not artifact:
+                logger.error(
+                    "workflow_complete_without_artifact",
+                    analysis_id=str(analysis_id),
+                    error="Artifact generation failed or was skipped",
+                )
+                # Mark as failed - incomplete workflow
+                await _update_analysis_status(analysis_id, "failed")
+                await _emit_workflow_error(
+                    analysis_id,
+                    ValueError("Workflow completed but no artifact was generated"),
+                )
+                return
+
+        # Update Analysis status to complete (only if artifact exists)
         await _update_analysis_status(analysis_id, "complete")
 
         # Emit completion event with artifact_id per SSE_SCHEMA.md
-        # Query artifact by analysis_id to get artifact_id for complete event
+        # Reuse artifact from validation check above (already queried)
         # Also attach artifact info to LangSmith trace for visibility
         try:
-            from app.core.agent_config import get_stage_name
-            from app.db.repositories.artifact_repository import ArtifactRepository
-            from app.db.session import AsyncSessionLocal
-
+            # Re-query artifact for SSE event (artifact variable from validation is out of scope)
             async with AsyncSessionLocal() as db_session:
                 repository = ArtifactRepository(session=db_session)
                 artifact = await repository.get_artifact_by_analysis_id(analysis_id)

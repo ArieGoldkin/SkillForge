@@ -31,41 +31,66 @@ async def test_run_workflow_task_success(
     test_url,
 ):
     """Test successful workflow execution."""
+    import uuid
+
+    from app.models.artifact import Artifact
+
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(return_value={})
 
-    # Mock database session and status update
+    # Mock analysis for status update
     mock_analysis = MagicMock()
     mock_analysis.status = "pending"
-    mock_db_session_analysis = AsyncMock()
-    mock_result_analysis = MagicMock()
-    mock_result_analysis.scalar_one_or_none.return_value = mock_analysis
-    mock_db_session_analysis.execute.return_value = mock_result_analysis
-    mock_db_session_analysis.__aenter__ = AsyncMock(return_value=mock_db_session_analysis)
-    mock_db_session_analysis.__aexit__ = AsyncMock(return_value=False)
+    mock_analysis.id = mock_analysis_id
 
-    # Mock database session for artifact query (second AsyncSessionLocal call)
-    mock_db_session_artifact = AsyncMock()
-    mock_db_session_artifact.__aenter__ = AsyncMock(return_value=mock_db_session_artifact)
-    mock_db_session_artifact.__aexit__ = AsyncMock(return_value=False)
+    # Mock artifact for validation and completion event
+    artifact_id = uuid.uuid4()
+    mock_artifact = MagicMock(spec=Artifact)
+    mock_artifact.id = artifact_id
 
-    # Mock repository - return None (artifact not found) for this test
-    mock_repository = AsyncMock()
-    mock_repository.get_artifact_by_analysis_id = AsyncMock(return_value=None)
+    # Mock database session for artifact validation (first AsyncSessionLocal call after workflow completes)
+    mock_db_session_artifact_validation = AsyncMock()
+    mock_db_session_artifact_validation.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_validation
+    )
+    mock_db_session_artifact_validation.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session for status update in _update_analysis_status (second call)
+    mock_db_session_status = AsyncMock()
+    mock_result_status = MagicMock()
+    mock_result_status.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session_status.execute.return_value = mock_result_status
+    mock_db_session_status.__aenter__ = AsyncMock(return_value=mock_db_session_status)
+    mock_db_session_status.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session for artifact query in completion event (third call)
+    mock_db_session_artifact_event = AsyncMock()
+    mock_db_session_artifact_event.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_event
+    )
+    mock_db_session_artifact_event.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock repository instance - return artifact
+    mock_repository_instance = AsyncMock()
+    mock_repository_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
 
     # Track session calls to return different sessions
-    session_calls = [mock_db_session_analysis, mock_db_session_artifact]
+    # Order: artifact validation, status update, artifact for event
+    session_calls = [
+        mock_db_session_artifact_validation,
+        mock_db_session_status,
+        mock_db_session_artifact_event,
+    ]
 
     def session_factory():
-        return session_calls.pop(0) if session_calls else mock_db_session_artifact
+        return session_calls.pop(0) if session_calls else mock_db_session_artifact_event
 
     # Patch AsyncSessionLocal at the source (app.db.session)
-    # AsyncSessionLocal is a callable, so we make it return our mock session when called
     with (
         patch("app.db.session.AsyncSessionLocal", side_effect=session_factory),
         patch(
             "app.db.repositories.artifact_repository.ArtifactRepository",
-            return_value=mock_repository,
+            return_value=mock_repository_instance,
         ),
     ):
         await run_workflow_task(mock_analysis_id, test_url)
@@ -78,11 +103,14 @@ async def test_run_workflow_task_success(
 
     # Verify status was updated to complete
     assert mock_analysis.status == "complete"
-    mock_db_session_analysis.commit.assert_called_once()
+    mock_db_session_status.commit.assert_called_once()
 
-    # Verify complete event was emitted (initial "workflow" event removed per schema)
+    # Verify complete event was emitted with artifact_id
     complete_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "complete"]
-    assert len(complete_calls) >= 1, "Complete event should be emitted"
+    assert len(complete_calls) == 1, "Complete event should be emitted exactly once"
+    complete_call = complete_calls[0]
+    assert "artifact_id" in complete_call.kwargs
+    assert complete_call.kwargs["artifact_id"] == str(artifact_id)
 
 
 @patch("app.api.v1.workflow_runner.emit_streaming_event")
@@ -137,16 +165,60 @@ async def test_run_workflow_task_status_update_fails(
     test_url,
 ):
     """Test workflow execution when status update fails."""
+    import uuid
+
+    from app.models.artifact import Artifact
+
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(return_value={})
 
-    # Mock database session to fail on status update
-    mock_db_session = AsyncMock()
-    mock_db_session.execute.side_effect = ConnectionError("DB connection failed")
-    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
-    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+    # Mock artifact for validation
+    artifact_id = uuid.uuid4()
+    mock_artifact = MagicMock(spec=Artifact)
+    mock_artifact.id = artifact_id
 
-    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+    # Mock database session for artifact validation (first call - succeeds)
+    mock_db_session_artifact_validation = AsyncMock()
+    mock_db_session_artifact_validation.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_validation
+    )
+    mock_db_session_artifact_validation.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session to fail on status update (second call - fails)
+    mock_db_session_status = AsyncMock()
+    mock_db_session_status.execute.side_effect = ConnectionError("DB connection failed")
+    mock_db_session_status.__aenter__ = AsyncMock(return_value=mock_db_session_status)
+    mock_db_session_status.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session for artifact query in completion event (third call - succeeds)
+    mock_db_session_artifact_event = AsyncMock()
+    mock_db_session_artifact_event.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_event
+    )
+    mock_db_session_artifact_event.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock repository instance - return artifact
+    mock_repository_instance = AsyncMock()
+    mock_repository_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
+
+    # Track session calls to return different sessions
+    # Order: artifact validation, status update (fails), artifact for event
+    session_calls = [
+        mock_db_session_artifact_validation,
+        mock_db_session_status,
+        mock_db_session_artifact_event,
+    ]
+
+    def session_factory():
+        return session_calls.pop(0) if session_calls else mock_db_session_artifact_event
+
+    with (
+        patch("app.db.session.AsyncSessionLocal", side_effect=session_factory),
+        patch(
+            "app.db.repositories.artifact_repository.ArtifactRepository",
+            return_value=mock_repository_instance,
+        ),
+    ):
         # Should not raise - status update failure is logged but doesn't fail workflow
         await run_workflow_task(mock_analysis_id, test_url)
 
@@ -300,3 +372,88 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     assert call_kwargs["artifact_id"] == str(artifact_id), (
         f"artifact_id should match artifact.id, got {call_kwargs.get('artifact_id')}"
     )
+
+
+@pytest.mark.asyncio
+@patch("app.api.v1.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.workflow_runner.analysis_workflow")
+@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.workflow_runner._update_analysis_status")
+@patch("app.api.v1.workflow_runner._emit_workflow_error")
+async def test_run_workflow_task_fails_without_artifact(
+    mock_emit_error,
+    mock_update_status,
+    mock_logger,
+    mock_workflow,
+    mock_emit_event,
+    mock_analysis_id,
+    test_url,
+):
+    """Test that workflow fails when artifact is missing (artifact validation fix).
+
+    This test verifies the fix where analysis is not marked complete if
+    artifact generation failed or was skipped.
+    """
+    # Mock workflow to complete successfully
+    mock_workflow.ainvoke = AsyncMock(return_value={})
+
+    # Mock analysis for status update
+    mock_analysis = MagicMock()
+    mock_analysis.status = "pending"
+    mock_analysis.id = mock_analysis_id
+
+    # Mock database session for analysis status update
+    mock_db_session_analysis = AsyncMock()
+    mock_result_analysis = MagicMock()
+    mock_result_analysis.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session_analysis.execute.return_value = mock_result_analysis
+    mock_db_session_analysis.__aenter__ = AsyncMock(return_value=mock_db_session_analysis)
+    mock_db_session_analysis.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session for artifact query (returns None - no artifact)
+    mock_db_session_artifact = AsyncMock()
+    mock_db_session_artifact.__aenter__ = AsyncMock(return_value=mock_db_session_artifact)
+    mock_db_session_artifact.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock repository - return None (artifact not found)
+    mock_repository = AsyncMock()
+    mock_repository.get_artifact_by_analysis_id = AsyncMock(return_value=None)
+
+    # Track session calls to return different sessions
+    session_calls = [mock_db_session_analysis, mock_db_session_artifact]
+
+    def session_factory():
+        return session_calls.pop(0) if session_calls else mock_db_session_artifact
+
+    with (
+        patch("app.db.session.AsyncSessionLocal", side_effect=session_factory),
+        patch(
+            "app.db.repositories.artifact_repository.ArtifactRepository",
+            return_value=mock_repository,
+        ),
+    ):
+        await run_workflow_task(mock_analysis_id, test_url)
+
+    # Verify workflow completed
+    mock_workflow.ainvoke.assert_called_once()
+
+    # Verify status was updated to FAILED (not complete) due to missing artifact
+    mock_update_status.assert_called()
+    # Check that status was set to "failed" (not "complete")
+    status_calls = [call for call in mock_update_status.call_args_list]
+    # Last call should be "failed" (after artifact validation fails)
+    assert len(status_calls) >= 1
+    # Verify error was emitted
+    mock_emit_error.assert_called_once()
+
+    # Verify error was logged
+    error_logs = [
+        call
+        for call in mock_logger.error.call_args_list
+        if "workflow_complete_without_artifact" in str(call)
+    ]
+    assert len(error_logs) == 1
+
+    # Verify complete event was NOT emitted (workflow failed)
+    complete_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "complete"]
+    assert len(complete_calls) == 0, "Complete event should not be emitted when artifact is missing"

@@ -131,3 +131,57 @@ async def test_stream_all_analyses_invalid_order_by(mock_session):
 
     # Should still work (defaults to created_at)
     assert mock_session.stream_scalars.called
+
+
+@pytest.mark.asyncio
+@patch("app.db.repositories.analysis_repository.func")
+@patch("app.db.repositories.analysis_repository.select")
+@patch("sqlalchemy.text")
+async def test_find_similar_analyses_vector_query_conversion(
+    mock_text, mock_select, mock_func, mock_session, sample_embedding
+):
+    """Test that Python list is correctly converted to PostgreSQL array format for vector query.
+
+    This test verifies the vector conversion implementation where the embedding list
+    is converted to PostgreSQL array format string '[0.1,0.2,...]' and cast to vector type.
+    This approach is safe because query_embedding is list[float] from embedding service,
+    not user input.
+    """
+    repo = AnalysisRepository(session=mock_session)
+
+    # Mock the query chain
+    where_result = mock_select.return_value.where.return_value
+    order_by_result = where_result.order_by.return_value
+    limit_result = order_by_result.limit.return_value
+    mock_subquery = MagicMock()
+    limit_result.subquery.return_value = mock_subquery
+
+    mock_final_query = MagicMock()
+    mock_select.return_value.order_by.return_value.limit.return_value = mock_final_query
+
+    mock_scalars_result = MagicMock()
+    mock_scalars_result.all.return_value = []
+    mock_session.scalars.return_value = mock_scalars_result
+
+    # Mock text() to capture the literal vector format call
+    mock_text_expr = MagicMock()
+    mock_text.return_value = mock_text_expr
+
+    result = await repo.find_similar_analyses(
+        query_embedding=sample_embedding, limit=5, fast_search_limit=20
+    )
+
+    # Verify text() was called with vector literal format
+    assert mock_text.called
+    text_call = mock_text.call_args
+    text_arg = text_call[0][0]
+
+    # Verify it uses PostgreSQL vector literal format: '[...]'::vector
+    # The implementation creates: "'[0.1,0.1,...]'::vector"
+    assert "::vector" in text_arg, "Vector cast operator '::vector' should be present"
+    assert "'" in text_arg, "Vector literal should be quoted"
+    assert "[" in text_arg and "]" in text_arg, "Vector array should use square brackets"
+
+    # Verify query executed successfully
+    assert isinstance(result, list)
+    assert mock_session.scalars.called
