@@ -1,35 +1,31 @@
-"""Performance analyst agent node for LangGraph StateGraph."""
+"""Performance analyst agent node for LangGraph StateGraph.
+
+Note: This node does NOT use @robust_traceable decorator because LangGraph
+automatically traces all node executions. Adding @robust_traceable would
+create duplicate spans in LangSmith. Runtime metadata is still updated
+via get_current_run_tree().
+"""
 
 import time
 
 from langsmith import get_current_run_tree
 
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
-from app.core.tracing import robust_traceable
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.runners import run_performance_analyst_with_session
 
 logger = get_logger(__name__)
 
 
-@robust_traceable(
-    name="performance_analyst",
-    run_type="chain",
-    tags=["workflow", "node", "agent", "performance_analyst"],
-    metadata={
-        "environment": settings.ENVIRONMENT,
-        "workflow_type": "analysis",
-        "component": "agent",
-    },
-)
 async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
     """Execute performance analysis.
 
     Executes performance analysis and returns findings.
     Each agent node manages its own database session for parallel execution.
-    GeneratorExit handling is managed by the robust_traceable wrapper.
+
+    Note: LangGraph automatically traces this node. We update runtime metadata
+    via get_current_run_tree() but don't add a separate tracing decorator.
 
     Args:
         state: Current workflow state with content and analysis_id
