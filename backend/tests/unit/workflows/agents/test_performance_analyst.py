@@ -30,6 +30,7 @@ def mock_agent():
                 optimization_opportunities=["Add caching", "Optimize queries"],
                 scaling_considerations="Horizontal scaling recommended",
                 recommendation="Implement Redis caching and optimize database queries",
+                confidence_score=0.82,
             )
         }
     )

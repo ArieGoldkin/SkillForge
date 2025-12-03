@@ -19,6 +19,10 @@ IMPLEMENTATION_PLANNER_PROMPT = """You are an Implementation Planning Specialist
 4. Specify which files need to be created or modified in each step
 5. Provide a testing strategy and validation approach
 6. Estimate implementation time
+7. Provide a confidence score (0.0-1.0) representing your confidence in the quality
+   and completeness of this implementation plan. Consider: clarity of steps, accuracy
+   of prerequisites, reasonableness of time estimates, and actionability of the guide.
+   Higher scores indicate more complete, accurate, and actionable plans.
 
 Focus on:
 - Clear, sequential steps that can be followed independently

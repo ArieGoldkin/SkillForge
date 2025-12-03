@@ -35,6 +35,10 @@ CRITICAL: You MUST include:
 - peer_dependencies: List of peer dependencies or system requirements
 - installation_notes: List of installation and setup notes
 - recommendation: Dependency management recommendation
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this dependency mapping. Consider: accuracy of dependency identification, correctness of
+  version compatibility assessment, completeness of conflict detection, and confidence in
+  installation notes.
 
 Be specific about versions and compatibility."""
 

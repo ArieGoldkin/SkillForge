@@ -41,6 +41,11 @@ Field Requirements:
 
 4. **integration_steps** (REQUIRED): List of strings (can be empty [])
 
+5. **confidence_score** (REQUIRED): Float (0.0-1.0) - confidence in quality and certainty
+   of this integration analysis. Consider: accuracy of compatibility scores, correctness
+   of migration effort assessment, completeness of breaking changes, and confidence in
+   integration steps.
+
 IMPORTANT: Include the "compatibility" field with at least 2 stack entries. "
     "Do not omit any required fields."""
 

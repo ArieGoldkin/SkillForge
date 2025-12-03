@@ -55,3 +55,13 @@ class SecurityAudit(BaseModel):
             "Write as 2-3 cohesive sentences summarizing critical fixes and their priority."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this security audit. Consider: accuracy of risk identification, "
+            "severity assessment correctness, completeness of mitigations, and confidence "
+            "in compliance notes. Higher scores indicate more thorough and accurate audits."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

@@ -33,6 +33,10 @@ CRITICAL: You MUST include:
 - modern_alternatives: List of modern alternatives if technology is legacy/declining
 - future_outlook: Future predictions and sustainability assessment
 - recommendation: Recommendation based on trend analysis
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this trend validation. Consider: accuracy of trend status assessment, correctness of
+  adoption rate evaluation, completeness of modern alternatives identification, and confidence
+  in future outlook predictions.
 
 Base assessments on current 2025 data and industry trends."""
 

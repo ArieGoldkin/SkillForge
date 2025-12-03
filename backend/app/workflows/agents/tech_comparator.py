@@ -43,6 +43,9 @@ Field Requirements:
    - MUST include entry for each alternative
    - Each entry: {"pros": [], "cons": [], "use_cases": []}
 4. **recommendation** (REQUIRED): String with clear recommendation
+5. **confidence_score** (REQUIRED): Float (0.0-1.0) - confidence in quality and certainty
+   of this comparison. Consider: accuracy of identification, completeness of analysis,
+   relevance of alternatives, and confidence in recommendation.
 
 IMPORTANT: The "comparison" field must include entries for primary_tech AND "
     "all alternatives. Do not omit any required fields."""

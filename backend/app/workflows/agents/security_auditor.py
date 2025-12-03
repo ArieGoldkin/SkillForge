@@ -34,6 +34,9 @@ CRITICAL: You MUST include:
 - best_practices: List of security best practices to follow
 - compliance_notes: List of relevant compliance frameworks and considerations
 - recommendation: Overall security recommendation with priority actions
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this security audit. Consider: accuracy of risk identification, severity assessment
+  correctness, completeness of mitigations, and confidence in compliance notes.
 
 Be thorough and prioritize critical vulnerabilities."""
 

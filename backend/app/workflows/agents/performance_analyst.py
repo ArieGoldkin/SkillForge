@@ -35,6 +35,10 @@ CRITICAL: You MUST include:
 - optimization_opportunities: List of optimization recommendations
 - scaling_considerations: Scaling strategy and approach
 - recommendation: Overall performance recommendation
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this performance analysis. Consider: accuracy of metric identification, correctness of
+  bottleneck analysis, completeness of optimization opportunities, and confidence in scaling
+  recommendations.
 
 Provide actionable, measurable recommendations."""
 

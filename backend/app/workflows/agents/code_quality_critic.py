@@ -35,6 +35,10 @@ CRITICAL: You MUST include:
 - maintainability_score: Score from 0.0 (poor) to 1.0 (excellent)
 - refactoring_suggestions: List of refactoring recommendations
 - recommendation: Overall code quality recommendation
+- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
+  of this code quality review. Consider: accuracy of issue identification, correctness of
+  maintainability score, completeness of refactoring suggestions, and confidence in best
+  practices recommendations.
 
 Be constructive and provide actionable improvements."""
 

@@ -38,6 +38,7 @@ def mock_agent():
                 peer_dependencies=["Node.js >= 16.0.0"],
                 installation_notes=["Install via npm: npm install react react-dom"],
                 recommendation="Use npm or yarn for dependency management",
+                confidence_score=0.88,
             )
         }
     )

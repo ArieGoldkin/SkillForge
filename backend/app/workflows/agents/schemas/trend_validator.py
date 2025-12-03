@@ -51,3 +51,14 @@ class TrendValidation(BaseModel):
             "Write as 2-3 cohesive sentences advising whether to adopt, wait, or avoid."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this trend validation. Consider: accuracy of trend status assessment, "
+            "correctness of adoption rate evaluation, completeness of modern alternatives "
+            "identification, and confidence in future outlook predictions. Higher scores "
+            "indicate more accurate and comprehensive trend assessments."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

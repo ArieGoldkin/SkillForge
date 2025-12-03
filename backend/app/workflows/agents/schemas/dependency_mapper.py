@@ -56,3 +56,14 @@ class DependencyMapping(BaseModel):
             "Write as 2-3 cohesive sentences summarizing the dependency strategy."
         )
     )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this dependency mapping. Consider: accuracy of dependency identification, "
+            "correctness of version compatibility assessment, completeness of conflict "
+            "detection, and confidence in installation notes. Higher scores indicate "
+            "more accurate and comprehensive dependency mappings."
+        ),
+        ge=0.0,
+        le=1.0,
+    )
