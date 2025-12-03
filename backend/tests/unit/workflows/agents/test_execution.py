@@ -156,10 +156,14 @@ async def test_run_agent_with_tracking_content_truncation(
     mock_agent,
     mock_session,
 ):
-    """Test that content is truncated to 1500 chars for agent efficiency."""
+    """Test that content is truncated to 12000 chars for agent efficiency.
+
+    Note: Increased from 1500 to 12000 chars to allow agents to analyze
+    meaningful article content rather than just boilerplate.
+    """
     analysis_id = str(uuid4())
-    # Create content longer than 1500 chars
-    long_content = "x" * 2500
+    # Create content longer than 12000 chars
+    long_content = "x" * 15000
 
     mock_save_finding.return_value = MagicMock()
 
@@ -179,13 +183,13 @@ async def test_run_agent_with_tracking_content_truncation(
     messages = input_messages.get("messages", [])
     if messages:
         user_message = messages[0].get("content", "")
-        # Content should be truncated to 1500 chars (plus header text)
+        # Content should be truncated to 12000 chars (plus header text)
         assert "Content Type: article" in user_message
         # Extract just the content part (after "Content:\n")
         content_part = (
             user_message.split("Content:\n", 1)[1] if "Content:\n" in user_message else ""
         )
-        max_content_length = 1500  # Default max_content_length for agents
+        max_content_length = 12000  # Default max_content_length for agents
         assert len(content_part) <= max_content_length
         assert result["agent_type"] == "test_agent"
 

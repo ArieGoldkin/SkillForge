@@ -109,14 +109,18 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
 
 
 # Agent capability mapping: which agents can process which content types
+# NOTE: Technical articles often discuss security, performance, and implementation
+# topics, so most analytical agents should be able to process "article" content.
+# Only code_quality_critic and dependency_mapper are restricted to actual code
+# since they perform structural analysis that requires parseable source code.
 AGENT_CAPABILITIES: dict[str, list[ContentType]] = {
     "tech_comparator": ["code", "documentation", "article", "changelog"],
-    "security_auditor": ["code", "documentation"],
+    "security_auditor": ["code", "documentation", "article"],  # Articles discuss security topics
     "implementation_planner": ["code", "documentation", "article"],
-    "performance_analyst": ["code", "documentation"],
-    "code_quality_critic": ["code"],  # Only code
+    "performance_analyst": ["code", "documentation", "article"],  # Articles discuss perf topics
+    "code_quality_critic": ["code"],  # Only code - requires structural analysis
     "trend_validator": ["code", "documentation", "article", "changelog"],
-    "dependency_mapper": ["code"],  # Only code
+    "dependency_mapper": ["code"],  # Only code - requires import/package analysis
     "integration_feasibility": ["code", "documentation", "article"],
 }
 
