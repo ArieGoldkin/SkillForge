@@ -106,7 +106,9 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
       store.setState((state) => ({
         events: [...state.events, data],
         latestEvent: data,
-        error: new Error(isErrorEvent(data) ? data.details.error : 'Analysis failed'),
+        error: new Error(
+          isErrorEvent(data) ? (data.details?.error ?? 'Analysis failed') : 'Analysis failed'
+        ),
       }))
 
       if (isErrorEvent(data)) {

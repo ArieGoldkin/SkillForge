@@ -2,7 +2,7 @@
  * Stage configuration - Maps backend stages to UI representation
  */
 
-import type { StageName } from '@app-types/sse'
+import type { AgentStageName, WorkflowStageName } from '@app-types/sse'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 
@@ -10,18 +10,39 @@ export interface StageConfig {
   title: string
   order: number
   uiStage: AnalysisStage
+  /** Whether this stage can be skipped by supervisor routing */
+  optional?: boolean
 }
 
-export const STAGE_CONFIG: Record<StageName, StageConfig> = {
+/**
+ * Configuration for agent stages (displayed in UI)
+ * Only includes stages that represent actual agent work
+ */
+export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
   extraction: { title: 'Content Extraction', order: 1, uiStage: 'extracting' },
   supervisor_routing: { title: 'Routing to Agents', order: 2, uiStage: 'processing' },
-  tech_comparison: { title: 'Tech Comparison', order: 3, uiStage: 'analyzing' },
-  security_audit: { title: 'Security Audit', order: 4, uiStage: 'analyzing' },
-  implementation_planning: { title: 'Implementation Planning', order: 5, uiStage: 'analyzing' },
-  performance_audit: { title: 'Performance Audit', order: 6, uiStage: 'analyzing' },
-  code_quality_audit: { title: 'Code Quality Audit', order: 7, uiStage: 'analyzing' },
-  trends_analysis: { title: 'Trends Analysis', order: 8, uiStage: 'analyzing' },
-  dependencies_analysis: { title: 'Dependencies Analysis', order: 9, uiStage: 'analyzing' },
+  tech_comparison: { title: 'Tech Comparison', order: 3, uiStage: 'analyzing', optional: true },
+  security_audit: { title: 'Security Audit', order: 4, uiStage: 'analyzing', optional: true },
+  implementation_planning: {
+    title: 'Implementation Planning',
+    order: 5,
+    uiStage: 'analyzing',
+    optional: true,
+  },
+  performance_audit: { title: 'Performance Audit', order: 6, uiStage: 'analyzing', optional: true },
+  code_quality_audit: {
+    title: 'Code Quality Audit',
+    order: 7,
+    uiStage: 'analyzing',
+    optional: true,
+  },
+  trends_analysis: { title: 'Trends Analysis', order: 8, uiStage: 'analyzing', optional: true },
+  dependencies_analysis: {
+    title: 'Dependencies Analysis',
+    order: 9,
+    uiStage: 'analyzing',
+    optional: true,
+  },
   aggregation: { title: 'Aggregating Results', order: 10, uiStage: 'generating' },
   artifact_generation: { title: 'Generating Report', order: 11, uiStage: 'generating' },
 }
@@ -33,7 +54,7 @@ export const TOTAL_STAGES = Object.keys(STAGE_CONFIG).length
  * Workaround for issue #88: Backend sends agent names instead of stage names
  * @see https://github.com/ArieGoldkin/SkillForge/issues/88
  */
-const AGENT_TO_STAGE_MAP: Record<string, StageName> = {
+const AGENT_TO_STAGE_MAP: Record<string, AgentStageName> = {
   // Direct matches (backend sends correct name)
   extraction: 'extraction',
   aggregation: 'aggregation',
@@ -58,13 +79,28 @@ const AGENT_TO_STAGE_MAP: Record<string, StageName> = {
 }
 
 /**
- * Normalize backend stage/agent name to frontend StageName
- * Returns the mapped stage name or the original if it's already valid
+ * Workflow-level stages that don't map to UI stages
+ * These are used for workflow control but don't represent agent work
  */
-export function normalizeStageNameFromBackend(backendName: string): StageName | null {
-  // Check if it's already a valid stage name
+const WORKFLOW_STAGES: WorkflowStageName[] = ['workflow', 'pattern_comparison', 'metrics']
+
+/**
+ * Normalize backend stage/agent name to frontend stage name
+ *
+ * @param backendName - Raw stage name from backend SSE event
+ * @returns AgentStageName for UI display, WorkflowStageName for workflow control, or null if unknown
+ */
+export function normalizeStageNameFromBackend(
+  backendName: string
+): AgentStageName | WorkflowStageName | null {
+  // Check if it's a workflow-level stage (not displayed in UI)
+  if (WORKFLOW_STAGES.includes(backendName as WorkflowStageName)) {
+    return backendName as WorkflowStageName
+  }
+
+  // Check if it's already a valid agent stage name
   if (backendName in STAGE_CONFIG) {
-    return backendName as StageName
+    return backendName as AgentStageName
   }
 
   // Check the mapping
@@ -75,6 +111,48 @@ export function normalizeStageNameFromBackend(backendName: string): StageName | 
   // Unknown stage - return null to skip
   console.warn(`[SSE] Unknown stage name from backend: ${backendName}`)
   return null
+}
+
+/**
+ * Type guard to check if a stage name is an agent stage (displayed in UI)
+ */
+export function isAgentStage(stage: AgentStageName | WorkflowStageName): stage is AgentStageName {
+  return stage in STAGE_CONFIG
+}
+
+/**
+ * Get list of optional agent stages (can be skipped by supervisor)
+ */
+export function getOptionalStages(): AgentStageName[] {
+  return (Object.entries(STAGE_CONFIG) as [AgentStageName, StageConfig][])
+    .filter(([, config]) => config.optional)
+    .map(([stage]) => stage)
+}
+
+/** Stage status entry for the status map */
+export interface StageStatusEntry {
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
+  timestamp: string
+  details?: Record<string, unknown>
+}
+
+/**
+ * Mark unselected optional agents as 'skipped' after supervisor completes
+ * Bug #165 fix: Shows skipped state instead of pending for non-selected agents
+ */
+export function markSkippedAgents(stageStatuses: Map<AgentStageName, StageStatusEntry>): void {
+  const supervisorStatus = stageStatuses.get('supervisor_routing')
+  if (supervisorStatus?.status !== 'complete') return
+
+  for (const agentStage of getOptionalStages()) {
+    if (!stageStatuses.has(agentStage)) {
+      stageStatuses.set(agentStage, {
+        status: 'skipped',
+        timestamp: supervisorStatus.timestamp,
+        details: { skipped_by: 'supervisor_routing' },
+      })
+    }
+  }
 }
 
 /**

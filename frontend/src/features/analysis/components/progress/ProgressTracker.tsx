@@ -1,7 +1,7 @@
 import type * as React from 'react'
 import { useMemo } from 'react'
 
-import type { StageName } from '@app-types/sse'
+import type { AgentStageName } from '@app-types/sse'
 import { useSSE } from '@hooks/useSSE'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -25,7 +25,7 @@ export interface ProgressTrackerProps {
   /** Optional CSS class name */
   className?: string
   /** Stages to display (default: ALL_STAGES) */
-  stages?: StageName[]
+  stages?: AgentStageName[]
   /** Callback when analysis completes with artifact ID */
   onComplete?: (artifactId: string) => void
   /** Callback when an error occurs */
