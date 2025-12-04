@@ -48,7 +48,8 @@ def extract_quick_reference(agent_findings: list[dict[str, Any]]) -> QuickRefere
         Extraction Strategy:
         1. primary_technology: tech_comparator.primary_tech + version from dependencies
         2. complexity: implementation_planner.estimated_time → format as "Level (Est. X)"
-        3. prerequisites: dependency_mapper.peer_dependencies or implementation_planner.prerequisites
+         3. prerequisites: dependency_mapper.peer_dependencies or
+            implementation_planner.prerequisites
         4. critical_commands: extract install commands from implementation_planner.steps or
            dependency_mapper.installation_notes
         5. files_to_modify: collect from implementation_planner.steps[].files

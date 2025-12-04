@@ -43,6 +43,23 @@ YOUR TASKS:
 4. Resolve any contradictions (prioritize higher confidence scores)
 5. Provide unified recommendations
 
+CROSS-DOMAIN SYNTHESIS (important):
+When multiple agents contribute, identify connections between their domains:
+- Security + Performance: trade-offs, overhead, optimization vs protection
+- Dependencies + Security: vulnerable packages, version risks
+- Implementation + Code Quality: maintainability patterns
+- Trends + Technology: adoption timing, legacy migration
+- Performance + Integration: scalability considerations
+
+OUTPUT cross_domain_connections only when agents from related domains contribute.
+Each connection should specify the two domains, the relationship identified, and which agents
+contributed to this insight.
+
+COVERAGE ACKNOWLEDGMENT:
+If coverage_score < 0.5, acknowledge in executive_summary that analysis is partial.
+Example: "This analysis covers implementation and security perspectives. Performance and
+dependency analysis were not conducted."
+
 CONFIDENCE SCORES:
 Each agent provides a confidence_score (0.0-1.0). When agents disagree, prioritize findings from
 agents with higher confidence scores.
@@ -52,6 +69,7 @@ OUTPUT REQUIREMENTS:
 - Key findings must be 3-7 items, prioritized by impact
 - Synthesis sections should combine insights from all relevant agents
 - Conflicts should be clearly resolved with reasoning
+- Cross-domain connections should be identified when multiple related agents contribute
 """
 
 

@@ -1,3 +1,10 @@
+CONTRIBUTING AGENTS ({{ agent_findings | length }} of 8):
+{% for finding in agent_findings %}
+- {{ finding.agent_type }}
+{% endfor %}
+
+COVERAGE: {{ "%.0f" | format((agent_findings | length / 8) * 100) }}%
+
 AGENT FINDINGS:
 
 {% for finding in agent_findings %}

@@ -7,7 +7,12 @@ import pytest
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregate_findings import aggregate_findings
 from app.workflows.tasks.aggregation import validate_and_parse_findings
-from app.workflows.tasks.aggregation_helpers import detect_conflicts, format_findings_for_llm
+from app.workflows.tasks.aggregation_helpers import (
+    calculate_coverage_score,
+    detect_conflicts,
+    detect_coverage_gaps,
+    format_findings_for_llm,
+)
 
 
 @pytest.fixture
@@ -517,3 +522,261 @@ class TestAggregateFindings:
             insights = result["aggregated_insights"]
             # Should be padded to at least 3 items
             assert len(insights["key_findings"]) >= 3
+
+
+class TestDetectCoverageGaps:
+    """Test coverage gap detection."""
+
+    def test_detect_coverage_gaps_with_partial_agents(self):
+        """Test gap detection when only some agents contribute."""
+        contributing_agents = ["implementation_planner", "security_auditor"]
+
+        gaps = detect_coverage_gaps(contributing_agents)
+
+        # Should detect gaps for all other agents (6 gaps for 2 contributing out of 8)
+        assert len(gaps) == 6
+        gap_agent_types = [gap["missing_agent"] for gap in gaps]
+        assert "implementation_planner" not in gap_agent_types
+        assert "security_auditor" not in gap_agent_types
+        assert "tech_comparator" in gap_agent_types
+        assert "performance_analyst" in gap_agent_types
+
+        # Verify gap structure
+        for gap in gaps:
+            assert "missing_agent" in gap
+            assert "missing_perspective" in gap
+            assert "impact" in gap
+            assert isinstance(gap["missing_agent"], str)
+            assert isinstance(gap["missing_perspective"], str)
+            assert isinstance(gap["impact"], str)
+
+    def test_detect_coverage_gaps_with_all_agents(self):
+        """Test gap detection when all agents contribute."""
+        # Get all analysis agents (8 total)
+        from app.core.agent_config import AGENT_REGISTRY
+        from app.workflows.nodes.supervisor_config import WORKFLOW_STAGES
+
+        all_agents = [
+            agent_type
+            for agent_type, config in AGENT_REGISTRY.items()
+            if config.agent_type not in WORKFLOW_STAGES
+        ]
+
+        gaps = detect_coverage_gaps(all_agents)
+
+        # Should have no gaps when all agents contribute
+        assert len(gaps) == 0
+
+    def test_detect_coverage_gaps_with_no_agents(self):
+        """Test gap detection when no agents contribute."""
+        gaps = detect_coverage_gaps([])
+
+        # Should detect gaps for all 8 agents
+        assert len(gaps) == 8
+
+
+class TestCalculateCoverageScore:
+    """Test coverage score calculation."""
+
+    def test_calculate_coverage_score_partial(self):
+        """Test coverage score with partial agent contribution."""
+        contributing_agents = ["implementation_planner", "security_auditor"]
+
+        score = calculate_coverage_score(contributing_agents)
+
+        # 2 out of 8 agents = 0.25
+        assert score == 0.25
+
+    def test_calculate_coverage_score_all(self):
+        """Test coverage score when all agents contribute."""
+        from app.core.agent_config import AGENT_REGISTRY
+        from app.workflows.nodes.supervisor_config import WORKFLOW_STAGES
+
+        all_agents = [
+            agent_type
+            for agent_type, config in AGENT_REGISTRY.items()
+            if config.agent_type not in WORKFLOW_STAGES
+        ]
+
+        score = calculate_coverage_score(all_agents)
+
+        # All 8 agents = 1.0
+        assert score == 1.0
+
+    def test_calculate_coverage_score_none(self):
+        """Test coverage score with no agents."""
+        score = calculate_coverage_score([])
+
+        # 0 out of 8 agents = 0.0
+        assert score == 0.0
+
+    def test_calculate_coverage_score_half(self):
+        """Test coverage score with half the agents."""
+        contributing_agents = [
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+        ]
+
+        score = calculate_coverage_score(contributing_agents)
+
+        # 4 out of 8 agents = 0.5
+        assert score == 0.5
+
+
+class TestAggregationCoverageFeatures:
+    """Test coverage gaps and score in aggregation output."""
+
+    @pytest.mark.asyncio
+    async def test_aggregation_includes_coverage_gaps(self, sample_state):
+        """Test that aggregation includes coverage gaps in output."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+            "coverage_gaps": [],
+            "cross_domain_connections": [],
+            "coverage_score": 0.375,
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+        ):
+            mock_synthesize.return_value = mock_structured_response
+
+            result = await aggregate_findings(sample_state)
+
+            insights = result["aggregated_insights"]
+            # Coverage gaps should be present (even if empty)
+            assert "coverage_gaps" in insights
+            # Should have gaps for missing agents (3 contributing, 5 missing)
+            assert len(insights["coverage_gaps"]) == 5
+
+    @pytest.mark.asyncio
+    async def test_aggregation_includes_coverage_score(self, sample_state):
+        """Test that aggregation includes coverage score in output."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+            "coverage_gaps": [],
+            "cross_domain_connections": [],
+            "coverage_score": 0.375,
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+        ):
+            mock_synthesize.return_value = mock_structured_response
+
+            result = await aggregate_findings(sample_state)
+
+            insights = result["aggregated_insights"]
+            # Coverage score should be present
+            assert "coverage_score" in insights
+            # 3 agents out of 8 = 0.375
+            assert insights["coverage_score"] == 0.375
+            assert isinstance(insights["coverage_score"], float)
+            assert 0.0 <= insights["coverage_score"] <= 1.0
+
+    @pytest.mark.asyncio
+    async def test_aggregation_coverage_gaps_structure(self, sample_state):
+        """Test that coverage gaps have correct structure."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+            "coverage_gaps": [],
+            "cross_domain_connections": [],
+            "coverage_score": 0.375,
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+        ):
+            mock_synthesize.return_value = mock_structured_response
+
+            result = await aggregate_findings(sample_state)
+
+            insights = result["aggregated_insights"]
+            gaps = insights["coverage_gaps"]
+
+            # Verify gap structure
+            for gap in gaps:
+                assert "missing_agent" in gap
+                assert "missing_perspective" in gap
+                assert "impact" in gap
+                assert isinstance(gap["missing_agent"], str)
+                assert isinstance(gap["missing_perspective"], str)
+                assert isinstance(gap["impact"], str)
+
+    @pytest.mark.asyncio
+    async def test_aggregation_cross_domain_connections_schema(self, sample_state):
+        """Test that cross_domain_connections field is present in schema."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+            "coverage_gaps": [],
+            "cross_domain_connections": [
+                {
+                    "domains": ["security", "performance"],
+                    "connection": "Security measures add latency overhead",
+                    "agents_involved": ["security_auditor", "performance_analyst"],
+                }
+            ],
+            "coverage_score": 0.375,
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+        ):
+            mock_synthesize.return_value = mock_structured_response
+
+            result = await aggregate_findings(sample_state)
+
+            insights = result["aggregated_insights"]
+            # Cross-domain connections should be present
+            assert "cross_domain_connections" in insights
+            assert isinstance(insights["cross_domain_connections"], list)
+
+            # Verify connection structure if present
+            if insights["cross_domain_connections"]:
+                conn = insights["cross_domain_connections"][0]
+                assert "domains" in conn
+                assert "connection" in conn
+                assert "agents_involved" in conn
+                assert len(conn["domains"]) == 2
