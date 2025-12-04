@@ -4,7 +4,10 @@
  * Version: 1.0
  */
 
-export type StageName =
+/**
+ * Agent stage names - represent individual processing stages
+ */
+export type AgentStageName =
   | 'extraction'
   | 'supervisor_routing'
   | 'tech_comparison'
@@ -17,7 +20,26 @@ export type StageName =
   | 'aggregation'
   | 'artifact_generation'
 
-export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
+/**
+ * Workflow-level stage names - represent workflow-wide events
+ * @see docs/issues/040-sse-endpoint/SSE_SCHEMA.md
+ */
+export type WorkflowStageName = 'workflow' | 'pattern_comparison' | 'metrics'
+
+/**
+ * All possible stage names (agent + workflow-level)
+ */
+export type StageName = AgentStageName | WorkflowStageName
+
+/**
+ * Stage status values
+ * - pending: Stage hasn't started yet
+ * - running: Stage is currently executing
+ * - complete: Stage finished successfully
+ * - failed: Stage encountered an error
+ * - skipped: Stage was skipped (not selected by supervisor)
+ */
+export type StageStatus = 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
 
 export interface SSEProgressEvent {
   type: 'progress'
@@ -36,10 +58,10 @@ export interface SSEProgressEvent {
 export interface SSECompleteEvent {
   type: 'complete'
   analysis_id: string
-  stage: 'artifact_generation'
+  stage: 'artifact_generation' | 'workflow'
   status: 'complete'
   timestamp: string
-  artifact_id: string
+  artifact_id?: string
   details?: Record<string, unknown>
 }
 

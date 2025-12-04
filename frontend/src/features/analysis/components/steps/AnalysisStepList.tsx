@@ -10,7 +10,7 @@ import { cn } from '@lib/utils'
 /**
  * Status type for each analysis step
  */
-export type AnalysisStepStatus = 'pending' | 'in-progress' | 'completed' | 'failed'
+export type AnalysisStepStatus = 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'
 
 /**
  * Individual analysis step
@@ -81,6 +81,8 @@ const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
       )
     case 'failed':
       return <XCircle className={cn(iconClasses, 'text-destructive')} />
+    case 'skipped':
+      return <Circle className={cn(iconClasses, 'text-muted-foreground opacity-50')} />
     case 'pending':
       return <Circle className={cn(iconClasses, 'text-muted-foreground')} />
   }
@@ -91,7 +93,7 @@ const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
  */
 const getStatusBadgeVariant = (
   status: AnalysisStepStatus
-): 'default' | 'success' | 'warning' | 'destructive' => {
+): 'default' | 'success' | 'warning' | 'destructive' | 'secondary' => {
   switch (status) {
     case 'completed':
       return 'success'
@@ -99,6 +101,8 @@ const getStatusBadgeVariant = (
       return 'warning'
     case 'failed':
       return 'destructive'
+    case 'skipped':
+      return 'secondary'
     case 'pending':
       return 'default'
   }
