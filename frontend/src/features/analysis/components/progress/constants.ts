@@ -3,12 +3,12 @@
  * Shared stage configuration and helper functions
  */
 
-import type { StageName, StageStatus } from '@app-types/sse'
+import type { AgentStageName, StageStatus } from '@app-types/sse'
 
 /**
  * All available pipeline stages
  */
-export const ALL_STAGES: StageName[] = [
+export const ALL_STAGES: AgentStageName[] = [
   'extraction',
   'supervisor_routing',
   'tech_comparison',
@@ -25,12 +25,12 @@ export const ALL_STAGES: StageName[] = [
 /**
  * Currently working stages (for testing with real backend)
  */
-export const WORKING_STAGES: StageName[] = ['extraction', 'supervisor_routing']
+export const WORKING_STAGES: AgentStageName[] = ['extraction', 'supervisor_routing']
 
 /**
  * Stage configuration with user-friendly labels
  */
-export const STAGE_CONFIG: Record<StageName, { label: string }> = {
+export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
   extraction: { label: 'Content Extraction' },
   supervisor_routing: { label: 'Agent Routing' },
   tech_comparison: { label: 'Technology Comparison' },
@@ -48,7 +48,7 @@ export const STAGE_CONFIG: Record<StageName, { label: string }> = {
  * Internal state for each stage
  */
 export interface StageState {
-  name: StageName
+  name: AgentStageName
   label: string
   status: StageStatus
   agent?: string
@@ -59,7 +59,7 @@ export interface StageState {
 /**
  * Create initial stage states from stage list
  */
-export function createInitialStages(stages: StageName[]): StageState[] {
+export function createInitialStages(stages: AgentStageName[]): StageState[] {
   return stages.map((name) => ({
     name,
     label: STAGE_CONFIG[name].label,
@@ -78,6 +78,8 @@ export function formatStatus(status: StageStatus): string {
       return 'Running'
     case 'failed':
       return 'Failed'
+    case 'skipped':
+      return 'Skipped'
     case 'pending':
       return 'Pending'
   }
@@ -98,7 +100,7 @@ export function formatAgentName(agent: string): string {
  */
 export function getStatusBadgeVariant(
   status: StageStatus
-): 'default' | 'success' | 'warning' | 'destructive' {
+): 'default' | 'success' | 'warning' | 'destructive' | 'secondary' {
   switch (status) {
     case 'complete':
       return 'success'
@@ -106,6 +108,8 @@ export function getStatusBadgeVariant(
       return 'warning'
     case 'failed':
       return 'destructive'
+    case 'skipped':
+      return 'secondary'
     case 'pending':
       return 'default'
   }
