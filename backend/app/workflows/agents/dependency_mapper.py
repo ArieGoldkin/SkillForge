@@ -45,7 +45,9 @@ NUMERIC SPECIFICITY REQUIREMENTS:
 - compatibility MUST reference specific versions (e.g., "React 18.x", "Python 3.9+")
 - peer_dependencies MUST include version constraints (e.g., "Node.js >= 18.0.0")
 - installation_notes MUST include exact commands (e.g., "pip install langchain==0.1.0")
-- version_conflicts MUST identify specific conflicting versions (e.g., "react@17 conflicts with @mui/material@5.x which requires react@18")
+- version_conflicts MUST identify specific conflicting versions (
+    e.g., "react@17 conflicts with @mui/material@5.x which requires react@18"
+)
 
 FORBIDDEN VAGUE LANGUAGE - Never use:
 - "latest version", "recent version" (use exact version numbers)

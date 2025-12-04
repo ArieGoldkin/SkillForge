@@ -19,21 +19,19 @@ READINESS_CONFIDENCE_THRESHOLD = 0.7  # Minimum confidence to mark ready
 STREAMING_CHUNK_SIZE = 50  # Characters per chunk for SSE streaming
 
 # Tutor prompts (will be moved to tasks module in Phase 2)
-SYLLABUS_GENERATION_PROMPT = """Generate a personalized curriculum for teaching the following content.
-
-Content Summary:
-{analysis_summary}
-
-User Level: {user_level}
-
-Create a curriculum with 2-4 sections, each containing 2-3 lessons.
-Each lesson should cover one key concept with:
-- Clear explanation
-- Analogical explanation (if helpful)
-- Concrete example
-- Practice exercise/question
-
-Return as JSON matching the Syllabus schema."""
+SYLLABUS_GENERATION_PROMPT = (
+    "Generate a personalized curriculum for teaching the following content.\n\n"
+    "Content Summary:\n"
+    "{analysis_summary}\n\n"
+    "User Level: {user_level}\n\n"
+    "Create a curriculum with 2-4 sections, each containing 2-3 lessons.\n"
+    "Each lesson should cover one key concept with:\n"
+    "- Clear explanation\n"
+    "- Analogical explanation (if helpful)\n"
+    "- Concrete example\n"
+    "- Practice exercise/question\n\n"
+    "Return as JSON matching the Syllabus schema."
+)
 
 LESSON_DELIVERY_PROMPT = """Deliver a lesson on the following concept:
 

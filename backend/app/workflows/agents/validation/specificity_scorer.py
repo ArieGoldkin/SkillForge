@@ -486,7 +486,10 @@ class SpecificityScorer:
             f"  - Vague Penalty: {score.vague_penalty:.3f}",
             "",
             "Counts:",
-            f"  - Numeric Values: {score.numeric_value_count} (expected: {score.expected_numeric_count})",
+            (
+                f"  - Numeric Values: {score.numeric_value_count} "
+                f"(expected: {score.expected_numeric_count})"
+            ),
             f"  - Vague Phrases: {score.vague_phrase_count}",
         ]
 

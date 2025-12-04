@@ -58,7 +58,10 @@ GOOD EXAMPLE:
   issue_type: "long_method"
   severity: "medium"
   description: "process_order() at orders.py:89 spans 145 lines with cyclomatic complexity 23"
-  suggestion: "Extract 3 methods: validate_items(), calculate_totals(), apply_discounts(). Effort: 45 min."
+  suggestion: (
+      "Extract 3 methods: validate_items(), calculate_totals(), apply_discounts(). "
+      "Effort: 45 min."
+  )
 
 BAD EXAMPLE (DO NOT USE):
   issue_type: "code smell"

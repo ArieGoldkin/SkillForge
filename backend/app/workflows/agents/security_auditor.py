@@ -55,13 +55,18 @@ FORBIDDEN VAGUE LANGUAGE - Never use:
 GOOD EXAMPLE:
   risk_type: "sql_injection"
   severity: "critical"
-  description: "Unsanitized user input in query at api/users.py:47 allows SQL injection, affecting 50K+ user records. CVSS 9.8."
+  description: (
+      "Unsanitized user input in query at api/users.py:47 allows SQL injection, "
+      "affecting 50K+ user records. CVSS 9.8."
+  )
   mitigation: "Use parameterized queries with SQLAlchemy ORM. Estimated fix: 2 hours."
 
 BAD EXAMPLE (DO NOT USE):
   risk_type: "database issue"
   severity: "high"
-  description: "There may be some SQL injection vulnerabilities that could potentially be exploited."
+  description: (
+      "There may be some SQL injection vulnerabilities that could potentially be exploited."
+  )
   mitigation: "Consider implementing appropriate security measures."
 
 Be thorough and prioritize critical vulnerabilities."""
