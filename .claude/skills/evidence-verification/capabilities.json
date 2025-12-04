@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "evidence-verification",
+  "version": "3.5.0",
+  "description": "Exit code validation, test result capture, build log analysis, and evidence templates",
+
+  "capabilities": {
+    "exit-code-validation": {
+      "keywords": ["exit code", "return code", "success", "failure", "status"],
+      "solves": [
+        "How do I verify command succeeded?",
+        "Check exit codes for evidence",
+        "Validate build/test success"
+      ],
+      "template_file": "templates/exit-code-capture.md",
+      "token_cost": 80
+    },
+    "test-evidence": {
+      "keywords": ["test results", "test output", "coverage report", "test evidence"],
+      "solves": [
+        "How do I capture test evidence?",
+        "Record test results in context",
+        "Prove tests passed"
+      ],
+      "template_file": "templates/test-evidence.md",
+      "token_cost": 100
+    },
+    "build-evidence": {
+      "keywords": ["build log", "build output", "compile", "bundle"],
+      "solves": [
+        "How do I capture build evidence?",
+        "Record build success",
+        "Verify compilation"
+      ],
+      "template_file": "templates/build-evidence.md",
+      "token_cost": 80
+    },
+    "quality-recording": {
+      "keywords": ["quality evidence", "shared context", "record", "proof"],
+      "solves": [
+        "How do I record evidence in context?",
+        "Update shared-context.json",
+        "Evidence-based verification"
+      ],
+      "reference_file": "SKILL.md#evidence-recording",
+      "token_cost": 120
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["verify.*success", "capture.*evidence", "prove.*completed"],
+    "medium_confidence": ["check.*passed", "evidence", "proof"]
+  },
+
+  "integrates_with": ["quality-gates", "code-review-playbook"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 300, "sections": ["overview", "evidence-types"] },
+    "tier_3_specific": { "files": "templates/*.md", "tokens": "80-120 each" }
+  },
+
+  "auto_trigger": {
+    "on_agent": "code-quality-reviewer",
+    "when": "after running tests/builds",
+    "action": "capture exit codes and results"
+  }
+}

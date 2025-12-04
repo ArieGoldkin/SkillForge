@@ -1,0 +1,782 @@
+{
+  "$schema": "./schemas/agent-registry.schema.json",
+  "version": "2.0.0",
+  "description": "Dynamic agent and skill registry enabling semantic discovery, progressive loading, and workflow composition",
+  "last_updated": "2025-12-04",
+
+  "discovery": {
+    "protocol": "semantic",
+    "fallback": "keyword",
+    "confidence_threshold": 0.7,
+    "max_agents_per_task": 3
+  },
+
+  "agents": {
+    "backend-system-architect": {
+      "display_name": "Backend System Architect",
+      "color": "yellow",
+      "model_preference": {
+        "design": "sonnet",
+        "simple_queries": "haiku",
+        "complex_analysis": "opus"
+      },
+      "capabilities": [
+        "api-design",
+        "database-schema",
+        "authentication",
+        "authorization",
+        "rate-limiting",
+        "microservices",
+        "rest-api",
+        "graphql",
+        "caching",
+        "webhooks"
+      ],
+      "can_solve_examples": [
+        "How do I add a paginated endpoint?",
+        "Design a database schema for user preferences",
+        "Implement JWT refresh tokens",
+        "Add rate limiting to the API",
+        "Create a webhook system",
+        "Design microservice boundaries"
+      ],
+      "skills_used": [
+        "api-design-framework",
+        "database-schema-designer",
+        "security-checklist",
+        "streaming-api-patterns"
+      ],
+      "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["backend/**", "api/**", "database/**", "services/**"],
+        "forbidden": ["frontend/**", "components/**", "styles/**"]
+      },
+      "handoff_to": ["code-quality-reviewer", "frontend-ui-developer"],
+      "mcp_tools": {
+        "documentation": ["context7"],
+        "testing": ["skillforge-postgres-dev"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "frontend-ui-developer": {
+      "display_name": "Frontend UI Developer",
+      "color": "purple",
+      "model_preference": {
+        "components": "sonnet",
+        "simple_styling": "haiku",
+        "complex_state": "sonnet"
+      },
+      "capabilities": [
+        "react-components",
+        "typescript-frontend",
+        "state-management",
+        "responsive-design",
+        "accessibility",
+        "performance-optimization",
+        "hooks",
+        "forms",
+        "animations"
+      ],
+      "can_solve_examples": [
+        "Create a login form component",
+        "Build a responsive dashboard layout",
+        "Implement dark mode toggle",
+        "Add form validation with error states",
+        "Create a reusable modal component",
+        "Optimize component re-renders"
+      ],
+      "skills_used": [
+        "react-server-components-framework",
+        "design-system-starter",
+        "type-safety-validation",
+        "testing-strategy-builder"
+      ],
+      "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["frontend/**", "components/**", "styles/**", "hooks/**"],
+        "forbidden": ["backend/**", "api/**", "database/**"]
+      },
+      "handoff_to": ["code-quality-reviewer", "whimsy-injector"],
+      "mcp_tools": {
+        "documentation": ["context7"],
+        "testing": ["playwright"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "ai-ml-engineer": {
+      "display_name": "AI/ML Engineer",
+      "color": "orange",
+      "model_preference": {
+        "prompt_engineering": "opus",
+        "integration": "sonnet",
+        "simple_queries": "haiku"
+      },
+      "capabilities": [
+        "llm-integration",
+        "prompt-engineering",
+        "rag-pipelines",
+        "embeddings",
+        "vector-search",
+        "streaming-responses",
+        "function-calling",
+        "cost-optimization",
+        "langchain",
+        "langgraph"
+      ],
+      "can_solve_examples": [
+        "Integrate OpenAI API with streaming",
+        "Build a RAG pipeline for document Q&A",
+        "Implement prompt caching for cost reduction",
+        "Add function calling to the chatbot",
+        "Design a multi-agent workflow",
+        "Optimize token usage"
+      ],
+      "skills_used": [
+        "ai-native-development",
+        "streaming-api-patterns",
+        "observability-monitoring"
+      ],
+      "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch"],
+      "boundaries": {
+        "allowed": ["backend/app/workflows/**", "backend/app/services/**", "ml/**", "prompts/**"],
+        "forbidden": ["infrastructure/**", "deployment/**"]
+      },
+      "handoff_to": ["code-quality-reviewer", "backend-system-architect"],
+      "mcp_tools": {
+        "documentation": ["context7"],
+        "observability": ["skillforge-langsmith"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "code-quality-reviewer": {
+      "display_name": "Code Quality Reviewer",
+      "color": "green",
+      "model_preference": {
+        "security_review": "opus",
+        "lint_check": "haiku",
+        "architecture_review": "sonnet"
+      },
+      "capabilities": [
+        "code-review",
+        "security-audit",
+        "linting",
+        "type-checking",
+        "test-coverage",
+        "performance-review",
+        "dependency-audit",
+        "best-practices"
+      ],
+      "can_solve_examples": [
+        "Review this PR for security issues",
+        "Check test coverage for the auth module",
+        "Run linting and fix violations",
+        "Audit dependencies for vulnerabilities",
+        "Review code for performance issues",
+        "Validate TypeScript strict mode compliance"
+      ],
+      "skills_used": [
+        "code-review-playbook",
+        "security-checklist",
+        "testing-strategy-builder",
+        "evidence-verification"
+      ],
+      "tools": ["Read", "Bash", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["**/*.test.*", "**/*.spec.*", "tests/**"],
+        "forbidden_actions": ["direct_implementation", "architecture_changes"]
+      },
+      "handoff_to": [],
+      "mcp_tools": {
+        "diagnostics": ["ide"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "studio-coach": {
+      "display_name": "Studio Coach",
+      "color": "blue",
+      "model_preference": {
+        "orchestration": "opus",
+        "simple_coordination": "sonnet"
+      },
+      "capabilities": [
+        "orchestration",
+        "task-decomposition",
+        "agent-coordination",
+        "workflow-composition",
+        "conflict-resolution",
+        "progress-tracking"
+      ],
+      "can_solve_examples": [
+        "Build a complete authentication system",
+        "Create a full-stack feature from scratch",
+        "Coordinate backend and frontend for new feature",
+        "Plan and execute a multi-sprint project",
+        "Resolve conflicts between agent outputs"
+      ],
+      "skills_used": [
+        "quality-gates",
+        "evidence-verification"
+      ],
+      "tools": ["Task", "Write", "Read"],
+      "is_orchestrator": true,
+      "can_invoke_agents": [
+        "backend-system-architect",
+        "frontend-ui-developer",
+        "ai-ml-engineer",
+        "code-quality-reviewer",
+        "ux-researcher",
+        "rapid-ui-designer"
+      ],
+      "mcp_tools": {
+        "planning": ["sequential-thinking"],
+        "memory": ["memory"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "ux-researcher": {
+      "display_name": "UX Researcher",
+      "color": "pink",
+      "model_preference": {
+        "research": "sonnet",
+        "synthesis": "opus"
+      },
+      "capabilities": [
+        "user-research",
+        "persona-creation",
+        "journey-mapping",
+        "usability-testing",
+        "a-b-testing",
+        "analytics-interpretation",
+        "accessibility-review"
+      ],
+      "can_solve_examples": [
+        "Create user personas for the app",
+        "Map the user journey for checkout flow",
+        "Analyze where users drop off",
+        "Design a usability test plan",
+        "Recommend placement for CTA buttons"
+      ],
+      "skills_used": [
+        "design-system-starter"
+      ],
+      "tools": ["Write", "Read", "WebSearch"],
+      "handoff_to": ["rapid-ui-designer", "frontend-ui-developer"],
+      "mcp_tools": {
+        "research": ["WebSearch"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "rapid-ui-designer": {
+      "display_name": "Rapid UI Designer",
+      "color": "cyan",
+      "model_preference": {
+        "design": "sonnet",
+        "simple_mockups": "haiku"
+      },
+      "capabilities": [
+        "ui-design",
+        "wireframing",
+        "prototyping",
+        "design-systems",
+        "component-architecture",
+        "responsive-layouts",
+        "color-theory",
+        "typography"
+      ],
+      "can_solve_examples": [
+        "Design a dashboard layout",
+        "Create a component library structure",
+        "Define spacing and typography scales",
+        "Design responsive breakpoints",
+        "Create a color palette for dark mode"
+      ],
+      "skills_used": [
+        "design-system-starter"
+      ],
+      "tools": ["Write", "Read"],
+      "handoff_to": ["frontend-ui-developer"],
+      "mcp_tools": {
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "sprint-prioritizer": {
+      "display_name": "Sprint Prioritizer",
+      "color": "teal",
+      "model_preference": {
+        "planning": "sonnet"
+      },
+      "capabilities": [
+        "sprint-planning",
+        "backlog-management",
+        "prioritization",
+        "estimation",
+        "dependency-mapping",
+        "velocity-tracking"
+      ],
+      "can_solve_examples": [
+        "Plan next sprint tasks",
+        "Prioritize the backlog using MoSCoW",
+        "Estimate story points for features",
+        "Identify blocking dependencies",
+        "Create a release roadmap"
+      ],
+      "skills_used": [],
+      "tools": ["Write", "Read", "TodoWrite"],
+      "handoff_to": ["studio-coach"],
+      "mcp_tools": {
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "product-manager": {
+      "display_name": "Product Manager",
+      "color": "indigo",
+      "model_preference": {
+        "strategy": "opus",
+        "documentation": "sonnet"
+      },
+      "capabilities": [
+        "product-strategy",
+        "prd-creation",
+        "feature-specification",
+        "market-research",
+        "user-stories",
+        "success-metrics",
+        "competitive-analysis"
+      ],
+      "can_solve_examples": [
+        "Write a PRD for the new feature",
+        "Define success metrics for launch",
+        "Create user stories for the epic",
+        "Analyze competitor features",
+        "Define MVP scope"
+      ],
+      "skills_used": [
+        "architecture-decision-record"
+      ],
+      "tools": ["Write", "Read", "WebSearch", "WebFetch", "TodoWrite"],
+      "handoff_to": ["sprint-prioritizer", "ux-researcher"],
+      "mcp_tools": {
+        "research": ["WebSearch"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "whimsy-injector": {
+      "display_name": "Whimsy Injector",
+      "color": "magenta",
+      "model_preference": {
+        "creativity": "sonnet"
+      },
+      "capabilities": [
+        "micro-interactions",
+        "animations",
+        "easter-eggs",
+        "delightful-ux",
+        "loading-states",
+        "success-celebrations",
+        "empty-states"
+      ],
+      "can_solve_examples": [
+        "Add confetti on successful signup",
+        "Create a playful loading animation",
+        "Design an engaging empty state",
+        "Add hover micro-interactions",
+        "Create an easter egg for power users"
+      ],
+      "skills_used": [],
+      "tools": ["Read", "Edit", "MultiEdit"],
+      "handoff_to": ["code-quality-reviewer"],
+      "mcp_tools": {
+        "discovery": ["mcp-find"]
+      }
+    }
+  },
+
+  "skills": {
+    "api-design-framework": {
+      "display_name": "API Design Framework",
+      "path": ".claude/skills/api-design-framework",
+      "provides": [
+        "openapi-templates",
+        "versioning-patterns",
+        "error-handling",
+        "pagination",
+        "rate-limiting-design",
+        "authentication-patterns"
+      ],
+      "used_by_agents": ["backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 600,
+        "full": 2500
+      }
+    },
+
+    "security-checklist": {
+      "display_name": "Security Checklist",
+      "path": ".claude/skills/security-checklist",
+      "provides": [
+        "owasp-top-10",
+        "authentication-patterns",
+        "input-validation",
+        "encryption-guidance",
+        "dependency-scanning",
+        "compliance-checklists"
+      ],
+      "used_by_agents": ["code-quality-reviewer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "checklists": "checklists/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 800,
+        "full": 4000
+      }
+    },
+
+    "ai-native-development": {
+      "display_name": "AI Native Development",
+      "path": ".claude/skills/ai-native-development",
+      "provides": [
+        "rag-patterns",
+        "embeddings",
+        "vector-databases",
+        "function-calling",
+        "agentic-workflows",
+        "cost-optimization",
+        "observability"
+      ],
+      "used_by_agents": ["ai-ml-engineer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 700,
+        "full": 3500
+      }
+    },
+
+    "react-server-components-framework": {
+      "display_name": "React Server Components",
+      "path": ".claude/skills/react-server-components-framework",
+      "provides": [
+        "rsc-patterns",
+        "server-actions",
+        "streaming-ssr",
+        "data-fetching",
+        "caching-strategies"
+      ],
+      "used_by_agents": ["frontend-ui-developer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "testing-strategy-builder": {
+      "display_name": "Testing Strategy Builder",
+      "path": ".claude/skills/testing-strategy-builder",
+      "provides": [
+        "test-planning",
+        "unit-testing",
+        "integration-testing",
+        "e2e-testing",
+        "coverage-targets",
+        "mocking-strategies"
+      ],
+      "used_by_agents": ["code-quality-reviewer", "frontend-ui-developer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "database-schema-designer": {
+      "display_name": "Database Schema Designer",
+      "path": ".claude/skills/database-schema-designer",
+      "provides": [
+        "schema-design",
+        "normalization",
+        "indexing-strategies",
+        "migration-patterns",
+        "query-optimization"
+      ],
+      "used_by_agents": ["backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "design-system-starter": {
+      "display_name": "Design System Starter",
+      "path": ".claude/skills/design-system-starter",
+      "provides": [
+        "design-tokens",
+        "component-patterns",
+        "spacing-scales",
+        "typography-systems",
+        "color-palettes"
+      ],
+      "used_by_agents": ["rapid-ui-designer", "frontend-ui-developer", "ux-researcher"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "streaming-api-patterns": {
+      "display_name": "Streaming API Patterns",
+      "path": ".claude/skills/streaming-api-patterns",
+      "provides": [
+        "sse-patterns",
+        "websocket-patterns",
+        "readable-streams",
+        "backpressure-handling",
+        "reconnection-strategies"
+      ],
+      "used_by_agents": ["backend-system-architect", "ai-ml-engineer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "code-review-playbook": {
+      "display_name": "Code Review Playbook",
+      "path": ".claude/skills/code-review-playbook",
+      "provides": [
+        "review-checklists",
+        "conventional-comments",
+        "feedback-templates",
+        "language-specific-checks"
+      ],
+      "used_by_agents": ["code-quality-reviewer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "checklists": "checklists/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "evidence-verification": {
+      "display_name": "Evidence Verification",
+      "path": ".claude/skills/evidence-verification",
+      "provides": [
+        "exit-code-validation",
+        "test-result-capture",
+        "build-log-analysis",
+        "evidence-templates"
+      ],
+      "used_by_agents": ["code-quality-reviewer", "studio-coach"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 300,
+        "full": 1000
+      }
+    },
+
+    "quality-gates": {
+      "display_name": "Quality Gates",
+      "path": ".claude/skills/quality-gates",
+      "provides": [
+        "complexity-scoring",
+        "blocking-thresholds",
+        "gate-validation",
+        "stuck-detection"
+      ],
+      "used_by_agents": ["studio-coach", "code-quality-reviewer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 300,
+        "full": 800
+      }
+    },
+
+    "type-safety-validation": {
+      "display_name": "Type Safety & Validation",
+      "path": ".claude/skills/type-safety-validation",
+      "provides": [
+        "zod-schemas",
+        "trpc-patterns",
+        "prisma-types",
+        "end-to-end-typing"
+      ],
+      "used_by_agents": ["frontend-ui-developer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "observability-monitoring": {
+      "display_name": "Observability & Monitoring",
+      "path": ".claude/skills/observability-monitoring",
+      "provides": [
+        "structured-logging",
+        "metrics-collection",
+        "distributed-tracing",
+        "alerting-strategies"
+      ],
+      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "architecture-decision-record": {
+      "display_name": "Architecture Decision Record",
+      "path": ".claude/skills/architecture-decision-record",
+      "provides": [
+        "adr-templates",
+        "decision-documentation",
+        "tradeoff-analysis"
+      ],
+      "used_by_agents": ["product-manager", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 300,
+        "full": 1000
+      }
+    }
+  },
+
+  "workflows": {
+    "secure-api-endpoint": {
+      "description": "Create a secure API endpoint with authentication, validation, and tests",
+      "composes_skills": [
+        "api-design-framework/references/endpoint-patterns.md",
+        "security-checklist/references/api-security.md",
+        "testing-strategy-builder/templates/api-test.md"
+      ],
+      "primary_agent": "backend-system-architect",
+      "validation_agent": "code-quality-reviewer",
+      "estimated_tokens": 800
+    },
+    "full-stack-feature": {
+      "description": "Build a complete feature with backend API and frontend UI",
+      "composes_skills": [
+        "api-design-framework/references/endpoint-patterns.md",
+        "react-server-components-framework/references/data-fetching.md",
+        "type-safety-validation/templates/shared-types.md"
+      ],
+      "orchestrator": "studio-coach",
+      "agents": ["backend-system-architect", "frontend-ui-developer"],
+      "estimated_tokens": 1200
+    },
+    "ai-integration": {
+      "description": "Add AI/LLM capabilities to the application",
+      "composes_skills": [
+        "ai-native-development/references/rag-patterns.md",
+        "streaming-api-patterns/references/sse-patterns.md",
+        "observability-monitoring/references/llm-tracing.md"
+      ],
+      "primary_agent": "ai-ml-engineer",
+      "validation_agent": "code-quality-reviewer",
+      "estimated_tokens": 1000
+    }
+  },
+
+  "mcp_integration": {
+    "always_available": [
+      "context7",
+      "sequential-thinking",
+      "memory"
+    ],
+    "on_demand": {
+      "testing": ["playwright"],
+      "database": ["skillforge-postgres-dev"],
+      "observability": ["skillforge-langsmith"],
+      "docker": ["MCP_DOCKER"]
+    },
+    "discovery_tool": "mcp__MCP_DOCKER__mcp-find",
+    "add_tool": "mcp__MCP_DOCKER__mcp-add",
+    "compose_tool": "mcp__MCP_DOCKER__code-mode"
+  }
+}

@@ -75,9 +75,20 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
             url=url,
             word_count=extracted.get("word_count", 0),
         )
+        # Build extraction_metadata from Jina's metadata plus top-level fields
+        # Type-safe construction: start with nested metadata dict, add top-level fields
+        base_metadata = extracted.get("metadata")
+        metadata: dict[str, str | int | None] = (
+            dict(base_metadata) if isinstance(base_metadata, dict) else {}
+        )
+        title_value = extracted.get("title")
+        metadata["title"] = title_value if isinstance(title_value, str) else None
+        word_count = extracted.get("word_count")
+        metadata["word_count"] = word_count if isinstance(word_count, int) else None
+
         return {
             "raw_content": extracted["content"],
-            "extraction_metadata": extracted["metadata"],
+            "extraction_metadata": metadata,
         }
     except Exception as e:
         # Emit SSE event: extraction failed

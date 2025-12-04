@@ -1,0 +1,67 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "quality-gates",
+  "version": "3.5.0",
+  "description": "Complexity scoring, blocking thresholds, gate validation, and stuck detection",
+
+  "capabilities": {
+    "complexity-scoring": {
+      "keywords": ["complexity", "score", "difficulty", "estimate", "sizing"],
+      "solves": [
+        "How complex is this task?",
+        "Score task complexity 1-5",
+        "Assess implementation difficulty"
+      ],
+      "reference_file": "SKILL.md#complexity-scoring",
+      "token_cost": 100
+    },
+    "blocking-thresholds": {
+      "keywords": ["blocking", "threshold", "gate", "stop", "escalate"],
+      "solves": [
+        "When should I block progress?",
+        "Define quality thresholds",
+        "Escalation criteria"
+      ],
+      "reference_file": "SKILL.md#blocking-thresholds",
+      "token_cost": 120
+    },
+    "stuck-detection": {
+      "keywords": ["stuck", "failed attempts", "retry", "blocked", "help"],
+      "solves": [
+        "How do I detect when stuck?",
+        "After N failed attempts, escalate",
+        "Automatic stuck detection"
+      ],
+      "reference_file": "SKILL.md#stuck-detection",
+      "token_cost": 80
+    },
+    "gate-validation": {
+      "keywords": ["validate", "gate", "pass", "fail", "criteria"],
+      "solves": [
+        "How do I validate quality gates?",
+        "Check if task passes gates",
+        "Quality gate checklist"
+      ],
+      "reference_file": "SKILL.md#gate-validation",
+      "token_cost": 100
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["quality.*gate", "block.*task", "complexity.*score"],
+    "medium_confidence": ["stuck", "escalate", "threshold"]
+  },
+
+  "integrates_with": ["evidence-verification"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 300, "sections": ["overview", "gate-types"] }
+  },
+
+  "auto_trigger": {
+    "on_agent": "studio-coach",
+    "when": "planning complex multi-agent tasks",
+    "action": "score complexity and set gates"
+  }
+}

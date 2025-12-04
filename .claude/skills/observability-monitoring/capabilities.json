@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "observability-monitoring",
+  "version": "3.7.0",
+  "description": "Structured logging, metrics collection, distributed tracing, and alerting strategies",
+
+  "capabilities": {
+    "structured-logging": {
+      "keywords": ["logging", "structured log", "json log", "log level", "pino", "winston"],
+      "solves": [
+        "How do I set up structured logging?",
+        "JSON logging best practices",
+        "Log levels and formatting"
+      ],
+      "reference_file": "SKILL.md#structured-logging",
+      "token_cost": 150
+    },
+    "metrics": {
+      "keywords": ["metrics", "prometheus", "grafana", "counter", "histogram", "gauge"],
+      "solves": [
+        "How do I collect metrics?",
+        "Prometheus metrics setup",
+        "Application metrics best practices"
+      ],
+      "reference_file": "SKILL.md#metrics-collection",
+      "token_cost": 180
+    },
+    "tracing": {
+      "keywords": ["tracing", "distributed tracing", "opentelemetry", "span", "trace id"],
+      "solves": [
+        "How do I implement distributed tracing?",
+        "OpenTelemetry setup",
+        "Trace context propagation"
+      ],
+      "reference_file": "SKILL.md#distributed-tracing",
+      "token_cost": 200
+    },
+    "alerting": {
+      "keywords": ["alert", "alerting", "notification", "threshold", "pagerduty", "slack"],
+      "solves": [
+        "How do I set up alerts?",
+        "Alert threshold strategies",
+        "On-call notification patterns"
+      ],
+      "reference_file": "SKILL.md#alerting-strategies",
+      "token_cost": 140
+    },
+    "dashboards": {
+      "keywords": ["dashboard", "visualization", "grafana", "charts", "slo", "sli"],
+      "solves": [
+        "How do I create monitoring dashboards?",
+        "SLO/SLI definition",
+        "Grafana dashboard patterns"
+      ],
+      "reference_file": "SKILL.md#dashboards",
+      "token_cost": 150
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["monitoring.*setup", "logging.*structured", "tracing.*distributed"],
+    "medium_confidence": ["observe", "metrics", "alert"]
+  },
+
+  "integrates_with": ["ai-native-development", "devops-deployment"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "pillars"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "140-200 each" }
+  },
+
+  "mcp_tools": {
+    "tracing": { "tool": "skillforge-langsmith", "use_when": "LLM observability needed" },
+    "documentation": { "tool": "context7", "library_ids": ["/open-telemetry/opentelemetry-js"] }
+  }
+}

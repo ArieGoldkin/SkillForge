@@ -3,7 +3,14 @@
  * Connects to the FastAPI backend at /api/v1/*
  */
 
-import type { Analysis, AnalyzeRequest, AnalyzeResponse, Artifact } from '@app-types/api'
+import type {
+  Analysis,
+  AnalyzeRequest,
+  AnalyzeResponse,
+  Artifact,
+  LibraryListResponse,
+  LibrarySearchParams,
+} from '@app-types/api'
 
 // API base URL - uses Vite env variable or defaults to localhost:8500
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8500'
@@ -126,6 +133,25 @@ export const analyzeAPI = {
    */
   getSSEEndpoint: (analysisId: string): string => {
     return `${API_BASE_URL}/api/v1/analyze/${analysisId}/stream`
+  },
+
+  /**
+   * Search library with full-text, semantic, or hybrid search
+   * GET /api/v1/library
+   */
+  searchLibrary: async (params: LibrarySearchParams = {}): Promise<LibraryListResponse> => {
+    const searchParams = new URLSearchParams()
+    if (params.query) searchParams.set('query', params.query)
+    if (params.content_type) searchParams.set('content_type', params.content_type)
+    if (params.status) searchParams.set('status', params.status)
+    if (params.search_mode) searchParams.set('search_mode', params.search_mode)
+    if (params.limit) searchParams.set('limit', params.limit.toString())
+    if (params.offset) searchParams.set('offset', params.offset.toString())
+
+    const queryString = searchParams.toString()
+    const endpoint = `/api/v1/library${queryString ? `?${queryString}` : ''}`
+
+    return apiFetch<LibraryListResponse>(endpoint)
   },
 }
 

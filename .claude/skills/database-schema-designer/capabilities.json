@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "database-schema-designer",
+  "version": "1.0.0",
+  "description": "Schema design for SQL/NoSQL databases, normalization, indexing, migrations, and optimization",
+
+  "capabilities": {
+    "schema-design": {
+      "keywords": ["schema", "table", "model", "entity", "relationship", "erd"],
+      "solves": [
+        "How do I design the database schema?",
+        "Model relationships between entities",
+        "Create an ERD for this feature"
+      ],
+      "reference_file": "SKILL.md#sql-database-design",
+      "token_cost": 200
+    },
+    "normalization": {
+      "keywords": ["normalize", "1nf", "2nf", "3nf", "denormalize", "redundancy"],
+      "solves": [
+        "Should I normalize this table?",
+        "What normal form should I use?",
+        "When to denormalize"
+      ],
+      "reference_file": "SKILL.md#normalization",
+      "token_cost": 180
+    },
+    "indexing": {
+      "keywords": ["index", "query performance", "slow query", "explain", "optimize"],
+      "solves": [
+        "Which columns should I index?",
+        "Query is slow, how to optimize?",
+        "Composite index strategies"
+      ],
+      "reference_file": "SKILL.md#indexing-strategies",
+      "token_cost": 150
+    },
+    "migrations": {
+      "keywords": ["migration", "alter table", "schema change", "versioning", "rollback"],
+      "solves": [
+        "How do I write a database migration?",
+        "Safe migration strategies",
+        "Zero-downtime migrations"
+      ],
+      "reference_file": "SKILL.md#migrations",
+      "token_cost": 160
+    },
+    "nosql-design": {
+      "keywords": ["nosql", "mongodb", "document", "collection", "embedding", "referencing"],
+      "solves": [
+        "When to use NoSQL?",
+        "MongoDB schema design",
+        "Embed vs reference documents"
+      ],
+      "reference_file": "SKILL.md#nosql-database-design",
+      "token_cost": 180
+    },
+    "partitioning": {
+      "keywords": ["partition", "shard", "scale", "horizontal", "archive"],
+      "solves": [
+        "How do I partition large tables?",
+        "Sharding strategies",
+        "Data archival patterns"
+      ],
+      "reference_file": "SKILL.md#partitioning",
+      "token_cost": 140
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["database.*design", "schema.*create", "table.*structure", "data.*model"],
+    "medium_confidence": ["create.*table", "add.*column", "query.*slow"]
+  },
+
+  "integrates_with": ["api-design-framework", "type-safety-validation"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 500, "sections": ["overview", "core-principles"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "140-200 each" }
+  },
+
+  "mcp_tools": {
+    "database": { "tool": "skillforge-postgres-dev", "use_when": "Testing schema/queries" },
+    "documentation": { "tool": "context7", "library_ids": ["/prisma/prisma", "/sqlalchemy/sqlalchemy"] }
+  }
+}

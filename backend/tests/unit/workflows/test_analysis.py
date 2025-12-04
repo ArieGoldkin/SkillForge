@@ -20,6 +20,7 @@ TEST_ANALYSIS_ID = str(uuid4())
 def sample_extraction_result() -> dict:
     """Sample extraction result from JinaReader."""
     return {
+        "title": "Test Article",
         "content": "# Test Article\n\nThis is test content.",
         "metadata": {
             "extractor": "jina_reader",
@@ -109,7 +110,13 @@ async def test_analysis_workflow_with_mocked_services(
         assert result["analysis_id"] == TEST_ANALYSIS_ID
         assert result["url"] == "https://example.com"
         assert result["raw_content"] == sample_extraction_result["content"]
-        assert result["extraction_metadata"] == sample_extraction_result["metadata"]
+        # extraction_metadata now includes title and word_count from top-level fields
+        expected_metadata = {
+            **sample_extraction_result["metadata"],
+            "title": sample_extraction_result.get("title"),
+            "word_count": sample_extraction_result.get("word_count"),
+        }
+        assert result["extraction_metadata"] == expected_metadata
         assert result["content_embedding"] == sample_embedding
         assert result["agent_findings"] == []
 

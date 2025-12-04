@@ -1,0 +1,66 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "edge-computing-patterns",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers, Vercel Edge, Deno Deploy for globally distributed, low-latency applications",
+
+  "capabilities": {
+    "cloudflare-workers": {
+      "keywords": ["cloudflare", "workers", "kv", "durable objects", "r2"],
+      "solves": [
+        "How do I deploy to Cloudflare Workers?",
+        "Cloudflare KV patterns",
+        "Durable Objects usage"
+      ],
+      "reference_file": "SKILL.md#cloudflare-workers",
+      "token_cost": 180
+    },
+    "vercel-edge": {
+      "keywords": ["vercel edge", "edge functions", "edge middleware", "geolocation"],
+      "solves": [
+        "How do I use Vercel Edge Functions?",
+        "Edge middleware patterns",
+        "Geo-based routing"
+      ],
+      "reference_file": "SKILL.md#vercel-edge",
+      "token_cost": 160
+    },
+    "edge-constraints": {
+      "keywords": ["edge runtime", "edge limitations", "no node", "web apis"],
+      "solves": [
+        "What are edge runtime constraints?",
+        "Edge-compatible code patterns",
+        "Web API only patterns"
+      ],
+      "reference_file": "SKILL.md#edge-constraints",
+      "token_cost": 120
+    },
+    "edge-caching": {
+      "keywords": ["edge cache", "cdn", "cache-control", "stale-while-revalidate"],
+      "solves": [
+        "How do I cache at the edge?",
+        "CDN caching strategies",
+        "Cache headers for edge"
+      ],
+      "reference_file": "SKILL.md#edge-caching",
+      "token_cost": 140
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["edge.*function", "cloudflare.*worker", "vercel.*edge"],
+    "medium_confidence": ["edge", "cdn", "globally.*distributed"]
+  },
+
+  "integrates_with": ["performance-optimization", "streaming-api-patterns"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "edge-runtimes"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "120-180 each" }
+  },
+
+  "mcp_tools": {
+    "documentation": { "tool": "context7", "library_ids": ["/cloudflare/workers-sdk"] }
+  }
+}

@@ -14,12 +14,20 @@ from app.db.repositories.artifact_repository import (
     IArtifactRepository,
     get_artifact_repository,
 )
+from app.db.repositories.library_repository import (
+    ILibraryRepository,
+    LibraryRepository,
+    get_library_repository,
+)
 
 __all__ = [
     "AnalysisRepository",
     "ArtifactRepository",
     "IAnalysisRepository",
     "IArtifactRepository",
+    "ILibraryRepository",
+    "LibraryRepository",
     "get_analysis_repository",
     "get_artifact_repository",
+    "get_library_repository",
 ]

@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "design-system-starter",
+  "version": "1.0.0",
+  "description": "Design tokens, component architecture, accessibility guidelines, and design system patterns",
+
+  "capabilities": {
+    "design-tokens": {
+      "keywords": ["design tokens", "css variables", "theme", "colors", "spacing", "typography scale"],
+      "solves": [
+        "How do I create design tokens?",
+        "Define color palette system",
+        "Typography and spacing scales"
+      ],
+      "template_file": "templates/design-tokens.css",
+      "token_cost": 150
+    },
+    "component-patterns": {
+      "keywords": ["component library", "atomic design", "compound components", "variants"],
+      "solves": [
+        "How do I structure a component library?",
+        "Atomic design methodology",
+        "Component variant patterns"
+      ],
+      "reference_file": "SKILL.md#component-architecture",
+      "token_cost": 180
+    },
+    "accessibility": {
+      "keywords": ["a11y", "accessibility", "wcag", "aria", "screen reader", "keyboard"],
+      "solves": [
+        "Make components accessible",
+        "WCAG 2.1 compliance",
+        "ARIA patterns"
+      ],
+      "reference_file": "SKILL.md#accessibility-guidelines",
+      "token_cost": 160
+    },
+    "responsive-design": {
+      "keywords": ["responsive", "breakpoints", "mobile-first", "media query", "fluid"],
+      "solves": [
+        "Define breakpoint system",
+        "Mobile-first approach",
+        "Responsive component patterns"
+      ],
+      "reference_file": "SKILL.md#responsive-design",
+      "token_cost": 120
+    },
+    "dark-mode": {
+      "keywords": ["dark mode", "theme switching", "color scheme", "light dark"],
+      "solves": [
+        "Implement dark mode",
+        "Theme switching pattern",
+        "Color scheme management"
+      ],
+      "reference_file": "SKILL.md#dark-mode",
+      "token_cost": 130
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["design.*system", "component.*library", "design.*tokens", "theme.*setup"],
+    "medium_confidence": ["color.*palette", "typography.*scale", "dark.*mode"]
+  },
+
+  "integrates_with": ["react-server-components-framework"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "core-concepts"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "120-180 each" },
+    "tier_4_generate": { "files": "templates/*", "tokens": "130-200 each" }
+  },
+
+  "mcp_tools": {
+    "documentation": { "tool": "context7", "library_ids": ["/tailwindlabs/tailwindcss", "/shadcn-ui/ui"] }
+  }
+}
