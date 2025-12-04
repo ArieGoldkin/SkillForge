@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** November 30, 2025
+**Last Updated:** December 4, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -67,8 +67,12 @@ docs/issues/
 │   └── README.md                         # Issue #90 open doc
 ├── 091-workflow-status-fix/
 │   └── README.md                         # Issue #91 open doc
-└── 092-extraction-error-handling/
-    └── README.md                         # Issue #92 open doc
+├── 092-extraction-error-handling/
+│   └── README.md                         # Issue #92 open doc
+├── 164-sse-progress-stuck/
+│   └── README.md                         # Issue #164 complete doc
+└── 165-skipped-agents-pending/
+    └── README.md                         # Issue #165 complete doc
 ```
 
 ---
@@ -103,6 +107,8 @@ docs/issues/
 | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) | Aggregator Node | 5 | ✅ Complete | Yonatan | [📄 Docs](./071-aggregator-node/README.md) | [#71](https://github.com/ArieGoldkin/SkillForge/issues/71) |
 | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) | Artifact Generation | 8 | ✅ Complete | Yonatan | [📄 Docs](./072-artifact-generation/README.md) | [#72](https://github.com/ArieGoldkin/SkillForge/issues/72) |
 | [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) | Fix Agent Type Mismatch and SSE Workflow Completion | 3 | ✅ Complete | Yonatan | [📄 Docs](./143-sse-workflow-completion-fix/README.md) | [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) |
+| [#164](https://github.com/ArieGoldkin/SkillForge/issues/164) | UI Progress stuck at 55% - handle 'workflow' stage | 3 | ✅ Complete | Arie | [📄 Docs](./164-sse-progress-stuck/README.md) | [#164](https://github.com/ArieGoldkin/SkillForge/issues/164) |
+| [#165](https://github.com/ArieGoldkin/SkillForge/issues/165) | Skipped agents show 'pending' instead of 'skipped' | 2 | ✅ Complete | Arie | [📄 Docs](./165-skipped-agents-pending/README.md) | [#165](https://github.com/ArieGoldkin/SkillForge/issues/165) |
 
 ### 🔄 In Progress / Ready (7 total - 20 pts)
 
