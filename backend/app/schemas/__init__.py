@@ -6,4 +6,5 @@ outgoing responses.
 
 Modules:
     - analyze: Schemas for analysis endpoints (AnalyzeRequest, AnalyzeResponse)
+    - library: Schemas for library search and filtering (LibraryFilters, LibrarySearchResult)
 """
