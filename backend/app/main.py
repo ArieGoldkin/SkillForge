@@ -34,7 +34,7 @@ if env_file.exists():
         os.environ.pop("LANGSMITH_PROJECT", None)  # Remove old value first
         os.environ["LANGSMITH_PROJECT"] = project_from_env
 
-from app.api.v1 import analyze, artifacts, health, search  # noqa: E402
+from app.api.v1 import analyze, artifacts, health, library, search  # noqa: E402
 from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
@@ -368,6 +368,7 @@ app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
 app.include_router(artifacts.router, prefix=settings.API_V1_PREFIX)
 app.include_router(search.router, prefix=settings.API_V1_PREFIX)
+app.include_router(library.router, prefix=settings.API_V1_PREFIX)
 app.include_router(tutor_router, prefix=settings.API_V1_PREFIX)
 
 
