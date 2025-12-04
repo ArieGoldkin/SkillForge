@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.api.v1.workflow_runner import run_workflow_task
+from app.api.v1.workflow_runner import _persist_analysis_data, run_workflow_task
 
 
 @pytest.fixture
@@ -35,8 +35,13 @@ async def test_run_workflow_task_success(
 
     from app.models.artifact import Artifact
 
-    # Mock workflow to complete successfully
-    mock_workflow.ainvoke = AsyncMock(return_value={})
+    # Mock workflow to complete successfully with data to persist
+    mock_workflow.ainvoke = AsyncMock(
+        return_value={
+            "raw_content": "Test content",
+            "extraction_metadata": {"title": "Test Title"},
+        }
+    )
 
     # Mock analysis for status update
     mock_analysis = MagicMock()
@@ -48,14 +53,22 @@ async def test_run_workflow_task_success(
     mock_artifact = MagicMock(spec=Artifact)
     mock_artifact.id = artifact_id
 
-    # Mock database session for artifact validation (first AsyncSessionLocal call after workflow completes)
+    # Mock database session for _persist_analysis_data (first call - Issue #168)
+    mock_db_session_persist = AsyncMock()
+    mock_result_persist = MagicMock()
+    mock_result_persist.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session_persist.execute.return_value = mock_result_persist
+    mock_db_session_persist.__aenter__ = AsyncMock(return_value=mock_db_session_persist)
+    mock_db_session_persist.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock database session for artifact validation (second call)
     mock_db_session_artifact_validation = AsyncMock()
     mock_db_session_artifact_validation.__aenter__ = AsyncMock(
         return_value=mock_db_session_artifact_validation
     )
     mock_db_session_artifact_validation.__aexit__ = AsyncMock(return_value=False)
 
-    # Mock database session for status update in _update_analysis_status (second call)
+    # Mock database session for status update in _update_analysis_status (third call)
     mock_db_session_status = AsyncMock()
     mock_result_status = MagicMock()
     mock_result_status.scalar_one_or_none.return_value = mock_analysis
@@ -63,7 +76,7 @@ async def test_run_workflow_task_success(
     mock_db_session_status.__aenter__ = AsyncMock(return_value=mock_db_session_status)
     mock_db_session_status.__aexit__ = AsyncMock(return_value=False)
 
-    # Mock database session for artifact query in completion event (third call)
+    # Mock database session for artifact query in completion event (fourth call)
     mock_db_session_artifact_event = AsyncMock()
     mock_db_session_artifact_event.__aenter__ = AsyncMock(
         return_value=mock_db_session_artifact_event
@@ -75,8 +88,9 @@ async def test_run_workflow_task_success(
     mock_repository_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
 
     # Track session calls to return different sessions
-    # Order: artifact validation, status update, artifact for event
+    # Order: persist data, artifact validation, status update, artifact for event
     session_calls = [
+        mock_db_session_persist,
         mock_db_session_artifact_validation,
         mock_db_session_status,
         mock_db_session_artifact_event,
@@ -457,3 +471,176 @@ async def test_run_workflow_task_fails_without_artifact(
     # Verify complete event was NOT emitted (workflow failed)
     complete_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "complete"]
     assert len(complete_calls) == 0, "Complete event should not be emitted when artifact is missing"
+
+
+# ============================================================================
+# Tests for _persist_analysis_data (Issue #168)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_success(mock_analysis_id):
+    """Test successful persistence of workflow data to analysis record."""
+    # Mock analysis record
+    mock_analysis = MagicMock()
+    mock_analysis.id = mock_analysis_id
+    mock_analysis.raw_content = None
+    mock_analysis.title = None
+    mock_analysis.extraction_metadata = None
+    mock_analysis.content_embedding = None
+
+    # Mock database session
+    mock_db_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session.execute.return_value = mock_result
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    # Workflow result with all fields
+    workflow_result = {
+        "raw_content": "This is the extracted content about React hooks...",
+        "extraction_metadata": {
+            "title": "React Hooks Tutorial",
+            "word_count": 1500,
+            "author": "Test Author",
+        },
+        "content_embedding": [0.1] * 1536,  # 1536-dimensional vector
+    }
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        result = await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    # Verify success
+    assert result is True
+
+    # Verify all fields were set
+    assert mock_analysis.raw_content == workflow_result["raw_content"]
+    assert mock_analysis.title == "React Hooks Tutorial"
+    assert mock_analysis.extraction_metadata == workflow_result["extraction_metadata"]
+    assert mock_analysis.content_embedding == workflow_result["content_embedding"]
+
+    # Verify commit was called
+    mock_db_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_partial_data(mock_analysis_id):
+    """Test persistence with partial workflow data (only some fields present)."""
+    mock_analysis = MagicMock()
+    mock_analysis.id = mock_analysis_id
+    mock_analysis.raw_content = None
+    mock_analysis.title = None
+    mock_analysis.extraction_metadata = None
+    mock_analysis.content_embedding = None
+
+    mock_db_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session.execute.return_value = mock_result
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    # Workflow result with only raw_content (no embedding, no metadata)
+    workflow_result = {
+        "raw_content": "Partial content...",
+    }
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        result = await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    assert result is True
+    assert mock_analysis.raw_content == "Partial content..."
+    # Title and embedding should not be set (no metadata/embedding in result)
+    mock_db_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_analysis_not_found(mock_analysis_id):
+    """Test persistence when analysis record is not found."""
+    mock_db_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None  # Analysis not found
+    mock_db_session.execute.return_value = mock_result
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    workflow_result = {"raw_content": "Content..."}
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        result = await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    # Should return False when analysis not found
+    assert result is False
+    mock_db_session.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_database_error(mock_analysis_id):
+    """Test persistence handles database errors gracefully."""
+    mock_db_session = AsyncMock()
+    mock_db_session.execute.side_effect = ConnectionError("DB connection failed")
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    workflow_result = {"raw_content": "Content..."}
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        result = await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    # Should return False on error (not raise)
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_empty_result(mock_analysis_id):
+    """Test persistence with empty workflow result."""
+    mock_analysis = MagicMock()
+    mock_analysis.id = mock_analysis_id
+
+    mock_db_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session.execute.return_value = mock_result
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    # Empty workflow result
+    workflow_result = {}
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        result = await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    # Should still succeed (just no data to persist)
+    assert result is True
+    mock_db_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_persist_analysis_data_extracts_title_from_metadata(mock_analysis_id):
+    """Test that title is correctly extracted from extraction_metadata."""
+    mock_analysis = MagicMock()
+    mock_analysis.id = mock_analysis_id
+    mock_analysis.title = None
+
+    mock_db_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session.execute.return_value = mock_result
+    mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
+    mock_db_session.__aexit__ = AsyncMock(return_value=False)
+
+    # extraction_metadata with title
+    workflow_result = {
+        "extraction_metadata": {
+            "title": "My Amazing Article Title",
+            "description": "Article description",
+        },
+    }
+
+    with patch("app.db.session.AsyncSessionLocal", return_value=mock_db_session):
+        await _persist_analysis_data(mock_analysis_id, workflow_result)
+
+    # Verify title was extracted and set
+    assert mock_analysis.title == "My Amazing Article Title"
+    assert mock_analysis.extraction_metadata == workflow_result["extraction_metadata"]

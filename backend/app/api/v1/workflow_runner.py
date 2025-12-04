@@ -52,6 +52,84 @@ async def _update_analysis_status(analysis_id: uuid.UUID, status: str) -> None:
         )
 
 
+async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) -> bool:
+    """Persist workflow results to the analysis record.
+
+    Updates the analysis with extracted content, title, and embedding data.
+    This enables full-text search (via search_vector trigger) and semantic search.
+
+    Args:
+        analysis_id: UUID of the analysis to update
+        workflow_result: Dictionary containing workflow state with:
+            - raw_content: Extracted text content
+            - extraction_metadata: Metadata dict with title, word_count, etc.
+            - content_embedding: Vector embedding (1536 dimensions)
+
+    Returns:
+        bool: True if data was persisted successfully, False otherwise
+
+    Note:
+        This function does not raise exceptions - errors are logged but the
+        workflow can continue. Persistence failure shouldn't fail the workflow.
+
+    """
+    try:
+        from sqlalchemy import select
+
+        from app.db.session import AsyncSessionLocal
+        from app.models.analysis import Analysis
+
+        async with AsyncSessionLocal() as db_session:
+            result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_id))
+            analysis = result.scalar_one_or_none()
+
+            if not analysis:
+                logger.warning(
+                    "persist_analysis_data_not_found",
+                    analysis_id=str(analysis_id),
+                )
+                return False
+
+            # Persist raw content
+            raw_content = workflow_result.get("raw_content")
+            if raw_content:
+                analysis.raw_content = raw_content  # type: ignore[assignment]
+
+            # Extract and persist title from extraction_metadata
+            extraction_metadata = workflow_result.get("extraction_metadata")
+            if extraction_metadata and isinstance(extraction_metadata, dict):
+                analysis.extraction_metadata = extraction_metadata  # type: ignore[assignment]
+                title = extraction_metadata.get("title")
+                if title:
+                    analysis.title = title  # type: ignore[assignment]
+
+            # Persist content embedding
+            content_embedding = workflow_result.get("content_embedding")
+            if content_embedding:
+                analysis.content_embedding = content_embedding  # type: ignore[assignment]
+
+            await db_session.commit()
+
+            logger.info(
+                "persist_analysis_data_success",
+                analysis_id=str(analysis_id),
+                has_raw_content=raw_content is not None,
+                has_title=analysis.title is not None,
+                has_embedding=content_embedding is not None,
+                raw_content_length=len(raw_content) if raw_content else 0,
+            )
+            return True
+
+    except Exception as db_error:
+        logger.error(
+            "persist_analysis_data_failed",
+            analysis_id=str(analysis_id),
+            error=str(db_error),
+            exc_info=True,
+        )
+        return False
+
+
 async def _emit_workflow_error(analysis_id: uuid.UUID, error: BaseException | Exception) -> None:
     """Emit SSE error event for workflow failure.
 
@@ -237,6 +315,11 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
             "workflow_task_complete",
             analysis_id=str(analysis_id),
         )
+
+        # Persist workflow data to analysis record (Issue #168)
+        # This enables full-text search (search_vector trigger) and semantic search
+        if isinstance(result, dict):
+            await _persist_analysis_data(analysis_id, result)
 
         # Validate artifact exists before marking analysis complete
         # This ensures data integrity - analyses should not be marked complete without artifacts
