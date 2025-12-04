@@ -19,12 +19,12 @@ def mock_agent_selection():
 
 
 @pytest.fixture
-def mock_agent_selection_empty():
-    """Mock AgentSelection with no agents."""
+def mock_agent_selection_minimal():
+    """Mock AgentSelection with minimal agents (1 agent)."""
     return AgentSelection(
-        agents=[],
-        reasoning="Simple content doesn't need analysis",
-        confidence=0.5,
+        agents=["implementation_planner"],
+        reasoning="Simple content needs basic implementation guidance",
+        confidence=0.7,
     )
 
 
@@ -106,11 +106,11 @@ async def test_supervisor_route_success(mock_agent_selection):
 
 
 @pytest.mark.asyncio
-async def test_supervisor_route_no_agents_selected(mock_agent_selection_empty):
-    """Test supervisor_route when no agents are selected."""
+async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_minimal):
+    """Test supervisor_route when minimal agents are selected (1 agent)."""
     # Mock the structured model that with_structured_output returns
     mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_empty)
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_minimal)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
@@ -123,23 +123,24 @@ async def test_supervisor_route_no_agents_selected(mock_agent_selection_empty):
         ) as mock_emit,
     ):
         result = await supervisor_route(
-            content="Simple content that doesn't need analysis.",
+            content="Simple content that needs basic implementation guidance.",
             content_type="article",
             analysis_id="test-analysis-id",
         )
 
-        # Verify decision structure even when no agents selected
+        # Verify decision structure with minimal agents
         assert "supervisor_decision" in result
         decision = result["supervisor_decision"]
-        assert decision["agents"] == []
-        assert decision["priority"] == []
-        assert decision["confidence"] == 0.5
+        assert len(decision["agents"]) == 1
+        assert "implementation_planner" in decision["agents"]
+        assert len(decision["priority"]) == 1
+        assert decision["confidence"] == 0.7
 
-        # Verify complete event was emitted with agent_count=0
+        # Verify complete event was emitted with agent_count=1
         complete_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "complete"]
         assert len(complete_calls) > 0
         complete_call = complete_calls[0]
-        assert complete_call[1]["agent_count"] == 0
+        assert complete_call[1]["agent_count"] == 1
 
 
 @pytest.mark.asyncio

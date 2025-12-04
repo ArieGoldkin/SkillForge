@@ -71,7 +71,8 @@ class TestBuildSupervisorPrompt:
     def test_supervisor_prompt_agent_list_format(self):
         """Test agent list in prompt has correct format."""
         prompt = build_supervisor_prompt()
-        agents_section = prompt.split("Agents:")[1].split("Select based on:")[0]
+        # Agent list is between "Agents:" and "AGENT SELECTION GUIDELINES:"
+        agents_section = prompt.split("Agents:")[1].split("AGENT SELECTION GUIDELINES:")[0]
 
         # Should have format: "- agent_type: description"
         lines = [line.strip() for line in agents_section.split("\n") if line.strip()]
@@ -83,9 +84,61 @@ class TestBuildSupervisorPrompt:
         """Test prompt contains example agent selections."""
         prompt = build_supervisor_prompt()
 
-        assert "React tutorial" in prompt
-        assert "Security guide" in prompt
-        assert "API comparison" in prompt
+        assert "React tutorial" in prompt or "Quick tip" in prompt
+        assert "Security guide" in prompt or "Security deep-dive" in prompt
+        assert "API comparison" in prompt or "Architecture comparison" in prompt
         assert "implementation_planner" in prompt or "code_quality_critic" in prompt
         assert "security_auditor" in prompt or "trend_validator" in prompt
         assert "tech_comparator" in prompt or "performance_analyst" in prompt
+
+    def test_supervisor_prompt_contains_guidelines(self):
+        """Test prompt contains agent selection guidelines."""
+        prompt = build_supervisor_prompt()
+
+        assert "AGENT SELECTION GUIDELINES" in prompt
+        assert "SHORT content" in prompt
+        assert "MEDIUM content" in prompt
+        assert "COMPREHENSIVE content" in prompt
+        assert "<1000 words" in prompt or "1000 words" in prompt
+        assert "3000 words" in prompt or ">3000 words" in prompt
+
+    def test_supervisor_prompt_contains_content_triggers(self):
+        """Test prompt contains content type triggers."""
+        prompt = build_supervisor_prompt()
+
+        assert "CONTENT TYPE TRIGGERS" in prompt
+        assert "tutorial" in prompt.lower() or "guide" in prompt.lower()
+        assert "security" in prompt.lower() or "auth" in prompt.lower()
+        assert "performance" in prompt.lower() or "async" in prompt.lower()
+        assert "comparison" in prompt.lower() or "vs" in prompt.lower()
+        assert "FastAPI" in prompt or "React" in prompt or "Django" in prompt
+
+    def test_supervisor_prompt_has_diverse_examples(self):
+        """Test prompt has examples with varying agent counts (1, 3, 4, 5 agents)."""
+        prompt = build_supervisor_prompt()
+
+        # Check for examples with different agent counts
+        # Should have at least one example with 1 agent, one with 3+, one with 4+
+        examples_section = prompt.split("Examples:")[1] if "Examples:" in prompt else ""
+
+        # Count agents in each example
+        import re
+
+        # Find all agent lists in examples
+        agent_lists = re.findall(r'"agents":\s*\[(.*?)\]', examples_section)
+
+        agent_counts = []
+        for agent_list in agent_lists:
+            # Count agents in this list
+            agents = [a.strip().strip('"') for a in agent_list.split(",") if a.strip()]
+            agent_counts.append(len(agents))
+
+        # Should have examples with different counts
+        assert len(set(agent_counts)) >= 2, (
+            f"Prompt should have examples with varying agent counts, got: {agent_counts}"
+        )
+        # Should have at least one example with 1 agent and one with 3+ agents
+        assert 1 in agent_counts or min(agent_counts) <= 2, (
+            f"Should have example with 1-2 agents, got: {agent_counts}"
+        )
+        assert max(agent_counts) >= 3, f"Should have example with 3+ agents, got: {agent_counts}"

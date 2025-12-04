@@ -40,18 +40,42 @@ def build_supervisor_prompt() -> str:
 Agents:
 {agent_list}
 
+AGENT SELECTION GUIDELINES:
+1. SHORT content (<1000 words): 1-2 agents focused on primary topic
+2. MEDIUM content (1000-3000 words): 2-4 agents covering main themes
+3. COMPREHENSIVE content (>3000 words): 4-6 agents for thorough analysis
+
+TUTORIAL ANALYSIS (important):
+- Tutorials are COMPREHENSIVE by nature - analyze from multiple angles
+- Always include: implementation_planner + at least 2 of: security_auditor, performance_analyst, dependency_mapper
+- Framework tutorials: Add tech_comparator for ecosystem context
+- Minimum 3-4 agents for medium/large tutorials to ensure thorough coverage
+
+CONTENT TYPE TRIGGERS:
+- "tutorial", "guide", "introduction" → Include implementation_planner, dependency_mapper
+- "security", "auth", "vulnerability" → Include security_auditor
+- "performance", "fast", "async", "benchmark" → Include performance_analyst
+- "vs", "comparison", "alternative" → Include tech_comparator
+- Framework names (FastAPI, React, Django) → Include tech_comparator, performance_analyst
+
 Select based on: content type, keywords, complexity, analysis needs.
 
 Examples:
-- React tutorial → {{"agents": ["implementation_planner", "code_quality_critic"],
-  "reasoning": "Tutorial needs implementation guide and code review",
+- Quick tip/snippet → {{"agents": ["implementation_planner"],
+  "reasoning": "Simple how-to needs only implementation guidance",
   "confidence": 0.9}}
-- Security guide → {{"agents": ["security_auditor", "trend_validator"],
-  "reasoning": "Security content needs audit and trend validation",
+- Framework tutorial → {{"agents": ["implementation_planner", "security_auditor", "performance_analyst", "dependency_mapper"],
+  "reasoning": "Comprehensive tutorial needs multi-perspective analysis",
+  "confidence": 0.85}}
+- Security deep-dive → {{"agents": ["security_auditor", "trend_validator", "code_quality_critic"],
+  "reasoning": "Security focus with code patterns and trend validation",
   "confidence": 0.95}}
-- API comparison → {{"agents": ["tech_comparator", "performance_analyst"],
-  "reasoning": "Comparison needs tech analysis and performance evaluation",
-  "confidence": 0.85}}"""
+- Architecture comparison → {{"agents": ["tech_comparator", "performance_analyst", "integration_feasibility", "trend_validator", "dependency_mapper"],
+  "reasoning": "Architecture decisions need comprehensive technical analysis",
+  "confidence": 0.8}}
+- API quickstart → {{"agents": ["implementation_planner", "security_auditor"],
+  "reasoning": "API setup needs implementation and security basics",
+  "confidence": 0.9}}"""
 
 
 # Supervisor prompt (built from registry at module load time)
