@@ -104,7 +104,7 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         return "code"
     if changelog_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
         return "changelog"
-    if doc_score >= 2:  # Lowered from 3 to 2 to better detect tutorials with code blocks
+    if doc_score >= 2:  # noqa: PLR2004 - Lowered from 3 to 2 to better detect tutorials with code blocks
         return "documentation"
 
     # Default to article for general text
