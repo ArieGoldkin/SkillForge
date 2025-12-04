@@ -1,0 +1,53 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "brainstorming",
+  "version": "1.0.0",
+  "description": "Structured Socratic questioning, alternative exploration, and incremental validation for idea refinement",
+
+  "capabilities": {
+    "socratic-questioning": {
+      "keywords": ["brainstorm", "idea", "explore", "think through", "clarify"],
+      "solves": [
+        "Help me think through this idea",
+        "Explore options for this feature",
+        "Clarify requirements through questions"
+      ],
+      "reference_file": "SKILL.md#socratic-method",
+      "token_cost": 150
+    },
+    "alternative-exploration": {
+      "keywords": ["alternatives", "options", "different approach", "other ways"],
+      "solves": [
+        "What are alternative approaches?",
+        "Explore different solutions",
+        "Compare implementation options"
+      ],
+      "reference_file": "SKILL.md#alternative-exploration",
+      "token_cost": 120
+    },
+    "incremental-validation": {
+      "keywords": ["validate", "assumption", "check", "verify idea"],
+      "solves": [
+        "How do I validate this idea?",
+        "Check assumptions step by step",
+        "Incremental design validation"
+      ],
+      "reference_file": "SKILL.md#incremental-validation",
+      "token_cost": 100
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["brainstorm", "think.*through", "explore.*idea"],
+    "medium_confidence": ["idea", "approach", "consider"]
+  },
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 300, "sections": ["overview", "methodology"] }
+  },
+
+  "mcp_tools": {
+    "reasoning": { "tool": "sequential-thinking", "use_when": "Complex multi-step reasoning needed" }
+  }
+}

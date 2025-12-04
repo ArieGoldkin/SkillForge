@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "performance-optimization",
+  "version": "3.7.0",
+  "description": "Full-stack performance analysis, optimization patterns, and monitoring strategies",
+
+  "capabilities": {
+    "database-optimization": {
+      "keywords": ["slow query", "n+1", "query optimization", "explain analyze", "index"],
+      "solves": [
+        "How do I optimize slow queries?",
+        "Fix N+1 query problems",
+        "Database performance tuning"
+      ],
+      "reference_file": "SKILL.md#database-optimization",
+      "token_cost": 180
+    },
+    "frontend-performance": {
+      "keywords": ["bundle size", "lazy load", "code splitting", "tree shaking", "lighthouse"],
+      "solves": [
+        "How do I reduce bundle size?",
+        "Implement code splitting",
+        "Lighthouse score optimization"
+      ],
+      "reference_file": "SKILL.md#frontend-performance",
+      "token_cost": 200
+    },
+    "caching": {
+      "keywords": ["cache", "redis", "cdn", "memoization", "cache invalidation"],
+      "solves": [
+        "How do I implement caching?",
+        "Redis caching patterns",
+        "Cache invalidation strategies"
+      ],
+      "reference_file": "SKILL.md#caching-strategies",
+      "token_cost": 180
+    },
+    "core-web-vitals": {
+      "keywords": ["lcp", "fid", "cls", "core web vitals", "web vitals", "inp"],
+      "solves": [
+        "How do I improve Core Web Vitals?",
+        "LCP optimization",
+        "CLS and layout shift fixes"
+      ],
+      "reference_file": "SKILL.md#core-web-vitals",
+      "token_cost": 160
+    },
+    "profiling": {
+      "keywords": ["profile", "flame graph", "memory leak", "cpu", "bottleneck"],
+      "solves": [
+        "How do I profile my application?",
+        "Find performance bottlenecks",
+        "Memory leak detection"
+      ],
+      "reference_file": "SKILL.md#profiling",
+      "token_cost": 150
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["optimize.*performance", "slow.*app", "bundle.*size", "query.*slow"],
+    "medium_confidence": ["faster", "performance", "speed"]
+  },
+
+  "integrates_with": ["database-schema-designer", "observability-monitoring"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "optimization-pillars"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "150-200 each" }
+  },
+
+  "mcp_tools": {
+    "browser": { "tool": "playwright", "use_when": "Lighthouse/performance testing" },
+    "database": { "tool": "skillforge-postgres-dev", "use_when": "Query analysis needed" }
+  }
+}

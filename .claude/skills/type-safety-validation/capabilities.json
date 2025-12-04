@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "type-safety-validation",
+  "version": "1.0.0",
+  "description": "End-to-end type safety with Zod, tRPC, Prisma, and TypeScript 5.7+ features",
+
+  "capabilities": {
+    "zod-schemas": {
+      "keywords": ["zod", "schema", "validation", "parse", "safeParse", "infer"],
+      "solves": [
+        "How do I validate input with Zod?",
+        "Create runtime validation schema",
+        "Infer TypeScript types from Zod"
+      ],
+      "reference_file": "SKILL.md#zod-validation",
+      "token_cost": 180
+    },
+    "trpc": {
+      "keywords": ["trpc", "type-safe api", "procedure", "router", "mutation", "query"],
+      "solves": [
+        "How do I set up tRPC?",
+        "Type-safe API calls",
+        "tRPC with React Query"
+      ],
+      "reference_file": "SKILL.md#trpc-patterns",
+      "token_cost": 200
+    },
+    "prisma-types": {
+      "keywords": ["prisma", "orm", "generated types", "model", "client"],
+      "solves": [
+        "How do I use Prisma types?",
+        "Type-safe database queries",
+        "Prisma schema to TypeScript"
+      ],
+      "reference_file": "SKILL.md#prisma-integration",
+      "token_cost": 150
+    },
+    "shared-types": {
+      "keywords": ["shared types", "dto", "contract", "api types", "monorepo types"],
+      "solves": [
+        "Share types between frontend and backend",
+        "Create API contracts",
+        "Monorepo type sharing"
+      ],
+      "template_file": "templates/shared-types.ts",
+      "token_cost": 120
+    },
+    "typescript-strict": {
+      "keywords": ["strict mode", "strictNullChecks", "noImplicitAny", "tsconfig"],
+      "solves": [
+        "Configure TypeScript strict mode",
+        "Fix strict mode errors",
+        "TypeScript best practices"
+      ],
+      "reference_file": "SKILL.md#typescript-strict-mode",
+      "token_cost": 100
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["zod.*schema", "trpc.*setup", "type.*safe", "validate.*input"],
+    "medium_confidence": ["typescript.*types", "prisma.*types", "api.*contract"]
+  },
+
+  "integrates_with": ["api-design-framework", "database-schema-designer"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "core-patterns"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "100-200 each" },
+    "tier_4_generate": { "files": "templates/*.ts", "tokens": "120-150 each" }
+  },
+
+  "mcp_tools": {
+    "documentation": { "tool": "context7", "library_ids": ["/colinhacks/zod", "/trpc/trpc"] }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "devops-deployment",
+  "version": "3.7.0",
+  "description": "CI/CD pipelines, containerization, Kubernetes, and infrastructure as code patterns",
+
+  "capabilities": {
+    "ci-cd": {
+      "keywords": ["ci", "cd", "pipeline", "github actions", "gitlab ci", "jenkins"],
+      "solves": [
+        "How do I set up CI/CD?",
+        "GitHub Actions workflow",
+        "Pipeline best practices"
+      ],
+      "reference_file": "SKILL.md#ci-cd-pipelines",
+      "token_cost": 200
+    },
+    "docker": {
+      "keywords": ["docker", "dockerfile", "container", "image", "build", "compose"],
+      "solves": [
+        "How do I containerize my app?",
+        "Dockerfile best practices",
+        "Docker Compose setup"
+      ],
+      "reference_file": "SKILL.md#containerization",
+      "token_cost": 180
+    },
+    "kubernetes": {
+      "keywords": ["kubernetes", "k8s", "deployment", "service", "ingress", "helm"],
+      "solves": [
+        "How do I deploy to Kubernetes?",
+        "K8s manifest patterns",
+        "Helm chart creation"
+      ],
+      "reference_file": "SKILL.md#kubernetes",
+      "token_cost": 250
+    },
+    "infrastructure-as-code": {
+      "keywords": ["terraform", "pulumi", "iac", "infrastructure", "provision"],
+      "solves": [
+        "How do I set up infrastructure as code?",
+        "Terraform patterns",
+        "Cloud resource provisioning"
+      ],
+      "reference_file": "SKILL.md#infrastructure-as-code",
+      "token_cost": 200
+    },
+    "deployment-strategies": {
+      "keywords": ["blue green", "canary", "rolling", "deployment strategy", "rollback"],
+      "solves": [
+        "Which deployment strategy should I use?",
+        "Blue-green deployment setup",
+        "Canary release patterns"
+      ],
+      "reference_file": "SKILL.md#deployment-strategies",
+      "token_cost": 160
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["deploy.*to", "ci.*cd.*setup", "docker.*image", "kubernetes.*deploy"],
+    "medium_confidence": ["pipeline", "container", "infrastructure"]
+  },
+
+  "integrates_with": ["observability-monitoring", "security-checklist"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 500, "sections": ["overview", "core-concepts"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "160-250 each" }
+  },
+
+  "mcp_tools": {
+    "docker": { "tool": "MCP_DOCKER", "use_when": "Container operations needed" }
+  }
+}

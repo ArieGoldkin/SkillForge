@@ -1,12 +1,12 @@
 ---
 name: claude-main
 description: AI Agent Hub - Modular Intelligence System
-version: 3.7.2
+version: 4.0.0
 ---
 
 # 🚀 AI Agent Hub - Intelligent Orchestration
 
-**Mode**: ⚡ Squad (Parallel)
+**Mode**: ⚡ Squad (Parallel) | **Discovery**: 🔍 Dynamic MCP (v4.0)
 
 ## 🔄 MANDATORY: New Context Window Initialization
 
@@ -74,29 +74,53 @@ This project uses specialized instruction files to optimize tokens while maintai
 | `.claude/instructions/architecture-decisions.md` | Shared architectural context |
 
 
-## ⚡ MANDATORY: Agent Activation Protocol
+## ⚡ MANDATORY: Agent Activation Protocol (v4.0 - Dynamic Discovery)
 
 **BEFORE responding to ANY user task, YOU MUST execute this protocol:**
 
-### Step 1: Check for Agent Triggers
-Read `.claude/context-triggers.md` and check if the user's request contains keywords matching any agent.
+### Step 1: Dynamic Agent Discovery (NEW in v4.0)
+1. **Read** `.claude/agent-registry.json` for semantic capability matching
+2. **Match** user intent against `agent.can_solve_examples` (not just keywords)
+3. **Check** `.claude/workflows/` for pre-composed solutions
+4. **Score** confidence (0-1) and select agents above 0.7 threshold
 
-### Step 2: Activate Matching Agent(s)
-**IF keywords match** → Read `.claude/instructions/orchestration.md`, then **MUST READ** `.claude/agents/<agent-name>.md` to load the agent's full capabilities, protocols, and implementation requirements.
-**IF multi-domain task** (e.g., "build app", "full project") → Activate Studio Coach, then read `.claude/agents/studio-coach.md`.
-**IF no match** → Proceed with general capabilities, but remain alert for implicit domain signals.
+### Step 2: Progressive Skill Loading (NEW in v4.0)
+**CRITICAL**: Never load full SKILL.md files when only specific guidance is needed.
+1. **First**: Read `capabilities.json` (~100 tokens) to find relevant capability
+2. **Then**: Load only the specific `references/*.md` or `templates/*.md` needed
+3. **Token savings**: 60-80% vs loading full skills
 
-### Step 3: Load Context Protocol (When Using Agents)
-**WHEN agent is activated** → Read `.claude/instructions/context-middleware.md` for context management rules.
-**ALWAYS** record decisions, evidence, and actions to `.claude/context/shared-context.json`.
+### Step 3: Check Pre-Composed Workflows
+**BEFORE ad-hoc coordination**, check `.claude/workflows/`:
+- `secure-api-endpoint.md` - API with auth, validation, tests
+- `full-stack-feature.md` - Backend + Frontend with shared types
+- `ai-integration.md` - LLM streaming, observability, cost tracking
 
-### Examples of Trigger Matching
-- User says "design REST API" → **Backend System Architect** (keywords: API, REST, backend)
-  → Read `.claude/agents/backend-system-architect.md` for implementation protocols
-- User says "create React component" → **Frontend UI Developer** (keywords: React, component, UI)
-  → Read `.claude/agents/frontend-ui-developer.md` for component patterns
-- User says "build task manager app" → **Studio Coach** coordinates multiple agents (multi-domain)
-  → Read `.claude/agents/studio-coach.md` for orchestration rules
+### Step 4: MCP Tool Integration
+**ALWAYS use MCP tools during development:**
+- `context7` → Fetch current library documentation before implementing
+- `mcp-find` → Discover additional tools as needed
+- `skillforge-langsmith` → For AI/LLM observability
+
+### Step 5: Load Context Protocol
+**WHEN agent is activated** → Read `.claude/instructions/orchestration.md` (v2.0 with MCP awareness)
+**ALWAYS** record decisions, evidence, and MCP usage to `.claude/context/shared-context.json`
+
+### Examples of Dynamic Discovery
+```
+User: "Add paginated search with rate limiting"
+
+OLD WAY (keyword matching):
+  → Match "API" → backend-system-architect
+  → Load 3 full SKILL.md files (~2500 tokens)
+
+NEW WAY (semantic discovery):
+  1. agent-registry.json → backend-system-architect (confidence: 0.95)
+  2. Check workflows/ → secure-api-endpoint.md exists!
+  3. Load composed workflow (~800 tokens)
+  4. Use context7 for current FastAPI docs
+  Token savings: 68%
+```
 
 ## 👥 Available Agents
 
@@ -161,11 +185,22 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 | **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (v3.7.0) |
 | **observability-monitoring** | Logging, metrics, tracing, alerting (v3.7.0) |
 
-**How to use skills:**
-- **PROACTIVELY read** `.claude/skills/<skill-name>/SKILL.md` when the user's task matches the skill description
-- **Progressive loading** - Start with SKILL.md, then access templates/examples as needed
-- **Apply patterns** - Use templates, checklists, and best practices from skill files
-- **Examples:** API design → read `.claude/skills/api-design-framework/SKILL.md`; Security review → read `.claude/skills/security-checklist/SKILL.md`
+**How to use skills (v4.0 - Progressive Loading):**
+1. **FIRST**: Read `.claude/skills/<skill-name>/capabilities.json` (~100 tokens)
+   - Contains searchable capability index with keywords and example problems
+   - Shows which specific reference/template files to load
+2. **THEN**: Load only the specific file needed from `references/` or `templates/`
+3. **AVOID**: Loading full SKILL.md unless you need the complete overview
+4. **TOKEN SAVINGS**: 60-80% by using progressive loading
+
+**Example - API Design Task:**
+```
+OLD: Load .claude/skills/api-design-framework/SKILL.md (600 tokens)
+NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
+     → Find "pagination" capability
+     → Load only references/pagination.md (150 tokens)
+     Savings: 58%
+```
 
 ## 🏭 Production Features (v3.5.0)
 
@@ -187,24 +222,51 @@ Read `.claude/context-triggers.md` and check if the user's request contains keyw
 - **Blocking**: Critical vulnerabilities block approval
 - **Fix commands**: Actionable remediation guidance
 
-## 📁 Project Structure (v3.5.9+)
+## 📁 Project Structure (v4.0.0 - Dynamic MCP)
 
 ```
 .claude/
-├── agents/              # 10 specialist agent personalities
-├── instructions/        # Orchestration & context rules
-│   ├── ...              # Core instructions
-│   └── supervisor-rules.md, squad-roster.md, ... # Squad coordination
-├── skills/              # 18 specialized knowledge modules
-├── context/             # Shared context & session data
+├── agent-registry.json    # 🆕 Semantic agent/skill discovery (v4.0)
+├── agents/                # 10 specialist agent personalities
+├── instructions/          # Orchestration & context rules
+│   ├── orchestration.md   # 🔄 Updated with MCP integration (v2.0)
+│   └── ...                # Core instructions
+├── skills/                # 18 specialized knowledge modules
+│   └── */capabilities.json # 🆕 Progressive loading indexes (v4.0)
+├── workflows/             # 🆕 Pre-composed multi-skill workflows (v4.0)
+│   ├── secure-api-endpoint.md
+│   ├── full-stack-feature.md
+│   └── ai-integration.md
+├── schemas/               # 🆕 JSON schemas for validation (v4.0)
+│   ├── agent-registry.schema.json
+│   └── skill-capabilities.schema.json
+├── context/               # Shared context & session data
 │   └── shared-context.json
-├── commands/            # Squad parallel execution commands
-├── examples/            # Squad workflow examples
-├── context-triggers.md  # Keyword-based agent activation
-└── settings.local.json  # MCP server configuration
+├── commands/              # Squad parallel execution commands
+├── examples/              # Squad workflow examples
+├── context-triggers.md    # Keyword-based agent activation (legacy)
+└── settings.local.json    # MCP server configuration
 ```
+
+## 🆕 Dynamic MCP Architecture (v4.0)
+
+**Inspired by Docker's Dynamic MCPs blog post**, this system transforms static agent/skill configuration into semantic discovery:
+
+| Pattern | Implementation |
+|---------|---------------|
+| `mcp-find` | `agent-registry.json` semantic matching |
+| `mcp-add` | Progressive skill loading (capabilities.json first) |
+| `code-mode` | Composed workflows in `.claude/workflows/` |
+| Dynamic selection | Load only needed skill sections |
+
+**Token Savings:** 60-80% on typical tasks through progressive loading and workflow composition.
+
+**MCP Integration:**
+- Always use `context7` for current library documentation
+- Use `mcp-find` to discover additional development tools
+- Record MCP usage in `shared-context.json` for workflow optimization
 
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
 
-*📦 v3.7.1: All Claude resources unified under `.claude/` following Anthropic's recommended patterns.*
+*📦 v4.0.0: Dynamic MCP architecture with semantic discovery, progressive loading, and workflow composition.*
