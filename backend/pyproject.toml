@@ -103,6 +103,10 @@ ignore = [
     "EM101",    # Exception string literal - acceptable in test mocks
     "F841",     # Unused variable - test fixtures may define for documentation
 ]
+# Complex aggregation function legitimately needs many statements
+"app/workflows/tasks/aggregate_findings.py" = [
+    "PLR0915",  # Too many statements - complex aggregation logic with multiple steps
+]
 
 [tool.ruff.format]
 # Ruff formatter configuration (replaces Black)

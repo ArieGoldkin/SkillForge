@@ -181,7 +181,12 @@ class TestAggregationFindingsTemplate:
         # Should replace underscores with spaces and uppercase in headers
         assert "TECH COMPARATOR" in result
         assert "SECURITY AUDITOR" in result
-        # Check that formatted headers appear (not raw agent_type)
-        findings_section = result.split("CONFIDENCE SCORES:")[0]
+        # Check that formatted headers appear (not raw agent_type in findings section)
+        # Exclude CONTRIBUTING AGENTS section which uses raw agent_type
+        contributing_section = result.split("AGENT FINDINGS:")[0]
+        findings_section = result.split("AGENT FINDINGS:")[1].split("CONFIDENCE SCORES:")[0]
+        # Raw agent_type can appear in CONTRIBUTING AGENTS section
+        assert "tech_comparator" in contributing_section  # OK in contributing agents list
+        # But should not appear in formatted findings headers
         assert "tech_comparator" not in findings_section  # Should not appear in header
         assert "security_auditor" not in findings_section  # Should not appear in header

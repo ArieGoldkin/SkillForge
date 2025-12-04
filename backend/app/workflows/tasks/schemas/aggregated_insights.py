@@ -100,6 +100,28 @@ class ConflictResolution(BaseModel):
     reasoning: str = Field(description="Why this agent was prioritized")
 
 
+class CoverageGap(BaseModel):
+    """Missing analysis perspective."""
+
+    missing_agent: str = Field(description="Agent that did not contribute")
+    missing_perspective: str = Field(description="What analysis is missing")
+    impact: str = Field(description="How this gap affects the analysis")
+
+
+class CrossDomainConnection(BaseModel):
+    """Connection between different analysis domains."""
+
+    domains: list[str] = Field(
+        description="The two domains connected (e.g., ['security', 'performance'])",
+        min_length=2,
+        max_length=2,
+    )
+    connection: str = Field(description="The identified relationship or trade-off")
+    agents_involved: list[str] = Field(
+        description="Agents that contributed to this insight", min_length=2
+    )
+
+
 class Synthesis(BaseModel):
     """Synthesized insights from all agents."""
 
@@ -165,4 +187,18 @@ class AggregatedInsights(BaseModel):
     conflicts_resolved: list[ConflictResolution] = Field(
         description="List of conflicts that were detected and resolved",
         default_factory=list,
+    )
+    coverage_gaps: list[CoverageGap] = Field(
+        description="Missing analysis perspectives when not all agents contribute",
+        default_factory=list,
+    )
+    cross_domain_connections: list[CrossDomainConnection] = Field(
+        description="Connections identified between different analysis domains",
+        default_factory=list,
+    )
+    coverage_score: float = Field(
+        description="Percentage of potential agents that contributed (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+        default=0.0,
     )

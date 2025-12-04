@@ -27,7 +27,11 @@ from app.workflows.tasks.aggregation_fallback import (
     create_empty_aggregated_insights,
     create_fallback_aggregated_insights,
 )
-from app.workflows.tasks.aggregation_helpers import detect_conflicts
+from app.workflows.tasks.aggregation_helpers import (
+    calculate_coverage_score,
+    detect_conflicts,
+    detect_coverage_gaps,
+)
 from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
 from app.workflows.utils.timeout_handling import handle_timeout_error
 
@@ -76,6 +80,18 @@ async def _aggregate_findings_impl(
             # Return basic structure with no findings
             return {"aggregated_insights": create_empty_aggregated_insights(start_time)}
 
+        # Step 1.5: Detect coverage gaps and calculate coverage score
+        coverage_gaps = detect_coverage_gaps(agent_types)
+        coverage_score = calculate_coverage_score(agent_types)
+
+        logger.debug(
+            "workflow_coverage_analysis",
+            analysis_id=analysis_id,
+            contributing_agents=len(agent_types),
+            coverage_score=coverage_score,
+            gaps_detected=len(coverage_gaps),
+        )
+
         # Step 2: Extract Quick Reference (before LLM synthesis for efficiency)
         quick_reference = extract_quick_reference(agent_findings)
         if quick_reference:
@@ -118,6 +134,10 @@ async def _aggregate_findings_impl(
             if quick_reference:
                 aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
 
+            # Step 7.5: Add coverage gaps and coverage score
+            aggregated_insights_dict["coverage_gaps"] = coverage_gaps
+            aggregated_insights_dict["coverage_score"] = coverage_score
+
             # Step 8: Calculate metadata using extracted function
             aggregated_insights_dict = calculate_aggregation_metadata(
                 validated_findings=validated_findings,
@@ -151,6 +171,9 @@ async def _aggregate_findings_impl(
                 # Add quick_reference to fallback as well
                 if quick_reference:
                     aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
+                # Add coverage gaps and coverage score to fallback
+                aggregated_insights_dict["coverage_gaps"] = coverage_gaps
+                aggregated_insights_dict["coverage_score"] = coverage_score
         except Exception as llm_error:
             logger.error(
                 "workflow_aggregation_llm_failed",
@@ -169,6 +192,9 @@ async def _aggregate_findings_impl(
             # Add quick_reference to fallback as well
             if quick_reference:
                 aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
+            # Add coverage gaps and coverage score to fallback
+            aggregated_insights_dict["coverage_gaps"] = coverage_gaps
+            aggregated_insights_dict["coverage_score"] = coverage_score
 
         # Emit SSE event: aggregation complete
         conflicts_resolved_count, key_findings_count = extract_sse_metadata(

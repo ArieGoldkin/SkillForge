@@ -2,10 +2,19 @@
 
 from typing import Any
 
+from app.core.agent_config import AGENT_REGISTRY
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
+from app.workflows.nodes.supervisor_config import WORKFLOW_STAGES
 
 logger = get_logger(__name__)
+
+# All analysis agents (exclude workflow stages)
+ALL_ANALYSIS_AGENTS = {
+    agent_type: config.description
+    for agent_type, config in AGENT_REGISTRY.items()
+    if config.agent_type not in WORKFLOW_STAGES
+}
 
 
 def detect_conflicts(
@@ -100,3 +109,42 @@ def format_findings_for_llm(
 
     # Render using Jinja2 template
     return render_jinja_template("aggregation_findings.j2", context)
+
+
+def detect_coverage_gaps(contributing_agents: list[str]) -> list[dict[str, str]]:
+    """Identify missing analysis perspectives.
+
+    Args:
+        contributing_agents: List of agent types that contributed findings
+
+    Returns:
+        List of coverage gap dictionaries with missing_agent, missing_perspective, impact
+
+    """
+    gaps = []
+    for agent_type, description in ALL_ANALYSIS_AGENTS.items():
+        if agent_type not in contributing_agents:
+            gaps.append(
+                {
+                    "missing_agent": agent_type,
+                    "missing_perspective": description,
+                    "impact": (
+                        f"Analysis incomplete without {agent_type.replace('_', ' ')} perspective"
+                    ),
+                }
+            )
+    return gaps
+
+
+def calculate_coverage_score(contributing_agents: list[str]) -> float:
+    """Calculate coverage as percentage of potential agents.
+
+    Args:
+        contributing_agents: List of agent types that contributed findings
+
+    Returns:
+        Coverage score between 0.0 and 1.0 (agents_used / total_agents)
+
+    """
+    total_agents = len(ALL_ANALYSIS_AGENTS)
+    return len(contributing_agents) / total_agents if total_agents > 0 else 0.0

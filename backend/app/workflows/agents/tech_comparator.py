@@ -36,7 +36,9 @@ Required Output Structure:
 }
 
 Field Requirements:
-1. **primary_tech** (REQUIRED): String - primary technology name with version (e.g., "LangGraph 0.6.7")
+1. **primary_tech** (REQUIRED): String - primary technology name with version (
+    e.g., "LangGraph 0.6.7"
+)
 2. **alternatives** (REQUIRED): List of 2-3 alternative technology names with versions
 3. **comparison** (REQUIRED): Dictionary mapping tech names to comparison entries
    - MUST include entry for primary_tech
@@ -51,7 +53,9 @@ NUMERIC SPECIFICITY REQUIREMENTS:
 - primary_tech MUST include version (e.g., "LangGraph 0.6.7", "React 18.2.0")
 - alternatives MUST include versions (e.g., "LangChain Agents 0.1.0")
 - pros MUST include quantifiable benefits (e.g., "40% faster cold start", "3x better throughput")
-- cons MUST include specific limitations (e.g., "Max 100 concurrent executions", "No TypeScript support")
+- cons MUST include specific limitations (
+    e.g., "Max 100 concurrent executions", "No TypeScript support"
+)
 - use_cases MUST include scale (e.g., "Best for 10K-100K daily users", "Handles 50K+ req/sec")
 
 FORBIDDEN VAGUE LANGUAGE - Never use:
@@ -63,9 +67,16 @@ FORBIDDEN VAGUE LANGUAGE - Never use:
 
 GOOD EXAMPLE:
   primary_tech: "LangGraph 0.6.7"
-  pros: ["Native state persistence with PostgreSQL checkpointing", "Built-in retry with 3x backoff", "50% less boilerplate than LangChain Agents"]
+  pros: [
+      "Native state persistence with PostgreSQL checkpointing",
+      "Built-in retry with 3x backoff",
+      "50% less boilerplate than LangChain Agents",
+  ]
   cons: ["Requires Python 3.9+", "Max 256MB state size", "No native JavaScript SDK"]
-  use_cases: ["Multi-step agentic workflows processing 1K-50K tasks/day", "RAG pipelines with <500ms latency requirements"]
+  use_cases: [
+      "Multi-step agentic workflows processing 1K-50K tasks/day",
+      "RAG pipelines with <500ms latency requirements",
+  ]
 
 BAD EXAMPLE (DO NOT USE):
   primary_tech: "LangGraph"
