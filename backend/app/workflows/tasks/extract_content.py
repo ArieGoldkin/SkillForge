@@ -77,7 +77,11 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         )
         return {
             "raw_content": extracted["content"],
-            "extraction_metadata": extracted["metadata"],
+            "extraction_metadata": {
+                **extracted["metadata"],
+                "title": extracted.get("title"),
+                "word_count": extracted.get("word_count"),
+            },
         }
     except Exception as e:
         # Emit SSE event: extraction failed
