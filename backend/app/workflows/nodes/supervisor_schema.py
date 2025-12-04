@@ -11,8 +11,8 @@ class AgentSelection(BaseModel):
 
     agents: list[str] = Field(
         ...,
-        description="Selected agent names (e.g., ['tech_comparator', 'security_auditor'])",
-        min_length=0,
+        description="Selected agent names. Select 1-2 for simple content, 3-4 for tutorials, 4-6 for comprehensive guides. (e.g., ['tech_comparator', 'security_auditor'])",
+        min_length=1,
         max_length=8,
     )
     reasoning: str = Field(

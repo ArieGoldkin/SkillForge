@@ -68,49 +68,49 @@ AGENT_REGISTRY: dict[str, AgentConfig] = {
         agent_type="tech_comparator",
         stage_name="tech_comparison",
         display_name="Tech Comparison",
-        description="Compare technology with modern alternatives",
+        description="Compare technology with alternatives. Triggers: framework names, 'vs', 'comparison', 'migrate', 'upgrade', version discussions",
     ),
     "security_auditor": AgentConfig(
         agent_type="security_auditor",
         stage_name="security_audit",
         display_name="Security Audit",
-        description="Security risks and vulnerabilities analysis",
+        description="Security risks and vulnerabilities analysis. Triggers: 'security', 'auth', 'vulnerability', 'authentication', 'authorization', 'encryption'",
     ),
     "implementation_planner": AgentConfig(
         agent_type="implementation_planner",
         stage_name="implementation_planning",
         display_name="Implementation Planning",
-        description="Step-by-step implementation guides and roadmaps",
+        description="Step-by-step implementation guides and roadmaps. Triggers: 'tutorial', 'guide', 'how to', 'setup', 'getting started', 'introduction'",
     ),
     "performance_analyst": AgentConfig(
         agent_type="performance_analyst",
         stage_name="performance_audit",
         display_name="Performance Audit",
-        description="Performance trade-offs, latency, and scaling analysis",
+        description="Performance analysis. Triggers: 'async', 'fast', 'benchmark', 'latency', 'throughput', 'scaling', 'workers', framework perf claims",
     ),
     "code_quality_critic": AgentConfig(
         agent_type="code_quality_critic",
         stage_name="code_quality_audit",
         display_name="Code Quality Audit",
-        description="Code patterns, best practices, and maintainability analysis",
+        description="Code patterns, best practices, and maintainability analysis. Triggers: code examples, 'best practices', 'antipattern', 'refactor'",
     ),
     "trend_validator": AgentConfig(
         agent_type="trend_validator",
         stage_name="trends_analysis",
         display_name="Trends Analysis",
-        description="2025 trends vs legacy/outdated technology validation",
+        description="2025 trends vs legacy/outdated technology validation. Triggers: 'trend', 'modern', 'legacy', 'deprecated', 'adoption', 'popularity'",
     ),
     "dependency_mapper": AgentConfig(
         agent_type="dependency_mapper",
         stage_name="dependencies_analysis",
         display_name="Dependencies Analysis",
-        description="Dependencies, versions, and conflicts analysis",
+        description="Map dependencies and ecosystem. Triggers: imports, requirements.txt, package.json, 'pip install', 'npm install', framework tutorials",
     ),
     "integration_feasibility": AgentConfig(
         agent_type="integration_feasibility",
         stage_name="implementation_planning",  # Part of implementation planning
         display_name="Integration Feasibility",
-        description="Modern stack integration assessment (Next.js, FastAPI)",
+        description="Modern stack integration assessment (Next.js, FastAPI). Triggers: 'integration', 'stack', 'frontend', 'backend', 'full-stack'",
     ),
     # Workflow stages (not agents, but need stage names)
     "supervisor": AgentConfig(

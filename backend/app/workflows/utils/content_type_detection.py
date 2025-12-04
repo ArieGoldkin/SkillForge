@@ -76,6 +76,9 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         r"```\w+",  # Code blocks in docs
         r"api\s+reference|documentation|tutorial|guide",
         r"^\s*\|.*\|",  # Tables
+        r"getting\s+started",  # Tutorial indicators
+        r"pip\s+install|npm\s+install",  # Package installation commands
+        r"step\s+\d+|step-by-step",  # Step-by-step instructions
     ]
 
     doc_score = sum(
@@ -101,7 +104,7 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         return "code"
     if changelog_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
         return "changelog"
-    if doc_score >= 3:  # noqa: PLR2004 - Score threshold for content type detection
+    if doc_score >= 2:  # Lowered from 3 to 2 to better detect tutorials with code blocks
         return "documentation"
 
     # Default to article for general text
@@ -111,8 +114,10 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
 # Agent capability mapping: which agents can process which content types
 # NOTE: Technical articles often discuss security, performance, and implementation
 # topics, so most analytical agents should be able to process "article" content.
-# Only code_quality_critic and dependency_mapper are restricted to actual code
-# since they perform structural analysis that requires parseable source code.
+# Only code_quality_critic is restricted to actual code since it performs
+# structural analysis that requires parseable source code.
+# dependency_mapper can extract dependency information from prose descriptions
+# in tutorials and documentation (e.g., "Install with pip install fastapi").
 AGENT_CAPABILITIES: dict[str, list[ContentType]] = {
     "tech_comparator": ["code", "documentation", "article", "changelog"],
     "security_auditor": ["code", "documentation", "article"],  # Articles discuss security topics
@@ -120,7 +125,11 @@ AGENT_CAPABILITIES: dict[str, list[ContentType]] = {
     "performance_analyst": ["code", "documentation", "article"],  # Articles discuss perf topics
     "code_quality_critic": ["code"],  # Only code - requires structural analysis
     "trend_validator": ["code", "documentation", "article", "changelog"],
-    "dependency_mapper": ["code"],  # Only code - requires import/package analysis
+    "dependency_mapper": [
+        "code",
+        "documentation",
+        "article",
+    ],  # Tutorials discuss dependencies in prose
     "integration_feasibility": ["code", "documentation", "article"],
 }
 

@@ -128,3 +128,69 @@ def test_agent_capabilities_complete():
         assert agent in AGENT_CAPABILITIES
         assert isinstance(AGENT_CAPABILITIES[agent], list)
         assert len(AGENT_CAPABILITIES[agent]) > 0
+
+
+def test_dependency_mapper_can_process_article():
+    """Test that dependency_mapper can process article content type."""
+    # dependency_mapper should be able to extract dependency info from tutorials/articles
+    assert can_agent_process_content("dependency_mapper", "article") is True
+
+
+def test_dependency_mapper_can_process_documentation():
+    """Test that dependency_mapper can process documentation content type."""
+    # dependency_mapper should be able to extract dependency info from documentation
+    assert can_agent_process_content("dependency_mapper", "documentation") is True
+
+
+def test_dependency_mapper_can_process_code():
+    """Test that dependency_mapper can still process code content type."""
+    # dependency_mapper should still be able to process code
+    assert can_agent_process_content("dependency_mapper", "code") is True
+
+
+def test_filter_agents_dependency_mapper_with_article():
+    """Test filtering agents with dependency_mapper and article content."""
+    agent_names = ["dependency_mapper", "code_quality_critic", "tech_comparator"]
+    filtered, skipped = filter_agents_by_content_type(agent_names, "article")
+
+    # dependency_mapper should be included (can process article)
+    assert "dependency_mapper" in filtered
+    # code_quality_critic should be skipped (only processes code)
+    assert "code_quality_critic" in skipped
+    # tech_comparator should be included (can process article)
+    assert "tech_comparator" in filtered
+    assert len(filtered) == 2
+    assert len(skipped) == 1
+
+
+def test_filter_agents_dependency_mapper_with_documentation():
+    """Test filtering agents with dependency_mapper and documentation content."""
+    agent_names = ["dependency_mapper", "code_quality_critic", "implementation_planner"]
+    filtered, skipped = filter_agents_by_content_type(agent_names, "documentation")
+
+    # dependency_mapper should be included (can process documentation)
+    assert "dependency_mapper" in filtered
+    # code_quality_critic should be skipped (only processes code)
+    assert "code_quality_critic" in skipped
+    # implementation_planner should be included (can process documentation)
+    assert "implementation_planner" in filtered
+    assert len(filtered) == 2
+    assert len(skipped) == 1
+
+
+def test_detect_content_type_tutorial_patterns():
+    """Test that tutorial-specific patterns are detected as documentation."""
+    # Tutorial with "getting started" pattern
+    tutorial_content = """
+    # Getting Started with FastAPI
+    
+    ## Installation
+    To install FastAPI, run:
+    pip install fastapi
+    
+    ## Step-by-Step Guide
+    1. Create a new project
+    2. Install dependencies
+    """
+    # Should detect as documentation (has markdown headers, pip install, step-by-step)
+    assert detect_content_type(tutorial_content) == "documentation"
