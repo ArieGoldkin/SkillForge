@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
 from sqlalchemy import Column, DateTime, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 
 from app.db.base import Base
@@ -27,6 +27,9 @@ class Analysis(Base):
     raw_content = Column(Text)
     # Embedding vector for semantic search (OpenAI text-embedding-3-small: 1536 dimensions)
     content_embedding = Column(Vector(1536))
+    # Full-text search vector (automatically populated by database trigger)
+    # Used for keyword-based search via PostgreSQL's GIN index
+    search_vector = Column(TSVECTOR)
     extraction_metadata = Column(JSONB)  # Metadata from content extraction
     status = Column(String(50), nullable=False, default="pending", index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
