@@ -71,3 +71,32 @@ export interface APIError {
     details?: object
   }
 }
+
+// Library Search Types (Issue #75)
+export type SearchMode = 'hybrid' | 'fulltext' | 'semantic'
+
+export interface LibrarySearchParams {
+  query?: string
+  content_type?: ContentType
+  status?: AnalysisStatus
+  search_mode?: SearchMode
+  limit?: number
+  offset?: number
+}
+
+export interface LibrarySearchResult {
+  analysis_id: string
+  url: string
+  title: string | null
+  content_type: ContentType
+  snippet: string | null
+  rank: number
+  created_at: string
+}
+
+export interface LibraryListResponse {
+  items: LibrarySearchResult[]
+  total: number
+  limit: number
+  offset: number
+}
