@@ -249,10 +249,12 @@ class LibraryRepository:
         # Assign ranks (1-indexed) and compute RRF scores
         # Type ignore needed: analysis.id is UUID at runtime, but mypy sees Column[UUID]
         fts_ranks: dict[UUID, int] = {
-            analysis.id: i + 1 for i, (analysis, _) in enumerate(fts_results)  # type: ignore[misc]
+            analysis.id: i + 1
+            for i, (analysis, _) in enumerate(fts_results)  # type: ignore[misc]
         }
         vec_ranks: dict[UUID, int] = {
-            analysis.id: i + 1 for i, (analysis, _) in enumerate(vector_results)  # type: ignore[misc]
+            analysis.id: i + 1
+            for i, (analysis, _) in enumerate(vector_results)  # type: ignore[misc]
         }
 
         # Combine unique analysis IDs
@@ -289,7 +291,8 @@ class LibraryRepository:
         result = await self.session.execute(stmt)
         # Type ignore needed: analysis.id is UUID at runtime, but mypy sees Column[UUID]
         analyses_by_id: dict[UUID, Analysis] = {
-            analysis.id: analysis for analysis in result.scalars().all()  # type: ignore[misc]
+            analysis.id: analysis
+            for analysis in result.scalars().all()  # type: ignore[misc]
         }
 
         # Build result list in sorted order with RRF scores
@@ -388,8 +391,7 @@ class LibraryRepository:
         Example:
             >>> repo = LibraryRepository(session)
             >>> snippet = await repo.get_search_snippet(
-            ...     UUID("123e4567-e89b-12d3-a456-426614174000"),
-            ...     "postgresql full-text search"
+            ...     UUID("123e4567-e89b-12d3-a456-426614174000"), "postgresql full-text search"
             ... )
             >>> print(snippet)
             "...PostgreSQL provides <mark>full-text search</mark> capabilities..."
