@@ -70,7 +70,7 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     # Detects: asyncpg, redis, starlette, cython, multiprocessing, profiling tools
     performance_pattern = re.compile(
         r"\b(?:asyncpg|redis|memcached|starlette|uvicorn|gunicorn|cython|multiprocessing|aiohttp|profiler|benchmark|latency|throughput)",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     has_performance_indicators = bool(performance_pattern.search(content))
 
@@ -78,15 +78,14 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     # Detects: auth libraries, crypto, cors, jwt, passwords, secrets
     security_pattern = re.compile(
         r"\b(?:python-jose|passlib|bcrypt|cryptography|authlib|django-allauth|helmet|cors|jwt|oauth|secret|password|vulnerability|xss|csrf|sql injection)",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
     has_security_indicators = bool(security_pattern.search(content))
 
     # ISSUE #177: Comparison Logic
     # Detects multiple frameworks or explicit comparison keywords
     comparison_pattern = re.compile(
-        r"\b(?:vs|versus|compare|comparison|alternative|migration|benchmark)",
-        re.IGNORECASE
+        r"\b(?:vs|versus|compare|comparison|alternative|migration|benchmark)", re.IGNORECASE
     )
     has_comparison_keywords = bool(comparison_pattern.search(content))
 
@@ -109,5 +108,5 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
         "has_performance_indicators": has_performance_indicators,
         "has_security_indicators": has_security_indicators,
         "has_comparison_indicators": has_comparison_indicators,
-        "frameworks_detected": list(frameworks_found)
+        "frameworks_detected": list(frameworks_found),
     }

@@ -338,7 +338,10 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         ) and "dependency_mapper" in filtered_agents:
             activation_reasons.append("dependency_mapper (code patterns)")
 
-        if code_patterns.get("has_performance_indicators") and "performance_analyst" in filtered_agents:
+        if (
+            code_patterns.get("has_performance_indicators")
+            and "performance_analyst" in filtered_agents
+        ):
             activation_reasons.append("performance_analyst (perf keywords)")
 
         if code_patterns.get("has_security_indicators") and "security_auditor" in filtered_agents:
@@ -347,7 +350,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         if code_patterns.get("has_comparison_indicators") and "tech_comparator" in filtered_agents:
             frameworks = code_patterns.get("frameworks_detected", [])
             if isinstance(frameworks, list):
-                activation_reasons.append(f"tech_comparator (comparison detected: {', '.join(frameworks)})")
+                activation_reasons.append(
+                    f"tech_comparator (comparison detected: {', '.join(frameworks)})"
+                )
 
         if activation_reasons:
             reasoning_parts.append(f"(Auto-activated: {'; '.join(activation_reasons)})")
