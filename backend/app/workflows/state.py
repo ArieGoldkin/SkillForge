@@ -20,6 +20,7 @@ class AnalysisState(TypedDict, total=False):
         analysis_id: Unique identifier for this analysis
         url: URL being analyzed
         content_type: Type of content (article, video, repo)
+        skill_level: User's experience level (beginner, intermediate, expert)
         raw_content: Extracted text content
         extraction_metadata: Metadata from extraction (title, word_count, etc.)
         content_embedding: Vector embedding of the content
@@ -40,6 +41,7 @@ class AnalysisState(TypedDict, total=False):
     analysis_id: AnalysisID
     url: str
     content_type: str
+    skill_level: str  # "beginner" | "intermediate" | "expert"
     raw_content: str
     extraction_metadata: dict[str, object]
     content_embedding: EmbeddingVector

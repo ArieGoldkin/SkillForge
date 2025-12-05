@@ -1,5 +1,7 @@
 """Pydantic schemas for analysis API endpoints."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -9,10 +11,14 @@ class AnalyzeRequest(BaseModel):
     Attributes:
         url: The URL to analyze (must be a valid HTTP/HTTPS URL)
         analysis_id: Optional analysis ID (auto-generated if not provided)
+        skill_level: User's skill level for personalized analysis output
 
     Example:
         ```python
-        request = AnalyzeRequest(url="https://example.com/article")
+        request = AnalyzeRequest(
+            url="https://example.com/article",
+            skill_level="intermediate"
+        )
         ```
 
     """
@@ -22,8 +28,19 @@ class AnalyzeRequest(BaseModel):
         default=None,
         description="Optional analysis ID (auto-generated if not provided)",
     )
+    skill_level: Literal["beginner", "intermediate", "expert"] = Field(
+        default="intermediate",
+        description="User's experience level for personalized output",
+    )
 
-    model_config = {"json_schema_extra": {"example": {"url": "https://example.com/article"}}}
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "url": "https://example.com/article",
+                "skill_level": "intermediate",
+            }
+        }
+    }
 
 
 class AnalyzeCreateResponse(BaseModel):
