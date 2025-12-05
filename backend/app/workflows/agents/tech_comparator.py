@@ -85,7 +85,12 @@ BAD EXAMPLE (DO NOT USE):
   use_cases: ["Various AI applications", "Building agents"]
 
 IMPORTANT: The "comparison" field must include entries for primary_tech AND all alternatives.
-Do not omit any required fields."""
+Do not omit any required fields.
+
+COMPARISON STRATEGY:
+- If multiple frameworks are detected (e.g., Django vs FastAPI), treat them as the primary subjects.
+- Focus on "Build vs Buy" if applicable.
+- Highlight "Standard vs Modern" approaches (e.g., Redux vs Zustand)."""
 
 
 async def run_tech_comparator(

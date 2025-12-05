@@ -66,6 +66,13 @@ BAD EXAMPLE (DO NOT USE):
   bottleneck: "Database queries are slow"
   opportunity: "Implement appropriate caching for better performance"
 
+FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
+- FastAPI/Starlette: Check for blocking code in async routes, Pydantic validation overhead.
+- Django: Check for N+1 queries (select_related/prefetch_related), middleware overhead.
+- React/Next.js: Check for excessive re-renders (useMemo/useCallback), large bundle sizes.
+- Node.js: Check for event loop blocking, memory leaks.
+- Databases: Check for missing indexes, inefficient joins, connection pooling.
+
 Provide actionable, measurable recommendations."""
 
 

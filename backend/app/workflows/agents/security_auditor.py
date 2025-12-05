@@ -69,6 +69,12 @@ BAD EXAMPLE (DO NOT USE):
   )
   mitigation: "Consider implementing appropriate security measures."
 
+FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
+- FastAPI: Check for CORS misconfiguration, input validation limits, dependency vulnerabilities.
+- Django: Check SECRET_KEY exposure, Debug=True in prod, CSRF settings, allowed_hosts.
+- React/Frontend: Check XSS (dangerouslySetInnerHTML), sensitive data in local storage, CSP headers.
+- Auth: Check JWT expiration, password hashing algorithms (prefer bcrypt/argon2), session management.
+
 Be thorough and prioritize critical vulnerabilities."""
 
 
