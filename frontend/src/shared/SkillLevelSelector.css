@@ -1,0 +1,75 @@
+/* Skill Level Selector Styles */
+.skill-level-selector {
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+.skill-level-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  color: hsl(var(--foreground));
+}
+
+.skill-level-options {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.skill-level-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.skill-level-option:hover {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.skill-level-option--active {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+}
+
+.skill-level-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.skill-level-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+.skill-level-text strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.skill-level-text small {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.3;
+}

@@ -3,6 +3,8 @@
  * Allows users to select their experience level for personalized analysis output
  */
 
+import './SkillLevelSelector.css'
+
 export type SkillLevel = 'beginner' | 'intermediate' | 'expert'
 
 interface SkillLevelSelectorProps {
