@@ -56,6 +56,7 @@ export interface TutoringMessage {
 export interface AnalyzeRequest {
   url: string
   content_type?: ContentType
+  skill_level?: 'beginner' | 'intermediate' | 'expert'
 }
 
 export interface AnalyzeResponse {
