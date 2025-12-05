@@ -4,6 +4,7 @@ This module handles the execution of agents with progress tracking,
 streaming support, error handling, and database persistence.
 """
 
+import os
 import time
 from dataclasses import dataclass
 
@@ -22,9 +23,33 @@ from app.workflows.agents.result_processing import (
     handle_agent_error,
     process_agent_result,
 )
+from app.workflows.agents.validation import score_agent_output
 from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
+
+# Specificity validation configuration
+# Can be overridden via environment variable for testing (set to 0.0 to disable)
+
+
+def get_specificity_min_score() -> float:
+    """Get specificity minimum score from environment or default.
+
+    Returns:
+        Minimum specificity score (0.0-1.0). 0.0 disables validation.
+
+    """
+    return float(os.environ.get("SPECIFICITY_MIN_SCORE", "0.70"))
+
+
+def get_specificity_max_retries() -> int:
+    """Get maximum specificity retries from environment or default.
+
+    Returns:
+        Maximum number of retries (default: 1)
+
+    """
+    return int(os.environ.get("SPECIFICITY_MAX_RETRIES", "1"))
 
 
 @dataclass
@@ -104,32 +129,78 @@ async def _run_agent_with_tracking_impl(
             ]
         }
 
-        try:
-            final_result = await invoke_agent(
-                agent=params.agent,
-                input_messages=input_messages,
-                analysis_id=params.analysis_id,
-                agent_type=params.agent_type,
-                timeout=config.timeout,
-            )
-        except (TimeoutError, GeneratorExit) as exc:
-            # GeneratorExit should not occur with RunnableConfig timeout,
-            # but kept as safety net for edge cases
-            raise handle_timeout_error(
-                exc=exc,
-                context=f"Agent {params.agent_type} execution",
-                timeout=config.timeout,
-                logger=logger,
-                agent_type=params.agent_type,
-                analysis_id=params.analysis_id,
-            ) from None
+        attempts = 0
+        findings = None
+        specificity_score = None
+        max_retries = get_specificity_max_retries()
+        min_score = get_specificity_min_score()
 
-        # Extract structured response (validated Pydantic model)
-        findings = extract_structured_response(final_result, params.agent_type)
+        while attempts <= max_retries:
+            try:
+                final_result = await invoke_agent(
+                    agent=params.agent,
+                    input_messages=input_messages,
+                    analysis_id=params.analysis_id,
+                    agent_type=params.agent_type,
+                    timeout=config.timeout,
+                )
+            except (TimeoutError, GeneratorExit) as exc:
+                # GeneratorExit should not occur with RunnableConfig timeout,
+                # but kept as safety net for edge cases
+                raise handle_timeout_error(
+                    exc=exc,
+                    context=f"Agent {params.agent_type} execution",
+                    timeout=config.timeout,
+                    logger=logger,
+                    agent_type=params.agent_type,
+                    analysis_id=params.analysis_id,
+                ) from None
+
+            # Extract structured response (validated Pydantic model)
+            findings = extract_structured_response(final_result, params.agent_type)
+
+            # Validate specificity; retry once if below threshold
+            # Skip validation if threshold is 0.0 (disabled for tests)
+            if min_score > 0.0:
+                specificity_score = score_agent_output(
+                    findings,
+                    agent_type=params.agent_type,
+                )
+                if specificity_score.overall_score >= min_score:
+                    break
+
+                if attempts >= max_retries:
+                    logger.error(
+                        "agent_specificity_below_threshold",
+                        agent_type=params.agent_type,
+                        analysis_id=params.analysis_id,
+                        specificity_score=specificity_score.overall_score,
+                        threshold=min_score,
+                        retries=attempts,
+                    )
+                    error_message = (
+                        "Specificity score "
+                        f"{specificity_score.overall_score} "
+                        f"below threshold {min_score}"
+                    )
+                    raise ValueError(error_message)
+
+                attempts += 1
+                logger.warning(
+                    "agent_specificity_retry",
+                    agent_type=params.agent_type,
+                    analysis_id=params.analysis_id,
+                    attempt=attempts,
+                    specificity_score=specificity_score.overall_score,
+                    threshold=min_score,
+                )
+            else:
+                # Validation disabled (min_score = 0.0), proceed without checking
+                break
 
         # Process and persist result
         return await process_agent_result(
-            findings=findings,
+            findings=findings or {},
             analysis_id=params.analysis_id,
             agent_type=params.agent_type,
             session=config.session,
