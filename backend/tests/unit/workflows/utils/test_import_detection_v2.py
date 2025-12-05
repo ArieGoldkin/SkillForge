@@ -159,7 +159,7 @@ def test_detect_code_patterns_performance_indicators():
     from fastapi import FastAPI
     import asyncpg
     import redis
-    
+
     # We need to benchmark the latency
     """
     patterns = detect_code_patterns(content)
@@ -172,7 +172,7 @@ def test_detect_code_patterns_security_indicators():
     content = """
     from passlib.context import CryptContext
     import python-jose
-    
+
     # Check for SQL injection vulnerabilities
     """
     patterns = detect_code_patterns(content)

@@ -7,6 +7,9 @@ installation commands.
 
 import re
 
+# Minimum frameworks needed to trigger tech comparator auto-activation
+MIN_FRAMEWORKS_FOR_COMPARISON = 2
+
 
 def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     """Detect code patterns that indicate dependency analysis needed.
@@ -94,7 +97,9 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
             frameworks_found.add(fw)
 
     # Heuristic: Tech Comparator needed if 2+ frameworks or explicit comparison requested
-    has_comparison_indicators = (len(frameworks_found) >= 2) or has_comparison_keywords
+    has_comparison_indicators = (
+        len(frameworks_found) >= MIN_FRAMEWORKS_FOR_COMPARISON
+    ) or has_comparison_keywords
 
     return {
         "has_imports": has_imports,

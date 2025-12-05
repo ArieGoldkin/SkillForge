@@ -168,7 +168,7 @@ async def _invoke_supervisor_with_retry(
         "component": "supervisor",
     },
 )
-async def supervisor_route(
+async def supervisor_route(  # noqa: PLR0912, PLR0915
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
