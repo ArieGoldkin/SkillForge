@@ -41,11 +41,28 @@ async def test_code_quality_critic_integration(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",  # Default skill level
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
     result = await run_code_quality_critic(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     assert result["agent_type"] == "code_quality_critic"
