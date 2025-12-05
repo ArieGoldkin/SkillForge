@@ -29,6 +29,7 @@ from app.workflows.utils.content_type_detection import (
     detect_content_type,
     filter_agents_by_content_type,
 )
+from app.workflows.utils.import_detection import detect_code_patterns
 
 logger = get_logger(__name__)
 
@@ -220,6 +221,17 @@ async def supervisor_route(
             hint_type=content_type,
         )
 
+        # Detect code patterns that indicate dependency analysis needed
+        code_patterns = detect_code_patterns(content)
+        logger.debug(
+            "code_patterns_detected",
+            analysis_id=analysis_id,
+            has_imports=code_patterns["has_imports"],
+            has_package_files=code_patterns["has_package_files"],
+            has_install_commands=code_patterns["has_install_commands"],
+            has_frameworks=code_patterns["has_frameworks"],
+        )
+
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
@@ -246,6 +258,20 @@ async def supervisor_route(
             selection.agents, detected_content_type
         )
 
+        # Auto-activate dependency_mapper if code patterns detected and not already selected
+        if (
+            code_patterns["has_imports"]
+            or code_patterns["has_package_files"]
+            or code_patterns["has_install_commands"]
+        ) and "dependency_mapper" not in filtered_agents:
+            logger.info(
+                "supervisor_auto_activate_dependency_mapper",
+                analysis_id=analysis_id,
+                reason="code_patterns_detected",
+                patterns=code_patterns,
+            )
+            filtered_agents.append("dependency_mapper")
+
         if skipped_agents:
             logger.info(
                 "supervisor_agents_filtered",
@@ -259,16 +285,26 @@ async def supervisor_route(
         # Calculate duration for performance monitoring
         duration_ms = int((time.time() - start_time) * 1000)
 
+        # Build reasoning with code pattern detection info
+        reasoning_parts = [selection.reasoning]
+        if skipped_agents:
+            reasoning_parts.append(
+                f"(Filtered: {len(skipped_agents)} agents skipped due to content type mismatch)"
+            )
+        if (
+            code_patterns["has_imports"]
+            or code_patterns["has_package_files"]
+            or code_patterns["has_install_commands"]
+        ) and "dependency_mapper" in filtered_agents:
+            reasoning_parts.append(
+                "(dependency_mapper auto-activated due to code patterns detected)"
+            )
+
         # Create supervisor decision with filtered agents
         supervisor_decision = {
             "agents": filtered_agents,  # Use filtered list
             "priority": [selection.confidence] * len(filtered_agents),
-            "reasoning": (
-                f"{selection.reasoning} "
-                f"(Filtered: {len(skipped_agents)} agents skipped due to content type mismatch)"
-                if skipped_agents
-                else selection.reasoning
-            ),
+            "reasoning": " ".join(reasoning_parts),
             "confidence": selection.confidence,
         }
 
@@ -295,6 +331,7 @@ async def supervisor_route(
             content_sent_chars=len(sized_content),
             content_original_chars=len(content),
             detected_content_type=detected_content_type,
+            code_patterns_detected=code_patterns,
         )
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
