@@ -151,3 +151,52 @@ def test_detect_code_patterns_integration():
     assert result3["has_package_files"] is False
     assert result3["has_install_commands"] is False
     assert result3["has_frameworks"] is False
+
+
+def test_detect_code_patterns_performance_indicators():
+    """Test detection of performance-critical keywords."""
+    content = """
+    from fastapi import FastAPI
+    import asyncpg
+    import redis
+
+    # We need to benchmark the latency
+    """
+    patterns = detect_code_patterns(content)
+    assert patterns["has_performance_indicators"] is True
+    assert patterns["has_security_indicators"] is False  # Ensure no false positives
+
+
+def test_detect_code_patterns_security_indicators():
+    """Test detection of security-critical keywords."""
+    content = """
+    from passlib.context import CryptContext
+    import python-jose
+
+    # Check for SQL injection vulnerabilities
+    """
+    patterns = detect_code_patterns(content)
+    assert patterns["has_security_indicators"] is True
+    assert patterns["has_performance_indicators"] is False
+
+
+def test_detect_code_patterns_comparison_logic():
+    """Test detection of comparison scenarios."""
+    # Scenario 1: Multiple frameworks
+    content_multi = "We generate code for FastAPI and Django and React."
+    patterns_multi = detect_code_patterns(content_multi)
+    assert patterns_multi["has_comparison_indicators"] is True
+    frameworks = patterns_multi["frameworks_detected"]
+    assert isinstance(frameworks, list)
+    assert set(frameworks) == {"fastapi", "django", "react"}
+
+    # Scenario 2: Explicit comparison keyword
+    content_explicit = "Let's compare vs the alternative approach."
+    patterns_explicit = detect_code_patterns(content_explicit)
+    assert patterns_explicit["has_comparison_indicators"] is True
+
+    # Scenario 3: Single framework (no comparison)
+    content_single = "Just using FastAPI here."
+    patterns_single = detect_code_patterns(content_single)
+    assert patterns_single["has_comparison_indicators"] is False
+
