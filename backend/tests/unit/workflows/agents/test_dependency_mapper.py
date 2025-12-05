@@ -34,6 +34,48 @@ def mock_agent():
                         compatibility="compatible",
                     )
                 ],
+                primary_framework="react",
+                core_dependencies=[
+                    Dependency(
+                        name="react",
+                        version="^18.0.0",
+                        purpose="Core UI library",
+                        compatibility="compatible",
+                    ),
+                    Dependency(
+                        name="react-dom",
+                        version="^18.0.0",
+                        purpose="DOM rendering",
+                        compatibility="compatible",
+                    ),
+                ],
+                optional_dependencies_by_purpose={
+                    "routing": [
+                        Dependency(
+                            name="react-router",
+                            version="^6.0.0",
+                            purpose="Client-side routing",
+                            compatibility="compatible",
+                        )
+                    ],
+                    "state": [
+                        Dependency(
+                            name="redux",
+                            version="^4.0.0",
+                            purpose="State management",
+                            compatibility="compatible",
+                        )
+                    ],
+                },
+                alternatives={
+                    "state": ["redux", "zustand", "recoil"],
+                    "routing": ["react-router", "wouter"],
+                },
+                version_matrix={
+                    "react": "^18.0.0",
+                    "react-dom": "^18.0.0",
+                    "react-router": "^6.0.0",
+                },
                 version_conflicts=[],
                 peer_dependencies=["Node.js >= 16.0.0"],
                 installation_notes=["Install via npm: npm install react react-dom"],
