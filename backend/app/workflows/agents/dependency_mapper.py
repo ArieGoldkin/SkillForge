@@ -1,7 +1,7 @@
 """Dependency Mapper Agent for dependency analysis.
 
 This agent maps dependencies, versions, potential conflicts, and provides
-dependency management recommendations.
+dependency management recommendations with framework ecosystem mapping.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,45 @@ from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
+
+# Framework ecosystems mapping
+FRAMEWORK_ECOSYSTEMS = {
+    "fastapi": {
+        "core": ["starlette", "pydantic", "uvicorn"],
+        "database": ["sqlalchemy", "databases", "tortoise-orm", "prisma"],
+        "auth": ["python-jose", "passlib", "authlib"],
+        "validation": ["email-validator"],
+        "testing": ["pytest", "httpx", "pytest-asyncio"],
+    },
+    "django": {
+        "core": ["django"],
+        "database": ["psycopg2", "mysqlclient", "django-extensions"],
+        "auth": ["django-allauth", "djangorestframework-simplejwt"],
+        "validation": ["django-crispy-forms"],
+        "testing": ["pytest-django", "django-test-plus"],
+    },
+    "flask": {
+        "core": ["flask", "werkzeug", "jinja2"],
+        "database": ["flask-sqlalchemy", "flask-migrate"],
+        "auth": ["flask-login", "flask-jwt-extended"],
+        "validation": ["flask-wtf", "marshmallow"],
+        "testing": ["pytest-flask"],
+    },
+    "react": {
+        "core": ["react", "react-dom"],
+        "routing": ["react-router", "react-router-dom"],
+        "state": ["redux", "zustand", "recoil"],
+        "ui": ["material-ui", "ant-design", "chakra-ui"],
+        "testing": ["@testing-library/react", "jest"],
+    },
+    "next.js": {
+        "core": ["next", "react", "react-dom"],
+        "routing": ["next-router"],
+        "database": ["prisma", "@prisma/client"],
+        "auth": ["next-auth", "auth0"],
+        "testing": ["@testing-library/react", "jest"],
+    },
+}
 
 # System prompt for dependency mapper agent
 DEPENDENCY_MAPPER_PROMPT = """You are a Dependency Management Specialist. Your task is to:
@@ -31,6 +70,12 @@ Focus on:
 CRITICAL: You MUST include:
 - required_dependencies: List of required dependencies with name, version, purpose, compatibility
 - optional_dependencies: List of optional dependencies
+- primary_framework: Primary framework identified (e.g., 'fastapi', 'react', 'django') if applicable
+- core_dependencies: Core dependencies required for the primary framework to function
+- optional_dependencies_by_purpose: Optional dependencies grouped by purpose
+  (database, auth, validation, testing, etc.)
+- alternatives: Alternative libraries for each purpose (purpose -> list of alternatives)
+- version_matrix: Version compatibility matrix (dependency -> version constraint)
 - version_conflicts: List of potential version conflicts
 - peer_dependencies: List of peer dependencies or system requirements
 - installation_notes: List of installation and setup notes
@@ -39,6 +84,42 @@ CRITICAL: You MUST include:
   of this dependency mapping. Consider: accuracy of dependency identification, correctness of
   version compatibility assessment, completeness of conflict detection, and confidence in
   installation notes.
+
+ECOSYSTEM MAPPING (IMPORTANT):
+When you identify a primary framework (FastAPI, React, Django, Flask, Next.js, etc.),
+map its ecosystem:
+
+1. **Identify Primary Framework**: Determine the main framework/library being used
+   - Examples: FastAPI, React, Django, Flask, Next.js, Express, etc.
+   - Set primary_framework field with the framework name (lowercase)
+
+2. **Map Core Dependencies**: Identify dependencies required for the framework to function
+   - For FastAPI: starlette, pydantic, uvicorn
+   - For React: react, react-dom
+   - For Django: django
+   - These go in core_dependencies field
+
+3. **Group Optional Dependencies by Purpose**: Organize optional dependencies by their purpose
+   - database: SQLAlchemy, databases, Tortoise ORM, Prisma, etc.
+   - auth: python-jose, passlib, authlib, next-auth, etc.
+   - validation: email-validator, marshmallow, etc.
+   - testing: pytest, httpx, @testing-library/react, jest, etc.
+   - routing: react-router, next-router, etc.
+   - state: redux, zustand, recoil, etc.
+   - ui: material-ui, ant-design, chakra-ui, etc.
+   - Use optional_dependencies_by_purpose field: {"database": [...], "auth": [...]}
+
+4. **Identify Alternatives**: For each purpose, list alternative libraries
+   - Example: {"database": ["sqlalchemy", "tortoise-orm", "prisma"]}
+   - Use alternatives field
+
+5. **Build Version Compatibility Matrix**: Map each dependency to its version constraint
+   - Example: {"fastapi": ">=0.100.0", "starlette": ">=0.27.0", "pydantic": ">=2.0.0"}
+   - Use version_matrix field
+
+6. **Version Compatibility**: Ensure all versions are compatible
+   - Check framework documentation for version requirements
+   - Identify potential conflicts in version_conflicts field
 
 NUMERIC SPECIFICITY REQUIREMENTS:
 - version MUST be exact or ranged (e.g., "4.2.1", ">=3.0.0 <4.0.0", "^18.0.0")

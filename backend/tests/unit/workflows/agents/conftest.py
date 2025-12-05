@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from langchain.messages import AIMessage
 from pydantic import BaseModel
 
 

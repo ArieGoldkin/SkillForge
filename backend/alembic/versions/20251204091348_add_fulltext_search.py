@@ -71,10 +71,7 @@ def upgrade() -> None:
 
     # 5. Create GIN index for full-text search
     op.create_index(
-        "ix_analyses_search_vector",
-        "analyses",
-        ["search_vector"],
-        postgresql_using="gin"
+        "ix_analyses_search_vector", "analyses", ["search_vector"], postgresql_using="gin"
     )
 
     # 6. Create HNSW index for vector similarity search (CRITICAL - previously missing!)
@@ -94,7 +91,7 @@ def upgrade() -> None:
         "ix_analyses_completed",
         "analyses",
         ["created_at"],
-        postgresql_where=text("status = 'complete'")
+        postgresql_where=text("status = 'complete'"),
     )
 
 

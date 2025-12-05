@@ -10,7 +10,7 @@ Tests the hybrid approach for handling GeneratorExit exceptions:
 
 import asyncio
 from contextlib import aclosing
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

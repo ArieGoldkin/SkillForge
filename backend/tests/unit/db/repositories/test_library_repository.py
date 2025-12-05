@@ -57,9 +57,7 @@ async def test_search_by_text_whitespace_query(mock_session):
 @pytest.mark.asyncio
 @patch("app.db.repositories.library_repository.func")
 @patch("app.db.repositories.library_repository.select")
-async def test_search_by_text_valid_query(
-    mock_select, mock_func, mock_session, sample_analysis
-):
+async def test_search_by_text_valid_query(mock_select, mock_func, mock_session, sample_analysis):
     """Test search_by_text with valid query."""
     repo = LibraryRepository(session=mock_session)
 
@@ -238,9 +236,7 @@ async def test_get_search_snippet_valid_query(mock_select, mock_func, mock_sessi
     )
     mock_session.execute.return_value = mock_result
 
-    snippet = await repo.get_search_snippet(
-        analysis_id=uuid.uuid4(), query="full-text search"
-    )
+    snippet = await repo.get_search_snippet(analysis_id=uuid.uuid4(), query="full-text search")
 
     assert snippet is not None
     assert "<mark>" in snippet
@@ -260,9 +256,7 @@ async def test_get_search_snippet_not_found(mock_select, mock_func, mock_session
     mock_result.scalar.return_value = None
     mock_session.execute.return_value = mock_result
 
-    snippet = await repo.get_search_snippet(
-        analysis_id=uuid.uuid4(), query="full-text search"
-    )
+    snippet = await repo.get_search_snippet(analysis_id=uuid.uuid4(), query="full-text search")
 
     assert snippet is None
     assert mock_session.execute.called

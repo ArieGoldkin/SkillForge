@@ -6,6 +6,7 @@ import pytest
 
 from app.workflows.nodes.supervisor import _get_content_for_supervisor, supervisor_route
 from app.workflows.nodes.supervisor_schema import AgentSelection
+from app.workflows.utils.import_detection import detect_code_patterns
 
 
 @pytest.fixture
@@ -92,9 +93,12 @@ async def test_supervisor_route_success(mock_agent_selection):
         assert "confidence" in decision
 
         # Verify agents were selected (both can process code)
-        assert len(decision["agents"]) == 2
+        # Note: dependency_mapper should be auto-activated due to import statements
+        assert len(decision["agents"]) >= 2
         assert "tech_comparator" in decision["agents"]
         assert "security_auditor" in decision["agents"]
+        # dependency_mapper should be auto-activated
+        assert "dependency_mapper" in decision["agents"]
         assert len(decision["priority"]) == len(decision["agents"])
         assert decision["confidence"] == 0.9
 
@@ -251,3 +255,142 @@ async def test_supervisor_route_decision_structure(mock_agent_selection):
         # Priorities should match confidence
         assert all(p == decision["confidence"] for p in decision["priority"])
         assert decision["confidence"] == 0.9
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_dependency_mapper_with_imports():
+    """Test supervisor auto-activates dependency_mapper when import statements detected."""
+    # Mock agent selection without dependency_mapper
+    mock_selection = AgentSelection(
+        agents=["implementation_planner"],
+        reasoning="Simple tutorial content",
+        confidence=0.8,
+    )
+
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content with import statements
+    content_with_imports = """
+    import fastapi
+    from fastapi import FastAPI
+    from typing import List
+
+    app = FastAPI()
+    """
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(
+            content=content_with_imports,
+            content_type="code",
+            analysis_id="test-analysis-id",
+        )
+
+        decision = result["supervisor_decision"]
+        # dependency_mapper should be auto-activated
+        assert "dependency_mapper" in decision["agents"]
+        assert "implementation_planner" in decision["agents"]
+        assert (
+            "auto-activated" in decision["reasoning"].lower()
+            or "code patterns" in decision["reasoning"].lower()
+        )
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_dependency_mapper_with_package_files():
+    """Test supervisor auto-activates dependency_mapper when package files mentioned."""
+    mock_selection = AgentSelection(
+        agents=["tech_comparator"],
+        reasoning="Framework comparison",
+        confidence=0.85,
+    )
+
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content mentioning package files
+    content_with_package = """
+    Add dependencies to requirements.txt:
+    fastapi==0.100.0
+    uvicorn==0.23.0
+    """
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(
+            content=content_with_package,
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        decision = result["supervisor_decision"]
+        # dependency_mapper should be auto-activated
+        assert "dependency_mapper" in decision["agents"]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_dependency_mapper_with_install_commands():
+    """Test supervisor auto-activates dependency_mapper when install commands detected."""
+    mock_selection = AgentSelection(
+        agents=["implementation_planner"],
+        reasoning="Setup guide",
+        confidence=0.9,
+    )
+
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content with installation commands
+    content_with_install = """
+    Install dependencies:
+    pip install fastapi uvicorn
+    npm install react react-dom
+    """
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(
+            content=content_with_install,
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        decision = result["supervisor_decision"]
+        # dependency_mapper should be auto-activated
+        assert "dependency_mapper" in decision["agents"]
+
+
+def test_detect_code_patterns_utility():
+    """Test import detection utility function."""
+    # Test with imports
+    content1 = "import fastapi\nfrom fastapi import FastAPI"
+    patterns1 = detect_code_patterns(content1)
+    assert patterns1["has_imports"] is True
+
+    # Test with package files
+    content2 = "Update requirements.txt with dependencies"
+    patterns2 = detect_code_patterns(content2)
+    assert patterns2["has_package_files"] is True
+
+    # Test with install commands
+    content3 = "Run: pip install fastapi"
+    patterns3 = detect_code_patterns(content3)
+    assert patterns3["has_install_commands"] is True
+
+    # Test with frameworks
+    content4 = "FastAPI is a modern framework"
+    patterns4 = detect_code_patterns(content4)
+    assert patterns4["has_frameworks"] is True

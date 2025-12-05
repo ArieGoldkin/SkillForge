@@ -80,7 +80,9 @@ class TestLibrarySearchResult:
             created_at="2024-01-01T12:00:00Z",
         )
         assert result.title == "Introduction to PostgreSQL"
-        assert result.snippet == "...PostgreSQL provides <mark>full-text search</mark> capabilities..."
+        assert (
+            result.snippet == "...PostgreSQL provides <mark>full-text search</mark> capabilities..."
+        )
 
     def test_library_search_result_missing_required_fields(self):
         """Test LibrarySearchResult raises ValidationError when required fields missing."""

@@ -4,7 +4,7 @@ Tests the robust_traceable decorator which is the only public API
 for tracing in this module.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

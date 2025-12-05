@@ -144,6 +144,7 @@ def fetch_trace_with_all_runs(trace_id: str) -> dict[str, Any]:
         trace_data = fetch_trace_with_all_runs("trace-id-here")
         print(f"Total runs: {len(trace_data.get('runs', []))}")
         ```
+
     """
     client = Client()
 
@@ -184,6 +185,7 @@ def identify_generator_exit_runs(trace_id: str) -> dict[str, Any]:
         print(f"Cleanup runs: {len(analysis['cleanup_runs'])}")
         print(f"Execution errors: {len(analysis['execution_runs'])}")
         ```
+
     """
     client = Client()
 
@@ -241,4 +243,3 @@ def identify_generator_exit_runs(trace_id: str) -> dict[str, Any]:
             "has_generator_exit": len(cleanup_runs) > 0 or len(execution_runs) > 0,
         },
     }
-

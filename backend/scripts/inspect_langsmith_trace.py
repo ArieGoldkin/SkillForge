@@ -12,7 +12,6 @@ Usage:
     python scripts/inspect_langsmith_trace.py --project <project_name> --limit 5
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -24,7 +23,6 @@ from tools.langsmith.queries import fetch_trace_with_all_runs, identify_generato
 
 def format_run_summary(run: dict) -> str:
     """Format a run summary for display."""
-    run_id = run.get("id", "unknown")
     name = run.get("name", "unnamed")
     run_type = run.get("run_type", "unknown")
     error = run.get("error")
@@ -49,7 +47,7 @@ def print_trace_analysis(trace_id: str) -> None:
     print("Fetching trace data...")
     try:
         trace_data = fetch_trace_with_all_runs(trace_id)
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         print(f"Error fetching trace: {e}")
         return
 
@@ -82,7 +80,7 @@ def print_trace_analysis(trace_id: str) -> None:
     print("Analyzing GeneratorExit runs...")
     try:
         gen_exit_analysis = identify_generator_exit_runs(trace_id)
-    except Exception as e:
+    except (ValueError, KeyError, RuntimeError) as e:
         print(f"Error analyzing GeneratorExit: {e}")
         gen_exit_analysis = None
 
@@ -91,7 +89,7 @@ def print_trace_analysis(trace_id: str) -> None:
         cleanup_runs = gen_exit_analysis.get("cleanup_runs", [])
         execution_runs = gen_exit_analysis.get("execution_runs", [])
 
-        print(f"GeneratorExit Summary:")
+        print("GeneratorExit Summary:")
         print(f"  Total runs: {summary.get('total_runs', 0)}")
         print(f"  Cleanup runs (expected): {summary.get('cleanup_count', 0)}")
         print(f"  Execution runs (errors): {summary.get('execution_count', 0)}")

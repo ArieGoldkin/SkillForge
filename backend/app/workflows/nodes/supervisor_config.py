@@ -59,6 +59,12 @@ CONTENT TYPE TRIGGERS:
 - "vs", "comparison", "alternative" → Include tech_comparator
 - Framework names (FastAPI, React, Django) → Include tech_comparator, performance_analyst
 
+CODE PATTERN TRIGGERS (REQUIRED):
+- Import statements (import X, from X import Y) → dependency_mapper REQUIRED
+- Package files (requirements.txt, pyproject.toml, package.json) → dependency_mapper REQUIRED
+- Installation commands (pip install, npm install) → dependency_mapper REQUIRED
+- Framework tutorials with code examples → dependency_mapper REQUIRED + ecosystem mapping
+
 Select based on: content type, keywords, complexity, analysis needs.
 
 Examples:

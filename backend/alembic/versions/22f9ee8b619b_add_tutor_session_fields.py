@@ -1,4 +1,4 @@
-"""add_tutor_session_fields
+"""Add tutor session fields.
 
 Revision ID: 22f9ee8b619b
 Revises: 1735171200000
