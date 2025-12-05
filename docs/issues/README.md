@@ -1,6 +1,6 @@
 # Issues Documentation Index
 
-**Last Updated:** December 4, 2025
+**Last Updated:** December 5, 2025
 **Status:** ✅ **ORGANIZED**
 
 ---
@@ -109,6 +109,10 @@ docs/issues/
 | [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) | Fix Agent Type Mismatch and SSE Workflow Completion | 3 | ✅ Complete | Yonatan | [📄 Docs](./143-sse-workflow-completion-fix/README.md) | [#143](https://github.com/ArieGoldkin/SkillForge/issues/143) |
 | [#164](https://github.com/ArieGoldkin/SkillForge/issues/164) | UI Progress stuck at 55% - handle 'workflow' stage | 3 | ✅ Complete | Arie | [📄 Docs](./164-sse-progress-stuck/README.md) | [#164](https://github.com/ArieGoldkin/SkillForge/issues/164) |
 | [#165](https://github.com/ArieGoldkin/SkillForge/issues/165) | Skipped agents show 'pending' instead of 'skipped' | 2 | ✅ Complete | Arie | [📄 Docs](./165-skipped-agents-pending/README.md) | [#165](https://github.com/ArieGoldkin/SkillForge/issues/165) |
+| [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) | TutorChat Component | 5 | ✅ Complete | Arie | — | [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) |
+| [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) | Create Library Page | 5 | ✅ Complete | Arie | — | [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) |
+| [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) | Search with Debounce | 3 | ✅ Complete | Arie | — | [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) |
+| [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) | Build Filter UI | 3 | ✅ Complete | Arie | — | [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) |
 
 ### 🔄 In Progress / Ready (7 total - 20 pts)
 
@@ -166,10 +170,12 @@ docs/issues/
 
 | Issue | Title | Points | Status | Assignee | GitHub |
 |-------|-------|--------|--------|----------|--------|
-| [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) | Task 4.1 - Create TutorChat Component | 5 | 🔄 Open | Arie | [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) |
+| [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) | Task 4.1 - Create TutorChat Component | 5 | ✅ Complete | Arie | [#113](https://github.com/ArieGoldkin/SkillForge/issues/113) |
 | [#114](https://github.com/ArieGoldkin/SkillForge/issues/114) | Task 4.2 - Create Topic Selection Modal | 3 | 🔄 Open | Arie | [#114](https://github.com/ArieGoldkin/SkillForge/issues/114) |
 | [#115](https://github.com/ArieGoldkin/SkillForge/issues/115) | Task 4.3 - Implement Session Resume Logic | 3 | 🔄 Open | Arie | [#115](https://github.com/ArieGoldkin/SkillForge/issues/115) |
 | [#116](https://github.com/ArieGoldkin/SkillForge/issues/116) | Task 4.4 - Add Exit Tutoring Functionality | 2 | 🔄 Open | Arie | [#116](https://github.com/ArieGoldkin/SkillForge/issues/116) |
+
+**Sprint 4 Progress:** 5/13 pts (38%) - TutorChat component implemented in `features/tutor/`
 
 ---
 
@@ -179,10 +185,12 @@ docs/issues/
 
 | Issue | Title | Points | Status | Assignee | GitHub |
 |-------|-------|--------|--------|----------|--------|
-| [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) | Task 5.1 - Create Library Page | 5 | 🔄 Open | Arie | [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) |
-| [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) | Task 5.2 - Implement Search with Debounce | 3 | 🔄 Open | Arie | [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) |
-| [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) | Task 5.3 - Build Filter UI | 3 | 🔄 Open | Arie | [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) |
+| [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) | Task 5.1 - Create Library Page | 5 | ✅ Complete | Arie | [#117](https://github.com/ArieGoldkin/SkillForge/issues/117) |
+| [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) | Task 5.2 - Implement Search with Debounce | 3 | ✅ Complete | Arie | [#118](https://github.com/ArieGoldkin/SkillForge/issues/118) |
+| [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) | Task 5.3 - Build Filter UI | 3 | ✅ Complete | Arie | [#119](https://github.com/ArieGoldkin/SkillForge/issues/119) |
 | [#120](https://github.com/ArieGoldkin/SkillForge/issues/120) | Task 5.4 - Add Sort Selector | 2 | 🔄 Open | Arie | [#120](https://github.com/ArieGoldkin/SkillForge/issues/120) |
+
+**Sprint 5 Progress:** 11/13 pts (85%) - Library page with search and filters implemented in `features/library/`
 
 ---
 
