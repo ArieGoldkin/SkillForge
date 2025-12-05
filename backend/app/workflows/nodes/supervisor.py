@@ -168,7 +168,7 @@ async def _invoke_supervisor_with_retry(
         "component": "supervisor",
     },
 )
-async def supervisor_route(
+async def supervisor_route(  # noqa: PLR0912, PLR0915
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
@@ -272,6 +272,43 @@ async def supervisor_route(
             )
             filtered_agents.append("dependency_mapper")
 
+        # ISSUE #178: Auto-activate performance_analyst
+        if (
+            code_patterns.get("has_performance_indicators")
+            and "performance_analyst" not in filtered_agents
+        ):
+            logger.info(
+                "supervisor_auto_activate_performance_analyst",
+                analysis_id=analysis_id,
+                reason="performance_indicators_detected",
+            )
+            filtered_agents.append("performance_analyst")
+
+        # ISSUE #174: Auto-activate security_auditor
+        if (
+            code_patterns.get("has_security_indicators")
+            and "security_auditor" not in filtered_agents
+        ):
+            logger.info(
+                "supervisor_auto_activate_security_auditor",
+                analysis_id=analysis_id,
+                reason="security_indicators_detected",
+            )
+            filtered_agents.append("security_auditor")
+
+        # ISSUE #177: Auto-activate tech_comparator
+        if (
+            code_patterns.get("has_comparison_indicators")
+            and "tech_comparator" not in filtered_agents
+        ):
+            logger.info(
+                "supervisor_auto_activate_tech_comparator",
+                analysis_id=analysis_id,
+                reason="comparison_indicators_detected",
+                detected_frameworks=code_patterns.get("frameworks_detected", []),
+            )
+            filtered_agents.append("tech_comparator")
+
         if skipped_agents:
             logger.info(
                 "supervisor_agents_filtered",
@@ -291,14 +328,34 @@ async def supervisor_route(
             reasoning_parts.append(
                 f"(Filtered: {len(skipped_agents)} agents skipped due to content type mismatch)"
             )
+
+        # Add auto-activation reasoning
+        activation_reasons = []
         if (
             code_patterns["has_imports"]
             or code_patterns["has_package_files"]
             or code_patterns["has_install_commands"]
         ) and "dependency_mapper" in filtered_agents:
-            reasoning_parts.append(
-                "(dependency_mapper auto-activated due to code patterns detected)"
-            )
+            activation_reasons.append("dependency_mapper (code patterns)")
+
+        if (
+            code_patterns.get("has_performance_indicators")
+            and "performance_analyst" in filtered_agents
+        ):
+            activation_reasons.append("performance_analyst (perf keywords)")
+
+        if code_patterns.get("has_security_indicators") and "security_auditor" in filtered_agents:
+            activation_reasons.append("security_auditor (security keywords)")
+
+        if code_patterns.get("has_comparison_indicators") and "tech_comparator" in filtered_agents:
+            frameworks = code_patterns.get("frameworks_detected", [])
+            if isinstance(frameworks, list):
+                activation_reasons.append(
+                    f"tech_comparator (comparison detected: {', '.join(frameworks)})"
+                )
+
+        if activation_reasons:
+            reasoning_parts.append(f"(Auto-activated: {'; '.join(activation_reasons)})")
 
         # Create supervisor decision with filtered agents
         supervisor_decision = {

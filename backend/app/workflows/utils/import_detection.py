@@ -7,8 +7,11 @@ installation commands.
 
 import re
 
+# Minimum frameworks needed to trigger tech comparator auto-activation
+MIN_FRAMEWORKS_FOR_COMPARISON = 2
 
-def detect_code_patterns(content: str) -> dict[str, bool]:
+
+def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     """Detect code patterns that indicate dependency analysis needed.
 
     Detects:
@@ -56,16 +59,54 @@ def detect_code_patterns(content: str) -> dict[str, bool]:
 
     # Detect framework mentions (common frameworks)
     framework_pattern = re.compile(
-        r"\b(?:fastapi|django|flask|react|vue|angular|next\.js|"
+        r"\b(?:fastapi|django|flask|react|vue|angular|next\.js|svelte|"
         r"express|nestjs|spring|laravel|rails|symfony|"
         r"asp\.net|dotnet|tornado|bottle|pyramid)\b",
         re.IGNORECASE,
     )
     has_frameworks = bool(framework_pattern.search(content))
 
+    # ISSUE #178: Performance Critical Keywords
+    # Detects: asyncpg, redis, starlette, cython, multiprocessing, profiling tools
+    performance_pattern = re.compile(
+        r"\b(?:asyncpg|redis|memcached|starlette|uvicorn|gunicorn|cython|multiprocessing|aiohttp|profiler|benchmark|latency|throughput)",
+        re.IGNORECASE,
+    )
+    has_performance_indicators = bool(performance_pattern.search(content))
+
+    # ISSUE #174: Security Critical Keywords
+    # Detects: auth libraries, crypto, cors, jwt, passwords, secrets
+    security_pattern = re.compile(
+        r"\b(?:python-jose|passlib|bcrypt|cryptography|authlib|django-allauth|helmet|cors|jwt|oauth|secret|password|vulnerability|xss|csrf|sql injection)",
+        re.IGNORECASE,
+    )
+    has_security_indicators = bool(security_pattern.search(content))
+
+    # ISSUE #177: Comparison Logic
+    # Detects multiple frameworks or explicit comparison keywords
+    comparison_pattern = re.compile(
+        r"\b(?:vs|versus|compare|comparison|alternative|migration|benchmark)", re.IGNORECASE
+    )
+    has_comparison_keywords = bool(comparison_pattern.search(content))
+
+    # Dynamic detection of multiple frameworks for comparison
+    frameworks_found = set()
+    for fw in ["fastapi", "django", "flask", "react", "vue", "angular", "next", "svelte"]:
+        if re.search(r"\b" + fw + r"\b", content, re.IGNORECASE):
+            frameworks_found.add(fw)
+
+    # Heuristic: Tech Comparator needed if 2+ frameworks or explicit comparison requested
+    has_comparison_indicators = (
+        len(frameworks_found) >= MIN_FRAMEWORKS_FOR_COMPARISON
+    ) or has_comparison_keywords
+
     return {
         "has_imports": has_imports,
         "has_package_files": has_package_files,
         "has_install_commands": has_install_commands,
         "has_frameworks": has_frameworks,
+        "has_performance_indicators": has_performance_indicators,
+        "has_security_indicators": has_security_indicators,
+        "has_comparison_indicators": has_comparison_indicators,
+        "frameworks_detected": list(frameworks_found),
     }

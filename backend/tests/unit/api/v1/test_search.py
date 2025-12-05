@@ -1,12 +1,14 @@
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
-from app.main import app
-from app.db.repositories.analysis_repository import get_analysis_repository
-from app.models.analysis import Analysis
 import uuid
 from datetime import datetime
+from unittest.mock import AsyncMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.db.repositories.analysis_repository import get_analysis_repository
+from app.main import app
+from app.models.analysis import Analysis
 
 client = TestClient(app)
 
@@ -29,7 +31,7 @@ async def test_search_similar_analyses_success(mock_repo, override_get_repo):
         mock_service_instance = MockService.return_value
         mock_service_instance.generate_embedding = AsyncMock(return_value=[0.1] * 1536)
         mock_service_instance.close = AsyncMock()
-        
+
         # Mock repository response
         analysis = Analysis(
             id=uuid.uuid4(),
@@ -40,14 +42,14 @@ async def test_search_similar_analyses_success(mock_repo, override_get_repo):
             created_at=datetime.utcnow()
         )
         mock_repo.find_similar_analyses.return_value = [analysis]
-        
+
         response = client.get("/api/v1/search/similar?query=test_query&limit=5")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
         assert data[0]["url"] == "https://example.com"
-        
+
         # Verify calls
         mock_service_instance.generate_embedding.assert_called_once_with("test_query")
         mock_repo.find_similar_analyses.assert_called_once()
@@ -65,8 +67,8 @@ async def test_search_similar_analyses_service_error(mock_repo, override_get_rep
     with patch("app.api.v1.search.EmbeddingService") as MockService:
         mock_service_instance = MockService.return_value
         mock_service_instance.generate_embedding = AsyncMock(side_effect=Exception("API Error"))
-        
+
         response = client.get("/api/v1/search/similar?query=test")
-        
+
         assert response.status_code == 500
         assert "Search failed" in response.json()["detail"]

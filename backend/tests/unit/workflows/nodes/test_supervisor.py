@@ -394,3 +394,75 @@ def test_detect_code_patterns_utility():
     content4 = "FastAPI is a modern framework"
     patterns4 = detect_code_patterns(content4)
     assert patterns4["has_frameworks"] is True
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_performance_analyst():
+    """Test supervisor auto-activates performance_analyst when performance keywords detected."""
+    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+
+    # Mock models
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content with performance keywords
+    content = "We need to optimize the asyncpg connection pool latency."
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(content, "code", "test-id")
+        agents = result["supervisor_decision"]["agents"]
+        assert "performance_analyst" in agents
+        assert "performance_indicators_detected" in str(result) or "perf keywords" in result["supervisor_decision"]["reasoning"]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_security_auditor():
+    """Test supervisor auto-activates security_auditor when security keywords detected."""
+    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+
+    # Mock models
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content with security keywords
+    content = "Use python-jose to decode the JWT token."
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(content, "code", "test-id")
+        agents = result["supervisor_decision"]["agents"]
+        assert "security_auditor" in agents
+        assert "security_indicators_detected" in str(result) or "security keywords" in result["supervisor_decision"]["reasoning"]
+
+
+@pytest.mark.asyncio
+async def test_supervisor_auto_activates_tech_comparator():
+    """Test supervisor auto-activates tech_comparator when comparison logic detected."""
+    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+
+    # Mock models
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    # Content with comparison indicators (FastAPI vs Django)
+    content = "Should we migrate from Django to FastAPI for better performance?"
+
+    with (
+        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+    ):
+        result = await supervisor_route(content, "article", "test-id")
+        agents = result["supervisor_decision"]["agents"]
+        assert "tech_comparator" in agents
+        assert "comparison_indicators_detected" in str(result) or "comparison detected" in result["supervisor_decision"]["reasoning"]
