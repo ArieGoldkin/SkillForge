@@ -11,6 +11,8 @@ from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.security_auditor import SecurityAudit
+from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
+from app.workflows.state import AnalysisState
 
 # System prompt for security auditor agent
 SECURITY_AUDITOR_PROMPT = """You are a Security Audit Specialist. Your task is to:
@@ -70,10 +72,12 @@ BAD EXAMPLE (DO NOT USE):
   mitigation: "Consider implementing appropriate security measures."
 
 FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
-- FastAPI: Check for CORS misconfiguration, input validation limits, dependency vulnerabilities.
+- FastAPI: Check CORS settings, rate limiting, SQL injection via raw queries, secret leaks.
 - Django: Check SECRET_KEY exposure, Debug=True in prod, CSRF settings, allowed_hosts.
-- React/Frontend: Check XSS (dangerouslySetInnerHTML), sensitive data in local storage, CSP headers.
-- Auth: Check JWT expiration, password hashing algorithms (prefer bcrypt/argon2), session management.
+- React/Frontend: Check XSS (dangerouslySetInnerHTML), sensitive data in local storage,
+  CSP headers.
+- Auth: Check JWT expiration, password hashing algorithms (prefer bcrypt/argon2),
+  session management.
 
 Be thorough and prioritize critical vulnerabilities."""
 
@@ -83,6 +87,7 @@ async def run_security_auditor(
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run security auditor agent to identify security risks and vulnerabilities.
 
@@ -91,6 +96,7 @@ async def run_security_auditor(
         content_type: Type of content (article, video, repo)
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
+        state: Current workflow state (for skill_level)
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -99,9 +105,16 @@ async def run_security_auditor(
         Exception: If agent execution fails
 
     """
+    # Get skill level and inject instructions
+    skill_level = state.get("skill_level", "intermediate")
+    skill_instructions = get_skill_level_instructions(skill_level)
+
+    # Build prompt with skill level instructions
+    full_prompt = f"{SECURITY_AUDITOR_PROMPT}\n\n{skill_instructions}"
+
     # Create agent with structured output
     agent = create_structured_agent(
-        system_prompt=SECURITY_AUDITOR_PROMPT,
+        system_prompt=full_prompt,
         response_schema=SecurityAudit,
     )
 

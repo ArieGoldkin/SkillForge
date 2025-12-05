@@ -10,6 +10,8 @@ from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.implementation_planner import ImplementationPlan
+from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
+from app.workflows.state import AnalysisState
 
 # System prompt for implementation planner agent
 IMPLEMENTATION_PLANNER_PROMPT = """You are an Implementation Planning Specialist. Your task is to:
@@ -67,6 +69,7 @@ async def run_implementation_planner(
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run implementation planner agent to create step-by-step implementation guide.
 
@@ -75,6 +78,7 @@ async def run_implementation_planner(
         content_type: Type of content (article, video, repo)
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
+        state: Current workflow state (for skill_level)
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -83,9 +87,16 @@ async def run_implementation_planner(
         Exception: If agent execution fails
 
     """
+    # Get skill level and inject instructions
+    skill_level = state.get("skill_level", "intermediate")
+    skill_instructions = get_skill_level_instructions(skill_level)
+
+    # Build prompt with skill level instructions
+    full_prompt = f"{IMPLEMENTATION_PLANNER_PROMPT}\n\n{skill_instructions}"
+
     # Create agent with structured output
     agent = create_structured_agent(
-        system_prompt=IMPLEMENTATION_PLANNER_PROMPT,
+        system_prompt=full_prompt,
         response_schema=ImplementationPlan,
     )
 

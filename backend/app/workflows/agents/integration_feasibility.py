@@ -10,6 +10,8 @@ from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
+from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
+from app.workflows.state import AnalysisState
 
 # System prompt for integration feasibility agent
 INTEGRATION_FEASIBILITY_PROMPT = """You are an Integration Analyst.
@@ -87,6 +89,7 @@ async def run_integration_feasibility(
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run integration feasibility agent to assess integration compatibility.
 
@@ -95,6 +98,7 @@ async def run_integration_feasibility(
         content_type: Type of content (article, video, repo)
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
+        state: Current workflow state (for skill_level)
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -103,9 +107,16 @@ async def run_integration_feasibility(
         Exception: If agent execution fails
 
     """
+    # Get skill level and inject instructions
+    skill_level = state.get("skill_level", "intermediate")
+    skill_instructions = get_skill_level_instructions(skill_level)
+
+    # Build prompt with skill level instructions
+    full_prompt = f"{INTEGRATION_FEASIBILITY_PROMPT}\n\n{skill_instructions}"
+
     # Create agent with structured output
     agent = create_structured_agent(
-        system_prompt=INTEGRATION_FEASIBILITY_PROMPT,
+        system_prompt=full_prompt,
         response_schema=IntegrationFeasibility,
     )
 
