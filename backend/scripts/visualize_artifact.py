@@ -184,9 +184,9 @@ async def visualize_artifact(artifact: Artifact, show_full_content: bool = False
     # Save to file option
     print_section("Export Options")
     filename = f"artifact_{artifact.id}.md"
-    print(f"  To save full content to file:")
+    print("  To save full content to file:")
     print(f"    echo '{artifact.markdown_content}' > {filename}")
-    print(f"\n  Or view in browser (markdown viewer)")
+    print("\n  Or view in browser (markdown viewer)")
     print(f"    python scripts/visualize_artifact.py --artifact-id {artifact.id} --save {filename}")
 
 
@@ -250,4 +250,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

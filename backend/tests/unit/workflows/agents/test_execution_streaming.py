@@ -1,11 +1,10 @@
 """Unit tests for agent execution streaming functionality."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from unittest.mock import patch as mock_patch
 from uuid import uuid4
 
 import pytest
-from langchain.messages import AIMessage
 
 from app.workflows.agents.execution import run_agent_with_tracking
 from tests.unit.workflows.agents.conftest import MockAgentSchema
@@ -111,7 +110,6 @@ async def test_run_agent_with_tracking_streaming_early_response(
     mock_session,
 ):
     """Test that structured_response is captured from ainvoke."""
-
     # Create mock agent that returns structured_response via ainvoke
     # Note: Current implementation uses ainvoke, not astream
     mock_agent = AsyncMock()

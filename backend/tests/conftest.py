@@ -390,7 +390,7 @@ async def check_database_available(requires_database):
             pytest.skip("Database not available - connection timeout")
     except Exception as e:
         # Skip test when database connection fails (e.g., in CI without database)
-        pytest.skip(f"Database not available - {type(e).__name__}: {str(e)}")
+        pytest.skip(f"Database not available - {type(e).__name__}: {e!s}")
 
 
 async def _dispose_engine_safely(timeout: float) -> None:

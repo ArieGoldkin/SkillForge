@@ -1,7 +1,6 @@
 """Integration tests for confidence_score database persistence."""
 
 import uuid
-from uuid import UUID
 
 import pytest
 from sqlalchemy import select

@@ -28,7 +28,6 @@ async def test_specificity_retry_then_success(monkeypatch):
         return {"ok": True}
 
     # Set threshold to 0.7 to test retry logic (conftest sets it to 0.0)
-    import os
 
     monkeypatch.setenv("SPECIFICITY_MIN_SCORE", "0.7")
     monkeypatch.setattr(execution, "emit_agent_progress", fake_emit_agent_progress)
@@ -80,7 +79,6 @@ async def test_specificity_failure_after_retries(monkeypatch):
     monkeypatch.setattr(execution, "score_agent_output", fake_score_agent_output)
     monkeypatch.setattr(execution, "process_agent_result", fake_process_agent_result)
     # Set threshold to 0.7 to test retry logic (conftest sets it to 0.0)
-    import os
 
     monkeypatch.setenv("SPECIFICITY_MIN_SCORE", "0.7")
     monkeypatch.setenv("SPECIFICITY_MAX_RETRIES", "1")

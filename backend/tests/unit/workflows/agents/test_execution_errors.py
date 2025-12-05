@@ -1,10 +1,9 @@
 """Unit tests for agent execution error handling."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
-from langchain.messages import AIMessage
 
 from app.workflows.agents.execution import run_agent_with_tracking
 from tests.unit.workflows.agents.conftest import MockAgentSchema

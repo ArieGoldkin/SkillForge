@@ -183,11 +183,11 @@ def test_detect_content_type_tutorial_patterns():
     # Tutorial with "getting started" pattern
     tutorial_content = """
     # Getting Started with FastAPI
-    
+
     ## Installation
     To install FastAPI, run:
     pip install fastapi
-    
+
     ## Step-by-Step Guide
     1. Create a new project
     2. Install dependencies

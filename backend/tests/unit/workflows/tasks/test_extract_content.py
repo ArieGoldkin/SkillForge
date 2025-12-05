@@ -28,7 +28,9 @@ def mock_jina_response():
 @pytest.fixture
 def mock_emit_event():
     """Mock SSE event emission."""
-    with patch("app.workflows.tasks.extract_content.emit_streaming_event", new_callable=AsyncMock) as mock:
+    with patch(
+        "app.workflows.tasks.extract_content.emit_streaming_event", new_callable=AsyncMock
+    ) as mock:
         yield mock
 
 

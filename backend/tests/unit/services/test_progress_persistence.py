@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.types import EventData
 from app.models.progress import AnalysisProgress
 from app.services.progress_persistence import persist_progress_event, persist_progress_event_async
 
@@ -135,7 +134,6 @@ async def test_persist_progress_event_async_handles_task_errors(
         pass
 
     # Give callback time to execute
-    import asyncio
 
     await asyncio.sleep(0.01)
 
