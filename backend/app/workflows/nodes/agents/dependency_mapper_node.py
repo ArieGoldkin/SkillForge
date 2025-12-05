@@ -60,6 +60,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="dependency_mapper",
         analysis_id=analysis_id,
+            state=state,
         trace_id=trace_id,
     )
 
@@ -69,6 +70,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             content=content,
             content_type=content_type,
             analysis_id=analysis_id,
+            state=state,
         )
 
         duration = time.time() - start_time
@@ -76,6 +78,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             "agent_node_complete",
             agent_type="dependency_mapper",
             analysis_id=analysis_id,
+            state=state,
             duration_seconds=duration,
             trace_id=trace_id,
         )
@@ -90,6 +93,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             "agent_node_cancelled",
             agent_type="dependency_mapper",
             analysis_id=analysis_id,
+            state=state,
             exception_type="GeneratorExit",
             duration_seconds=duration,
             step_timeout=STEP_TIMEOUT,
@@ -104,6 +108,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             "agent_node_failed",
             agent_type="dependency_mapper",
             analysis_id=analysis_id,
+            state=state,
             error_type=type(e).__name__,
             error=str(e),
             duration_seconds=duration,

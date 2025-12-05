@@ -2,9 +2,9 @@ import { useState } from 'react'
 
 import { useNavigate } from '@tanstack/react-router'
 
-import { analyzeAPI } from '@services/api.service'
-
 import type { SkillLevel } from '@shared/SkillLevelSelector'
+
+import { analyzeAPI } from '@services/api.service'
 
 import { FeaturesSection } from './components/FeaturesSection'
 import { HeroSection } from './components/HeroSection'
