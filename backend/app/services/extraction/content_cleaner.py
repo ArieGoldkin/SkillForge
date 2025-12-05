@@ -20,7 +20,8 @@ BOILERPLATE_PATTERNS = [
     r"(?:^|\n).*?cookie(?:bot|s?).*?(?:\n|$)",
     r"(?:^|\n).*?(?:we use cookies|this (?:website|site) uses cookies).*?(?:\n|$)",
     r"(?:^|\n).*?(?:consent|gdpr|privacy policy|cookie policy).*?(?:\n|$)",
-    r"(?:^|\n)\s*\*?\s*\[?\s*(?:necessary|preferences|statistics|marketing)\s*\]?\s*-?\s*\[?[x ]?\]?\s*(?:\n|$)",
+    r"(?:^|\n)\s*\*?\s*\[?\s*(?:necessary|preferences|statistics|marketing)\s*\]?\s*-?\s*"
+    r"\[?[x ]?\]?\s*(?:\n|$)",
     # Navigation elements
     r"(?:^|\n)\s*\[(?:skip to (?:content|main)|menu|navigation)\].*?(?:\n|$)",
     r"(?:^|\n)\s*\*\s*\[(?:home|about|contact|blog|pricing|features|docs)\].*?(?:\n|$)",
