@@ -4,6 +4,8 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { analyzeAPI } from '@services/api.service'
 
+import type { SkillLevel } from '@shared/SkillLevelSelector'
+
 import { FeaturesSection } from './components/FeaturesSection'
 import { HeroSection } from './components/HeroSection'
 import { HowItWorksSection } from './components/HowItWorksSection'
@@ -16,6 +18,7 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedContentType, setSelectedContentType] = useState<ContentType>('article')
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>('intermediate')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,8 +27,8 @@ export default function Home() {
     setIsSubmitting(true)
     setError(null)
     try {
-      // Use real backend API
-      const response = await analyzeAPI.createAnalysis({ url })
+      // Use real backend API with skill level
+      const response = await analyzeAPI.createAnalysis({ url, skill_level: skillLevel })
       navigate({ to: '/analyze/$id', params: { id: response.analysis_id } })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create analysis'
@@ -43,6 +46,8 @@ export default function Home() {
         setUrl={setUrl}
         selectedContentType={selectedContentType}
         setSelectedContentType={setSelectedContentType}
+        skillLevel={skillLevel}
+        setSkillLevel={setSkillLevel}
         isSubmitting={isSubmitting}
         handleSubmit={handleSubmit}
         error={error}
