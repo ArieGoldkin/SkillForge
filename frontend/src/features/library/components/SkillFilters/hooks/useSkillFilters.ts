@@ -70,10 +70,8 @@ export const useSkillFilters = (
 
   // Status change handler
   const handleStatusChange = (status: SkillStatus, checked: boolean) => {
-    const newStatuses = checked
-      ? [...filters.status, status]
-      : filters.status.filter((s) => s !== status)
-
+    // Backend supports a single status; treat as radio (one selection)
+    const newStatuses = checked ? [status] : []
     onChange({ ...filters, status: newStatuses })
   }
 

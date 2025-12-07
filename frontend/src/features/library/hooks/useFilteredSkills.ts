@@ -9,7 +9,7 @@ interface Skill {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   progress: number
-  status: 'not-started' | 'in-progress' | 'completed'
+  status: 'not-started' | 'in-progress' | 'completed' | 'failed'
   onSelect: (id: string) => void
 }
 
@@ -19,9 +19,6 @@ export function useFilteredSkills(skills: Skill[], searchQuery: string, filters:
       return false
     }
     if (filters.difficulty.length && !filters.difficulty.includes(skill.difficulty)) {
-      return false
-    }
-    if (filters.status.length && !filters.status.includes(skill.status)) {
       return false
     }
     return true
