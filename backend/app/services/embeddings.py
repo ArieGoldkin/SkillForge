@@ -115,6 +115,7 @@ class EmbeddingService:
                 tiktoken.encoding_for_model, "text-embedding-3-small"
             )
 
+        assert self._encoding is not None
         tokens = self._encoding.encode(text)
         original_token_count = len(tokens)
         original_length = len(text)

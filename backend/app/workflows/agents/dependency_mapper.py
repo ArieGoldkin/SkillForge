@@ -10,6 +10,8 @@ from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
+from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
+from app.workflows.state import AnalysisState
 
 # Framework ecosystems mapping
 FRAMEWORK_ECOSYSTEMS = {
@@ -161,29 +163,35 @@ async def run_dependency_mapper(
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
+    state: AnalysisState,
 ) -> dict[str, object]:
-    """Run dependency mapper agent to map dependencies and versions.
+    """Run dependency mapper agent.
 
     Args:
-        content: Extracted text content to analyze
-        content_type: Type of content (article, video, repo)
-        analysis_id: Unique identifier for this analysis
-        session: Database session for persistence
+        content: Analyzed content
+        content_type: Type of content
+        analysis_id: Analysis ID
+        session: Database session
+        state: Current workflow state (for skill_level)
 
     Returns:
-        Dictionary with agent_type, findings, processing_time_ms
-
-    Raises:
-        Exception: If agent execution fails
+        Agent findings dict
 
     """
-    # Create agent with structured output
+    # Get skill level and inject instructions
+    skill_level = state.get("skill_level", "intermediate")
+    skill_instructions = get_skill_level_instructions(skill_level)
+
+    # Build prompt with skill level instructions
+    full_prompt = f"{DEPENDENCY_MAPPER_PROMPT}\n\n{skill_instructions}"
+
+    # Create agent
     agent = create_structured_agent(
-        system_prompt=DEPENDENCY_MAPPER_PROMPT,
+        system_prompt=full_prompt,
         response_schema=DependencyMapping,
     )
 
-    # Run agent with tracking and persistence
+    # Run agent
     return await run_agent_with_tracking(
         agent=agent,
         content=content,

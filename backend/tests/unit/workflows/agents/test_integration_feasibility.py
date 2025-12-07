@@ -11,6 +11,7 @@ from app.workflows.agents.schemas.integration_feasibility import (
     CompatibilityScore,
     IntegrationFeasibility,
 )
+from app.workflows.state import AnalysisState
 
 
 @pytest.fixture
@@ -54,6 +55,24 @@ def mock_session():
     return session
 
 
+@pytest.fixture
+def mock_state():
+    """Mock analysis state."""
+    return AnalysisState(
+        analysis_id=uuid4(),
+        url="https://example.com",
+        content_type="article",
+        skill_level="intermediate",
+        raw_content="test content",
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
+
 @pytest.mark.asyncio
 @patch("app.workflows.agents.integration_feasibility.create_structured_agent")
 @patch("app.workflows.agents.integration_feasibility.run_agent_with_tracking")
@@ -61,6 +80,7 @@ async def test_run_integration_feasibility_success(
     mock_run_tracking,
     mock_create_agent,
     mock_session,
+    mock_state,
 ):
     """Test successful integration feasibility execution."""
     analysis_id = str(uuid4())
@@ -80,7 +100,9 @@ async def test_run_integration_feasibility_success(
         "processing_time_ms": 1500,
     }
 
-    result = await run_integration_feasibility(content, content_type, analysis_id, mock_session)
+    result = await run_integration_feasibility(
+        content, content_type, analysis_id, mock_session, mock_state
+    )
 
     assert result["agent_type"] == "integration_feasibility"
     assert "findings" in result
@@ -95,6 +117,7 @@ async def test_integration_feasibility_error_handling(
     mock_run_tracking,
     mock_create_agent,
     mock_session,
+    mock_state,
 ):
     """Test error handling in integration feasibility."""
     analysis_id = str(uuid4())
@@ -104,4 +127,6 @@ async def test_integration_feasibility_error_handling(
     mock_run_tracking.side_effect = Exception("Agent failed")
 
     with pytest.raises(Exception, match="Agent failed"):
-        await run_integration_feasibility(content, content_type, analysis_id, mock_session)
+        await run_integration_feasibility(
+            content, content_type, analysis_id, mock_session, mock_state
+        )

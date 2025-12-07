@@ -114,7 +114,8 @@ async def test_robust_traceable_propagates_generator_exit():
         call_count["executed"] += 1
         # Simulate GeneratorExit during execution
         # Note: Python converts GeneratorExit in async functions to RuntimeError
-        raise GeneratorExit("Execution interrupted")
+        msg = "Execution interrupted"
+        raise GeneratorExit(msg)
 
     # Python converts GeneratorExit in async functions to RuntimeError
     # robust_traceable lets exceptions propagate naturally
@@ -131,7 +132,8 @@ async def test_robust_traceable_preserves_other_exceptions():
 
     @robust_traceable(name="test_node", run_type="chain")
     async def test_node(value: int) -> int:
-        raise ValueError("Real error")
+        msg = "Real error"
+        raise ValueError(msg)
 
     with pytest.raises(ValueError, match="Real error"):
         await test_node(5)

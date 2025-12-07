@@ -99,7 +99,8 @@ async def test_stream_analysis_progress_error(
     # Mock broadcaster to raise an error
     async def mock_subscribe(channel):
         yield {"type": "progress", "stage": "extraction", "status": "running"}
-        raise ConnectionError("Broadcaster connection lost")
+        msg = "Broadcaster connection lost"
+        raise ConnectionError(msg)
 
     mock_broadcaster.subscribe = mock_subscribe
 

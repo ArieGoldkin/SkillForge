@@ -6,6 +6,7 @@ Tests auto-activation of:
 - security_auditor (Issue #174)
 - tech_comparator (Issue #177)
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -28,22 +29,20 @@ async def test_performance_analyst_activation():
 
     content = """
     # FastAPI Performance Optimization Guide
-    
+
     import asyncpg
     from fastapi import FastAPI
     import redis
-    
+
     We need to optimize database connection pooling to reduce latency.
     Current API response time is 450ms, we need to get it under 200ms.
-    
+
     Using asyncpg for async database queries and Redis for caching.
     Benchmarking shows that the current throughput is 2000 req/sec.
     """
 
     result = await supervisor_route(
-        content=content,
-        content_type="article",
-        analysis_id="test-perf-001"
+        content=content, content_type="article", analysis_id="test-perf-001"
     )
 
     agents = result["supervisor_decision"]["agents"]
@@ -74,22 +73,20 @@ async def test_security_auditor_activation():
 
     content = """
     # JWT Authentication Implementation
-    
+
     from passlib.context import CryptContext
     import python-jose
     from jose import jwt
-    
+
     We need to implement secure JWT token validation.
     Checking for SQL injection vulnerabilities in user input.
     Password hashing uses bcrypt for security.
-    
+
     Make sure to validate CORS settings and check for XSS risks.
     """
 
     result = await supervisor_route(
-        content=content,
-        content_type="code",
-        analysis_id="test-sec-001"
+        content=content, content_type="code", analysis_id="test-sec-001"
     )
 
     agents = result["supervisor_decision"]["agents"]
@@ -120,20 +117,18 @@ async def test_tech_comparator_activation():
 
     content = """
     # FastAPI vs Django: Which Framework to Choose?
-    
+
     Should we migrate from Django to FastAPI for our microservices?
-    
+
     Both frameworks have their strengths. FastAPI offers better performance
     with async support, while Django provides a more mature ecosystem.
-    
+
     We're comparing the two for our next project and need guidance.
     React is also being considered for the frontend.
     """
 
     result = await supervisor_route(
-        content=content,
-        content_type="article",
-        analysis_id="test-comp-001"
+        content=content, content_type="article", analysis_id="test-comp-001"
     )
 
     agents = result["supervisor_decision"]["agents"]
@@ -166,15 +161,15 @@ async def test_combined_activation():
 
     content = """
     # Optimizing FastAPI Security and Performance
-    
+
     import asyncpg
     from fastapi import FastAPI
     from passlib.context import CryptContext
     import redis
-    
+
     We're comparing FastAPI vs Django for our high-performance API.
     Need to optimize latency (currently 500ms) and ensure JWT security.
-    
+
     Key concerns:
     - Database connection pooling with asyncpg
     - Redis caching for 90% hit ratio
@@ -183,9 +178,7 @@ async def test_combined_activation():
     """
 
     result = await supervisor_route(
-        content=content,
-        content_type="code",
-        analysis_id="test-combined-001"
+        content=content, content_type="code", analysis_id="test-combined-001"
     )
 
     agents = result["supervisor_decision"]["agents"]

@@ -285,7 +285,7 @@ class TestGenerateArtifact:
                 mock_repo.create_artifact.side_effect = Exception("Database error")
                 mock_repo_class.return_value = mock_repo
 
-                with pytest.raises(Exception):
+                with pytest.raises(Exception, match="Database error"):
                     await generate_artifact(sample_state)
 
             # Verify error SSE event was called

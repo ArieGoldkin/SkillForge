@@ -4,6 +4,8 @@ import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 import { Input } from '@shared/components/ui/input'
+import { SkillLevelSelector } from '@shared/SkillLevelSelector'
+import type { SkillLevel } from '@shared/SkillLevelSelector'
 
 import { cn } from '@lib/utils'
 
@@ -14,6 +16,8 @@ interface HeroSectionProps {
   setUrl: (url: string) => void
   selectedContentType: ContentType
   setSelectedContentType: (type: ContentType) => void
+  skillLevel: SkillLevel
+  setSkillLevel: (level: SkillLevel) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
@@ -24,6 +28,8 @@ export function HeroSection({
   setUrl,
   selectedContentType,
   setSelectedContentType,
+  skillLevel,
+  setSkillLevel,
   isSubmitting,
   handleSubmit,
   error,
@@ -45,6 +51,8 @@ export function HeroSection({
           setUrl={setUrl}
           selectedContentType={selectedContentType}
           setSelectedContentType={setSelectedContentType}
+          skillLevel={skillLevel}
+          setSkillLevel={setSkillLevel}
           isSubmitting={isSubmitting}
           handleSubmit={handleSubmit}
           error={error}
@@ -59,6 +67,8 @@ interface ContentAnalysisFormProps {
   setUrl: (url: string) => void
   selectedContentType: ContentType
   setSelectedContentType: (type: ContentType) => void
+  skillLevel: SkillLevel
+  setSkillLevel: (level: SkillLevel) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
@@ -69,6 +79,8 @@ function ContentAnalysisForm({
   setUrl,
   selectedContentType,
   setSelectedContentType,
+  skillLevel,
+  setSkillLevel,
   isSubmitting,
   handleSubmit,
   error,
@@ -93,6 +105,8 @@ function ContentAnalysisForm({
         selectedContentType={selectedContentType}
         setSelectedContentType={setSelectedContentType}
       />
+
+      <SkillLevelSelector value={skillLevel} onChange={setSkillLevel} />
 
       {error && (
         <Alert variant="destructive" className="mb-4">

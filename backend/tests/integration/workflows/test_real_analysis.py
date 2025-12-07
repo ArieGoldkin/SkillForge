@@ -76,6 +76,7 @@ async def test_real_article_analysis_claude_opus_4_5(
         {
             "url": test_url,
             "analysis_id": analysis_id,
+            "skill_level": "intermediate",
         },
         config=workflow_config,
     )

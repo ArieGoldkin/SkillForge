@@ -86,6 +86,7 @@ async def test_claude_opus_4_5_baseline(
         {
             "url": test_url,
             "analysis_id": analysis_id,
+            "skill_level": "intermediate",
         },
         config=workflow_config,
     )

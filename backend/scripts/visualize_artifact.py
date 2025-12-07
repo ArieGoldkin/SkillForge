@@ -98,9 +98,12 @@ def analyze_markdown_structure(content: str) -> dict:
             structure["lists"] += 1
 
         # Tables
-        if "|" in line_stripped and not in_code_block:
-            if "---" in lines[max(0, i - 2) : i + 1][-1] if i > 1 else False:
-                structure["tables"] += 1
+        if (
+            "|" in line_stripped
+            and not in_code_block
+            and ("---" in lines[max(0, i - 2) : i + 1][-1] if i > 1 else False)
+        ):
+            structure["tables"] += 1
 
     return structure
 

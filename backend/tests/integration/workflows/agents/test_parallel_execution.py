@@ -65,6 +65,7 @@ async def test_parallel_agents_all_8_agents_execute(
             {
                 "url": test_url,
                 "analysis_id": analysis_id,
+                "skill_level": "intermediate",
             },
             config=workflow_config,
         ),
@@ -135,6 +136,7 @@ async def test_parallel_agents_error_isolation_one_failure_does_not_crash_others
             {
                 "url": test_url,
                 "analysis_id": analysis_id,
+                "skill_level": "intermediate",
             },
             config=workflow_config,
         ),

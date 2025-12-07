@@ -45,11 +45,27 @@ async def test_tech_comparator_integration(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
     result = await run_tech_comparator(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     assert result["agent_type"] == "tech_comparator"
@@ -109,11 +125,28 @@ async def test_integration_feasibility_integration(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
     result = await run_integration_feasibility(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     assert result["agent_type"] == "integration_feasibility"
@@ -173,11 +206,28 @@ async def test_implementation_planner_integration(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
     result = await run_implementation_planner(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     assert result["agent_type"] == "implementation_planner"
@@ -250,18 +300,40 @@ async def test_agents_parallel_execution_with_separate_sessions(
         shared_session.add(analysis)
         await shared_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
     # Each agent gets its own session (matching the fix in execute_agents)
     async def run_with_session_1():
         async with AsyncSessionLocal() as session:
-            return await run_tech_comparator(content, content_type, analysis_id, session)
+            return await run_tech_comparator(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     async def run_with_session_2():
         async with AsyncSessionLocal() as session:
-            return await run_integration_feasibility(content, content_type, analysis_id, session)
+            return await run_integration_feasibility(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     async def run_with_session_3():
         async with AsyncSessionLocal() as session:
-            return await run_implementation_planner(content, content_type, analysis_id, session)
+            return await run_implementation_planner(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     # Execute all three agents in parallel with separate sessions
     tasks = [
@@ -342,11 +414,27 @@ async def test_agent_returns_confidence_score_in_output(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
     result = await run_tech_comparator(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     # Verify confidence_score was in the structured response (before extraction)
@@ -393,12 +481,29 @@ async def test_confidence_score_range_enforced(
     db_session.add(analysis)
     await db_session.commit()
 
+    from app.workflows.state import AnalysisState
+
+    mock_state = AnalysisState(
+        analysis_id=UUID(analysis_id),
+        url="https://example.com",
+        content_type=content_type,
+        skill_level="intermediate",
+        raw_content=content,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
     # Agent should complete successfully with valid confidence_score
     result = await run_tech_comparator(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
         session=db_session,
+        state=mock_state,
     )
 
     # Verify confidence_score is in valid range

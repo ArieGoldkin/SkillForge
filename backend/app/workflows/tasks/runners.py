@@ -27,6 +27,7 @@ from app.workflows.agents import (
     run_tech_comparator,
     run_trend_validator,
 )
+from app.workflows.state import AnalysisState
 
 # Note: AsyncSessionLocal is imported lazily inside each function to avoid
 # DATABASE_URL validation at import time (required for CI without database)
@@ -38,6 +39,7 @@ async def run_tech_comparator_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run tech comparator with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -56,7 +58,7 @@ async def run_tech_comparator_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_tech_comparator(content, content_type, analysis_id, session)
+            return await run_tech_comparator(content, content_type, analysis_id, session, state)
     except GeneratorExit:
         # GeneratorExit occurs when timeout cancels the task - handle gracefully
         duration = time.time() - start_time
@@ -92,6 +94,7 @@ async def run_integration_feasibility_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run integration feasibility with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -110,7 +113,9 @@ async def run_integration_feasibility_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_integration_feasibility(content, content_type, analysis_id, session)
+            return await run_integration_feasibility(
+                content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -145,6 +150,7 @@ async def run_implementation_planner_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run implementation planner with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -163,7 +169,9 @@ async def run_implementation_planner_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_implementation_planner(content, content_type, analysis_id, session)
+            return await run_implementation_planner(
+                content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -198,6 +206,7 @@ async def run_security_auditor_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run security auditor with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -216,7 +225,7 @@ async def run_security_auditor_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_security_auditor(content, content_type, analysis_id, session)
+            return await run_security_auditor(content, content_type, analysis_id, session, state)
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -251,6 +260,7 @@ async def run_performance_analyst_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run performance analyst with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -269,7 +279,7 @@ async def run_performance_analyst_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_performance_analyst(content, content_type, analysis_id, session)
+            return await run_performance_analyst(content, content_type, analysis_id, session, state)
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -304,6 +314,7 @@ async def run_code_quality_critic_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run code quality critic with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -322,7 +333,7 @@ async def run_code_quality_critic_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_code_quality_critic(content, content_type, analysis_id, session)
+            return await run_code_quality_critic(content, content_type, analysis_id, session, state)
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -357,6 +368,7 @@ async def run_trend_validator_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run trend validator with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -375,7 +387,7 @@ async def run_trend_validator_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_trend_validator(content, content_type, analysis_id, session)
+            return await run_trend_validator(content, content_type, analysis_id, session, state)
     except GeneratorExit as gen_exit:
         # GeneratorExit occurs when async generator is closed prematurely
         # This can happen during LangGraph's internal streaming cleanup or timeout cancellation
@@ -419,6 +431,7 @@ async def run_dependency_mapper_with_session(
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    state: AnalysisState,
 ) -> dict[str, object]:
     """Run dependency mapper with its own database session."""
     from app.db.session import AsyncSessionLocal
@@ -437,7 +450,7 @@ async def run_dependency_mapper_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_dependency_mapper(content, content_type, analysis_id, session)
+            return await run_dependency_mapper(content, content_type, analysis_id, session, state)
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(

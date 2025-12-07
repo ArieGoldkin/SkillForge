@@ -96,7 +96,7 @@ async def test_persist_progress_event_async_creates_task(mock_persist, sample_ev
     assert len(_progress_tasks) == 1
 
     # Wait for task to complete
-    task = list(_progress_tasks)[0]
+    task = next(iter(_progress_tasks))
     await task
 
     # Verify persist_progress_event was called
@@ -126,7 +126,7 @@ async def test_persist_progress_event_async_handles_task_errors(
     persist_progress_event_async(sample_event_data)
 
     # Wait for task to complete (with exception handling)
-    task = list(_progress_tasks)[0]
+    task = next(iter(_progress_tasks))
     try:
         await task
     except Exception:

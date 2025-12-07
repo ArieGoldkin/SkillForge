@@ -118,7 +118,7 @@ async def create_analysis(
             error=str(e),
         )
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid URL format: {e!s}",
         ) from e
 
@@ -133,7 +133,7 @@ async def create_analysis(
                 error=str(e),
             )
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Invalid analysis_id format: {e!s}",
             ) from e
     else:
@@ -173,7 +173,9 @@ async def create_analysis(
 
     # Start workflow asynchronously with proper task lifecycle management
     # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-    task: asyncio.Task[None] = asyncio.create_task(run_workflow_task(analysis_uuid, url_str))  # type: ignore[arg-type]
+    task: asyncio.Task[None] = asyncio.create_task(
+        run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
+    )
     _background_tasks.add(task)
     task.add_done_callback(_handle_task_completion)
 

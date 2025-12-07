@@ -11,12 +11,12 @@ Run with:
 """
 
 import asyncio
-import os
 import sys
+from pathlib import Path
 from uuid import uuid4
 
 # Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from unittest.mock import MagicMock
 

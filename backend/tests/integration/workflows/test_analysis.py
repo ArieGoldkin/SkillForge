@@ -150,6 +150,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
                     {
                         "url": test_url,
                         "analysis_id": analysis_id,
+                        "skill_level": "intermediate",
                     },
                     config=workflow_config,
                 ),

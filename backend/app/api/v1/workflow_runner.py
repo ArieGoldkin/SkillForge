@@ -247,7 +247,9 @@ async def _handle_workflow_exception(
         "workflow_type": "analysis",
     },
 )
-async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
+async def run_workflow_task(
+    analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
+) -> None:
     """Run analysis workflow in background task.
 
     This function is executed asynchronously after the endpoint returns.
@@ -263,6 +265,7 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
     Args:
         analysis_id: UUID of the analysis
         url: URL to analyze
+        skill_level: User's experience level (beginner, intermediate, expert)
 
     """
     workflow_completed = False  # Track completion status for GeneratorExit handling
@@ -294,6 +297,7 @@ async def run_workflow_task(analysis_id: uuid.UUID, url: str) -> None:
         input_state: dict[str, str] = {
             "url": url,
             "analysis_id": str(analysis_id),
+            "skill_level": skill_level,
         }
 
         # Execute workflow

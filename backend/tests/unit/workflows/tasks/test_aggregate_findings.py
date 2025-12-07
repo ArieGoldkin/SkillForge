@@ -107,7 +107,7 @@ class TestValidateAndParseFindings:
         """Test validation skips findings without agent_type."""
         findings = [{"findings": {"test": "data"}}]  # Missing agent_type
 
-        validated, agent_types, confidence_scores = validate_and_parse_findings(findings)
+        validated, agent_types, _confidence_scores = validate_and_parse_findings(findings)
 
         assert len(validated) == 0
         assert len(agent_types) == 0
@@ -132,7 +132,7 @@ class TestValidateAndParseFindings:
         """Test validation skips invalid finding types."""
         findings = ["not a dict", {"agent_type": "valid", "findings": {}}]
 
-        validated, agent_types, confidence_scores = validate_and_parse_findings(findings)
+        validated, agent_types, _confidence_scores = validate_and_parse_findings(findings)
 
         assert len(validated) == 1  # Only valid one included
         assert "valid" in agent_types

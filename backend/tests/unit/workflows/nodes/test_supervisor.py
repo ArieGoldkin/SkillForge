@@ -399,7 +399,9 @@ def test_detect_code_patterns_utility():
 @pytest.mark.asyncio
 async def test_supervisor_auto_activates_performance_analyst():
     """Test supervisor auto-activates performance_analyst when performance keywords detected."""
-    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+    mock_selection = AgentSelection(
+        agents=["implementation_planner"], reasoning="Plan", confidence=0.8
+    )
 
     # Mock models
     mock_structured_model = MagicMock()
@@ -417,13 +419,18 @@ async def test_supervisor_auto_activates_performance_analyst():
         result = await supervisor_route(content, "code", "test-id")
         agents = result["supervisor_decision"]["agents"]
         assert "performance_analyst" in agents
-        assert "performance_indicators_detected" in str(result) or "perf keywords" in result["supervisor_decision"]["reasoning"]
+        assert (
+            "performance_indicators_detected" in str(result)
+            or "perf keywords" in result["supervisor_decision"]["reasoning"]
+        )
 
 
 @pytest.mark.asyncio
 async def test_supervisor_auto_activates_security_auditor():
     """Test supervisor auto-activates security_auditor when security keywords detected."""
-    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+    mock_selection = AgentSelection(
+        agents=["implementation_planner"], reasoning="Plan", confidence=0.8
+    )
 
     # Mock models
     mock_structured_model = MagicMock()
@@ -441,13 +448,18 @@ async def test_supervisor_auto_activates_security_auditor():
         result = await supervisor_route(content, "code", "test-id")
         agents = result["supervisor_decision"]["agents"]
         assert "security_auditor" in agents
-        assert "security_indicators_detected" in str(result) or "security keywords" in result["supervisor_decision"]["reasoning"]
+        assert (
+            "security_indicators_detected" in str(result)
+            or "security keywords" in result["supervisor_decision"]["reasoning"]
+        )
 
 
 @pytest.mark.asyncio
 async def test_supervisor_auto_activates_tech_comparator():
     """Test supervisor auto-activates tech_comparator when comparison logic detected."""
-    mock_selection = AgentSelection(agents=["implementation_planner"], reasoning="Plan", confidence=0.8)
+    mock_selection = AgentSelection(
+        agents=["implementation_planner"], reasoning="Plan", confidence=0.8
+    )
 
     # Mock models
     mock_structured_model = MagicMock()
@@ -465,4 +477,7 @@ async def test_supervisor_auto_activates_tech_comparator():
         result = await supervisor_route(content, "article", "test-id")
         agents = result["supervisor_decision"]["agents"]
         assert "tech_comparator" in agents
-        assert "comparison_indicators_detected" in str(result) or "comparison detected" in result["supervisor_decision"]["reasoning"]
+        assert (
+            "comparison_indicators_detected" in str(result)
+            or "comparison detected" in result["supervisor_decision"]["reasoning"]
+        )
