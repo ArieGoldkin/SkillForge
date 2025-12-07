@@ -9,7 +9,18 @@
 export { default as ArtifactPage } from './ArtifactPage'
 
 // Hooks
-export { useArtifact, type UseArtifactReturn, type UseArtifactState } from './hooks'
+export {
+  useArtifact,
+  useArtifactPreview,
+  type UseArtifactReturn,
+  type UseArtifactState,
+  type UseArtifactPreviewReturn,
+} from './hooks'
 
 // Components
-export { MarkdownPreview, type MarkdownPreviewProps } from './components'
+export {
+  MarkdownPreview,
+  ArtifactPreviewModal,
+  type MarkdownPreviewProps,
+  type ArtifactPreviewModalProps,
+} from './components'
