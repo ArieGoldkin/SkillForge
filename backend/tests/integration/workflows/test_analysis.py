@@ -358,3 +358,148 @@ async def test_analysis_workflow_with_checkpointer(
     finally:
         # Ensure engine connections are disposed
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(
+    150
+)  # 2.5 minute max timeout - accounts for streaming/parallel execution overhead
+async def test_workflow_persists_results_to_database(
+    requires_database, reset_engine_connections
+) -> None:
+    """Test that workflow results are persisted to database after completion (Issue #168).
+
+    This test verifies that _persist_analysis_data() correctly saves workflow results
+    to the database, including raw_content, title, content_embedding, and that
+    the search_vector trigger fires correctly.
+
+    This test requires:
+    - OpenAI API key configured (for embeddings and agents)
+    - Database connection
+
+    Note: External services (Jina, OpenAI) are mocked to avoid API dependency issues.
+    """
+    from sqlalchemy import select
+
+    from app.api.v1.workflow_runner import run_workflow_task
+
+    # Use a simple test URL
+    test_url = "https://react.dev"
+    # Use a proper UUID for the analysis_id (required for database foreign key)
+    analysis_id = uuid4()
+
+    # Create Analysis record before running workflow (required for agent foreign keys)
+    async with AsyncSessionLocal() as session:
+        analysis = Analysis(
+            id=analysis_id,
+            url=test_url,
+            content_type="article",
+            status="pending",
+        )
+        session.add(analysis)
+        await session.commit()
+
+    # Mock Jina to avoid API dependency issues
+    mock_jina = MagicMock()
+    mock_jina.extract_article = AsyncMock(return_value=SAMPLE_EXTRACTION_RESULT)
+    mock_jina.close = AsyncMock()
+
+    # Mock embedding service to avoid OpenAI API dependency issues
+    mock_embedding_service = MagicMock()
+    mock_embedding_service.generate_embedding = AsyncMock(return_value=SAMPLE_EMBEDDING)
+    mock_embedding_service.close = AsyncMock()
+
+    # Mock supervisor to return empty agent selection (no agents to execute for faster test)
+    mock_supervisor_result = {
+        "supervisor_decision": {
+            "agents": [],
+            "priority": [],
+            "reasoning": "Test content - no agents needed for persistence test",
+            "confidence": 0.5,
+        }
+    }
+
+    # Mock artifact repository to avoid database foreign key violations
+    mock_artifact = MagicMock()
+    mock_artifact.id = analysis_id
+    mock_artifact_repo = AsyncMock()
+    mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
+    mock_artifact_repo.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
+
+    try:
+        with (
+            patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+            patch(
+                "app.workflows.tasks.generate_embedding.EmbeddingService",
+                return_value=mock_embedding_service,
+            ),
+            patch(
+                "app.workflows.graph_builder.supervisor_route",
+                new_callable=AsyncMock,
+                return_value=mock_supervisor_result,
+            ),
+            # Mock router to return no agents (empty list) for faster execution
+            patch(
+                "app.workflows.nodes.agent_router.route_to_agents",
+                return_value=[],  # No agents selected
+            ),
+            patch(
+                "app.workflows.tasks.generate_artifact.ArtifactRepository",
+                return_value=mock_artifact_repo,
+            ),
+        ):
+            # Run full workflow via run_workflow_task (this calls _persist_analysis_data)
+            await run_workflow_task(
+                analysis_id=analysis_id,
+                url=test_url,
+                skill_level="intermediate",
+            )
+
+        # Verify database persistence (Issue #168)
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
+            analysis = result.scalar_one_or_none()
+            assert analysis is not None, "Analysis record should exist"
+
+            # Verify raw_content is persisted
+            assert analysis.raw_content is not None, "raw_content should be persisted"
+            assert analysis.raw_content == SAMPLE_EXTRACTION_RESULT["content"], (
+                "raw_content should match extracted content"
+            )
+
+            # Verify title is persisted (extracted from extraction_metadata)
+            assert analysis.title is not None, "title should be persisted"
+            assert analysis.title == SAMPLE_EXTRACTION_RESULT["title"], (
+                "title should match extracted title"
+            )
+
+            # Verify content_embedding is persisted
+            assert analysis.content_embedding is not None, "content_embedding should be persisted"
+            assert len(analysis.content_embedding) == EXPECTED_EMBEDDING_DIMENSIONS, (
+                f"content_embedding should be {EXPECTED_EMBEDDING_DIMENSIONS} dimensions"
+            )
+            assert list(analysis.content_embedding) == SAMPLE_EMBEDDING, (
+                "content_embedding should match generated embedding"
+            )
+
+            # Verify extraction_metadata is persisted
+            assert analysis.extraction_metadata is not None, (
+                "extraction_metadata should be persisted"
+            )
+            assert isinstance(analysis.extraction_metadata, dict), (
+                "extraction_metadata should be a dict"
+            )
+            assert "title" in analysis.extraction_metadata, (
+                "extraction_metadata should contain title"
+            )
+
+            # Verify search_vector trigger fired (Issue #168 - full-text search)
+            assert analysis.search_vector is not None, (
+                "search_vector should be populated by trigger after persistence"
+            )
+
+    finally:
+        # Ensure engine connections are disposed
+        await engine.dispose()
