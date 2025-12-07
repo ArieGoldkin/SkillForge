@@ -16,8 +16,11 @@ from app.workflows.analysis import analysis_workflow
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
 
 # Sample extraction result for mocking
+# Note: JinaReader returns title at both top level and in metadata
 SAMPLE_EXTRACTION_RESULT = {
     "content": "Sample article content for testing workflow end-to-end.",
+    "title": "Test Article",  # Top-level title (Issue #170 fix)
+    "word_count": 10,
     "metadata": {
         "title": "Test Article",
         "content_type": "article",
@@ -171,6 +174,11 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         assert result["url"] == test_url
         assert len(result["raw_content"]) > 0
         assert isinstance(result["extraction_metadata"], dict)
+        # Verify title is in extraction_metadata (Issue #170 fix)
+        assert "title" in result["extraction_metadata"], "Title should be in extraction_metadata"
+        assert result["extraction_metadata"]["title"] == "Test Article", (
+            "Title should be extracted from JinaReader response"
+        )
         # Verify embedding (mocked, so we know the exact value)
         assert "content_embedding" in result
         assert len(result["content_embedding"]) == EXPECTED_EMBEDDING_DIMENSIONS
@@ -184,6 +192,17 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         mock_jina.close.assert_called_once()
         mock_embedding_service.generate_embedding.assert_called_once()
         mock_embedding_service.close.assert_called_once()
+
+        # Verify title persistence would work correctly (Issue #170)
+        # Simulate what _persist_analysis_data does with the workflow result
+        extraction_metadata = result.get("extraction_metadata")
+        assert extraction_metadata is not None, "extraction_metadata should exist"
+        title = extraction_metadata.get("title")
+        assert title is not None, "Title should be present in extraction_metadata"
+        assert title == "Test Article", "Title should match the extracted value"
+        # Verify the structure matches what _persist_analysis_data expects
+        # (from workflow_runner.py line 102-104)
+        assert isinstance(title, str), "Title should be a string"
     finally:
         # Ensure engine connections are disposed
         await engine.dispose()
