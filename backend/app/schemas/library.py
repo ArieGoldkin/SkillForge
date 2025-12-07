@@ -67,6 +67,7 @@ class LibrarySearchResult(BaseModel):
     url: str = Field(..., description="Source URL that was analyzed")
     title: str | None = Field(None, description="Content title (if available)")
     content_type: str = Field(..., description="Detected content type")
+    status: str = Field(..., description="Analysis status (pending, running, complete, failed)")
     snippet: str | None = Field(
         None,
         description="Search snippet with highlighted matches (for text search)",
@@ -84,6 +85,7 @@ class LibrarySearchResult(BaseModel):
                 "url": "https://example.com/article",
                 "title": "Introduction to PostgreSQL",
                 "content_type": "article",
+                "status": "complete",
                 "snippet": "...PostgreSQL provides <mark>full-text search</mark> capabilities...",
                 "rank": 0.87,
                 "created_at": "2024-01-01T12:00:00Z",

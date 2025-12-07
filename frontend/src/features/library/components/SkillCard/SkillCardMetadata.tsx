@@ -36,11 +36,14 @@ const getDifficultyVariant = (
 /**
  * Get badge variant for status
  */
-const getStatusVariant = (status: SkillStatus): 'default' | 'warning' | 'success' => {
-  const variants: Record<SkillStatus, 'default' | 'warning' | 'success'> = {
+const getStatusVariant = (
+  status: SkillStatus
+): 'default' | 'warning' | 'success' | 'destructive' => {
+  const variants: Record<SkillStatus, 'default' | 'warning' | 'success' | 'destructive'> = {
     'not-started': 'default',
     'in-progress': 'warning',
     completed: 'success',
+    failed: 'destructive',
   }
   return variants[status]
 }
@@ -53,6 +56,7 @@ const formatStatus = (status: SkillStatus): string => {
     'not-started': 'Not Started',
     'in-progress': 'In Progress',
     completed: 'Completed',
+    failed: 'Failed',
   }
   return labels[status]
 }

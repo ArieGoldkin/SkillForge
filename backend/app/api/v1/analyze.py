@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.sse_handler import stream_analysis_progress as stream_analysis_progress_handler
@@ -15,7 +16,8 @@ from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
 from app.db.session import get_db
 from app.models.analysis import Analysis
-from app.schemas.analyze import AnalyzeCreateResponse, AnalyzeRequest
+from app.models.artifact import Artifact
+from app.schemas.analyze import AnalyzeCreateResponse, AnalyzeRequest, AnalyzeStatusResponse
 from app.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
@@ -194,28 +196,33 @@ async def create_analysis(
 @router.get("/analyze/{analysis_id}")
 async def get_analysis(
     analysis_id: uuid.UUID,
-) -> JSONResponse:
-    """Get analysis details by ID.
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AnalyzeStatusResponse:
+    """Get analysis details including latest artifact id."""
+    result = await db.execute(select(Analysis).where(Analysis.id == analysis_id))
+    analysis = result.scalar_one_or_none()
 
-    Args:
-        analysis_id: UUID of the analysis
+    if not analysis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Analysis {analysis_id} not found",
+        )
 
-    Returns:
-        JSONResponse with analysis details
+    artifact_result = await db.execute(
+        select(Artifact.id)
+            .where(Artifact.analysis_id == analysis_id)
+            .order_by(Artifact.created_at.desc())
+            .limit(1)
+    )
+    artifact_id = artifact_result.scalar_one_or_none()
 
-    Note:
-        This is a placeholder endpoint. Full implementation will require
-        repository pattern integration (Task 1.3.1).
-
-    """
-    # TODO(@yonatan): Implement with repository pattern (Issue #41)
-    return JSONResponse(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        content={
-            "error": {
-                "code": "NOT_IMPLEMENTED",
-                "message": "Analysis retrieval not yet implemented",
-                "analysis_id": str(analysis_id),
-            }
-        },
+    return AnalyzeStatusResponse(
+        analysis_id=str(analysis.id),
+        url=str(analysis.url),
+        content_type=str(analysis.content_type),
+        status=str(analysis.status),
+        title=str(analysis.title) if analysis.title else None,
+        artifact_id=str(artifact_id) if artifact_id else None,
+        created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+        updated_at=analysis.updated_at.isoformat() if analysis.updated_at else "",
     )

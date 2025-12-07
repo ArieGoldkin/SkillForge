@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy import select
 
+from app.api.v1.workflow_runner import run_workflow_task
 from app.core.config import get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.analysis import Analysis
@@ -503,3 +505,54 @@ async def test_workflow_persists_results_to_database(
     finally:
         # Ensure engine connections are disposed
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+@pytest.mark.external
+@pytest.mark.timeout(150)
+@patch("app.api.v1.workflow_runner.analysis_workflow")
+async def test_workflow_fails_when_required_fields_missing(
+    mock_workflow,
+    requires_database,
+    reset_engine_connections,
+) -> None:
+    """Workflow should fail when required fields (e.g., embedding) are missing."""
+    test_url = "https://example.com/article"
+    analysis_id = uuid4()
+
+    # Create Analysis record
+    async with AsyncSessionLocal() as session:
+        analysis = Analysis(
+            id=analysis_id,
+            url=test_url,
+            content_type="article",
+            status="pending",
+        )
+        session.add(analysis)
+        await session.commit()
+
+    # Mock workflow to return incomplete result (missing embedding)
+    mock_workflow.ainvoke = AsyncMock(
+        return_value={
+            "raw_content": "Sample content",
+            "extraction_metadata": {"title": "Incomplete Result"},
+            # content_embedding intentionally missing
+        }
+    )
+
+    # Run workflow task
+    await run_workflow_task(
+        analysis_id=analysis_id,
+        url=test_url,
+        skill_level="intermediate",
+    )
+
+    # Verify analysis marked failed and no content persisted
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
+        analysis = result.scalar_one_or_none()
+        assert analysis is not None
+        assert analysis.status == "failed"
+        assert analysis.raw_content is None
+        assert analysis.content_embedding is None

@@ -8,10 +8,34 @@ from fastapi.responses import Response
 
 from app.core.logging import get_logger
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
+from app.schemas.artifact import ArtifactMetadataResponse
 from app.workflows.tasks.artifact_helpers import generate_filename
 
 router = APIRouter(tags=["artifacts"])
 logger = get_logger(__name__)
+
+
+@router.get("/analyze/{analysis_id}/artifact", response_model=ArtifactMetadataResponse)
+async def get_artifact_by_analysis(
+    analysis_id: uuid.UUID,
+    repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
+) -> ArtifactMetadataResponse:
+    """Retrieve the latest artifact for an analysis (metadata + markdown)."""
+    artifact = await repo.get_latest_artifact_by_analysis(analysis_id)
+
+    if not artifact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No artifact found for analysis {analysis_id}",
+        )
+
+    return ArtifactMetadataResponse(
+        artifact_id=str(artifact.id),
+        analysis_id=str(artifact.analysis_id),
+        markdown_content=artifact.markdown_content,
+        artifact_metadata=artifact.artifact_metadata,
+        created_at=artifact.created_at.isoformat() if artifact.created_at else "",
+    )
 
 
 @router.get("/artifacts/{artifact_id}/download")

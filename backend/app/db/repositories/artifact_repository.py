@@ -37,6 +37,12 @@ class IArtifactRepository(Protocol):
         """Get artifact by analysis ID."""
         ...
 
+    async def get_latest_artifact_by_analysis(
+        self, analysis_id: uuid.UUID
+    ) -> Artifact | None:
+        """Get the most recent artifact for an analysis."""
+        ...
+
     async def get_artifact_with_analysis(
         self, artifact_id: uuid.UUID
     ) -> tuple[Artifact, Analysis] | None:
@@ -95,6 +101,18 @@ class ArtifactRepository:
         """Get artifact by analysis ID."""
         result = await self.session.execute(
             select(Artifact).where(Artifact.analysis_id == analysis_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_latest_artifact_by_analysis(
+        self, analysis_id: uuid.UUID
+    ) -> Artifact | None:
+        """Get the most recent artifact for an analysis."""
+        result = await self.session.execute(
+            select(Artifact)
+            .where(Artifact.analysis_id == analysis_id)
+            .order_by(Artifact.created_at.desc())
+            .limit(1)
         )
         return result.scalar_one_or_none()
 

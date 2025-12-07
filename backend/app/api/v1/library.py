@@ -8,13 +8,18 @@ This module provides the unified library endpoint that supports:
 """
 
 from enum import Enum
+from uuid import UUID
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status as http_status
 
 from app.core.logging import get_logger
 from app.db.repositories.library_repository import ILibraryRepository, get_library_repository
+from app.db.session import get_db
+from app.models.analysis import Analysis
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 from app.services.embeddings import EmbeddingService
 
@@ -203,6 +208,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                         url=str(analysis.url),
                         title=str(analysis.title) if analysis.title else None,
                         content_type=str(analysis.content_type),
+                        status=str(analysis.status),
                         snippet=snippet,
                         rank=score,
                         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
@@ -260,6 +266,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                     url=str(analysis.url),
                     title=str(analysis.title) if analysis.title else None,
                     content_type=str(analysis.content_type),
+                    status=str(analysis.status),
                     snippet=None,  # No snippet in listing mode
                     rank=0.0,  # No ranking in listing mode
                     created_at=analysis.created_at.isoformat() if analysis.created_at else "",
@@ -301,3 +308,28 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Library request failed",
         ) from e
+
+
+@router.delete("/analyses/{analysis_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+async def delete_analysis(
+    analysis_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    """Delete an analysis and cascading related data.
+
+    This uses database-level ON DELETE CASCADE to remove related agent findings,
+    artifacts, and progress rows.
+    """
+
+    analysis = await db.get(Analysis, analysis_id)
+    if not analysis:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Analysis not found",
+        )
+
+    # Use direct DELETE to rely on database-level ON DELETE CASCADE
+    await db.execute(delete(Analysis).where(Analysis.id == analysis_id))
+    await db.commit()
+
+    logger.info("analysis_deleted", analysis_id=str(analysis_id))

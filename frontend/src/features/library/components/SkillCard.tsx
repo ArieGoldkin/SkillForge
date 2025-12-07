@@ -1,5 +1,7 @@
 import type * as React from 'react'
 
+import { Trash2 } from 'lucide-react'
+
 import { Card, CardContent } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
@@ -29,6 +31,7 @@ export interface SkillCardProps {
   thumbnail?: string
   progress?: number
   onSelect: (id: string) => void
+  onDelete?: (id: string) => void
   className?: string
 }
 
@@ -76,6 +79,7 @@ export const SkillCard: React.FC<SkillCardProps> = ({
   thumbnail,
   progress,
   onSelect,
+  onDelete,
   className,
 }) => {
   const handleClick = () => {
@@ -101,7 +105,20 @@ export const SkillCard: React.FC<SkillCardProps> = ({
       role="button"
       aria-label={`${title} - ${formatStatus(status)}`}
     >
-      <CardContent className="p-0">
+      <CardContent className="p-0 relative">
+        {onDelete && (
+          <button
+            type="button"
+            className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete(id)
+            }}
+            aria-label="Delete analysis"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
         <SkillCardThumbnail title={title} thumbnail={thumbnail} />
 
         <div className="p-6 space-y-4">

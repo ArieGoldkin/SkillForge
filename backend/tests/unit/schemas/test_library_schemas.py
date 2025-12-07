@@ -57,6 +57,7 @@ class TestLibrarySearchResult:
             analysis_id="123e4567-e89b-12d3-a456-426614174000",
             url="https://example.com/article",
             content_type="article",
+            status="complete",
             rank=0.87,
             created_at="2024-01-01T12:00:00Z",
         )
@@ -76,6 +77,7 @@ class TestLibrarySearchResult:
             title="Introduction to PostgreSQL",
             content_type="article",
             snippet="...PostgreSQL provides <mark>full-text search</mark> capabilities...",
+            status="complete",
             rank=0.87,
             created_at="2024-01-01T12:00:00Z",
         )
@@ -97,6 +99,7 @@ class TestLibrarySearchResult:
         assert "analysis_id" in error_fields
         assert "rank" in error_fields
         assert "created_at" in error_fields
+        assert "status" in error_fields
 
     def test_library_search_result_rank_type_validation(self):
         """Test LibrarySearchResult rank must be float."""
@@ -105,6 +108,7 @@ class TestLibrarySearchResult:
             analysis_id="123e4567-e89b-12d3-a456-426614174000",
             url="https://example.com/article",
             content_type="article",
+            status="complete",
             rank=1,  # int
             created_at="2024-01-01T12:00:00Z",
         )
@@ -119,6 +123,7 @@ class TestLibrarySearchResult:
             title="Test Article",
             content_type="article",
             snippet="Test snippet",
+            status="complete",
             rank=0.87,
             created_at="2024-01-01T12:00:00Z",
         )
@@ -137,6 +142,7 @@ class TestLibrarySearchResult:
             analysis_id="123e4567-e89b-12d3-a456-426614174000",
             url="https://example.com/article",
             content_type="article",
+            status="complete",
             rank=0.87,
             created_at="2024-01-01T12:00:00Z",
         )
@@ -169,6 +175,7 @@ class TestLibraryListResponse:
                 url="https://example.com/article1",
                 title="Article 1",
                 content_type="article",
+                status="complete",
                 rank=0.9,
                 created_at="2024-01-01T12:00:00Z",
             ),
@@ -177,6 +184,7 @@ class TestLibraryListResponse:
                 url="https://example.com/article2",
                 title="Article 2",
                 content_type="article",
+                status="complete",
                 rank=0.8,
                 created_at="2024-01-02T12:00:00Z",
             ),
