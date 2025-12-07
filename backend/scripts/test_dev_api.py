@@ -5,7 +5,7 @@ import asyncio
 
 import httpx
 
-API_BASE = "http://127.0.0.1:8000/api/v1"
+API_BASE = "http://127.0.0.1:8500/api/v1"
 
 
 async def submit_analysis(url: str, description: str):
@@ -16,8 +16,10 @@ async def submit_analysis(url: str, description: str):
     print(f"{'=' * 80}\n")
 
     async with httpx.AsyncClient(timeout=120.0) as client:
-        # Submit analysis
-        response = await client.post(f"{API_BASE}/analyze", json={"url": url})
+        # Submit analysis with skill_level
+        response = await client.post(
+            f"{API_BASE}/analyze", json={"url": url, "skill_level": "intermediate"}
+        )
         response.raise_for_status()
         data = response.json()
         analysis_id = data["analysis_id"]
