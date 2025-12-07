@@ -140,4 +140,3 @@ async def run_tech_comparator(
         agent_type="tech_comparator",
         session=session,
     )
-

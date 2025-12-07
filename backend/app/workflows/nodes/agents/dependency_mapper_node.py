@@ -60,7 +60,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="dependency_mapper",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

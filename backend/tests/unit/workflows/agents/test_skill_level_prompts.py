@@ -70,4 +70,3 @@ def test_skill_level_instructions_have_target_audience():
     for level, instructions in SKILL_LEVEL_INSTRUCTIONS.items():
         assert "TARGET AUDIENCE:" in instructions, f"{level} missing TARGET AUDIENCE"
         assert f"{level.title()} Developer" in instructions
-

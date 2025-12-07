@@ -199,4 +199,3 @@ def test_detect_code_patterns_comparison_logic():
     content_single = "Just using FastAPI here."
     patterns_single = detect_code_patterns(content_single)
     assert patterns_single["has_comparison_indicators"] is False
-

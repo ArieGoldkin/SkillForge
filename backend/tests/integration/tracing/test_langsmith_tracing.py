@@ -179,7 +179,7 @@ async def test_environment_metadata_propagation(mock_get_current_run_tree):
         run_tree = get_current_run_tree()
         if run_tree:
             # Verify static metadata is available
-            assert "environment" in run_tree.metadata or True  # May be in decorator metadata
+            assert True  # May be in decorator metadata
             run_tree.metadata["runtime_key"] = "runtime_value"
 
         return {"status": "success"}

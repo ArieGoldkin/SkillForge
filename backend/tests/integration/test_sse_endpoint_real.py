@@ -42,6 +42,7 @@ async def _run_workflow_task(analysis_id: str, channel: str) -> None:
             {
                 "url": "https://react.dev",
                 "analysis_id": analysis_id,
+                "skill_level": "intermediate",
             },
             config={"configurable": {"thread_id": analysis_id}},
         )
@@ -275,6 +276,7 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
             {
                 "url": "https://python.org",
                 "analysis_id": analysis_id,
+                "skill_level": "intermediate",
             },
             config={"configurable": {"thread_id": analysis_id}},
         )

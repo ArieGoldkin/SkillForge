@@ -60,7 +60,7 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
         "agent_node_started",
         agent_type="implementation_planner",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

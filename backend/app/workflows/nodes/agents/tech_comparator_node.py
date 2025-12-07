@@ -60,7 +60,7 @@ async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="tech_comparator",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

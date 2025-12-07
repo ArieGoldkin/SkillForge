@@ -356,9 +356,8 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     if not complete_calls:
         # Debug: print all calls
         print(f"All calls: {[(c.args, c.kwargs) for c in all_calls]}")
-        assert False, (
-            f"No complete event found. All calls: {[(c.args, c.kwargs) for c in all_calls]}"
-        )
+        msg = f"No complete event found. All calls: {[(c.args, c.kwargs) for c in all_calls]}"
+        raise AssertionError(msg)
 
     assert len(complete_calls) == 1, (
         f"Complete event should be emitted exactly once, got {len(complete_calls)} calls"
@@ -454,7 +453,7 @@ async def test_run_workflow_task_fails_without_artifact(
     # Verify status was updated to FAILED (not complete) due to missing artifact
     mock_update_status.assert_called()
     # Check that status was set to "failed" (not "complete")
-    status_calls = [call for call in mock_update_status.call_args_list]
+    status_calls = list(mock_update_status.call_args_list)
     # Last call should be "failed" (after artifact validation fails)
     assert len(status_calls) >= 1
     # Verify error was emitted

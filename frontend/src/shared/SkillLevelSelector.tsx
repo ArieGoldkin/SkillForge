@@ -42,7 +42,7 @@ export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps)
           <button
             key={level.value}
             type="button"
-            className={`skill-level-option ${value === level.value ? ' skill-level-option--active' : ''}`}
+            className={`skill-level-option${value === level.value ? ' skill-level-option--active' : ''}`}
             onClick={() => onChange(level.value)}
             aria-pressed={value === level.value}
           >

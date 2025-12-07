@@ -113,7 +113,9 @@ async def run_integration_feasibility_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_integration_feasibility(content, content_type, analysis_id, session, state)
+            return await run_integration_feasibility(
+                content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -167,7 +169,9 @@ async def run_implementation_planner_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_implementation_planner(content, content_type, analysis_id, session, state)
+            return await run_implementation_planner(
+                content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(

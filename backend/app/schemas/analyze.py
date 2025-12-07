@@ -15,10 +15,7 @@ class AnalyzeRequest(BaseModel):
 
     Example:
         ```python
-        request = AnalyzeRequest(
-            url="https://example.com/article",
-            skill_level="intermediate"
-        )
+        request = AnalyzeRequest(url="https://example.com/article", skill_level="intermediate")
         ```
 
     """

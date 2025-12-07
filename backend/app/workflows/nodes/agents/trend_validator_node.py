@@ -60,7 +60,7 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="trend_validator",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

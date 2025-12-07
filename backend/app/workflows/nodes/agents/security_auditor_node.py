@@ -60,7 +60,7 @@ async def security_auditor_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="security_auditor",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

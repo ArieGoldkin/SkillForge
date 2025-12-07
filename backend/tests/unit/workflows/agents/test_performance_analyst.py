@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.workflows.agents.performance_analyst import run_performance_analyst
 from app.workflows.agents.schemas.performance_analyst import PerformanceAnalysis, PerformanceMetric
+from app.workflows.state import AnalysisState
 
 
 @pytest.fixture
@@ -56,6 +57,26 @@ def mock_session():
     session.execute = AsyncMock(return_value=mock_result)
     return session
 
+    return session
+
+
+@pytest.fixture
+def mock_state():
+    """Mock analysis state."""
+    return AnalysisState(
+        analysis_id=uuid4(),
+        url="https://example.com",
+        content_type="article",
+        skill_level="intermediate",
+        raw_content="test content",
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.performance_analyst.create_structured_agent")
@@ -65,6 +86,7 @@ async def test_run_performance_analyst_success(
     mock_create_agent,
     mock_agent,
     mock_session,
+    mock_state,
 ):
     """Test successful performance analyst execution."""
     analysis_id = str(uuid4())
@@ -84,7 +106,9 @@ async def test_run_performance_analyst_success(
         "processing_time_ms": 1400,
     }
 
-    result = await run_performance_analyst(content, content_type, analysis_id, mock_session)
+    result = await run_performance_analyst(
+        content, content_type, analysis_id, mock_session, mock_state
+    )
 
     assert result["agent_type"] == "performance_analyst"
     assert "findings" in result
@@ -102,6 +126,7 @@ async def test_run_performance_analyst_error_handling(
     mock_create_agent,
     mock_agent,
     mock_session,
+    mock_state,
 ):
     """Test performance analyst error handling."""
     analysis_id = str(uuid4())
@@ -112,13 +137,13 @@ async def test_run_performance_analyst_error_handling(
     mock_run_tracking.side_effect = RuntimeError("Agent execution failed")
 
     with pytest.raises(RuntimeError, match="Agent execution failed"):
-        await run_performance_analyst(content, content_type, analysis_id, mock_session)
+        await run_performance_analyst(content, content_type, analysis_id, mock_session, mock_state)
 
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.performance_analyst.create_structured_agent")
 async def test_run_performance_analyst_schema_validation(
-    mock_create_agent, mock_agent, mock_session
+    mock_create_agent, mock_agent, mock_session, mock_state
 ):
     """Test performance analyst schema validation."""
     analysis_id = str(uuid4())
@@ -127,7 +152,9 @@ async def test_run_performance_analyst_schema_validation(
 
     mock_create_agent.return_value = mock_agent
 
-    result = await run_performance_analyst(content, content_type, analysis_id, mock_session)
+    result = await run_performance_analyst(
+        content, content_type, analysis_id, mock_session, mock_state
+    )
 
     assert result is not None
     assert "agent_type" in result

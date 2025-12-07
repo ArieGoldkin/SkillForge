@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def mock_jina_response():
-    """Standard Jina Reader response with title."""
+    """Return standard Jina Reader response with title."""
     return {
         "title": "First Steps - FastAPI",
         "content": "The simplest FastAPI file could look like this...",

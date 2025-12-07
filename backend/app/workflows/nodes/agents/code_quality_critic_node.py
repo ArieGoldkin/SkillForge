@@ -60,7 +60,7 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
         "agent_node_started",
         agent_type="code_quality_critic",
         analysis_id=analysis_id,
-            state=state,
+        state=state,
         trace_id=trace_id,
     )
 

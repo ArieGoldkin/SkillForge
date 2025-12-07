@@ -319,15 +319,21 @@ async def test_agents_parallel_execution_with_separate_sessions(
     # Each agent gets its own session (matching the fix in execute_agents)
     async def run_with_session_1():
         async with AsyncSessionLocal() as session:
-            return await run_tech_comparator(content, content_type, analysis_id, session, state=mock_state)
+            return await run_tech_comparator(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     async def run_with_session_2():
         async with AsyncSessionLocal() as session:
-            return await run_integration_feasibility(content, content_type, analysis_id, session, state=mock_state)
+            return await run_integration_feasibility(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     async def run_with_session_3():
         async with AsyncSessionLocal() as session:
-            return await run_implementation_planner(content, content_type, analysis_id, session, state=mock_state)
+            return await run_implementation_planner(
+                content, content_type, analysis_id, session, state=mock_state
+            )
 
     # Execute all three agents in parallel with separate sessions
     tasks = [

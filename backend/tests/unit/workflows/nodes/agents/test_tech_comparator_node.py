@@ -16,7 +16,14 @@ def sample_state() -> AnalysisState:
         "analysis_id": str(uuid4()),
         "url": "https://example.com",
         "content_type": "article",
+        "skill_level": "intermediate",
         "raw_content": "React is a JavaScript library for building user interfaces.",
+        "extraction_metadata": {},
+        "content_embedding": [0.1] * 1536,
+        "supervisor_decision": {},
+        "agent_findings": [],
+        "aggregated_insights": {},
+        "artifact_id": None,
     }
 
 
@@ -41,6 +48,7 @@ async def test_tech_comparator_node_success(
         content=sample_state["raw_content"],
         content_type=sample_state["content_type"],
         analysis_id=sample_state["analysis_id"],
+        state=sample_state,
     )
 
 

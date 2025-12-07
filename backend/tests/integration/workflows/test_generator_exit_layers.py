@@ -65,7 +65,8 @@ class TestLayer1Aclosing:
             async with aclosing(test_generator()) as gen:
                 async for item in gen:
                     if item == 1:
-                        raise ValueError("Test exception")
+                        msg = "Test exception"
+                        raise ValueError(msg)
 
         # Cleanup should still be called
         assert cleanup_called, "Generator cleanup should be called even when exception occurs"
@@ -109,7 +110,8 @@ class TestLayer2RobustTraceable:
             call_count["executed"] += 1
             # Simulate GeneratorExit during execution
             # Note: Python converts GeneratorExit in async functions to RuntimeError
-            raise GeneratorExit("Execution interrupted")
+            msg = "Execution interrupted"
+            raise GeneratorExit(msg)
 
         # Python converts GeneratorExit in async functions to RuntimeError
         # robust_traceable lets exceptions propagate naturally
@@ -125,7 +127,8 @@ class TestLayer2RobustTraceable:
 
         @robust_traceable(name="test_node", run_type="chain")
         async def test_node(value: int) -> int:
-            raise ValueError("Real error")
+            msg = "Real error"
+            raise ValueError(msg)
 
         with pytest.raises(ValueError, match="Real error"):
             await test_node(5)
@@ -184,7 +187,7 @@ class TestLayer3WorkflowHandling:
                     pass
                 else:
                     # Re-raise execution error
-                    raise e
+                    raise
 
         assert workflow_completed is False
 
