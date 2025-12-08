@@ -1,12 +1,9 @@
 import { useMemo, useState } from 'react'
 
-import type { SearchMode } from '@app-types/api'
-import { useQueryClient } from '@tanstack/react-query'
+import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
-
-import { analyzeAPI } from '@services/api.service'
 
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
@@ -21,7 +18,6 @@ import { dedupeByAnalysisId } from './utils/libraryTransform'
 /* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
 export default function Library() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid')
   const [showCompletedOnly, setShowCompletedOnly] = useState(true)
@@ -78,6 +74,7 @@ export default function Library() {
         tags,
         progress: isFailed ? undefined : 0,
         status: mapAnalysisStatusToSkillStatus(item.status),
+        analysisStatus: item.status,
         onSelect: (id: string) => {
           navigate({ to: '/analyze/$id', params: { id } })
         },
@@ -96,13 +93,13 @@ export default function Library() {
     return Array.from(tagSet)
   }, [searchResults])
 
-  const availableStatuses = useMemo<SkillStatus[]>(() => {
-    const statusSet = new Set<SkillStatus>()
+  const availableStatuses = useMemo<AnalysisStatus[]>(() => {
+    const statusSet = new Set<AnalysisStatus>()
     const pages = searchResults?.pages ?? []
     const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
     items.forEach((item) => {
       if (item.status) {
-        statusSet.add(mapAnalysisStatusToSkillStatus(item.status))
+        statusSet.add(item.status)
       }
     })
     return Array.from(statusSet)
@@ -113,16 +110,6 @@ export default function Library() {
 
   const handleSelectSkill = (id: string) => {
     navigate({ to: '/analyze/$id', params: { id } })
-  }
-
-  const handleDeleteSkill = async (id: string) => {
-    try {
-      await analyzeAPI.deleteAnalysis(id)
-      await queryClient.invalidateQueries({ queryKey: ['library'] })
-    } catch (error) {
-      console.error('Failed to delete analysis', error)
-      alert('Failed to delete analysis. Please try again.')
-    }
   }
 
   const showingCount = filteredSkills.length
@@ -155,7 +142,7 @@ export default function Library() {
             checked={showCompletedOnly}
             onChange={(event) => setShowCompletedOnly(event.target.checked)}
           />
-          Show completed only
+          Show finished only
         </label>
         {searchResults && (
           <span className="text-sm text-muted-foreground ml-auto">
@@ -184,7 +171,6 @@ export default function Library() {
             isLoading={isLoading}
             skills={filteredSkills}
             onSelectSkill={handleSelectSkill}
-            onDeleteSkill={handleDeleteSkill}
             onLoadMore={hasNextPage ? fetchNextPage : undefined}
             canLoadMore={Boolean(hasNextPage)}
             isLoadingMore={isFetchingNextPage || isFetching || isLoading}

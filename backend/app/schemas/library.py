@@ -72,7 +72,6 @@ class LibrarySearchResult(BaseModel):
         None,
         description="Search snippet with highlighted matches (for text search)",
     )
-    status: str = Field(..., description="Analysis status")
     tags: list[str] = Field(default_factory=list, description="Tags for filtering (content type + topics)")
     rank: float = Field(..., description="Relevance score (for text search) or distance (for vector search)")
     created_at: str = Field(..., description="Timestamp when the analysis was created")
@@ -87,7 +86,6 @@ class LibrarySearchResult(BaseModel):
                 "status": "complete",
                 "snippet": "...PostgreSQL provides <mark>full-text search</mark> capabilities...",
                 "rank": 0.87,
-                "status": "complete",
                 "tags": ["article", "postgresql"],
                 "created_at": "2024-01-01T12:00:00Z",
             }

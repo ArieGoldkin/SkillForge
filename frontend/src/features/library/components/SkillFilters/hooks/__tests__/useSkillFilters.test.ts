@@ -37,7 +37,7 @@ describe('useSkillFilters', () => {
   it('clears all filters', () => {
     const filters: SkillFilters = {
       difficulty: ['beginner'],
-      status: ['completed'],
+      status: ['complete'],
       tags: ['React'],
       durationRange: [10, 100],
     }

@@ -1,5 +1,5 @@
 import type { AnalysisStatus } from '@app-types/api'
-
+import type { SkillStatus } from '../components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from '../components/SkillFilters'
 
 interface Skill {
@@ -10,8 +10,8 @@ interface Skill {
   duration: number
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
-  progress: number
-  status: 'not-started' | 'in-progress' | 'completed'
+  progress?: number
+  status: SkillStatus
   analysisStatus: AnalysisStatus
   onSelect: (id: string) => void
 }

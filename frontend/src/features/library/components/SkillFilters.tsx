@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/
 
 import { cn } from '@lib/utils'
 
-import type { SkillDifficulty, SkillStatus } from './SkillCard'
+import type { AnalysisStatus } from '@app-types/api'
+
+import type { SkillDifficulty } from './SkillCard'
 import { DifficultyFilter } from './SkillFilters/DifficultyFilter'
 import { DurationFilter } from './SkillFilters/DurationFilter'
 import { useSkillFilters } from './SkillFilters/hooks'
@@ -20,7 +22,7 @@ import { TagFilter } from './SkillFilters/TagFilter'
  */
 export interface SkillFilters {
   difficulty: SkillDifficulty[]
-  status: SkillStatus[]
+  status: AnalysisStatus[]
   tags: string[]
   durationRange: [number, number]
 }
@@ -32,7 +34,7 @@ export interface SkillFiltersProps {
   filters: SkillFilters
   onChange: (filters: SkillFilters) => void
   availableTags: string[]
-  availableStatuses: SkillStatus[]
+  availableStatuses?: AnalysisStatus[]
   className?: string
 }
 
@@ -61,7 +63,7 @@ export const SkillFilters: React.FC<SkillFiltersProps> = ({
   filters,
   onChange,
   availableTags,
-  availableStatuses,
+  availableStatuses = ['complete', 'in-progress', 'failed'],
   className,
 }) => {
   const { handlers, activeFilterCount } = useSkillFilters(filters, onChange)

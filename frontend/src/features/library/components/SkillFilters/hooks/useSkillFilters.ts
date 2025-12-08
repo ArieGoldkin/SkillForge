@@ -72,10 +72,8 @@ export const useSkillFilters = (
 
   // Status change handler
   const handleStatusChange = (status: AnalysisStatus, checked: boolean) => {
-    const newStatuses = checked
-      ? [...filters.status, status]
-      : filters.status.filter((s) => s !== status)
-
+    // Treat status as radio: only one status at a time
+    const newStatuses = checked ? [status] : []
     onChange({ ...filters, status: newStatuses })
   }
 

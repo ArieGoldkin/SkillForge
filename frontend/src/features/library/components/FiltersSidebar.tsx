@@ -1,4 +1,4 @@
-import type { SkillStatus } from './SkillCard'
+import type { AnalysisStatus } from '@app-types/api'
 import type { SkillFilters as SkillFiltersType } from './SkillFilters'
 import { SkillFilters } from './SkillFilters'
 
@@ -6,7 +6,7 @@ interface FiltersSidebarProps {
   filters: SkillFiltersType
   onChange: (filters: SkillFiltersType) => void
   availableTags: string[]
-  availableStatuses: SkillStatus[]
+  availableStatuses?: AnalysisStatus[]
 }
 
 export function FiltersSidebar({

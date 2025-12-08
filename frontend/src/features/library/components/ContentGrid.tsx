@@ -1,4 +1,5 @@
 import { LoadingGrid } from './LoadingGrid'
+import type { SkillStatus } from './SkillCard'
 import { SkillGridView } from './SkillGridView'
 
 interface Skill {
@@ -10,7 +11,7 @@ interface Skill {
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   progress?: number
-  status: 'not-started' | 'in-progress' | 'completed' | 'failed'
+  status: SkillStatus
   onSelect: (id: string) => void
 }
 
@@ -18,7 +19,6 @@ interface ContentGridProps {
   isLoading: boolean
   skills: Skill[]
   onSelectSkill: (id: string) => void
-  onDeleteSkill?: (id: string) => void
   onLoadMore?: () => void
   isLoadingMore?: boolean
   canLoadMore?: boolean
@@ -28,7 +28,6 @@ export function ContentGrid({
   isLoading,
   skills,
   onSelectSkill,
-  onDeleteSkill,
   onLoadMore,
   isLoadingMore = false,
   canLoadMore = false,
@@ -40,7 +39,6 @@ export function ContentGrid({
       <SkillGridView
         skills={skills}
         onSelectSkill={onSelectSkill}
-        onDeleteSkill={onDeleteSkill}
         onLoadMore={onLoadMore}
         canLoadMore={canLoadMore}
         isLoadingMore={isLoadingMore}

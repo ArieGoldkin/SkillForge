@@ -2,7 +2,14 @@
 // Source: docs/INTEGRATION_POINTS.md
 
 export type ContentType = 'article' | 'video' | 'repo'
-export type AnalysisStatus = 'pending' | 'extracting' | 'analyzing' | 'complete' | 'failed'
+export type AnalysisStatus =
+  | 'pending'
+  | 'extracting'
+  | 'analyzing'
+  | 'running'
+  | 'in-progress'
+  | 'complete'
+  | 'failed'
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
 
 export interface Analysis {
@@ -63,6 +70,20 @@ export interface AnalyzeResponse {
   analysis_id: string
   sse_endpoint: string
   status: AnalysisStatus
+}
+
+export interface AnalysisStatusResponse {
+  status: AnalysisStatus
+  artifact_id?: string | null
+}
+
+export interface ArtifactMetadataResponse {
+  analysis_id: string
+  artifact_id: string
+  markdown_content?: string | null
+  metadata?: Record<string, unknown>
+  download_count?: number
+  created_at?: string
 }
 
 export interface APIError {
