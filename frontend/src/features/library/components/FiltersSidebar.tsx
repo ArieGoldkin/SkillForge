@@ -4,15 +4,23 @@ import { SkillFilters } from './SkillFilters'
 interface FiltersSidebarProps {
   filters: SkillFiltersType
   onChange: (filters: SkillFiltersType) => void
+  availableTags: string[]
+  availableStatuses: string[]
 }
 
-export function FiltersSidebar({ filters, onChange }: FiltersSidebarProps) {
+export function FiltersSidebar({
+  filters,
+  onChange,
+  availableTags,
+  availableStatuses,
+}: FiltersSidebarProps) {
   return (
     <div className="lg:col-span-1">
       <SkillFilters
         filters={filters}
         onChange={onChange}
-        availableTags={['article', 'video', 'repo', 'complete', 'analyzing']}
+        availableTags={availableTags}
+        availableStatuses={availableStatuses}
       />
     </div>
   )

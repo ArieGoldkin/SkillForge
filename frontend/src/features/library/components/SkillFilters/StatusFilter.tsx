@@ -4,7 +4,7 @@
 
 import type * as React from 'react'
 
-import type { SkillStatus } from '../SkillCard'
+import type { AnalysisStatus } from '@app-types/api'
 
 import { CheckboxItem } from './CheckboxItem'
 import { FilterSection } from './FilterSection'
@@ -13,24 +13,24 @@ import { FilterSection } from './FilterSection'
  * Props for StatusFilter component
  */
 export interface StatusFilterProps {
-  selectedStatuses: SkillStatus[]
-  onChange: (status: SkillStatus, checked: boolean) => void
+  selectedStatuses: AnalysisStatus[]
+  availableStatuses: AnalysisStatus[]
+  onChange: (status: AnalysisStatus, checked: boolean) => void
 }
-
-/**
- * Available status values
- */
-const statuses: SkillStatus[] = ['not-started', 'in-progress', 'completed', 'failed']
 
 /**
  * StatusFilter component
  *
  * Provides checkboxes for filtering by skill completion status.
  */
-export const StatusFilter: React.FC<StatusFilterProps> = ({ selectedStatuses, onChange }) => {
+export const StatusFilter: React.FC<StatusFilterProps> = ({
+  selectedStatuses,
+  availableStatuses,
+  onChange,
+}) => {
   return (
     <FilterSection title="Status">
-      {statuses.map((status) => (
+      {availableStatuses.map((status) => (
         <CheckboxItem
           key={status}
           id={`status-${status}`}

@@ -1,25 +1,60 @@
-# Issue #193 - Library filters: status/tag not applied
+# Issue #193: Library Filters (Status & Tags) Fix
 
-## Summary
-Status and tag filters in the Library were not wired to the backend. Selecting statuses or tags did not change results, and the “Show completed only” toggle could override status choices. We mapped filters to backend params, made status single-select (backend limitation), and added tests.
+**GitHub Issue:** [#193](https://github.com/ArieGoldkin/SkillForge/issues/193)  
+**Branch:** `feature/issue-193-library-filters`  
+**Status:** In Progress  
+**Owner:** Yonatan  
 
-## Scope of work
-- Map status filter → backend `status` query param.
-- Map tag filter → backend `content_type` query param (article/video/repo).
-- Disable “Show completed only” when a status is selected to avoid override.
-- Keep client-side filtering only for dimensions not supported by backend (difficulty/duration).
-- Add frontend tests for filter mapping and status param wiring.
+---
 
-## Changes (code)
-- `frontend/src/features/library/Library.tsx` – map filters to query params; reset pagination on change; disable completed-only when status is chosen.
-- `frontend/src/features/library/components/SkillFilters/hooks/useSkillFilters.ts` – single-select status (radio-like).
-- `frontend/src/features/library/hooks/useFilteredSkills.ts` – limit client filtering to difficulty/duration.
+## 📋 Overview
 
-## Tests
-- `npx vitest run src/features/library/__tests__/Library.filters.test.tsx src/features/library/__tests__/filterMapping.test.ts src/features/analysis/hooks/__tests__/useAnalysisStatus.test.ts`
-  - Verifies status → backend param mapping, content_type mapping, and status refetch handling.
+Library filters for status and tags were not affecting results. This change aligns backend responses and frontend filtering so status/tag selections constrain the displayed analyses.
 
-## Status
-- Fix implemented on branch `feature/issue-168-persist-workflow-results`.
-- GitHub issue: https://github.com/ArieGoldkin/SkillForge/issues/193
+---
+
+## ✅ Scope
+
+- Add `status` and `tags` fields to library search/list responses.
+- Surface content type (and topics when present) as tags.
+- Apply client-side filtering for status and tags on returned items.
+- Keep existing search behavior (hybrid/fulltext/semantic) unchanged.
+
+---
+
+## 🛠️ Changes Implemented
+
+- **Backend**
+  - `LibrarySearchResult` now includes `status` and `tags` (content type + topics).
+  - `/api/v1/library` populates tags for both search and listing paths.
+- **Frontend**
+  - API types extended with `status` and `tags`.
+  - Library mapping preserves analysis status/tags and builds dynamic tag/status options.
+  - Filters now apply status and tag selections to the displayed results.
+- **Tests**
+  - Updated `useFilteredSkills` tests for status and tag filtering.
+  - Updated `useSkillFilters` test for new status values.
+
+---
+
+## 🔬 Testing Notes
+
+- Run frontend unit tests:
+  ```bash
+  cd frontend
+  npm test
+  ```
+- Manual sanity:
+  1) Search in Library.  
+  2) Apply a status filter → results shrink accordingly.  
+  3) Apply a tag filter (content type/topic) → only matching items remain.  
+  4) Combine status + tag to confirm intersection.  
+
+---
+
+## 📂 Files Touched (high level)
+
+- Backend: `backend/app/api/v1/library.py`, `backend/app/schemas/library.py`
+- Frontend: `frontend/src/types/api.ts`, `frontend/src/features/library/Library.tsx`, filter components/hooks, related tests
+
 

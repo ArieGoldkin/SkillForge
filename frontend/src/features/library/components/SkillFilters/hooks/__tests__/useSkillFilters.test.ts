@@ -14,7 +14,7 @@ describe('useSkillFilters', () => {
   it('calculates active filter count correctly', () => {
     const filters: SkillFilters = {
       difficulty: ['beginner', 'intermediate'],
-      status: ['completed'],
+      status: ['complete'],
       tags: ['React'],
       durationRange: [0, 1000],
     }

@@ -13,6 +13,7 @@ const mockSkills = [
     tags: ['React'],
     progress: 0,
     status: 'not-started' as const,
+    analysisStatus: 'complete' as const,
     onSelect: () => {},
   },
   {
@@ -25,6 +26,7 @@ const mockSkills = [
     tags: ['TypeScript'],
     progress: 100,
     status: 'completed' as const,
+    analysisStatus: 'pending' as const,
     onSelect: () => {},
   },
 ]
@@ -55,9 +57,17 @@ describe('useFilteredSkills', () => {
     expect(result[0].difficulty).toBe('advanced')
   })
 
-  it('does not filter by status (handled server-side)', () => {
-    const filters = { ...emptyFilters, status: ['completed' as const] }
+  it('filters by status', () => {
+    const filters = { ...emptyFilters, status: ['pending' as const] }
     const result = useFilteredSkills(mockSkills, '', filters)
-    expect(result).toHaveLength(2)
+    expect(result).toHaveLength(1)
+    expect(result[0].analysisStatus).toBe('pending')
+  })
+
+  it('filters by tags', () => {
+    const filters = { ...emptyFilters, tags: ['React'] }
+    const result = useFilteredSkills(mockSkills, '', filters)
+    expect(result).toHaveLength(1)
+    expect(result[0].tags).toContain('React')
   })
 })
