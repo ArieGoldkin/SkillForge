@@ -72,8 +72,12 @@ class LibrarySearchResult(BaseModel):
         None,
         description="Search snippet with highlighted matches (for text search)",
     )
-    tags: list[str] = Field(default_factory=list, description="Tags for filtering (content type + topics)")
-    rank: float = Field(..., description="Relevance score (for text search) or distance (for vector search)")
+    tags: list[str] = Field(
+        default_factory=list, description="Tags for filtering (content type + topics)"
+    )
+    rank: float = Field(
+        ..., description="Relevance score (for text search) or distance (for vector search)"
+    )
     created_at: str = Field(..., description="Timestamp when the analysis was created")
 
     model_config = {

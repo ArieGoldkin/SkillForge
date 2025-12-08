@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
@@ -29,11 +29,11 @@ export default function Library() {
   })
   const limit = 15
 
-  const mapAnalysisStatusToSkillStatus = (status: AnalysisStatus): SkillStatus => {
+  const mapAnalysisStatusToSkillStatus = useCallback((status: AnalysisStatus): SkillStatus => {
     if (status === 'complete') return 'completed'
     if (status === 'failed') return 'failed'
     return 'in-progress'
-  }
+  }, [])
 
   // Use server-side infinite search API
   const {
@@ -80,7 +80,7 @@ export default function Library() {
         },
       }
     })
-  }, [searchResults, navigate])
+  }, [searchResults, navigate, mapAnalysisStatusToSkillStatus])
 
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -88,7 +88,9 @@ export default function Library() {
     const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
     items.forEach((item) => {
       const tags = item.tags?.length ? item.tags : [item.content_type]
-      tags.forEach((tag) => tagSet.add(tag))
+      tags.forEach((tag) => {
+        tagSet.add(tag)
+      })
     })
     return Array.from(tagSet)
   }, [searchResults])
