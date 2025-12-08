@@ -1,25 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
-import type { LibrarySearchParams, SearchMode } from '@app-types/api'
-import { useQueryClient } from '@tanstack/react-query'
+import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
-import { analyzeAPI } from '@services/api.service'
-
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
 import { LibraryHeader } from './components/LibraryHeader'
+import type { SkillStatus } from './components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
 import { SkillSearch } from './components/SkillSearch'
-import { useFilteredSkills, useLibrarySearch } from './hooks'
-import { mapFiltersToQuery, mapStatusToSkillStatus, normalizeTitle } from './utils'
+import { useFilteredSkills, useLibrarySearchInfinite } from './hooks'
+import { mapFiltersToQuery, normalizeTitle } from './utils'
+import { dedupeByAnalysisId } from './utils/libraryTransform'
 
-// eslint-disable-next-line max-lines-per-function
+/* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
 export default function Library() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid')
   const [showCompletedOnly, setShowCompletedOnly] = useState(true)
@@ -29,69 +27,97 @@ export default function Library() {
     status: [],
     durationRange: [0, 1000],
   })
-  const [offset, setOffset] = useState(0)
-  const limit = 20
+  const limit = 15
 
-  const searchParams: LibrarySearchParams = {
+  const mapAnalysisStatusToSkillStatus = useCallback((status: AnalysisStatus): SkillStatus => {
+    if (status === 'complete') return 'completed'
+    if (status === 'failed') return 'failed'
+    return 'in-progress'
+  }, [])
+
+  // Use server-side infinite search API
+  const {
+    data: searchResults,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLibrarySearchInfinite({
     query: searchQuery || undefined,
     search_mode: searchMode,
     ...mapFiltersToQuery(filters, showCompletedOnly),
     limit,
-    offset,
-  }
-
-  // Use server-side search API
-  const { data: searchResults, isLoading } = useLibrarySearch(searchParams)
+  })
 
   // Transform search results into skills format
   const skills = useMemo(() => {
-    if (!searchResults?.items) return []
+    const pages = searchResults?.pages ?? []
+    const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
+    if (!items.length) {
+      return []
+    }
 
-    return searchResults.items.map((item) => ({
-      id: item.analysis_id,
-      title: normalizeTitle(item.title),
-      description: item.snippet
-        ? // Strip HTML marks for description, keep snippet for display
-          item.snippet.replace(/<\/?mark>/g, '')
-        : `Analysis of ${item.content_type}`,
-      snippet: item.snippet, // Preserved for potential future use
-      thumbnail: `https://api.dicebear.com/7.x/shapes/svg?seed=${item.analysis_id}`,
-      duration: 25,
-      difficulty: 'intermediate' as const,
-      tags: [item.content_type],
-      progress: item.status === 'complete' ? 100 : 0,
-      status: mapStatusToSkillStatus(item.status),
-      onSelect: (id: string) => {
-        navigate({ to: '/analyze/$id', params: { id } })
-      },
-    }))
-  }, [searchResults, navigate])
+    return items.map((item) => {
+      const tags = item.tags?.length ? item.tags : [item.content_type]
+      const isFailed = item.status === 'failed'
+      return {
+        id: item.analysis_id,
+        title: normalizeTitle(item.title),
+        description: item.snippet
+          ? item.snippet.replace(/<\/?mark>/g, '')
+          : `Analysis of ${item.content_type}`,
+        snippet: item.snippet,
+        thumbnail: `https://api.dicebear.com/7.x/shapes/svg?seed=${item.analysis_id}`,
+        duration: 25,
+        difficulty: 'intermediate' as const,
+        tags,
+        progress: isFailed ? undefined : 0,
+        status: mapAnalysisStatusToSkillStatus(item.status),
+        analysisStatus: item.status,
+        onSelect: (id: string) => {
+          navigate({ to: '/analyze/$id', params: { id } })
+        },
+      }
+    })
+  }, [searchResults, navigate, mapAnalysisStatusToSkillStatus])
 
-  // Apply client-side filters for difficulty/duration only (status/content_type handled by API)
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    const pages = searchResults?.pages ?? []
+    const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
+    items.forEach((item) => {
+      const tags = item.tags?.length ? item.tags : [item.content_type]
+      tags.forEach((tag) => {
+        tagSet.add(tag)
+      })
+    })
+    return Array.from(tagSet)
+  }, [searchResults])
+
+  const availableStatuses = useMemo<AnalysisStatus[]>(() => {
+    const statusSet = new Set<AnalysisStatus>()
+    const pages = searchResults?.pages ?? []
+    const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
+    items.forEach((item) => {
+      if (item.status) {
+        statusSet.add(item.status)
+      }
+    })
+    return Array.from(statusSet)
+  }, [searchResults])
+
+  // Apply client-side filters for difficulty/tags (server doesn't support these yet)
   const filteredSkills = useFilteredSkills(skills, '', filters)
 
   const handleSelectSkill = (id: string) => {
     navigate({ to: '/analyze/$id', params: { id } })
   }
 
-  const handleLoadMore = () => {
-    if (searchResults && offset + limit < searchResults.total) {
-      setOffset((prev) => prev + limit)
-    }
-  }
-
-  const handleDeleteSkill = async (id: string) => {
-    try {
-      await analyzeAPI.deleteAnalysis(id)
-      await queryClient.invalidateQueries({ queryKey: ['library'] })
-      setOffset(0)
-    } catch (error) {
-      console.error('Failed to delete analysis', error)
-      alert('Failed to delete analysis. Please try again.')
-    }
-  }
-
-  const hasMore = searchResults ? offset + limit < searchResults.total : false
+  const showingCount = filteredSkills.length
+  const totalCount = searchQuery.trim()
+    ? showingCount
+    : (searchResults?.pages?.[0]?.total ?? filteredSkills.length)
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -116,16 +142,15 @@ export default function Library() {
           <input
             type="checkbox"
             checked={showCompletedOnly}
-            onChange={(event) => {
-              setShowCompletedOnly(event.target.checked)
-              setOffset(0)
-            }}
+            onChange={(event) => setShowCompletedOnly(event.target.checked)}
           />
-          Show completed only
+          Show finished only
         </label>
         {searchResults && (
           <span className="text-sm text-muted-foreground ml-auto">
-            Showing {Math.min(offset + limit, searchResults.total)} of {searchResults.total} results
+            {searchQuery.trim()
+              ? `Showing ${showingCount} result${showingCount === 1 ? '' : 's'}`
+              : `Showing ${showingCount} of ${totalCount} result${totalCount === 1 ? '' : 's'}`}
           </span>
         )}
       </div>
@@ -139,29 +164,19 @@ export default function Library() {
             if (next.status.length > 0 && showCompletedOnly) {
               setShowCompletedOnly(false)
             }
-            setOffset(0)
           }}
+          availableTags={availableTags}
+          availableStatuses={availableStatuses}
         />
         <div className="lg:col-span-3">
           <ContentGrid
             isLoading={isLoading}
             skills={filteredSkills}
             onSelectSkill={handleSelectSkill}
-            onDeleteSkill={handleDeleteSkill}
+            onLoadMore={hasNextPage ? fetchNextPage : undefined}
+            canLoadMore={Boolean(hasNextPage)}
+            isLoadingMore={isFetchingNextPage || isFetching || isLoading}
           />
-
-          {/* Load More button */}
-          {hasMore && searchResults && (
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                className="px-6 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
-              >
-                Load More ({searchResults.total - (offset + limit)} remaining)
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

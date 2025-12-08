@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SkillStatus } from '../components/SkillCard/types'
 import type { SkillFilters } from '../components/SkillFilters'
 import { mapFiltersToQuery } from '../utils'
 
@@ -18,7 +17,7 @@ describe('mapFiltersToQuery', () => {
   })
 
   it('maps first status selection to backend status', () => {
-    const filters: SkillFilters = { ...baseFilters, status: ['in-progress' as SkillStatus] }
+    const filters: SkillFilters = { ...baseFilters, status: ['in-progress'] }
     const result = mapFiltersToQuery(filters, false)
     expect(result.status).toBe('running')
   })

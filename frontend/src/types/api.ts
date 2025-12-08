@@ -7,6 +7,7 @@ export type AnalysisStatus =
   | 'extracting'
   | 'analyzing'
   | 'running'
+  | 'in-progress'
   | 'complete'
   | 'failed'
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
@@ -19,17 +20,6 @@ export interface Analysis {
   status: AnalysisStatus
   created_at: string
   artifact_id: string | null
-}
-
-export interface AnalysisStatusResponse {
-  analysis_id: string
-  url: string
-  content_type: ContentType
-  status: AnalysisStatus
-  title: string | null
-  artifact_id: string | null
-  created_at: string
-  updated_at: string
 }
 
 export interface SSEProgressEvent {
@@ -50,14 +40,6 @@ export interface Artifact {
     word_count: number
   }
   download_count: number
-  created_at: string
-}
-
-export interface ArtifactMetadataResponse {
-  artifact_id: string
-  analysis_id: string
-  markdown_content: string
-  artifact_metadata?: Record<string, unknown> | null
   created_at: string
 }
 
@@ -90,6 +72,20 @@ export interface AnalyzeResponse {
   status: AnalysisStatus
 }
 
+export interface AnalysisStatusResponse {
+  status: AnalysisStatus
+  artifact_id?: string | null
+}
+
+export interface ArtifactMetadataResponse {
+  analysis_id: string
+  artifact_id: string
+  markdown_content?: string | null
+  metadata?: Record<string, unknown>
+  download_count?: number
+  created_at?: string
+}
+
 export interface APIError {
   error: {
     code: string
@@ -116,6 +112,7 @@ export interface LibrarySearchResult {
   title: string | null
   content_type: ContentType
   status: AnalysisStatus
+  tags: string[]
   snippet: string | null
   rank: number
   created_at: string

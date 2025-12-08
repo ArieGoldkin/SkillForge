@@ -10,6 +10,8 @@
 
 import * as React from 'react'
 
+import type { AnalysisStatus } from '@app-types/api'
+
 import type { SkillFilters as SkillFiltersType } from '@features/library/components/SkillFilters'
 import { SkillFilters } from '@features/library/components/SkillFilters'
 import { SkillGridView } from '@features/library/components/SkillGridView'
@@ -49,7 +51,12 @@ export const LibraryTab: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
             <h3 className="text-lg font-medium mb-3">SkillFilters</h3>
-            <SkillFilters filters={filters} onChange={setFilters} availableTags={availableTags} />
+            <SkillFilters
+              filters={filters}
+              onChange={setFilters}
+              availableTags={availableTags}
+              availableStatuses={['complete', 'in-progress', 'failed'] satisfies AnalysisStatus[]}
+            />
           </div>
 
           <div className="lg:col-span-3">

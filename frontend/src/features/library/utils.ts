@@ -3,13 +3,6 @@ import type { AnalysisStatus, ContentType, SearchMode } from '@app-types/api'
 import type { SkillStatus } from './components/SkillCard/types'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
 
-const STATUS_MAP: Record<SkillStatus, AnalysisStatus> = {
-  'not-started': 'pending',
-  'in-progress': 'running',
-  completed: 'complete',
-  failed: 'failed',
-}
-
 const CONTENT_TYPE_TAGS: readonly ContentType[] = ['article', 'video', 'repo']
 
 export const normalizeTitle = (rawTitle: string | null): string => {
@@ -26,8 +19,8 @@ const pickContentType = (filters: SkillFiltersType): ContentType | undefined => 
 
 const pickStatus = (filters: SkillFiltersType): AnalysisStatus | undefined => {
   if (!filters.status.length) return undefined
-  const first = filters.status[0]
-  return STATUS_MAP[first]
+  const status = filters.status[0]
+  return status === 'in-progress' ? 'running' : status
 }
 
 export const mapFiltersToQuery = (
@@ -55,6 +48,8 @@ export const mapStatusToSkillStatus = (status: AnalysisStatus): SkillStatus => {
       return 'failed'
     case 'extracting':
     case 'analyzing':
+    case 'running':
+    case 'in-progress':
     case 'pending':
       return 'in-progress'
     default:
