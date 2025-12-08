@@ -55,10 +55,9 @@ describe('useFilteredSkills', () => {
     expect(result[0].difficulty).toBe('advanced')
   })
 
-  it('filters by status', () => {
+  it('does not filter by status (handled server-side)', () => {
     const filters = { ...emptyFilters, status: ['completed' as const] }
     const result = useFilteredSkills(mockSkills, '', filters)
-    expect(result).toHaveLength(1)
-    expect(result[0].status).toBe('completed')
+    expect(result).toHaveLength(2)
   })
 })

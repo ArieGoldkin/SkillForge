@@ -1,6 +1,7 @@
 """Integration tests for artifact download endpoint."""
 
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi import status
@@ -134,6 +135,59 @@ async def test_download_increments_count(requires_database, reset_engine_connect
     assert artifact.download_count == initial_count + 1, (
         f"Expected download_count to be {initial_count + 1}, got {artifact.download_count}"
     )
+
+
+@pytest.mark.asyncio
+async def test_get_artifact_by_analysis_returns_latest(
+    requires_database, reset_engine_connections, db_session
+):
+    """GET /api/v1/analyze/{id}/artifact returns latest artifact metadata."""
+    analysis_id = uuid.uuid4()
+    analysis = Analysis(
+        id=analysis_id,
+        url="https://example.com/article",
+        content_type="article",
+        status="complete",
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    older_artifact = Artifact(
+        id=uuid.uuid4(),
+        analysis_id=analysis_id,
+        markdown_content="# Old",
+        version=1,
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+    )
+    newer_artifact = Artifact(
+        id=uuid.uuid4(),
+        analysis_id=analysis_id,
+        markdown_content="# New",
+        version=2,
+        created_at=datetime.now(UTC),
+    )
+    db_session.add_all([older_artifact, newer_artifact])
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/api/v1/analyze/{analysis_id}/artifact")
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["artifact_id"] == str(newer_artifact.id)
+    assert data["markdown_content"].startswith("# New")
+
+
+@pytest.mark.asyncio
+async def test_get_artifact_by_analysis_not_found(reset_engine_connections):
+    """GET /api/v1/analyze/{id}/artifact returns 404 when missing."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/api/v1/analyze/{uuid.uuid4()}/artifact")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert "No artifact" in response.json()["detail"]
 
 
 @pytest.mark.asyncio

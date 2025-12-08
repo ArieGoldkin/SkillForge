@@ -163,12 +163,17 @@ describe('api.service', () => {
     })
   })
 
-  describe('analyzeAPI.getAnalysis', () => {
-    it('returns analysis data on success', async () => {
+  describe('analyzeAPI.getAnalysisStatus', () => {
+    it('returns analysis status data on success', async () => {
       const mockAnalysis = {
-        id: 'analysis-123',
+        analysis_id: 'analysis-123',
         url: 'https://example.com',
+        content_type: 'article',
         status: 'complete',
+        title: 'Example',
+        artifact_id: 'artifact-1',
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -176,7 +181,7 @@ describe('api.service', () => {
         json: async () => mockAnalysis,
       })
 
-      const result = await analyzeAPI.getAnalysis('analysis-123')
+      const result = await analyzeAPI.getAnalysisStatus('analysis-123')
 
       expect(result).toEqual(mockAnalysis)
       expect(mockFetch).toHaveBeenCalledWith(
@@ -185,27 +190,24 @@ describe('api.service', () => {
       )
     })
 
-    it('returns null on 501 (not implemented)', async () => {
+    it('throws on error response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 501,
-        json: async () => ({ detail: 'Not implemented' }),
+        status: 404,
+        json: async () => ({ detail: 'Not found' }),
       })
 
-      // Suppress console.warn for this test
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-
-      const result = await analyzeAPI.getAnalysis('analysis-123')
-
-      expect(result).toBe(null)
+      await expect(analyzeAPI.getAnalysisStatus('missing')).rejects.toThrow('Not found')
     })
   })
 
   describe('analyzeAPI.getArtifact', () => {
     it('returns artifact data on success', async () => {
       const mockArtifact = {
-        id: 'artifact-123',
-        content: '# Implementation Guide',
+        artifact_id: 'artifact-123',
+        analysis_id: 'analysis-123',
+        markdown_content: '# Implementation Guide',
+        created_at: '2025-01-01T00:00:00Z',
       }
 
       mockFetch.mockResolvedValueOnce({

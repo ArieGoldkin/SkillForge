@@ -17,6 +17,7 @@ const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
 export interface SkillGridViewProps {
   skills: SkillCardProps[]
   onSelectSkill: (id: string) => void
+  onDeleteSkill?: (id: string) => void
   loading?: boolean
   emptyMessage?: string
   className?: string
@@ -83,6 +84,7 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => {
 export const SkillGridView: React.FC<SkillGridViewProps> = ({
   skills,
   onSelectSkill,
+  onDeleteSkill,
   loading = false,
   emptyMessage = 'No skills found. Try adjusting your filters or search query.',
   className,
@@ -101,7 +103,9 @@ export const SkillGridView: React.FC<SkillGridViewProps> = ({
         <EmptyState message={emptyMessage} />
       ) : (
         // Skill cards
-        skills.map((skill) => <SkillCard key={skill.id} {...skill} onSelect={onSelectSkill} />)
+        skills.map((skill) => (
+          <SkillCard key={skill.id} {...skill} onSelect={onSelectSkill} onDelete={onDeleteSkill} />
+        ))
       )}
     </div>
   )

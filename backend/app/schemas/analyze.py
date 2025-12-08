@@ -87,6 +87,19 @@ class AnalyzeCreateResponse(BaseModel):
     }
 
 
+class AnalyzeStatusResponse(BaseModel):
+    """Response schema for analysis status and artifact lookup."""
+
+    analysis_id: str = Field(..., description="Unique identifier for the analysis")
+    url: str = Field(..., description="Source URL that was analyzed")
+    content_type: str = Field(..., description="Detected content type")
+    status: str = Field(..., description="Analysis status")
+    title: str | None = Field(None, description="Extracted title if available")
+    artifact_id: str | None = Field(None, description="Latest artifact id if generated")
+    created_at: str = Field(..., description="Timestamp when analysis was created")
+    updated_at: str = Field(..., description="Timestamp when analysis was last updated")
+
+
 class AnalyzeResponse(BaseModel):
     """Response schema for analysis results.
 

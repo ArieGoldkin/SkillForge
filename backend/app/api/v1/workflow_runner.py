@@ -18,6 +18,19 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def _validate_workflow_result(workflow_result: dict) -> list[str]:
+    """Validate required workflow result fields and return missing ones."""
+    required_fields = ["raw_content", "extraction_metadata", "content_embedding"]
+    missing_fields: list[str] = []
+
+    for field in required_fields:
+        value = workflow_result.get(field)
+        if not value:
+            missing_fields.append(field)
+
+    return missing_fields
+
+
 async def _update_analysis_status(analysis_id: uuid.UUID, status: str) -> None:
     """Update analysis status in database.
 
@@ -68,10 +81,6 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
     Returns:
         bool: True if data was persisted successfully, False otherwise
 
-    Note:
-        This function does not raise exceptions - errors are logged but the
-        workflow can continue. Persistence failure shouldn't fail the workflow.
-
     """
     try:
         from sqlalchemy import select
@@ -94,6 +103,12 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
             raw_content = workflow_result.get("raw_content")
             if raw_content:
                 analysis.raw_content = raw_content  # type: ignore[assignment]
+            else:
+                logger.warning(
+                    "persist_missing_raw_content",
+                    analysis_id=str(analysis_id),
+                    message="Workflow result missing raw_content",
+                )
 
             # Extract and persist title from extraction_metadata
             extraction_metadata = workflow_result.get("extraction_metadata")
@@ -102,11 +117,29 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
                 title = extraction_metadata.get("title")
                 if title:
                     analysis.title = title  # type: ignore[assignment]
+                else:
+                    logger.warning(
+                        "persist_missing_title",
+                        analysis_id=str(analysis_id),
+                        message="Workflow result missing title in extraction_metadata",
+                    )
+            else:
+                logger.warning(
+                    "persist_missing_extraction_metadata",
+                    analysis_id=str(analysis_id),
+                    message="Workflow result missing extraction_metadata",
+                )
 
             # Persist content embedding
             content_embedding = workflow_result.get("content_embedding")
             if content_embedding:
                 analysis.content_embedding = content_embedding  # type: ignore[assignment]
+            else:
+                logger.warning(
+                    "persist_missing_content_embedding",
+                    analysis_id=str(analysis_id),
+                    message="Workflow result missing content_embedding",
+                )
 
             await db_session.commit()
 
@@ -127,7 +160,8 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
             error=str(db_error),
             exc_info=True,
         )
-        return False
+        error_message = f"Failed to persist analysis data: {db_error}"
+        raise RuntimeError(error_message) from db_error
 
 
 async def _emit_workflow_error(analysis_id: uuid.UUID, error: BaseException | Exception) -> None:
@@ -247,7 +281,7 @@ async def _handle_workflow_exception(
         "workflow_type": "analysis",
     },
 )
-async def run_workflow_task(
+async def run_workflow_task(  # noqa: PLR0915
     analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
 ) -> None:
     """Run analysis workflow in background task.
@@ -323,7 +357,34 @@ async def run_workflow_task(
         # Persist workflow data to analysis record (Issue #168)
         # This enables full-text search (search_vector trigger) and semantic search
         if isinstance(result, dict):
-            await _persist_analysis_data(analysis_id, result)
+            missing_fields = _validate_workflow_result(result)
+            if missing_fields:
+                logger.error(
+                    "workflow_result_incomplete",
+                    analysis_id=str(analysis_id),
+                    missing_fields=missing_fields,
+                    message="Workflow result missing required fields",
+                )
+                await _update_analysis_status(analysis_id, "failed")
+                await _emit_workflow_error(
+                    analysis_id,
+                    ValueError(f"Workflow result incomplete: missing {missing_fields}"),
+                )
+                return
+
+            persist_success = await _persist_analysis_data(analysis_id, result)
+            if not persist_success:
+                logger.error(
+                    "workflow_persistence_failed",
+                    analysis_id=str(analysis_id),
+                    message="Failed to persist workflow data, marking as failed",
+                )
+                await _update_analysis_status(analysis_id, "failed")
+                await _emit_workflow_error(
+                    analysis_id,
+                    RuntimeError("Workflow data persistence failed"),
+                )
+                return
 
         # Validate artifact exists before marking analysis complete
         # This ensures data integrity - analyses should not be marked complete without artifacts

@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
-import type { SearchMode } from '@app-types/api'
+import type { LibrarySearchParams, SearchMode } from '@app-types/api'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
+
+import { analyzeAPI } from '@services/api.service'
 
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
@@ -11,12 +14,15 @@ import { LibraryHeader } from './components/LibraryHeader'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
 import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearch } from './hooks'
+import { mapFiltersToQuery, mapStatusToSkillStatus, normalizeTitle } from './utils'
 
-/* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
+// eslint-disable-next-line max-lines-per-function
 export default function Library() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid')
+  const [showCompletedOnly, setShowCompletedOnly] = useState(true)
   const [filters, setFilters] = useState<SkillFiltersType>({
     difficulty: [],
     tags: [],
@@ -26,13 +32,16 @@ export default function Library() {
   const [offset, setOffset] = useState(0)
   const limit = 20
 
-  // Use server-side search API
-  const { data: searchResults, isLoading } = useLibrarySearch({
+  const searchParams: LibrarySearchParams = {
     query: searchQuery || undefined,
     search_mode: searchMode,
+    ...mapFiltersToQuery(filters, showCompletedOnly),
     limit,
     offset,
-  })
+  }
+
+  // Use server-side search API
+  const { data: searchResults, isLoading } = useLibrarySearch(searchParams)
 
   // Transform search results into skills format
   const skills = useMemo(() => {
@@ -40,7 +49,7 @@ export default function Library() {
 
     return searchResults.items.map((item) => ({
       id: item.analysis_id,
-      title: item.title || 'Untitled',
+      title: normalizeTitle(item.title),
       description: item.snippet
         ? // Strip HTML marks for description, keep snippet for display
           item.snippet.replace(/<\/?mark>/g, '')
@@ -50,15 +59,15 @@ export default function Library() {
       duration: 25,
       difficulty: 'intermediate' as const,
       tags: [item.content_type],
-      progress: 0,
-      status: 'not-started' as const,
+      progress: item.status === 'complete' ? 100 : 0,
+      status: mapStatusToSkillStatus(item.status),
       onSelect: (id: string) => {
         navigate({ to: '/analyze/$id', params: { id } })
       },
     }))
   }, [searchResults, navigate])
 
-  // Apply client-side filters for difficulty/tags (server doesn't support these yet)
+  // Apply client-side filters for difficulty/duration only (status/content_type handled by API)
   const filteredSkills = useFilteredSkills(skills, '', filters)
 
   const handleSelectSkill = (id: string) => {
@@ -68,6 +77,17 @@ export default function Library() {
   const handleLoadMore = () => {
     if (searchResults && offset + limit < searchResults.total) {
       setOffset((prev) => prev + limit)
+    }
+  }
+
+  const handleDeleteSkill = async (id: string) => {
+    try {
+      await analyzeAPI.deleteAnalysis(id)
+      await queryClient.invalidateQueries({ queryKey: ['library'] })
+      setOffset(0)
+    } catch (error) {
+      console.error('Failed to delete analysis', error)
+      alert('Failed to delete analysis. Please try again.')
     }
   }
 
@@ -92,6 +112,17 @@ export default function Library() {
             <TabsTrigger value="semantic">Semantic</TabsTrigger>
           </TabsList>
         </Tabs>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={showCompletedOnly}
+            onChange={(event) => {
+              setShowCompletedOnly(event.target.checked)
+              setOffset(0)
+            }}
+          />
+          Show completed only
+        </label>
         {searchResults && (
           <span className="text-sm text-muted-foreground ml-auto">
             Showing {Math.min(offset + limit, searchResults.total)} of {searchResults.total} results
@@ -101,12 +132,22 @@ export default function Library() {
 
       {/* Main content grid with filters */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <FiltersSidebar filters={filters} onChange={setFilters} />
+        <FiltersSidebar
+          filters={filters}
+          onChange={(next) => {
+            setFilters(next)
+            if (next.status.length > 0 && showCompletedOnly) {
+              setShowCompletedOnly(false)
+            }
+            setOffset(0)
+          }}
+        />
         <div className="lg:col-span-3">
           <ContentGrid
             isLoading={isLoading}
             skills={filteredSkills}
             onSelectSkill={handleSelectSkill}
+            onDeleteSkill={handleDeleteSkill}
           />
 
           {/* Load More button */}

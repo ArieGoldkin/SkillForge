@@ -5,9 +5,10 @@
 
 import type {
   Analysis,
+  AnalysisStatusResponse,
   AnalyzeRequest,
   AnalyzeResponse,
-  Artifact,
+  ArtifactMetadataResponse,
   LibraryListResponse,
   LibrarySearchParams,
 } from '@app-types/api'
@@ -65,16 +66,22 @@ export const analyzeAPI = {
   },
 
   /**
-   * Get analysis by ID
+   * Get analysis status by ID
    * GET /api/v1/analyze/{id}
-   * Note: Backend returns 501 currently, so this may fail
    */
-  getAnalysis: async (id: string): Promise<Analysis | null> => {
+  getAnalysisStatus: async (id: string): Promise<AnalysisStatusResponse> => {
+    return apiFetch<AnalysisStatusResponse>(`/api/v1/analyze/${id}`)
+  },
+
+  /**
+   * Get latest artifact metadata/content for an analysis
+   * GET /api/v1/analyze/{id}/artifact
+   */
+  getArtifactByAnalysis: async (analysisId: string): Promise<ArtifactMetadataResponse | null> => {
     try {
-      return await apiFetch<Analysis>(`/api/v1/analyze/${id}`)
+      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
     } catch (error) {
-      // Backend returns 501 for GET - return null to indicate not available
-      console.warn(`getAnalysis not available for ${id}:`, error)
+      console.warn(`getArtifactByAnalysis not available for ${analysisId}:`, error)
       return null
     }
   },
@@ -82,11 +89,10 @@ export const analyzeAPI = {
   /**
    * Get artifact for an analysis
    * GET /api/v1/analyze/{id}/artifact
-   * Note: Not yet implemented in backend
    */
-  getArtifact: async (analysisId: string): Promise<Artifact | null> => {
+  getArtifact: async (analysisId: string): Promise<ArtifactMetadataResponse | null> => {
     try {
-      return await apiFetch<Artifact>(`/api/v1/analyze/${analysisId}/artifact`)
+      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
     } catch (error) {
       console.warn(`getArtifact not available for ${analysisId}:`, error)
       return null
@@ -125,6 +131,19 @@ export const analyzeAPI = {
     } catch (error) {
       console.warn('listAnalyses not available:', error)
       return []
+    }
+  },
+
+  /**
+   * Delete an analysis and related records
+   * DELETE /api/v1/analyses/{id}
+   */
+  deleteAnalysis: async (analysisId: string): Promise<void> => {
+    const url = `${API_BASE_URL}/api/v1/analyses/${analysisId}`
+    const response = await fetch(url, { method: 'DELETE' })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || `Failed to delete analysis (${response.status})`)
     }
   },
 

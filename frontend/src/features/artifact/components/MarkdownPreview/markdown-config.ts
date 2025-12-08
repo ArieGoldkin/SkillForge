@@ -2,6 +2,7 @@ import {
   CodeRenderer,
   InputRenderer,
   ListItemRenderer,
+  ParagraphRenderer,
   TableRenderer,
   UnorderedListRenderer,
 } from './internal'
@@ -15,4 +16,5 @@ export const markdownRenderers = {
   input: InputRenderer,
   li: ListItemRenderer,
   ul: UnorderedListRenderer,
+  p: ParagraphRenderer,
 }

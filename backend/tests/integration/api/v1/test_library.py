@@ -77,6 +77,7 @@ class TestLibraryEndpointSearchMode:
         assert data["limit"] == 20
         assert data["offset"] == 0
         assert isinstance(data["items"], list)
+        assert data["items"][0]["status"] == "complete"
 
     @pytest.mark.asyncio
     async def test_fulltext_search_success(
@@ -112,6 +113,7 @@ class TestLibraryEndpointSearchMode:
         data = response.json()
         assert "items" in data
         assert data["limit"] == 10
+        assert data["items"][0]["status"] == "complete"
 
     @pytest.mark.asyncio
     async def test_semantic_search_success(
@@ -622,3 +624,30 @@ class TestLibraryEndpointValidation:
         data = response.json()
         assert data["limit"] == 20
         assert data["offset"] == 0
+
+
+class TestLibraryDeleteEndpoint:
+    """Tests for deleting analyses via the library API."""
+
+    @pytest.mark.asyncio
+    async def test_delete_analysis_removes_record(
+        self, test_client, requires_database, reset_engine_connections, db_session
+    ):
+        """Ensure DELETE removes analysis and cascading relations."""
+        analysis_id = uuid4()
+        analysis = Analysis(
+            id=analysis_id,
+            url="https://example.com/to-delete",
+            title="To Delete",
+            content_type="article",
+            status="complete",
+            created_at=datetime.now(UTC),
+        )
+        db_session.add(analysis)
+        await db_session.commit()
+
+        response = await test_client.delete(f"/api/v1/analyses/{analysis_id}")
+        assert response.status_code == 204
+
+        remaining = await db_session.get(Analysis, analysis_id)
+        assert remaining is None

@@ -2,6 +2,7 @@
 
 import asyncio
 import uuid
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -11,6 +12,7 @@ from sqlalchemy import select
 
 from app.main import app
 from app.models.analysis import Analysis
+from app.models.artifact import Artifact
 
 
 @pytest.mark.asyncio
@@ -198,6 +200,55 @@ async def test_post_analyze_content_types(reset_engine_connections):
                     )
                     assert response.status_code == status.HTTP_201_CREATED
                     assert response.json()["content_type"] == expected_type
+
+
+@pytest.mark.asyncio
+async def test_get_analyze_returns_status_and_artifact(
+    requires_database, reset_engine_connections, db_session
+):
+    """GET /api/v1/analyze/{id} returns status and latest artifact id."""
+    analysis_id = uuid.uuid4()
+    artifact_id = uuid.uuid4()
+
+    analysis = Analysis(
+        id=analysis_id,
+        url="https://example.com/article",
+        content_type="article",
+        status="complete",
+        title="Example",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    artifact = Artifact(
+        id=artifact_id,
+        analysis_id=analysis_id,
+        markdown_content="# Test",
+        artifact_metadata={"topics": []},
+        created_at=datetime.now(UTC),
+    )
+    db_session.add_all([analysis, artifact])
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/api/v1/analyze/{analysis_id}")
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["analysis_id"] == str(analysis_id)
+    assert data["status"] == "complete"
+    assert data["artifact_id"] == str(artifact_id)
+    assert data["title"] == "Example"
+
+
+@pytest.mark.asyncio
+async def test_get_analyze_not_found(reset_engine_connections):
+    """GET /api/v1/analyze/{id} returns 404 when missing."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(f"/api/v1/analyze/{uuid.uuid4()}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.asyncio

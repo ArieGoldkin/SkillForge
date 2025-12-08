@@ -5,6 +5,7 @@ import type { Components } from 'react-markdown'
 import { cn } from '@lib/utils'
 
 import { CodeBlock } from './CodeBlock'
+import { ParagraphRenderer } from './ParagraphRenderer'
 
 type CodeComponent = NonNullable<Components['code']>
 type CodeProps = CodeComponent extends ElementType<infer P> ? P : never
@@ -107,3 +108,6 @@ export const UnorderedListRenderer: NonNullable<Components['ul']> = (props) => {
     </ul>
   )
 }
+
+// Re-export paragraph renderer
+export { ParagraphRenderer }

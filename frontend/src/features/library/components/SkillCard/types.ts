@@ -10,4 +10,4 @@ export type SkillDifficulty = 'beginner' | 'intermediate' | 'advanced'
 /**
  * Status of user's progress with the skill
  */
-export type SkillStatus = 'not-started' | 'in-progress' | 'completed'
+export type SkillStatus = 'not-started' | 'in-progress' | 'completed' | 'failed'

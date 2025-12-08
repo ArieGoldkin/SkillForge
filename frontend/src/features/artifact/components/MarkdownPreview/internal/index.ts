@@ -17,4 +17,5 @@ export {
   ListItemRenderer,
   TableRenderer,
   UnorderedListRenderer,
+  ParagraphRenderer,
 } from './renderers'

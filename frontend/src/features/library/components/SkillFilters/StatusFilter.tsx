@@ -20,7 +20,7 @@ export interface StatusFilterProps {
 /**
  * Available status values
  */
-const statuses: SkillStatus[] = ['not-started', 'in-progress', 'completed']
+const statuses: SkillStatus[] = ['not-started', 'in-progress', 'completed', 'failed']
 
 /**
  * StatusFilter component
