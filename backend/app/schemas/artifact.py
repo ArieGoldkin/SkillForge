@@ -11,4 +11,3 @@ class ArtifactMetadataResponse(BaseModel):
     markdown_content: str = Field(..., description="Artifact markdown content")
     artifact_metadata: dict | None = Field(None, description="Optional artifact metadata")
     created_at: str = Field(..., description="Creation timestamp")
-
