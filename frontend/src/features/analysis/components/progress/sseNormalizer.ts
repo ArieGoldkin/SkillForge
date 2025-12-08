@@ -21,7 +21,6 @@ import type {
 const STAGE_NAME_MAP: Record<string, StageName> = {
   supervisor: 'supervisor_routing',
   // Add more mappings as backend stages are implemented
-  // embedding: 'extraction', // if embedding should map to extraction
 }
 
 /**
@@ -37,6 +36,7 @@ const STATUS_MAP: Record<string, StageStatus> = {
  */
 const VALID_STAGES: StageName[] = [
   'extraction',
+  'embedding',
   'supervisor_routing',
   'tech_comparison',
   'security_audit',

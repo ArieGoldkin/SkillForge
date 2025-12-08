@@ -70,6 +70,7 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
   // Default agent names based on stage
   const agentNames: Record<AgentStageName, string> = {
     extraction: 'Content Extractor',
+    embedding: 'Embedding Generator',
     supervisor_routing: 'Supervisor',
     tech_comparison: 'Tech Comparator',
     security_audit: 'Security Auditor',
@@ -87,6 +88,7 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
 
 const RUNNING_ACTIONS: Record<AgentStageName, string> = {
   extraction: 'Extracting content from URL...',
+  embedding: 'Generating embeddings...',
   supervisor_routing: 'Routing analysis to specialized agents...',
   tech_comparison: 'Comparing technology patterns...',
   security_audit: 'Auditing security considerations...',
@@ -102,6 +104,9 @@ const RUNNING_ACTIONS: Record<AgentStageName, string> = {
 function getCompleteAction(stage: AgentStageName, details?: Record<string, unknown>): string {
   if (stage === 'extraction' && details?.word_count) {
     return `Extracted ${details.word_count} words from content`
+  }
+  if (stage === 'embedding') {
+    return 'Generated semantic embeddings'
   }
   if (stage === 'artifact_generation' && details?.artifact_id) {
     return 'Generated implementation guide'

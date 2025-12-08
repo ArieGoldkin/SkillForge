@@ -10,6 +10,7 @@ import type { AgentStageName, StageStatus } from '@app-types/sse'
  */
 export const ALL_STAGES: AgentStageName[] = [
   'extraction',
+  'embedding',
   'supervisor_routing',
   'tech_comparison',
   'security_audit',
@@ -25,13 +26,14 @@ export const ALL_STAGES: AgentStageName[] = [
 /**
  * Currently working stages (for testing with real backend)
  */
-export const WORKING_STAGES: AgentStageName[] = ['extraction', 'supervisor_routing']
+export const WORKING_STAGES: AgentStageName[] = ['extraction', 'embedding', 'supervisor_routing']
 
 /**
  * Stage configuration with user-friendly labels
  */
 export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
   extraction: { label: 'Content Extraction' },
+  embedding: { label: 'Embedding Generation' },
   supervisor_routing: { label: 'Agent Routing' },
   tech_comparison: { label: 'Technology Comparison' },
   security_audit: { label: 'Security Audit' },

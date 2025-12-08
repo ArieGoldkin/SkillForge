@@ -46,6 +46,8 @@ def create_structured_agent(
 
     """
     model = get_chat_model()
+    # Prevent multiple parallel tool calls; we expect exactly one structured response
+    model = model.bind_tools(tools or [], parallel_tool_calls=False)
     agent = create_agent(
         model,
         tools=tools or [],

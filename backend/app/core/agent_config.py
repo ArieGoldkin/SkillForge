@@ -26,6 +26,7 @@ from typing import Literal
 StageName = Literal[
     # Agent stages
     "extraction",
+    "embedding",
     "supervisor_routing",
     "tech_comparison",
     "security_audit",
@@ -155,7 +156,7 @@ AGENT_REGISTRY: dict[str, AgentConfig] = {
     ),
     "embedding": AgentConfig(
         agent_type="embedding",
-        stage_name="extraction",  # Part of extraction phase
+        stage_name="embedding",
         display_name="Embedding Generation",
         description="Generate semantic embeddings for content",
     ),

@@ -20,31 +20,32 @@ export interface StageConfig {
  */
 export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
   extraction: { title: 'Content Extraction', order: 1, uiStage: 'extracting' },
-  supervisor_routing: { title: 'Routing to Agents', order: 2, uiStage: 'processing' },
-  tech_comparison: { title: 'Tech Comparison', order: 3, uiStage: 'analyzing', optional: true },
-  security_audit: { title: 'Security Audit', order: 4, uiStage: 'analyzing', optional: true },
+  embedding: { title: 'Embedding Generation', order: 2, uiStage: 'processing' },
+  supervisor_routing: { title: 'Routing to Agents', order: 3, uiStage: 'processing' },
+  tech_comparison: { title: 'Tech Comparison', order: 4, uiStage: 'analyzing', optional: true },
+  security_audit: { title: 'Security Audit', order: 5, uiStage: 'analyzing', optional: true },
   implementation_planning: {
     title: 'Implementation Planning',
-    order: 5,
+    order: 6,
     uiStage: 'analyzing',
     optional: true,
   },
-  performance_audit: { title: 'Performance Audit', order: 6, uiStage: 'analyzing', optional: true },
+  performance_audit: { title: 'Performance Audit', order: 7, uiStage: 'analyzing', optional: true },
   code_quality_audit: {
     title: 'Code Quality Audit',
-    order: 7,
+    order: 8,
     uiStage: 'analyzing',
     optional: true,
   },
-  trends_analysis: { title: 'Trends Analysis', order: 8, uiStage: 'analyzing', optional: true },
+  trends_analysis: { title: 'Trends Analysis', order: 9, uiStage: 'analyzing', optional: true },
   dependencies_analysis: {
     title: 'Dependencies Analysis',
-    order: 9,
+    order: 10,
     uiStage: 'analyzing',
     optional: true,
   },
-  aggregation: { title: 'Aggregating Results', order: 10, uiStage: 'generating' },
-  artifact_generation: { title: 'Generating Report', order: 11, uiStage: 'generating' },
+  aggregation: { title: 'Aggregating Results', order: 11, uiStage: 'generating' },
+  artifact_generation: { title: 'Generating Report', order: 12, uiStage: 'generating' },
 }
 
 export const TOTAL_STAGES = Object.keys(STAGE_CONFIG).length
@@ -72,7 +73,7 @@ const AGENT_TO_STAGE_MAP: Record<string, AgentStageName> = {
   // Alternative names backend might send
   supervisor: 'supervisor_routing',
   supervisor_route: 'supervisor_routing',
-  embedding: 'extraction', // embedding is part of extraction phase
+  embedding: 'embedding',
 
   // Sub-agents that are part of larger stages
   integration_feasibility: 'implementation_planning', // part of implementation planning
@@ -163,11 +164,17 @@ export function estimateTimeRemaining(completedStages: number): string | undefin
     return '~2-3 minutes'
   }
   const remaining = TOTAL_STAGES - completedStages
-  if (remaining <= 2) {
+  if (remaining >= 10) {
+    return '~1-2 minutes'
+  }
+  if (remaining <= 3) {
     return '~30 seconds'
   }
-  if (remaining <= 5) {
+  if (remaining <= 6) {
     return '~1 minute'
   }
-  return '~1-2 minutes'
+  if (remaining <= 9) {
+    return '~1-2 minutes'
+  }
+  return '~2-3 minutes'
 }
