@@ -70,7 +70,10 @@ BAD EXAMPLE (DO NOT USE):
   job_market: "Many job opportunities available"
   future_outlook: "Should remain relevant for the foreseeable future"
 
-Base assessments on current 2025 data and industry trends."""
+Base assessments on current 2025 data and industry trends.
+
+Return exactly ONE structured response/tool call. Do NOT return multiple tool
+calls or additional responses."""
 
 
 async def run_trend_validator(

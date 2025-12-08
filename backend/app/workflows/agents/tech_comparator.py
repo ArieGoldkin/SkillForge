@@ -87,7 +87,8 @@ BAD EXAMPLE (DO NOT USE):
   use_cases: ["Various AI applications", "Building agents"]
 
 IMPORTANT: The "comparison" field must include entries for primary_tech AND all alternatives.
-Do not omit any required fields.
+Do not omit any required fields. Return exactly ONE structured response/tool call; never
+return multiple tool calls or extra responses.
 
 COMPARISON STRATEGY:
 - If multiple frameworks are detected (e.g., Django vs FastAPI), treat them as the primary subjects.

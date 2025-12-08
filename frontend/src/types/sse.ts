@@ -9,6 +9,7 @@
  */
 export type AgentStageName =
   | 'extraction'
+  | 'embedding'
   | 'supervisor_routing'
   | 'tech_comparison'
   | 'security_audit'

@@ -16,8 +16,8 @@ import {
 
 describe('stageConfig', () => {
   describe('STAGE_CONFIG', () => {
-    it('contains all 11 stages with correct structure', () => {
-      expect(TOTAL_STAGES).toBe(11)
+    it('contains all 12 stages with correct structure', () => {
+      expect(TOTAL_STAGES).toBe(12)
 
       // Verify each stage has required properties
       Object.entries(STAGE_CONFIG).forEach(([_stageName, config]) => {
@@ -44,6 +44,7 @@ describe('stageConfig', () => {
     describe('direct stage names (already valid)', () => {
       it.each([
         'extraction',
+        'embedding',
         'supervisor_routing',
         'tech_comparison',
         'security_audit',
@@ -77,7 +78,7 @@ describe('stageConfig', () => {
       it.each([
         ['supervisor', 'supervisor_routing'],
         ['supervisor_route', 'supervisor_routing'],
-        ['embedding', 'extraction'],
+        ['embedding', 'embedding'],
         ['integration_feasibility', 'implementation_planning'],
       ])('maps alternative name "%s" to "%s"', (altName, expectedStage) => {
         expect(normalizeStageNameFromBackend(altName)).toBe(expectedStage)
