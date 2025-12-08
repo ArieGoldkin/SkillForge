@@ -7,14 +7,16 @@
 
 import { useMemo } from 'react'
 
-import type { SkillDifficulty, SkillStatus } from '../../SkillCard'
+import type { AnalysisStatus } from '@app-types/api'
+
+import type { SkillDifficulty } from '../../SkillCard'
 
 /**
  * Filter configuration
  */
 export interface SkillFilters {
   difficulty: SkillDifficulty[]
-  status: SkillStatus[]
+  status: AnalysisStatus[]
   tags: string[]
   durationRange: [number, number]
 }
@@ -24,7 +26,7 @@ export interface SkillFilters {
  */
 export interface SkillFiltersHandlers {
   handleDifficultyChange: (difficulty: SkillDifficulty, checked: boolean) => void
-  handleStatusChange: (status: SkillStatus, checked: boolean) => void
+  handleStatusChange: (status: AnalysisStatus, checked: boolean) => void
   handleTagChange: (tag: string, checked: boolean) => void
   handleClearAll: () => void
 }
@@ -69,9 +71,11 @@ export const useSkillFilters = (
   }
 
   // Status change handler
-  const handleStatusChange = (status: SkillStatus, checked: boolean) => {
-    // Backend supports a single status; treat as radio (one selection)
-    const newStatuses = checked ? [status] : []
+  const handleStatusChange = (status: AnalysisStatus, checked: boolean) => {
+    const newStatuses = checked
+      ? [...filters.status, status]
+      : filters.status.filter((s) => s !== status)
+
     onChange({ ...filters, status: newStatuses })
   }
 

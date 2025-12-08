@@ -1,6 +1,6 @@
-import type * as React from 'react'
+import React, { useEffect, useRef } from 'react'
 
-import { BookOpen } from 'lucide-react'
+import { BookOpen, Loader2 } from 'lucide-react'
 
 import { Card } from '@shared/components/ui/card'
 
@@ -17,10 +17,12 @@ const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
 export interface SkillGridViewProps {
   skills: SkillCardProps[]
   onSelectSkill: (id: string) => void
-  onDeleteSkill?: (id: string) => void
   loading?: boolean
   emptyMessage?: string
   className?: string
+  onLoadMore?: () => void
+  canLoadMore?: boolean
+  isLoadingMore?: boolean
 }
 
 /**
@@ -81,31 +83,76 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => {
  * />
  * ```
  */
+// eslint-disable-next-line max-lines-per-function
 export const SkillGridView: React.FC<SkillGridViewProps> = ({
   skills,
   onSelectSkill,
-  onDeleteSkill,
   loading = false,
   emptyMessage = 'No skills found. Try adjusting your filters or search query.',
   className,
+  onLoadMore,
+  canLoadMore = false,
+  isLoadingMore = false,
 }) => {
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!onLoadMore || !canLoadMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry.isIntersecting) {
+          onLoadMore()
+        }
+      },
+      {
+        root: null,
+        rootMargin: '200px', // trigger slightly before reaching the end
+        threshold: 0.1,
+      }
+    )
+
+    const sentinel = sentinelRef.current
+    if (sentinel) observer.observe(sentinel)
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel)
+      observer.disconnect()
+    }
+  }, [onLoadMore, canLoadMore])
+
   return (
-    <div
-      className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', className)}
-      role="list"
-      aria-label="Skills grid"
-    >
-      {loading ? (
-        // Loading skeletons
-        SKELETON_IDS.map((id) => <SkillCardSkeleton key={id} />)
-      ) : skills.length === 0 ? (
-        // Empty state
-        <EmptyState message={emptyMessage} />
-      ) : (
-        // Skill cards
-        skills.map((skill) => (
-          <SkillCard key={skill.id} {...skill} onSelect={onSelectSkill} onDelete={onDeleteSkill} />
-        ))
+    <div className="space-y-4">
+      <div
+        className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', className)}
+        role="list"
+        aria-label="Skills grid"
+      >
+        {loading ? (
+          // Loading skeletons
+          SKELETON_IDS.map((id) => <SkillCardSkeleton key={id} />)
+        ) : skills.length === 0 ? (
+          // Empty state
+          <EmptyState message={emptyMessage} />
+        ) : (
+          // Skill cards
+          skills.map((skill) => <SkillCard key={skill.id} {...skill} onSelect={onSelectSkill} />)
+        )}
+      </div>
+
+      {/* Infinite scroll sentinel + loading indicator */}
+      {onLoadMore && canLoadMore && (
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {isLoadingMore ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <span>Loading more…</span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">Scroll to load more</div>
+          )}
+        </div>
       )}
     </div>
   )
