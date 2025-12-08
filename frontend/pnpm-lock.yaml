@@ -27,7 +27,7 @@ importers:
         specifier: ^5.90.11
         version: 5.90.11(react@19.2.1)
       '@tanstack/react-router':
-        specifier: ^1.139.10
+        specifier: ^1.140.0
         version: 1.140.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       class-variance-authority:
         specifier: ^0.7.1
