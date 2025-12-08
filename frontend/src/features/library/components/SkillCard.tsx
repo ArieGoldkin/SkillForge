@@ -95,6 +95,7 @@ const SkillCardBody: React.FC<SkillCardProps> = ({
 /**
  * SkillCard - Individual skill/learning resource card
  */
+// eslint-disable-next-line max-lines-per-function
 export const SkillCard: React.FC<SkillCardProps> = ({
   id,
   title,

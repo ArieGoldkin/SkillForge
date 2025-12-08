@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SkillFilters } from '../components/SkillFilters'
 import type { SkillStatus } from '../components/SkillCard/types'
+import type { SkillFilters } from '../components/SkillFilters'
 import { mapFiltersToQuery } from '../utils'
 
 describe('mapFiltersToQuery', () => {

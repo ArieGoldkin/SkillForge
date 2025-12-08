@@ -91,6 +91,7 @@ const useDerivedState = ({
   return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
 }
 
+// eslint-disable-next-line max-lines-per-function
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()

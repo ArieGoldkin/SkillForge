@@ -16,6 +16,7 @@ import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearch } from './hooks'
 import { mapFiltersToQuery, mapStatusToSkillStatus, normalizeTitle } from './utils'
 
+// eslint-disable-next-line max-lines-per-function
 export default function Library() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()

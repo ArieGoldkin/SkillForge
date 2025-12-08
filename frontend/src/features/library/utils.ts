@@ -1,6 +1,7 @@
+import type { AnalysisStatus, ContentType, SearchMode } from '@app-types/api'
+
 import type { SkillStatus } from './components/SkillCard/types'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
-import type { AnalysisStatus, ContentType, SearchMode } from '@app-types/api'
 
 const STATUS_MAP: Record<SkillStatus, AnalysisStatus> = {
   'not-started': 'pending',
