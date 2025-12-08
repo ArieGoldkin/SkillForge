@@ -15,7 +15,7 @@ router = APIRouter(tags=["artifacts"])
 logger = get_logger(__name__)
 
 
-@router.get("/analyze/{analysis_id}/artifact", response_model=ArtifactMetadataResponse)
+@router.get("/analyze/{analysis_id}/artifact")
 async def get_artifact_by_analysis(
     analysis_id: uuid.UUID,
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],

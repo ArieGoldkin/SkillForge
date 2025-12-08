@@ -8,8 +8,8 @@ This module provides the unified library endpoint that supports:
 """
 
 from enum import Enum
-from uuid import UUID
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete
@@ -320,7 +320,6 @@ async def delete_analysis(
     This uses database-level ON DELETE CASCADE to remove related agent findings,
     artifacts, and progress rows.
     """
-
     analysis = await db.get(Analysis, analysis_id)
     if not analysis:
         raise HTTPException(

@@ -4,20 +4,20 @@
 This script retrieves artifacts for the three analyses (beginner, intermediate, expert)
 and compares their content to verify that skill_level influences the generated output.
 """
+# ruff: noqa: E402
 
 import asyncio
 import sys
 from pathlib import Path
+from uuid import UUID
 
-# Add backend directory to path
+# Add backend directory to path before importing application modules
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from uuid import UUID
-
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.repositories.artifact_repository import ArtifactRepository
+from app.db.session import AsyncSessionLocal
 
 logger = get_logger(__name__)
 
@@ -27,7 +27,7 @@ INTERMEDIATE_ANALYSIS_ID = UUID("649744e4-207a-4e52-bf0e-19fc284ac4a0")
 EXPERT_ANALYSIS_ID = UUID("00f6fc5f-931d-41df-9dc9-7a9eaf465719")
 
 
-async def compare_artifacts() -> None:
+async def compare_artifacts() -> None:  # noqa: PLR0912
     """Compare artifacts across skill levels."""
     async with AsyncSessionLocal() as session:
         repo = ArtifactRepository(session)
