@@ -268,7 +268,15 @@ async def test_workflow_status_updates_to_complete(
         content_type="article",
         status="pending",
     )
-    db_session.add(analysis)
+    artifact = Artifact(
+        id=uuid.uuid4(),
+        analysis_id=analysis_uuid,
+        markdown_content="# Test",
+        version=1,
+        artifact_metadata={},
+        created_at=datetime.now(UTC),
+    )
+    db_session.add_all([analysis, artifact])
     await db_session.commit()
 
     # Mock workflow to succeed
@@ -279,7 +287,7 @@ async def test_workflow_status_updates_to_complete(
             "url": "https://example.com/article",
             "content_type": "article",
             "raw_content": "Test content",
-            "extraction_metadata": {},
+            "extraction_metadata": {"title": "Mock"},
             "content_embedding": [0.0] * 1536,
             "supervisor_decision": {},
             "agent_findings": [],

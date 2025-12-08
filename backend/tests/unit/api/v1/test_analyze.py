@@ -34,6 +34,13 @@ def create_mock_db_session() -> AsyncMock:
     return mock_session
 
 
+def create_mock_analysis_repo() -> AsyncMock:
+    """Create a mocked analysis repository for unit tests."""
+    mock_repo = AsyncMock()
+    mock_repo.create_analysis = AsyncMock()
+    return mock_repo
+
+
 class TestCreateAnalysis:
     """Test cases for POST /api/v1/analyze endpoint."""
 
@@ -55,8 +62,8 @@ class TestCreateAnalysis:
         # Mock create_task to return a proper mock task (prevents background task from running)
         mock_create_task.return_value = create_mock_task()
 
-        # Create mocked database session (no real DB connection needed for unit tests)
-        mock_db = create_mock_db_session()
+        # Create mocked repository (no real DB connection needed for unit tests)
+        mock_repo = create_mock_analysis_repo()
 
         # Create request
         request = AnalyzeRequest(url="https://example.com/article")
@@ -64,7 +71,7 @@ class TestCreateAnalysis:
         # Mock UUID generation
         with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
             # Call endpoint directly with mocked database session
-            response = await create_analysis(request, db=mock_db)
+            response = await create_analysis(request, analysis_repo=mock_repo)
 
         # Assertions
         assert response.analysis_id == str(analysis_uuid)
@@ -122,15 +129,15 @@ class TestCreateAnalysis:
         mock_detect_type.return_value = "article"
         mock_create_task.return_value = create_mock_task()
 
-        # Create mocked database session (no real DB connection needed for unit tests)
-        mock_db = create_mock_db_session()
+        # Create mocked repository (no real DB connection needed for unit tests)
+        mock_repo = create_mock_analysis_repo()
 
         request = AnalyzeRequest(
             url="https://example.com/article",
             analysis_id="custom-id-123",
         )
 
-        response = await create_analysis(request, db=mock_db)
+        response = await create_analysis(request, analysis_repo=mock_repo)
 
         mock_normalize_id.assert_called_once_with("custom-id-123")
         assert response.analysis_id == str(analysis_uuid)
@@ -169,7 +176,7 @@ class TestCreateAnalysis:
         mock_create_task.return_value = create_mock_task()
 
         # Create mocked database session (no real DB connection needed for unit tests)
-        mock_db = create_mock_db_session()
+        mock_repo = create_mock_analysis_repo()
 
         test_cases = [
             ("https://example.com/article", "article"),
@@ -183,7 +190,7 @@ class TestCreateAnalysis:
             with patch("app.api.v1.analyze.uuid.uuid4", return_value=test_uuid):
                 mock_detect_type.return_value = expected_type
                 request = AnalyzeRequest(url=url)
-                response = await create_analysis(request, db=mock_db)
+                response = await create_analysis(request, analysis_repo=mock_repo)
                 assert response.content_type == expected_type
 
     @pytest.mark.asyncio
@@ -197,16 +204,16 @@ class TestCreateAnalysis:
 
         mock_detect_type.return_value = "article"
 
-        # Create mocked database session (no real DB connection needed for unit tests)
-        mock_db = create_mock_db_session()
+        # Create mocked repository (no real DB connection needed for unit tests)
+        mock_repo = create_mock_analysis_repo()
 
-        # Make commit raise an exception to test error handling
-        mock_db.commit = AsyncMock(side_effect=Exception("Database connection failed"))
+        # Make create_analysis raise an exception to test error handling
+        mock_repo.create_analysis.side_effect = Exception("Database connection failed")
 
         request = AnalyzeRequest(url="https://example.com/article")
 
         with pytest.raises(HTTPException) as exc_info:
-            await create_analysis(request, db=mock_db)
+            await create_analysis(request, analysis_repo=mock_repo)
 
         # Should raise 500 for database errors
         assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -229,12 +236,12 @@ class TestCreateAnalysis:
         mock_create_task.return_value = create_mock_task()
 
         # Create mocked database session (no real DB connection needed for unit tests)
-        mock_db = create_mock_db_session()
+        mock_repo = create_mock_analysis_repo()
 
         request = AnalyzeRequest(url="https://example.com/article")
 
         with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
-            response = await create_analysis(request, db=mock_db)
+            response = await create_analysis(request, analysis_repo=mock_repo)
 
         assert response.sse_endpoint.startswith("/api/v1/analyze/")
         assert response.sse_endpoint.endswith("/stream")

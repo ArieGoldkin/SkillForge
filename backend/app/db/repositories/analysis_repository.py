@@ -4,6 +4,7 @@ This module implements the repository pattern for analysis database operations,
 including two-stage vector search using pgvector 0.4.1 binary quantization.
 """
 
+import uuid
 from typing import TYPE_CHECKING, Annotated, Protocol
 
 from fastapi import Depends
@@ -26,6 +27,22 @@ logger = get_logger(__name__)
 
 class IAnalysisRepository(Protocol):
     """Protocol interface for analysis repository operations."""
+
+    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
+        """Get a single analysis by ID."""
+        ...
+
+    async def create_analysis(
+        self,
+        *,
+        analysis_id: uuid.UUID,
+        url: str,
+        content_type: str,
+        status: str,
+        title: str | None = None,
+    ) -> Analysis:
+        """Create a new analysis record."""
+        ...
 
     async def find_similar_analyses(
         self,
@@ -56,6 +73,33 @@ class AnalysisRepository:
 
         """
         self.session = session
+
+    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
+        """Get analysis by ID."""
+        result = await self.session.execute(select(Analysis).where(Analysis.id == analysis_id))
+        return result.scalar_one_or_none()
+
+    async def create_analysis(
+        self,
+        *,
+        analysis_id: uuid.UUID,
+        url: str,
+        content_type: str,
+        status: str,
+        title: str | None = None,
+    ) -> Analysis:
+        """Create a new analysis record."""
+        analysis = Analysis(
+            id=analysis_id,
+            url=url,
+            content_type=content_type,
+            status=status,
+            title=title,
+        )
+        self.session.add(analysis)
+        await self.session.commit()
+        await self.session.refresh(analysis)
+        return analysis
 
     async def find_similar_analyses(
         self,

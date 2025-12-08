@@ -629,3 +629,8 @@ def requires_llm():
             f"{api_field} not available (required for {provider} model '{llm_model}'). "
             f"Set {api_field} in your .env file or environment variables."
         )
+
+    # Skip if a known placeholder/test key is provided to avoid live calls failing
+    placeholder_prefixes = ("sk-test", "test-", "dummy-", "placeholder-")
+    if isinstance(api_key, str) and api_key.lower().startswith(placeholder_prefixes):
+        pytest.skip(f"{api_field} appears to be a placeholder; skipping external LLM tests.")

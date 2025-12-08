@@ -182,14 +182,12 @@ async def test_error_response_format_consistency():
         # FastAPI validation errors use "detail" field
         assert "detail" in data
 
-        # Test 501 error (custom error format)
+        # Test 404 error (not found)
         response = await client.get(f"/api/v1/analyze/{uuid.uuid4()}")
-        assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         data = response.json()
-        # Custom errors use "error" object
-        assert "error" in data
-        assert "code" in data["error"]
-        assert "message" in data["error"]
+        assert "detail" in data
+        assert "not found" in str(data["detail"]).lower()
 
 
 @pytest.mark.asyncio

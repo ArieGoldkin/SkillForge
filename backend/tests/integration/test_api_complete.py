@@ -457,19 +457,15 @@ async def test_api_sse_endpoint_not_found(reset_engine_connections):
 
 
 @pytest.mark.asyncio
-async def test_api_get_analysis_not_implemented(reset_engine_connections):
-    """Test GET /api/v1/analyze/{id} returns 501 Not Implemented."""
+async def test_api_get_analysis_not_found(reset_engine_connections):
+    """Test GET /api/v1/analyze/{id} returns 404 when analysis is missing."""
     analysis_uuid = uuid.uuid4()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get(f"/api/v1/analyze/{analysis_uuid}")
 
-        assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
-        data = response.json()
-        assert "error" in data
-        assert data["error"]["code"] == "NOT_IMPLEMENTED"
-        assert "not yet implemented" in data["error"]["message"].lower()
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.asyncio
@@ -566,13 +562,12 @@ async def test_api_error_response_format(reset_engine_connections):
         data = response.json()
         assert "detail" in data
 
-        # Test 501 error (not implemented)
+        # Test 404 error (not found)
         response = await client.get(f"/api/v1/analyze/{uuid.uuid4()}")
-        assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         data = response.json()
-        assert "error" in data
-        assert "code" in data["error"]
-        assert "message" in data["error"]
+        assert "detail" in data
+        assert "not found" in str(data["detail"]).lower()
 
 
 @pytest.mark.asyncio

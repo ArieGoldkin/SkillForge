@@ -59,7 +59,10 @@ async def test_delete_analysis_cascades(requires_database, reset_engine_connecti
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     # Verify rows are gone
-    for model in (Analysis, AgentFinding, Artifact, AnalysisProgress):
+    result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_id))
+    assert result.scalars().first() is None
+
+    for model in (AgentFinding, Artifact, AnalysisProgress):
         result = await db_session.execute(select(model).where(model.analysis_id == analysis_id))
         assert result.scalars().first() is None
 
