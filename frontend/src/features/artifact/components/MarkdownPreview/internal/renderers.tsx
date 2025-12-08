@@ -1,6 +1,4 @@
 import type React from 'react'
-import type { ElementType } from 'react'
-
 import type { Components } from 'react-markdown'
 
 import { cn } from '@lib/utils'
@@ -8,15 +6,12 @@ import { cn } from '@lib/utils'
 import { CodeBlock } from './CodeBlock'
 import { ParagraphRenderer } from './ParagraphRenderer'
 
-type CodeComponent = NonNullable<Components['code']>
-type CodeProps = CodeComponent extends ElementType<infer P> ? P : never
-type CodeRendererProps = CodeProps &
-  React.ComponentProps<'code'> & {
-    inline?: boolean
-    className?: string
-    children?: React.ReactNode
-    node?: unknown
-  }
+type CodeRendererProps = React.HTMLAttributes<HTMLElement> & {
+  inline?: boolean
+  className?: string
+  children?: React.ReactNode
+  node?: unknown
+}
 
 /**
  * Custom code renderer for ReactMarkdown
@@ -63,7 +58,7 @@ export const CodeRenderer = ((rawProps: CodeRendererProps) => {
 /**
  * Custom table renderer - wraps tables for responsive scrolling
  */
-type TableRendererProps = React.ComponentProps<'table'> & {
+type TableRendererProps = React.HTMLAttributes<HTMLTableElement> & {
   children?: React.ReactNode
   node?: unknown
 }
@@ -80,7 +75,7 @@ export const TableRenderer = ((rawProps: TableRendererProps) => {
 /**
  * Custom input renderer - styles task list checkboxes
  */
-type InputRendererProps = React.ComponentProps<'input'> & {
+type InputRendererProps = React.InputHTMLAttributes<HTMLInputElement> & {
   type?: string
   node?: unknown
 }
@@ -96,7 +91,7 @@ export const InputRenderer = ((rawProps: InputRendererProps) => {
 /**
  * Custom list item renderer - handles task list items
  */
-type ListItemRendererProps = React.ComponentProps<'li'> & {
+type ListItemRendererProps = React.LiHTMLAttributes<HTMLLIElement> & {
   className?: string
   children?: React.ReactNode
   node?: unknown
@@ -115,7 +110,7 @@ export const ListItemRenderer = ((rawProps: ListItemRendererProps) => {
 /**
  * Custom unordered list renderer - handles task lists
  */
-type UnorderedListRendererProps = React.ComponentProps<'ul'> & {
+type UnorderedListRendererProps = React.HTMLAttributes<HTMLUListElement> & {
   className?: string
   children?: React.ReactNode
   node?: unknown
