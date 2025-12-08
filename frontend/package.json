@@ -35,7 +35,7 @@
     "@tanstack/react-router": "^1.139.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.555.0",
+    "lucide-react": "^0.556.0",
     "prismjs": "^1.30.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
