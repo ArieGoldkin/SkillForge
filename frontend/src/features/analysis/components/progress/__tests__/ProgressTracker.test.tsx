@@ -89,7 +89,7 @@ describe('ProgressTracker Component', () => {
       render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
 
       const pendingBadges = screen.getAllByText('Pending')
-      expect(pendingBadges.length).toBe(2)
+      expect(pendingBadges.length).toBe(WORKING_STAGES.length)
     })
 
     it('displays connection status indicator', () => {

@@ -6,10 +6,12 @@ SSE event emission.
 """
 
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel
@@ -47,9 +49,9 @@ def create_structured_agent(
     """
     model = get_chat_model()
     # Prevent multiple parallel tool calls; we expect exactly one structured response
-    model = model.bind_tools(tools or [], parallel_tool_calls=False)
+    bound_model: Runnable = model.bind_tools(tools or [], parallel_tool_calls=False)
     agent = create_agent(
-        model,
+        cast(BaseChatModel, bound_model),
         tools=tools or [],
         system_prompt=system_prompt,
         response_format=ToolStrategy(response_schema),
