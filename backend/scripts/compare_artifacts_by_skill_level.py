@@ -122,7 +122,13 @@ async def compare_artifacts() -> None:  # noqa: PLR0912
         print("-" * 80)
 
         beginner_terms = ["simple", "easy", "basic", "introduction", "getting started", "first"]
-        intermediate_terms = ["advanced", "optimization", "best practices", "architecture", "pattern"]
+        intermediate_terms = [
+            "advanced",
+            "optimization",
+            "best practices",
+            "architecture",
+            "pattern",
+        ]
         expert_terms = ["implementation", "deep dive", "optimization", "performance", "scalability"]
 
         for level, artifact in artifacts.items():
@@ -154,5 +160,3 @@ async def compare_artifacts() -> None:  # noqa: PLR0912
 
 if __name__ == "__main__":
     asyncio.run(compare_artifacts())
-
-

@@ -209,9 +209,9 @@ async def get_analysis(
 
     artifact_result = await db.execute(
         select(Artifact.id)
-            .where(Artifact.analysis_id == analysis_id)
-            .order_by(Artifact.created_at.desc())
-            .limit(1)
+        .where(Artifact.analysis_id == analysis_id)
+        .order_by(Artifact.created_at.desc())
+        .limit(1)
     )
     artifact_id = artifact_result.scalar_one_or_none()
 

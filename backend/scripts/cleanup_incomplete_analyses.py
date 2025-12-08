@@ -26,7 +26,9 @@ from app.db.session import AsyncSessionLocal  # noqa: E402
 async def cleanup_incomplete_analyses():
     """Delete incomplete analyses and related data."""
     settings = get_settings()
-    print(f"Connecting to database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}")
+    print(
+        f"Connecting to database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'local'}"
+    )
 
     async with AsyncSessionLocal() as session:
         try:
@@ -138,4 +140,3 @@ async def cleanup_incomplete_analyses():
 
 if __name__ == "__main__":
     asyncio.run(cleanup_incomplete_analyses())
-

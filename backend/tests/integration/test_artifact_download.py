@@ -189,6 +189,7 @@ async def test_get_artifact_by_analysis_not_found(reset_engine_connections):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert "No artifact" in response.json()["detail"]
 
+
 @pytest.mark.asyncio
 async def test_full_workflow_generates_artifact(
     requires_database, reset_engine_connections, db_session

@@ -99,6 +99,7 @@ class AnalyzeStatusResponse(BaseModel):
     created_at: str = Field(..., description="Timestamp when analysis was created")
     updated_at: str = Field(..., description="Timestamp when analysis was last updated")
 
+
 class AnalyzeResponse(BaseModel):
     """Response schema for analysis results.
 

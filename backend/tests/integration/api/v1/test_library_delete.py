@@ -16,9 +16,7 @@ from app.models.progress import AnalysisProgress
 
 
 @pytest.mark.asyncio
-async def test_delete_analysis_cascades(
-    requires_database, reset_engine_connections, db_session
-):
+async def test_delete_analysis_cascades(requires_database, reset_engine_connections, db_session):
     """DELETE /api/v1/analyses/{id} removes analysis and related rows."""
     analysis_id = uuid.uuid4()
     analysis = Analysis(
@@ -74,4 +72,3 @@ async def test_delete_analysis_not_found(reset_engine_connections):
         response = await client.delete(f"/api/v1/analyses/{uuid.uuid4()}")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-
