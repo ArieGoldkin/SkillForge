@@ -20,6 +20,10 @@ def requires_openai():
     if not openai_key:
         pytest.skip("OpenAI API key not available")
 
+    placeholder_prefixes = ("sk-test", "test-", "dummy-", "placeholder-")
+    if openai_key.lower().startswith(placeholder_prefixes):
+        pytest.skip("OpenAI API key appears to be placeholder; skipping external supervisor tests.")
+
 
 @pytest.mark.asyncio
 @pytest.mark.slow

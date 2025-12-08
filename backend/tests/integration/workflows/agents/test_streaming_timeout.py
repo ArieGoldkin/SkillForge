@@ -35,6 +35,7 @@ def mock_streaming_agent():
             yield chunk
 
     agent.astream = mock_astream
+    agent.ainvoke = AsyncMock(return_value={"structured_response": {"findings": "test"}})
     return agent
 
 

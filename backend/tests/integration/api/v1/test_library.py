@@ -649,5 +649,7 @@ class TestLibraryDeleteEndpoint:
         response = await test_client.delete(f"/api/v1/analyses/{analysis_id}")
         assert response.status_code == 204
 
+        # Expire local identity map to ensure we re-fetch from DB
+        db_session.expire_all()
         remaining = await db_session.get(Analysis, analysis_id)
         assert remaining is None

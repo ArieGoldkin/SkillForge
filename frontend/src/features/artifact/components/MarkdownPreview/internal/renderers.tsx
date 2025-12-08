@@ -1,4 +1,4 @@
-import type { ElementType } from 'react'
+import type React from 'react'
 
 import type { Components } from 'react-markdown'
 
@@ -7,8 +7,12 @@ import { cn } from '@lib/utils'
 import { CodeBlock } from './CodeBlock'
 import { ParagraphRenderer } from './ParagraphRenderer'
 
-type CodeComponent = NonNullable<Components['code']>
-type CodeProps = CodeComponent extends ElementType<infer P> ? P : never
+type CodeRendererProps = React.HTMLAttributes<HTMLElement> & {
+  inline?: boolean
+  className?: string
+  children?: React.ReactNode
+  node?: unknown
+}
 
 /**
  * Custom code renderer for ReactMarkdown
@@ -19,16 +23,8 @@ type CodeProps = CodeComponent extends ElementType<infer P> ? P : never
  * - Inline code has no language class and typically no newlines
  * - The deprecated `inline` prop is checked as fallback for compatibility
  */
-export const CodeRenderer: NonNullable<Components['code']> = (props) => {
-  const {
-    inline,
-    className,
-    children,
-    node: _node,
-    ...rest
-  } = props as CodeProps & {
-    inline?: boolean
-  }
+export const CodeRenderer = ((rawProps: CodeRendererProps) => {
+  const { inline, className, children, node: _node, ...rest } = rawProps
   const match = /language-(\w+)/.exec(className || '')
   const language = match ? match[1] : 'text'
   const codeContent = String(children).replace(/\n$/, '')
@@ -58,56 +54,78 @@ export const CodeRenderer: NonNullable<Components['code']> = (props) => {
   }
 
   return <CodeBlock code={codeContent} language={language} />
-}
+}) satisfies NonNullable<Components['code']>
 
 /**
  * Custom table renderer - wraps tables for responsive scrolling
  */
-export const TableRenderer: NonNullable<Components['table']> = (props) => {
-  const { children, node: _node, ...rest } = props
+type TableRendererProps = React.HTMLAttributes<HTMLTableElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const TableRenderer = ((rawProps: TableRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
   return (
     <div className="table-wrapper">
       <table {...rest}>{children}</table>
     </div>
   )
-}
+}) satisfies NonNullable<Components['table']>
 
 /**
  * Custom input renderer - styles task list checkboxes
  */
-export const InputRenderer: NonNullable<Components['input']> = (props) => {
-  const { type, node: _node, ...rest } = props
+type InputRendererProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  type?: string
+  node?: unknown
+}
+
+export const InputRenderer = ((rawProps: InputRendererProps) => {
+  const { type, node: _node, ...rest } = rawProps
   if (type === 'checkbox') {
     return <input type="checkbox" className="task-checkbox" {...rest} />
   }
   return <input type={type} {...rest} />
-}
+}) satisfies NonNullable<Components['input']>
 
 /**
  * Custom list item renderer - handles task list items
  */
-export const ListItemRenderer: NonNullable<Components['li']> = (props) => {
-  const { children, className, node: _node, ...rest } = props
+type ListItemRendererProps = React.LiHTMLAttributes<HTMLLIElement> & {
+  className?: string
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const ListItemRenderer = ((rawProps: ListItemRendererProps) => {
+  const { children, className, node: _node, ...rest } = rawProps
   const isTaskItem = className?.includes('task-list-item')
   return (
     <li className={cn(isTaskItem && 'task-list-item', className)} {...rest}>
       {children}
     </li>
   )
-}
+}) satisfies NonNullable<Components['li']>
 
 /**
  * Custom unordered list renderer - handles task lists
  */
-export const UnorderedListRenderer: NonNullable<Components['ul']> = (props) => {
-  const { className, children, node: _node, ...rest } = props
+type UnorderedListRendererProps = React.HTMLAttributes<HTMLUListElement> & {
+  className?: string
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const UnorderedListRenderer = ((rawProps: UnorderedListRendererProps) => {
+  const { className, children, node: _node, ...rest } = rawProps
   const isTaskList = className?.includes('contains-task-list')
   return (
     <ul className={cn(isTaskList && 'task-list', className)} {...rest}>
       {children}
     </ul>
   )
-}
+}) satisfies NonNullable<Components['ul']>
 
 // Re-export paragraph renderer
 export { ParagraphRenderer }

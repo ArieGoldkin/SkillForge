@@ -18,8 +18,18 @@ from app.workflows.analysis import analysis_workflow
 @pytest.fixture
 def requires_jina_api_key():
     """Skip test if JINA_API_KEY is not set."""
+    placeholder_prefixes = ("sk-test", "test-", "dummy-", "placeholder-")
+
     if not os.environ.get("JINA_API_KEY"):
         pytest.skip("JINA_API_KEY not set in .env - skipping integration test")
+
+    openai_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("LLM_OPENAI_API_KEY")
+    if not openai_key or openai_key.lower().startswith(placeholder_prefixes):
+        pytest.skip("OPENAI_API_KEY missing or placeholder - skipping integration test")
+
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not anthropic_key or anthropic_key.lower().startswith(placeholder_prefixes):
+        pytest.skip("ANTHROPIC_API_KEY missing or placeholder - skipping integration test")
 
 
 @pytest.mark.asyncio
