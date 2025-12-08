@@ -60,6 +60,7 @@ const useIdleRecheck = (
   eventsLength: number,
   refetch: () => Promise<void>
 ) => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch when SSE goes idle; eventsLength intentionally included
   useEffect(() => {
     if (!analysisId) return
     if (isComplete) return
