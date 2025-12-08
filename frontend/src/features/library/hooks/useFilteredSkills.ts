@@ -1,4 +1,5 @@
 import type { AnalysisStatus } from '@app-types/api'
+
 import type { SkillStatus } from '../components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from '../components/SkillFilters'
 

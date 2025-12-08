@@ -1,5 +1,6 @@
 import type * as React from 'react'
 
+import type { AnalysisStatus } from '@app-types/api'
 import { Filter, X } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
@@ -7,8 +8,6 @@ import { Button } from '@shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
-
-import type { AnalysisStatus } from '@app-types/api'
 
 import type { SkillDifficulty } from './SkillCard'
 import { DifficultyFilter } from './SkillFilters/DifficultyFilter'
