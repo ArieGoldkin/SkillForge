@@ -8,7 +8,7 @@ interface Skill {
   duration: number
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
-  progress: number
+  progress?: number
   status: 'not-started' | 'in-progress' | 'completed' | 'failed'
   onSelect: (id: string) => void
 }

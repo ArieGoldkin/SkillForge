@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeTitle } from '../Library'
+import { normalizeTitle } from '../utils'
 
 describe('normalizeTitle', () => {
   it('returns Untitled when null', () => {

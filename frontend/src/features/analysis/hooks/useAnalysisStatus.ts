@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { AnalysisStatus, AnalysisStatusResponse } from '@app-types/api'
+
 import { analyzeAPI } from '@services/api.service'
 
 export const IDLE_RECHECK_MS = 15000
@@ -26,11 +27,7 @@ interface AnalysisStatusResult {
   refetch: () => Promise<void>
 }
 
-export function useAnalysisStatus({
-  analysisId,
-  completedParam,
-  sseState,
-}: UseAnalysisStatusParams): AnalysisStatusResult {
+const useStatusRequest = (analysisId?: string) => {
   const [statusData, setStatusData] = useState<AnalysisStatusResponse | null>(null)
   const [statusError, setStatusError] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
@@ -51,17 +48,35 @@ export function useAnalysisStatus({
   }, [analysisId])
 
   useEffect(() => {
-    fetchStatus()
+    void fetchStatus()
   }, [fetchStatus])
 
+  return { statusData, statusError, loading, refetch: fetchStatus }
+}
+
+const useIdleRecheck = (
+  analysisId: string | undefined,
+  isComplete: boolean,
+  eventsLength: number,
+  refetch: () => Promise<void>
+) => {
   useEffect(() => {
     if (!analysisId) return
-    if (sseState.isComplete) return
+    if (isComplete) return
     const timer = setTimeout(() => {
-      fetchStatus()
+      void refetch()
     }, IDLE_RECHECK_MS)
     return () => clearTimeout(timer)
-  }, [analysisId, fetchStatus, sseState.eventsLength, sseState.isComplete])
+  }, [analysisId, isComplete, eventsLength, refetch])
+}
+
+export function useAnalysisStatus({
+  analysisId,
+  completedParam,
+  sseState,
+}: UseAnalysisStatusParams): AnalysisStatusResult {
+  const { statusData, statusError, loading, refetch } = useStatusRequest(analysisId)
+  useIdleRecheck(analysisId, sseState.isComplete, sseState.eventsLength, refetch)
 
   const resolvedStatus: AnalysisStatus | undefined = useMemo(() => {
     if (statusData?.status) return statusData.status
@@ -84,6 +99,6 @@ export function useAnalysisStatus({
     shouldConnect,
     loading,
     statusError,
-    refetch: fetchStatus,
+    refetch,
   }
 }

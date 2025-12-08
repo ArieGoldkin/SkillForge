@@ -1,16 +1,20 @@
 import React from 'react'
+
 import type { Components } from 'react-markdown'
 
 import { cn } from '@lib/utils'
 
 const extractTextFromReact = (nodes: React.ReactNode): string => {
   return React.Children.toArray(nodes)
-    .map((child) => {
+    .map((child: React.ReactNode) => {
       if (typeof child === 'string' || typeof child === 'number') {
         return String(child)
       }
-      if (React.isValidElement(child) && child.props?.children) {
-        return extractTextFromReact(child.props.children)
+      if (React.isValidElement(child)) {
+        const element = child as React.ReactElement<{ children?: React.ReactNode }>
+        if (element.props?.children) {
+          return extractTextFromReact(element.props.children)
+        }
       }
       return ''
     })
@@ -18,11 +22,17 @@ const extractTextFromReact = (nodes: React.ReactNode): string => {
     .trim()
 }
 
-const extractTextFromMdast = (mdastNode: any): string => {
-  if (!mdastNode) return ''
-  if (typeof mdastNode.value === 'string') return mdastNode.value
-  if (Array.isArray(mdastNode.children)) {
-    return mdastNode.children.map((child) => extractTextFromMdast(child)).join('')
+const extractTextFromMdast = (mdastNode: unknown): string => {
+  if (!mdastNode || typeof mdastNode !== 'object') return ''
+  if ('value' in (mdastNode as Record<string, unknown>)) {
+    const value = (mdastNode as { value?: unknown }).value
+    if (typeof value === 'string') return value
+  }
+  if ('children' in (mdastNode as Record<string, unknown>)) {
+    const children = (mdastNode as { children?: unknown }).children
+    if (Array.isArray(children)) {
+      return children.map((child: unknown) => extractTextFromMdast(child)).join('')
+    }
   }
   return ''
 }

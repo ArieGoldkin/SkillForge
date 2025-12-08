@@ -1,7 +1,7 @@
 """Artifact download endpoints."""
 
 import uuid
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
@@ -32,8 +32,10 @@ async def get_artifact_by_analysis(
     return ArtifactMetadataResponse(
         artifact_id=str(artifact.id),
         analysis_id=str(artifact.analysis_id),
-        markdown_content=artifact.markdown_content,
-        artifact_metadata=artifact.artifact_metadata,
+        markdown_content=str(cast(str | None, artifact.markdown_content) or ""),
+        artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
+        if artifact.artifact_metadata
+        else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 

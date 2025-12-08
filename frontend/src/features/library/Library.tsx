@@ -1,60 +1,20 @@
 import { useMemo, useState } from 'react'
 
-import type { AnalysisStatus, SearchMode } from '@app-types/api'
+import type { LibrarySearchParams, SearchMode } from '@app-types/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
 import { analyzeAPI } from '@services/api.service'
+
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
 import { LibraryHeader } from './components/LibraryHeader'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
 import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearch } from './hooks'
-
-const STATUS_MAP = {
-  'not-started': 'pending',
-  'in-progress': 'running',
-  completed: 'complete',
-  failed: 'failed',
-} as const
-
-const CONTENT_TYPE_TAGS = ['article', 'video', 'repo'] as const
-
-export const mapFiltersToQuery = (
-  filters: SkillFiltersType,
-  showCompletedOnly: boolean
-): {
-  status?: string
-  content_type?: string
-} => {
-  if (showCompletedOnly) {
-    return { status: 'complete', content_type: pickContentType(filters) }
-  }
-  return {
-    status: pickStatus(filters),
-    content_type: pickContentType(filters),
-  }
-}
-
-const pickStatus = (filters: SkillFiltersType): string | undefined => {
-  if (!filters.status.length) return undefined
-  const first = filters.status[0]
-  return STATUS_MAP[first] ?? undefined
-}
-
-const pickContentType = (filters: SkillFiltersType): string | undefined => {
-  const tag = filters.tags.find((t) => (CONTENT_TYPE_TAGS as readonly string[]).includes(t))
-  return tag
-}
-
-/* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
-export const normalizeTitle = (rawTitle: string | null): string => {
-  if (!rawTitle) return 'Untitled'
-  return rawTitle.replace(/^title:\s*/i, '').trim() || 'Untitled'
-}
+import { mapFiltersToQuery, mapStatusToSkillStatus, normalizeTitle } from './utils'
 
 export default function Library() {
   const navigate = useNavigate()
@@ -71,29 +31,16 @@ export default function Library() {
   const [offset, setOffset] = useState(0)
   const limit = 20
 
-  const mapStatusToSkillStatus = (status: AnalysisStatus) => {
-    switch (status) {
-      case 'complete':
-        return 'completed'
-      case 'failed':
-        return 'failed'
-      case 'extracting':
-      case 'analyzing':
-      case 'pending':
-        return 'in-progress'
-      default:
-        return 'not-started'
-    }
-  }
-
-  // Use server-side search API
-  const { data: searchResults, isLoading } = useLibrarySearch({
+  const searchParams: LibrarySearchParams = {
     query: searchQuery || undefined,
     search_mode: searchMode,
     ...mapFiltersToQuery(filters, showCompletedOnly),
     limit,
     offset,
-  })
+  }
+
+  // Use server-side search API
+  const { data: searchResults, isLoading } = useLibrarySearch(searchParams)
 
   // Transform search results into skills format
   const skills = useMemo(() => {
@@ -111,7 +58,7 @@ export default function Library() {
       duration: 25,
       difficulty: 'intermediate' as const,
       tags: [item.content_type],
-      progress: item.status === 'complete' ? 100 : undefined,
+      progress: item.status === 'complete' ? 100 : 0,
       status: mapStatusToSkillStatus(item.status),
       onSelect: (id: string) => {
         navigate({ to: '/analyze/$id', params: { id } })

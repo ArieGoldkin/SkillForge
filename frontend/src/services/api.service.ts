@@ -8,7 +8,6 @@ import type {
   AnalysisStatusResponse,
   AnalyzeRequest,
   AnalyzeResponse,
-  Artifact,
   ArtifactMetadataResponse,
   LibraryListResponse,
   LibrarySearchParams,

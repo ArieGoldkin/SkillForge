@@ -2,7 +2,13 @@
 // Source: docs/INTEGRATION_POINTS.md
 
 export type ContentType = 'article' | 'video' | 'repo'
-export type AnalysisStatus = 'pending' | 'extracting' | 'analyzing' | 'complete' | 'failed'
+export type AnalysisStatus =
+  | 'pending'
+  | 'extracting'
+  | 'analyzing'
+  | 'running'
+  | 'complete'
+  | 'failed'
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
 
 export interface Analysis {

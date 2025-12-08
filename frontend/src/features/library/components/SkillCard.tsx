@@ -43,30 +43,57 @@ const formatStatus = (status: SkillStatus): string => {
     'not-started': 'Not Started',
     'in-progress': 'In Progress',
     completed: 'Completed',
+    failed: 'Failed',
   }
   return labels[status]
 }
 
+const SkillCardBody: React.FC<SkillCardProps> = ({
+  id,
+  title,
+  description,
+  difficulty,
+  duration,
+  tags,
+  status,
+  thumbnail,
+  progress,
+  onDelete,
+}) => (
+  <CardContent className="p-0 relative">
+    {onDelete && (
+      <button
+        type="button"
+        className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
+        onClick={(event) => {
+          event.stopPropagation()
+          onDelete(id)
+        }}
+        aria-label="Delete analysis"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    )}
+    <SkillCardThumbnail title={title} thumbnail={thumbnail} />
+
+    <div className="p-6 space-y-4">
+      <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+        {title}
+      </h3>
+
+      <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+
+      <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
+
+      <SkillCardProgress status={status} progress={progress} />
+
+      <SkillCardTags tags={tags} />
+    </div>
+  </CardContent>
+)
+
 /**
  * SkillCard - Individual skill/learning resource card
- *
- * Displays a skill with thumbnail, metadata, tags, and progress indicator.
- * Supports hover effects and keyboard navigation.
- *
- * @example
- * ```tsx
- * <SkillCard
- *   id="react-rsc"
- *   title="React Server Components"
- *   description="Learn RSC fundamentals and integration with Next.js"
- *   difficulty="intermediate"
- *   duration={45}
- *   tags={['React', 'Next.js', 'Server Components']}
- *   status="in-progress"
- *   progress={60}
- *   onSelect={(id) => console.log('Selected:', id)}
- * />
- * ```
  */
 export const SkillCard: React.FC<SkillCardProps> = ({
   id,
@@ -105,36 +132,19 @@ export const SkillCard: React.FC<SkillCardProps> = ({
       role="button"
       aria-label={`${title} - ${formatStatus(status)}`}
     >
-      <CardContent className="p-0 relative">
-        {onDelete && (
-          <button
-            type="button"
-            className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
-            onClick={(event) => {
-              event.stopPropagation()
-              onDelete(id)
-            }}
-            aria-label="Delete analysis"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-        <SkillCardThumbnail title={title} thumbnail={thumbnail} />
-
-        <div className="p-6 space-y-4">
-          <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-            {title}
-          </h3>
-
-          <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
-
-          <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
-
-          <SkillCardProgress status={status} progress={progress} />
-
-          <SkillCardTags tags={tags} />
-        </div>
-      </CardContent>
+      <SkillCardBody
+        id={id}
+        title={title}
+        description={description}
+        difficulty={difficulty}
+        duration={duration}
+        tags={tags}
+        status={status}
+        thumbnail={thumbnail}
+        progress={progress}
+        onSelect={onSelect}
+        onDelete={onDelete}
+      />
     </Card>
   )
 }

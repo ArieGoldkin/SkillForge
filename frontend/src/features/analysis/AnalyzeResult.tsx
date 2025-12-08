@@ -17,36 +17,51 @@ import { useAnalysisStatus } from './hooks/useAnalysisStatus'
 
 const routeApi = getRouteApi('/analyze/$id')
 
-export default function AnalyzeResult() {
-  const { id } = routeApi.useParams()
-  const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
-  const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
-  const { overallProgress, steps, activities, hasError, errorMessage, artifactId } =
-    useAnalysisProgress(events)
-  const statusState = useAnalysisStatus({
-    analysisId: id,
-    completedParam: Boolean(completed),
-    sseState: { eventsLength: events.length, isComplete, artifactId },
-  })
-
+const useSSELifecycle = ({
+  analysisId,
+  shouldConnect,
+  connect,
+  disconnect,
+  reset,
+}: {
+  analysisId?: string
+  shouldConnect: boolean
+  connect: (id: string) => void
+  disconnect: () => void
+  reset: () => void
+}) => {
   useEffect(() => {
-    if (statusState.shouldConnect && id) {
+    if (shouldConnect && analysisId) {
       reset()
-      connect(id)
+      connect(analysisId)
     } else {
       disconnect()
     }
     return () => disconnect()
-  }, [id, statusState.shouldConnect, connect, disconnect, reset])
+  }, [analysisId, shouldConnect, connect, disconnect, reset])
+}
 
-  useEffect(() => {
-    if (!statusState.resolvedStatus) return
-    if (statusState.resolvedStatus === 'complete' || statusState.resolvedStatus === 'failed') {
-      disconnect()
-    }
-  }, [statusState.resolvedStatus, disconnect])
-
-  // Show completed state if navigating back from artifact page
+const useDerivedState = ({
+  artifactId,
+  urlArtifactId,
+  statusState,
+  isComplete,
+  events,
+  hasError,
+  error,
+  errorMessage,
+  completed,
+}: {
+  artifactId?: string
+  urlArtifactId?: string
+  statusState: ReturnType<typeof useAnalysisStatus>
+  isComplete: boolean
+  events: unknown[]
+  hasError: boolean
+  error: Error | null
+  errorMessage?: string | null
+  completed?: boolean
+}) => {
   const resolvedArtifactId = useMemo(
     () => artifactId || statusState.resolvedArtifactId || urlArtifactId,
     [artifactId, statusState.resolvedArtifactId, urlArtifactId]
@@ -65,6 +80,50 @@ export default function AnalyzeResult() {
 
   const isFailed = resolvedStatus === 'failed' || hasError
 
+  const waitingForFirstEvent =
+    !isResolvedComplete &&
+    !isFailed &&
+    events.length === 0 &&
+    !error &&
+    !isComplete &&
+    (statusState.loading || !statusState.resolvedStatus)
+
+  return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
+}
+
+export default function AnalyzeResult() {
+  const { id } = routeApi.useParams()
+  const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
+  const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
+  const { overallProgress, steps, activities, hasError, errorMessage, artifactId } =
+    useAnalysisProgress(events)
+  const statusState = useAnalysisStatus({
+    analysisId: id,
+    completedParam: Boolean(completed),
+    sseState: { eventsLength: events.length, isComplete, artifactId },
+  })
+
+  useSSELifecycle({
+    analysisId: id,
+    shouldConnect: statusState.shouldConnect,
+    connect,
+    disconnect,
+    reset,
+  })
+
+  const { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError } =
+    useDerivedState({
+      artifactId,
+      urlArtifactId,
+      statusState,
+      isComplete,
+      events,
+      hasError,
+      error,
+      errorMessage,
+      completed,
+    })
+
   if (completed && urlArtifactId) {
     return <CompletedAnalysisView analysisId={id} artifactId={urlArtifactId} />
   }
@@ -72,15 +131,6 @@ export default function AnalyzeResult() {
   if (isResolvedComplete && resolvedArtifactId) {
     return <CompletedAnalysisView analysisId={id} artifactId={resolvedArtifactId} />
   }
-
-  const waitingForFirstEvent =
-    !isResolvedComplete &&
-    !isFailed &&
-    !isConnected &&
-    events.length === 0 &&
-    !error &&
-    !isComplete &&
-    (statusState.loading || !statusState.resolvedStatus)
 
   if (waitingForFirstEvent) {
     return <LoadingState />
