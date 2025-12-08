@@ -1,6 +1,5 @@
 import type * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
 import { Filter, X } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
@@ -9,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/
 
 import { cn } from '@lib/utils'
 
-import type { SkillDifficulty } from './SkillCard'
+import type { SkillDifficulty, SkillStatus } from './SkillCard'
 import { DifficultyFilter } from './SkillFilters/DifficultyFilter'
 import { DurationFilter } from './SkillFilters/DurationFilter'
 import { useSkillFilters } from './SkillFilters/hooks'
@@ -21,7 +20,7 @@ import { TagFilter } from './SkillFilters/TagFilter'
  */
 export interface SkillFilters {
   difficulty: SkillDifficulty[]
-  status: AnalysisStatus[]
+  status: SkillStatus[]
   tags: string[]
   durationRange: [number, number]
 }
@@ -33,7 +32,7 @@ export interface SkillFiltersProps {
   filters: SkillFilters
   onChange: (filters: SkillFilters) => void
   availableTags: string[]
-  availableStatuses: string[]
+  availableStatuses: SkillStatus[]
   className?: string
 }
 

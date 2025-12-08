@@ -1,23 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
-import type { AnalysisStatus, SearchMode } from '@app-types/api'
+import type { SearchMode } from '@app-types/api'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
+import { analyzeAPI } from '@services/api.service'
+
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
 import { LibraryHeader } from './components/LibraryHeader'
+import type { SkillStatus } from './components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
 import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearchInfinite } from './hooks'
+import { mapFiltersToQuery, normalizeTitle } from './utils'
 import { dedupeByAnalysisId } from './utils/libraryTransform'
 
 /* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
 export default function Library() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchMode, setSearchMode] = useState<SearchMode>('hybrid')
+  const [showCompletedOnly, setShowCompletedOnly] = useState(true)
   const [filters, setFilters] = useState<SkillFiltersType>({
     difficulty: [],
     tags: [],
@@ -25,6 +32,12 @@ export default function Library() {
     durationRange: [0, 1000],
   })
   const limit = 15
+
+  const mapAnalysisStatusToSkillStatus = (status: AnalysisStatus): SkillStatus => {
+    if (status === 'complete') return 'completed'
+    if (status === 'failed') return 'failed'
+    return 'in-progress'
+  }
 
   // Use server-side infinite search API
   const {
@@ -37,6 +50,7 @@ export default function Library() {
   } = useLibrarySearchInfinite({
     query: searchQuery || undefined,
     search_mode: searchMode,
+    ...mapFiltersToQuery(filters, showCompletedOnly),
     limit,
   })
 
@@ -48,29 +62,20 @@ export default function Library() {
       return []
     }
 
-    const mapAnalysisStatusToSkillStatus = (status: string) => {
-      if (status === 'complete') return 'completed' as const
-      if (status === 'failed') return 'failed' as const
-      return 'in-progress' as const
-    }
-
     return items.map((item) => {
-      const cleanTitle = item.title?.replace(/^title:\s*/i, '').trim() || 'Untitled'
       const tags = item.tags?.length ? item.tags : [item.content_type]
       const isFailed = item.status === 'failed'
       return {
         id: item.analysis_id,
-        title: cleanTitle,
+        title: normalizeTitle(item.title),
         description: item.snippet
-          ? // Strip HTML marks for description, keep snippet for display
-            item.snippet.replace(/<\/?mark>/g, '')
+          ? item.snippet.replace(/<\/?mark>/g, '')
           : `Analysis of ${item.content_type}`,
-        snippet: item.snippet, // Preserved for potential future use
+        snippet: item.snippet,
         thumbnail: `https://api.dicebear.com/7.x/shapes/svg?seed=${item.analysis_id}`,
         duration: 25,
         difficulty: 'intermediate' as const,
         tags,
-        analysisStatus: item.status,
         progress: isFailed ? undefined : 0,
         status: mapAnalysisStatusToSkillStatus(item.status),
         onSelect: (id: string) => {
@@ -91,13 +96,13 @@ export default function Library() {
     return Array.from(tagSet)
   }, [searchResults])
 
-  const availableStatuses = useMemo<AnalysisStatus[]>(() => {
-    const statusSet = new Set<AnalysisStatus>()
+  const availableStatuses = useMemo<SkillStatus[]>(() => {
+    const statusSet = new Set<SkillStatus>()
     const pages = searchResults?.pages ?? []
     const items = dedupeByAnalysisId(pages.flatMap((page) => page.items))
     items.forEach((item) => {
       if (item.status) {
-        statusSet.add(item.status as AnalysisStatus)
+        statusSet.add(mapAnalysisStatusToSkillStatus(item.status))
       }
     })
     return Array.from(statusSet)
@@ -108,6 +113,16 @@ export default function Library() {
 
   const handleSelectSkill = (id: string) => {
     navigate({ to: '/analyze/$id', params: { id } })
+  }
+
+  const handleDeleteSkill = async (id: string) => {
+    try {
+      await analyzeAPI.deleteAnalysis(id)
+      await queryClient.invalidateQueries({ queryKey: ['library'] })
+    } catch (error) {
+      console.error('Failed to delete analysis', error)
+      alert('Failed to delete analysis. Please try again.')
+    }
   }
 
   const showingCount = filteredSkills.length
@@ -134,6 +149,14 @@ export default function Library() {
             <TabsTrigger value="semantic">Semantic</TabsTrigger>
           </TabsList>
         </Tabs>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={showCompletedOnly}
+            onChange={(event) => setShowCompletedOnly(event.target.checked)}
+          />
+          Show completed only
+        </label>
         {searchResults && (
           <span className="text-sm text-muted-foreground ml-auto">
             {searchQuery.trim()
@@ -147,7 +170,12 @@ export default function Library() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <FiltersSidebar
           filters={filters}
-          onChange={setFilters}
+          onChange={(next) => {
+            setFilters(next)
+            if (next.status.length > 0 && showCompletedOnly) {
+              setShowCompletedOnly(false)
+            }
+          }}
           availableTags={availableTags}
           availableStatuses={availableStatuses}
         />
@@ -156,6 +184,7 @@ export default function Library() {
             isLoading={isLoading}
             skills={filteredSkills}
             onSelectSkill={handleSelectSkill}
+            onDeleteSkill={handleDeleteSkill}
             onLoadMore={hasNextPage ? fetchNextPage : undefined}
             canLoadMore={Boolean(hasNextPage)}
             isLoadingMore={isFetchingNextPage || isFetching || isLoading}

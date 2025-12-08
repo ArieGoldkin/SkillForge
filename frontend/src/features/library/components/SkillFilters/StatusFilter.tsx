@@ -4,7 +4,7 @@
 
 import type * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { SkillStatus } from '../SkillCard'
 
 import { CheckboxItem } from './CheckboxItem'
 import { FilterSection } from './FilterSection'
@@ -13,9 +13,9 @@ import { FilterSection } from './FilterSection'
  * Props for StatusFilter component
  */
 export interface StatusFilterProps {
-  selectedStatuses: AnalysisStatus[]
-  availableStatuses: AnalysisStatus[]
-  onChange: (status: AnalysisStatus, checked: boolean) => void
+  selectedStatuses: SkillStatus[]
+  availableStatuses: SkillStatus[]
+  onChange: (status: SkillStatus, checked: boolean) => void
 }
 
 /**
@@ -28,9 +28,13 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({
   availableStatuses,
   onChange,
 }) => {
+  const statuses = availableStatuses.length
+    ? availableStatuses
+    : (['completed', 'in-progress', 'failed'] as SkillStatus[])
+
   return (
     <FilterSection title="Status">
-      {availableStatuses.map((status) => (
+      {statuses.map((status) => (
         <CheckboxItem
           key={status}
           id={`status-${status}`}
