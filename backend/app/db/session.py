@@ -99,8 +99,8 @@ def get_engine() -> "AsyncEngine":
 
         # Detect test mode for connection pool sizing
         _is_test_mode = os.getenv("PYTEST_CURRENT_TEST") is not None
-        _test_pool_size = 1  # Minimal pool size for tests to prevent exhaustion
-        _test_max_overflow = 1  # Minimal overflow for tests
+        _test_pool_size = 5  # Larger pool in tests to avoid async task starvation
+        _test_max_overflow = 5
 
         _engine = create_async_engine(
             get_async_database_url(),

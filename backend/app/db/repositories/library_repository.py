@@ -5,6 +5,7 @@ including full-text search, vector similarity search, and hybrid search using
 Reciprocal Rank Fusion (RRF).
 """
 
+import math
 from typing import TYPE_CHECKING, Annotated, Protocol
 from uuid import UUID
 
@@ -199,8 +200,19 @@ class LibraryRepository:
             results_count=len(rows),
         )
 
-        # Return list of (Analysis, distance) tuples
-        return [(row[0], float(row[1])) for row in rows]
+        # Return list of (Analysis, distance) tuples, filtering out non-finite scores
+        filtered: list[tuple[Analysis, float]] = []
+        for row in rows:
+            distance = float(row[1])
+            if not math.isfinite(distance):
+                logger.warning(
+                    "search_by_vector_non_finite_distance",
+                    analysis_id=str(row[0].id),
+                    distance=distance,
+                )
+                continue
+            filtered.append((row[0], distance))
+        return filtered
 
     async def hybrid_search(
         self,

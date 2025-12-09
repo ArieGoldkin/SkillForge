@@ -7,8 +7,36 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.core.config import _infer_provider_from_model, _split_provider_from_model, settings
 from app.core.logging import get_logger
+from app.core.model_registry import MODEL_REGISTRY
 
 logger = get_logger(__name__)
+
+
+def _resolve_model_from_registry(model_key: str) -> tuple[str, str | None]:
+    """Resolve a model registry key to its actual API model_id and provider.
+
+    The MODEL_REGISTRY uses human-friendly keys (e.g., "claude-haiku-3-5-20241022")
+    that may differ from actual API model IDs (e.g., "claude-3-5-haiku-20241022").
+
+    Args:
+        model_key: Either a registry key or a raw model identifier
+
+    Returns:
+        Tuple of (resolved_model_id, provider_or_none)
+        If model_key is in registry, returns the model_id and provider from registry.
+        If not in registry, returns the original model_key and None.
+
+    """
+    if model_key in MODEL_REGISTRY:
+        info = MODEL_REGISTRY[model_key]
+        logger.debug(
+            "model_registry_resolved",
+            registry_key=model_key,
+            api_model_id=info.model_id,
+            provider=info.provider,
+        )
+        return info.model_id, info.provider
+    return model_key, None
 
 
 def _should_strip_provider_prefix(provider: str | None) -> bool:
@@ -18,7 +46,7 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     return provider in {"openai", "anthropic", "google_genai"}
 
 
-def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912
+def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912, PLR0915
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
@@ -52,11 +80,23 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     model_identifier = str(model_identifier_raw).strip()
 
     # Re-resolve provider/model if runtime model was provided
+    provider: str | None = None
+    model_name: str = ""
     if runtime_model:
-        # Parse the runtime model to get provider/model
-        provider, model_name = _split_provider_from_model(model_identifier)
-        if not provider:
-            provider = _infer_provider_from_model(model_identifier)
+        # First, check if this is a registry key that needs resolution
+        # Registry keys may differ from actual API model IDs
+        # (e.g., "claude-haiku-3-5-20241022" -> "claude-3-5-haiku-20241022")
+        resolved_model_id, registry_provider = _resolve_model_from_registry(model_identifier)
+
+        if registry_provider:
+            # Model was found in registry - use registry values
+            provider = registry_provider
+            model_name = resolved_model_id
+            model_identifier = resolved_model_id  # Update for logging
+        else:
+            # Not in registry - parse the runtime model to get provider/model
+            parsed_provider, model_name = _split_provider_from_model(model_identifier)
+            provider = parsed_provider or _infer_provider_from_model(model_identifier)
     else:
         provider = settings.resolved_llm_provider()
         model_name = settings.resolved_llm_model_name()

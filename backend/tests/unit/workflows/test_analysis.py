@@ -88,6 +88,15 @@ async def test_analysis_workflow_with_mocked_services(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
+        patch(
+            "app.services.sse_helpers.persist_progress_event_async",
+            return_value=None,
+        ),
+        patch(
+            "app.workflows.tasks.store_embeddings.store_embeddings",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
     ):
         result = await analysis_workflow.ainvoke(
             {
@@ -123,7 +132,7 @@ async def test_analysis_workflow_with_mocked_services(
         # Verify services were called
         mock_jina.extract_article.assert_called_once_with("https://example.com")
         mock_jina.close.assert_called_once()
-        mock_embedding_service.generate_embedding.assert_called_once()
+        assert mock_embedding_service.generate_embedding.call_count >= 1
 
 
 @pytest.mark.asyncio

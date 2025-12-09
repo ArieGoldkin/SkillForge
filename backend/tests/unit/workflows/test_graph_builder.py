@@ -94,6 +94,28 @@ async def test_graph_execution_with_mocks(
     mock_artifact_repo = AsyncMock()
     mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
 
+    class _DummySession:
+        async def commit(self): ...
+
+        async def rollback(self): ...
+
+        def add_all(self, items): ...
+
+        async def flush(self): ...
+
+    class _DummySessionContext:
+        def __init__(self) -> None:
+            self.session = _DummySession()
+
+        async def __aenter__(self):  # noqa: D401
+            return self.session
+
+        async def __aexit__(self, exc_type, exc, tb):  # noqa: D401
+            return False
+
+    def _dummy_session_factory():
+        return _DummySessionContext()
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
@@ -112,6 +134,16 @@ async def test_graph_execution_with_mocks(
         patch(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
+        ),
+        patch("app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory),
+        patch(
+            "app.services.sse_helpers.persist_progress_event_async",
+            return_value=None,
+        ),
+        patch(
+            "app.workflows.tasks.store_embeddings.store_embeddings",
+            new_callable=AsyncMock,
+            return_value=[],
         ),
     ):
         graph = build_analysis_graph()
@@ -182,6 +214,28 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
     mock_artifact_repo = AsyncMock()
     mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
 
+    class _DummySession:
+        async def commit(self): ...
+
+        async def rollback(self): ...
+
+        def add_all(self, items): ...
+
+        async def flush(self): ...
+
+    class _DummySessionContext:
+        def __init__(self) -> None:
+            self.session = _DummySession()
+
+        async def __aenter__(self):  # noqa: D401
+            return self.session
+
+        async def __aexit__(self, exc_type, exc, tb):  # noqa: D401
+            return False
+
+    def _dummy_session_factory():
+        return _DummySessionContext()
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
@@ -200,6 +254,16 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
         patch(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
+        ),
+        patch("app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory),
+        patch(
+            "app.services.sse_helpers.persist_progress_event_async",
+            return_value=None,
+        ),
+        patch(
+            "app.workflows.tasks.store_embeddings.store_embeddings",
+            new_callable=AsyncMock,
+            return_value=[],
         ),
     ):
         graph = build_analysis_graph()

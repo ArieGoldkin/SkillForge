@@ -1,0 +1,35 @@
+{
+  "generated_at": "2025-12-09T18:28:19.899719",
+  "tasks": {
+    "supervisor": {
+      "primary_model": "gemini-2.5-flash",
+      "fallback_model": "gpt-5-mini",
+      "rationale": "Hypothesis-based selection (not validated):\n  - Primary: Gemini 2.5 Flash\n  - Fallback: GPT-5 Mini\n  - Rationale: Fast routing requires low latency; Gemini Flash offers best speed/cost",
+      "metrics": {}
+    },
+    "agent_analysis": {
+      "primary_model": "gpt-5-mini",
+      "fallback_model": "claude-sonnet-4-20250514",
+      "rationale": "Hypothesis-based selection (not validated):\n  - Primary: GPT-5 Mini\n  - Fallback: Claude Sonnet 4\n  - Rationale: No specific rationale",
+      "metrics": {}
+    },
+    "synthesis": {
+      "primary_model": "claude-sonnet-4-20250514",
+      "fallback_model": "gpt-5",
+      "rationale": "Hypothesis-based selection (not validated):\n  - Primary: Claude Sonnet 4\n  - Fallback: GPT-5\n  - Rationale: Aggregation benefits from longer context; Claude excels at coherent summaries",
+      "metrics": {}
+    },
+    "tutoring": {
+      "primary_model": "claude-sonnet-4-20250514",
+      "fallback_model": "gpt-5",
+      "rationale": "Hypothesis-based selection (not validated):\n  - Primary: Claude Sonnet 4\n  - Fallback: GPT-5\n  - Rationale: No specific rationale",
+      "metrics": {}
+    },
+    "code_analysis": {
+      "primary_model": "claude-sonnet-4-20250514",
+      "fallback_model": "gpt-5",
+      "rationale": "Hypothesis-based selection (not validated):\n  - Primary: Claude Sonnet 4\n  - Fallback: GPT-5\n  - Rationale: No specific rationale",
+      "metrics": {}
+    }
+  }
+}
