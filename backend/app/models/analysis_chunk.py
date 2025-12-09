@@ -51,3 +51,33 @@ class AnalysisChunk(Base):
         if isinstance(self.path, Sequence):
             return " / ".join(map(str, self.path))
         return ""
+
+    # Property aliases to provide consistent interface for SearchService
+    @property
+    def content(self) -> str | None:
+        """Alias for snippet to provide consistent SearchService interface."""
+        snippet_value = self.snippet
+        return str(snippet_value) if snippet_value is not None else None
+
+    @property
+    def chunk_type(self) -> str:
+        """Alias for granularity to provide consistent SearchService interface."""
+        granularity_value = self.granularity
+        return str(granularity_value) if granularity_value else "unknown"
+
+    @property
+    def embedding(self) -> list[float] | None:
+        """Alias for vector to provide consistent SearchService interface."""
+        return self.vector  # type: ignore[return-value]
+
+    @property
+    def chunk_metadata(self) -> dict:
+        """Build metadata dict from individual fields for SearchService."""
+        return {
+            "section": self.section_title,
+            "path": self.path,
+            "content_type": self.content_type,
+            "language": self.language,
+            "chunk_idx": self.chunk_idx,
+            "chunk_total": self.chunk_total,
+        }

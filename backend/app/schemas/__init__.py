@@ -7,4 +7,25 @@ outgoing responses.
 Modules:
     - analyze: Schemas for analysis endpoints (AnalyzeRequest, AnalyzeResponse)
     - library: Schemas for library search and filtering (LibraryFilters, LibrarySearchResult)
+    - search: Schemas for search API (SearchRequest, SearchResponse, SearchMode, etc.)
 """
+
+from app.schemas.search import (
+    ChunkMetadata,
+    DateRange,
+    SearchFilters,
+    SearchMode,
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+)
+
+__all__ = [
+    "ChunkMetadata",
+    "DateRange",
+    "SearchFilters",
+    "SearchMode",
+    "SearchRequest",
+    "SearchResponse",
+    "SearchResult",
+]
