@@ -1,16 +1,26 @@
 """Search endpoints for semantic similarity search.
 
-This module provides search functionality using two-stage vector search
-for finding similar analyses based on semantic similarity.
+This module provides search functionality using:
+1. Analysis-level search: GET /search/similar - Find similar analyses
+2. Chunk-level search: POST /search - Semantic, keyword, or hybrid search on content chunks
+
+The chunk-level search supports three modes:
+- SEMANTIC: Vector similarity search using embeddings (kNN with cosine similarity)
+- KEYWORD: Full-text search using PostgreSQL tsvector
+- HYBRID: Combined semantic + keyword search with Reciprocal Rank Fusion (RRF)
 """
 
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.repositories.analysis_repository import IAnalysisRepository, get_analysis_repository
+from app.db.session import get_db
+from app.schemas.search import SearchRequest, SearchResponse
 from app.services.embeddings import EmbeddingService
+from app.services.search.search_service import SearchService
 
 router = APIRouter(tags=["search"])
 logger = get_logger(__name__)
@@ -92,6 +102,103 @@ async def search_similar_analyses(
         logger.error(
             "search_similar_failed",
             query=query,
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Search failed",
+        ) from e
+
+
+@router.post("/search")
+async def search_chunks(
+    request: SearchRequest,
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> SearchResponse:
+    """Search content chunks using semantic, keyword, or hybrid search.
+
+    Performs search across analysis content chunks with three search modes:
+
+    - **SEMANTIC**: Vector similarity search using embeddings (kNN with cosine similarity)
+    - **KEYWORD**: Full-text search using PostgreSQL tsvector with BM25-like ranking
+    - **HYBRID**: Combined semantic + keyword search with Reciprocal Rank Fusion (RRF)
+
+    Args:
+        request: SearchRequest with query, mode, top_k, and optional filters
+        session: Database session dependency
+
+    Returns:
+        SearchResponse with results list, total count, original query, and mode
+
+    Raises:
+        HTTPException: 400 if query is empty or top_k is invalid
+        HTTPException: 500 if search execution fails
+
+    Example:
+        POST /api/v1/search
+        {
+            "query": "How to implement OAuth2 in FastAPI?",
+            "mode": "hybrid",
+            "top_k": 10,
+            "filters": {"content_type": "article"}
+        }
+
+    """
+    logger.info(
+        "search_chunks_request",
+        query_length=len(request.query),
+        mode=request.mode.value,
+        top_k=request.top_k,
+        has_filters=request.filters is not None,
+    )
+
+    try:
+        # Initialize services
+        embedding_service = EmbeddingService()
+        search_service = SearchService(session, embedding_service)
+
+        # Execute search
+        results = await search_service.search(
+            query=request.query,
+            mode=request.mode,
+            top_k=request.top_k,
+            filters=request.filters,
+        )
+
+        # Close embedding service
+        await embedding_service.close()
+
+        logger.info(
+            "search_chunks_complete",
+            query_length=len(request.query),
+            mode=request.mode.value,
+            results_count=len(results),
+        )
+
+        return SearchResponse(
+            results=results,
+            total=len(results),
+            query=request.query,
+            mode=request.mode,
+        )
+
+    except ValueError as e:
+        logger.warning(
+            "search_chunks_validation_error",
+            query=request.query[:100],
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+    except Exception as e:
+        logger.error(
+            "search_chunks_failed",
+            query=request.query[:100],
+            mode=request.mode.value,
             error=str(e),
             exc_info=True,
         )
