@@ -106,7 +106,19 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
 
 
 async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
-    """Chunk content and generate embeddings for coarse/fine (and summaries)."""
+    """Chunk content and generate embeddings for coarse/fine (and summaries).
+
+    This node is gated by ENABLE_COARSE_TO_FINE config flag. When disabled,
+    it returns empty results without doing any work (preserving the legacy
+    single-embedding behavior).
+    """
+    # Gate: Skip chunking if coarse-to-fine is disabled
+    if not getattr(settings, "ENABLE_COARSE_TO_FINE", False):
+        return {
+            "chunk_counts": {"coarse": 0, "fine": 0, "summaries": 0},
+            "dedup_stats": {"kept": 0, "dropped": 0},
+        }
+
     content = state["raw_content"]
     analysis_id = state["analysis_id"]
 

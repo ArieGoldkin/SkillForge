@@ -10,6 +10,8 @@ import tiktoken
 DEFAULT_SHORT_WINDOW = 900
 DEFAULT_LONG_WINDOW = 600
 DEFAULT_OVERLAP_PCT = 0.12
+DEFAULT_MAX_COARSE = 500
+DEFAULT_MAX_FINE = 2000
 
 
 @dataclass
@@ -144,9 +146,24 @@ def chunk_document(
     long_window: int = DEFAULT_LONG_WINDOW,
     overlap_pct: float = DEFAULT_OVERLAP_PCT,
     long_threshold_tokens: int = 4000,
+    max_coarse: int = DEFAULT_MAX_COARSE,
+    max_fine: int = DEFAULT_MAX_FINE,
 ) -> tuple[list[ChunkText], list[ChunkText]]:
-    """Chunk a full document into coarse and fine lists (single-section fallback)."""
-    return build_chunks(
+    """Chunk a full document into coarse and fine lists with optional caps.
+
+    Args:
+        text: Document text to chunk
+        short_window: Token window for short documents
+        long_window: Token window for long documents
+        overlap_pct: Overlap percentage between windows (0.0-1.0)
+        long_threshold_tokens: Token count threshold to switch windows
+        max_coarse: Maximum number of coarse chunks (truncates if exceeded)
+        max_fine: Maximum number of fine chunks (truncates if exceeded)
+
+    Returns:
+        Tuple of (coarse_chunks, fine_chunks), each capped at their max
+    """
+    coarse_chunks, fine_chunks = build_chunks(
         text,
         short_window=short_window,
         long_window=long_window,
@@ -154,4 +171,19 @@ def chunk_document(
         long_threshold_tokens=long_threshold_tokens,
         section_title=None,
     )
+
+    # Enforce caps to prevent runaway chunk counts on very large documents
+    if len(coarse_chunks) > max_coarse:
+        coarse_chunks = coarse_chunks[:max_coarse]
+        # Update chunk_total to reflect truncation
+        for chunk in coarse_chunks:
+            chunk.chunk_total = max_coarse
+
+    if len(fine_chunks) > max_fine:
+        fine_chunks = fine_chunks[:max_fine]
+        # Update chunk_total to reflect truncation
+        for chunk in fine_chunks:
+            chunk.chunk_total = max_fine
+
+    return coarse_chunks, fine_chunks
 

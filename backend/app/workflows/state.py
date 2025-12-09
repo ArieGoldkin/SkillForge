@@ -51,3 +51,6 @@ class AnalysisState(TypedDict, total=False):
     artifact_id: str | None  # Issue #72: Generated artifact ID
     evaluation_results: dict[str, object]  # NEW: Agent quality scores
     metrics: dict[str, object]  # NEW: Performance metrics
+    # Issue #221: Hierarchical chunking results
+    chunk_counts: dict[str, int]  # {"coarse": N, "fine": M, "summaries": K}
+    dedup_stats: dict[str, int]  # {"kept": N, "dropped": M}
