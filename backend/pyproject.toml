@@ -209,3 +209,22 @@ filterwarnings = [
     # Suppress pytest's unraisable exception wrapper for the same issue
     "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
+
+[tool.coverage.run]
+# Measure code coverage but omit experimental and placeholder modules
+omit = [
+    "app/evaluation/*",          # Experimental benchmarking framework
+    "app/workflows/studio_compat.py",  # LangGraph Studio compatibility placeholder
+    "app/workflows/tutor/tasks/*",     # Tutor task placeholders
+    "app/workflows/tutor/context.py",  # Tutor context placeholder
+    "app/workflows/nodes/agent_tools.py",  # Agent tools placeholder
+]
+
+[tool.coverage.report]
+# Exclude patterns from coverage reporting
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]
