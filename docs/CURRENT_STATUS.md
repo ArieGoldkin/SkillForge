@@ -1,8 +1,9 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** November 2024
-**Branch:** `dev` (aligned with `main`)
-**Sprint:** Sprint 2 Complete ✅ → Sprint 3 In Progress (10/13 pts complete)
+**Date:** December 9, 2025
+**Branch:** `feature/221-hierarchical-chunking`
+**Sprint:** Sprint 8 - Embeddings & Search 🚀
+**Milestone Due:** December 22, 2025 (13 days remaining)
 
 ---
 
@@ -296,6 +297,174 @@
 
 ---
 
+## 🚀 Sprint 8 - Embeddings & Search
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    SPRINT 8 - EMBEDDINGS & SEARCH                            ║
+║                    Due: December 22, 2025 (13 days)                          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐    ║
+║  │                     CHUNKING & EMBEDDING PIPELINE                    │    ║
+║  └─────────────────────────────────────────────────────────────────────┘    ║
+║                                                                              ║
+║     ┌──────────┐    ┌──────────────┐    ┌───────────────┐    ┌─────────┐   ║
+║     │  RAW     │───▶│   CHUNKER    │───▶│  EMBEDDINGS   │───▶│  STORE  │   ║
+║     │ CONTENT  │    │  (heading-   │    │  (batch +     │    │ PGVector│   ║
+║     │          │    │   aware)     │    │   normalize)  │    │         │   ║
+║     └──────────┘    └──────────────┘    └───────────────┘    └─────────┘   ║
+║                            │                    │                           ║
+║                            ▼                    ▼                           ║
+║                     ┌──────────┐         ┌───────────┐                     ║
+║                     │  DEDUP   │         │  COARSE   │                     ║
+║                     │ (shingle │         │    +      │                     ║
+║                     │  hash)   │         │   FINE    │                     ║
+║                     └──────────┘         └───────────┘                     ║
+║                                                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐    ║
+║  │                     RETRIEVAL & SEARCH LAYER                         │    ║
+║  └─────────────────────────────────────────────────────────────────────┘    ║
+║                                                                              ║
+║     ┌──────────┐    ┌──────────────┐    ┌───────────────┐    ┌─────────┐   ║
+║     │  QUERY   │───▶│   COARSE     │───▶│    FINE       │───▶│ RE-RANK │   ║
+║     │          │    │   SEARCH     │    │   SEARCH      │    │         │   ║
+║     │          │    │  (sections)  │    │  (paragraphs) │    │         │   ║
+║     └──────────┘    └──────────────┘    └───────────────┘    └─────────┘   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+### Sprint 8 Issues Overview
+
+| # | Issue | Title | Status | Priority |
+|---|-------|-------|--------|----------|
+| 215 | Embedding pipeline hardening | Chunk + batch + hash | 🔲 Open | HIGH |
+| 216 | Retrieval & search API | Semantic + hybrid search | 🔲 Open | HIGH |
+| 217 | Re-ranker | Search result re-ranking | 🔲 Open | MEDIUM |
+| 218 | Telemetry & metrics | Backpressure for embeddings | 🔲 Open | MEDIUM |
+| 219 | Eval harness | Embedding model A/B testing | 🔲 Open | LOW |
+| 220 | PII/safety guardrails | Vector cleanup | 🔲 Open | MEDIUM |
+| **221** | **Hierarchical chunking** | **Coarse-to-fine retrieval** | **🚧 IN PROGRESS** | **HIGH** |
+| 222 | Pluggable parsers | Chunking extensibility | 🔲 Open | LOW |
+| 223 | Retrieval smoke tests | Offline fixtures | 🔲 Open | MEDIUM |
+
+**Total:** 9 issues | **Open:** 9 | **Closed:** 0 | **In Progress:** 1
+
+---
+
+## 🚧 Issue #221 - Hierarchical Chunking (CURRENT WORK)
+
+**Branch:** `feature/221-hierarchical-chunking`
+**Documentation:** [docs/issues/221-hierarchical-chunking/README.md](./issues/221-hierarchical-chunking/README.md)
+
+### Implementation Progress
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    ISSUE #221 DELIVERABLES STATUS                          │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  CHUNKING SERVICE                          WORKFLOW TASKS                  │
+│  ════════════════                          ══════════════                  │
+│  ✅ chunker.py (heading-aware)             ✅ chunk_content.py             │
+│  ✅ dedup.py (shingle hash)                ✅ generate_embedding.py (upd)  │
+│  ✅ summaries.py                           ✅ store_embeddings.py          │
+│  ✅ __init__.py                            ✅ telemetry.py                 │
+│                                            ✅ metrics.py                   │
+│                                                                            │
+│  RETRIEVAL UTILS                           DATABASE                        │
+│  ═══════════════                           ════════                        │
+│  ✅ retrieval_routing.py                   ✅ chunk_repository.py          │
+│     (coarse-to-fine helper)                ✅ migration (analysis_chunks)  │
+│                                                                            │
+│  TESTS                                     CONFIG                          │
+│  ═════                                     ══════                          │
+│  ✅ test_chunking.py                       🔲 Add config knobs             │
+│  ✅ test_store_embeddings.py               🔲 Integration testing          │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Files Created/Modified
+
+**New Files:**
+- `backend/app/services/chunking/chunker.py` - Heading-aware chunking
+- `backend/app/services/chunking/dedup.py` - Shingle deduplication
+- `backend/app/services/chunking/summaries.py` - Section summaries
+- `backend/app/workflows/tasks/chunk_content.py` - Chunking workflow task
+- `backend/app/workflows/tasks/store_embeddings.py` - Embedding persistence
+- `backend/app/workflows/tasks/telemetry.py` - Metrics emission
+- `backend/app/workflows/tasks/metrics.py` - Performance metrics
+- `backend/app/workflows/utils/retrieval_routing.py` - Coarse-to-fine helper
+- `backend/app/db/repositories/chunk_repository.py` - Chunk data access
+- `backend/alembic/versions/20251209120000_add_analysis_chunks.py` - Migration
+
+**Modified Files:**
+- `backend/app/workflows/tasks/generate_embedding.py` - Batch-aware update
+- `backend/app/workflows/graph_builder.py` - Pipeline integration
+- `backend/app/db/session.py` - Session handling
+
+### Data Contract
+
+```python
+ChunkMeta = {
+    "analysis_id": str,
+    "chunk_id": str,
+    "granularity": "coarse" | "fine" | "summary",
+    "path": list[str],          # ["Intro", "Background", "chunk_2/5"]
+    "chunk_idx": int,
+    "chunk_total": int,
+    "section_title": str | None,
+    "content_type": str | None,
+    "language": str | None,
+    "hash": str,                # Dedup hash
+    "model": str | None,        # Embedding model
+    "model_version": str | None,
+    "snippet": str | None,      # Preview text
+}
+```
+
+### Remaining Work for #221
+
+- [ ] Add configuration knobs to `config.py`
+- [ ] Complete integration tests with real embeddings
+- [ ] Verify coarse-to-fine retrieval helper
+- [ ] Update documentation with operational guidance
+- [ ] Run full test suite and fix any failures
+
+---
+
+## 📊 Sprint 8 Dependencies
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SPRINT 8 ISSUE DEPENDENCIES                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   #215 (Embedding Pipeline)                                                 │
+│      │                                                                      │
+│      ├──▶ #221 (Hierarchical Chunking) ◀── CURRENT                         │
+│      │         │                                                            │
+│      │         └──▶ #222 (Pluggable Parsers)                               │
+│      │                                                                      │
+│      └──▶ #218 (Telemetry & Metrics)                                       │
+│                │                                                            │
+│                └──▶ #219 (Eval Harness)                                    │
+│                                                                             │
+│   #216 (Retrieval API)                                                      │
+│      │                                                                      │
+│      ├──▶ #217 (Re-ranker)                                                 │
+│      │                                                                      │
+│      └──▶ #223 (Smoke Tests)                                               │
+│                                                                             │
+│   #220 (PII/Safety) ── Independent                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 📋 Issues Status (Sprint 3)
 
 ### Frontend Sprint 3 Issues
@@ -410,32 +579,39 @@
 ## 📊 Visual Status
 
 ```
-                    CURRENT STATE
-                    =============
-
-    ✅ COMPLETED                    🚧 IN PROGRESS
-    ├─ FastAPI Structure           └─ (None - ready to start)
-    ├─ CI/CD Setup
-    ├─ GitHub Project Docs
-    └─ Branch Alignment
-
-    ✅ RECENTLY FIXED                ⚠️  WARNINGS
-    ├─ Workflow config issues       └─ (None - all issues resolved)
-    │  └─ Poetry cache fixed
-    ├─ Frontend workflows disabled
-    ├─ E2E tests disabled
-    └─ Dependabot conflicts resolved
-
-    ✅ COMPLETED ISSUES (Sprint 1)
-    ├─ Issue #2: Config & Logging [3 pts] ✅
-    ├─ Issue #3: Database & Migrations [8 pts] ✅
-    ├─ Issue #4: Content Extraction [5 pts] ✅
-    └─ Issue #5: Embedding Service [5 pts] ✅ ← Ready for PR!
-
-    ✅ DEPENDENCIES RESOLVED
-    Issue #2 ✅ → Issue #3 ✅ → Issue #5 ✅
-         ↓
-    Issue #4 ✅ (independent)
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         SKILLFORGE PROJECT STATUS                            ║
+║                         December 9, 2025                                     ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║   COMPLETED SPRINTS                      CURRENT SPRINT                      ║
+║   ═════════════════                      ══════════════                      ║
+║   ✅ Sprint 1: Foundation                🚀 Sprint 8: Embeddings & Search   ║
+║   ✅ Sprint 2: LangGraph & SSE              └─ 9 issues, 13 days remain     ║
+║   ✅ Sprint 3: Artifact Viewer                                              ║
+║   ✅ Sprint 4-7: Core Features                                              ║
+║                                                                              ║
+║   SPRINT 8 PROGRESS                      CURRENT BRANCH                      ║
+║   ════════════════                       ══════════════                      ║
+║   🚧 #221 Hierarchical Chunking          feature/221-hierarchical-chunking  ║
+║   🔲 #215 Embedding Pipeline                                                 ║
+║   🔲 #216 Retrieval API                                                      ║
+║   🔲 #217 Re-ranker                                                          ║
+║   🔲 #218 Telemetry                                                          ║
+║   🔲 #219 Eval Harness                                                       ║
+║   🔲 #220 PII/Safety                                                         ║
+║   🔲 #222 Pluggable Parsers                                                  ║
+║   🔲 #223 Smoke Tests                                                        ║
+║                                                                              ║
+║   KEY DELIVERABLES (#221)                                                    ║
+║   ═══════════════════════                                                    ║
+║   ✅ Heading-aware chunker               ✅ Coarse-to-fine helper           ║
+║   ✅ Shingle deduplication               ✅ Chunk repository                ║
+║   ✅ Batch embedding updates             ✅ Migration script                ║
+║   ✅ Store embeddings task               🔲 Config knobs                    ║
+║   ✅ Telemetry/metrics hooks             🔲 Integration tests               ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -519,7 +695,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** December 2024 (StateGraph refactor complete, all system health bugs fixed)
+**Last Updated:** December 9, 2025 (Sprint 8 - Hierarchical Chunking in progress)
 **Maintained By:** Yonatan & Arie
 
 ---

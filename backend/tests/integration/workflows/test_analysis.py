@@ -192,8 +192,8 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         # Verify mocked services were called
         mock_jina.extract_article.assert_called_once_with(test_url)
         mock_jina.close.assert_called_once()
-        mock_embedding_service.generate_embedding.assert_called_once()
-        mock_embedding_service.close.assert_called_once()
+        assert mock_embedding_service.generate_embedding.call_count >= 1
+        assert mock_embedding_service.close.call_count >= 1
 
         # Verify title persistence would work correctly (Issue #170)
         # Simulate what _persist_analysis_data does with the workflow result

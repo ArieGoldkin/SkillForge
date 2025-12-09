@@ -172,6 +172,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
+    model_id: str | None = None,
 ) -> dict[str, object]:
     """Supervisor decides which agents should analyze the content.
 
@@ -182,6 +183,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         content: The extracted text content to analyze
         content_type: Content type (article, video, repo)
         analysis_id: Unique identifier for this analysis
+        model_id: Optional model identifier to use (e.g., "gpt-4o-mini", "gemini-2.5-flash").
+            If not provided, uses the default from settings.
 
     Returns:
         Dictionary with supervisor_decision containing:
@@ -243,7 +246,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         )
 
         # Get model with structured output (no tools, faster inference)
-        model = get_chat_model()
+        # Use runtime model override if model_id is provided
+        model_config = {"configurable": {"model": model_id}} if model_id else None
+        model = get_chat_model(model_config)
         structured_model = model.with_structured_output(AgentSelection)
 
         # Invoke with progressive timeout retry

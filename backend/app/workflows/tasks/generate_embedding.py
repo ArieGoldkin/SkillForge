@@ -7,6 +7,8 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID, EmbeddingVector
+from app.services.chunking.chunker import ChunkText
+from app.services.chunking.summaries import SummaryChunk
 from app.services.embeddings import EmbeddingService
 from app.services.sse_helpers import emit_streaming_event
 
@@ -94,3 +96,68 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
         await embedding_service.close()
 
     return embedding
+
+
+async def generate_embeddings_batch(
+    payloads: list[ChunkText | SummaryChunk],
+    analysis_id: AnalysisID,
+    normalize: bool = True,
+) -> list[tuple[EmbeddingVector, dict]]:
+    """Batch-generate embeddings for a list of chunk payloads."""
+    if not payloads:
+        return []
+
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage=get_stage_name("embedding"),
+        status="running",
+    )
+
+    try:
+        run_tree = get_current_run_tree()
+        if run_tree:
+            run_tree.metadata["analysis_id"] = str(analysis_id)
+    except Exception:
+        pass
+
+    embedding_service = EmbeddingService()
+    results: list[tuple[EmbeddingVector, dict]] = []
+
+    try:
+        for chunk in payloads:
+            embedding_result = await embedding_service.generate_embedding(chunk.text, normalize=normalize)
+            results.append((list(embedding_result), chunk.__dict__))
+
+        await emit_streaming_event(
+            "progress",
+            analysis_id=analysis_id,
+            stage=get_stage_name("embedding"),
+            status="complete",
+        )
+
+        logger.info(
+            "workflow_embedding_batch_complete",
+            count=len(results),
+            normalize=normalize,
+        )
+    except Exception as e:
+        await emit_streaming_event(
+            "error",
+            analysis_id=analysis_id,
+            stage=get_stage_name("embedding"),
+            status="failed",
+            error=str(e),
+            error_code="EMBEDDING_FAILED",
+        )
+        logger.error(
+            "workflow_embedding_batch_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            exc_info=True,
+        )
+        raise
+    finally:
+        await embedding_service.close()
+
+    return results

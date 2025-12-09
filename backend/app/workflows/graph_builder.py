@@ -12,6 +12,8 @@ from langgraph.graph import END, StateGraph
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.db.repositories.chunk_repository import ChunkRepository
+from app.db.session import get_session_factory
 from app.workflows.nodes.agent_router import route_to_agents
 from app.workflows.nodes.agents import (
     code_quality_critic_node,
@@ -27,18 +29,23 @@ from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.state import AnalysisState
 from app.workflows.tasks import (
     aggregate_findings,
+    chunk_content,
     extract_content,
     generate_artifact,
     generate_embedding,
+    generate_embeddings_batch,
+    log_chunking_metrics,
+    store_embeddings,
 )
 
-# Try to import PostgresSaver, fallback to MemorySaver if not available
+# Try to import PostgresSaver dynamically to avoid hard dependency in lint
 try:
-    from langgraph.checkpoint.postgres import (
-        PostgresSaver,  # type: ignore[import-not-found,import-untyped]
-    )
-except ImportError:
-    PostgresSaver = None  # type: ignore[assignment, misc]
+    import importlib
+
+    _lg_pg = importlib.import_module("langgraph.checkpoint.postgres")
+    PostgresSaver = getattr(_lg_pg, "PostgresSaver", None)  # type: ignore[var-annotated]
+except Exception:  # noqa: BLE001
+    PostgresSaver = None  # type: ignore[var-annotated]
 
 logger = get_logger(__name__)
 
@@ -85,7 +92,7 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
 
 async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
-    """Generate embedding for content.
+    """Generate embedding for content (legacy single vector).
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
@@ -95,6 +102,69 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
     # Return only updated fields, not entire state
     return {
         "content_embedding": embedding,
+    }
+
+
+async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
+    """Chunk content and generate embeddings for coarse/fine (and summaries)."""
+    content = state["raw_content"]
+    analysis_id = state["analysis_id"]
+
+    # SSE: chunking started
+    from app.services.sse_helpers import emit_streaming_event  # local import to avoid cycles
+
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="chunking",
+        status="running",
+    )
+
+    # Chunk
+    chunk_payload = await chunk_content(content)
+
+    # Embed all chunks (coarse + fine + summaries)
+    all_payloads = (
+        list(chunk_payload["coarse"])
+        + list(chunk_payload["fine"])
+        + list(chunk_payload["summaries"])
+    )
+    embedded = await generate_embeddings_batch(all_payloads, analysis_id)
+
+    # Persist embeddings via ChunkRepository
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        repo = ChunkRepository(session)
+        await store_embeddings(embedded, analysis_id, repo)
+        await session.commit()
+
+    # Telemetry/logs (no raw text)
+    log_chunking_metrics(
+        coarse=len(chunk_payload["coarse"]),
+        fine=len(chunk_payload["fine"]),
+        summaries=len(chunk_payload["summaries"]),
+        dedup_kept=chunk_payload["dedup_stats"].kept,
+        dedup_dropped=chunk_payload["dedup_stats"].dropped,
+    )
+
+    # SSE: chunking+embedding complete
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage="chunking",
+        status="complete",
+    )
+
+    return {
+        "chunk_counts": {
+            "coarse": len(chunk_payload["coarse"]),
+            "fine": len(chunk_payload["fine"]),
+            "summaries": len(chunk_payload["summaries"]),
+        },
+        "dedup_stats": {
+            "kept": chunk_payload["dedup_stats"].kept,
+            "dropped": chunk_payload["dedup_stats"].dropped,
+        },
     }
 
 
@@ -137,6 +207,7 @@ def build_analysis_graph():
     # Add workflow nodes
     graph.add_node("extract", _extract_content_node)
     graph.add_node("embedding", _generate_embedding_node)
+    graph.add_node("chunk_and_embed", _chunk_and_embed_node)
     graph.add_node("supervisor", _supervisor_node)
     graph.add_node("aggregate", aggregate_findings)
     graph.add_node("generate_artifact", generate_artifact)
@@ -157,6 +228,7 @@ def build_analysis_graph():
 
     # Fan-out: embedding and supervisor run in parallel after extract
     graph.add_edge("extract", "embedding")
+    graph.add_edge("extract", "chunk_and_embed")
     graph.add_edge("extract", "supervisor")
 
     # Fan-out: Supervisor routes to selected agents dynamically using Send API

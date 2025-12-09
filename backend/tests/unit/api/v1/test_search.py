@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -41,7 +41,7 @@ async def test_search_similar_analyses_success(mock_repo, override_get_repo):
             title="Test Analysis",
             content_type="article",
             status="complete",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         mock_repo.find_similar_analyses.return_value = [analysis]
 

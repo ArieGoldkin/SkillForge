@@ -2,7 +2,45 @@
 
 from unittest.mock import MagicMock, patch
 
-from app.core.model_factory import _should_strip_provider_prefix, get_chat_model
+from app.core.model_factory import (
+    _resolve_model_from_registry,
+    _should_strip_provider_prefix,
+    get_chat_model,
+)
+
+
+# =============================================================================
+# Tests for _resolve_model_from_registry
+# =============================================================================
+
+
+def test_resolve_model_from_registry_found():
+    """Test resolving a model that exists in the registry."""
+    # claude-haiku-3-5-20241022 is a registry key that maps to a different model_id
+    model_id, provider = _resolve_model_from_registry("claude-haiku-3-5-20241022")
+    assert model_id == "claude-3-5-haiku-20241022"  # Actual API model ID
+    assert provider == "anthropic"
+
+
+def test_resolve_model_from_registry_not_found():
+    """Test resolving a model not in the registry returns original."""
+    model_id, provider = _resolve_model_from_registry("some-unknown-model")
+    assert model_id == "some-unknown-model"
+    assert provider is None
+
+
+def test_resolve_model_from_registry_gemini():
+    """Test resolving Gemini model from registry."""
+    model_id, provider = _resolve_model_from_registry("gemini-2.5-flash")
+    assert model_id == "gemini-2.5-flash"  # Stable name
+    assert provider == "google_genai"
+
+
+def test_resolve_model_from_registry_gpt():
+    """Test resolving GPT model from registry."""
+    model_id, provider = _resolve_model_from_registry("gpt-4o-mini")
+    assert model_id == "gpt-4o-mini"
+    assert provider == "openai"
 
 
 def test_should_strip_provider_prefix_openai():
