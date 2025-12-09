@@ -13,6 +13,7 @@ Modules:
 from app.schemas.search import (
     ChunkMetadata,
     DateRange,
+    ReRankConfig,
     SearchFilters,
     SearchMode,
     SearchRequest,
@@ -23,6 +24,7 @@ from app.schemas.search import (
 __all__ = [
     "ChunkMetadata",
     "DateRange",
+    "ReRankConfig",
     "SearchFilters",
     "SearchMode",
     "SearchRequest",

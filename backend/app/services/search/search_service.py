@@ -35,11 +35,13 @@ from app.core.logging import get_logger
 from app.models.analysis_chunk import AnalysisChunk
 from app.schemas.search import (
     ChunkMetadata,
+    ReRankConfig,
     SearchFilters,
     SearchMode,
     SearchResult,
 )
 from app.services.embeddings import EmbeddingService
+from app.services.search.reranker import ReRanker
 
 if TYPE_CHECKING:
     from app.db.repositories.chunk_repository import ChunkRepository
@@ -51,12 +53,13 @@ class SearchService:
     """Service for executing search queries across content chunks.
 
     Provides semantic, keyword, and hybrid search capabilities with
-    result ranking, snippet generation, and filtering.
+    result ranking, snippet generation, filtering, and optional re-ranking.
 
     Attributes:
         session: AsyncSession for database operations
         embedding_service: Service for generating query embeddings
         chunk_repo: Repository for chunk database operations
+        reranker: Optional re-ranker for improving result relevance
 
     """
 
@@ -66,16 +69,19 @@ class SearchService:
         self,
         session: AsyncSession,
         embedding_service: EmbeddingService,
+        reranker: ReRanker | None = None,
     ) -> None:
         """Initialize SearchService with dependencies.
 
         Args:
             session: AsyncSession for database queries
             embedding_service: Service for generating embeddings
+            reranker: Optional re-ranker for LLM-based relevance scoring
 
         """
         self.session = session
         self.embedding_service = embedding_service
+        self.reranker = reranker or ReRanker()
 
         # Import here to avoid circular dependency
         from app.db.repositories.chunk_repository import ChunkRepository
@@ -94,17 +100,20 @@ class SearchService:
         mode: SearchMode,
         top_k: int = 10,
         filters: SearchFilters | None = None,
+        rerank: ReRankConfig | None = None,
     ) -> list[SearchResult]:
-        """Execute search query using specified mode.
+        """Execute search query using specified mode with optional re-ranking.
 
         Main entry point for search operations. Routes to appropriate
         search method based on mode and returns unified SearchResult format.
+        Optionally applies LLM-based re-ranking for improved relevance.
 
         Args:
             query: Search query string (max 1000 characters)
             mode: Search strategy (SEMANTIC, KEYWORD, or HYBRID)
             top_k: Maximum number of results to return (1-100)
             filters: Optional filters for content_type, date_range, etc.
+            rerank: Optional re-ranking configuration for LLM-based scoring
 
         Returns:
             List of SearchResult objects sorted by relevance score (descending)
@@ -119,6 +128,7 @@ class SearchService:
             ...     mode=SearchMode.HYBRID,
             ...     top_k=5,
             ...     filters=SearchFilters(content_type="article"),
+            ...     rerank=ReRankConfig(enabled=True, final_count=5),
             ... )
 
         """
@@ -132,21 +142,40 @@ class SearchService:
             logger.error("search_invalid_top_k", top_k=top_k)
             raise ValueError(msg)
 
+        # Determine how many results to fetch from DB
+        # If re-ranking is enabled, fetch more candidates than final_count
+        fetch_k = top_k
+        if rerank and rerank.enabled:
+            fetch_k = rerank.candidate_count
+
         logger.info(
             "search_started",
             query=query[:100],  # Truncate for logging
             mode=mode.value,
             top_k=top_k,
+            fetch_k=fetch_k,
             filters=filters.model_dump() if filters else None,
+            rerank_enabled=rerank.enabled if rerank else False,
         )
 
         # Route to appropriate search method
         if mode == SearchMode.SEMANTIC:
-            results = await self._semantic_search(query, top_k, filters)
+            results = await self._semantic_search(query, fetch_k, filters)
         elif mode == SearchMode.KEYWORD:
-            results = await self._keyword_search(query, top_k, filters)
+            results = await self._keyword_search(query, fetch_k, filters)
         else:  # SearchMode.HYBRID
-            results = await self._hybrid_search(query, top_k, filters)
+            results = await self._hybrid_search(query, fetch_k, filters)
+
+        # Apply re-ranking if enabled
+        if rerank and rerank.enabled:
+            results = await self.reranker.rerank(
+                query=query,
+                results=results,
+                config=rerank,
+            )
+        else:
+            # Truncate to top_k if not re-ranking
+            results = results[:top_k]
 
         logger.info(
             "search_completed",
@@ -154,6 +183,7 @@ class SearchService:
             mode=mode.value,
             results_count=len(results),
             top_score=results[0].score if results else None,
+            reranked=rerank.enabled if rerank else False,
         )
 
         return results

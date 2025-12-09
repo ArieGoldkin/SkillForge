@@ -52,6 +52,69 @@ class DateRange(BaseModel):
     }
 
 
+class ReRankConfig(BaseModel):
+    """Configuration for optional re-ranking stage.
+
+    Re-ranking uses an LLM to re-score top candidates for improved
+    relevance. This adds latency but can significantly improve result
+    quality for complex queries.
+
+    Attributes:
+        enabled: Whether to enable re-ranking
+        candidate_count: Number of candidates to consider for re-ranking
+        final_count: Number of results to return after re-ranking
+        use_structural_priors: Whether to apply metadata-based scoring
+        timeout_seconds: Maximum time for re-ranking before fallback
+
+    Example:
+        ```python
+        config = ReRankConfig(
+            enabled=True,
+            candidate_count=50,
+            final_count=10,
+            timeout_seconds=5.0,
+        )
+        ```
+
+    """
+
+    enabled: bool = Field(default=False, description="Enable LLM-based re-ranking of results")
+    candidate_count: int = Field(
+        default=50,
+        ge=10,
+        le=100,
+        description="Number of candidates to consider for re-ranking",
+    )
+    final_count: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of results to return after re-ranking",
+    )
+    use_structural_priors: bool = Field(
+        default=True,
+        description="Apply metadata-based scoring boosts (position, path, type)",
+    )
+    timeout_seconds: float = Field(
+        default=5.0,
+        ge=1.0,
+        le=30.0,
+        description="Maximum seconds for re-ranking before fallback to base ranking",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "enabled": True,
+                "candidate_count": 50,
+                "final_count": 10,
+                "use_structural_priors": True,
+                "timeout_seconds": 5.0,
+            }
+        }
+    }
+
+
 class SearchFilters(BaseModel):
     """Filter criteria for search queries.
 
@@ -104,6 +167,7 @@ class SearchRequest(BaseModel):
         mode: Search mode (semantic, keyword, or hybrid)
         top_k: Maximum number of results to return (1-100)
         filters: Optional filter criteria
+        rerank: Optional re-ranking configuration for improved relevance
 
     Example:
         ```python
@@ -112,6 +176,7 @@ class SearchRequest(BaseModel):
             mode=SearchMode.HYBRID,
             top_k=10,
             filters=SearchFilters(content_type="article"),
+            rerank=ReRankConfig(enabled=True, final_count=5),
         )
         ```
 
@@ -128,6 +193,10 @@ class SearchRequest(BaseModel):
         default=10, ge=1, le=100, description="Maximum number of results to return (1-100)"
     )
     filters: SearchFilters | None = Field(default=None, description="Optional filter criteria")
+    rerank: ReRankConfig | None = Field(
+        default=None,
+        description="Optional re-ranking configuration for improved relevance",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -136,6 +205,13 @@ class SearchRequest(BaseModel):
                 "mode": "hybrid",
                 "top_k": 10,
                 "filters": {"content_type": "article", "tags": ["python", "fastapi"]},
+                "rerank": {
+                    "enabled": True,
+                    "candidate_count": 50,
+                    "final_count": 10,
+                    "use_structural_priors": True,
+                    "timeout_seconds": 5.0,
+                },
             }
         }
     }
