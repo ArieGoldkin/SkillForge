@@ -63,6 +63,36 @@ Check `.claude/context-triggers.md` for keywords (test, review, quality, bug, li
 - Performance: No N+1 queries, proper memoization
 - Documentation: JSDoc for public APIs, README updates
 
+## Vector Search & Retrieval Review Checklist
+**Embedding Validation:**
+- [ ] Embedding dimensions match model (1536 for text-embedding-3-small)
+- [ ] Vectors are L2 normalized before storage (for cosine similarity)
+- [ ] Token truncation uses tiktoken, not character count
+- [ ] Empty/whitespace text validation before embedding
+
+**Index Validation:**
+- [ ] HNSW index exists with proper ops: `vector_cosine_ops`
+- [ ] HNSW parameters reasonable: m=16, ef_construction=64
+- [ ] GIN index exists for tsvector columns (hybrid search)
+- [ ] Analyze table after bulk inserts for query optimization
+
+**Search Correctness:**
+- [ ] Cosine distance used (not L2) for normalized vectors
+- [ ] RRF fusion uses k=60 constant
+- [ ] Limit parameter enforced server-side
+- [ ] Empty query returns 400, not 500
+
+**Async Patterns:**
+- [ ] AsyncSession with `expire_on_commit=False`
+- [ ] pgvector types registered on connect event
+- [ ] Proper session cleanup in finally blocks
+- [ ] No sync database calls in async context
+
+**Performance Checks:**
+- [ ] Search latency < 100ms for semantic, < 200ms for hybrid
+- [ ] No unbounded result sets (always use LIMIT)
+- [ ] Pagination uses offset/limit, not cursor (acceptable for < 10k results)
+
 ## Example
 Task: "Review authentication code"
 Action: Run `npm run lint && npm run typecheck && npm test auth.test.ts`

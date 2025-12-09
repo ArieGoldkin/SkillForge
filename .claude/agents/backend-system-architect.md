@@ -47,6 +47,33 @@ Check `.claude/context-triggers.md` for keywords (API, database, backend), auto-
 - Response time < 200ms p95, availability > 99.9%
 - Horizontal scaling ready, 12-factor app compliant
 
+## Vector Search & Retrieval Patterns (pgvector)
+**Database Schema:**
+- Use `Vector(1536)` column type for OpenAI embeddings
+- Add generated TSVECTOR column for hybrid search: `GENERATED ALWAYS AS (to_tsvector('english', content)) STORED`
+- Create HNSW index: `postgresql_using='hnsw', postgresql_with={'m': 16, 'ef_construction': 64}, postgresql_ops={'embedding': 'vector_cosine_ops'}`
+- Create GIN index for full-text: `USING GIN (content_tsvector)`
+
+**Repository Pattern for Search:**
+```python
+# Semantic search with cosine distance
+stmt = select(Chunk).order_by(Chunk.embedding.cosine_distance(query_vec)).limit(top_k)
+
+# Hybrid search with RRF fusion (k=60)
+# score(d) = Σ 1/(k + rank(d)) for each ranker
+```
+
+**SQLAlchemy Async Patterns:**
+- Use `async_sessionmaker(engine, expire_on_commit=False)`
+- Register pgvector: `@event.listens_for(engine.sync_engine, 'connect')` → `register_vector_async`
+- Transaction management: `async with session.begin():`
+- Always `await engine.dispose()` on shutdown
+
+**FastAPI Search Endpoint:**
+- Use `APIRouter(prefix="/search", tags=["search"])`
+- Inject session: `db: AsyncSession = Depends(get_db)`
+- Return Pydantic models with `response_model=SearchResponse`
+
 ## Example
 Task: "Create user authentication API"
 Action: Build real /api/auth/login, /api/auth/register with JWT, bcrypt, test with:
