@@ -118,15 +118,17 @@ async def generate_embeddings_batch(
         run_tree = get_current_run_tree()
         if run_tree:
             run_tree.metadata["analysis_id"] = str(analysis_id)
-    except Exception:
-        pass
+    except Exception:  # noqa: BLE001
+        pass  # LangSmith run tree not available, non-critical
 
     embedding_service = EmbeddingService()
     results: list[tuple[EmbeddingVector, dict]] = []
 
     try:
         for chunk in payloads:
-            embedding_result = await embedding_service.generate_embedding(chunk.text, normalize=normalize)
+            embedding_result = await embedding_service.generate_embedding(
+                chunk.text, normalize=normalize
+            )
             results.append((list(embedding_result), chunk.__dict__))
 
         await emit_streaming_event(

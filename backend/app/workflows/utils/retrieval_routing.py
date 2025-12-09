@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 from app.core.logging import get_logger
 
@@ -15,7 +15,7 @@ def coarse_to_fine(
     *,
     top_k_coarse: int = 5,
     top_k_fine: int = 5,
-) -> List[dict]:
+) -> list[dict]:
     """Retrieve fine results constrained to top coarse sections.
 
     Args:
@@ -26,6 +26,7 @@ def coarse_to_fine(
 
     Returns:
         List of fine hits with path/snippet preserved.
+
     """
     coarse_list = list(coarse_hits)[:top_k_coarse]
     if not coarse_list:
@@ -38,5 +39,4 @@ def coarse_to_fine(
         coarse_considered=len(coarse_list),
         fine_returned=len(fine_hits),
     )
-    return fine_hits
-
+    return list(fine_hits)

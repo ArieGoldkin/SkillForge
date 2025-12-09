@@ -28,6 +28,7 @@ def latency_evaluator(run: Run, example: Example) -> dict[str, Any]:
             - key: "latency_ms"
             - score: Inverse of latency (lower latency = higher score)
             - comment: Latency in milliseconds
+
     """
     # Extract timing from run
     if not run.start_time or not run.end_time:
@@ -68,6 +69,7 @@ def ttft_evaluator(run: Run, example: Example) -> dict[str, Any]:
             - key: "ttft_ms"
             - score: Inverse of TTFT (lower = higher score)
             - comment: TTFT in milliseconds
+
     """
     # Extract TTFT from run metadata if available
     # This requires instrumentation in the target function to track first token time

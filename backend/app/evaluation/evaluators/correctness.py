@@ -40,6 +40,7 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
 
     Returns:
         {"key": "supervisor_correctness", "score": 0.0-1.0, "comment": "..."}
+
     """
     # Extract outputs from run
     outputs = run.outputs or {}
@@ -115,6 +116,7 @@ def agent_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
 
     Returns:
         {"key": "agent_correctness", "score": 0.0-1.0, "comment": "..."}
+
     """
     # Extract outputs and inputs
     outputs = run.outputs or {}
@@ -236,6 +238,7 @@ def synthesis_correctness_evaluator(run: Run, example: Example) -> dict[str, Any
 
     Returns:
         {"key": "synthesis_correctness", "score": 0.0-1.0, "comment": "..."}
+
     """
     # Extract outputs
     outputs = run.outputs or {}

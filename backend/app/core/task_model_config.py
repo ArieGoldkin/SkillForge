@@ -90,6 +90,7 @@ def get_model_for_task(task_type: str, use_fallback: bool = False) -> str | None
 
     Returns:
         Model identifier string, or None if task type not found
+
     """
     config = TASK_MODELS.get(task_type)
     if not config:
@@ -105,6 +106,7 @@ def get_task_config(task_type: str) -> TaskModelConfig | None:
 
     Returns:
         TaskModelConfig with primary, fallback, status, and metrics
+
     """
     return TASK_MODELS.get(task_type)
 
@@ -117,6 +119,7 @@ def is_validated(task_type: str) -> bool:
 
     Returns:
         True if validated, False if hypothesis-based
+
     """
     config = TASK_MODELS.get(task_type)
     return config.status == "validated" if config else False

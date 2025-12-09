@@ -247,7 +247,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
 
         # Get model with structured output (no tools, faster inference)
         # Use runtime model override if model_id is provided
-        model_config = {"configurable": {"model": model_id}} if model_id else None
+        model_config: dict[str, dict[str, object]] | None = (
+            {"configurable": {"model": model_id}} if model_id else None
+        )
         model = get_chat_model(model_config)
         structured_model = model.with_structured_output(AgentSelection)
 

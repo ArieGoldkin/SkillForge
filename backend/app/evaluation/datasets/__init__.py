@@ -23,6 +23,7 @@ def load_dataset(name: str) -> list[dict[str, Any]]:
 
     Returns:
         List of examples with inputs, outputs, and metadata
+
     """
     dataset_path = DATASETS_DIR / f"{name}.json"
     if not dataset_path.exists():

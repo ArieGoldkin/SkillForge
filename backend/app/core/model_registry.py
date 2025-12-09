@@ -272,9 +272,7 @@ def list_models_by_provider(provider: Provider) -> list[str]:
 
 def list_models_by_capability(capability: str) -> list[str]:
     """List all models that have a specific capability."""
-    return [
-        name for name, info in MODEL_REGISTRY.items() if capability in info.capabilities
-    ]
+    return [name for name, info in MODEL_REGISTRY.items() if capability in info.capabilities]
 
 
 def list_models_by_latency(tier: LatencyTier) -> list[str]:
@@ -300,6 +298,7 @@ def get_available_models(settings: object) -> list[str]:
 
     Returns:
         List of model names that can be used
+
     """
     available = []
     for name, info in MODEL_REGISTRY.items():

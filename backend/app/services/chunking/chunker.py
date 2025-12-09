@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence
 
 import tiktoken
 
@@ -16,8 +16,10 @@ DEFAULT_MAX_FINE = 2000
 
 @dataclass
 class ChunkText:
+    """A single text chunk with hierarchical path and granularity metadata."""
+
     text: str
-    path: List[str]
+    path: list[str]
     section_title: str | None
     granularity: str  # "coarse" | "fine"
     chunk_idx: int
@@ -72,7 +74,9 @@ def _split_paragraphs_into_windows(
                 end = min(start + window_tokens, len(tokens))
                 win_tokens = tokens[start:end]
                 windows.append(encoding.decode(win_tokens))
-                start = max(end - overlap_tokens, end) if end == len(tokens) else end - overlap_tokens
+                start = (
+                    max(end - overlap_tokens, end) if end == len(tokens) else end - overlap_tokens
+                )
             continue
 
         # If buffer + para fits, append; else flush buffer
@@ -91,7 +95,7 @@ def _split_paragraphs_into_windows(
     return windows
 
 
-def build_chunks(
+def build_chunks(  # noqa: PLR0913
     text: str,
     *,
     short_window: int = DEFAULT_SHORT_WINDOW,
@@ -139,7 +143,7 @@ def build_chunks(
     return coarse_chunks, fine_chunks
 
 
-def chunk_document(
+def chunk_document(  # noqa: PLR0913
     text: str,
     *,
     short_window: int = DEFAULT_SHORT_WINDOW,
@@ -162,6 +166,7 @@ def chunk_document(
 
     Returns:
         Tuple of (coarse_chunks, fine_chunks), each capped at their max
+
     """
     coarse_chunks, fine_chunks = build_chunks(
         text,
@@ -186,4 +191,3 @@ def chunk_document(
             chunk.chunk_total = max_fine
 
     return coarse_chunks, fine_chunks
-

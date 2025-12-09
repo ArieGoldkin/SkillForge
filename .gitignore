@@ -285,8 +285,9 @@ htmlcov/
 # Project Specific
 # ============================================================================
 
-# Downloaded models (Ollama models are large)
-models/
+# Downloaded ML models (Ollama models are large)
+# Exclude only root-level models folder, not backend/app/models/
+/models/
 *.bin
 *.safetensors
 

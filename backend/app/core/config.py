@@ -264,8 +264,12 @@ class Settings(BaseSettings):
     CHUNK_WINDOW_LONG: int = Field(default=600, description="Token window for long docs")
     CHUNK_OVERLAP_PCT: float = Field(default=0.12, description="Overlap ratio for chunk windows")
     DOC_LENGTH_THRESHOLD: int = Field(default=4000, description="Token threshold for long docs")
-    ENABLE_SUMMARIES: bool = Field(default=False, description="Enable section summaries for routing")
-    ENABLE_COARSE_TO_FINE: bool = Field(default=False, description="Enable coarse-to-fine retrieval")
+    ENABLE_SUMMARIES: bool = Field(
+        default=False, description="Enable section summaries for routing"
+    )
+    ENABLE_COARSE_TO_FINE: bool = Field(
+        default=False, description="Enable coarse-to-fine retrieval"
+    )
     DEDUP_ENABLED: bool = Field(default=True, description="Enable shingle deduplication for chunks")
     MAX_CHUNKS_COARSE: int = Field(default=500, description="Cap coarse chunks per doc")
     MAX_CHUNKS_FINE: int = Field(default=2000, description="Cap fine chunks per doc")

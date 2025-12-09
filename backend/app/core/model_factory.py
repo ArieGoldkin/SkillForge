@@ -25,6 +25,7 @@ def _resolve_model_from_registry(model_key: str) -> tuple[str, str | None]:
         Tuple of (resolved_model_id, provider_or_none)
         If model_key is in registry, returns the model_id and provider from registry.
         If not in registry, returns the original model_key and None.
+
     """
     if model_key in MODEL_REGISTRY:
         info = MODEL_REGISTRY[model_key]
@@ -45,7 +46,7 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     return provider in {"openai", "anthropic", "google_genai"}
 
 
-def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912
+def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912, PLR0915
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
@@ -79,6 +80,8 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     model_identifier = str(model_identifier_raw).strip()
 
     # Re-resolve provider/model if runtime model was provided
+    provider: str | None = None
+    model_name: str = ""
     if runtime_model:
         # First, check if this is a registry key that needs resolution
         # Registry keys may differ from actual API model IDs
@@ -92,9 +95,8 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
             model_identifier = resolved_model_id  # Update for logging
         else:
             # Not in registry - parse the runtime model to get provider/model
-            provider, model_name = _split_provider_from_model(model_identifier)
-            if not provider:
-                provider = _infer_provider_from_model(model_identifier)
+            parsed_provider, model_name = _split_provider_from_model(model_identifier)
+            provider = parsed_provider or _infer_provider_from_model(model_identifier)
     else:
         provider = settings.resolved_llm_provider()
         model_name = settings.resolved_llm_model_name()

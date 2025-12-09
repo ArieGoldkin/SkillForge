@@ -38,6 +38,7 @@ def create_quality_evaluator(
         relevance_evaluator = create_quality_evaluator("relevance")
         depth_evaluator = create_quality_evaluator("depth", judge_model="gpt-5-mini")
         ```
+
     """
     # Define prompts for different aspects
     prompts = {
@@ -119,6 +120,7 @@ Respond with ONLY a number from 0-10.""",
                 - key: "quality_{aspect}"
                 - score: Normalized score (0.0-1.0)
                 - comment: Raw judge score
+
         """
         # Extract data
         inputs = example.inputs or {}
@@ -172,7 +174,7 @@ Respond with ONLY a number from 0-10.""",
             return {
                 "key": f"quality_{aspect}",
                 "score": 0.0,
-                "comment": f"Judge evaluation failed: {str(e)}",
+                "comment": f"Judge evaluation failed: {e!s}",
             }
 
     return quality_evaluator

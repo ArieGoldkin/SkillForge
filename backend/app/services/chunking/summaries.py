@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 from app.services.chunking.chunker import ChunkText
 
 
 @dataclass
 class SummaryChunk:
+    """A summary-level chunk for section routing."""
+
     text: str
     path: list[str]
     section_title: str | None
@@ -39,4 +40,3 @@ def summarize_sections(sections: list[ChunkText], max_len: int = 240) -> list[Su
             )
         )
     return summaries
-

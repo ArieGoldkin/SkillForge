@@ -30,6 +30,7 @@ def cost_evaluator(run: Run, example: Example) -> dict[str, Any]:
             - key: "cost_usd"
             - score: Inverse of cost (lower cost = higher score)
             - comment: Cost in USD and token breakdown
+
     """
     # Extract token usage from run
     # LangSmith tracks usage in run.outputs or run.extra
@@ -91,6 +92,7 @@ def cost_per_correct_evaluator(run: Run, example: Example) -> dict[str, Any]:
             - key: "cost_per_correct"
             - score: Correctness / cost ratio
             - comment: Cost-effectiveness metric
+
     """
     # Get cost from run
     cost_result = cost_evaluator(run, example)
@@ -110,7 +112,11 @@ def cost_per_correct_evaluator(run: Run, example: Example) -> dict[str, Any]:
     correctness = 0.0
     if hasattr(run, "feedback") and run.feedback:
         for feedback in run.feedback:
-            if feedback.key in {"supervisor_correctness", "agent_correctness", "synthesis_correctness"}:
+            if feedback.key in {
+                "supervisor_correctness",
+                "agent_correctness",
+                "synthesis_correctness",
+            }:
                 correctness = feedback.score or 0.0
                 break
 

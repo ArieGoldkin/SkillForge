@@ -41,26 +41,26 @@ Example:
     )
     print(f"Winner by accuracy: {comparison.winner_by_metric['accuracy']}")
     ```
+
 """
 
 from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from langsmith import Client
-from langsmith.schemas import Example, Run
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.core.model_factory import get_chat_model
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
 from app.evaluation.datasets import load_dataset
-from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
+from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregate_findings import aggregate_findings
 
@@ -82,6 +82,7 @@ class ExperimentResults:
         run_count: Number of examples evaluated
         timestamp: When experiment was run
         dataset_name: Name of dataset used
+
     """
 
     experiment_id: str
@@ -102,6 +103,7 @@ class ComparisonResults:
         winner_by_metric: Dictionary mapping metric_name -> winning model_id
         recommendation: Human-readable recommendation based on all metrics
         task_type: Type of task compared
+
     """
 
     experiments: list[ExperimentResults]
@@ -121,6 +123,7 @@ class LLMBenchmark:
         client: LangSmith client for running experiments
         project_name: LangSmith project name for tracking experiments
         local_mode: If True, run evaluations locally without LangSmith dataset sync
+
     """
 
     def __init__(self, project_name: str = "skillforge-eval", local_mode: bool = False):
@@ -129,6 +132,7 @@ class LLMBenchmark:
         Args:
             project_name: LangSmith project name for experiment tracking
             local_mode: If True, run evaluations locally without LangSmith dataset sync
+
         """
         self.client = Client()
         self.project_name = project_name
@@ -172,6 +176,7 @@ class LLMBenchmark:
                 ],
             )
             ```
+
         """
         # Validate model exists in registry
         model_info = get_model_info(model_id)
@@ -321,6 +326,7 @@ class LLMBenchmark:
             )
             print(comparison.recommendation)
             ```
+
         """
         logger.info(
             "comparison_starting",
@@ -399,6 +405,7 @@ class LLMBenchmark:
 
         Returns:
             Async callable that takes inputs dict and returns outputs dict
+
         """
         if task_type == "supervisor":
             return self._create_supervisor_target(model_id)
@@ -418,6 +425,7 @@ class LLMBenchmark:
 
         Returns:
             Callable that invokes supervisor with given model
+
         """
         # Capture model_id in closure - supervisor_route now accepts model_id parameter
 
@@ -429,6 +437,7 @@ class LLMBenchmark:
 
             Returns:
                 Dict with 'selected_agents' list
+
             """
             content = inputs.get("content", "")
             content_type = inputs.get("content_type", "article")
@@ -457,6 +466,7 @@ class LLMBenchmark:
 
         Returns:
             Callable that invokes agent with given model
+
         """
 
         async def agent_target(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -467,6 +477,7 @@ class LLMBenchmark:
 
             Returns:
                 Dict with agent analysis output
+
             """
             content = inputs.get("content", "")
             agent_type = inputs.get("agent_type", "tech_comparator")
@@ -513,6 +524,7 @@ class LLMBenchmark:
 
         Returns:
             Callable that invokes synthesis with given model
+
         """
 
         async def synthesis_target(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -523,6 +535,7 @@ class LLMBenchmark:
 
             Returns:
                 Dict with aggregated insights
+
             """
             agent_findings = inputs.get("agent_findings", [])
 
@@ -566,6 +579,7 @@ class LLMBenchmark:
 
         Returns:
             List of evaluator callables
+
         """
         # Import evaluators dynamically to avoid circular imports
         from app.evaluation.evaluators import (
@@ -610,6 +624,7 @@ class LLMBenchmark:
 
         Returns:
             Dictionary of metric_name -> value
+
         """
         metrics: dict[str, float] = {}
 
@@ -671,9 +686,12 @@ class LLMBenchmark:
 
         Returns:
             Dictionary of aggregated metrics
+
         """
         from uuid import uuid4
-        from langsmith.schemas import Run as LSRun, Example as LSExample
+
+        from langsmith.schemas import Example as LSExample
+        from langsmith.schemas import Run as LSRun
 
         all_scores: dict[str, list[float]] = {}
         latencies: list[float] = []
@@ -746,6 +764,7 @@ class LLMBenchmark:
                 try:
                     # Check evaluator signature
                     import inspect
+
                     sig = inspect.signature(evaluator)
                     params = list(sig.parameters.keys())
 
@@ -812,9 +831,7 @@ class LLMBenchmark:
 
         return metrics
 
-    def _find_winners_by_metric(
-        self, experiments: list[ExperimentResults]
-    ) -> dict[str, str]:
+    def _find_winners_by_metric(self, experiments: list[ExperimentResults]) -> dict[str, str]:
         """Find winning model for each metric.
 
         Args:
@@ -822,6 +839,7 @@ class LLMBenchmark:
 
         Returns:
             Dictionary mapping metric_name -> winning model_id
+
         """
         winners: dict[str, str] = {}
 
@@ -844,13 +862,11 @@ class LLMBenchmark:
 
                 value = exp.metrics[metric_name]
 
-                if best_value is None:
-                    best_value = value
-                    best_model = exp.model_id
-                elif lower_is_better and value < best_value:
-                    best_value = value
-                    best_model = exp.model_id
-                elif not lower_is_better and value > best_value:
+                if (
+                    best_value is None
+                    or (lower_is_better and value < best_value)
+                    or (not lower_is_better and value > best_value)
+                ):
                     best_value = value
                     best_model = exp.model_id
 
@@ -859,9 +875,7 @@ class LLMBenchmark:
 
         return winners
 
-    def _calculate_cost_savings(
-        self, experiments: list[ExperimentResults]
-    ) -> dict[str, float]:
+    def _calculate_cost_savings(self, experiments: list[ExperimentResults]) -> dict[str, float]:
         """Calculate cost savings between models.
 
         Args:
@@ -869,6 +883,7 @@ class LLMBenchmark:
 
         Returns:
             Dictionary with cost comparison metrics
+
         """
         cost_savings = {}
 
@@ -910,6 +925,7 @@ class LLMBenchmark:
 
         Returns:
             Recommendation string
+
         """
         # Count wins per model
         win_counts: dict[str, int] = {}

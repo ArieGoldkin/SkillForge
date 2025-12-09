@@ -2,29 +2,31 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, TypedDict
-from uuid import UUID
+from collections.abc import Iterable
+from typing import Any, TypedDict
 
 from sqlalchemy.exc import IntegrityError
 
 from app.core.logging import get_logger
+from app.core.types import AnalysisID
 from app.db.repositories.chunk_repository import ChunkRepository
 
 logger = get_logger(__name__)
 
 
 class StoredEmbedding(TypedDict):
+    """Embedding with associated metadata for storage."""
+
     vector: list[float]
     metadata: dict[str, Any]
 
 
 async def store_embeddings(
     payloads: Iterable[tuple[list[float], dict]],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     repo: ChunkRepository,
 ) -> list[StoredEmbedding]:
     """Persist embeddings via ChunkRepository."""
-
     stored: list[StoredEmbedding] = []
     repo_items: list[dict[str, Any]] = []
     for vector, metadata in payloads:

@@ -21,6 +21,8 @@ logger = get_logger(__name__)
 
 
 class ChunkedPayload(TypedDict):
+    """Payload containing chunked content at multiple granularities."""
+
     coarse: list[ChunkText]
     fine: list[ChunkText]
     summaries: list[SummaryChunk]

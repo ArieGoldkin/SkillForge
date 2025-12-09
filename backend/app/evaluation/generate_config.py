@@ -28,7 +28,6 @@ from app.core.model_registry import (
     MODEL_REGISTRY,
     TASK_MODEL_HYPOTHESES,
     ModelInfo,
-    Provider,
     get_model_info,
 )
 
@@ -64,6 +63,7 @@ def analyze_experiment_results(results: dict[str, Any]) -> dict[str, TaskConfig]
 
     Returns:
         Dictionary mapping task_type to TaskConfig
+
     """
     configs = {}
 
@@ -174,6 +174,7 @@ def generate_from_hypotheses() -> dict[str, TaskConfig]:
 
     Returns:
         Dictionary mapping task_type to TaskConfig
+
     """
     configs = {}
 
@@ -225,6 +226,7 @@ def generate_config_file(
     Args:
         configs: Task configurations
         output_path: Path to write config file
+
     """
     lines = [
         '"""Auto-generated model configuration from LLM benchmark experiments.',
@@ -245,39 +247,43 @@ def generate_config_file(
     for task_type, config in configs.items():
         lines.append(f'    "{task_type}": ("{config.primary_model}", "{config.fallback_model}"),')
 
-    lines.extend([
-        "}",
-        "",
-        "",
-        "def get_model_for_task(task_type: str, use_fallback: bool = False) -> str:",
-        '    """Get optimal model for a task type.',
-        "",
-        "    Args:",
-        "        task_type: Type of task (supervisor, agent, synthesis)",
-        "        use_fallback: If True, return fallback model instead of primary",
-        "",
-        "    Returns:",
-        "        Model identifier string",
-        '    """',
-        "    primary, fallback = TASK_MODELS.get(task_type, (None, None))",
-        "    if use_fallback:",
-        "        return fallback",
-        "    return primary",
-        "",
-        "",
-        "# Selection rationale (for documentation)",
-        "SELECTION_RATIONALE = {",
-    ])
+    lines.extend(
+        [
+            "}",
+            "",
+            "",
+            "def get_model_for_task(task_type: str, use_fallback: bool = False) -> str:",
+            '    """Get optimal model for a task type.',
+            "",
+            "    Args:",
+            "        task_type: Type of task (supervisor, agent, synthesis)",
+            "        use_fallback: If True, return fallback model instead of primary",
+            "",
+            "    Returns:",
+            "        Model identifier string",
+            '    """',
+            "    primary, fallback = TASK_MODELS.get(task_type, (None, None))",
+            "    if use_fallback:",
+            "        return fallback",
+            "    return primary",
+            "",
+            "",
+            "# Selection rationale (for documentation)",
+            "SELECTION_RATIONALE = {",
+        ]
+    )
 
     for task_type, config in configs.items():
         # Escape the rationale for Python string
         escaped = config.rationale.replace('"', '\\"').replace("\n", "\\n")
         lines.append(f'    "{task_type}": "{escaped}",')
 
-    lines.extend([
-        "}",
-        "",
-    ])
+    lines.extend(
+        [
+            "}",
+            "",
+        ]
+    )
 
     # Write file
     output = Path(output_path)
@@ -295,6 +301,7 @@ def generate_json_config(configs: dict[str, TaskConfig]) -> dict[str, Any]:
 
     Returns:
         JSON-serializable dictionary
+
     """
     return {
         "generated_at": datetime.now().isoformat(),

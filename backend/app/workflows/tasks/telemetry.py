@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def log_chunking_metrics(
+def log_chunking_metrics(  # noqa: PLR0913
     *,
     coarse: int,
     fine: int,
@@ -23,6 +21,7 @@ def log_chunking_metrics(
     long_window: int | None = None,
     doc_len_threshold: int | None = None,
 ) -> None:
+    """Log chunking pipeline metrics for observability."""
     logger.info(
         "chunking_metrics",
         coarse=coarse,
@@ -37,4 +36,3 @@ def log_chunking_metrics(
         long_window=long_window,
         doc_len_threshold=doc_len_threshold,
     )
-

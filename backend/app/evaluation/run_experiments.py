@@ -22,13 +22,12 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.core.logging import get_logger
-from app.core.model_registry import MODEL_REGISTRY, TASK_MODEL_HYPOTHESES
+from app.core.model_registry import MODEL_REGISTRY
 from app.evaluation import LLMBenchmark
 from app.evaluation.datasets import list_datasets, load_dataset
 
@@ -39,8 +38,14 @@ logger = get_logger(__name__)
 # for runtime model switching across OpenAI, Anthropic, Google, and xAI
 DEFAULT_MODELS = {
     "supervisor": ["gpt-4o-mini", "gpt-4o", "gemini-2.5-flash", "claude-haiku-3-5-20241022"],
-    "agent": ["gpt-4o-mini", "gpt-4o"],  # Agent analysis still uses env var (TODO: add model_id support)
-    "synthesis": ["gpt-4o-mini", "gpt-4o"],  # Synthesis still uses env var (TODO: add model_id support)
+    "agent": [
+        "gpt-4o-mini",
+        "gpt-4o",
+    ],  # Agent analysis still uses env var (TODO: add model_id support)
+    "synthesis": [
+        "gpt-4o-mini",
+        "gpt-4o",
+    ],  # Synthesis still uses env var (TODO: add model_id support)
 }
 
 # Dataset mappings
@@ -68,6 +73,7 @@ async def run_task_experiments(
 
     Returns:
         Dictionary with experiment results and recommendations
+
     """
     models = model_ids or DEFAULT_MODELS.get(task_type, [])
     dataset_name = TASK_DATASETS.get(task_type)
@@ -96,7 +102,9 @@ async def run_task_experiments(
                 print(f"  WARNING: Model '{model_id}' not in registry!")
             else:
                 info = MODEL_REGISTRY[model_id]
-                print(f"  {model_id}: ${info.input_cost_per_1m}/1M input, ${info.output_cost_per_1m}/1M output")
+                print(
+                    f"  {model_id}: ${info.input_cost_per_1m}/1M input, ${info.output_cost_per_1m}/1M output"
+                )
 
         return {
             "task_type": task_type,
@@ -152,6 +160,7 @@ async def run_all_experiments(
 
     Returns:
         Dictionary with all results and recommendations
+
     """
     benchmark = LLMBenchmark(project_name="skillforge-eval", local_mode=local_mode)
 
@@ -164,7 +173,7 @@ async def run_all_experiments(
 
     # Run experiments for each task type
     for task_type in ["supervisor", "agent", "synthesis"]:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Running experiments for: {task_type.upper()}")
         print("=" * 60)
 
@@ -189,7 +198,7 @@ async def run_all_experiments(
             if task_results.get("status") == "completed":
                 print(f"\n{task_type.upper()}:")
                 print(f"  Recommendation: {task_results.get('recommendation')}")
-                print(f"  Winners by metric:")
+                print("  Winners by metric:")
                 for metric, winner in task_results.get("winner_by_metric", {}).items():
                     print(f"    - {metric}: {winner}")
             else:
@@ -214,6 +223,7 @@ def generate_model_config(results: dict[str, Any]) -> dict[str, str]:
 
     Returns:
         Dictionary mapping task type to recommended model
+
     """
     config = {}
 
@@ -229,7 +239,9 @@ def generate_model_config(results: dict[str, Any]) -> dict[str, str]:
             )
 
             # Prefer correctness metric, then accuracy, then first winner
-            recommended_model = correctness_winner or accuracy_winner or next(iter(winners.values()), None)
+            recommended_model = (
+                correctness_winner or accuracy_winner or next(iter(winners.values()), None)
+            )
 
             if recommended_model:
                 config[task_type] = recommended_model
@@ -304,7 +316,9 @@ Examples:
     if args.list_models:
         print("Available models:")
         for name, info in sorted(MODEL_REGISTRY.items()):
-            print(f"  {name}: {info.display_name} (${info.input_cost_per_1m}/1M in, ${info.output_cost_per_1m}/1M out)")
+            print(
+                f"  {name}: {info.display_name} (${info.input_cost_per_1m}/1M in, ${info.output_cost_per_1m}/1M out)"
+            )
         return
 
     if args.list_datasets:

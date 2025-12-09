@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List
-
 from app.db.repositories.chunk_repository import ChunkRepository
 from app.models.analysis_chunk import AnalysisChunk
 
@@ -19,7 +17,11 @@ async def retrieve_coarse_to_fine(
     Note: Vector search scoring is placeholder (0.0). Replace with pgvector kNN.
     """
     coarse_hits = await repo.search_coarse(limit=top_k_coarse)
-    coarse_paths = [hit.path for hit, _ in coarse_hits if isinstance(hit, AnalysisChunk) and hit.path]
+    coarse_paths: list[list[str]] = [
+        list(hit.path) if hit.path else []
+        for hit, _ in coarse_hits
+        if isinstance(hit, AnalysisChunk) and hit.path
+    ]
 
     fine_hits = await repo.search_fine_by_paths(coarse_paths, limit=top_k_fine)
 
@@ -38,4 +40,3 @@ async def retrieve_coarse_to_fine(
             }
         )
     return results
-

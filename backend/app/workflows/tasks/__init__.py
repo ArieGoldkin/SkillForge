@@ -14,11 +14,11 @@ from app.workflows.tasks.telemetry import log_chunking_metrics
 
 __all__ = [
     "aggregate_findings",
+    "chunk_content",
     "extract_content",
     "generate_artifact",
     "generate_embedding",
     "generate_embeddings_batch",
-    "chunk_content",
-    "store_embeddings",
     "log_chunking_metrics",
+    "store_embeddings",
 ]
