@@ -57,3 +57,7 @@ UUID_NAMESPACE_DNS = (
 # SSE Event Throttling
 SSE_EVENT_THROTTLE_MS = 500  # Minimum time between SSE events (milliseconds)
 SSE_EVENT_THROTTLE_CHARS = 50  # Minimum characters between SSE events
+
+# Search Configuration
+SEARCH_TOP_K_MIN = 1  # Minimum number of search results
+SEARCH_TOP_K_MAX = 100  # Maximum number of search results

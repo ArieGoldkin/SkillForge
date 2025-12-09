@@ -20,6 +20,7 @@ from app.db.base import Base  # noqa: E402
 # Models register themselves with Base.metadata when imported
 from app.models.agent_finding import AgentFinding  # noqa: E402, F401
 from app.models.analysis import Analysis  # noqa: E402, F401
+from app.models.analysis_chunk import AnalysisChunk  # noqa: E402, F401
 from app.models.artifact import Artifact  # noqa: E402, F401
 from app.models.progress import AnalysisProgress  # noqa: E402, F401
 from app.models.tutoring import TutoringMessage, TutoringSession  # noqa: E402, F401
