@@ -360,3 +360,49 @@ class ChunkRepository:
         stmt = select(AnalysisChunk).where(AnalysisChunk.analysis_id == analysis_id)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def search_coarse(
+        self,
+        limit: int = 10,
+    ) -> list[tuple[AnalysisChunk, float]]:
+        """Search coarse-grained chunks (placeholder for vector search).
+
+        Args:
+            limit: Maximum number of results to return
+
+        Returns:
+            List of tuples (AnalysisChunk, score) - score is placeholder 0.0
+
+        Note:
+            This is a placeholder method. For real vector search, use semantic_search
+            with a query embedding instead.
+
+        """
+        stmt = select(AnalysisChunk).where(AnalysisChunk.granularity == "coarse").limit(limit)
+        result = await self.session.execute(stmt)
+        return [(row, 0.0) for row in result.scalars().all()]
+
+    async def search_fine_by_paths(
+        self,
+        paths: list[list[str]],
+        limit: int = 10,
+    ) -> list[tuple[AnalysisChunk, float]]:
+        """Search fine-grained chunks constrained to paths (placeholder for vector search).
+
+        Args:
+            paths: List of path arrays to filter by
+            limit: Maximum number of results to return
+
+        Returns:
+            List of tuples (AnalysisChunk, score) - score is placeholder 0.0
+
+        Note:
+            This is a placeholder method. For real vector search, use semantic_search
+            with a query embedding and filters instead.
+
+        """
+        if not paths:
+            return []
+        stmt = select(AnalysisChunk).where(AnalysisChunk.granularity == "fine").limit(limit)
+        result = await self.session.execute(stmt)
+        return [(row, 0.0) for row in result.scalars().all()]

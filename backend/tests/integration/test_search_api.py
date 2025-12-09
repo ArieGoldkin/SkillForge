@@ -82,9 +82,10 @@ class TestSearchAPIResponseFormat:
 
     def test_search_returns_correct_response_structure(self, test_client):
         """Test that search returns correctly formatted response."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             # Mock embedding service
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
@@ -117,9 +118,10 @@ class TestSearchAPIResponseFormat:
 
     def test_search_accepts_all_modes(self, test_client):
         """Test that all search modes are accepted."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
@@ -138,9 +140,10 @@ class TestSearchAPIResponseFormat:
 
     def test_search_with_filters(self, test_client):
         """Test that search accepts filter parameters."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
@@ -163,9 +166,10 @@ class TestSearchAPIResponseFormat:
 
     def test_search_default_values(self, test_client):
         """Test that search uses correct default values."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
@@ -194,17 +198,16 @@ class TestSearchAPIErrorHandling:
         """Test that embedding errors return 500."""
         from app.core.exceptions import EmbeddingError
 
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
 
             mock_search = MagicMock()
-            mock_search.search = AsyncMock(
-                side_effect=EmbeddingError("API error")
-            )
+            mock_search.search = AsyncMock(side_effect=EmbeddingError("API error"))
             mock_search_class.return_value = mock_search
 
             response = test_client.post(
@@ -213,21 +216,21 @@ class TestSearchAPIErrorHandling:
             )
 
             assert response.status_code == 500
-            assert "embedding" in response.json()["detail"].lower()
+            # API returns generic error message for security (no internal details exposed)
+            assert response.json()["detail"] == "Search failed"
 
     def test_search_value_error_returns_400(self, test_client):
         """Test that validation errors return 400."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
 
             mock_search = MagicMock()
-            mock_search.search = AsyncMock(
-                side_effect=ValueError("Invalid parameter")
-            )
+            mock_search.search = AsyncMock(side_effect=ValueError("Invalid parameter"))
             mock_search_class.return_value = mock_search
 
             response = test_client.post(
@@ -239,17 +242,16 @@ class TestSearchAPIErrorHandling:
 
     def test_search_generic_error_returns_500(self, test_client):
         """Test that generic errors return 500."""
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed
 
             mock_search = MagicMock()
-            mock_search.search = AsyncMock(
-                side_effect=RuntimeError("Unexpected error")
-            )
+            mock_search.search = AsyncMock(side_effect=RuntimeError("Unexpected error"))
             mock_search_class.return_value = mock_search
 
             response = test_client.post(
@@ -285,9 +287,10 @@ class TestSearchAPIMockedResults:
             created_at=datetime.now(UTC),
         )
 
-        with patch("app.api.v1.search.EmbeddingService") as mock_embed_class, patch(
-            "app.api.v1.search.SearchService"
-        ) as mock_search_class:
+        with (
+            patch("app.api.v1.search.EmbeddingService") as mock_embed_class,
+            patch("app.api.v1.search.SearchService") as mock_search_class,
+        ):
             mock_embed = MagicMock()
             mock_embed.close = AsyncMock()
             mock_embed_class.return_value = mock_embed

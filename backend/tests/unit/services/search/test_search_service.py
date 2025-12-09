@@ -56,9 +56,7 @@ def mock_chunk():
 @pytest_asyncio.fixture
 async def search_service(mock_session, mock_embedding_service):
     """Create a SearchService with mocked dependencies."""
-    with patch(
-        "app.db.repositories.chunk_repository.ChunkRepository"
-    ) as mock_chunk_repo_class:
+    with patch("app.db.repositories.chunk_repository.ChunkRepository") as mock_chunk_repo_class:
         mock_chunk_repo = MagicMock()
         mock_chunk_repo.semantic_search = AsyncMock(return_value=[])
         mock_chunk_repo.keyword_search = AsyncMock(return_value=[])
@@ -119,9 +117,7 @@ class TestSearchServiceRouting:
     """Tests for SearchService mode routing."""
 
     @pytest.mark.asyncio
-    async def test_search_routes_to_semantic_search(
-        self, search_service, mock_embedding_service
-    ):
+    async def test_search_routes_to_semantic_search(self, search_service, mock_embedding_service):
         """Test that SEMANTIC mode calls semantic_search."""
         await search_service.search(
             query="test query",
@@ -152,9 +148,7 @@ class TestSearchServiceRouting:
         search_service.chunk_repo.hybrid_search.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_search_routes_to_hybrid_search(
-        self, search_service, mock_embedding_service
-    ):
+    async def test_search_routes_to_hybrid_search(self, search_service, mock_embedding_service):
         """Test that HYBRID mode calls hybrid_search."""
         await search_service.search(
             query="test query",
@@ -175,14 +169,10 @@ class TestSearchServiceResults:
     """Tests for SearchService result processing."""
 
     @pytest.mark.asyncio
-    async def test_semantic_search_returns_search_results(
-        self, search_service, mock_chunk
-    ):
+    async def test_semantic_search_returns_search_results(self, search_service, mock_chunk):
         """Test that semantic search returns properly formatted SearchResult."""
         # Mock the repository to return chunks with scores
-        search_service.chunk_repo.semantic_search = AsyncMock(
-            return_value=[(mock_chunk, 0.95)]
-        )
+        search_service.chunk_repo.semantic_search = AsyncMock(return_value=[(mock_chunk, 0.95)])
 
         results = await search_service.search(
             query="OAuth2 authentication",
@@ -254,9 +244,7 @@ class TestSearchServiceSnippets:
     @pytest.fixture
     def service_with_mocks(self, mock_session, mock_embedding_service):
         """Create service for testing snippet generation."""
-        with patch(
-            "app.db.repositories.chunk_repository.ChunkRepository"
-        ) as mock_repo_class:
+        with patch("app.db.repositories.chunk_repository.ChunkRepository") as mock_repo_class:
             mock_repo = MagicMock()
             mock_repo.semantic_search = AsyncMock(return_value=[])
             mock_repo_class.return_value = mock_repo
@@ -344,9 +332,7 @@ class TestSearchServiceFilters:
 
             assert result == {"analysis_id": "123e4567-e89b-12d3-a456-426614174000"}
 
-    def test_filters_to_dict_with_multiple_filters(
-        self, mock_session, mock_embedding_service
-    ):
+    def test_filters_to_dict_with_multiple_filters(self, mock_session, mock_embedding_service):
         """Test filter conversion with multiple filters."""
         with patch("app.db.repositories.chunk_repository.ChunkRepository"):
             service = SearchService(mock_session, mock_embedding_service)
@@ -362,9 +348,7 @@ class TestSearchServiceFilters:
                 "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
             }
 
-    def test_filters_to_dict_empty_returns_empty_dict(
-        self, mock_session, mock_embedding_service
-    ):
+    def test_filters_to_dict_empty_returns_empty_dict(self, mock_session, mock_embedding_service):
         """Test that empty filters returns empty dict."""
         with patch("app.db.repositories.chunk_repository.ChunkRepository"):
             service = SearchService(mock_session, mock_embedding_service)
@@ -383,9 +367,7 @@ class TestSearchServiceIntegration:
         self, search_service, mock_chunk, mock_embedding_service
     ):
         """Test complete semantic search flow with all components."""
-        search_service.chunk_repo.semantic_search = AsyncMock(
-            return_value=[(mock_chunk, 0.92)]
-        )
+        search_service.chunk_repo.semantic_search = AsyncMock(return_value=[(mock_chunk, 0.92)])
 
         results = await search_service.search(
             query="OAuth2 authentication FastAPI",
