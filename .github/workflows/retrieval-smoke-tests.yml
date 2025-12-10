@@ -161,18 +161,22 @@ jobs:
         if: always()
         working-directory: ./backend
         run: |
-          poetry run pytest tests/smoke/retrieval/ \
-            -m "smoke and retrieval" \
-            --tb=no \
-            --quiet \
-            --color=no \
-            > test_summary.txt 2>&1 || true
-
+          # Use --collect-only to list tests without running them (fast!)
+          # The actual test results are already in the previous steps' logs
           echo "## Retrieval Smoke Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Categories:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Semantic Search: Vector similarity retrieval" >> $GITHUB_STEP_SUMMARY
+          echo "- Keyword Search: PostgreSQL tsvector full-text search" >> $GITHUB_STEP_SUMMARY
+          echo "- Hybrid Search: RRF fusion of semantic + keyword" >> $GITHUB_STEP_SUMMARY
+          echo "- Coarse-to-Fine: Hierarchical retrieval" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Count:**" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          cat test_summary.txt >> $GITHUB_STEP_SUMMARY || echo "No test summary generated" >> $GITHUB_STEP_SUMMARY
+          poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval" --collect-only -q 2>&1 | tail -5 >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_See individual test step logs above for detailed results._" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         uses: actions/upload-artifact@v5
