@@ -1,7 +1,7 @@
 """add cascade delete for analysis_chunks
 
 Revision ID: 20251210_cascade
-Revises: 20251210_harden_embedding_pipeline
+Revises: 20251210_harden
 Create Date: 2025-12-10 12:00:00.000000
 
 This migration adds ON DELETE CASCADE to the analysis_id foreign key
@@ -18,7 +18,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "20251210_cascade"
-down_revision = "20251210_harden_embedding_pipeline"
+down_revision = "20251210_harden"
 branch_labels = None
 depends_on = None
 
