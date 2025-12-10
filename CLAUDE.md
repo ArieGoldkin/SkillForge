@@ -51,13 +51,14 @@ version: 4.0.0
 
 ## 🚨 CRITICAL: Pre-Commit Validation (NEVER SKIP)
 
-**BEFORE every commit or PR, you MUST run full lint on ENTIRE codebase:**
+**BEFORE every commit or PR, you MUST run ALL CI checks locally:**
 
 ```bash
 # Backend (Python) - from backend/ directory:
 cd backend
-poetry run ruff check .    # ENTIRE codebase, not just changed files
-poetry run mypy app        # Type checking
+poetry run ruff format --check app/  # ⚠️ CI runs BOTH format AND lint!
+poetry run ruff check app/           # Lint check
+poetry run mypy app/ --ignore-missing-imports  # Type check
 
 # Frontend (TypeScript) - from frontend/ directory:
 cd frontend
@@ -66,13 +67,14 @@ npm run typecheck          # Type checking
 ```
 
 **Why this matters:**
+- CI runs BOTH `ruff format --check` AND `ruff check` - running only one will miss issues!
 - CI runs lint on the FULL codebase, not just changed files
 - Changing one file can cause lint errors in importing files
-- Running `ruff check <specific-file>` will miss these cascading errors
 
-**Common mistake to NEVER make:**
+**Common mistakes to NEVER make:**
+- ❌ Running only `ruff check` without `ruff format --check`
 - ❌ `ruff check app/services/embeddings.py` (only checks one file)
-- ✅ `ruff check .` (checks entire codebase like CI does)
+- ✅ Run ALL three commands above (format, lint, mypy)
 
 
 ## 📋 Modular Instruction System

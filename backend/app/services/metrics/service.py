@@ -291,7 +291,9 @@ class MetricsService:
             batch_count=batch_count,
             total_latency_ms=total_latency_ms,
             avg_batch_size=avg_batch_size,
-            throughput_per_second=batch_count / (total_latency_ms / 1000) if total_latency_ms > 0 else 0,
+            throughput_per_second=batch_count / (total_latency_ms / 1000)
+            if total_latency_ms > 0
+            else 0,
         )
 
     def record_dedup_stats(

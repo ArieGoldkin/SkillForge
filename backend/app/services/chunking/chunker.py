@@ -200,7 +200,9 @@ def build_chunks(  # noqa: PLR0913
     fine_chunks: list[ChunkText] = []
     for idx, raw_chunk_text in enumerate(fine_texts):
         # Enforce token budget and track truncation
-        chunk_text, token_count, was_truncated = _truncate_to_token_limit(raw_chunk_text, max_tokens)
+        chunk_text, token_count, was_truncated = _truncate_to_token_limit(
+            raw_chunk_text, max_tokens
+        )
         fine_chunks.append(
             ChunkText(
                 text=chunk_text,
