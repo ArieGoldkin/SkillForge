@@ -44,7 +44,10 @@
         "api-design-framework",
         "database-schema-designer",
         "security-checklist",
-        "streaming-api-patterns"
+        "streaming-api-patterns",
+        "observability-monitoring",
+        "performance-optimization",
+        "devops-deployment"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -136,11 +139,13 @@
       "skills_used": [
         "ai-native-development",
         "streaming-api-patterns",
-        "observability-monitoring"
+        "observability-monitoring",
+        "performance-optimization",
+        "database-schema-designer"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch"],
       "boundaries": {
-        "allowed": ["backend/app/workflows/**", "backend/app/services/**", "ml/**", "prompts/**"],
+        "allowed": ["backend/app/workflows/**", "backend/app/services/**", "ml/**", "prompts/**", "backend/app/models/**"],
         "forbidden": ["infrastructure/**", "deployment/**"]
       },
       "handoff_to": ["code-quality-reviewer", "backend-system-architect"],
