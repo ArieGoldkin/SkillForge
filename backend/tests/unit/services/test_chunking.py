@@ -1,5 +1,3 @@
-import pytest
-
 from app.services.chunking.chunker import chunk_document
 from app.services.chunking.dedup import deduplicate
 
@@ -19,7 +17,7 @@ def test_chunk_document_produces_coarse_and_fine():
 
 def test_dedup_removes_duplicates():
     text = "Same para.\n\nSame para."
-    coarse, fine = chunk_document(
+    coarse, _fine = chunk_document(
         text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10
     )
     deduped, stats = deduplicate(coarse)
@@ -34,7 +32,7 @@ def test_chunk_document_enforces_max_caps():
     text = "\n\n".join(paragraphs)
 
     # Without caps - should produce many chunks
-    coarse_all, fine_all = chunk_document(
+    coarse_all, _fine_all = chunk_document(
         text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10
     )
     assert len(coarse_all) == 20, "expect 20 coarse chunks without cap"

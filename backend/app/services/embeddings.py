@@ -25,6 +25,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
 from app.core.constants import (
+    HTTP_RATE_LIMITED,
+    HTTP_SERVER_ERROR_THRESHOLD,
     MAX_RETRY_ATTEMPTS,
     RETRY_MAX_WAIT_EMBEDDING,
     RETRY_MIN_WAIT_EMBEDDING,
@@ -94,6 +96,115 @@ class EmbeddingService:
             metrics_enabled=settings.METRICS_ENABLED,
         )
 
+    def _handle_api_status_error(
+        self,
+        error: APIStatusError,
+        latency_ms: float,
+        token_count: int,
+        truncated: bool,
+    ) -> None:
+        """Handle OpenAI API errors with backpressure and metrics.
+
+        Args:
+            error: The API status error from OpenAI
+            latency_ms: Request latency in milliseconds
+            token_count: Original token count before truncation
+            truncated: Whether the input was truncated
+
+        """
+        if error.status_code == HTTP_RATE_LIMITED:
+            self._error_tracker.record_rate_limit()
+            self._batch_sizer.decrease_for_rate_limit()
+            self._metrics.record_api_error(provider="openai", status=HTTP_RATE_LIMITED)
+        elif error.status_code >= HTTP_SERVER_ERROR_THRESHOLD:
+            self._error_tracker.record_server_error(error.status_code)
+            self._batch_sizer.decrease_for_server_error()
+            self._metrics.record_api_error(provider="openai", status=error.status_code)
+        else:
+            self._error_tracker.record_error(ErrorType.OTHER, error.status_code)
+            self._metrics.record_api_error(provider="openai", status=error.status_code)
+
+        self._metrics.record_embedding_request(
+            status="api_error",
+            latency_ms=latency_ms,
+            token_count=token_count,
+            truncated=truncated,
+        )
+
+        logger.exception(
+            "embedding_generation_failed",
+            error=str(error),
+            error_type=type(error).__name__,
+            status_code=error.status_code,
+        )
+
+    def _handle_generic_error(
+        self,
+        error: Exception,
+        latency_ms: float,
+        token_count: int,
+        truncated: bool,
+    ) -> None:
+        """Handle unexpected errors with metrics recording.
+
+        Args:
+            error: The unexpected exception
+            latency_ms: Request latency in milliseconds
+            token_count: Original token count before truncation
+            truncated: Whether the input was truncated
+
+        """
+        self._error_tracker.record_error(ErrorType.OTHER)
+        self._metrics.record_embedding_request(
+            status="error",
+            latency_ms=latency_ms,
+            token_count=token_count,
+            truncated=truncated,
+        )
+        self._metrics.record_api_error(provider="openai", status="unknown")
+
+        logger.exception(
+            "embedding_generation_failed",
+            error=str(error),
+            error_type=type(error).__name__,
+        )
+
+    async def _prepare_text(self, text: str) -> tuple[str, int, bool]:
+        """Prepare text for embedding by tokenizing and truncating if needed.
+
+        Args:
+            text: The input text to prepare
+
+        Returns:
+            Tuple of (processed_text, original_token_count, was_truncated)
+
+        """
+        import asyncio
+
+        if self._encoding is None:
+            self._encoding = await asyncio.to_thread(
+                tiktoken.encoding_for_model, "text-embedding-3-small"
+            )
+
+        assert self._encoding is not None
+        tokens = self._encoding.encode(text)
+        original_token_count = len(tokens)
+        truncated = False
+
+        if original_token_count > self.max_tokens:
+            truncated_tokens = tokens[: self.max_tokens]
+            text = self._encoding.decode(truncated_tokens)
+            truncated = True
+            logger.warning(
+                "embedding_text_truncated",
+                original_tokens=original_token_count,
+                truncated_tokens=self.max_tokens,
+                original_chars=len(text),
+                truncated_chars=len(text),
+            )
+
+        return text, original_token_count, truncated
+
     @retry(
         stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
         wait=wait_exponential(
@@ -123,35 +234,8 @@ class EmbeddingService:
             logger.error("embedding_empty_text")
             raise ValueError(msg)
 
-        # Token-based truncation (not character-based)
-        # OpenAI text-embedding-3-small limit is 8,191 tokens
-        # Lazy-load encoding on first use using thread pool to avoid blocking
-        import asyncio
-
-        if self._encoding is None:
-            # Initialize encoding in thread pool to avoid blocking the event loop
-            self._encoding = await asyncio.to_thread(
-                tiktoken.encoding_for_model, "text-embedding-3-small"
-            )
-
-        assert self._encoding is not None
-        tokens = self._encoding.encode(text)
-        original_token_count = len(tokens)
-        original_length = len(text)
-        truncated = False
-
-        if original_token_count > self.max_tokens:
-            # Truncate tokens, then decode back to text
-            truncated_tokens = tokens[: self.max_tokens]
-            text = self._encoding.decode(truncated_tokens)
-            truncated = True
-            logger.warning(
-                "embedding_text_truncated",
-                original_tokens=original_token_count,
-                truncated_tokens=self.max_tokens,
-                original_chars=original_length,
-                truncated_chars=len(text),
-            )
+        # Tokenize and truncate if needed
+        text, original_token_count, truncated = await self._prepare_text(text)
 
         # Apply rate limiting before API call
         await self._rate_limiter.acquire_async(tokens=1)
@@ -222,56 +306,15 @@ class EmbeddingService:
             raise
 
         except APIStatusError as e:
-            # Handle OpenAI API errors with proper error tracking
             latency_ms = (time.perf_counter() - start_time) * 1000
-
-            # Track error type for backpressure decisions
-            if e.status_code == 429:
-                self._error_tracker.record_rate_limit()
-                self._batch_sizer.decrease_for_rate_limit()
-                self._metrics.record_api_error(provider="openai", status=429)
-            elif e.status_code >= 500:
-                self._error_tracker.record_server_error(e.status_code)
-                self._batch_sizer.decrease_for_server_error()
-                self._metrics.record_api_error(provider="openai", status=e.status_code)
-            else:
-                self._error_tracker.record_error(ErrorType.OTHER, e.status_code)
-                self._metrics.record_api_error(provider="openai", status=e.status_code)
-
-            self._metrics.record_embedding_request(
-                status="api_error",
-                latency_ms=latency_ms,
-                token_count=original_token_count,
-                truncated=truncated,
-            )
-
+            self._handle_api_status_error(e, latency_ms, original_token_count, truncated)
             error_msg = f"Embedding generation failed: {e!s}"
-            logger.exception(
-                "embedding_generation_failed",
-                error=str(e),
-                error_type=type(e).__name__,
-                status_code=e.status_code,
-            )
             raise EmbeddingError(error_msg) from e
 
         except Exception as e:
-            # Handle unexpected errors
             latency_ms = (time.perf_counter() - start_time) * 1000
-            self._error_tracker.record_error(ErrorType.OTHER)
-            self._metrics.record_embedding_request(
-                status="error",
-                latency_ms=latency_ms,
-                token_count=original_token_count,
-                truncated=truncated,
-            )
-            self._metrics.record_api_error(provider="openai", status="unknown")
-
+            self._handle_generic_error(e, latency_ms, original_token_count, truncated)
             error_msg = f"Embedding generation failed: {e!s}"
-            logger.exception(
-                "embedding_generation_failed",
-                error=str(e),
-                error_type=type(e).__name__,
-            )
             raise EmbeddingError(error_msg) from e
 
     async def close(self) -> None:

@@ -9,9 +9,9 @@ from types import SimpleNamespace
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.db.repositories.tutor_repository import get_tutor_repository
 from app.main import app
 from app.services.event_broadcaster import broadcaster
-from app.db.repositories.tutor_repository import get_tutor_repository
 
 
 @pytest.fixture
@@ -100,7 +100,8 @@ def fake_tutor_repo() -> object:
         ) -> tuple[FakeSession, list[FakeMessage]]:
             session = self.sessions.get(session_id)
             if not session:
-                raise ValueError(f"Session {session_id} not found")
+                msg = f"Session {session_id} not found"
+                raise ValueError(msg)
             return session, list(self.messages.get(session_id, []))
 
         async def save_message(
@@ -111,7 +112,8 @@ def fake_tutor_repo() -> object:
             message_metadata: dict[str, object] | None = None,
         ) -> FakeMessage:
             if session_id not in self.sessions:
-                raise ValueError(f"Session {session_id} not found")
+                msg = f"Session {session_id} not found"
+                raise ValueError(msg)
             message = FakeMessage(
                 id=uuid.uuid4(),
                 session_id=session_id,
@@ -139,7 +141,8 @@ def fake_tutor_repo() -> object:
         ) -> FakeSession:
             session = self.sessions.get(session_id)
             if not session:
-                raise ValueError(f"Session {session_id} not found")
+                msg = f"Session {session_id} not found"
+                raise ValueError(msg)
             if syllabus is not None:
                 session.syllabus = syllabus
             if current_section is not None:
