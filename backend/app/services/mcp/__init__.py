@@ -22,6 +22,18 @@ Example:
 
 """
 
+from app.services.mcp.batch import (
+    MAX_BATCH_SIZE,
+    ActionableError,
+    BatchResult,
+    FailedItem,
+    PackageInfo,
+    SuccessItem,
+    VulnerabilityInfo,
+    batch_check_dependencies,
+    batch_check_vulnerabilities,
+    execute_batch,
+)
 from app.services.mcp.client import (
     MCP_RETRY_ATTEMPTS,
     MCP_RETRY_MAX_WAIT,
@@ -53,11 +65,15 @@ from app.services.mcp.registry import (
 
 __all__ = [
     "AGENT_TOOL_CONFIGS",
+    "MAX_BATCH_SIZE",
     "MCP_RETRY_ATTEMPTS",
     "MCP_RETRY_MAX_WAIT",
     "MCP_RETRY_MIN_WAIT",
     "MCP_RETRY_MULTIPLIER",
+    "ActionableError",
     "AgentToolConfig",
+    "BatchResult",
+    "FailedItem",
     "MCPClientPool",
     "MCPConfigurationError",
     "MCPConnectionError",
@@ -67,9 +83,15 @@ __all__ = [
     "MCPTimeoutError",
     "MCPToolError",
     "MCPTransport",
+    "PackageInfo",
+    "SuccessItem",
     "ToolCapability",
     "ToolRegistry",
+    "VulnerabilityInfo",
+    "batch_check_dependencies",
+    "batch_check_vulnerabilities",
     "create_mcp_retry_decorator",
+    "execute_batch",
     "execute_with_timeout",
     "get_mcp_settings",
 ]
