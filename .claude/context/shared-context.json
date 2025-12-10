@@ -1,14 +1,15 @@
 {
-  "version": "1.0.5",
-  "timestamp": "2025-12-04T10:30:00.000Z",
-  "session_id": "frontend-integration-issue-75-20251204",
+  "version": "1.0.6",
+  "timestamp": "2025-12-10T17:38:33.000Z",
+  "session_id": "sprint-8-completion-20251210",
   "mode": "single_agent",
   "current_sprint": {
-    "number": 3,
-    "name": "Artifact Viewer",
-    "total_points": 13,
-    "completed_points": 1,
-    "status": "in_progress"
+    "number": 8,
+    "name": "Embeddings & Search",
+    "total_points": 9,
+    "completed_points": 9,
+    "status": "complete",
+    "milestone_closed": "2025-12-10T17:38:33Z"
   },
   "agent_decisions": {
     "ai-ml-engineer": {
