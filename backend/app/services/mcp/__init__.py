@@ -7,14 +7,18 @@ real-time data lookup (CVE databases, npm registry, etc.).
 Architecture:
     - MCPClientPool: Connection pool for MCP servers with lazy init
     - MCPServerConfig: Configuration for MCP server connections
+    - ToolRegistry: Manages which tools each agent can access
     - MCPConnectionError: Exception for connection failures
 
 Example:
-    >>> from app.services.mcp import MCPClientPool, get_mcp_settings
+    >>> from app.services.mcp import MCPClientPool, get_mcp_settings, ToolRegistry
     >>> settings = get_mcp_settings()
     >>> pool = MCPClientPool(settings.servers)
+    >>> registry = ToolRegistry()
     >>> async with pool.get_tools("github") as tools:
-    ...     result = await tools[0].ainvoke({"repo": "langchain-ai/langchain"})
+    ...     # Filter tools for specific agent
+    ...     agent_tools = registry.filter_tools(tools, "security_auditor")
+    ...     result = await agent_tools[0].ainvoke({"query": "CVE-2024"})
 
 """
 
@@ -32,8 +36,16 @@ from app.services.mcp.exceptions import (
     MCPTimeoutError,
     MCPToolError,
 )
+from app.services.mcp.registry import (
+    AGENT_TOOL_CONFIGS,
+    AgentToolConfig,
+    ToolCapability,
+    ToolRegistry,
+)
 
 __all__ = [
+    "AGENT_TOOL_CONFIGS",
+    "AgentToolConfig",
     "MCPClientPool",
     "MCPConfigurationError",
     "MCPConnectionError",
@@ -43,5 +55,7 @@ __all__ = [
     "MCPTimeoutError",
     "MCPToolError",
     "MCPTransport",
+    "ToolCapability",
+    "ToolRegistry",
     "get_mcp_settings",
 ]

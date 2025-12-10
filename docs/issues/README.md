@@ -86,6 +86,9 @@ docs/issues/
 │   └── README.md                         # Issue #165 complete doc
 ├── 230-mcp-client-pool/
 │   └── README.md                         # Issue #230 Sprint 9 MCP Client Pool
+├── 231-tool-registry/
+│   ├── PLAN.md                           # Issue #231 implementation plan
+│   └── README.md                         # Issue #231 Sprint 9 Tool Registry
 └── mcp-integration/
     └── github-issues-plan.md             # Sprint 9 MCP planning docs
 ```
@@ -277,8 +280,8 @@ docs/issues/
 
 | Issue | Title | Points | Status | Docs | GitHub |
 |-------|-------|--------|--------|------|--------|
-| [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) | MCP Client Pool & Connection Management | 5 | 🔄 Ready for Review | [📄 Docs](./230-mcp-client-pool/README.md) | [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) |
-| [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) | Tool Registry & Agent Capability Mapping | 3 | 🔜 Pending | — | [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) |
+| [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) | MCP Client Pool & Connection Management | 5 | ✅ Complete | [📄 Docs](./230-mcp-client-pool/README.md) | [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) |
+| [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) | Tool Registry & Agent Capability Mapping | 3 | ✅ Complete | [📄 Docs](./231-tool-registry/README.md) | [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) |
 | [#232](https://github.com/ArieGoldkin/SkillForge/issues/232) | Tool-Enabled Agent Factory | 5 | 🔜 Pending | — | [#232](https://github.com/ArieGoldkin/SkillForge/issues/232) |
 | [#233](https://github.com/ArieGoldkin/SkillForge/issues/233) | Security Auditor MCP Integration | 3 | 🔜 Pending | — | [#233](https://github.com/ArieGoldkin/SkillForge/issues/233) |
 | [#234](https://github.com/ArieGoldkin/SkillForge/issues/234) | Dependency Mapper MCP Integration | 3 | 🔜 Pending | — | [#234](https://github.com/ArieGoldkin/SkillForge/issues/234) |
@@ -286,7 +289,7 @@ docs/issues/
 | [#236](https://github.com/ArieGoldkin/SkillForge/issues/236) | MCP Integration Tests | 3 | 🔜 Pending | — | [#236](https://github.com/ArieGoldkin/SkillForge/issues/236) |
 | [#243](https://github.com/ArieGoldkin/SkillForge/issues/243) | MCP Bulk Operations Support | 2 | 🔜 Pending | — | [#243](https://github.com/ArieGoldkin/SkillForge/issues/243) |
 
-**Sprint 9 Progress:** 0/27 pts (0%) - In progress
+**Sprint 9 Progress:** 8/27 pts (30%) - In progress
 
 ### Key Architecture
 
