@@ -49,6 +49,32 @@ version: 4.0.0
 **Codebase Structure**: `backend/` (FastAPI + LangGraph) | `frontend/` (React 19) | `docs/` (specs & tasks)
 
 
+## 🚨 CRITICAL: Pre-Commit Validation (NEVER SKIP)
+
+**BEFORE every commit or PR, you MUST run full lint on ENTIRE codebase:**
+
+```bash
+# Backend (Python) - from backend/ directory:
+cd backend
+poetry run ruff check .    # ENTIRE codebase, not just changed files
+poetry run mypy app        # Type checking
+
+# Frontend (TypeScript) - from frontend/ directory:
+cd frontend
+npm run lint               # ENTIRE codebase
+npm run typecheck          # Type checking
+```
+
+**Why this matters:**
+- CI runs lint on the FULL codebase, not just changed files
+- Changing one file can cause lint errors in importing files
+- Running `ruff check <specific-file>` will miss these cascading errors
+
+**Common mistake to NEVER make:**
+- ❌ `ruff check app/services/embeddings.py` (only checks one file)
+- ✅ `ruff check .` (checks entire codebase like CI does)
+
+
 ## 📋 Modular Instruction System
 
 This project uses specialized instruction files to optimize tokens while maintaining agent capabilities.
