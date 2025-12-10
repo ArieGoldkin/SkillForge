@@ -26,9 +26,6 @@ from app.evaluation.ingestion.edge_case_generator import (
     EdgeCaseGenerator,
 )
 from app.evaluation.ingestion.edge_case_templates import EdgeCaseTemplates
-
-# Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
-ALL_CATEGORIES = EDGE_CASE_CATEGORIES
 from app.evaluation.ingestion.github_importer import (
     GitHubImportConfig,
     GitHubImporter,
@@ -44,6 +41,9 @@ from app.evaluation.ingestion.pii_anonymizer import (
     PIIReplacement,
     get_anonymizer,
 )
+
+# Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
+ALL_CATEGORIES = EDGE_CASE_CATEGORIES
 
 # LangSmithExtractor requires langsmith package
 if LANGSMITH_AVAILABLE:
