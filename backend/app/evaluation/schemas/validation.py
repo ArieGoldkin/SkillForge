@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -31,12 +32,12 @@ logger = get_logger(__name__)
 
 # Try to import jsonschema, but don't fail if not available
 try:
-    import jsonschema
     from jsonschema import Draft7Validator
 
     JSONSCHEMA_AVAILABLE = True
 except ImportError:
     JSONSCHEMA_AVAILABLE = False
+    Draft7Validator = None  # type: ignore[misc, assignment]
     logger.warning("jsonschema not available - install with: pip install jsonschema")
 
 
@@ -64,7 +65,9 @@ class ValidationResult:
     draft_examples: int = 0
 
 
-def validate_dataset(dataset_path: str | Path, schema_path: str | Path | None = None) -> ValidationResult:
+def validate_dataset(
+    dataset_path: str | Path, schema_path: str | Path | None = None
+) -> ValidationResult:
     """Validate evaluation dataset against v2.0 schema.
 
     Performs both JSON Schema validation and business logic validation:
@@ -268,7 +271,9 @@ def _validate_business_logic(dataset: dict[str, Any]) -> tuple[list[str], list[s
         if validated_by:
             approvals = sum(1 for v in validated_by if v.get("approved"))
             if status == "validated" and approvals < 2:
-                errors.append(f"{example_id}: Status 'validated' requires ≥2 approvals, found {approvals}")
+                errors.append(
+                    f"{example_id}: Status 'validated' requires ≥2 approvals, found {approvals}"
+                )
 
         # Warn about draft examples
         if status == "draft":
@@ -277,7 +282,9 @@ def _validate_business_logic(dataset: dict[str, Any]) -> tuple[list[str], list[s
     return errors, warnings
 
 
-def validate_directory(directory: str | Path, recursive: bool = True) -> dict[str, ValidationResult]:
+def validate_directory(
+    directory: str | Path, recursive: bool = True
+) -> dict[str, ValidationResult]:
     """Validate all datasets in a directory.
 
     Args:
@@ -404,7 +411,7 @@ if __name__ == "__main__":
         report = generate_validation_report(results)
     else:
         parser.error("Must specify --dataset or --directory")
-        exit(1)
+        sys.exit(1)
 
     # Output report
     if args.output:
@@ -417,6 +424,6 @@ if __name__ == "__main__":
     # Exit with error code if any validation failed
     if args.directory:
         if any(not r.is_valid for r in results.values()):
-            exit(1)
+            sys.exit(1)
     elif not result.is_valid:
-        exit(1)
+        sys.exit(1)

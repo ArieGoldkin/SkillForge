@@ -104,7 +104,7 @@
         "notes": "Hand-crafted example based on React 19 and Vue 3.5 feature analysis"
       },
       "validation": {
-        "status": "validated",
+        "status": "pending_review",
         "validated_by": [
           {
             "reviewer": "yonatangross",
@@ -215,7 +215,7 @@
         "notes": "Extracted from production trace where security agent identified 4 vulnerabilities with high confidence"
       },
       "validation": {
-        "status": "validated",
+        "status": "pending_review",
         "validated_by": [
           {
             "reviewer": "security_team",
@@ -305,7 +305,7 @@
         "notes": "Adversarial example testing agent's ability to reject inappropriate tech choices"
       },
       "validation": {
-        "status": "validated",
+        "status": "pending_review",
         "validated_by": [
           {
             "reviewer": "yonatangross",

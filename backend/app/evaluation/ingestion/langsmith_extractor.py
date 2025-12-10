@@ -25,16 +25,25 @@ Usage:
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
-from langsmith import Client
-
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+# LangSmith is optional - only needed when actually extracting traces
+try:
+    from langsmith import Client
+
+    LANGSMITH_AVAILABLE = True
+except ImportError:
+    Client = None  # type: ignore[misc, assignment]
+    LANGSMITH_AVAILABLE = False
+    logger.warning("langsmith not available - install with: pip install langsmith")
 
 TaskType = Literal["supervisor", "agent", "synthesis"]
 
@@ -78,7 +87,7 @@ class LangSmithExtractor:
             project_name="skillforge-prod",
             task_type="agent",
             agent_type="security_auditor",
-            min_confidence=0.85
+            min_confidence=0.85,
         )
         examples = extractor.extract(config)
         extractor.save_dataset(examples, "datasets/drafts/langsmith_security.json")
@@ -88,6 +97,11 @@ class LangSmithExtractor:
 
     def __init__(self):
         """Initialize extractor with LangSmith client."""
+        if not LANGSMITH_AVAILABLE or Client is None:
+            msg = (
+                "langsmith is required for LangSmithExtractor. Install with: pip install langsmith"
+            )
+            raise ImportError(msg)
         self.client = Client()
         logger.info("langsmith_extractor_initialized")
 
@@ -136,24 +150,17 @@ class LangSmithExtractor:
             List of LangSmith Run objects
 
         """
-        # Build filter
-        filter_dict = {
-            "project": config.project_name,
-        }
-
-        # Add date range if specified
-        if config.date_start or config.date_end:
-            filter_dict["start_time"] = config.date_start or (datetime.utcnow() - timedelta(days=7))
-            if config.date_end:
-                filter_dict["end_time"] = config.date_end
+        # Determine date range
+        start_time = config.date_start or (datetime.utcnow() - timedelta(days=7))
+        end_time = config.date_end
 
         # Query runs
         try:
             runs = list(
                 self.client.list_runs(
                     project_name=config.project_name,
-                    start_time=filter_dict.get("start_time"),
-                    end_time=filter_dict.get("end_time"),
+                    start_time=start_time,
+                    end_time=end_time,
                     is_root=True,  # Only root traces
                     limit=config.limit,
                 )
@@ -191,7 +198,9 @@ class LangSmithExtractor:
 
         return filtered_runs
 
-    def _convert_trace_to_example(self, trace: Any, config: ExtractionConfig) -> dict[str, Any] | None:
+    def _convert_trace_to_example(
+        self, trace: Any, config: ExtractionConfig
+    ) -> dict[str, Any] | None:
         """Convert LangSmith trace to v2.0 example format.
 
         Args:
@@ -253,7 +262,9 @@ class LangSmithExtractor:
 
         # Add agent_type for agent task type
         if config.task_type == "agent":
-            example["inputs"]["agent_type"] = config.agent_type or self._extract_agent_type(inputs)
+            inputs_dict = example["inputs"]
+            if isinstance(inputs_dict, dict):
+                inputs_dict["agent_type"] = config.agent_type or self._extract_agent_type(inputs)
 
         return example
 
@@ -282,26 +293,40 @@ class LangSmithExtractor:
 
     def _extract_agent_type(self, inputs: dict[str, Any]) -> str | None:
         """Extract agent type from inputs."""
-        return inputs.get("agent_type") or inputs.get("supervisor_decision", {}).get("agents", [None])[0]
+        agent_type = inputs.get("agent_type")
+        if agent_type:
+            return str(agent_type)
+        supervisor_decision = inputs.get("supervisor_decision", {})
+        if isinstance(supervisor_decision, dict):
+            agents = supervisor_decision.get("agents", [])
+            if isinstance(agents, list) and agents:
+                return str(agents[0]) if agents[0] else None
+        return None
 
-    def _extract_primary_outputs(self, outputs: dict[str, Any], task_type: TaskType) -> dict[str, Any]:
+    def _extract_primary_outputs(
+        self, outputs: dict[str, Any], task_type: TaskType
+    ) -> dict[str, Any]:
         """Extract primary expected outputs based on task type."""
         if task_type == "supervisor":
             decision = outputs.get("supervisor_decision", {})
-            return {
-                "selected_agents": decision.get("agents", []),
-                "confidence": decision.get("confidence", 0.0),
-                "reasoning": decision.get("reasoning", ""),
-            }
+            if isinstance(decision, dict):
+                return {
+                    "selected_agents": decision.get("agents", []),
+                    "confidence": decision.get("confidence", 0.0),
+                    "reasoning": decision.get("reasoning", ""),
+                }
+            return {}
         elif task_type == "agent":
             # Extract first agent finding
             findings = outputs.get("agent_findings", [])
-            if findings:
-                return findings[0]
+            if isinstance(findings, list) and findings:
+                first = findings[0]
+                return dict(first) if isinstance(first, dict) else {}
             return {}
         elif task_type == "synthesis":
-            return outputs.get("aggregated_insights", {})
-        return outputs
+            insights = outputs.get("aggregated_insights", {})
+            return dict(insights) if isinstance(insights, dict) else {}
+        return dict(outputs)
 
     def _generate_default_criteria(self, task_type: TaskType) -> dict[str, Any]:
         """Generate default evaluation criteria."""
@@ -369,7 +394,10 @@ class LangSmithExtractor:
         return tags
 
     def save_dataset(
-        self, examples: list[dict[str, Any]], output_path: str | Path, dataset_name: str | None = None
+        self,
+        examples: list[dict[str, Any]],
+        output_path: str | Path,
+        dataset_name: str | None = None,
     ) -> None:
         """Save extracted examples as v2.0 dataset.
 
@@ -398,7 +426,13 @@ class LangSmithExtractor:
             "metadata": {
                 "dataset_name": dataset_name or output_path.stem,
                 "task_type": task_type,
-                "agent_types": list(set(ex["inputs"].get("agent_type") for ex in examples if "agent_type" in ex["inputs"])),
+                "agent_types": list(
+                    set(
+                        ex["inputs"].get("agent_type")
+                        for ex in examples
+                        if "agent_type" in ex["inputs"]
+                    )
+                ),
                 "domains": [],
                 "created_at": datetime.utcnow().isoformat() + "Z",
                 "updated_at": datetime.utcnow().isoformat() + "Z",
@@ -421,7 +455,9 @@ class LangSmithExtractor:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Extract evaluation examples from LangSmith traces")
+    parser = argparse.ArgumentParser(
+        description="Extract evaluation examples from LangSmith traces"
+    )
     parser.add_argument("--project-name", required=True, help="LangSmith project name")
     parser.add_argument(
         "--task-type",
@@ -430,8 +466,12 @@ if __name__ == "__main__":
         help="Task type to extract",
     )
     parser.add_argument("--agent-type", help="Specific agent type (for agent task type)")
-    parser.add_argument("--min-confidence", type=float, default=0.85, help="Minimum confidence threshold")
-    parser.add_argument("--max-latency-ms", type=int, default=5000, help="Maximum latency in milliseconds")
+    parser.add_argument(
+        "--min-confidence", type=float, default=0.85, help="Minimum confidence threshold"
+    )
+    parser.add_argument(
+        "--max-latency-ms", type=int, default=5000, help="Maximum latency in milliseconds"
+    )
     parser.add_argument("--date-range", help="Date range in format YYYY-MM-DD:YYYY-MM-DD")
     parser.add_argument("--limit", type=int, default=100, help="Maximum examples to extract")
     parser.add_argument("--output", required=True, help="Output path for dataset JSON")
@@ -448,7 +488,7 @@ if __name__ == "__main__":
             date_end = datetime.fromisoformat(end_str)
         except ValueError:
             print("Error: Invalid date range format. Use YYYY-MM-DD:YYYY-MM-DD")
-            exit(1)
+            sys.exit(1)
 
     # Build config
     config = ExtractionConfig(
@@ -468,7 +508,7 @@ if __name__ == "__main__":
 
     if not examples:
         print("No examples extracted matching criteria")
-        exit(1)
+        sys.exit(1)
 
     # Save
     extractor.save_dataset(examples, args.output)
