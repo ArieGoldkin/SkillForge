@@ -70,7 +70,9 @@ RERANK_GAMMA = 0.2  # Weight for structural prior score (metadata-based)
 RERANK_DEFAULT_TIMEOUT = 5.0  # Default timeout for re-ranking in seconds
 RERANK_DEFAULT_CANDIDATES = 50  # Default number of candidates to consider
 RERANK_DEFAULT_FINAL_COUNT = 10  # Default number of results after re-ranking
-RERANK_MODEL = "gpt-4o-mini"  # Cost-effective model for re-ranking (fallback if gpt-5-nano unavailable)
+RERANK_MODEL = (
+    "gpt-4o-mini"  # Cost-effective model for re-ranking (fallback if gpt-5-nano unavailable)
+)
 
 # Structural Prior Weights (for metadata-based scoring)
 STRUCTURAL_WEIGHT_SECTION_PRESENT = 0.10  # Boost for having explicit section title
