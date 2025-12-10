@@ -62,3 +62,25 @@ SSE_EVENT_THROTTLE_CHARS = 50  # Minimum characters between SSE events
 SEARCH_TOP_K_MIN = 1  # Minimum number of search results
 SEARCH_TOP_K_MAX = 100  # Maximum number of search results
 SEARCH_QUERY_MAX_LENGTH = 1000  # Maximum search query length in characters
+
+# Re-ranking Configuration
+RERANK_ALPHA = 0.3  # Weight for base retrieval score (RRF/semantic/keyword)
+RERANK_BETA = 0.5  # Weight for LLM relevance score
+RERANK_GAMMA = 0.2  # Weight for structural prior score (metadata-based)
+RERANK_DEFAULT_TIMEOUT = 5.0  # Default timeout for re-ranking in seconds
+RERANK_DEFAULT_CANDIDATES = 50  # Default number of candidates to consider
+RERANK_DEFAULT_FINAL_COUNT = 10  # Default number of results after re-ranking
+RERANK_MODEL = (
+    "gpt-4o-mini"  # Cost-effective model for re-ranking (fallback if gpt-5-nano unavailable)
+)
+
+# Structural Prior Weights (for metadata-based scoring)
+STRUCTURAL_WEIGHT_SECTION_PRESENT = 0.10  # Boost for having explicit section title
+STRUCTURAL_WEIGHT_PATH_DEPTH_PENALTY = 0.05  # Penalty per extra path level beyond 2
+STRUCTURAL_WEIGHT_POSITION_EARLY = 0.10  # Boost for chunks in first 20% of section
+STRUCTURAL_WEIGHT_POSITION_LATE = -0.05  # Penalty for chunks in last 20% of section
+STRUCTURAL_WEIGHT_CODE_BLOCK = 0.05  # Boost for code block chunks
+STRUCTURAL_WEIGHT_HEADING = 0.10  # Boost for heading chunks
+STRUCTURAL_PATH_DEPTH_THRESHOLD = 2  # Path depth above this triggers penalty
+STRUCTURAL_POSITION_EARLY_THRESHOLD = 0.2  # First 20% of section considered "early"
+STRUCTURAL_POSITION_LATE_THRESHOLD = 0.8  # Last 20% of section considered "late"

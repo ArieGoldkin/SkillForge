@@ -124,8 +124,10 @@ async def search_chunks(
     - **KEYWORD**: Full-text search using PostgreSQL tsvector with BM25-like ranking
     - **HYBRID**: Combined semantic + keyword search with Reciprocal Rank Fusion (RRF)
 
+    Optional re-ranking can be enabled to improve result relevance using LLM-based scoring.
+
     Args:
-        request: SearchRequest with query, mode, top_k, and optional filters
+        request: SearchRequest with query, mode, top_k, optional filters and rerank config
         session: Database session dependency
 
     Returns:
@@ -141,7 +143,8 @@ async def search_chunks(
             "query": "How to implement OAuth2 in FastAPI?",
             "mode": "hybrid",
             "top_k": 10,
-            "filters": {"content_type": "article"}
+            "filters": {"content_type": "article"},
+            "rerank": {"enabled": true, "candidate_count": 50, "final_count": 10}
         }
 
     """
@@ -151,6 +154,7 @@ async def search_chunks(
         mode=request.mode.value,
         top_k=request.top_k,
         has_filters=request.filters is not None,
+        rerank_enabled=request.rerank.enabled if request.rerank else False,
     )
 
     try:
@@ -158,12 +162,13 @@ async def search_chunks(
         embedding_service = EmbeddingService()
         search_service = SearchService(session, embedding_service)
 
-        # Execute search
+        # Execute search with optional re-ranking
         results = await search_service.search(
             query=request.query,
             mode=request.mode,
             top_k=request.top_k,
             filters=request.filters,
+            rerank=request.rerank,
         )
 
         # Close embedding service
@@ -174,6 +179,7 @@ async def search_chunks(
             query_length=len(request.query),
             mode=request.mode.value,
             results_count=len(results),
+            reranked=request.rerank.enabled if request.rerank else False,
         )
 
         return SearchResponse(
