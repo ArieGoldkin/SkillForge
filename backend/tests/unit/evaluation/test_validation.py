@@ -9,7 +9,6 @@ Tests cover:
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -156,7 +155,11 @@ class TestValidateDataset:
                                 "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
                             },
                             "completeness": {"weight": 0.5, "required_fields": []},
-                            "quality": {"weight": 0.5, "min_length": 10, "max_length": 1000},  # Total = 1.5
+                            "quality": {
+                                "weight": 0.5,
+                                "min_length": 10,
+                                "max_length": 1000,
+                            },  # Total = 1.5
                         },
                         "custom_evaluators": [],
                     },
@@ -361,12 +364,8 @@ class TestGenerateValidationReport:
     def test_generate_report_multiple_results(self):
         """Test report for multiple datasets."""
         results = {
-            "good.json": ValidationResult(
-                dataset_name="good.json", is_valid=True, example_count=3
-            ),
-            "bad.json": ValidationResult(
-                dataset_name="bad.json", is_valid=False, errors=["Error"]
-            ),
+            "good.json": ValidationResult(dataset_name="good.json", is_valid=True, example_count=3),
+            "bad.json": ValidationResult(dataset_name="bad.json", is_valid=False, errors=["Error"]),
         }
         report = generate_validation_report(results)
         assert "good.json" in report
@@ -379,7 +378,13 @@ class TestRealDatasetValidation:
 
     def test_validate_golden_dataset(self):
         """Test validation against the actual golden dataset."""
-        golden_path = Path(__file__).parent.parent.parent.parent / "app" / "evaluation" / "datasets" / "agent_analysis_golden_v2.json"
+        golden_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "app"
+            / "evaluation"
+            / "datasets"
+            / "agent_analysis_golden_v2.json"
+        )
 
         if not golden_path.exists():
             pytest.skip("Golden dataset not found")

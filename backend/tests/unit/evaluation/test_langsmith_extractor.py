@@ -3,19 +3,23 @@
 Tests cover:
 - ExtractionConfig dataclass
 - LangSmithExtractor helper methods (without API calls)
+- Domain inference
+- PII anonymization integration
+- Batch extraction methods
 - Dataset saving functionality
 - Optional import handling
 """
 
 import json
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app.evaluation.ingestion.langsmith_extractor import (
+    AGENT_TO_DOMAIN,
+    ALL_AGENT_TYPES,
+    KEYWORD_DOMAIN_MAP,
     LANGSMITH_AVAILABLE,
     ExtractionConfig,
 )
@@ -209,7 +213,7 @@ class TestLangSmithExtractorMethods:
 
         assert output_path.exists()
 
-        with open(output_path) as f:
+        with output_path.open() as f:
             dataset = json.load(f)
 
         assert dataset["version"] == "2.0.0"
@@ -336,3 +340,358 @@ class TestLangSmithExtractorIntegration:
 
             # Should be filtered out due to error
             assert len(examples) == 0
+
+
+class TestDomainInferenceConstants:
+    """Tests for domain inference constants and mappings."""
+
+    def test_all_agent_types_has_8_agents(self):
+        """Test that ALL_AGENT_TYPES contains exactly 8 agent types."""
+        assert len(ALL_AGENT_TYPES) == 8
+        expected_agents = {
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "code_quality_critic",
+            "dependency_mapper",
+            "trend_validator",
+            "integration_feasibility",
+        }
+        assert set(ALL_AGENT_TYPES) == expected_agents
+
+    def test_agent_to_domain_coverage(self):
+        """Test that all agents have domain mappings."""
+        for agent in ALL_AGENT_TYPES:
+            assert agent in AGENT_TO_DOMAIN, f"Agent {agent} missing from AGENT_TO_DOMAIN"
+            assert len(AGENT_TO_DOMAIN[agent]) >= 1
+
+    def test_keyword_domain_map_not_empty(self):
+        """Test that keyword domain map is populated."""
+        assert len(KEYWORD_DOMAIN_MAP) > 10
+        # Check some expected keywords
+        assert "api" in KEYWORD_DOMAIN_MAP
+        assert "database" in KEYWORD_DOMAIN_MAP
+        assert "security" in KEYWORD_DOMAIN_MAP
+        assert "docker" in KEYWORD_DOMAIN_MAP
+
+
+@pytest.mark.skipif(not LANGSMITH_AVAILABLE, reason="LangSmith not installed")
+class TestLangSmithExtractorDomainInference:
+    """Tests for domain inference functionality."""
+
+    @pytest.fixture
+    def extractor(self):
+        """Create extractor with mocked client."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+            return extractor
+
+    def test_infer_domain_from_keyword_api(self, extractor):
+        """Test domain inference from API keywords."""
+        content = "How to build a REST API with FastAPI"
+        domain = extractor._infer_domain(content)
+        assert domain == "backend"
+
+    def test_infer_domain_from_keyword_database(self, extractor):
+        """Test domain inference from database keywords."""
+        content = "Optimizing SQL queries for PostgreSQL"
+        domain = extractor._infer_domain(content)
+        assert domain == "data-layer"
+
+    def test_infer_domain_from_keyword_security(self, extractor):
+        """Test domain inference from security keywords."""
+        content = "Implementing OAuth2 authentication flow"
+        domain = extractor._infer_domain(content)
+        assert domain == "security"
+
+    def test_infer_domain_from_keyword_frontend(self, extractor):
+        """Test domain inference from frontend keywords."""
+        content = "Building React components with hooks"
+        domain = extractor._infer_domain(content)
+        assert domain == "frontend"
+
+    def test_infer_domain_from_keyword_devops(self, extractor):
+        """Test domain inference from devops keywords."""
+        content = "Setting up Kubernetes deployment pipelines"
+        domain = extractor._infer_domain(content)
+        assert domain == "devops"
+
+    def test_infer_domain_from_agent_type(self, extractor):
+        """Test domain inference from agent type fallback."""
+        content = "Some generic content without domain keywords"
+        domain = extractor._infer_domain(content, agent_type="security_auditor")
+        assert domain == "security"
+
+    def test_infer_domain_from_agent_type_performance(self, extractor):
+        """Test domain inference for performance analyst."""
+        content = "General performance discussion"
+        domain = extractor._infer_domain(content, agent_type="performance_analyst")
+        assert domain == "data-layer"  # First in list for performance_analyst
+
+    def test_infer_domain_default_general(self, extractor):
+        """Test domain defaults to general when no match."""
+        content = "Random content with no technical keywords"
+        domain = extractor._infer_domain(content)
+        assert domain == "general"
+
+    def test_infer_domain_from_inputs_content_type(self, extractor):
+        """Test domain inference from inputs content_type."""
+        content = "Random content"
+        inputs = {"content_type": "database-tutorial"}
+        domain = extractor._infer_domain(content, inputs=inputs)
+        assert domain == "data-layer"
+
+
+@pytest.mark.skipif(not LANGSMITH_AVAILABLE, reason="LangSmith not installed")
+class TestLangSmithExtractorPIIAnonymization:
+    """Tests for PII anonymization integration."""
+
+    @pytest.fixture
+    def extractor(self):
+        """Create extractor with mocked client."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+            return extractor
+
+    def test_anonymize_content_with_email(self, extractor):
+        """Test PII anonymization of content with email."""
+        content = "Contact john.doe@company.com for more info"
+        anonymized, has_pii, pii_count = extractor._anonymize_content(content)
+
+        assert has_pii is True
+        assert pii_count >= 1
+        assert "john.doe@company.com" not in anonymized
+        assert "[EMAIL_1]" in anonymized
+
+    def test_anonymize_content_with_phone(self, extractor):
+        """Test PII anonymization of content with phone."""
+        content = "Call us at 555-123-4567"
+        anonymized, has_pii, _pii_count = extractor._anonymize_content(content)
+
+        assert has_pii is True
+        assert "555-123-4567" not in anonymized
+
+    def test_anonymize_content_no_pii(self, extractor):
+        """Test content without PII."""
+        content = "This is just a normal sentence about coding."
+        anonymized, has_pii, pii_count = extractor._anonymize_content(content)
+
+        assert has_pii is False
+        assert pii_count == 0
+        assert anonymized == content
+
+    def test_anonymize_content_preserves_safe_emails(self, extractor):
+        """Test that allowlisted emails are preserved."""
+        content = "Test with example@example.com"
+        anonymized, _has_pii, _pii_count = extractor._anonymize_content(content)
+
+        # example.com is allowlisted
+        assert "example@example.com" in anonymized
+
+
+@pytest.mark.skipif(not LANGSMITH_AVAILABLE, reason="LangSmith not installed")
+class TestLangSmithExtractorConversionWithEnhancements:
+    """Tests for trace conversion with domain/PII enhancements."""
+
+    @pytest.fixture
+    def mock_trace(self):
+        """Create a mock trace with PII content."""
+        trace = MagicMock()
+        trace.id = "trace-123-456"
+        trace.error = None
+        trace.start_time = datetime.utcnow() - timedelta(seconds=2)
+        trace.end_time = datetime.utcnow()
+        trace.inputs = {
+            "content": "Contact john@corp.com for the API documentation",
+            "content_type": "article",
+        }
+        trace.outputs = {"confidence": 0.92}
+        return trace
+
+    def test_convert_trace_includes_domain(self, mock_trace):
+        """Test that converted examples include inferred domain."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+
+            config = ExtractionConfig(project_name="test", task_type="agent")
+            example = extractor._convert_trace_to_example(mock_trace, config)
+
+            assert "domain" in example["metadata"]
+            assert example["metadata"]["domain"] == "backend"  # API keyword
+
+    def test_convert_trace_includes_pii_metadata(self, mock_trace):
+        """Test that converted examples include PII anonymization metadata."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+
+            config = ExtractionConfig(project_name="test", task_type="agent")
+            example = extractor._convert_trace_to_example(mock_trace, config)
+
+            assert "pii_anonymized" in example["metadata"]
+            assert "pii_count" in example["metadata"]
+            # john@corp.com should be anonymized
+            assert example["metadata"]["pii_anonymized"] is True
+            assert example["metadata"]["pii_count"] >= 1
+
+    def test_convert_trace_content_anonymized(self, mock_trace):
+        """Test that PII in content is anonymized."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+
+            config = ExtractionConfig(project_name="test", task_type="agent")
+            example = extractor._convert_trace_to_example(mock_trace, config)
+
+            assert "john@corp.com" not in example["inputs"]["content"]
+            assert "[EMAIL_1]" in example["inputs"]["content"]
+
+
+@pytest.mark.skipif(not LANGSMITH_AVAILABLE, reason="LangSmith not installed")
+class TestLangSmithExtractorBatchMethods:
+    """Tests for batch extraction methods."""
+
+    @pytest.fixture
+    def mock_trace_factory(self):
+        """Create mock traces with configurable agent types."""
+
+        def create_trace(agent_type: str, content: str = "Test content"):
+            trace = MagicMock()
+            trace.id = f"trace-{agent_type}-123"
+            trace.error = None
+            trace.start_time = datetime.utcnow() - timedelta(seconds=2)
+            trace.end_time = datetime.utcnow()
+            trace.inputs = {
+                "content": content,
+                "content_type": "article",
+                "agent_type": agent_type,
+            }
+            trace.outputs = {"confidence": 0.90}
+            return trace
+
+        return create_trace
+
+    def test_extract_all_agents_calls_each_agent(self, mock_trace_factory):
+        """Test that extract_all_agents queries for each agent type."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client_class:
+            mock_client = MagicMock()
+            # Return one trace per call
+            mock_client.list_runs.return_value = [
+                mock_trace_factory("security_auditor", "Security test")
+            ]
+            mock_client_class.return_value = mock_client
+
+            extractor = LangSmithExtractor()
+            examples = extractor.extract_all_agents(project_name="test", examples_per_agent=1)
+
+            # Should have called list_runs 8 times (once per agent)
+            assert mock_client.list_runs.call_count == 8
+
+    def test_extract_by_confidence_bands_structure(self, mock_trace_factory):
+        """Test extract_by_confidence_bands returns correct structure."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client_class:
+            mock_client = MagicMock()
+            mock_client.list_runs.return_value = [
+                mock_trace_factory("tech_comparator", "Test content")
+            ]
+            mock_client_class.return_value = mock_client
+
+            extractor = LangSmithExtractor()
+            bands = extractor.extract_by_confidence_bands(project_name="test", examples_per_band=5)
+
+            assert "high" in bands
+            assert "medium" in bands
+            assert "low" in bands
+            assert isinstance(bands["high"], list)
+            assert isinstance(bands["medium"], list)
+            assert isinstance(bands["low"], list)
+
+
+@pytest.mark.skipif(not LANGSMITH_AVAILABLE, reason="LangSmith not installed")
+class TestLangSmithExtractorSaveDatasetWithDomains:
+    """Tests for save_dataset with domain collection."""
+
+    @pytest.fixture
+    def extractor(self):
+        """Create extractor with mocked client."""
+        from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+        with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client:
+            mock_client.return_value = MagicMock()
+            extractor = LangSmithExtractor()
+            return extractor
+
+    def test_save_dataset_collects_domains(self, extractor, tmp_path):
+        """Test that save_dataset collects domains from examples."""
+        examples = [
+            {
+                "id": "test-001",
+                "inputs": {"content": "Test", "agent_type": "security_auditor"},
+                "expected_outputs": {"primary": {}},
+                "evaluation_criteria": {},
+                "provenance": {"source": "langsmith"},
+                "validation": {"status": "draft"},
+                "metadata": {"difficulty": "medium", "domain": "security"},
+            },
+            {
+                "id": "test-002",
+                "inputs": {"content": "Test 2", "agent_type": "tech_comparator"},
+                "expected_outputs": {"primary": {}},
+                "evaluation_criteria": {},
+                "provenance": {"source": "langsmith"},
+                "validation": {"status": "draft"},
+                "metadata": {"difficulty": "medium", "domain": "backend"},
+            },
+        ]
+
+        output_path = tmp_path / "output.json"
+        extractor.save_dataset(examples, str(output_path), dataset_name="test_domains")
+
+        with output_path.open() as f:
+            dataset = json.load(f)
+
+        assert "domains" in dataset["metadata"]
+        assert "security" in dataset["metadata"]["domains"]
+        assert "backend" in dataset["metadata"]["domains"]
+        assert len(dataset["metadata"]["domains"]) == 2
+
+    def test_save_dataset_empty_domains_when_missing(self, extractor, tmp_path):
+        """Test save_dataset handles examples without domains."""
+        examples = [
+            {
+                "id": "test-001",
+                "inputs": {"content": "Test", "agent_type": "security_auditor"},
+                "expected_outputs": {"primary": {}},
+                "evaluation_criteria": {},
+                "provenance": {"source": "langsmith"},
+                "validation": {"status": "draft"},
+                "metadata": {"difficulty": "medium"},  # No domain
+            },
+        ]
+
+        output_path = tmp_path / "output.json"
+        extractor.save_dataset(examples, str(output_path))
+
+        with output_path.open() as f:
+            dataset = json.load(f)
+
+        assert "domains" in dataset["metadata"]
+        assert dataset["metadata"]["domains"] == []

@@ -32,8 +32,60 @@ from pathlib import Path
 from typing import Any, Literal
 
 from app.core.logging import get_logger
+from app.evaluation.ingestion.pii_anonymizer import PIIAnonymizer, get_anonymizer
 
 logger = get_logger(__name__)
+
+# Domain inference mappings (aligned with GitHub importer)
+AGENT_TO_DOMAIN: dict[str, list[str]] = {
+    "tech_comparator": ["backend", "frontend", "llm-orchestration"],
+    "security_auditor": ["security"],
+    "implementation_planner": ["backend", "frontend", "agent-systems"],
+    "performance_analyst": ["data-layer", "devops", "backend"],
+    "code_quality_critic": ["backend", "frontend"],
+    "dependency_mapper": ["llm-orchestration", "agent-systems"],
+    "trend_validator": ["machine-learning", "devops"],
+    "integration_feasibility": ["llm-orchestration", "agent-systems", "backend"],
+}
+
+KEYWORD_DOMAIN_MAP: dict[str, str] = {
+    "api": "backend",
+    "rest": "backend",
+    "graphql": "backend",
+    "database": "data-layer",
+    "sql": "data-layer",
+    "postgresql": "data-layer",
+    "mongodb": "data-layer",
+    "frontend": "frontend",
+    "react": "frontend",
+    "vue": "frontend",
+    "css": "frontend",
+    "ml": "machine-learning",
+    "model": "machine-learning",
+    "training": "machine-learning",
+    "deploy": "devops",
+    "ci/cd": "devops",
+    "docker": "devops",
+    "kubernetes": "devops",
+    "security": "security",
+    "auth": "security",
+    "llm": "llm-orchestration",
+    "langchain": "llm-orchestration",
+    "agent": "agent-systems",
+    "workflow": "agent-systems",
+}
+
+# All 8 agent types for batch extraction
+ALL_AGENT_TYPES: list[str] = [
+    "tech_comparator",
+    "security_auditor",
+    "implementation_planner",
+    "performance_analyst",
+    "code_quality_critic",
+    "dependency_mapper",
+    "trend_validator",
+    "integration_feasibility",
+]
 
 # LangSmith is optional - only needed when actually extracting traces
 try:
@@ -95,15 +147,21 @@ class LangSmithExtractor:
 
     """
 
-    def __init__(self):
-        """Initialize extractor with LangSmith client."""
+    def __init__(self, anonymizer: PIIAnonymizer | None = None):
+        """Initialize extractor with LangSmith client and optional anonymizer.
+
+        Args:
+            anonymizer: PII anonymizer instance (default: auto-create)
+
+        """
         if not LANGSMITH_AVAILABLE or Client is None:
             msg = (
                 "langsmith is required for LangSmithExtractor. Install with: pip install langsmith"
             )
             raise ImportError(msg)
         self.client = Client()
-        logger.info("langsmith_extractor_initialized")
+        self.anonymizer = anonymizer or get_anonymizer()
+        logger.info("langsmith_extractor_initialized", has_anonymizer=True)
 
     def extract(self, config: ExtractionConfig) -> list[dict[str, Any]]:
         """Extract examples from LangSmith traces.
@@ -217,6 +275,15 @@ class LangSmithExtractor:
         if not content:
             return None
 
+        # Anonymize PII in content
+        anonymized_content, has_pii, pii_count = self._anonymize_content(content)
+
+        # Determine agent type
+        agent_type = config.agent_type or self._extract_agent_type(inputs)
+
+        # Infer domain from content and agent type
+        domain = self._infer_domain(anonymized_content, agent_type, inputs)
+
         # Generate example ID
         trace_id = str(trace.id)[:8]
         timestamp = datetime.utcnow().strftime("%Y%m%d")
@@ -229,7 +296,7 @@ class LangSmithExtractor:
         example = {
             "id": example_id,
             "inputs": {
-                "content": content,
+                "content": anonymized_content,
                 "content_type": inputs.get("content_type", "article"),
             },
             "expected_outputs": {
@@ -252,9 +319,12 @@ class LangSmithExtractor:
                 "quality_score": None,
             },
             "metadata": {
-                "difficulty": self._estimate_difficulty(content),
+                "difficulty": self._estimate_difficulty(anonymized_content),
+                "domain": domain,
                 "edge_case": False,
                 "adversarial": False,
+                "pii_anonymized": has_pii,
+                "pii_count": pii_count,
                 "tags": self._extract_tags(inputs, outputs),
                 "notes": f"Trace latency: {self._calculate_latency_ms(trace)}ms",
             },
@@ -264,7 +334,7 @@ class LangSmithExtractor:
         if config.task_type == "agent":
             inputs_dict = example["inputs"]
             if isinstance(inputs_dict, dict):
-                inputs_dict["agent_type"] = config.agent_type or self._extract_agent_type(inputs)
+                inputs_dict["agent_type"] = agent_type
 
         return example
 
@@ -393,6 +463,197 @@ class LangSmithExtractor:
 
         return tags
 
+    def _infer_domain(
+        self,
+        content: str,
+        agent_type: str | None = None,
+        inputs: dict[str, Any] | None = None,
+    ) -> str:
+        """Infer technical domain from content and agent type.
+
+        Args:
+            content: Text content to analyze
+            agent_type: Agent type if known
+            inputs: Trace inputs for additional context
+
+        Returns:
+            Inferred domain name
+
+        """
+        content_lower = content.lower()
+
+        # First check keywords in content
+        for keyword, domain in KEYWORD_DOMAIN_MAP.items():
+            if keyword in content_lower:
+                return domain
+
+        # Then check agent type mapping
+        if agent_type and agent_type in AGENT_TO_DOMAIN:
+            # Return first (primary) domain for this agent
+            return AGENT_TO_DOMAIN[agent_type][0]
+
+        # Check inputs for additional signals
+        if inputs:
+            content_type = inputs.get("content_type", "").lower()
+            for keyword, domain in KEYWORD_DOMAIN_MAP.items():
+                if keyword in content_type:
+                    return domain
+
+        # Default domain
+        return "general"
+
+    def _anonymize_content(self, content: str) -> tuple[str, bool, int]:
+        """Anonymize PII in content.
+
+        Args:
+            content: Text content to anonymize
+
+        Returns:
+            Tuple of (anonymized_text, has_pii, pii_count)
+
+        """
+        result = self.anonymizer.anonymize(content)
+        return result.text, result.has_pii, result.pii_count
+
+    def extract_all_agents(
+        self,
+        project_name: str,
+        examples_per_agent: int = 5,
+        min_confidence: float = 0.50,
+        max_latency_ms: int = 10000,
+        date_start: datetime | None = None,
+        date_end: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        """Extract balanced examples for all 8 agent types.
+
+        This method attempts to extract a balanced set of examples
+        across all agent types for comprehensive evaluation coverage.
+
+        Args:
+            project_name: LangSmith project name
+            examples_per_agent: Target examples per agent (default 5)
+            min_confidence: Minimum confidence threshold
+            max_latency_ms: Maximum latency in ms
+            date_start: Start date for query
+            date_end: End date for query
+
+        Returns:
+            List of examples covering all 8 agents
+
+        """
+        all_examples: list[dict[str, Any]] = []
+        agent_counts: dict[str, int] = dict.fromkeys(ALL_AGENT_TYPES, 0)
+
+        for agent_type in ALL_AGENT_TYPES:
+            config = ExtractionConfig(
+                project_name=project_name,
+                task_type="agent",
+                agent_type=agent_type,
+                min_confidence=min_confidence,
+                max_latency_ms=max_latency_ms,
+                date_start=date_start,
+                date_end=date_end,
+                limit=examples_per_agent * 2,  # Get extra to filter
+            )
+
+            try:
+                examples = self.extract(config)
+                # Take up to examples_per_agent
+                selected = examples[:examples_per_agent]
+                all_examples.extend(selected)
+                agent_counts[agent_type] = len(selected)
+
+                logger.info(
+                    "agent_extraction_complete",
+                    agent_type=agent_type,
+                    examples_found=len(examples),
+                    examples_selected=len(selected),
+                )
+            except Exception as e:
+                logger.warning(
+                    "agent_extraction_failed",
+                    agent_type=agent_type,
+                    error=str(e),
+                )
+                continue
+
+        logger.info(
+            "all_agents_extraction_complete",
+            total_examples=len(all_examples),
+            agent_distribution=agent_counts,
+        )
+
+        return all_examples
+
+    def extract_by_confidence_bands(
+        self,
+        project_name: str,
+        examples_per_band: int = 10,
+        max_latency_ms: int = 10000,
+        date_start: datetime | None = None,
+        date_end: datetime | None = None,
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Extract examples grouped by confidence bands.
+
+        Extracts examples in three confidence bands:
+        - high: >= 0.85
+        - medium: 0.70 - 0.84
+        - low: 0.50 - 0.69
+
+        Args:
+            project_name: LangSmith project name
+            examples_per_band: Target examples per band
+            max_latency_ms: Maximum latency in ms
+            date_start: Start date for query
+            date_end: End date for query
+
+        Returns:
+            Dict with keys 'high', 'medium', 'low' containing examples
+
+        """
+        bands: dict[str, list[dict[str, Any]]] = {
+            "high": [],
+            "medium": [],
+            "low": [],
+        }
+
+        # Define confidence thresholds for each band
+        band_configs = [
+            ("high", 0.85, 1.0),
+            ("medium", 0.70, 0.84),
+            ("low", 0.50, 0.69),
+        ]
+
+        for band_name, min_conf, _ in band_configs:
+            config = ExtractionConfig(
+                project_name=project_name,
+                task_type="agent",
+                min_confidence=min_conf,
+                max_latency_ms=max_latency_ms,
+                date_start=date_start,
+                date_end=date_end,
+                limit=examples_per_band * 3,  # Get extra to filter
+            )
+
+            try:
+                examples = self.extract(config)
+                bands[band_name] = examples[:examples_per_band]
+
+                logger.info(
+                    "confidence_band_extraction_complete",
+                    band=band_name,
+                    examples_found=len(examples),
+                    examples_selected=len(bands[band_name]),
+                )
+            except Exception as e:
+                logger.warning(
+                    "confidence_band_extraction_failed",
+                    band=band_name,
+                    error=str(e),
+                )
+
+        return bands
+
     def save_dataset(
         self,
         examples: list[dict[str, Any]],
@@ -420,6 +681,15 @@ class LangSmithExtractor:
             else:
                 task_type = "synthesis"
 
+        # Collect unique domains from examples
+        domains = list(
+            set(
+                ex.get("metadata", {}).get("domain")
+                for ex in examples
+                if ex.get("metadata", {}).get("domain")
+            )
+        )
+
         # Build dataset
         dataset = {
             "version": "2.0.0",
@@ -433,7 +703,7 @@ class LangSmithExtractor:
                         if "agent_type" in ex["inputs"]
                     )
                 ),
-                "domains": [],
+                "domains": domains,
                 "created_at": datetime.utcnow().isoformat() + "Z",
                 "updated_at": datetime.utcnow().isoformat() + "Z",
                 "release_tag": "draft",

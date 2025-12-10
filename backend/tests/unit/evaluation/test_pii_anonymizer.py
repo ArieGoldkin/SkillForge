@@ -13,7 +13,6 @@ Tests cover:
 import pytest
 
 from app.evaluation.ingestion.pii_anonymizer import (
-    ALLOWLISTED_DOMAINS,
     ALLOWLISTED_EMAILS,
     AnonymizedResult,
     PIIAnonymizer,

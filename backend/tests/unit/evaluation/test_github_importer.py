@@ -11,10 +11,8 @@ Tests cover:
 """
 
 import json
-import tempfile
 from datetime import UTC, datetime
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -125,9 +123,7 @@ class TestGitHubImporterAgentInference:
         with patch.object(GitHubImporter, "__init__", lambda x, **kwargs: None):
             importer = GitHubImporter.__new__(GitHubImporter)
             importer.anonymizer = MagicMock()
-            importer.anonymizer.anonymize.return_value = MagicMock(
-                text="anonymized", has_pii=False
-            )
+            importer.anonymizer.anonymize.return_value = MagicMock(text="anonymized", has_pii=False)
             return importer
 
     @pytest.fixture
@@ -498,7 +494,9 @@ class TestAgentKeywordsConsistency:
     def test_label_agents_are_valid(self):
         """Test that label-mapped agents are in the keywords dict."""
         for label, agent in LABEL_TO_AGENT.items():
-            assert agent in AGENT_KEYWORDS, f"Agent '{agent}' for label '{label}' not in AGENT_KEYWORDS"
+            assert agent in AGENT_KEYWORDS, (
+                f"Agent '{agent}' for label '{label}' not in AGENT_KEYWORDS"
+            )
 
     def test_repo_domains_are_strings(self):
         """Test that all repo domain mappings are strings."""
