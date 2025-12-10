@@ -159,9 +159,7 @@ class OrphanCleaner:
         )
 
         # Find chunks belonging to superseded analyses
-        query = select(AnalysisChunk.id).where(
-            AnalysisChunk.analysis_id.in_(superseded_ids_query)
-        )
+        query = select(AnalysisChunk.id).where(AnalysisChunk.analysis_id.in_(superseded_ids_query))
 
         result = await self.session.execute(query)
         orphan_ids = [row[0] for row in result.all()]
@@ -263,8 +261,7 @@ class OrphanCleaner:
 
         Example:
             >>> stats = await cleaner.cleanup_all_orphans(
-            ...     hard_delete=False,
-            ...     include_superseded=True
+            ...     hard_delete=False, include_superseded=True
             ... )
             >>> print(f"Cleaned up {stats['total_deleted']} chunks")
 
@@ -278,15 +275,11 @@ class OrphanCleaner:
 
         # 1. Find and delete chunks with missing parent
         missing_parent_ids = await self.find_orphans_missing_parent()
-        stats["missing_parent"] = await self.delete_orphans_batch(
-            missing_parent_ids, hard_delete
-        )
+        stats["missing_parent"] = await self.delete_orphans_batch(missing_parent_ids, hard_delete)
 
         # 2. Find and delete chunks from old failed analyses
         failed_analysis_ids = await self.find_orphans_failed_analysis()
-        stats["failed_analysis"] = await self.delete_orphans_batch(
-            failed_analysis_ids, hard_delete
-        )
+        stats["failed_analysis"] = await self.delete_orphans_batch(failed_analysis_ids, hard_delete)
 
         # 3. Optionally find and delete chunks from superseded analyses
         if include_superseded:
@@ -365,7 +358,7 @@ class OrphanCleaner:
             AnalysisChunk objects
 
         Example:
-            >>> async for chunk in cleaner.stream_orphan_chunks('missing_parent'):
+            >>> async for chunk in cleaner.stream_orphan_chunks("missing_parent"):
             ...     print(f"Orphan: {chunk.id} from analysis {chunk.analysis_id}")
 
         """

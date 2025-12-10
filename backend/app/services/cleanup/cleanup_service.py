@@ -114,9 +114,7 @@ class CleanupService:
 
         # 2. TTL-based cleanup
         if include_expired:
-            ttl_result = await self.ttl_cleaner.cleanup_with_preview(
-                confirm=not dry_run
-            )
+            ttl_result = await self.ttl_cleaner.cleanup_with_preview(confirm=not dry_run)
             report["ttl_cleanup"] = ttl_result
 
         # 3. Run integrity checks (always safe, read-only)
@@ -136,8 +134,7 @@ class CleanupService:
             expired_total = report["ttl_cleanup"].get("analyses_deleted", 0)
 
         integrity_issues = sum(
-            len(v) if isinstance(v, list) else 0
-            for v in integrity_report.values()
+            len(v) if isinstance(v, list) else 0 for v in integrity_report.values()
         )
 
         report["summary"] = {
@@ -163,7 +160,7 @@ class CleanupService:
 
         Example:
             >>> health = await service.health_check()
-            >>> if not health['healthy']:
+            >>> if not health["healthy"]:
             ...     print(f"Found {health['total_issues']} issues")
 
         """
@@ -178,15 +175,10 @@ class CleanupService:
         # Run integrity checks
         integrity_report = await self.integrity_checker.run_all_checks()
         integrity_issues = sum(
-            len(v) if isinstance(v, list) else 0
-            for v in integrity_report.values()
+            len(v) if isinstance(v, list) else 0 for v in integrity_report.values()
         )
 
-        total_issues = (
-            orphan_counts["total"]
-            + expired_counts["total"]
-            + integrity_issues
-        )
+        total_issues = orphan_counts["total"] + expired_counts["total"] + integrity_issues
 
         health_status: dict = {
             "healthy": total_issues == 0,
@@ -198,8 +190,7 @@ class CleanupService:
                 "orphans": orphan_counts,
                 "expired": expired_counts,
                 "integrity": {
-                    k: len(v) if isinstance(v, list) else 0
-                    for k, v in integrity_report.items()
+                    k: len(v) if isinstance(v, list) else 0 for k, v in integrity_report.items()
                 },
             },
         }
@@ -226,7 +217,7 @@ class CleanupService:
 
         Example:
             >>> report = await service.generate_cleanup_report_markdown()
-            >>> with open('cleanup_report.md', 'w') as f:
+            >>> with open("cleanup_report.md", "w") as f:
             ...     f.write(report)
 
         """
@@ -390,7 +381,7 @@ class CleanupService:
 
         Example:
             >>> # In cron job
-            >>> result = await service.schedule_cleanup(cleanup_type='orphans')
+            >>> result = await service.schedule_cleanup(cleanup_type="orphans")
 
         """
         logger.info("schedule_cleanup_started", cleanup_type=cleanup_type)

@@ -53,8 +53,8 @@ class PIIDetector:
         self.sensitivity = sensitivity or SensitivityLevel(
             getattr(settings, "PII_SENSITIVITY_LEVEL", "medium")
         )
-        self.enabled = enabled if enabled is not None else getattr(
-            settings, "PII_SCREENING_ENABLED", False
+        self.enabled = (
+            enabled if enabled is not None else getattr(settings, "PII_SCREENING_ENABLED", False)
         )
 
         # Get active patterns based on sensitivity level

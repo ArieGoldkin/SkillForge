@@ -411,9 +411,7 @@ class VectorIntegrityChecker:
         report["non_normalized_vectors"] = await self.check_vector_normalization()
 
         # Calculate summary statistics
-        total_issues = sum(
-            len(v) if isinstance(v, list) else 0 for v in report.values()
-        )
+        total_issues = sum(len(v) if isinstance(v, list) else 0 for v in report.values())
 
         logger.info(
             "run_all_checks_complete",

@@ -61,8 +61,8 @@ class TTLCleaner:
             days: Number of days to retain, or None for no expiration
 
         Example:
-            >>> cleaner.set_ttl_policy('draft', 14)  # Keep drafts for 14 days
-            >>> cleaner.set_ttl_policy('complete', None)  # Never expire complete
+            >>> cleaner.set_ttl_policy("draft", 14)  # Keep drafts for 14 days
+            >>> cleaner.set_ttl_policy("complete", None)  # Never expire complete
 
         """
         if days is None:
@@ -92,16 +92,14 @@ class TTLCleaner:
 
         Example:
             >>> cleaner = TTLCleaner(session)
-            >>> expired = await cleaner.find_expired_analyses(status='draft')
+            >>> expired = await cleaner.find_expired_analyses(status="draft")
             >>> print(f"Found {len(expired)} expired draft analyses")
 
         """
         expired: list[tuple[uuid.UUID, str, datetime]] = []
 
         # Determine which statuses to check
-        statuses_to_check = (
-            [status] if status else list(self.ttl_policies.keys())
-        )
+        statuses_to_check = [status] if status else list(self.ttl_policies.keys())
 
         for check_status in statuses_to_check:
             ttl_days = self.ttl_policies.get(check_status)
@@ -145,7 +143,7 @@ class TTLCleaner:
             Dictionary with deletion statistics by status
 
         Example:
-            >>> stats = await cleaner.delete_expired_analyses(status='draft')
+            >>> stats = await cleaner.delete_expired_analyses(status="draft")
             >>> print(f"Deleted {stats['draft']} draft analyses")
 
         Note:
@@ -349,19 +347,14 @@ class TTLCleaner:
             True if extended, False if analysis not found
 
         Example:
-            >>> extended = await cleaner.extend_ttl_for_analysis(
-            ...     analysis_id,
-            ...     extension_days=14
-            ... )
+            >>> extended = await cleaner.extend_ttl_for_analysis(analysis_id, extension_days=14)
 
         """
         from sqlalchemy import update
 
         # Update updated_at to now to reset TTL
         stmt = (
-            update(Analysis)
-            .where(Analysis.id == analysis_id)
-            .values(updated_at=datetime.now(UTC))
+            update(Analysis).where(Analysis.id == analysis_id).values(updated_at=datetime.now(UTC))
         )
 
         result = await self.session.execute(stmt)
@@ -386,8 +379,8 @@ class TTLCleaner:
 
         Example:
             >>> report = await cleaner.get_ttl_status_report()
-            >>> print(report['policies'])
-            >>> print(report['expired_counts'])
+            >>> print(report["policies"])
+            >>> print(report["expired_counts"])
 
         """
         report: dict[str, dict | str] = {
