@@ -11,7 +11,7 @@ Tests cover:
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -232,8 +232,8 @@ class TestLangSmithExtractorIntegration:
         trace = MagicMock()
         trace.id = "abc123-def456"
         trace.error = None
-        trace.start_time = datetime.utcnow() - timedelta(seconds=2)
-        trace.end_time = datetime.utcnow()
+        trace.start_time = datetime.now(UTC) - timedelta(seconds=2)
+        trace.end_time = datetime.now(UTC)
         trace.inputs = {
             "content": "Test content about React and Vue frameworks",
             "content_type": "article",
@@ -298,8 +298,8 @@ class TestLangSmithExtractorIntegration:
         from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
 
         # Set high latency (10 seconds)
-        mock_trace.start_time = datetime.utcnow() - timedelta(seconds=10)
-        mock_trace.end_time = datetime.utcnow()
+        mock_trace.start_time = datetime.now(UTC) - timedelta(seconds=10)
+        mock_trace.end_time = datetime.now(UTC)
 
         with patch("app.evaluation.ingestion.langsmith_extractor.Client") as mock_client_class:
             mock_client = MagicMock()
@@ -506,8 +506,8 @@ class TestLangSmithExtractorConversionWithEnhancements:
         trace = MagicMock()
         trace.id = "trace-123-456"
         trace.error = None
-        trace.start_time = datetime.utcnow() - timedelta(seconds=2)
-        trace.end_time = datetime.utcnow()
+        trace.start_time = datetime.now(UTC) - timedelta(seconds=2)
+        trace.end_time = datetime.now(UTC)
         trace.inputs = {
             "content": "Contact john@corp.com for the API documentation",
             "content_type": "article",
@@ -573,8 +573,8 @@ class TestLangSmithExtractorBatchMethods:
             trace = MagicMock()
             trace.id = f"trace-{agent_type}-123"
             trace.error = None
-            trace.start_time = datetime.utcnow() - timedelta(seconds=2)
-            trace.end_time = datetime.utcnow()
+            trace.start_time = datetime.now(UTC) - timedelta(seconds=2)
+            trace.end_time = datetime.now(UTC)
             trace.inputs = {
                 "content": content,
                 "content_type": "article",

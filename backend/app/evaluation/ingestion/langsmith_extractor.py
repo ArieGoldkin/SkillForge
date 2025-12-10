@@ -27,7 +27,7 @@ from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
@@ -209,7 +209,7 @@ class LangSmithExtractor:
 
         """
         # Determine date range
-        start_time = config.date_start or (datetime.utcnow() - timedelta(days=7))
+        start_time = config.date_start or (datetime.now(UTC) - timedelta(days=7))
         end_time = config.date_end
 
         # Query runs
@@ -286,7 +286,7 @@ class LangSmithExtractor:
 
         # Generate example ID
         trace_id = str(trace.id)[:8]
-        timestamp = datetime.utcnow().strftime("%Y%m%d")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d")
         example_id = f"{config.task_type}-langsmith-{timestamp}-{trace_id}"
 
         # Extract outputs
@@ -307,11 +307,11 @@ class LangSmithExtractor:
             "evaluation_criteria": self._generate_default_criteria(config.task_type),
             "provenance": {
                 "source": "langsmith",
-                "created_at": datetime.utcnow().isoformat() + "Z",
+                "created_at": datetime.now(UTC).isoformat(),
                 "created_by": "langsmith_extractor",
                 "source_url": self._get_trace_url(trace, config.project_name),
                 "langsmith_trace_id": str(trace.id),
-                "notes": f"Extracted from production trace on {datetime.utcnow().strftime('%Y-%m-%d')}",
+                "notes": f"Extracted from production trace on {datetime.now(UTC).strftime('%Y-%m-%d')}",
             },
             "validation": {
                 "status": "draft",
@@ -704,10 +704,10 @@ class LangSmithExtractor:
                     )
                 ),
                 "domains": domains,
-                "created_at": datetime.utcnow().isoformat() + "Z",
-                "updated_at": datetime.utcnow().isoformat() + "Z",
+                "created_at": datetime.now(UTC).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
                 "release_tag": "draft",
-                "description": f"Extracted from LangSmith on {datetime.utcnow().strftime('%Y-%m-%d')}",
+                "description": f"Extracted from LangSmith on {datetime.now(UTC).strftime('%Y-%m-%d')}",
                 "maintainers": ["langsmith_extractor"],
             },
             "examples": examples,

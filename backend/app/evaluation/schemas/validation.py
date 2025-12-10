@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -341,7 +341,7 @@ def generate_validation_report(results: dict[str, ValidationResult]) -> str:
     lines = [
         "# Evaluation Dataset Validation Report",
         "",
-        f"**Generated**: {datetime.utcnow().isoformat()}Z",
+        f"**Generated**: {datetime.now(UTC).isoformat()}",
         f"**Datasets Checked**: {len(results)}",
         "",
     ]
