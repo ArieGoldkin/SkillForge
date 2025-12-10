@@ -87,7 +87,6 @@ ignore = [
     "SIM105",   # Use contextlib.suppress (try/except is clearer)
     "SIM117",   # Combine with statements (readability preference)
     "TRY300",   # Consider moving to else block (stylistic)
-    "RUF043",   # Pairwise instead of zip (Python 3.10+ feature, stylistic)
 ]
 
 [tool.ruff.lint.per-file-ignores]

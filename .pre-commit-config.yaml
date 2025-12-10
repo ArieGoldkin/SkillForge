@@ -20,24 +20,34 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
 
-  # Python code formatting and linting (Ruff replaces Black)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+  # Python code formatting and linting (uses local poetry-managed ruff to match CI)
+  - repo: local
     hooks:
-      - id: ruff
-        args: ["--fix", "--exit-non-zero-on-fix"]
-        files: ^backend/
+      - id: ruff-check
+        name: ruff check
+        entry: bash -c 'cd backend && poetry run ruff check app/ --fix --exit-non-zero-on-fix'
+        language: system
+        files: ^backend/app/.*\.py$
+        pass_filenames: false
+        types: [python]
       - id: ruff-format
-        files: ^backend/
+        name: ruff format
+        entry: bash -c 'cd backend && poetry run ruff format --check app/'
+        language: system
+        files: ^backend/app/.*\.py$
+        pass_filenames: false
+        types: [python]
 
-  # Python type checking (optional - can run manually)
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.13.0
-  #   hooks:
-  #     - id: mypy
-  #       args: ['--ignore-missing-imports', '--python-version=3.13']
-  #       files: ^backend/app/
-  #       pass_filenames: false
+  # Python type checking - runs mypy on backend/app directory
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: bash -c 'cd backend && poetry run mypy app/'
+        language: system
+        files: ^backend/app/.*\.py$
+        pass_filenames: false
+        types: [python]
 
   # Frontend (if exists)
   - repo: https://github.com/pre-commit/mirrors-eslint
