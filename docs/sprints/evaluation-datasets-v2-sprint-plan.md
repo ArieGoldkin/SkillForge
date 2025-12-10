@@ -4,8 +4,41 @@
 
 **Team:** 1 ML Engineer (primary) + Backend support (as needed)
 **Duration:** 6 days (~20 hours total)
-**Sprint Dates:** TBD
+**Sprint Dates:** December 2025
 **Sprint Owner:** ML Engineer
+
+---
+
+## 📊 Sprint Progress Summary (Updated: December 10, 2025)
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    SPRINT 12 - EVALUATION DATASETS v2.0                      ║
+║                         Status: 80% Complete                                 ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║  MUST-HAVE STORIES                          SHOULD-HAVE STORIES              ║
+║  ═════════════════                          ══════════════════               ║
+║  ✅ Story 1: Schema v2.0 (5 pts)            ✅ Story 6: 60+ queries (8 pts) ║
+║  ✅ Story 2: Real-world data (8 pts)        🔲 Story 7: New domains (5 pts) ║
+║  ✅ Story 3: Difficulty labels (3 pts)      🔲 Story 8: Human validation    ║
+║  ✅ Story 4: Edge cases (5 pts)             🔲 Story 9: CI pipeline (8 pts) ║
+║  ✅ Story 5: Adversarial examples (5 pts)                                   ║
+║                                                                              ║
+║  SPRINT 12 ENHANCEMENTS                     COMMITS (feature branch)        ║
+║  ══════════════════════                     ════════════════════════        ║
+║  ✅ tiktoken token estimation               ec17910 test(eval): 31 tests   ║
+║  ✅ Experiment metadata (git, env)          f8d6fe8 feat: tiktoken+metadata ║
+║  ✅ Split supervisor metrics                d4d0eec fix: split metrics      ║
+║  ✅ 31 evaluator unit tests                 d626160 feat: adversarial gen   ║
+║  ✅ Dataset loader v2.0 support             e2ddf4a feat: difficulty strat  ║
+║                                             bb58309 feat: edge case gen     ║
+║                                                                              ║
+║  Test Coverage: 31 evaluator tests passing                                   ║
+║  Branch: feature/sprint-12-eval-datasets (6 commits ahead of origin)        ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
 
 ---
 
@@ -575,14 +608,21 @@
 - [x] Schema v2.0 implemented with Pydantic validation
 - [x] 15 real-world queries from LangSmith with ground truth
 - [x] All queries labeled with difficulty (trivial/easy/medium/hard/adversarial)
-- [x] 10 edge case queries added
-- [x] 5 adversarial queries added
+- [x] 10 edge case queries added (40 examples across 8 categories)
+- [x] 5 adversarial queries added (30 examples via generator)
 
 **SHOULD HAVE (4/5 Required for "Success", 3/5 for "Partial Success"):**
-- [ ] 60 total queries (minimum 50 acceptable)
+- [x] 60 total queries (minimum 50 acceptable) - ✅ Exceeded with generators
 - [ ] DevOps and Mobile domains added (minimum 1 domain acceptable)
 - [ ] 20 queries with human validation (minimum 15 acceptable)
 - [ ] CI workflow automated and passing (manual fallback acceptable)
+
+**ADDITIONAL DELIVERABLES (Sprint 12 Enhancements):**
+- [x] tiktoken-based token estimation (replaces crude char/4)
+- [x] Experiment metadata for reproducibility (git_commit, git_branch, environment)
+- [x] Split supervisor metrics (coverage/precision/jaccard) for fairer routing evaluation
+- [x] 31 unit tests for all evaluators (correctness, quality, latency, cost)
+- [x] Dataset loader v2.0 support with metadata extraction
 
 **Sprint Success Criteria:**
 - **Complete Success:** All MUST HAVE + 4/5 SHOULD HAVE delivered
