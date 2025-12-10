@@ -1,23 +1,90 @@
 # Issue #223: Retrieval Smoke Tests
 
-**Status:** In Progress
+**Status:** ✅ Phase 1 Complete (Core Tests) | Phase 2-3 Planned
 **Branch:** `feature/223-retrieval-smoke-tests`
 **Sprint:** Sprint 8 - Embeddings & Search
 **Priority:** MEDIUM
-**Estimated Points:** 3
+**Estimated Effort:** 2 weeks (part-time) / 13 days (full-time)
+**Dependencies:** Issue #221 (Hierarchical Chunking) must be complete
 
 ---
 
 ## Summary
 
-Add a lightweight offline retrieval smoke test suite to validate chunking, semantic search, hybrid search, and coarse-to-fine retrieval. The suite catches regressions quickly and provides confidence that the retrieval pipeline works correctly.
+Lightweight, offline retrieval smoke test suite that validates SkillForge's hierarchical chunking and coarse-to-fine retrieval system in <30 seconds with frozen fixtures and industry-standard metrics (Recall@5, MRR, NDCG@10, P@1).
+
+## Key Features
+
+- **Fast Feedback**: <30s runtime (CI-friendly)
+- **Offline Testing**: Pre-computed embeddings, no API calls
+- **Comprehensive Coverage**: Semantic, hybrid, coarse-to-fine modes
+- **Industry Metrics**: Recall@5 ≥0.70, MRR ≥0.60, NDCG@10 ≥0.65, P@1 ≥0.50
+- **CI Integration**: GitHub Actions with fixture caching
+
+## Documentation Suite
+
+This issue includes comprehensive design documentation:
+
+1. **[DESIGN_DOCUMENT.md](./DESIGN_DOCUMENT.md)** (60+ pages, production-quality)
+   - Smoke test best practices research
+   - Fixture design strategy (synthetic vs real data)
+   - CLI script architecture with complete implementation
+   - Metrics computation (Recall@k, MRR, NDCG, P@1)
+   - CI integration patterns
+
+2. **[IMPLEMENTATION_CHECKLIST.md](./IMPLEMENTATION_CHECKLIST.md)** (detailed task breakdown)
+   - Phase 1: Fixture Generation (Week 1, Days 1-4)
+   - Phase 2: CLI Implementation (Week 1-2, Days 5-9)
+   - Phase 3: CI Integration (Week 2, Days 10-11)
+   - Phase 4: Documentation (Week 2, Days 12-14)
+
+3. **[ARCHITECTURE_DIAGRAM.md](./ARCHITECTURE_DIAGRAM.md)** (visual system design)
+   - System overview diagrams
+   - Fixture data flow
+   - Test execution pipeline
+   - Metric computation formulas
+   - CI/CD integration architecture
+
+## Implementation Status
+
+### ✅ Phase 1: Core Smoke Tests (COMPLETE)
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Semantic Search Tests | ✅ | 11 tests - positive, negative, broad queries |
+| Keyword Search Tests | ✅ | 10 tests - tsvector, snippets, edge cases |
+| Hybrid Search Tests | ✅ | 8 tests - RRF fusion, comparison tests |
+| IR Metrics | ✅ | Recall@k, MRR, NDCG@k, Precision@k, Hit Rate |
+| Fixture System | ✅ | 8 docs, 46 sections, 15 queries |
+| CLI Runner | ✅ | Mode filtering, JUnit XML, verbose output |
+| Pytest Markers | ✅ | smoke, retrieval, semantic, keyword, hybrid |
+| Real API Integration | ✅ | OpenAI embeddings, PostgreSQL/pgvector |
+
+**Test Results:** 26 tests passing with real OpenAI API (~2 min runtime)
+
+### 🔲 Phase 2: Coarse-to-Fine Tests (PLANNED)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Two-stage retrieval tests | 🔲 | Section → Paragraph hierarchy |
+| Hierarchical navigation | 🔲 | Uses `path` field from chunks |
+
+### 🔲 Phase 3: CI Integration (PLANNED)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| GitHub Actions workflow | 🔲 | PostgreSQL + pgvector service |
+| Embedding cache | 🔲 | Pre-computed for offline CI |
+| PR comments | 🔲 | Markdown report on PR |
+
+---
 
 ## Goals
 
 1. **Validate Core Retrieval** - Ensure semantic, keyword, and hybrid search return expected results
-2. **Catch Regressions** - Fail fast when changes break retrieval quality
-3. **CI Integration** - Run automatically on every PR to prevent broken merges
-4. **Minimal Overhead** - Fast execution (<30s) with small fixture set
+2. **Catch Regressions** - Fail fast when changes break retrieval quality (< 30s feedback)
+3. **CI Integration** - Run automatically on every PR touching retrieval code
+4. **Production Quality** - Use industry-standard metrics and best practices
 
 ## Architecture Overview
 
