@@ -203,9 +203,7 @@ class ReRanker:
 
         # Calculate structural priors if enabled
         if config.use_structural_priors:
-            structural_scores = self._structural_scorer.score_batch(
-                [r.metadata for r in results]
-            )
+            structural_scores = self._structural_scorer.score_batch([r.metadata for r in results])
         else:
             structural_scores = [0.0] * len(results)
 
