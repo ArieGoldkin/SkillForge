@@ -5,14 +5,24 @@ in the analyzed content, focusing on OWASP Top 10, authentication, data exposure
 and compliance considerations.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.base import (
+    ToolCallConfig,
+    create_structured_agent,
+    create_tool_enabled_agent,
+)
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.security_auditor import SecurityAudit
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
+
+logger = get_logger(__name__)
 
 # System prompt for security auditor agent
 SECURITY_AUDITOR_PROMPT = """You are a Security Audit Specialist. Your task is to:
@@ -82,12 +92,13 @@ FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
 Be thorough and prioritize critical vulnerabilities."""
 
 
-async def run_security_auditor(
+async def run_security_auditor(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run security auditor agent to identify security risks and vulnerabilities.
 
@@ -97,6 +108,7 @@ async def run_security_auditor(
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced security analysis
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -112,11 +124,25 @@ async def run_security_auditor(
     # Build prompt with skill level instructions
     full_prompt = f"{SECURITY_AUDITOR_PROMPT}\n\n{skill_instructions}"
 
-    # Create agent with structured output
-    agent = create_structured_agent(
-        system_prompt=full_prompt,
-        response_schema=SecurityAudit,
-    )
+    # Create agent - use tool-enabled factory if tools provided
+    if tools:
+        agent = create_tool_enabled_agent(
+            system_prompt=full_prompt,
+            response_schema=SecurityAudit,
+            tools=tools,
+            tool_call_config=ToolCallConfig(max_tool_calls=15),
+        )
+        logger.info(
+            "security_auditor_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
+    else:
+        agent = create_structured_agent(
+            system_prompt=full_prompt,
+            response_schema=SecurityAudit,
+        )
 
     # Run agent with tracking and persistence
     return await run_agent_with_tracking(

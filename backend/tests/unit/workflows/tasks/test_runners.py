@@ -163,8 +163,9 @@ async def test_run_security_auditor_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Security auditor now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -267,8 +268,9 @@ async def test_run_dependency_mapper_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Dependency mapper now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 

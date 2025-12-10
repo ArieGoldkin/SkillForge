@@ -6,6 +6,7 @@ SSE event emission.
 """
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import cast
 from uuid import UUID
 
@@ -25,6 +26,20 @@ from app.models.agent_finding import AgentFinding
 from app.services.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class ToolCallConfig:
+    """Configuration for tool-enabled agent behavior.
+
+    Attributes:
+        max_tool_calls: Maximum number of tool calls allowed per agent run
+        parallel_tool_calls: Whether to allow parallel tool execution
+
+    """
+
+    max_tool_calls: int = 10
+    parallel_tool_calls: bool = True
 
 
 def create_structured_agent(
@@ -61,6 +76,129 @@ def create_structured_agent(
     # Validation errors are automatically captured by LangChain and traced by LangSmith.
     # We don't need to wrap invoke here as ToolStrategy handles validation internally.
     # The validation errors will appear in LangSmith traces automatically.
+
+    return agent
+
+
+def _build_tool_enhanced_prompt(
+    base_prompt: str,
+    tools: Sequence[BaseTool],
+    max_tool_calls: int,
+) -> str:
+    """Enhance system prompt with tool usage guidelines.
+
+    Args:
+        base_prompt: Original system prompt for the agent
+        tools: List of available MCP tools
+        max_tool_calls: Maximum allowed tool invocations
+
+    Returns:
+        Enhanced prompt with tool descriptions and usage guidelines
+
+    """
+    if not tools:
+        return base_prompt
+
+    tool_descriptions = "\n".join(f"- **{tool.name}**: {tool.description}" for tool in tools)
+
+    tool_section = f"""
+
+## Available Tools
+
+You have access to the following tools for real-time data lookup:
+
+{tool_descriptions}
+
+## Tool Usage Guidelines
+
+1. **Verify claims:** Use tools to check specific versions, CVEs, package metadata
+2. **Be efficient:** Maximum {max_tool_calls} tool calls allowed - prioritize wisely
+3. **Handle failures gracefully:** If a tool fails, note the gap in your findings
+4. **Cite sources:** Reference tool results (e.g., "Per npm registry, v3.0.0...")
+5. **Don't over-rely:** Trust your training for concepts; use tools for current facts
+
+IMPORTANT: After your tool calls, you MUST produce a structured response matching
+the expected schema. Tool usage is for research - your final output must be structured.
+"""
+
+    return base_prompt + tool_section
+
+
+def create_tool_enabled_agent(
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    tools: Sequence[BaseTool],
+    tool_call_config: ToolCallConfig | None = None,
+) -> Runnable:
+    """Create an agent with MCP tool access and structured output.
+
+    This factory creates agents that can call external MCP tools (GitHub, npm, PyPI)
+    during their reasoning process while still producing validated structured output.
+
+    Args:
+        system_prompt: Base system prompt for the agent
+        response_schema: Pydantic model defining expected output structure
+        tools: List of MCP tools (pre-filtered by ToolRegistry)
+        tool_call_config: Optional configuration for tool behavior
+
+    Returns:
+        Configured agent with tool calling and structured output support
+
+    Raises:
+        ValueError: If tools sequence is empty
+
+    Example:
+        >>> from app.services.mcp import MCPClientPool, ToolRegistry
+        >>> registry = ToolRegistry()
+        >>> tools = await pool.get_tools_for_capabilities(
+        ...     registry.get_capabilities("security_auditor")
+        ... )
+        >>> agent = create_tool_enabled_agent(
+        ...     system_prompt="Analyze security...",
+        ...     response_schema=SecurityAudit,
+        ...     tools=tools,
+        ... )
+
+    Note:
+        Unlike create_structured_agent(), this factory:
+        - Enables parallel_tool_calls for efficiency
+        - Enhances the prompt with tool usage guidelines
+        - Requires at least one tool (use create_structured_agent for no-tool agents)
+
+    """
+    if not tools:
+        msg = "tools must not be empty; use create_structured_agent() for agents without tools"
+        raise ValueError(msg)
+
+    config = tool_call_config or ToolCallConfig()
+
+    # Enhance prompt with tool information
+    enhanced_prompt = _build_tool_enhanced_prompt(
+        base_prompt=system_prompt,
+        tools=tools,
+        max_tool_calls=config.max_tool_calls,
+    )
+
+    logger.info(
+        "creating_tool_enabled_agent",
+        tool_count=len(tools),
+        tool_names=[t.name for t in tools],
+        max_tool_calls=config.max_tool_calls,
+        parallel_tool_calls=config.parallel_tool_calls,
+    )
+
+    model = get_chat_model()
+    # Enable parallel tool calls for MCP tools (efficiency)
+    bound_model: Runnable = model.bind_tools(
+        list(tools), parallel_tool_calls=config.parallel_tool_calls
+    )
+
+    agent = create_agent(
+        cast(BaseChatModel, bound_model),
+        tools=list(tools),
+        system_prompt=enhanced_prompt,
+        response_format=ToolStrategy(response_schema),
+    )
 
     return agent
 

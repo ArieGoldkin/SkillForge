@@ -4,14 +4,24 @@ This agent maps dependencies, versions, potential conflicts, and provides
 dependency management recommendations with framework ecosystem mapping.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.workflows.agents.base import create_structured_agent
+from app.workflows.agents.base import (
+    ToolCallConfig,
+    create_structured_agent,
+    create_tool_enabled_agent,
+)
 from app.workflows.agents.execution import run_agent_with_tracking
 from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
+
+logger = get_logger(__name__)
 
 # Framework ecosystems mapping
 FRAMEWORK_ECOSYSTEMS = {
@@ -158,12 +168,13 @@ BAD EXAMPLE (DO NOT USE):
 Be specific about versions and compatibility."""
 
 
-async def run_dependency_mapper(
+async def run_dependency_mapper(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run dependency mapper agent.
 
@@ -173,6 +184,7 @@ async def run_dependency_mapper(
         analysis_id: Analysis ID
         session: Database session
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced dependency analysis
 
     Returns:
         Agent findings dict
@@ -185,13 +197,27 @@ async def run_dependency_mapper(
     # Build prompt with skill level instructions
     full_prompt = f"{DEPENDENCY_MAPPER_PROMPT}\n\n{skill_instructions}"
 
-    # Create agent
-    agent = create_structured_agent(
-        system_prompt=full_prompt,
-        response_schema=DependencyMapping,
-    )
+    # Create agent - use tool-enabled factory if tools provided
+    if tools:
+        agent = create_tool_enabled_agent(
+            system_prompt=full_prompt,
+            response_schema=DependencyMapping,
+            tools=tools,
+            tool_call_config=ToolCallConfig(max_tool_calls=20),
+        )
+        logger.info(
+            "dependency_mapper_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
+    else:
+        agent = create_structured_agent(
+            system_prompt=full_prompt,
+            response_schema=DependencyMapping,
+        )
 
-    # Run agent
+    # Run agent with tracking and persistence
     return await run_agent_with_tracking(
         agent=agent,
         content=content,
