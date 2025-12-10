@@ -14,10 +14,14 @@ from pathlib import Path
 import pytest
 
 from app.evaluation.schemas.validation import (
+    MIN_QUERIES_PER_DIFFICULTY,
+    VALID_DIFFICULTY_LEVELS,
     ValidationResult,
     generate_validation_report,
     validate_dataset,
+    validate_difficulty_distribution,
     validate_directory,
+    validate_query_fixtures,
 )
 
 
@@ -394,3 +398,225 @@ class TestRealDatasetValidation:
         # The golden dataset should be valid
         assert result.is_valid is True, f"Golden dataset validation failed: {result.errors}"
         assert result.example_count > 0, "Golden dataset should have examples"
+
+
+class TestDifficultyValidation:
+    """Tests for difficulty stratification validation functions."""
+
+    def test_valid_difficulty_levels_constant(self):
+        """Test VALID_DIFFICULTY_LEVELS contains correct values."""
+        expected = {"trivial", "easy", "medium", "hard", "adversarial"}
+        assert expected == VALID_DIFFICULTY_LEVELS
+
+    def test_min_queries_per_difficulty_constant(self):
+        """Test MIN_QUERIES_PER_DIFFICULTY is reasonable."""
+        assert MIN_QUERIES_PER_DIFFICULTY == 3
+
+    def test_validate_difficulty_distribution_all_valid(self):
+        """Test validation passes for valid difficulty distribution."""
+        examples = [
+            {"id": "ex-1", "metadata": {"difficulty": "trivial"}},
+            {"id": "ex-2", "metadata": {"difficulty": "easy"}},
+            {"id": "ex-3", "metadata": {"difficulty": "medium"}},
+            {"id": "ex-4", "metadata": {"difficulty": "hard"}},
+            {"id": "ex-5", "metadata": {"difficulty": "adversarial"}},
+        ]
+        errors, _warnings, distribution = validate_difficulty_distribution(
+            examples, min_per_level=1
+        )
+
+        assert errors == []
+        assert distribution["trivial"] == 1
+        assert distribution["easy"] == 1
+        assert distribution["medium"] == 1
+        assert distribution["hard"] == 1
+        assert distribution["adversarial"] == 1
+
+    def test_validate_difficulty_distribution_missing_field(self):
+        """Test validation catches missing difficulty field."""
+        examples = [
+            {"id": "ex-1", "metadata": {"difficulty": "easy"}},
+            {"id": "ex-2", "metadata": {}},  # Missing difficulty
+        ]
+        errors, _warnings, _distribution = validate_difficulty_distribution(examples)
+
+        assert len(errors) == 1
+        assert "ex-2" in errors[0]
+        assert "Missing metadata.difficulty" in errors[0]
+
+    def test_validate_difficulty_distribution_invalid_value(self):
+        """Test validation catches invalid difficulty values."""
+        examples = [
+            {
+                "id": "ex-1",
+                "metadata": {"difficulty": "expert"},
+            },  # Invalid - "expert" not in new schema
+            {"id": "ex-2", "metadata": {"difficulty": "easy"}},
+        ]
+        errors, _warnings, _distribution = validate_difficulty_distribution(examples)
+
+        assert len(errors) == 1
+        assert "ex-1" in errors[0]
+        assert "Invalid difficulty 'expert'" in errors[0]
+
+    def test_validate_difficulty_distribution_warns_low_count(self):
+        """Test validation warns when difficulty count is below minimum."""
+        examples = [
+            {"id": "ex-1", "metadata": {"difficulty": "easy"}},
+            {"id": "ex-2", "metadata": {"difficulty": "easy"}},  # Only 2 easy
+        ]
+        _errors, warnings, _distribution = validate_difficulty_distribution(
+            examples, min_per_level=3
+        )
+
+        # Should warn about missing levels and low counts
+        assert any("No examples with difficulty='adversarial'" in w for w in warnings)
+        assert any("Only 2 examples with difficulty='easy'" in w for w in warnings)
+
+    def test_validate_difficulty_distribution_no_metadata(self):
+        """Test validation handles examples without metadata section."""
+        examples = [
+            {"id": "ex-1"},  # No metadata at all
+        ]
+        errors, _warnings, _distribution = validate_difficulty_distribution(examples)
+
+        assert len(errors) == 1
+        assert "Missing metadata.difficulty" in errors[0]
+
+
+class TestValidateQueryFixtures:
+    """Tests for validate_query_fixtures function."""
+
+    @pytest.fixture
+    def valid_queries_fixture(self, tmp_path):
+        """Create valid queries.json with all difficulty levels."""
+        queries = {
+            "version": "1.1",
+            "queries": [
+                {"id": "q-1", "query": "test", "difficulty": "trivial"},
+                {"id": "q-2", "query": "test", "difficulty": "trivial"},
+                {"id": "q-3", "query": "test", "difficulty": "trivial"},
+                {"id": "q-4", "query": "test", "difficulty": "easy"},
+                {"id": "q-5", "query": "test", "difficulty": "easy"},
+                {"id": "q-6", "query": "test", "difficulty": "easy"},
+                {"id": "q-7", "query": "test", "difficulty": "medium"},
+                {"id": "q-8", "query": "test", "difficulty": "medium"},
+                {"id": "q-9", "query": "test", "difficulty": "medium"},
+                {"id": "q-10", "query": "test", "difficulty": "hard"},
+                {"id": "q-11", "query": "test", "difficulty": "hard"},
+                {"id": "q-12", "query": "test", "difficulty": "hard"},
+                {"id": "q-13", "query": "test", "difficulty": "adversarial"},
+                {"id": "q-14", "query": "test", "difficulty": "adversarial"},
+                {"id": "q-15", "query": "test", "difficulty": "adversarial"},
+            ],
+        }
+        filepath = tmp_path / "valid_queries.json"
+        with filepath.open("w") as f:
+            json.dump(queries, f)
+        return filepath
+
+    @pytest.fixture
+    def missing_difficulty_fixture(self, tmp_path):
+        """Create queries.json with missing difficulty fields."""
+        queries = {
+            "version": "1.0",
+            "queries": [
+                {"id": "q-1", "query": "test"},  # No difficulty
+                {"id": "q-2", "query": "test", "difficulty": "easy"},
+            ],
+        }
+        filepath = tmp_path / "missing_diff.json"
+        with filepath.open("w") as f:
+            json.dump(queries, f)
+        return filepath
+
+    @pytest.fixture
+    def invalid_difficulty_fixture(self, tmp_path):
+        """Create queries.json with invalid difficulty value."""
+        queries = {
+            "version": "1.0",
+            "queries": [
+                {"id": "q-1", "query": "test", "difficulty": "expert"},  # Invalid
+            ],
+        }
+        filepath = tmp_path / "invalid_diff.json"
+        with filepath.open("w") as f:
+            json.dump(queries, f)
+        return filepath
+
+    def test_validate_valid_queries_fixture(self, valid_queries_fixture):
+        """Test validation passes for well-distributed queries fixture."""
+        result = validate_query_fixtures(str(valid_queries_fixture))
+
+        assert result.is_valid is True
+        assert result.example_count == 15
+        assert result.errors == []
+        # Should have distribution summary in warnings
+        assert any("Distribution:" in w for w in result.warnings)
+
+    def test_validate_missing_difficulty(self, missing_difficulty_fixture):
+        """Test validation fails for missing difficulty field."""
+        result = validate_query_fixtures(str(missing_difficulty_fixture))
+
+        assert result.is_valid is False
+        assert any("q-1" in e and "Missing difficulty" in e for e in result.errors)
+
+    def test_validate_invalid_difficulty(self, invalid_difficulty_fixture):
+        """Test validation fails for invalid difficulty value."""
+        result = validate_query_fixtures(str(invalid_difficulty_fixture))
+
+        assert result.is_valid is False
+        assert any("Invalid difficulty 'expert'" in e for e in result.errors)
+
+    def test_validate_nonexistent_fixture(self):
+        """Test validation handles missing fixture file."""
+        result = validate_query_fixtures("/nonexistent/queries.json")
+
+        assert result.is_valid is False
+        assert any("not found" in e.lower() for e in result.errors)
+
+    def test_validate_invalid_json_fixture(self, tmp_path):
+        """Test validation handles invalid JSON fixture."""
+        filepath = tmp_path / "bad.json"
+        with filepath.open("w") as f:
+            f.write("not valid json")
+
+        result = validate_query_fixtures(str(filepath))
+
+        assert result.is_valid is False
+        assert any("Invalid JSON" in e for e in result.errors)
+
+
+class TestRealQueryFixtureValidation:
+    """Integration tests against real queries.json fixture."""
+
+    def test_validate_real_queries_fixture(self):
+        """Test validation against the actual queries.json fixture."""
+        fixture_path = (
+            Path(__file__).parent.parent.parent.parent
+            / "tests"
+            / "smoke"
+            / "retrieval"
+            / "fixtures"
+            / "queries.json"
+        )
+
+        if not fixture_path.exists():
+            pytest.skip("Queries fixture not found")
+
+        result = validate_query_fixtures(str(fixture_path))
+
+        # The queries fixture should be valid after #255 implementation
+        assert result.is_valid is True, f"Queries fixture validation failed: {result.errors}"
+        assert result.example_count == 21, "Queries fixture should have 21 queries"
+
+        # Check distribution warning for minimum coverage
+        distribution_warning = next((w for w in result.warnings if "Distribution:" in w), None)
+        assert distribution_warning is not None, "Should include distribution summary"
+
+        # Verify all difficulty levels are represented
+        assert "trivial: 3" in distribution_warning
+        assert "easy: 5" in distribution_warning
+        assert "medium: 6" in distribution_warning
+        assert "hard: 3" in distribution_warning
+        assert "adversarial: 4" in distribution_warning

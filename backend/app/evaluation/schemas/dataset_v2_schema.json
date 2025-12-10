@@ -364,7 +364,7 @@
             "properties": {
               "difficulty": {
                 "type": "string",
-                "enum": ["easy", "medium", "hard", "expert", "adversarial"],
+                "enum": ["trivial", "easy", "medium", "hard", "adversarial"],
                 "description": "Difficulty level for the model"
               },
               "edge_case": {

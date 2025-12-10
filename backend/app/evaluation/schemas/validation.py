@@ -30,6 +30,12 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Valid difficulty levels (aligned with sprint spec)
+VALID_DIFFICULTY_LEVELS = frozenset(["trivial", "easy", "medium", "hard", "adversarial"])
+
+# Minimum queries per difficulty level for comprehensive coverage
+MIN_QUERIES_PER_DIFFICULTY = 3
+
 # Try to import jsonschema, but don't fail if not available
 try:
     from jsonschema import Draft7Validator
@@ -386,6 +392,139 @@ def generate_validation_report(results: dict[str, ValidationResult]) -> str:
         lines.append("")
 
     return "\n".join(lines)
+
+
+def validate_difficulty_distribution(
+    examples: list[dict[str, Any]], min_per_level: int = MIN_QUERIES_PER_DIFFICULTY
+) -> tuple[list[str], list[str], dict[str, int]]:
+    """Validate difficulty field presence and distribution across examples.
+
+    Args:
+        examples: List of example dictionaries with metadata.difficulty
+        min_per_level: Minimum required examples per difficulty level
+
+    Returns:
+        Tuple of (errors, warnings, distribution_counts)
+
+    Example:
+        ```python
+        errors, warnings, counts = validate_difficulty_distribution(dataset["examples"])
+        if errors:
+            print(f"Difficulty validation failed: {errors}")
+        print(f"Distribution: {counts}")
+        ```
+
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    distribution: dict[str, int] = dict.fromkeys(VALID_DIFFICULTY_LEVELS, 0)
+
+    # Check each example for difficulty field
+    for i, example in enumerate(examples):
+        example_id = example.get("id", f"example-{i}")
+        metadata = example.get("metadata", {})
+        difficulty = metadata.get("difficulty")
+
+        if difficulty is None:
+            errors.append(f"{example_id}: Missing metadata.difficulty field")
+        elif difficulty not in VALID_DIFFICULTY_LEVELS:
+            errors.append(
+                f"{example_id}: Invalid difficulty '{difficulty}', "
+                f"must be one of: {sorted(VALID_DIFFICULTY_LEVELS)}"
+            )
+        else:
+            distribution[difficulty] += 1
+
+    # Check distribution coverage
+    for level, count in distribution.items():
+        if count == 0:
+            warnings.append(f"No examples with difficulty='{level}'")
+        elif count < min_per_level:
+            warnings.append(
+                f"Only {count} examples with difficulty='{level}', recommend ≥{min_per_level}"
+            )
+
+    return errors, warnings, distribution
+
+
+def validate_query_fixtures(
+    fixture_path: str | Path, min_per_level: int = MIN_QUERIES_PER_DIFFICULTY
+) -> ValidationResult:
+    """Validate retrieval test fixture queries for difficulty coverage.
+
+    Specifically designed for queries.json format in retrieval fixtures.
+
+    Args:
+        fixture_path: Path to queries.json fixture file
+        min_per_level: Minimum required queries per difficulty level
+
+    Returns:
+        ValidationResult with validation status and distribution info
+
+    Example:
+        ```python
+        result = validate_query_fixtures("tests/smoke/retrieval/fixtures/queries.json")
+        if result.is_valid:
+            print("Query fixtures are valid!")
+        ```
+
+    """
+    fixture_path = Path(fixture_path)
+    result = ValidationResult(is_valid=True, dataset_name=fixture_path.stem)
+
+    if not fixture_path.exists():
+        result.is_valid = False
+        result.errors.append(f"Fixture file not found: {fixture_path}")
+        return result
+
+    try:
+        with open(fixture_path) as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        result.is_valid = False
+        result.errors.append(f"Invalid JSON: {e}")
+        return result
+
+    queries = data.get("queries", [])
+    result.example_count = len(queries)
+
+    if not queries:
+        result.warnings.append("Fixture has no queries")
+        return result
+
+    # Validate difficulty for queries (using same logic but different field structure)
+    distribution: dict[str, int] = dict.fromkeys(VALID_DIFFICULTY_LEVELS, 0)
+
+    for query in queries:
+        query_id = query.get("id", "unknown")
+        difficulty = query.get("difficulty")
+
+        if difficulty is None:
+            result.errors.append(f"{query_id}: Missing difficulty field")
+            result.is_valid = False
+        elif difficulty not in VALID_DIFFICULTY_LEVELS:
+            result.errors.append(
+                f"{query_id}: Invalid difficulty '{difficulty}', "
+                f"must be one of: {sorted(VALID_DIFFICULTY_LEVELS)}"
+            )
+            result.is_valid = False
+        else:
+            distribution[difficulty] += 1
+
+    # Check distribution coverage
+    for level, count in distribution.items():
+        if count == 0:
+            result.warnings.append(f"No queries with difficulty='{level}'")
+        elif count < min_per_level:
+            result.warnings.append(
+                f"Only {count} queries with difficulty='{level}', recommend ≥{min_per_level}"
+            )
+
+    # Add distribution summary to warnings for visibility
+    dist_summary = ", ".join(f"{k}: {v}" for k, v in sorted(distribution.items()))
+    result.warnings.append(f"Distribution: {dist_summary}")
+
+    return result
 
 
 # CLI entry point
