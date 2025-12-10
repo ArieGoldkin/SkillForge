@@ -219,7 +219,7 @@ filterwarnings = [
 [tool.coverage.run]
 # Measure code coverage but omit experimental and placeholder modules
 omit = [
-    "app/evaluation/*",          # Experimental benchmarking framework
+    # Note: app/evaluation/* removed - now has proper tests (issue #252)
     "app/workflows/studio_compat.py",  # LangGraph Studio compatibility placeholder
     "app/workflows/tutor/tasks/*",     # Tutor task placeholders
     "app/workflows/tutor/context.py",  # Tutor context placeholder
