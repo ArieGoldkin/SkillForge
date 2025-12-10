@@ -320,3 +320,155 @@ class EmbeddingService:
     async def close(self) -> None:
         """Close the OpenAI client."""
         await self.client.close()
+
+    async def generate_embeddings_batch(
+        self,
+        texts: list[str],
+        normalize: bool = True,
+        batch_size: int | None = None,
+    ) -> list[tuple[EmbeddingVector, float]]:
+        """Generate embeddings for multiple texts using batch API.
+
+        Uses OpenAI's multi-input embedding API for efficiency.
+        Returns embeddings in the same order as input texts.
+
+        Args:
+            texts: List of texts to embed
+            normalize: If True, apply L2 normalization (default: True)
+            batch_size: Optional batch size override. Uses adaptive batch sizer if None.
+
+        Returns:
+            List of tuples (embedding_vector, latency_ms) in same order as input
+
+        Raises:
+            EmbeddingError: If embedding generation fails
+            ValueError: If texts is empty
+
+        """
+        if not texts:
+            return []
+
+        # Use adaptive batch size from backpressure system if not specified
+        if batch_size is None:
+            batch_size = self._batch_sizer.current_size
+
+        # Clamp batch size to configured limits
+        batch_size = max(
+            settings.BATCH_SIZE_MIN,
+            min(batch_size, settings.BATCH_SIZE_MAX),
+        )
+
+        results: list[tuple[EmbeddingVector, float]] = []
+        total_tokens = 0
+
+        for batch_start in range(0, len(texts), batch_size):
+            batch_texts = texts[batch_start : batch_start + batch_size]
+            batch_results = await self._embed_batch(batch_texts, normalize)
+
+            # Track stats
+            for embedding, latency_ms in batch_results:
+                results.append((embedding, latency_ms))
+                total_tokens += len(embedding)
+
+        # Record batch-level metrics
+        self._metrics.record_batch_embedding(
+            batch_count=len(texts),
+            total_latency_ms=sum(r[1] for r in results),
+            avg_batch_size=batch_size,
+        )
+
+        logger.info(
+            "batch_embedding_complete",
+            total_texts=len(texts),
+            batch_size=batch_size,
+            batch_count=(len(texts) + batch_size - 1) // batch_size,
+        )
+
+        return results
+
+    async def _embed_batch(
+        self,
+        texts: list[str],
+        normalize: bool,
+    ) -> list[tuple[EmbeddingVector, float]]:
+        """Embed a single batch of texts.
+
+        Args:
+            texts: Batch of texts to embed
+            normalize: Whether to normalize vectors
+
+        Returns:
+            List of (embedding, latency_ms) tuples
+
+        """
+        if not texts:
+            return []
+
+        # Prepare texts (tokenize and truncate each)
+        prepared_texts: list[str] = []
+        for text in texts:
+            if not text or not text.strip():
+                continue
+            prepared_text, _, _ = await self._prepare_text(text)
+            prepared_texts.append(prepared_text)
+
+        if not prepared_texts:
+            return []
+
+        # Apply rate limiting before batch API call
+        await self._rate_limiter.acquire_async(tokens=len(prepared_texts))
+
+        start_time = time.perf_counter()
+
+        try:
+            # Call OpenAI embeddings API with batch input
+            response = await self.client.embeddings.create(
+                model=self.model,
+                input=prepared_texts,
+            )
+
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            per_text_latency = latency_ms / len(prepared_texts)
+
+            # Extract embeddings and maintain order
+            results: list[tuple[EmbeddingVector, float]] = []
+            for data in response.data:
+                embedding = cast(EmbeddingVector, data.embedding)
+
+                if len(embedding) != self.expected_dimensions:
+                    error_msg = (
+                        f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
+                    )
+                    raise EmbeddingError(error_msg)
+
+                if normalize:
+                    embedding = normalize_vector(embedding)
+
+                results.append((embedding, per_text_latency))
+
+            # Record success and metrics
+            self._error_tracker.record_success()
+            self._metrics.record_embedding_request(
+                status="success",
+                latency_ms=latency_ms,
+                token_count=sum(len(t) for t in prepared_texts),  # Approximate
+                truncated=False,
+                batch_size=len(prepared_texts),
+            )
+
+            # Allow batch sizer to potentially increase after success
+            self._batch_sizer.try_increase(self._error_tracker)
+
+            return results
+
+        except APIStatusError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._handle_api_status_error(e, latency_ms, 0, False)
+            error_msg = f"Batch embedding generation failed: {e!s}"
+            raise EmbeddingError(error_msg) from e
+
+        except Exception as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._handle_generic_error(e, latency_ms, 0, False)
+            error_msg = f"Batch embedding generation failed: {e!s}"
+            raise EmbeddingError(error_msg) from e

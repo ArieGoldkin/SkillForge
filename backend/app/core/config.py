@@ -351,6 +351,26 @@ class Settings(BaseSettings):
         description="Threshold below which a vector is considered zero/invalid",
     )
 
+    # Chunking Configuration (Issue #215)
+    CHUNK_MAX_TOKENS: int = Field(
+        default=7500,
+        description="Hard limit for tokens per chunk (below 8K OpenAI API limit)",
+    )
+    CHUNK_PREFER_SEMANTIC_BREAKS: bool = Field(
+        default=True,
+        description="Prefer breaking at paragraph/heading boundaries when chunking",
+    )
+
+    # Deduplication Configuration (Issue #215)
+    DEDUP_CHECK_DATABASE: bool = Field(
+        default=True,
+        description="Check database for existing hashes before embedding",
+    )
+    DEDUP_HASH_INCLUDES_MODEL: bool = Field(
+        default=True,
+        description="Include model and version in hash to trigger re-embedding on model upgrade",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
