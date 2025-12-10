@@ -7,6 +7,12 @@ This module provides task-specific evaluators that measure output accuracy:
 
 All evaluators are compatible with LangSmith's evaluate() method using
 the Run and Example signature.
+
+Supervisor Routing Metrics (v2.0):
+- coverage_score: Did supervisor select all REQUIRED agents? (superset OK)
+- precision_score: How many selected agents were relevant?
+- jaccard_score: Traditional exact match similarity (legacy)
+- supervisor_correctness: Combined weighted score
 """
 
 from typing import Any
@@ -19,20 +25,68 @@ from app.workflows.agents.schemas.tech_comparator import TechComparison
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
 
+def _calculate_supervisor_metrics(
+    expected_agents: set[str],
+    actual_agents: set[str],
+    optional_agents: set[str] | None = None,
+) -> dict[str, float]:
+    """Calculate multiple routing metrics for supervisor evaluation.
+
+    Args:
+        expected_agents: Required agents that MUST be selected.
+        actual_agents: Agents actually selected by supervisor.
+        optional_agents: Agents that MAY be selected (auto-activated, context-dependent).
+
+    Returns:
+        Dictionary with coverage_score, precision_score, jaccard_score.
+
+    """
+    optional_agents = optional_agents or set()
+
+    # Coverage: Did we select ALL required agents? (superset is OK)
+    # This rewards thoroughness - selecting extra agents doesn't hurt
+    if not expected_agents:
+        coverage_score = 1.0
+    else:
+        covered = expected_agents & actual_agents
+        coverage_score = len(covered) / len(expected_agents)
+
+    # Precision: How many selected agents were relevant (expected OR optional)?
+    # This penalizes selecting completely irrelevant agents
+    relevant_agents = expected_agents | optional_agents
+    if not actual_agents:
+        precision_score = 0.0
+    elif not relevant_agents:
+        precision_score = 1.0  # No expectations = anything is fine
+    else:
+        relevant_selected = actual_agents & relevant_agents
+        precision_score = len(relevant_selected) / len(actual_agents)
+
+    # Jaccard: Traditional exact match (legacy metric)
+    if not expected_agents and not actual_agents:
+        jaccard_score = 1.0
+    else:
+        intersection = expected_agents & actual_agents
+        union = expected_agents | actual_agents
+        jaccard_score = len(intersection) / len(union) if union else 0.0
+
+    return {
+        "coverage_score": coverage_score,
+        "precision_score": precision_score,
+        "jaccard_score": jaccard_score,
+    }
+
+
 def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
-    """Evaluate supervisor routing correctness.
+    """Evaluate supervisor routing correctness with multiple metrics.
 
-    Measures how well the supervisor selected the appropriate agents for
-    the given content. Uses Jaccard similarity for partial credit.
+    Uses a combination of metrics to fairly evaluate routing:
+    - Coverage (50%): Did supervisor select all REQUIRED agents?
+    - Precision (30%): Were selected agents relevant?
+    - Jaccard (20%): Traditional similarity (for backward compatibility)
 
-    Scoring:
-    - 1.0: Perfect match (all expected agents selected, no extras)
-    - 0.5-0.9: Partial match (some correct agents, some missing/extra)
-    - 0.0: No overlap or all wrong agents
-
-    Penalties:
-    - Missing expected agents reduces score
-    - Selecting irrelevant agents reduces score
+    This approach rewards thoroughness (selecting extra helpful agents)
+    while penalizing missing required agents or selecting irrelevant ones.
 
     Args:
         run: LangSmith run with supervisor output
@@ -48,6 +102,8 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
     # Extract expected agents from example outputs
     reference_outputs = example.outputs or {}
     expected_agents = set(reference_outputs.get("expected_agents", []))
+    # Optional agents are OK to select (auto-activated by supervisor logic)
+    optional_agents = set(reference_outputs.get("optional_agents", []))
     # Support both 'agents' and 'selected_agents' keys
     actual_agents = set(outputs.get("agents", outputs.get("selected_agents", [])))
 
@@ -59,13 +115,6 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
             "comment": "No agents expected or selected (trivial case)",
         }
 
-    if not expected_agents:
-        return {
-            "key": "supervisor_correctness",
-            "score": 0.0,
-            "comment": f"Selected {len(actual_agents)} agents when none expected",
-        }
-
     if not actual_agents:
         return {
             "key": "supervisor_correctness",
@@ -73,25 +122,140 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
             "comment": f"No agents selected (expected {len(expected_agents)})",
         }
 
-    # Jaccard similarity for partial credit
-    intersection = expected_agents & actual_agents
-    union = expected_agents | actual_agents
-    score = len(intersection) / len(union) if union else 0.0
+    # Calculate all metrics
+    metrics = _calculate_supervisor_metrics(expected_agents, actual_agents, optional_agents)
+
+    # Combined score: Coverage (50%) + Precision (30%) + Jaccard (20%)
+    # This weights coverage heavily - missing required agents is worse than extra agents
+    score = (
+        0.50 * metrics["coverage_score"]
+        + 0.30 * metrics["precision_score"]
+        + 0.20 * metrics["jaccard_score"]
+    )
 
     # Build detailed comment
     missing = expected_agents - actual_agents
-    extra = actual_agents - expected_agents
+    extra = actual_agents - expected_agents - optional_agents
+    auto_activated = actual_agents & optional_agents
 
-    comment_parts = [f"{len(intersection)}/{len(expected_agents)} correct"]
+    comment_parts = [
+        f"coverage: {metrics['coverage_score']:.0%}",
+        f"precision: {metrics['precision_score']:.0%}",
+    ]
     if missing:
         comment_parts.append(f"missing: {sorted(missing)}")
     if extra:
-        comment_parts.append(f"extra: {sorted(extra)}")
+        comment_parts.append(f"unexpected: {sorted(extra)}")
+    if auto_activated:
+        comment_parts.append(f"auto-activated: {sorted(auto_activated)}")
 
     return {
         "key": "supervisor_correctness",
         "score": score,
         "comment": ", ".join(comment_parts),
+    }
+
+
+def supervisor_coverage_evaluator(run: Run, example: Example) -> dict[str, Any]:
+    """Evaluate supervisor coverage - did it select all REQUIRED agents.
+
+    This metric rewards thoroughness. Selecting extra agents is OK.
+    Only penalizes MISSING required agents.
+
+    Scoring:
+    - 1.0: All required agents selected (superset is perfect)
+    - 0.5: Half of required agents selected
+    - 0.0: No required agents selected
+
+    Args:
+        run: LangSmith run with supervisor output
+        example: Golden example with expected agents
+
+    Returns:
+        {"key": "supervisor_coverage", "score": 0.0-1.0, "comment": "..."}
+
+    """
+    outputs = run.outputs or {}
+    reference_outputs = example.outputs or {}
+
+    expected_agents = set(reference_outputs.get("expected_agents", []))
+    actual_agents = set(outputs.get("agents", outputs.get("selected_agents", [])))
+
+    if not expected_agents:
+        return {
+            "key": "supervisor_coverage",
+            "score": 1.0,
+            "comment": "No required agents specified",
+        }
+
+    covered = expected_agents & actual_agents
+    missing = expected_agents - actual_agents
+    score = len(covered) / len(expected_agents)
+
+    comment = f"{len(covered)}/{len(expected_agents)} required agents covered"
+    if missing:
+        comment += f", missing: {sorted(missing)}"
+
+    return {
+        "key": "supervisor_coverage",
+        "score": score,
+        "comment": comment,
+    }
+
+
+def supervisor_precision_evaluator(run: Run, example: Example) -> dict[str, Any]:
+    """Evaluate supervisor precision - were selected agents relevant.
+
+    This metric penalizes selecting completely irrelevant agents.
+    Expected + optional agents are considered relevant.
+
+    Scoring:
+    - 1.0: All selected agents were relevant
+    - 0.5: Half of selected agents were relevant
+    - 0.0: No selected agents were relevant
+
+    Args:
+        run: LangSmith run with supervisor output
+        example: Golden example with expected/optional agents
+
+    Returns:
+        {"key": "supervisor_precision", "score": 0.0-1.0, "comment": "..."}
+
+    """
+    outputs = run.outputs or {}
+    reference_outputs = example.outputs or {}
+
+    expected_agents = set(reference_outputs.get("expected_agents", []))
+    optional_agents = set(reference_outputs.get("optional_agents", []))
+    actual_agents = set(outputs.get("agents", outputs.get("selected_agents", [])))
+
+    if not actual_agents:
+        return {
+            "key": "supervisor_precision",
+            "score": 0.0,
+            "comment": "No agents selected",
+        }
+
+    relevant_agents = expected_agents | optional_agents
+    if not relevant_agents:
+        return {
+            "key": "supervisor_precision",
+            "score": 1.0,
+            "comment": "No relevance constraints specified",
+        }
+
+    relevant_selected = actual_agents & relevant_agents
+    irrelevant = actual_agents - relevant_agents
+    score = len(relevant_selected) / len(actual_agents)
+
+    comment = f"{len(relevant_selected)}/{len(actual_agents)} agents relevant"
+    if irrelevant:
+        comment += f", irrelevant: {sorted(irrelevant)}"
+
+    return {
+        "key": "supervisor_precision",
+        "score": score,
+        "comment": comment,
     }
 
 

@@ -12,6 +12,7 @@
     },
     "outputs": {
       "expected_agents": ["tech_comparator", "trend_validator"],
+      "optional_agents": ["dependency_mapper", "performance_analyst"],
       "reasoning": "Article directly compares React vs Vue frameworks. Contains 'vs', 'comparison', 'migrate' keywords. Also discusses 2025 trends and ecosystem maturity."
     },
     "metadata": {
@@ -33,6 +34,7 @@
     },
     "outputs": {
       "expected_agents": ["security_auditor", "code_quality_critic"],
+      "optional_agents": ["implementation_planner", "dependency_mapper"],
       "reasoning": "Focuses on security vulnerabilities and authentication. Contains 'security', 'vulnerability', 'auth' keywords. Also includes code examples showing best practices vs antipatterns."
     },
     "metadata": {
@@ -54,6 +56,7 @@
     },
     "outputs": {
       "expected_agents": ["implementation_planner", "dependency_mapper"],
+      "optional_agents": ["code_quality_critic", "security_auditor"],
       "reasoning": "Tutorial/guide content with 'tutorial', 'getting started', step-by-step format. Contains pip install commands and package dependencies."
     },
     "metadata": {
@@ -75,6 +78,7 @@
     },
     "outputs": {
       "expected_agents": ["performance_analyst", "tech_comparator"],
+      "optional_agents": ["dependency_mapper"],
       "reasoning": "Performance benchmarks with latency and throughput metrics. Contains 'async', 'benchmark', 'latency', 'throughput' keywords. Also compares different drivers."
     },
     "metadata": {
@@ -96,6 +100,7 @@
     },
     "outputs": {
       "expected_agents": ["code_quality_critic", "implementation_planner"],
+      "optional_agents": ["dependency_mapper"],
       "reasoning": "Discusses best practices, antipatterns, and refactoring. Contains code examples showing good vs bad patterns."
     },
     "metadata": {
@@ -117,6 +122,7 @@
     },
     "outputs": {
       "expected_agents": ["tech_comparator", "trend_validator", "dependency_mapper"],
+      "optional_agents": ["implementation_planner", "performance_analyst"],
       "reasoning": "Compares state management libraries with migration focus. Contains 'migrate', 'vs' comparisons, discusses modern vs legacy approaches, and lists package dependencies."
     },
     "metadata": {
@@ -138,6 +144,7 @@
     },
     "outputs": {
       "expected_agents": ["implementation_planner", "integration_feasibility", "dependency_mapper"],
+      "optional_agents": ["code_quality_critic", "security_auditor"],
       "reasoning": "Full-stack integration guide with setup instructions. Contains 'integration', 'stack', 'frontend', 'backend' keywords. Lists npm and pip dependencies."
     },
     "metadata": {
@@ -159,6 +166,7 @@
     },
     "outputs": {
       "expected_agents": ["trend_validator", "tech_comparator"],
+      "optional_agents": ["performance_analyst"],
       "reasoning": "Discusses technology trends, adoption statistics, and what's modern vs legacy. Contains 'trend', 'modern', 'adoption', 'popularity' keywords."
     },
     "metadata": {
@@ -180,6 +188,7 @@
     },
     "outputs": {
       "expected_agents": ["implementation_planner", "dependency_mapper", "integration_feasibility"],
+      "optional_agents": ["code_quality_critic", "trend_validator"],
       "reasoning": "Official React documentation with getting started content. Contains setup guidance, code examples, and mentions full-stack frameworks (Next.js, React Router)."
     },
     "metadata": {
@@ -201,6 +210,7 @@
     },
     "outputs": {
       "expected_agents": ["security_auditor", "implementation_planner"],
+      "optional_agents": ["code_quality_critic", "dependency_mapper"],
       "reasoning": "Authentication and security implementation guide. Contains 'security', 'auth', 'authentication' keywords. Also provides step-by-step tutorial content."
     },
     "metadata": {
@@ -222,6 +232,7 @@
     },
     "outputs": {
       "expected_agents": ["performance_analyst", "implementation_planner"],
+      "optional_agents": ["dependency_mapper", "integration_feasibility"],
       "reasoning": "Performance scaling case study with metrics. Contains 'scaling', 'latency', 'throughput' keywords. Also includes architecture evolution guide."
     },
     "metadata": {
@@ -243,6 +254,7 @@
     },
     "outputs": {
       "expected_agents": ["code_quality_critic", "implementation_planner"],
+      "optional_agents": ["dependency_mapper"],
       "reasoning": "Best practices guide for type hints. Contains code examples and 'best practices' theme. Educational tutorial format."
     },
     "metadata": {
@@ -264,6 +276,7 @@
     },
     "outputs": {
       "expected_agents": ["implementation_planner", "dependency_mapper", "trend_validator"],
+      "optional_agents": ["code_quality_critic"],
       "reasoning": "Tutorial for LangChain with setup instructions. Contains pip install, dependencies. Also mentions 2025 recommendations (LangGraph vs legacy)."
     },
     "metadata": {
@@ -285,6 +298,7 @@
     },
     "outputs": {
       "expected_agents": ["security_auditor", "code_quality_critic"],
+      "optional_agents": ["implementation_planner", "dependency_mapper"],
       "reasoning": "Security vulnerability focus with prevention patterns. Contains 'vulnerability', 'security' keywords. Shows dangerous vs safe code patterns."
     },
     "metadata": {
@@ -306,6 +320,7 @@
     },
     "outputs": {
       "expected_agents": ["tech_comparator", "trend_validator", "performance_analyst"],
+      "optional_agents": ["dependency_mapper"],
       "reasoning": "Direct technology comparison with 'vs'. Discusses 2025 trends and provides performance metrics comparison."
     },
     "metadata": {
@@ -327,6 +342,7 @@
     },
     "outputs": {
       "expected_agents": ["trend_validator", "implementation_planner", "dependency_mapper"],
+      "optional_agents": ["code_quality_critic"],
       "reasoning": "Discusses deprecated technology and migration. Contains 'deprecated', 'migrate' keywords. Includes step-by-step migration guide with npm commands."
     },
     "metadata": {
@@ -348,6 +364,7 @@
     },
     "outputs": {
       "expected_agents": ["tech_comparator", "integration_feasibility", "performance_analyst"],
+      "optional_agents": ["code_quality_critic", "security_auditor"],
       "reasoning": "Compares communication patterns with performance metrics. Integration architecture discussion. Contains latency comparison table."
     },
     "metadata": {
@@ -369,6 +386,7 @@
     },
     "outputs": {
       "expected_agents": ["code_quality_critic", "security_auditor"],
+      "optional_agents": ["performance_analyst"],
       "reasoning": "Code quality and review checklist. Contains 'best practices' theme and security checks. Focuses on maintainability patterns."
     },
     "metadata": {
@@ -390,6 +408,7 @@
     },
     "outputs": {
       "expected_agents": ["trend_validator", "code_quality_critic"],
+      "optional_agents": ["implementation_planner", "performance_analyst"],
       "reasoning": "New version features and deprecations. Contains 'deprecated', 'modern' language features. Discusses adoption of new syntax."
     },
     "metadata": {
@@ -411,6 +430,7 @@
     },
     "outputs": {
       "expected_agents": ["dependency_mapper", "implementation_planner"],
+      "optional_agents": ["code_quality_critic"],
       "reasoning": "Troubleshooting package/dependency issues. Contains pip install, package management, environment setup content."
     },
     "metadata": {
