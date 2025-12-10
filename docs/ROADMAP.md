@@ -1,8 +1,9 @@
 # 🗺️ SkillForge Development Roadmap
 
-**Version:** 1.0
-**Last Updated:** November 23, 2025
+**Version:** 2.0
+**Last Updated:** December 10, 2025
 **Project Type:** Research-to-Implementation Pipeline with AI Tutoring
+**Current Sprint:** Sprint 8 - Embeddings & Search
 
 ---
 
@@ -124,18 +125,17 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 - `pydantic>=2.10.3` - Data validation
 - `pydantic-settings>=2.6.1` - Configuration management
 
-**LangChain/LangGraph v1.0 (November 2025):**
-- `langgraph>=1.0.0` - **v1.0 stable** - Agent orchestration with Functional API
-- `langchain>=1.0.0` - **v1.0 stable** - Core framework with create_agent
-- `langchain-core>=1.0.0` - **v1.0 stable** - Foundation library
-- `langchain-community>=1.0.0` - **v1.0 stable** - Community integrations
-- `langgraph-checkpoint>=3.0.0` - Advanced checkpointing (PostgreSQL, time-travel)
-- `langsmith>=1.0.0` - Observability & tracing (v1.0 compatible)
+**LangChain/LangGraph v1.0 (December 2025):**
+- `langgraph>=1.0.4` - **v1.0 stable** - Agent orchestration with StateGraph API
+- `langchain>=1.1.2` - **v1.0 stable** - Core framework
+- `langchain-core>=1.1.1` - **v1.0 stable** - Foundation library
+- `langchain-community>=0.4.1` - Community integrations
+- `langgraph-checkpoint>=3.0.1` - Advanced checkpointing (PostgreSQL, time-travel)
 
 **LLM Providers:**
-- `langchain-openai>=1.0.0` - OpenAI models (staging/prod, v1.0 compatible)
-- `langchain-anthropic>=1.0.0` - Claude models (optional, v1.0 compatible)
-- OpenAI integration via `langchain-openai` (v1.0 compatible)
+- `langchain-openai>=1.1.0` - OpenAI models (staging/prod)
+- `langchain-anthropic>=1.2.0` - Claude models (optional)
+- `langchain-google-genai>=3.2.0` - Google Gemini models (optional)
 
 **Database:**
 - `psycopg[binary,pool]==3.2.3` - PostgreSQL driver
@@ -425,128 +425,187 @@ logger.info(
 
 ---
 
-## 📅 Development Phases
+## 📅 Sprint Roadmap
 
-### **Phase 1: Foundation (Weeks 1-2)** ⚡ PRIORITY
-**Goal:** Establish core infrastructure and basic analysis capability
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        SKILLFORGE SPRINT PROGRESSION                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Sprint 8 (Current)         Sprint 9              Sprint 10                    │
+│   ═══════════════════       ═════════════         ════════════════              │
+│   Embeddings & Search  →    MCP Consumer    →    Context Engineering           │
+│   • Hierarchical chunking   • MCP client         • Memory persistence          │
+│   • Semantic search         • Tool discovery     • Context injection           │
+│   • Re-ranker               • External MCPs      • Conversation threading      │
+│   • Smoke tests             • Context mgmt                                     │
+│                                                                                 │
+│             │                      │                      │                     │
+│             ▼                      ▼                      ▼                     │
+│                                                                                 │
+│   Sprint 11                  Sprint 12               Testing                    │
+│   ════════════════          ════════════════         ════════════              │
+│   Features                   MCP Server        →    Deployment                 │
+│   • Tutoring refinement      • SkillForge as MCP    • E2E tests               │
+│   • Library enhancements     • Tool exposure        • Performance             │
+│   • Search optimization      • AI assistant APIs    • Production              │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### **Sprint 8: Embeddings & Search** ✅ (CURRENT)
+**Goal:** Production-ready embedding pipeline and search infrastructure
 
 **Deliverables:**
+- ✅ Embedding pipeline hardening (batch processing, normalization)
+- ✅ Hierarchical chunking (coarse-to-fine retrieval)
+- ✅ Semantic + keyword + hybrid search APIs
+- ✅ Re-ranker implementation
+- ✅ PII/Safety guardrails for vectors
+- ✅ Retrieval smoke tests with IR metrics (Recall@k, MRR, NDCG)
+
+**Key Issues:**
+| # | Title | Status |
+|---|-------|--------|
+| 215 | Embedding Pipeline Hardening | ✅ Complete |
+| 216 | Retrieval & Search API | ✅ Complete |
+| 217 | Re-ranker | ✅ Complete |
+| 220 | PII/Safety Guardrails | ✅ Complete |
+| 221 | Hierarchical Chunking | ✅ Complete |
+| 223 | Retrieval Smoke Tests | ✅ Complete |
+
+---
+
+### **Sprint 9: MCP Consumer** 📥 (NEXT)
+**Goal:** Integrate SkillForge as MCP client to consume external tools
+
+**Deliverables:**
+- MCP client implementation for Claude Code integration
+- Tool discovery and registration system
+- External MCP server consumption (context7, memory, etc.)
+- Context window management and optimization
+- MCP transport layer (stdio, SSE)
+
+**Definition of Done:**
+- SkillForge can connect to external MCP servers
+- Tools from external MCPs are discoverable and callable
+- Context is efficiently managed across MCP connections
+
+---
+
+### **Sprint 10: Context Engineering** 🧠
+**Goal:** Advanced context management for intelligent conversations
+
+**Deliverables:**
+- Advanced context management system
+- Memory persistence across sessions
+- Dynamic context injection based on conversation state
+- Conversation threading and branching
+- Context summarization for long conversations
+
+**Definition of Done:**
+- Conversations maintain context across browser sessions
+- System can intelligently inject relevant context from history
+- Long conversations are summarized to fit context windows
+
+---
+
+### **Sprint 11: Features - Tutoring & Library** 📚
+**Goal:** Refine core user-facing features
+
+**Deliverables:**
+- Socratic tutoring system refinement
+- Knowledge library enhancements
+- Full-text + semantic search optimization
+- Topic extraction and filtering improvements
+- User progress tracking
+
+**Definition of Done:**
+- Tutoring adapts based on user understanding level
+- Library search returns relevant results in <500ms
+- Topics are accurately extracted and filterable
+
+---
+
+### **Sprint 12: MCP Server** 📤
+**Goal:** Expose SkillForge as MCP server for external AI assistants
+
+**Deliverables:**
+- SkillForge as MCP server provider
+- Tool exposure for external consumers
+- API integration for AI assistants (Claude Code, etc.)
+- Production-ready MCP endpoints
+- Documentation for MCP consumers
+
+**Definition of Done:**
+- External AI assistants can call SkillForge tools via MCP
+- Analysis, tutoring, and library search available as MCP tools
+- Comprehensive documentation for integrators
+
+---
+
+### **Testing & Deployment** 🚀
+**Goal:** Production-ready deployment with comprehensive testing
+
+**Deliverables:**
+- E2E testing suite (Playwright)
+- Performance optimization
+- Production deployment (Vercel + Railway)
+- Monitoring & alerting (Sentry, Prometheus)
+
+**Definition of Done:**
+- All E2E tests pass
+- P95 latency <3 seconds for analysis
+- <5% error rate in production
+
+---
+
+## 📜 Completed Phases (Legacy Reference)
+
+<details>
+<summary>Click to expand completed phases (Sprints 1-7)</summary>
+
+### **Phase 1: Foundation** ✅
 - ✅ Backend scaffolding (FastAPI app structure)
 - ✅ Database schema + migrations (PGVector tables)
 - ✅ Frontend scaffolding (React 19 + Vite)
 - ✅ Content extraction for articles (Jina AI Reader)
-- ✅ Basic analysis workflow (no sub-agents yet)
+- ✅ Basic analysis workflow
 - ✅ Docker Compose dev environment
 
-**Definition of Done:**
-- User can submit article URL → backend extracts text → stores in PGVector
-- Frontend displays extraction progress via SSE
-- All services run via `docker-compose up`
-
----
-
-### **Phase 2: Multi-Agent Analysis Pipeline (Weeks 3-4)** 🤖
-**Goal:** Implement full LangGraph orchestration with sub-agents
-
-**Deliverables:**
+### **Phase 2: Multi-Agent Analysis Pipeline** ✅
 - ✅ LangGraph supervisor pattern implementation
-- ✅ 3 core sub-agents (Tech Comparator, Integration Feasibility, Implementation Planner)
-- ✅ 5 additional sub-agents (Security, Performance, Code Quality, Trends, Dependencies)
+- ✅ 8 specialized sub-agents
 - ✅ Aggregator node (synthesizes findings)
 - ✅ Artifact generator (markdown output)
 - ✅ SSE progress updates for each stage
-- ✅ Markdown download endpoint
 
-**Definition of Done:**
-- User submits URL → receives comprehensive markdown artifact in <5 minutes
-- Artifact includes: Executive Summary, Key Findings, Architecture Recommendations, Implementation Plan, Claude Code-ready prompts
-- All agent findings persisted to database with embeddings
-
----
-
-### **Phase 3: Tutoring System (Weeks 5-6)** 🎓
-**Goal:** Interactive Socratic learning mode
-
-**Deliverables:**
+### **Phase 3: Tutoring System** ✅
 - ✅ Tutor agent LangGraph workflow
 - ✅ Context loading from analysis
-- ✅ Socratic dialogue implementation (system prompt engineering)
-- ✅ Understanding assessment logic
-- ✅ Tutoring UI (separate chat interface)
-- ✅ Session persistence (tutoring_sessions + tutoring_messages tables)
+- ✅ Socratic dialogue implementation
+- ✅ Session persistence
 
-**Definition of Done:**
-- User can click "Teach Me" on any analysis → enters interactive chat
-- Tutor asks progressive questions, adapts to user responses
-- Conversation history persists across browser sessions
-- User can exit/resume tutoring sessions
-
----
-
-### **Phase 4: Library & Search (Weeks 7-8)** 📚
-**Goal:** Searchable knowledge base with filtering
-
-**Deliverables:**
-- ✅ Full-text search (PostgreSQL `tsvector` + PGVector semantic search)
-- ✅ Library UI with filters (content type, date, topics)
+### **Phase 4: Library & Search** ✅
+- ✅ Full-text search (PostgreSQL tsvector + PGVector)
+- ✅ Library UI with filters
 - ✅ Topic extraction & auto-tagging
-- ✅ Sorting (recent, most downloaded)
 - ✅ Pagination
-- ✅ Markdown preview in library
 
-**Definition of Done:**
-- User can search "React Server Components" → finds all relevant analyses
-- Filters work correctly (e.g., "only videos from last month")
-- Library loads instantly (<500ms) for up to 1000 analyses
-
----
-
-### **Phase 5: Content Source Expansion (Week 9)** 📹
-**Goal:** Support YouTube videos and GitHub repositories
-
-**Deliverables:**
-- ✅ YouTube transcript extraction (youtube-transcript-api)
-- ✅ GitHub repo analysis (basic structure + README)
+### **Phase 5: Content Source Expansion** ✅
+- ✅ YouTube transcript extraction
+- ✅ GitHub repo analysis
 - ✅ Content type detection & routing
-- ✅ Specialized prompts for video vs article vs repo
 
-**Definition of Done:**
-- User can submit YouTube tutorial URL → receives transcript-based analysis
-- User can submit GitHub repo URL → receives architecture analysis
-- All content types use same artifact template
-
----
-
-### **Phase 6: Polish & Production (Weeks 10-11)** 🚀
-**Goal:** Production-ready deployment
-
-**Deliverables:**
+### **Phase 6: Polish** ✅
 - ✅ Error boundaries & loading states
-- ✅ Toast notifications for user feedback
-- ✅ Markdown preview with syntax highlighting (Prism.js)
-- ✅ Copy-to-clipboard for Claude Code prompts
-- ✅ Unit tests for critical paths (>70% coverage)
-- ✅ E2E tests (Playwright - 10 core flows)
-- ✅ Production deployment (Vercel frontend + backend host)
-- ✅ Monitoring & logging (Sentry, Prometheus)
+- ✅ Toast notifications
+- ✅ Markdown preview with syntax highlighting
+- ✅ Copy-to-clipboard for prompts
 
-**Definition of Done:**
-- All features work on production domains
-- <5% error rate in production
-- P95 latency <3 seconds for analysis
-- Lighthouse score >90
-
----
-
-### **Phase 7: Future Enhancements (Post-MVP)** 🔮
-**Not in initial scope, but planned:**
-
-- **GitHub Integration:** Analyze user's repos for skill utilization
-- **Artifact Updates from Tutoring:** Insights from tutoring refine original markdown
-- **Collaborative Features:** Share analyses with team
-- **API Access:** Developers can integrate SkillForge via REST API
-- **Browser Extension:** One-click analysis from any webpage
-- **MCP Server:** Direct integration with Claude Code CLI
+</details>
 
 ---
 
@@ -1380,7 +1439,7 @@ This roadmap is designed to be imported into your project management system. Eac
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** November 23, 2025
+**Document Version:** 2.0
+**Last Updated:** December 10, 2025
 **Maintained By:** Project Team
 **Review Cycle:** Weekly during active development

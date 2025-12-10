@@ -1,7 +1,16 @@
 # Issues Documentation Index
 
-**Last Updated:** December 6, 2025
+**Last Updated:** December 10, 2025
 **Status:** ✅ **ORGANIZED**
+**Current Sprint:** Sprint 8 - Embeddings & Search
+
+---
+
+## 🗺️ Sprint Progression
+
+```
+Sprint 8 (Current) → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server) → Testing
+```
 
 ---
 
