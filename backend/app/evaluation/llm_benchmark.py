@@ -47,12 +47,16 @@ Example:
 from __future__ import annotations
 
 import asyncio
+import subprocess
+import sys
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
+import tiktoken
 from langsmith import Client
 
 from app.core.config import settings
@@ -70,6 +74,41 @@ logger = get_logger(__name__)
 TaskType = Literal["supervisor", "agent", "synthesis"]
 
 
+def _estimate_tokens(text: str, model: str) -> int:
+    """Estimate token count for a given text using tiktoken.
+
+    Args:
+        text: Text to count tokens for
+        model: Model identifier (e.g., "gpt-4o-mini", "claude-sonnet-4")
+
+    Returns:
+        Estimated token count
+
+    """
+    try:
+        # Map model IDs to tiktoken encoding names
+        # OpenAI models use specific encodings
+        if model.startswith("gpt-4o") or model.startswith("gpt-4-"):
+            encoding = tiktoken.encoding_for_model("gpt-4o")
+        elif model.startswith("gpt-3.5"):
+            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        else:
+            # For non-OpenAI models (Claude, Gemini, Grok), use cl100k_base
+            # which is the most modern OpenAI encoding and provides reasonable estimates
+            encoding = tiktoken.get_encoding("cl100k_base")
+
+        return len(encoding.encode(text))
+    except Exception as e:
+        # Fallback to crude estimation if tiktoken fails
+        logger.debug(
+            "token_estimation_fallback",
+            model=model,
+            error=str(e),
+            message="Using char/4 fallback estimation",
+        )
+        return len(text) // 4
+
+
 @dataclass
 class ExperimentResults:
     """Results from a single experiment run.
@@ -82,6 +121,10 @@ class ExperimentResults:
         run_count: Number of examples evaluated
         timestamp: When experiment was run
         dataset_name: Name of dataset used
+        git_commit: Git commit hash (short) for reproducibility
+        git_branch: Git branch name
+        environment: Environment metadata (model config, temperature, etc.)
+        python_version: Python version used
 
     """
 
@@ -92,6 +135,10 @@ class ExperimentResults:
     run_count: int
     timestamp: datetime
     dataset_name: str = ""
+    git_commit: str | None = None
+    git_branch: str | None = None
+    environment: dict[str, Any] = field(default_factory=dict)
+    python_version: str = ""
 
 
 @dataclass
@@ -138,6 +185,75 @@ class LLMBenchmark:
         self.project_name = project_name
         self.local_mode = local_mode
         logger.info("benchmark_initialized", project=project_name, local_mode=local_mode)
+
+    def _get_experiment_metadata(self, model_id: str) -> dict[str, Any]:
+        """Collect experiment metadata for reproducibility.
+
+        Args:
+            model_id: Model identifier to include in environment metadata
+
+        Returns:
+            Dictionary with git info, python version, and environment metadata
+
+        """
+        metadata: dict[str, Any] = {
+            "git_commit": None,
+            "git_branch": None,
+            "python_version": "",
+            "environment": {},
+        }
+
+        # Get git commit hash (short)
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            metadata["git_commit"] = result.stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+            logger.warning("git_commit_failed", error=str(e))
+
+        # Get git branch name
+        try:
+            result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            metadata["git_branch"] = result.stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+            logger.warning("git_branch_failed", error=str(e))
+
+        # Get Python version
+        version_info = sys.version_info
+        metadata["python_version"] = (
+            f"{version_info.major}.{version_info.minor}.{version_info.micro}"
+        )
+
+        # Get model configuration
+        model_info = get_model_info(model_id)
+        if model_info:
+            metadata["environment"] = {
+                "model_id": model_id,
+                "model_display_name": model_info.display_name,
+                "provider": model_info.provider,
+                "temperature": getattr(settings, "LLM_TEMPERATURE", 0.0),
+                "max_tokens": getattr(settings, "LLM_MAX_TOKENS", None),
+                "input_cost_per_1m": model_info.input_cost_per_1m,
+                "output_cost_per_1m": model_info.output_cost_per_1m,
+            }
+        else:
+            metadata["environment"] = {
+                "model_id": model_id,
+                "temperature": getattr(settings, "LLM_TEMPERATURE", 0.0),
+            }
+
+        return metadata
 
     async def run_experiment(
         self,
@@ -275,6 +391,9 @@ class LLMBenchmark:
 
         duration = time.time() - start_time
 
+        # Collect experiment metadata for reproducibility
+        metadata = self._get_experiment_metadata(model_id)
+
         # Create result object
         result = ExperimentResults(
             experiment_id=experiment_name,
@@ -284,6 +403,10 @@ class LLMBenchmark:
             run_count=len(dataset),
             timestamp=datetime.now(),
             dataset_name=dataset_name,
+            git_commit=metadata["git_commit"],
+            git_branch=metadata["git_branch"],
+            environment=metadata["environment"],
+            python_version=metadata["python_version"],
         )
 
         logger.info(
@@ -294,6 +417,8 @@ class LLMBenchmark:
             metrics=metrics,
             run_count=len(dataset),
             duration_seconds=duration,
+            git_commit=metadata["git_commit"],
+            git_branch=metadata["git_branch"],
         )
 
         return result
@@ -441,7 +566,8 @@ class LLMBenchmark:
             """
             content = inputs.get("content", "")
             content_type = inputs.get("content_type", "article")
-            analysis_id = inputs.get("analysis_id", "benchmark")
+            # Generate valid UUID for benchmark runs to satisfy progress persistence
+            analysis_id = inputs.get("analysis_id") or str(uuid.uuid4())
 
             # Invoke supervisor with runtime model selection
             result = await supervisor_route(content, content_type, analysis_id, model_id=model_id)
@@ -483,9 +609,9 @@ class LLMBenchmark:
             agent_type = inputs.get("agent_type", "tech_comparator")
             content_type = inputs.get("content_type", "article")
 
-            # Build minimal state for agent
+            # Build minimal state for agent (use valid UUID for progress persistence)
             state: AnalysisState = {
-                "analysis_id": "benchmark",
+                "analysis_id": str(uuid.uuid4()),
                 "url": "https://example.com",
                 "content_type": content_type,
                 "skill_level": "intermediate",
@@ -539,9 +665,9 @@ class LLMBenchmark:
             """
             agent_findings = inputs.get("agent_findings", [])
 
-            # Build minimal state
+            # Build minimal state (use valid UUID for progress persistence)
             state: AnalysisState = {
-                "analysis_id": "benchmark",
+                "analysis_id": str(uuid.uuid4()),
                 "url": "https://example.com",
                 "content_type": "article",
                 "skill_level": "intermediate",
@@ -727,12 +853,9 @@ class LLMBenchmark:
             example_latency = (time.time() - example_start) * 1000  # ms
             latencies.append(example_latency)
 
-            # Estimate cost based on approximate token counts
-            # Rough estimation: 4 chars = 1 token
-            input_chars = len(str(inputs))
-            output_chars = len(str(outputs))
-            input_tokens = input_chars // 4
-            output_tokens = output_chars // 4
+            # Estimate cost based on token counts using tiktoken
+            input_tokens = _estimate_tokens(str(inputs), model_id)
+            output_tokens = _estimate_tokens(str(outputs), model_id)
             example_cost = model_info.estimate_cost(input_tokens, output_tokens)
             total_cost += example_cost
 
