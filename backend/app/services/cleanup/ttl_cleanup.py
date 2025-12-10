@@ -39,6 +39,7 @@ class TTLCleaner:
         Args:
             session: Async database session
             batch_size: Number of analyses to delete per batch
+
         """
         self.session = session
         self.batch_size = batch_size
@@ -62,6 +63,7 @@ class TTLCleaner:
         Example:
             >>> cleaner.set_ttl_policy('draft', 14)  # Keep drafts for 14 days
             >>> cleaner.set_ttl_policy('complete', None)  # Never expire complete
+
         """
         if days is None:
             self.ttl_policies.pop(status, None)
@@ -92,6 +94,7 @@ class TTLCleaner:
             >>> cleaner = TTLCleaner(session)
             >>> expired = await cleaner.find_expired_analyses(status='draft')
             >>> print(f"Found {len(expired)} expired draft analyses")
+
         """
         expired: list[tuple[uuid.UUID, str, datetime]] = []
 
@@ -148,6 +151,7 @@ class TTLCleaner:
         Note:
             Chunks are automatically deleted via foreign key ON DELETE CASCADE.
             No need to manually delete chunks if cascade_to_chunks=True.
+
         """
         stats: dict[str, int] = {}
 
@@ -175,7 +179,7 @@ class TTLCleaner:
                 # Delete analyses (chunks cascade automatically)
                 stmt = delete(Analysis).where(Analysis.id.in_(batch))
                 result = await self.session.execute(stmt)
-                batch_deleted = result.rowcount or 0
+                batch_deleted = result.rowcount or 0  # type: ignore[attr-defined]
                 deleted_count += batch_deleted
 
                 await self.session.commit()
@@ -210,6 +214,7 @@ class TTLCleaner:
         Example:
             >>> counts = await cleaner.count_expired_by_status()
             >>> print(f"Expired drafts: {counts.get('draft', 0)}")
+
         """
         counts: dict[str, int] = {}
 
@@ -251,6 +256,7 @@ class TTLCleaner:
             >>> expired_ids = [a[0] for a in expired]
             >>> chunk_count = await cleaner.get_expired_chunk_count(expired_ids)
             >>> print(f"Will delete {chunk_count} chunks")
+
         """
         if not analysis_ids:
             return 0
@@ -292,6 +298,7 @@ class TTLCleaner:
             >>> # Execute deletion
             >>> result = await cleaner.cleanup_with_preview(confirm=True)
             >>> print(f"Deleted {result['analyses_deleted']} analyses")
+
         """
         # Find expired analyses
         expired_analyses = await self.find_expired_analyses(status=status)
@@ -346,6 +353,7 @@ class TTLCleaner:
             ...     analysis_id,
             ...     extension_days=14
             ... )
+
         """
         from sqlalchemy import update
 
@@ -359,7 +367,7 @@ class TTLCleaner:
         result = await self.session.execute(stmt)
         await self.session.commit()
 
-        extended = (result.rowcount or 0) > 0
+        extended = (result.rowcount or 0) > 0  # type: ignore[attr-defined]
 
         logger.info(
             "extend_ttl_for_analysis",
@@ -370,7 +378,7 @@ class TTLCleaner:
 
         return extended
 
-    async def get_ttl_status_report(self) -> dict[str, dict]:
+    async def get_ttl_status_report(self) -> dict:
         """Generate comprehensive TTL status report.
 
         Returns:
@@ -380,8 +388,9 @@ class TTLCleaner:
             >>> report = await cleaner.get_ttl_status_report()
             >>> print(report['policies'])
             >>> print(report['expired_counts'])
+
         """
-        report: dict[str, dict] = {
+        report: dict[str, dict | str] = {
             "policies": self.ttl_policies.copy(),
             "expired_counts": await self.count_expired_by_status(),
             "timestamp": datetime.now(UTC).isoformat(),

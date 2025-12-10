@@ -7,7 +7,6 @@ Detects corrupted vectors:
 """
 
 import uuid
-from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from math import inf, isfinite, isnan
 
@@ -22,6 +21,9 @@ logger = get_logger(__name__)
 
 # Expected vector dimensions for OpenAI text-embedding-3-small
 EXPECTED_DIMENSIONS = 1536
+
+# Maximum number of issues to show in report summaries
+MAX_REPORT_EXAMPLES = 10
 
 
 class VectorIntegrityChecker:
@@ -45,6 +47,7 @@ class VectorIntegrityChecker:
         Args:
             session: Async database session
             batch_size: Number of records to check per batch
+
         """
         self.session = session
         self.batch_size = batch_size
@@ -65,6 +68,7 @@ class VectorIntegrityChecker:
             >>> checker = VectorIntegrityChecker(session)
             >>> invalid_ids = await checker.check_chunk_vector_dimensions()
             >>> print(f"Found {len(invalid_ids)} chunks with invalid dimensions")
+
         """
         # pgvector provides vector_dims() function to get vector dimensionality
         # Check if dimension != EXPECTED_DIMENSIONS
@@ -93,6 +97,7 @@ class VectorIntegrityChecker:
 
         Example:
             >>> invalid_ids = await checker.check_analysis_vector_dimensions()
+
         """
         query = select(Analysis.id).where(
             Analysis.content_embedding.isnot(None),
@@ -124,6 +129,7 @@ class VectorIntegrityChecker:
         Example:
             >>> null_ids = await checker.check_null_chunk_vectors()
             >>> print(f"Found {len(null_ids)} chunks with NULL vectors")
+
         """
         query = select(AnalysisChunk.id).where(AnalysisChunk.vector.is_(None))
 
@@ -151,6 +157,7 @@ class VectorIntegrityChecker:
 
         Example:
             >>> null_ids = await checker.check_null_analysis_embeddings()
+
         """
         query = select(Analysis.id).where(Analysis.content_embedding.is_(None))
 
@@ -187,6 +194,7 @@ class VectorIntegrityChecker:
             >>> issues = await checker.check_invalid_values_in_chunks()
             >>> for chunk_id, issue in issues:
             ...     print(f"Chunk {chunk_id}: {issue}")
+
         """
         issues: list[tuple[uuid.UUID, str]] = []
 
@@ -216,7 +224,7 @@ class VectorIntegrityChecker:
                     issues.append((chunk_id, f"Contains {nan_count} NaN values"))
 
                 # Check for Inf values
-                inf_count = sum(1 for v in vector if v == inf or v == -inf)
+                inf_count = sum(1 for v in vector if v in {inf, -inf})
                 if inf_count > 0:
                     issues.append((chunk_id, f"Contains {inf_count} Inf values"))
 
@@ -252,6 +260,7 @@ class VectorIntegrityChecker:
 
         Example:
             >>> zero_ids = await checker.check_zero_vectors_in_chunks()
+
         """
         zero_vector_ids: list[uuid.UUID] = []
 
@@ -313,6 +322,7 @@ class VectorIntegrityChecker:
             >>> issues = await checker.check_vector_normalization()
             >>> for chunk_id, norm in issues:
             ...     print(f"Chunk {chunk_id} has norm {norm} (expected ~1.0)")
+
         """
         non_normalized: list[tuple[uuid.UUID, float]] = []
 
@@ -369,6 +379,7 @@ class VectorIntegrityChecker:
             >>> checker = VectorIntegrityChecker(session)
             >>> report = await checker.run_all_checks()
             >>> print(f"Found {len(report['chunk_dimension_issues'])} dimension issues")
+
         """
         report: dict[str, list] = {
             "chunk_dimension_issues": [],
@@ -427,6 +438,7 @@ class VectorIntegrityChecker:
         Example:
             >>> report = await checker.generate_integrity_report_markdown()
             >>> print(report)
+
         """
         report = await self.run_all_checks()
 
@@ -460,14 +472,14 @@ class VectorIntegrityChecker:
                 ]
             )
 
-            # Add first 10 issues as examples
-            for i, result in enumerate(results[:10], 1):
+            # Add first issues as examples (limit to MAX_REPORT_EXAMPLES)
+            for i, result in enumerate(results[:MAX_REPORT_EXAMPLES], 1):
                 if isinstance(result, tuple):
                     lines.append(f"{i}. {result}")
                 else:
                     lines.append(f"{i}. {result}")
 
-            if len(results) > 10:
-                lines.append(f"... and {len(results) - 10} more")
+            if len(results) > MAX_REPORT_EXAMPLES:
+                lines.append(f"... and {len(results) - MAX_REPORT_EXAMPLES} more")
 
         return "\n".join(lines)

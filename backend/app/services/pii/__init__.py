@@ -14,11 +14,11 @@ from app.services.pii.types import (
 )
 
 __all__ = [
-    "PIIDetector",
-    "get_pii_detector",
     "PIIAction",
+    "PIIDetector",
     "PIIMatch",
     "PIIResult",
     "PIIType",
     "SensitivityLevel",
+    "get_pii_detector",
 ]

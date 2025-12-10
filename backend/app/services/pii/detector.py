@@ -15,8 +15,8 @@ import structlog
 
 from app.core.config import settings
 from app.services.pii.patterns import (
-    PII_PATTERNS,
     PATTERN_TO_TYPE,
+    PII_PATTERNS,
     SENSITIVITY_PATTERNS,
 )
 from app.services.pii.types import PIIMatch, PIIResult, PIIType, SensitivityLevel
@@ -170,7 +170,7 @@ def get_pii_detector() -> PIIDetector:
         Global PIIDetector instance (created on first call).
 
     """
-    global _detector
+    global _detector  # noqa: PLW0603
     if _detector is None:
         _detector = PIIDetector()
     return _detector

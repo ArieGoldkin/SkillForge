@@ -38,6 +38,7 @@ class CleanupService:
         Args:
             session: Async database session
             batch_size: Default batch size for operations
+
         """
         self.session = session
         self.batch_size = batch_size
@@ -75,6 +76,7 @@ class CleanupService:
             >>>
             >>> # Execute cleanup
             >>> result = await service.run_full_cleanup(dry_run=False)
+
         """
         logger.info(
             "full_cleanup_started",
@@ -153,7 +155,7 @@ class CleanupService:
 
         return report
 
-    async def health_check(self) -> dict[str, bool | int]:
+    async def health_check(self) -> dict:
         """Run health check to identify issues without cleanup.
 
         Returns:
@@ -163,6 +165,7 @@ class CleanupService:
             >>> health = await service.health_check()
             >>> if not health['healthy']:
             ...     print(f"Found {health['total_issues']} issues")
+
         """
         logger.info("health_check_started")
 
@@ -185,7 +188,7 @@ class CleanupService:
             + integrity_issues
         )
 
-        health_status = {
+        health_status: dict = {
             "healthy": total_issues == 0,
             "total_issues": total_issues,
             "orphan_chunks": orphan_counts["total"],
@@ -225,6 +228,7 @@ class CleanupService:
             >>> report = await service.generate_cleanup_report_markdown()
             >>> with open('cleanup_report.md', 'w') as f:
             ...     f.write(report)
+
         """
         from datetime import UTC, datetime
 
@@ -387,9 +391,11 @@ class CleanupService:
         Example:
             >>> # In cron job
             >>> result = await service.schedule_cleanup(cleanup_type='orphans')
+
         """
         logger.info("schedule_cleanup_started", cleanup_type=cleanup_type)
 
+        result: dict = {}
         if cleanup_type == "full":
             result = await self.run_full_cleanup(
                 include_orphans=True,

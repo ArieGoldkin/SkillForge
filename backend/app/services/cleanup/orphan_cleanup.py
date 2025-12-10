@@ -8,7 +8,7 @@ import uuid
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -44,6 +44,7 @@ class OrphanCleaner:
             session: Async database session
             batch_size: Number of chunks to process per batch
             grace_period_days: Days to wait before hard delete (default: 7)
+
         """
         self.session = session
         self.batch_size = batch_size
@@ -62,6 +63,7 @@ class OrphanCleaner:
             >>> cleaner = OrphanCleaner(session)
             >>> orphan_ids = await cleaner.find_orphans_missing_parent()
             >>> print(f"Found {len(orphan_ids)} orphaned chunks")
+
         """
         # LEFT JOIN to find chunks with NULL parent (parent was deleted)
         query = (
@@ -98,6 +100,7 @@ class OrphanCleaner:
 
         Example:
             >>> orphans = await cleaner.find_orphans_failed_analysis(failed_threshold_days=14)
+
         """
         threshold_date = datetime.now(UTC) - timedelta(days=failed_threshold_days)
 
@@ -131,10 +134,10 @@ class OrphanCleaner:
 
         Example:
             >>> orphans = await cleaner.find_orphans_superseded_analysis()
+
         """
         # Find superseded analyses: same URL but not the latest created_at
         # Use window function to identify latest analysis per URL
-        from sqlalchemy import literal_column
 
         superseded_subquery = (
             select(
@@ -195,6 +198,7 @@ class OrphanCleaner:
         Note:
             Soft delete requires migration to add is_deleted column to analysis_chunks.
             Hard delete is immediate and permanent - use with caution.
+
         """
         if not orphan_ids:
             logger.info("delete_orphans_batch_skipped", reason="no_orphans")
@@ -212,11 +216,11 @@ class OrphanCleaner:
             else:
                 # Soft delete: Mark as deleted (requires migration for is_deleted column)
                 # For now, we'll use hard delete since is_deleted doesn't exist yet
-                # TODO: Add is_deleted column migration and use soft delete
+                # TODO(cleanup): Add is_deleted column migration - see issue #220
                 stmt = delete(AnalysisChunk).where(AnalysisChunk.id.in_(batch))
 
             result = await self.session.execute(stmt)
-            batch_deleted = result.rowcount or 0
+            batch_deleted = result.rowcount or 0  # type: ignore[attr-defined]
             total_deleted += batch_deleted
 
             await self.session.commit()
@@ -263,6 +267,7 @@ class OrphanCleaner:
             ...     include_superseded=True
             ... )
             >>> print(f"Cleaned up {stats['total_deleted']} chunks")
+
         """
         stats: dict[str, int] = {
             "missing_parent": 0,
@@ -314,6 +319,7 @@ class OrphanCleaner:
         Example:
             >>> counts = await cleaner.count_orphans()
             >>> print(f"Found {counts['total']} orphaned chunks")
+
         """
         counts: dict[str, int] = {
             "missing_parent": 0,
@@ -361,6 +367,7 @@ class OrphanCleaner:
         Example:
             >>> async for chunk in cleaner.stream_orphan_chunks('missing_parent'):
             ...     print(f"Orphan: {chunk.id} from analysis {chunk.analysis_id}")
+
         """
         if orphan_type == "missing_parent":
             orphan_ids = await self.find_orphans_missing_parent()

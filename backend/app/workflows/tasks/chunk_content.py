@@ -34,6 +34,7 @@ class PIIRejectError(Exception):
     """
 
     def __init__(self, pii_types: list[str], pii_density: float) -> None:
+        """Initialize PIIRejectError with detection details."""
         self.pii_types = pii_types
         self.pii_density = pii_density
         super().__init__(
@@ -50,6 +51,7 @@ class PIIMetadata(TypedDict, total=False):
         pii_count: Total number of PII matches found.
 
     SECURITY: Contains only type flags, NEVER actual PII values.
+
     """
 
     pii_flag: bool

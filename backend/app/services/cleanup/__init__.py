@@ -13,7 +13,7 @@ from app.services.cleanup.ttl_cleanup import TTLCleaner
 
 __all__ = [
     "CleanupService",
-    "VectorIntegrityChecker",
     "OrphanCleaner",
     "TTLCleaner",
+    "VectorIntegrityChecker",
 ]
