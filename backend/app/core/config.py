@@ -371,6 +371,38 @@ class Settings(BaseSettings):
         description="Include model and version in hash to trigger re-embedding on model upgrade",
     )
 
+    # PII Screening Configuration (Issue #220)
+    PII_SCREENING_ENABLED: bool = Field(
+        default=False,
+        description="Enable PII detection before embedding (default: false for dev)",
+    )
+    PII_SENSITIVITY_LEVEL: str = Field(
+        default="medium",
+        description="Detection sensitivity: low (email), medium (+phone/SSN), high (+API keys)",
+    )
+    PII_ACTION: str = Field(
+        default="flag",
+        description="Action on PII detection: flag (continue with metadata) or reject (fail)",
+    )
+    PII_REJECT_THRESHOLD: float = Field(
+        default=0.3,
+        description="Reject if PII density exceeds threshold (0.0-1.0)",
+    )
+
+    # Cleanup Configuration (Issue #220)
+    CLEANUP_ENABLED: bool = Field(
+        default=True,
+        description="Enable scheduled cleanup jobs",
+    )
+    CLEANUP_DRAFT_TTL_DAYS: int = Field(
+        default=7,
+        description="Days before draft analyses are auto-deleted",
+    )
+    CLEANUP_BATCH_SIZE: int = Field(
+        default=1000,
+        description="Batch size for cleanup operations",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

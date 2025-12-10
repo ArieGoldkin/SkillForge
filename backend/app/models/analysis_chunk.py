@@ -50,6 +50,8 @@ class AnalysisChunk(Base):
         token_count: Token count for telemetry and cost tracking
         embedding_latency_ms: Embedding generation latency for monitoring
         was_truncated: Whether content was truncated before embedding
+        pii_flag: Whether PII was detected in this chunk (Issue #220)
+        pii_types: List of detected PII types (e.g., ["email", "phone_us"]) - never contains actual PII
         created_at: Chunk creation timestamp
         updated_at: Last update timestamp (auto-updated)
 
@@ -108,6 +110,11 @@ class AnalysisChunk(Base):
     token_count = Column(Integer)  # Token count for cost tracking
     embedding_latency_ms = Column(Float)  # Embedding generation latency
     was_truncated = Column(Boolean, default=False)  # Whether content was truncated
+
+    # PII metadata (Issue #220)
+    # Note: Only stores detection flags, NEVER actual PII values
+    pii_flag = Column(Boolean, default=False)  # Whether PII was detected
+    pii_types = Column(JSONB)  # List of PII types detected, e.g., ["email", "phone_us"]
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
