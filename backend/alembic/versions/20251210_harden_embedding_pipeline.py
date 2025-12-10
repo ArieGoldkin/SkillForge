@@ -92,15 +92,17 @@ def upgrade() -> None:
     )
 
     # ============================================================================
-    # PHASE 4: Create indexes (CONCURRENTLY where possible)
+    # PHASE 4: Create indexes
     # ============================================================================
+    # NOTE: Not using CONCURRENTLY as it cannot run inside transaction blocks.
+    # For production with existing data, consider running these manually outside Alembic.
 
     # HNSW index for vector similarity search (semantic search)
     # Using cosine distance operator for normalized embeddings
     # Parameters: m=16 (connections per layer), ef_construction=64 (build quality)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_vector_hnsw
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_vector_hnsw
             ON analysis_chunks
             USING hnsw (vector vector_cosine_ops)
             WITH (m = 16, ef_construction = 64);
@@ -110,7 +112,7 @@ def upgrade() -> None:
     # GIN index for full-text search (keyword search)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_content_tsvector
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_content_tsvector
             ON analysis_chunks
             USING GIN (content_tsvector);
         """)
@@ -120,7 +122,7 @@ def upgrade() -> None:
     # Non-unique to allow same content with different models
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_hash_model
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_hash_model
             ON analysis_chunks (hash, model, model_version);
         """)
     )
@@ -129,7 +131,7 @@ def upgrade() -> None:
     # Note: This is created by SQLAlchemy model (index=True), but ensure it exists
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_hash
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_hash
             ON analysis_chunks (hash);
         """)
     )
@@ -137,7 +139,7 @@ def upgrade() -> None:
     # Composite index for hierarchical search (analysis + granularity)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_analysis_granularity
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_analysis_granularity
             ON analysis_chunks (analysis_id, granularity);
         """)
     )
@@ -146,7 +148,7 @@ def upgrade() -> None:
     # Partial index: only where content_type is not null
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_content_type_created
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_content_type_created
             ON analysis_chunks (content_type, created_at DESC)
             WHERE content_type IS NOT NULL;
         """)
@@ -309,12 +311,12 @@ def downgrade() -> None:
     # Remove indexes
     # ============================================================================
 
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_content_type_created"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_analysis_granularity"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_hash"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_hash_model"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_content_tsvector"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_vector_hnsw"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_content_type_created"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_analysis_granularity"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_hash"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_hash_model"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_content_tsvector"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_vector_hnsw"))
 
     # ============================================================================
     # Remove columns
