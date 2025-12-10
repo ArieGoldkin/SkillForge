@@ -30,7 +30,7 @@ def test_detect_article_default() -> None:
 def test_url_validation_empty_string() -> None:
     """Test that empty string raises ContentTypeError."""
     with pytest.raises(
-        ContentTypeError, match="URL must be a non-empty string|URL cannot be empty"
+        ContentTypeError, match=r"URL must be a non-empty string|URL cannot be empty"
     ):
         detect_content_type("")
 
@@ -52,13 +52,13 @@ def test_url_validation_invalid_type() -> None:
 
 def test_url_validation_missing_scheme() -> None:
     """Test that URL without scheme raises ContentTypeError."""
-    with pytest.raises(ContentTypeError, match="Invalid URL format|Failed to parse URL"):
+    with pytest.raises(ContentTypeError, match=r"Invalid URL format|Failed to parse URL"):
         detect_content_type("example.com/article")
 
 
 def test_url_validation_missing_netloc() -> None:
     """Test that URL without netloc raises ContentTypeError."""
-    with pytest.raises(ContentTypeError, match="Invalid URL format|Failed to parse URL"):
+    with pytest.raises(ContentTypeError, match=r"Invalid URL format|Failed to parse URL"):
         detect_content_type("https://")
 
 

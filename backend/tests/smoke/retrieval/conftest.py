@@ -8,6 +8,8 @@ Provides fixtures for:
 
 NOTE: Smoke tests require real API keys (not test placeholders).
       Ensure .env has valid OPENAI_API_KEY before running.
+
+CI: GitHub Actions workflow runs on every PR to dev/main.
 """
 
 from __future__ import annotations

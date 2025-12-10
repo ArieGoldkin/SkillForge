@@ -30,7 +30,7 @@ async def test_save_agent_finding_analysis_not_found(mock_session, analysis_id):
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    with pytest.raises(ValueError, match="Analysis record with id=.* does not exist"):
+    with pytest.raises(ValueError, match=r"Analysis record with id=.* does not exist"):
         await save_agent_finding(
             session=mock_session,
             analysis_id=analysis_id,

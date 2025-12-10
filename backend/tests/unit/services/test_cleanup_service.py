@@ -2,13 +2,11 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.analysis import Analysis
-from app.models.analysis_chunk import AnalysisChunk
 from app.services.cleanup.cleanup_service import CleanupService
 from app.services.cleanup.integrity_checks import VectorIntegrityChecker
 from app.services.cleanup.orphan_cleanup import OrphanCleaner
@@ -84,9 +82,7 @@ class TestOrphanCleaner:
         mock_result.all.return_value = [(uuid.uuid4(),)]
         mock_session.execute.return_value = mock_result
 
-        orphan_ids = await orphan_cleaner.find_orphans_failed_analysis(
-            failed_threshold_days=7
-        )
+        orphan_ids = await orphan_cleaner.find_orphans_failed_analysis(failed_threshold_days=7)
 
         assert len(orphan_ids) == 1
         assert mock_session.execute.called
@@ -97,9 +93,7 @@ class TestOrphanCleaner:
 
         assert deleted == 0
 
-    async def test_delete_orphans_batch_single_batch(
-        self, orphan_cleaner, mock_session
-    ):
+    async def test_delete_orphans_batch_single_batch(self, orphan_cleaner, mock_session):
         """Test delete with single batch."""
         orphan_ids = [uuid.uuid4() for _ in range(50)]
 
@@ -108,9 +102,7 @@ class TestOrphanCleaner:
         mock_result.rowcount = 50
         mock_session.execute.return_value = mock_result
 
-        deleted = await orphan_cleaner.delete_orphans_batch(
-            orphan_ids, hard_delete=True
-        )
+        deleted = await orphan_cleaner.delete_orphans_batch(orphan_ids, hard_delete=True)
 
         assert deleted == 50
         assert mock_session.execute.called
@@ -135,9 +127,7 @@ class TestOrphanCleaner:
 class TestVectorIntegrityChecker:
     """Test vector integrity checks."""
 
-    async def test_check_chunk_vector_dimensions_valid(
-        self, integrity_checker, mock_session
-    ):
+    async def test_check_chunk_vector_dimensions_valid(self, integrity_checker, mock_session):
         """Test dimension check with all valid vectors."""
         mock_result = MagicMock()
         mock_result.all.return_value = []
@@ -147,9 +137,7 @@ class TestVectorIntegrityChecker:
 
         assert invalid_ids == []
 
-    async def test_check_chunk_vector_dimensions_invalid(
-        self, integrity_checker, mock_session
-    ):
+    async def test_check_chunk_vector_dimensions_invalid(self, integrity_checker, mock_session):
         """Test dimension check with invalid vectors."""
         invalid_id = uuid.uuid4()
         mock_result = MagicMock()
@@ -179,9 +167,7 @@ class TestVectorIntegrityChecker:
         mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
 
-        issues = await integrity_checker.check_invalid_values_in_chunks(
-            check_batch_size=100
-        )
+        issues = await integrity_checker.check_invalid_values_in_chunks(check_batch_size=100)
 
         assert issues == []
 

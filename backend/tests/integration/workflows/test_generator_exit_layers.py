@@ -178,7 +178,7 @@ class TestLayer3WorkflowHandling:
             raise GeneratorExit("Interrupted")
 
         # Should propagate GeneratorExit (may be converted to RuntimeError in async functions)
-        with pytest.raises((GeneratorExit, RuntimeError), match=".*"):
+        with pytest.raises((GeneratorExit, RuntimeError), match=r".*"):
             try:
                 await mock_workflow()
             except (GeneratorExit, RuntimeError) as e:
