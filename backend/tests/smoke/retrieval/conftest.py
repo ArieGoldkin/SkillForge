@@ -5,21 +5,38 @@ Provides fixtures for:
 - Search service initialization
 - Test documents and chunks
 - Fixture data loading
+
+NOTE: Smoke tests require real API keys (not test placeholders).
+      Ensure .env has valid OPENAI_API_KEY before running.
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-import pytest
-import pytest_asyncio
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+# CRITICAL: Load .env BEFORE any other imports to get real API keys
+# The main conftest.py sets placeholder keys, but smoke tests need real ones
+# Path: tests/smoke/retrieval/conftest.py -> parent.parent.parent = tests/ -> parent = backend/
+_env_file = Path(__file__).parent.parent.parent.parent / ".env"
+if not _env_file.exists():
+    # Try relative to backend/ (when running from backend dir)
+    _env_file = Path(__file__).parent.parent.parent / ".." / ".env"
+if _env_file.exists():
+    from dotenv import load_dotenv
 
-from tests.smoke.retrieval.fixtures import FixtureLoader
-from tests.smoke.retrieval.metrics import MetricsCalculator
+    # Override=True ensures we get real keys from .env, not placeholders
+    load_dotenv(_env_file, override=True)
+
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+
+from tests.smoke.retrieval.fixtures import FixtureLoader  # noqa: E402
+from tests.smoke.retrieval.metrics import MetricsCalculator  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -35,6 +52,25 @@ pytestmark = [
     pytest.mark.smoke,
     pytest.mark.retrieval,
 ]
+
+
+@pytest.fixture(autouse=True)
+def ensure_real_api_keys():
+    """Verify real API keys are available for smoke tests.
+
+    Smoke tests are marked with pytest.mark.smoke, which causes the main
+    conftest.py to skip setting placeholder OPENAI_API_KEY. This fixture
+    verifies that real keys from .env are available for live API calls.
+    """
+    from app.core.config import get_settings
+
+    # Clear settings cache to ensure fresh load from environment
+    get_settings.cache_clear()
+
+    # Refresh the module-level settings object
+    import app.core.config
+
+    app.core.config.settings = get_settings()
 
 
 @pytest.fixture(scope="module")
@@ -116,14 +152,48 @@ def requires_embedding_service():
 
 
 @pytest_asyncio.fixture
-async def embedding_service() -> EmbeddingService:
+async def embedding_service(ensure_real_api_keys) -> EmbeddingService:
     """Create embedding service for tests.
 
-    Requires valid OpenAI API key.
+    Requires valid OpenAI API key from .env file.
+    Directly reads the key and patches the settings module to bypass
+    any cached references to placeholder keys from test fixtures.
     """
-    api_key = os.environ.get("OPENAI_API_KEY")
+    # Read directly from .env to bypass any test mocking
+    env_file = Path(__file__).parent.parent.parent.parent / ".env"
+    if not env_file.exists():
+        env_file = Path(__file__).parent.parent.parent / ".." / ".env"
+    if not env_file.exists():
+        env_file = Path(".env")
+
+    api_key = None
+    if env_file.exists():
+        from dotenv import dotenv_values
+
+        env_vars = dotenv_values(env_file)
+        api_key = env_vars.get("OPENAI_API_KEY")
+
     if not api_key or api_key.startswith("sk-test"):
-        pytest.skip("OPENAI_API_KEY required for embedding service")
+        pytest.skip("Valid OPENAI_API_KEY required in .env for embedding service")
+
+    # CRITICAL: Must set OS env var AND patch app.core.config.settings
+    # because EmbeddingService imports settings at module level
+    os.environ["OPENAI_API_KEY"] = api_key
+
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+
+    import app.core.config
+
+    app.core.config.settings = get_settings()
+
+    # Also reload the embeddings module to pick up new settings reference
+    import importlib
+
+    import app.services.embeddings
+
+    importlib.reload(app.services.embeddings)
 
     from app.services.embeddings import EmbeddingService
 
@@ -211,8 +281,10 @@ async def seeded_chunks(
     chunks: list[AnalysisChunk] = []
     analysis_id = smoke_test_analysis.id
 
+    import hashlib
+
     for doc in test_documents:
-        for section in doc.get("sections", []):
+        for idx, section in enumerate(doc.get("sections", [])):
             content = section["content"]
 
             # Generate embedding for chunk
@@ -221,26 +293,37 @@ async def seeded_chunks(
                 normalize=True,
             )
 
-            # Create chunk with all required fields
+            # Create content hash for deduplication
+            content_hash = hashlib.sha256(content.encode()).hexdigest()
+
+            # Create chunk with actual column names (not property aliases)
+            # Properties: content→snippet, embedding→vector, chunk_type→granularity
             chunk = AnalysisChunk(
                 id=uuid4(),
                 analysis_id=analysis_id,
-                content=content,
-                embedding=embedding,
-                chunk_type=section.get("granularity", "coarse"),
+                snippet=content,  # 'content' is read-only property alias
+                vector=embedding,  # 'embedding' is read-only property alias
+                granularity=section.get("granularity", "coarse"),  # 'chunk_type' is alias
                 section_title=section["title"],
-                chunk_idx=0,
+                chunk_idx=idx,
                 chunk_total=len(doc["sections"]),
-                # Metadata for filtering and identification
-                metadata={
-                    "section_id": section["id"],
-                    "doc_id": doc["id"],
-                    "content_type": doc["content_type"],
-                    "bucket": doc["bucket"],
-                    "language": doc["language"],
-                    "tags": doc.get("tags", []),
-                },
+                path=[doc["id"], section["id"]],  # JSONB path for navigation
+                hash=content_hash,  # Required for deduplication
+                content_type=doc["content_type"],
+                language=doc["language"],
+                model="text-embedding-3-small",
+                model_version="v1",
             )
+
+            # Store metadata for test verification
+            # We use a dynamic attribute that tests can access
+            # path[0] = doc_id, path[1] = section_id
+            chunk.metadata = {
+                "section_id": section["id"],
+                "doc_id": doc["id"],
+                "bucket": doc["bucket"],
+                "tags": doc.get("tags", []),
+            }
 
             smoke_db_session.add(chunk)
             chunks.append(chunk)
