@@ -187,6 +187,7 @@ jobs:
       - name: Comment PR with results
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true  # Don't fail the workflow if commenting fails (permissions)
         with:
           script: |
             const fs = require('fs');
