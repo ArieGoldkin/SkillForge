@@ -2,12 +2,38 @@
 
 This module defines TypedDict state structures for the analysis workflow.
 State is managed by LangGraph's StateGraph and automatically checkpointed.
+
+Handle Pattern (Issue #244): Large content is stored as refs, not inline.
+Agents use load_artifact tool to retrieve content sections on-demand.
 """
 
 import operator
 from typing import Annotated, TypedDict
 
 from app.core.types import AnalysisID, EmbeddingVector
+
+
+class ContentRef(TypedDict, total=False):
+    """Lightweight reference to content stored in database.
+
+    This implements the Handle Pattern from Google ADK's Context Engineering.
+    Instead of passing large content inline through state, we pass this
+    lightweight reference (~200 bytes) and let agents load what they need.
+
+    Attributes:
+        uri: Artifact URI (analysis://{analysis_id}/content)
+        summary: Always-available content summary (~500 words)
+        size_bytes: Original content size for context
+        content_type: MIME type (text/plain, text/markdown)
+        available_sections: Loadable sections (summary, full, code_blocks, headings)
+
+    """
+
+    uri: str
+    summary: str
+    size_bytes: int
+    content_type: str
+    available_sections: list[str]
 
 
 class AnalysisState(TypedDict, total=False):
@@ -21,7 +47,8 @@ class AnalysisState(TypedDict, total=False):
         url: URL being analyzed
         content_type: Type of content (article, video, repo)
         skill_level: User's experience level (beginner, intermediate, expert)
-        raw_content: Extracted text content
+        raw_content: Extracted text content (DEPRECATED: use content_ref)
+        content_ref: Lightweight ref to content - agents use load_artifact tool
         extraction_metadata: Metadata from extraction (title, word_count, etc.)
         content_embedding: Vector embedding of the content
         supervisor_decision: Supervisor's agent selection decision
@@ -36,13 +63,19 @@ class AnalysisState(TypedDict, total=False):
         to append their findings. Each agent node returns {"agent_findings": [result]},
         and LangGraph automatically concatenates them.
 
+    Handle Pattern (Issue #244):
+        raw_content is deprecated. Use content_ref instead.
+        Agents should call load_artifact(uri, section) to get content.
+        Available sections: summary, full, first_n, code_blocks, headings.
+
     """
 
     analysis_id: AnalysisID
     url: str
     content_type: str
     skill_level: str  # "beginner" | "intermediate" | "expert"
-    raw_content: str
+    raw_content: str  # DEPRECATED: Use content_ref for new code
+    content_ref: ContentRef  # Issue #244: Handle Pattern - lightweight ref
     extraction_metadata: dict[str, object]
     content_embedding: EmbeddingVector
     supervisor_decision: dict[str, object]
