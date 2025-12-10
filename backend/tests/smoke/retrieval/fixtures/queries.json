@@ -4,7 +4,7 @@
   "queries": [
     {
       "id": "q-oauth2-impl",
-      "query": "How to implement OAuth2 password flow in FastAPI?",
+      "query": "OAuth2 password token endpoint",
       "modes": ["semantic", "keyword", "hybrid"],
       "category": "specific",
       "expected_chunks": ["fastapi-auth/oauth2-password"],
@@ -24,7 +24,7 @@
     },
     {
       "id": "q-async-await",
-      "query": "Python async await syntax and usage",
+      "query": "asyncio event loop concurrent",
       "modes": ["semantic", "keyword", "hybrid"],
       "category": "specific",
       "expected_chunks": ["python-async/intro", "python-async/basics"],
@@ -44,7 +44,7 @@
     },
     {
       "id": "q-sql-join",
-      "query": "SQL JOIN types and when to use them",
+      "query": "SELECT JOIN rows data",
       "modes": ["semantic", "keyword", "hybrid"],
       "category": "specific",
       "expected_chunks": ["sql-basics/select"],
@@ -124,7 +124,7 @@
     },
     {
       "id": "q-k8s-scaling",
-      "query": "Kubernetes horizontal pod autoscaling configuration",
+      "query": "HPA pod metrics scaling",
       "modes": ["semantic", "keyword", "hybrid"],
       "category": "specific",
       "expected_chunks": ["kubernetes-deploy/scaling"],
