@@ -157,40 +157,62 @@ def upgrade() -> None:
     # ============================================================================
     # PHASE 5: Add check constraints for data integrity
     # ============================================================================
+    # NOTE: PostgreSQL doesn't support ADD CONSTRAINT IF NOT EXISTS, so we use
+    # DO blocks with existence checks to make migrations idempotent.
 
     # Ensure granularity is one of the valid values
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_granularity
-            CHECK (granularity IN ('coarse', 'fine', 'summary'));
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_granularity') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_granularity
+                    CHECK (granularity IN ('coarse', 'fine', 'summary'));
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_idx is non-negative
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_idx_positive
-            CHECK (chunk_idx >= 0);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_idx_positive') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_idx_positive
+                    CHECK (chunk_idx >= 0);
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_total is positive
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_total_positive
-            CHECK (chunk_total > 0);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_total_positive') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_total_positive
+                    CHECK (chunk_total > 0);
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_idx < chunk_total (logical consistency)
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_idx_lt_total
-            CHECK (chunk_idx < chunk_total);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_idx_lt_total') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_idx_lt_total
+                    CHECK (chunk_idx < chunk_total);
+                END IF;
+            END $$;
         """)
     )
 
