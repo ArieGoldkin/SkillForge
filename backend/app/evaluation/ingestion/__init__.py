@@ -3,11 +3,18 @@
 This module provides tools for extracting evaluation examples from various sources:
 - LangSmith production traces
 - GitHub issues and discussions
+- Edge case generation
 - Stack Overflow Q&A (planned)
 
 Also provides PII anonymization for safe data handling.
 """
 
+from app.evaluation.ingestion.edge_case_generator import (
+    ALL_CATEGORIES,
+    EdgeCaseConfig,
+    EdgeCaseGenerator,
+)
+from app.evaluation.ingestion.edge_case_templates import EdgeCaseTemplates
 from app.evaluation.ingestion.github_importer import (
     GitHubImportConfig,
     GitHubImporter,
@@ -37,6 +44,11 @@ if LANGSMITH_AVAILABLE:
         "GitHubImporter",
         "GitHubImportConfig",
         "GitHubIssue",
+        # Edge Cases
+        "EdgeCaseGenerator",
+        "EdgeCaseConfig",
+        "EdgeCaseTemplates",
+        "ALL_CATEGORIES",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",
@@ -52,6 +64,11 @@ else:
         "GitHubImporter",
         "GitHubImportConfig",
         "GitHubIssue",
+        # Edge Cases
+        "EdgeCaseGenerator",
+        "EdgeCaseConfig",
+        "EdgeCaseTemplates",
+        "ALL_CATEGORIES",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",

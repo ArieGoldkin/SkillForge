@@ -20,7 +20,7 @@
         },
         "task_type": {
           "type": "string",
-          "enum": ["supervisor", "agent", "synthesis"],
+          "enum": ["supervisor", "agent", "synthesis", "edge_case"],
           "description": "Type of LangGraph task this dataset evaluates"
         },
         "agent_types": {
@@ -88,12 +88,12 @@
             "properties": {
               "content": {
                 "type": "string",
-                "minLength": 10,
-                "description": "Raw content to analyze"
+                "minLength": 1,
+                "description": "Raw content to analyze (minLength 1 to allow edge case testing)"
               },
               "content_type": {
                 "type": "string",
-                "enum": ["article", "tutorial", "video_transcript", "documentation", "code_repository"],
+                "enum": ["article", "tutorial", "video_transcript", "documentation", "code_repository", "query"],
                 "description": "Type of content"
               },
               "agent_type": {
@@ -162,7 +162,7 @@
                           },
                           "acceptable": {
                             "type": "number",
-                            "minimum": 0.7,
+                            "minimum": 0.5,
                             "maximum": 0.9
                           },
                           "failing": {
@@ -352,10 +352,10 @@
                 }
               },
               "quality_score": {
-                "type": "number",
+                "type": ["number", "null"],
                 "minimum": 0,
                 "maximum": 1,
-                "description": "Human-assigned quality score (0-1)"
+                "description": "Human-assigned quality score (0-1), null for draft examples"
               }
             }
           },
@@ -364,7 +364,7 @@
             "properties": {
               "difficulty": {
                 "type": "string",
-                "enum": ["easy", "medium", "hard", "expert"],
+                "enum": ["easy", "medium", "hard", "expert", "adversarial"],
                 "description": "Difficulty level for the model"
               },
               "edge_case": {
