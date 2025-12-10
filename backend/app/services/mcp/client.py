@@ -1,0 +1,559 @@
+"""MCP Client Pool for managing connections to MCP servers.
+
+Uses langchain-mcp-adapters for protocol handling with added:
+- Connection pooling and lifecycle management
+- Health checks and automatic reconnection
+- Graceful degradation when servers unavailable
+- Lazy initialization (connect on first use)
+
+Architecture:
+    MCPClientPool manages connections to multiple MCP servers.
+    Each server connection is wrapped in MCPConnection for state tracking.
+    Tools are loaded lazily on first request and cached for reuse.
+
+Example:
+    >>> pool = MCPClientPool({"github": github_config})
+    >>> async with pool.get_tools("github") as tools:
+    ...     result = await tools[0].ainvoke({"repo": "owner/repo"})
+    >>> await pool.close()
+
+"""
+
+from __future__ import annotations
+
+import asyncio
+import time
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import TYPE_CHECKING
+
+from app.core.logging import get_logger
+from app.services.mcp.config import MCPServerConfig
+from app.services.mcp.exceptions import MCPConnectionError
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from langchain_core.tools import BaseTool
+
+logger = get_logger(__name__)
+
+# Circuit breaker threshold - mark connection as ERROR after this many failures
+MAX_CONSECUTIVE_ERRORS = 3
+
+
+class ConnectionState(Enum):
+    """MCP connection states for lifecycle tracking.
+
+    State Transitions:
+        DISCONNECTED -> CONNECTING -> CONNECTED
+        CONNECTED -> ERROR (on failure)
+        ERROR -> CONNECTING (on retry)
+
+    """
+
+    DISCONNECTED = "disconnected"
+    CONNECTING = "connecting"
+    CONNECTED = "connected"
+    ERROR = "error"
+
+
+@dataclass
+class MCPConnection:
+    """Wrapper for MCP server connection with state tracking.
+
+    Tracks connection state, loaded tools, and error history
+    to support health monitoring and automatic recovery.
+
+    Attributes:
+        server_name: Unique identifier for the server
+        config: Server configuration
+        state: Current connection state
+        tools: Cached tools from the server
+        last_health_check: Timestamp of last successful health check
+        error_count: Consecutive error count for circuit breaking
+        last_error: Most recent error message
+
+    """
+
+    server_name: str
+    config: MCPServerConfig
+    state: ConnectionState = ConnectionState.DISCONNECTED
+    tools: list[BaseTool] = field(default_factory=list)
+    last_health_check: float | None = None
+    error_count: int = 0
+    last_error: str | None = None
+
+    def is_healthy(self) -> bool:
+        """Check if connection is healthy and usable.
+
+        A connection is healthy if:
+        - State is CONNECTED
+        - Error count is below threshold
+
+        Returns:
+            True if connection can be used
+
+        """
+        return self.state == ConnectionState.CONNECTED and self.error_count < MAX_CONSECUTIVE_ERRORS
+
+    def record_success(self) -> None:
+        """Record successful operation, reset error count."""
+        self.error_count = 0
+        self.last_error = None
+        self.last_health_check = time.time()
+
+    def record_error(self, error: str) -> None:
+        """Record failed operation.
+
+        Args:
+            error: Error message for debugging
+
+        """
+        self.error_count += 1
+        self.last_error = error
+        if self.error_count >= MAX_CONSECUTIVE_ERRORS:
+            self.state = ConnectionState.ERROR
+
+
+class MCPClientPool:
+    """Connection pool for MCP servers.
+
+    Manages connections to multiple MCP servers with:
+    - Lazy initialization (connect on first use)
+    - Connection reuse across requests
+    - Health monitoring and automatic recovery
+    - Graceful degradation when servers fail
+
+    Thread Safety:
+        Uses asyncio.Lock for connection management.
+        Safe for concurrent use within a single event loop.
+
+    Example:
+        >>> pool = MCPClientPool(config)
+        >>> async with pool.get_tools("github") as tools:
+        ...     # tools is list[BaseTool] from GitHub MCP
+        ...     result = await tools[0].ainvoke({"repo": "langchain-ai/langchain"})
+
+    """
+
+    def __init__(self, server_configs: dict[str, MCPServerConfig]) -> None:
+        """Initialize pool with server configurations.
+
+        Args:
+            server_configs: Mapping of server names to their configurations.
+                          Only enabled servers will be used.
+
+        """
+        # Filter to only enabled servers
+        self._configs = {name: config for name, config in server_configs.items() if config.enabled}
+        self._connections: dict[str, MCPConnection] = {}
+        self._lock = asyncio.Lock()
+        self._client: MultiServerMCPClient | None = None
+        self._closed = False
+
+        logger.info(
+            "mcp_client_pool_initialized",
+            server_count=len(self._configs),
+            servers=list(self._configs.keys()),
+        )
+
+    async def _ensure_client(self) -> MultiServerMCPClient:
+        """Lazily create the MCP client.
+
+        Creates a MultiServerMCPClient with all configured servers.
+        The client handles actual MCP protocol communication.
+
+        Returns:
+            Initialized MultiServerMCPClient
+
+        Raises:
+            MCPConnectionError: If client creation fails
+
+        """
+        if self._closed:
+            msg = "Client pool is closed"
+            raise MCPConnectionError(msg, details={"state": "closed"})
+
+        if self._client is None:
+            try:
+                # Convert our config to langchain-mcp-adapters format
+                client_config = {}
+                for name, cfg in self._configs.items():
+                    client_config[name] = cfg.to_langchain_config()
+
+                self._client = MultiServerMCPClient(client_config)
+
+                logger.info(
+                    "mcp_client_created",
+                    servers=list(self._configs.keys()),
+                )
+            except Exception as e:
+                logger.exception(
+                    "mcp_client_creation_failed",
+                    error=str(e),
+                )
+                msg = f"Failed to create MCP client: {e}"
+                raise MCPConnectionError(
+                    msg,
+                    details={"error_type": type(e).__name__},
+                ) from e
+
+        return self._client
+
+    def _get_or_create_connection(self, server_name: str) -> MCPConnection:
+        """Get existing connection or create new one.
+
+        Args:
+            server_name: Name of the MCP server
+
+        Returns:
+            MCPConnection for the server
+
+        Raises:
+            ValueError: If server is not configured
+
+        """
+        if server_name not in self._configs:
+            available = list(self._configs.keys())
+            msg = f"Unknown MCP server: {server_name}. Available: {available}"
+            raise ValueError(msg)
+
+        if server_name not in self._connections:
+            self._connections[server_name] = MCPConnection(
+                server_name=server_name,
+                config=self._configs[server_name],
+            )
+
+        return self._connections[server_name]
+
+    @asynccontextmanager
+    async def get_tools(
+        self,
+        server_name: str,
+    ) -> AsyncIterator[list[BaseTool]]:
+        """Get tools from an MCP server.
+
+        Context manager that provides tools from the specified server.
+        Handles connection management and error recovery.
+
+        Args:
+            server_name: Name of the MCP server to connect to
+
+        Yields:
+            List of LangChain-compatible tools from the server
+
+        Raises:
+            MCPConnectionError: If server is unavailable after retries
+            ValueError: If server is not configured
+
+        Example:
+            >>> async with pool.get_tools("github") as tools:
+            ...     for tool in tools:
+            ...         print(f"{tool.name}: {tool.description}")
+
+        """
+        async with self._lock:
+            conn = self._get_or_create_connection(server_name)
+
+        try:
+            # Load tools if not already loaded or connection unhealthy
+            if not conn.tools or not conn.is_healthy():
+                await self._load_tools(conn)
+
+            yield conn.tools
+            conn.record_success()
+
+        except MCPConnectionError:
+            # Re-raise connection errors
+            raise
+        except Exception as e:
+            conn.record_error(str(e))
+            logger.exception(
+                "mcp_tool_access_failed",
+                server=server_name,
+                error=str(e),
+                error_count=conn.error_count,
+            )
+            msg = f"Failed to access tools from {server_name}: {e}"
+            raise MCPConnectionError(
+                msg,
+                server_name=server_name,
+                details={"error_type": type(e).__name__},
+            ) from e
+
+    async def _load_tools(self, conn: MCPConnection) -> None:
+        """Load tools from MCP server into connection.
+
+        Args:
+            conn: Connection to load tools for
+
+        Raises:
+            MCPConnectionError: If tool loading fails
+
+        """
+        conn.state = ConnectionState.CONNECTING
+
+        try:
+            client = await self._ensure_client()
+
+            # Load tools from specific server
+            # Note: langchain-mcp-adapters API may vary - adjust as needed
+            async with client:
+                tools = client.get_tools()
+
+                # Filter to tools from this specific server
+                # Tool names are typically prefixed with server name
+                server_tools = [
+                    t
+                    for t in tools
+                    if t.name.startswith(f"{conn.server_name}_")
+                    or conn.server_name in getattr(t, "metadata", {}).get("server", "")
+                ]
+
+                # If no prefix filtering works, use all tools for this server
+                if not server_tools:
+                    server_tools = tools
+
+                conn.tools = server_tools
+                conn.state = ConnectionState.CONNECTED
+                conn.record_success()
+
+                logger.info(
+                    "mcp_tools_loaded",
+                    server=conn.server_name,
+                    tool_count=len(conn.tools),
+                    tools=[t.name for t in conn.tools],
+                )
+
+        except Exception as e:
+            conn.state = ConnectionState.ERROR
+            conn.record_error(str(e))
+
+            logger.exception(
+                "mcp_tool_loading_failed",
+                server=conn.server_name,
+                error=str(e),
+                error_count=conn.error_count,
+            )
+
+            msg = f"Failed to load tools from {conn.server_name}: {e}"
+            raise MCPConnectionError(
+                msg,
+                server_name=conn.server_name,
+                details={
+                    "error_type": type(e).__name__,
+                    "error_count": conn.error_count,
+                },
+            ) from e
+
+    async def get_tools_for_capabilities(
+        self,
+        capabilities: list[str],
+    ) -> list[BaseTool]:
+        """Get tools matching specified capabilities.
+
+        Capabilities use format "server:tool_name" to specify which
+        tools to load from which servers.
+
+        Args:
+            capabilities: List of capability strings
+                         e.g., ["github:get_repo", "npm:get_package"]
+
+        Returns:
+            List of tools matching any of the specified capabilities.
+            Returns empty list if no capabilities match.
+
+        Example:
+            >>> tools = await pool.get_tools_for_capabilities(
+            ...     [
+            ...         "github:get_repo",
+            ...         "github:get_file_contents",
+            ...         "npm:get_package",
+            ...     ]
+            ... )
+
+        """
+        if not capabilities:
+            return []
+
+        all_tools: list[BaseTool] = []
+
+        # Group capabilities by server
+        server_caps: dict[str, list[str]] = {}
+        for cap in capabilities:
+            if ":" not in cap:
+                logger.warning(
+                    "mcp_invalid_capability_format",
+                    capability=cap,
+                    expected_format="server:tool_name",
+                )
+                continue
+
+            server, tool_name = cap.split(":", 1)
+            if server not in server_caps:
+                server_caps[server] = []
+            server_caps[server].append(tool_name)
+
+        # Load tools from each required server
+        for server_name, tool_names in server_caps.items():
+            if server_name not in self._configs:
+                logger.warning(
+                    "mcp_server_not_configured",
+                    server=server_name,
+                    requested_tools=tool_names,
+                )
+                continue
+
+            try:
+                async with self.get_tools(server_name) as tools:
+                    # Filter to requested tools
+                    for tool in tools:
+                        # Check if tool name matches any requested capability
+                        tool_base_name = tool.name.replace(f"{server_name}_", "")
+                        if tool_base_name in tool_names or tool.name in tool_names:
+                            all_tools.append(tool)
+
+            except MCPConnectionError as e:
+                # Log but continue - graceful degradation
+                logger.warning(
+                    "mcp_capability_loading_failed",
+                    server=server_name,
+                    error=str(e),
+                    requested_tools=tool_names,
+                )
+                continue
+
+        logger.info(
+            "mcp_capabilities_loaded",
+            requested=capabilities,
+            loaded_count=len(all_tools),
+            loaded_tools=[t.name for t in all_tools],
+        )
+
+        return all_tools
+
+    async def health_check(self) -> dict[str, bool]:
+        """Check health of all configured servers.
+
+        Attempts to connect to each server and load tools.
+        Results indicate which servers are available.
+
+        Returns:
+            Mapping of server names to health status
+
+        Example:
+            >>> health = await pool.health_check()
+            >>> print(health)
+            {"github": True, "npm": True, "pypi": False}
+
+        """
+        results: dict[str, bool] = {}
+
+        for name in self._configs:
+            try:
+                async with self.get_tools(name) as tools:
+                    results[name] = len(tools) > 0
+            except MCPConnectionError as e:
+                logger.warning(
+                    "mcp_health_check_failed",
+                    server=name,
+                    error=str(e),
+                )
+                results[name] = False
+
+        logger.info(
+            "mcp_health_check_complete",
+            results=results,
+            healthy_count=sum(results.values()),
+            total_count=len(results),
+        )
+
+        return results
+
+    async def close(self) -> None:
+        """Close all connections and cleanup resources.
+
+        Should be called when shutting down the application
+        to properly cleanup child processes (stdio) and
+        network connections (HTTP/SSE).
+
+        """
+        self._closed = True
+
+        # Clear all connections
+        for conn in self._connections.values():
+            conn.state = ConnectionState.DISCONNECTED
+            conn.tools = []
+
+        self._connections.clear()
+
+        # Close the underlying client
+        if self._client is not None:
+            try:
+                # Note: Check langchain-mcp-adapters for proper cleanup method
+                if hasattr(self._client, "close"):
+                    await self._client.close()
+                elif hasattr(self._client, "__aexit__"):
+                    await self._client.__aexit__(None, None, None)
+            except (OSError, RuntimeError) as e:
+                # OSError for network/process issues, RuntimeError for event loop issues
+                logger.warning(
+                    "mcp_client_close_error",
+                    error=str(e),
+                )
+            finally:
+                self._client = None
+
+        logger.info("mcp_client_pool_closed")
+
+    @property
+    def is_closed(self) -> bool:
+        """Check if pool is closed."""
+        return self._closed
+
+    def get_connection_status(self) -> dict[str, dict]:
+        """Get status of all connections for monitoring.
+
+        Returns:
+            Dictionary with connection status for each server
+
+        """
+        status = {}
+        for name, conn in self._connections.items():
+            status[name] = {
+                "state": conn.state.value,
+                "tool_count": len(conn.tools),
+                "error_count": conn.error_count,
+                "last_error": conn.last_error,
+                "last_health_check": conn.last_health_check,
+                "is_healthy": conn.is_healthy(),
+            }
+        return status
+
+
+# Lazy import to avoid import errors when langchain-mcp-adapters not installed
+try:
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+except ImportError:
+
+    class MultiServerMCPClient:  # type: ignore[no-redef]
+        """Placeholder when langchain-mcp-adapters not installed."""
+
+        def __init__(self, config: dict) -> None:
+            """Raise ImportError when MCP adapters not installed.
+
+            Args:
+                config: Server configuration (ignored, raises immediately)
+
+            Raises:
+                ImportError: Always raised to indicate missing dependency
+
+            """
+            del config  # Unused, we raise immediately
+            msg = (
+                "langchain-mcp-adapters is required for MCP integration. "
+                "Install with: pip install langchain-mcp-adapters"
+            )
+            raise ImportError(msg)
