@@ -36,7 +36,9 @@ Some text after
         assert len(sections.code_blocks) == 1
         block = sections.code_blocks[0]
         assert block.language == "python"
-        assert content[block.start : block.end] == '```python\ndef hello():\n    print("Hello")\n```'
+        assert (
+            content[block.start : block.end] == '```python\ndef hello():\n    print("Hello")\n```'
+        )
 
     def test_extract_multiple_code_blocks(self, extractor: SectionExtractor) -> None:
         """Should extract multiple code blocks."""
