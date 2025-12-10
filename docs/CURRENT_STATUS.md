@@ -1,9 +1,17 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 9, 2025
-**Branch:** `feature/221-hierarchical-chunking`
-**Sprint:** Sprint 8 - Embeddings & Search 🚀
-**Milestone Due:** December 22, 2025 (13 days remaining)
+**Date:** December 10, 2025
+**Branch:** `feature/223-retrieval-smoke-tests`
+**Sprint:** Sprint 8 - Embeddings & Search ✅
+**Next Sprint:** Sprint 9 - MCP Consumer
+
+---
+
+## 🗺️ Sprint Roadmap
+
+```
+Sprint 8 (Current) → Sprint 9 (MCP Consumer) → Sprint 10 (Context Engineering) → Sprint 11 (Features) → Sprint 12 (MCP Server) → Testing
+```
 
 ---
 
@@ -339,99 +347,82 @@
 
 | # | Issue | Title | Status | Priority |
 |---|-------|-------|--------|----------|
-| 215 | Embedding pipeline hardening | Chunk + batch + hash | 🔲 Open | HIGH |
-| 216 | Retrieval & search API | Semantic + hybrid search | 🔲 Open | HIGH |
-| 217 | Re-ranker | Search result re-ranking | 🔲 Open | MEDIUM |
+| 215 | Embedding pipeline hardening | Chunk + batch + hash | ✅ Complete | HIGH |
+| 216 | Retrieval & search API | Semantic + hybrid search | ✅ Complete | HIGH |
+| 217 | Re-ranker | Search result re-ranking | ✅ Complete | MEDIUM |
 | 218 | Telemetry & metrics | Backpressure for embeddings | 🔲 Open | MEDIUM |
 | 219 | Eval harness | Embedding model A/B testing | 🔲 Open | LOW |
-| 220 | PII/safety guardrails | Vector cleanup | 🔲 Open | MEDIUM |
-| **221** | **Hierarchical chunking** | **Coarse-to-fine retrieval** | **🚧 IN PROGRESS** | **HIGH** |
+| 220 | PII/safety guardrails | Vector cleanup | ✅ Complete | MEDIUM |
+| 221 | Hierarchical chunking | Coarse-to-fine retrieval | ✅ Complete | HIGH |
 | 222 | Pluggable parsers | Chunking extensibility | 🔲 Open | LOW |
-| 223 | Retrieval smoke tests | Offline fixtures | 🔲 Open | MEDIUM |
+| **223** | **Retrieval smoke tests** | **Offline fixtures** | **🚧 IN PROGRESS** | **MEDIUM** |
 
-**Total:** 9 issues | **Open:** 9 | **Closed:** 0 | **In Progress:** 1
+**Total:** 9 issues | **Complete:** 5 | **Open:** 3 | **In Progress:** 1
 
 ---
 
-## 🚧 Issue #221 - Hierarchical Chunking (CURRENT WORK)
+## 🚧 Issue #223 - Retrieval Smoke Tests (CURRENT WORK)
 
-**Branch:** `feature/221-hierarchical-chunking`
-**Documentation:** [docs/issues/221-hierarchical-chunking/README.md](./issues/221-hierarchical-chunking/README.md)
+**Branch:** `feature/223-retrieval-smoke-tests`
+**Documentation:** [docs/issues/223-retrieval-smoke-tests/README.md](./issues/223-retrieval-smoke-tests/README.md)
+**PR:** [#250](https://github.com/ArieGoldkin/SkillForge/pull/250)
 
 ### Implementation Progress
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                    ISSUE #221 DELIVERABLES STATUS                          │
+│                    ISSUE #223 DELIVERABLES STATUS                          │
 ├────────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
-│  CHUNKING SERVICE                          WORKFLOW TASKS                  │
-│  ════════════════                          ══════════════                  │
-│  ✅ chunker.py (heading-aware)             ✅ chunk_content.py             │
-│  ✅ dedup.py (shingle hash)                ✅ generate_embedding.py (upd)  │
-│  ✅ summaries.py                           ✅ store_embeddings.py          │
-│  ✅ __init__.py                            ✅ telemetry.py                 │
-│                                            ✅ metrics.py                   │
+│  SMOKE TEST SUITE                          IR METRICS                      │
+│  ════════════════                          ══════════                      │
+│  ✅ test_semantic_search.py (11 tests)     ✅ Recall@k                     │
+│  ✅ test_keyword_search.py (10 tests)      ✅ MRR (Mean Reciprocal Rank)   │
+│  ✅ test_hybrid_search.py (8 tests)        ✅ NDCG@k                       │
+│  ✅ test_coarse_to_fine.py (8 tests)       ✅ Precision@k                  │
+│                                            ✅ Hit Rate                     │
 │                                                                            │
-│  RETRIEVAL UTILS                           DATABASE                        │
-│  ═══════════════                           ════════                        │
-│  ✅ retrieval_routing.py                   ✅ chunk_repository.py          │
-│     (coarse-to-fine helper)                ✅ migration (analysis_chunks)  │
+│  FIXTURES                                  CI INTEGRATION                  │
+│  ════════                                  ══════════════                  │
+│  ✅ documents.json (8 docs, 46 sections)   ✅ GitHub Actions workflow      │
+│  ✅ queries.json (15 queries)              ✅ PostgreSQL + pgvector        │
+│  ✅ loader.py (fixture loader)             ✅ PR comments                  │
+│                                            ✅ Test artifacts               │
 │                                                                            │
-│  TESTS                                     CONFIG                          │
-│  ═════                                     ══════                          │
-│  ✅ test_chunking.py                       🔲 Add config knobs             │
-│  ✅ test_store_embeddings.py               🔲 Integration testing          │
+│  DOCUMENTATION                             CLI RUNNER                      │
+│  ═════════════                             ══════════                      │
+│  ✅ FIXTURE_GUIDE.md                       ✅ smoke_test_retrieval.py      │
+│  ✅ CI_WORKFLOW_GUIDE.md                   ✅ JUnit XML output             │
+│  ✅ QUICK_REFERENCE.md                     ✅ Verbose mode                 │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Files Created/Modified
+**Test Results:** 34 tests passing (26 core + 8 coarse-to-fine) with real OpenAI API
 
-**New Files:**
-- `backend/app/services/chunking/chunker.py` - Heading-aware chunking
-- `backend/app/services/chunking/dedup.py` - Shingle deduplication
-- `backend/app/services/chunking/summaries.py` - Section summaries
-- `backend/app/workflows/tasks/chunk_content.py` - Chunking workflow task
-- `backend/app/workflows/tasks/store_embeddings.py` - Embedding persistence
-- `backend/app/workflows/tasks/telemetry.py` - Metrics emission
-- `backend/app/workflows/tasks/metrics.py` - Performance metrics
-- `backend/app/workflows/utils/retrieval_routing.py` - Coarse-to-fine helper
-- `backend/app/db/repositories/chunk_repository.py` - Chunk data access
-- `backend/alembic/versions/20251209120000_add_analysis_chunks.py` - Migration
+### Files Created
 
-**Modified Files:**
-- `backend/app/workflows/tasks/generate_embedding.py` - Batch-aware update
-- `backend/app/workflows/graph_builder.py` - Pipeline integration
-- `backend/app/db/session.py` - Session handling
+**Test Files:**
+- `backend/tests/smoke/retrieval/test_semantic_search.py` - 11 semantic search tests
+- `backend/tests/smoke/retrieval/test_keyword_search.py` - 10 keyword search tests
+- `backend/tests/smoke/retrieval/test_hybrid_search.py` - 8 hybrid search tests
+- `backend/tests/smoke/retrieval/test_coarse_to_fine.py` - 8 hierarchical retrieval tests
+- `backend/tests/smoke/retrieval/conftest.py` - Pytest fixtures
+- `backend/tests/smoke/retrieval/metrics.py` - IR metrics (Recall, MRR, NDCG, P@k)
 
-### Data Contract
+**Fixtures:**
+- `backend/tests/smoke/retrieval/fixtures/documents.json` - 8 test documents, 46 sections
+- `backend/tests/smoke/retrieval/fixtures/queries.json` - 15 test queries with expected results
+- `backend/tests/smoke/retrieval/fixtures/loader.py` - Fixture loader utility
 
-```python
-ChunkMeta = {
-    "analysis_id": str,
-    "chunk_id": str,
-    "granularity": "coarse" | "fine" | "summary",
-    "path": list[str],          # ["Intro", "Background", "chunk_2/5"]
-    "chunk_idx": int,
-    "chunk_total": int,
-    "section_title": str | None,
-    "content_type": str | None,
-    "language": str | None,
-    "hash": str,                # Dedup hash
-    "model": str | None,        # Embedding model
-    "model_version": str | None,
-    "snippet": str | None,      # Preview text
-}
-```
+**CI/CD:**
+- `.github/workflows/retrieval-smoke-tests.yml` - GitHub Actions workflow
+- `backend/scripts/smoke_test_retrieval.py` - CLI runner script
 
-### Remaining Work for #221
-
-- [ ] Add configuration knobs to `config.py`
-- [ ] Complete integration tests with real embeddings
-- [ ] Verify coarse-to-fine retrieval helper
-- [ ] Update documentation with operational guidance
-- [ ] Run full test suite and fix any failures
+**Documentation:**
+- `docs/issues/223-retrieval-smoke-tests/FIXTURE_GUIDE.md` - How to add/modify fixtures
+- `docs/issues/223-retrieval-smoke-tests/CI_WORKFLOW_GUIDE.md` - CI workflow docs
+- `docs/issues/223-retrieval-smoke-tests/QUICK_REFERENCE.md` - One-page quick reference
 
 ---
 
@@ -581,35 +572,36 @@ ChunkMeta = {
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         SKILLFORGE PROJECT STATUS                            ║
-║                         December 9, 2025                                     ║
+║                         December 10, 2025                                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║   SPRINT PROGRESSION                                                         ║
+║   ══════════════════                                                         ║
+║   Sprint 8 (Current) → 9 (MCP Consumer) → 10 (Context Engineering)          ║
+║       → 11 (Features) → 12 (MCP Server) → Testing                           ║
 ║                                                                              ║
 ║   COMPLETED SPRINTS                      CURRENT SPRINT                      ║
 ║   ═════════════════                      ══════════════                      ║
-║   ✅ Sprint 1: Foundation                🚀 Sprint 8: Embeddings & Search   ║
-║   ✅ Sprint 2: LangGraph & SSE              └─ 9 issues, 13 days remain     ║
-║   ✅ Sprint 3: Artifact Viewer                                              ║
-║   ✅ Sprint 4-7: Core Features                                              ║
+║   ✅ Sprint 1-7: Foundation-Polish       ✅ Sprint 8: Embeddings & Search   ║
+║                                              └─ 5/9 issues complete          ║
 ║                                                                              ║
 ║   SPRINT 8 PROGRESS                      CURRENT BRANCH                      ║
 ║   ════════════════                       ══════════════                      ║
-║   🚧 #221 Hierarchical Chunking          feature/221-hierarchical-chunking  ║
-║   🔲 #215 Embedding Pipeline                                                 ║
-║   🔲 #216 Retrieval API                                                      ║
-║   🔲 #217 Re-ranker                                                          ║
+║   ✅ #215 Embedding Pipeline             feature/223-retrieval-smoke-tests  ║
+║   ✅ #216 Retrieval API                                                      ║
+║   ✅ #217 Re-ranker                                                          ║
 ║   🔲 #218 Telemetry                                                          ║
 ║   🔲 #219 Eval Harness                                                       ║
-║   🔲 #220 PII/Safety                                                         ║
+║   ✅ #220 PII/Safety                                                         ║
+║   ✅ #221 Hierarchical Chunking                                              ║
 ║   🔲 #222 Pluggable Parsers                                                  ║
-║   🔲 #223 Smoke Tests                                                        ║
+║   🚧 #223 Smoke Tests                                                        ║
 ║                                                                              ║
-║   KEY DELIVERABLES (#221)                                                    ║
+║   KEY DELIVERABLES (#223)                                                    ║
 ║   ═══════════════════════                                                    ║
-║   ✅ Heading-aware chunker               ✅ Coarse-to-fine helper           ║
-║   ✅ Shingle deduplication               ✅ Chunk repository                ║
-║   ✅ Batch embedding updates             ✅ Migration script                ║
-║   ✅ Store embeddings task               🔲 Config knobs                    ║
-║   ✅ Telemetry/metrics hooks             🔲 Integration tests               ║
+║   ✅ 34 smoke tests                      ✅ CI workflow                     ║
+║   ✅ IR metrics suite                    ✅ Fixture system                  ║
+║   ✅ Coarse-to-fine tests                ✅ Documentation                   ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -695,7 +687,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** December 9, 2025 (Sprint 8 - Hierarchical Chunking in progress)
+**Last Updated:** December 10, 2025 (Sprint 8 - Retrieval Smoke Tests in progress)
 **Maintained By:** Yonatan & Arie
 
 ---

@@ -1,9 +1,17 @@
 # 📊 SkillForge Project Summary & Verification
 
-**Date:** November 21, 2025  
-**Status:** ✅ Documentation Complete & Organized  
-**GitHub:** ✅ Issues, Milestones & Labels Created  
-**Recent Updates:** ✅ GitHub Actions workflow fixes applied (Issue #25)
+**Date:** December 10, 2025
+**Status:** ✅ Sprint 8 - Embeddings & Search (Near Complete)
+**Current Sprint:** Sprint 8 → Next: Sprint 9 (MCP Consumer)
+**GitHub:** ✅ Issues, Milestones & Labels Active
+
+---
+
+## 🗺️ Sprint Progression
+
+```
+Sprint 8 (Current) → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server) → Testing
+```
 
 ---
 

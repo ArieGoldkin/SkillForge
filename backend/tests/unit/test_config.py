@@ -176,7 +176,7 @@ def test_settings_production_rejects_host_0_0_0_0(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
     get_settings.cache_clear()
 
-    with pytest.raises(ValueError, match="SECURITY: HOST=0.0.0.0 is not allowed"):
+    with pytest.raises(ValueError, match=r"SECURITY: HOST=0\.0\.0\.0 is not allowed"):
         Settings(
             ENVIRONMENT="production",
             HOST="0.0.0.0",

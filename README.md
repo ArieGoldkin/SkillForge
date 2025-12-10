@@ -89,7 +89,7 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 
 ### Backend
 - **Framework:** FastAPI 0.121.2+
-- **AI Orchestration:** LangGraph 1.0 + LangChain 1.0 (Sprint 2)
+- **AI Orchestration:** LangGraph 1.0 + LangChain 1.0
 - **Database:** PostgreSQL 17 + PGVector 0.4.1
 - **LLM:** Multi-provider support (GPT-5 Mini/Claude/Gemini for dev and production)
 - **Language:** Python 3.13
@@ -249,36 +249,41 @@ VITE_API_BASE_URL=http://localhost:8500
 
 ## 🎯 Development Roadmap
 
-### Phase 1: Foundation ✅ (Planning Complete)
-- Backend scaffolding (FastAPI, PostgreSQL, Docker)
-- Frontend scaffolding (React 19, Vite, Tailwind)
-- Content extraction (Jina AI Reader)
-- Basic analysis workflow
+### Sprint 8: Embeddings & Search ✅ (Current)
+- Embedding pipeline hardening with batch processing
+- Hierarchical chunking (coarse-to-fine retrieval)
+- Semantic + hybrid search API
+- Re-ranker implementation
+- Retrieval smoke tests
 
-### Phase 2: Multi-Agent Pipeline (In Progress)
-- LangGraph supervisor pattern
-- 8 specialized sub-agents
-- Artifact generation
-- SSE progress streaming
+### Sprint 9: MCP Consumer (Next)
+- MCP client integration for Claude Code
+- Tool discovery and registration
+- External MCP server consumption
+- Context window management
 
-### Phase 3: Tutoring System (Planned)
-- Socratic dialogue engine
-- Context-aware tutoring
-- Session persistence
+### Sprint 10: Context Engineering
+- Advanced context management
+- Memory persistence across sessions
+- Dynamic context injection
+- Conversation threading
 
-### Phase 4: Knowledge Library (Planned)
-- Full-text + semantic search
-- Topic extraction
-- Filtering and sorting
+### Sprint 11: Features - Tutoring & Library
+- Socratic tutoring system refinement
+- Knowledge library enhancements
+- Full-text + semantic search optimization
+- Topic extraction and filtering
 
-### Phase 5: Content Expansion (Planned)
-- YouTube video support
-- GitHub repository analysis
+### Sprint 12: MCP Server
+- SkillForge as MCP server provider
+- Tool exposure for external consumers
+- API integration for AI assistants
+- Production-ready MCP endpoints
 
-### Phase 6: Production Launch (Planned)
-- E2E testing
+### Testing & Deployment
+- E2E testing suite
 - Performance optimization
-- Deployment (Vercel + backend hosting)
+- Production deployment (Vercel + Railway)
 
 ---
 
@@ -321,10 +326,9 @@ We welcome contributions! This project follows a **parallel development workflow
 
 ## 📊 Project Stats
 
-- **Total Story Points:** 242 (105 frontend + 137 backend)
-- **Sprints:** 7 (11-13 weeks)
-- **User Stories:** 16 across 4 epics
-- **Tech Stack:** React 19, FastAPI, LangGraph, PostgreSQL
+- **Current Sprint:** Sprint 8 - Embeddings & Search
+- **Sprint Progression:** 8 → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server)
+- **Tech Stack:** React 19, FastAPI, LangGraph 0.6.7, PostgreSQL + PGVector
 - **Team:** 2 developers (frontend + backend)
 
 ---
@@ -364,4 +368,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using Claude Code**
 
-*Last Updated: November 21, 2025*
+*Last Updated: December 10, 2025*

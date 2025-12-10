@@ -2021,5 +2021,6 @@ docker-compose logs -f
 ---
 
 **Document Maintained By:** Yonatan
-**Last Updated:** November 20, 2025
-**Review:** Update daily
+**Last Updated:** December 10, 2025
+**Current Sprint:** Sprint 8 - Embeddings & Search
+**Sprint Progression:** 8 → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server)

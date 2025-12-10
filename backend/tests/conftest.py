@@ -161,7 +161,7 @@ def auto_clear_config_cache(clear_config_cache):
 
 
 @pytest.fixture(autouse=True)
-def ensure_test_env_vars(monkeypatch):
+def ensure_test_env_vars(monkeypatch, request):
     """Ensure test environment variables are set before each test.
 
     This fixture runs automatically for every test and ensures:
@@ -171,13 +171,21 @@ def ensure_test_env_vars(monkeypatch):
 
     NOTE: DATABASE_URL is NOT overridden if already set (e.g., from .env.test).
     This allows integration tests to use the real database configuration.
+
+    NOTE: Smoke tests (marked with pytest.mark.smoke) skip the OPENAI_API_KEY
+    placeholder to allow them to use real API keys from .env for live testing.
     """
     # Only set DATABASE_URL if not already set (e.g., from .env.test)
     # Integration tests need the real DATABASE_URL (port 5437 from .env.test)
     if "DATABASE_URL" not in os.environ:
         # Use port 5437 to match Docker setup
         monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+
+    # Skip OPENAI_API_KEY placeholder for smoke tests - they need real keys
+    # Check for smoke marker to allow live API calls in smoke tests
+    is_smoke_test = request.node.get_closest_marker("smoke") is not None
+    if not is_smoke_test:
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
     # Clear settings cache to force fresh settings instance
     get_settings.cache_clear()

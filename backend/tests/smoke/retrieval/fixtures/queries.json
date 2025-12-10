@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "generated": "2025-12-10",
+  "queries": [
+    {
+      "id": "q-oauth2-impl",
+      "query": "OAuth2 password token endpoint",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["fastapi-auth/oauth2-password"],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Direct match for OAuth2 implementation - should find OAuth2 password section"
+    },
+    {
+      "id": "q-jwt-expiry",
+      "query": "JWT token expiration time best practices",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["fastapi-auth/jwt-tokens"],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "JWT configuration query - should find JWT tokens section"
+    },
+    {
+      "id": "q-async-await",
+      "query": "asyncio event loop concurrent",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["python-async/intro", "python-async/basics"],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Python async programming - should find intro and basics"
+    },
+    {
+      "id": "q-react-state",
+      "query": "How to manage state in React function components",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["react-hooks/usestate", "react-hooks/intro"],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "React state management - should find useState hook section"
+    },
+    {
+      "id": "q-sql-join",
+      "query": "SELECT JOIN rows data",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["sql-basics/select"],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "SQL joins - should find SELECT section which covers JOINs"
+    },
+    {
+      "id": "q-langchain-tools",
+      "query": "How to create custom tools in LangChain agents",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["langchain-agents/tools"],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "LangChain tool creation - should find tools section"
+    },
+    {
+      "id": "q-api-security-broad",
+      "query": "API security and authentication methods",
+      "modes": ["semantic", "hybrid"],
+      "category": "broad",
+      "expected_chunks": ["fastapi-auth/intro", "fastapi-auth/oauth2-password", "graphql-api/auth"],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Broad security query - should find multiple auth-related sections"
+    },
+    {
+      "id": "q-deployment-broad",
+      "query": "How to deploy applications to production",
+      "modes": ["semantic", "hybrid"],
+      "category": "broad",
+      "expected_chunks": ["kubernetes-deploy/intro", "kubernetes-deploy/deployments", "langchain-agents/production"],
+      "min_score": 0.4,
+      "max_score": null,
+      "description": "Broad deployment query - should find K8s and LangChain production sections"
+    },
+    {
+      "id": "q-neg-quantum",
+      "query": "quantum computing algorithms and qubits",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "negative",
+      "expected_chunks": [],
+      "min_score": null,
+      "max_score": 0.4,
+      "description": "Completely unrelated domain - should return low scores"
+    },
+    {
+      "id": "q-neg-rust",
+      "query": "Rust borrow checker and ownership model",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "negative",
+      "expected_chunks": [],
+      "min_score": null,
+      "max_score": 0.4,
+      "description": "Different programming language - should not match Python/JS content"
+    },
+    {
+      "id": "q-sem-synonym",
+      "query": "secure web API authentication mechanisms",
+      "modes": ["semantic"],
+      "category": "specific",
+      "expected_chunks": ["fastapi-auth/intro", "fastapi-auth/oauth2-password"],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Synonym test - 'mechanisms' should match OAuth2/JWT content semantically"
+    },
+    {
+      "id": "q-sem-paraphrase",
+      "query": "making database queries run faster",
+      "modes": ["semantic"],
+      "category": "specific",
+      "expected_chunks": ["sql-basics/optimization"],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Paraphrase test - should match query optimization section"
+    },
+    {
+      "id": "q-k8s-scaling",
+      "query": "HPA pod metrics scaling",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["kubernetes-deploy/scaling"],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "K8s HPA query - should find scaling section"
+    },
+    {
+      "id": "q-vector-search",
+      "query": "How does semantic search with embeddings work",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "expected_chunks": ["embeddings-guide/search", "embeddings-guide/intro"],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Embeddings query - should find semantic search section"
+    },
+    {
+      "id": "q-edge-short",
+      "query": "JWT",
+      "modes": ["keyword", "hybrid"],
+      "category": "edge",
+      "expected_chunks": ["fastapi-auth/jwt-tokens"],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Very short query (single term) - should still find JWT section"
+    },
+    {
+      "id": "q-edge-special",
+      "query": "OAuth2.0 JWT (tokens) & API-keys",
+      "modes": ["keyword", "hybrid"],
+      "category": "edge",
+      "expected_chunks": ["fastapi-auth/jwt-tokens", "fastapi-auth/intro"],
+      "min_score": 0.4,
+      "max_score": null,
+      "description": "Special characters in query - should handle gracefully"
+    },
+    {
+      "id": "q-c2f-tools-coarse",
+      "query": "How to create custom tools for LangChain agents",
+      "modes": ["semantic", "hybrid"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/tools"],
+      "expected_fine_chunks": ["langchain-agents/tools/decorator-usage", "langchain-agents/tools/best-practices"],
+      "granularity": "coarse",
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Coarse stage: Find tools section, then drill into fine paragraphs"
+    },
+    {
+      "id": "q-c2f-tools-fine",
+      "query": "How to write good tool descriptions for LLM selection",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/tools/best-practices"],
+      "expected_coarse_parent": "langchain-agents/tools",
+      "granularity": "fine",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Fine stage: Should find specific best-practices paragraph"
+    },
+    {
+      "id": "q-c2f-react-coarse",
+      "query": "LangChain agent architecture and patterns",
+      "modes": ["semantic", "hybrid"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/architecture"],
+      "expected_fine_chunks": ["langchain-agents/architecture/react-pattern"],
+      "granularity": "coarse",
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Coarse stage: Find architecture section, drill into ReAct details"
+    },
+    {
+      "id": "q-c2f-react-fine",
+      "query": "How does ReAct reasoning and acting loop work",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/architecture/react-pattern"],
+      "expected_coarse_parent": "langchain-agents/architecture",
+      "granularity": "fine",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Fine stage: Should find ReAct pattern paragraph specifically"
+    },
+    {
+      "id": "q-c2f-intro-hierarchy",
+      "query": "What do LangChain agents actually do",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/intro", "langchain-agents/intro/what-agents-do"],
+      "granularity": "both",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Should find both coarse intro and fine what-agents-do"
+    }
+  ]
+}

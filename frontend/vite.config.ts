@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5175, // SkillForge dev port (avoiding 5173/5174 used by reporter-accuracy)
+    port: 5173, // SkillForge dev port
     strictPort: true,
     proxy: {
       '/api': {

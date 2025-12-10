@@ -92,15 +92,17 @@ def upgrade() -> None:
     )
 
     # ============================================================================
-    # PHASE 4: Create indexes (CONCURRENTLY where possible)
+    # PHASE 4: Create indexes
     # ============================================================================
+    # NOTE: Not using CONCURRENTLY as it cannot run inside transaction blocks.
+    # For production with existing data, consider running these manually outside Alembic.
 
     # HNSW index for vector similarity search (semantic search)
     # Using cosine distance operator for normalized embeddings
     # Parameters: m=16 (connections per layer), ef_construction=64 (build quality)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_vector_hnsw
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_vector_hnsw
             ON analysis_chunks
             USING hnsw (vector vector_cosine_ops)
             WITH (m = 16, ef_construction = 64);
@@ -110,7 +112,7 @@ def upgrade() -> None:
     # GIN index for full-text search (keyword search)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_content_tsvector
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_content_tsvector
             ON analysis_chunks
             USING GIN (content_tsvector);
         """)
@@ -120,7 +122,7 @@ def upgrade() -> None:
     # Non-unique to allow same content with different models
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_hash_model
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_hash_model
             ON analysis_chunks (hash, model, model_version);
         """)
     )
@@ -129,7 +131,7 @@ def upgrade() -> None:
     # Note: This is created by SQLAlchemy model (index=True), but ensure it exists
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_hash
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_hash
             ON analysis_chunks (hash);
         """)
     )
@@ -137,7 +139,7 @@ def upgrade() -> None:
     # Composite index for hierarchical search (analysis + granularity)
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_analysis_granularity
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_analysis_granularity
             ON analysis_chunks (analysis_id, granularity);
         """)
     )
@@ -146,7 +148,7 @@ def upgrade() -> None:
     # Partial index: only where content_type is not null
     op.execute(
         text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_analysis_chunks_content_type_created
+            CREATE INDEX IF NOT EXISTS ix_analysis_chunks_content_type_created
             ON analysis_chunks (content_type, created_at DESC)
             WHERE content_type IS NOT NULL;
         """)
@@ -155,40 +157,62 @@ def upgrade() -> None:
     # ============================================================================
     # PHASE 5: Add check constraints for data integrity
     # ============================================================================
+    # NOTE: PostgreSQL doesn't support ADD CONSTRAINT IF NOT EXISTS, so we use
+    # DO blocks with existence checks to make migrations idempotent.
 
     # Ensure granularity is one of the valid values
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_granularity
-            CHECK (granularity IN ('coarse', 'fine', 'summary'));
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_granularity') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_granularity
+                    CHECK (granularity IN ('coarse', 'fine', 'summary'));
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_idx is non-negative
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_idx_positive
-            CHECK (chunk_idx >= 0);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_idx_positive') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_idx_positive
+                    CHECK (chunk_idx >= 0);
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_total is positive
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_total_positive
-            CHECK (chunk_total > 0);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_total_positive') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_total_positive
+                    CHECK (chunk_total > 0);
+                END IF;
+            END $$;
         """)
     )
 
     # Ensure chunk_idx < chunk_total (logical consistency)
     op.execute(
         text("""
-            ALTER TABLE analysis_chunks
-            ADD CONSTRAINT IF NOT EXISTS chk_chunk_idx_lt_total
-            CHECK (chunk_idx < chunk_total);
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_chunk_idx_lt_total') THEN
+                    ALTER TABLE analysis_chunks
+                    ADD CONSTRAINT chk_chunk_idx_lt_total
+                    CHECK (chunk_idx < chunk_total);
+                END IF;
+            END $$;
         """)
     )
 
@@ -309,12 +333,12 @@ def downgrade() -> None:
     # Remove indexes
     # ============================================================================
 
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_content_type_created"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_analysis_granularity"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_hash"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_hash_model"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_content_tsvector"))
-    op.execute(text("DROP INDEX CONCURRENTLY IF EXISTS ix_analysis_chunks_vector_hnsw"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_content_type_created"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_analysis_granularity"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_hash"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_hash_model"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_content_tsvector"))
+    op.execute(text("DROP INDEX IF EXISTS ix_analysis_chunks_vector_hnsw"))
 
     # ============================================================================
     # Remove columns

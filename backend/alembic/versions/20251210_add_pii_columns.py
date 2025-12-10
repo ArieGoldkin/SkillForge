@@ -1,7 +1,7 @@
 """Add PII columns to analysis_chunks table.
 
 Revision ID: 20251210_add_pii_columns
-Revises: 20251210_add_cascade_delete
+Revises: 20251210_cascade
 Create Date: 2025-12-10
 
 Issue #220: PII/Safety Guardrails
@@ -18,7 +18,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
 revision = "20251210_add_pii_columns"
-down_revision = "20251210_add_cascade_delete"
+down_revision = "20251210_cascade"
 branch_labels = None
 depends_on = None
 

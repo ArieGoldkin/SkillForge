@@ -151,19 +151,37 @@ def test_deduplicate_with_hashes_filters_existing():
     # Create test chunks
     chunks = [
         ChunkText(
-            text="Chunk A", path=["root"], section_title=None,
-            granularity="fine", chunk_idx=0, chunk_total=3,
-            token_count=5, was_truncated=False, content_hash=""
+            text="Chunk A",
+            path=["root"],
+            section_title=None,
+            granularity="fine",
+            chunk_idx=0,
+            chunk_total=3,
+            token_count=5,
+            was_truncated=False,
+            content_hash="",
         ),
         ChunkText(
-            text="Chunk B", path=["root"], section_title=None,
-            granularity="fine", chunk_idx=1, chunk_total=3,
-            token_count=5, was_truncated=False, content_hash=""
+            text="Chunk B",
+            path=["root"],
+            section_title=None,
+            granularity="fine",
+            chunk_idx=1,
+            chunk_total=3,
+            token_count=5,
+            was_truncated=False,
+            content_hash="",
         ),
         ChunkText(
-            text="Chunk C", path=["root"], section_title=None,
-            granularity="fine", chunk_idx=2, chunk_total=3,
-            token_count=5, was_truncated=False, content_hash=""
+            text="Chunk C",
+            path=["root"],
+            section_title=None,
+            granularity="fine",
+            chunk_idx=2,
+            chunk_total=3,
+            token_count=5,
+            was_truncated=False,
+            content_hash="",
         ),
     ]
 
@@ -186,15 +204,19 @@ def test_deduplicate_with_hashes_empty_existing():
     """Verify dedup passes all chunks when no existing hashes."""
     chunks = [
         ChunkText(
-            text="New chunk", path=["root"], section_title=None,
-            granularity="fine", chunk_idx=0, chunk_total=1,
-            token_count=5, was_truncated=False, content_hash=""
+            text="New chunk",
+            path=["root"],
+            section_title=None,
+            granularity="fine",
+            chunk_idx=0,
+            chunk_total=1,
+            token_count=5,
+            was_truncated=False,
+            content_hash="",
         ),
     ]
 
-    new_chunks, stats = deduplicate_with_hashes(
-        chunks, set(), "text-embedding-3-small", "v1"
-    )
+    new_chunks, stats = deduplicate_with_hashes(chunks, set(), "text-embedding-3-small", "v1")
 
     assert len(new_chunks) == 1, "all chunks should pass with no existing hashes"
     assert stats.skipped == 0
@@ -204,9 +226,15 @@ def test_deduplicate_with_hashes_all_existing():
     """Verify dedup filters all chunks when all exist."""
     chunks = [
         ChunkText(
-            text="Existing", path=["root"], section_title=None,
-            granularity="fine", chunk_idx=0, chunk_total=1,
-            token_count=5, was_truncated=False, content_hash=""
+            text="Existing",
+            path=["root"],
+            section_title=None,
+            granularity="fine",
+            chunk_idx=0,
+            chunk_total=1,
+            token_count=5,
+            was_truncated=False,
+            content_hash="",
         ),
     ]
 

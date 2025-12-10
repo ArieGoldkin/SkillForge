@@ -1,8 +1,9 @@
 # 🔗 SkillForge - Integration Points & Coordination Protocol
 
-**Version:** 1.0
-**Last Updated:** November 20, 2025
+**Version:** 1.1
+**Last Updated:** December 10, 2025
 **Team:** Arie (Frontend) + Yonatan (Backend)
+**Current Sprint:** Sprint 8 - Embeddings & Search
 
 ---
 
