@@ -8,6 +8,7 @@ Detects corrupted vectors:
 
 import uuid
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from math import inf, isfinite, isnan
 
 from sqlalchemy import func, select
@@ -432,7 +433,7 @@ class VectorIntegrityChecker:
         lines = [
             "# Vector Integrity Report",
             "",
-            f"Generated at: {__import__('datetime').datetime.now().__import__('datetime').UTC)}",
+            f"Generated at: {datetime.now(UTC).isoformat()}",
             "",
             "## Summary",
             "",

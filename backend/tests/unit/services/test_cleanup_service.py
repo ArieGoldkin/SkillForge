@@ -190,9 +190,14 @@ class TestVectorIntegrityChecker:
         # Mock chunk with zero vector
         chunk_id = uuid.uuid4()
         zero_vector = [0.0] * 1536
-        mock_result = MagicMock()
-        mock_result.all.return_value = [(chunk_id, zero_vector)]
-        mock_session.execute.return_value = mock_result
+
+        # First call returns zero vector, second call returns empty (to break loop)
+        first_result = MagicMock()
+        first_result.all.return_value = [(chunk_id, zero_vector)]
+        empty_result = MagicMock()
+        empty_result.all.return_value = []
+
+        mock_session.execute.side_effect = [first_result, empty_result]
 
         zero_ids = await integrity_checker.check_zero_vectors_in_chunks()
 
@@ -285,12 +290,24 @@ class TestCleanupService:
 
     async def test_health_check_unhealthy(self, cleanup_service, mock_session):
         """Test health check when issues exist."""
-        # Mock some orphans
+        # Mock database to return orphans for count
         orphan_id = uuid.uuid4()
         mock_result = MagicMock()
         mock_result.all.return_value = [(orphan_id,)]
         mock_result.scalar_one.return_value = 1
-        mock_session.execute.return_value = mock_result
+
+        # Create empty result for all the batch iteration checks
+        empty_result = MagicMock()
+        empty_result.all.return_value = []
+        empty_result.scalar_one.return_value = 0
+
+        # Use a generator that returns mock_result once, then empty_result forever
+        def infinite_results():
+            yield mock_result  # First call finds orphan
+            while True:
+                yield empty_result  # All subsequent calls return empty
+
+        mock_session.execute.side_effect = infinite_results()
 
         health = await cleanup_service.health_check()
 
