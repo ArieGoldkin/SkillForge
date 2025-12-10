@@ -161,6 +161,65 @@
       "min_score": 0.4,
       "max_score": null,
       "description": "Special characters in query - should handle gracefully"
+    },
+    {
+      "id": "q-c2f-tools-coarse",
+      "query": "How to create custom tools for LangChain agents",
+      "modes": ["semantic", "hybrid"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/tools"],
+      "expected_fine_chunks": ["langchain-agents/tools/decorator-usage", "langchain-agents/tools/best-practices"],
+      "granularity": "coarse",
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Coarse stage: Find tools section, then drill into fine paragraphs"
+    },
+    {
+      "id": "q-c2f-tools-fine",
+      "query": "How to write good tool descriptions for LLM selection",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/tools/best-practices"],
+      "expected_coarse_parent": "langchain-agents/tools",
+      "granularity": "fine",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Fine stage: Should find specific best-practices paragraph"
+    },
+    {
+      "id": "q-c2f-react-coarse",
+      "query": "LangChain agent architecture and patterns",
+      "modes": ["semantic", "hybrid"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/architecture"],
+      "expected_fine_chunks": ["langchain-agents/architecture/react-pattern"],
+      "granularity": "coarse",
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Coarse stage: Find architecture section, drill into ReAct details"
+    },
+    {
+      "id": "q-c2f-react-fine",
+      "query": "How does ReAct reasoning and acting loop work",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/architecture/react-pattern"],
+      "expected_coarse_parent": "langchain-agents/architecture",
+      "granularity": "fine",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Fine stage: Should find ReAct pattern paragraph specifically"
+    },
+    {
+      "id": "q-c2f-intro-hierarchy",
+      "query": "What do LangChain agents actually do",
+      "modes": ["semantic"],
+      "category": "coarse-to-fine",
+      "expected_chunks": ["langchain-agents/intro", "langchain-agents/intro/what-agents-do"],
+      "granularity": "both",
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Should find both coarse intro and fine what-agents-do"
     }
   ]
 }

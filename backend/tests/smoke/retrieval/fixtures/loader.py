@@ -11,13 +11,14 @@ from pathlib import Path
 from typing import TypedDict
 
 
-class Section(TypedDict):
+class Section(TypedDict, total=False):
     """Document section structure."""
 
     id: str
     title: str
     content: str
     granularity: str
+    parent_section: str  # For fine-grained sections, reference to coarse parent
 
 
 class Document(TypedDict):
@@ -32,7 +33,7 @@ class Document(TypedDict):
     sections: list[Section]
 
 
-class Query(TypedDict):
+class Query(TypedDict, total=False):
     """Test query structure."""
 
     id: str
@@ -43,6 +44,10 @@ class Query(TypedDict):
     min_score: float | None
     max_score: float | None
     description: str
+    # Coarse-to-fine specific fields
+    granularity: str  # 'coarse', 'fine', or 'both'
+    expected_fine_chunks: list[str]  # Expected fine chunks for coarse queries
+    expected_coarse_parent: str  # Expected parent section for fine queries
 
 
 class FixtureData(TypedDict):
@@ -137,6 +142,49 @@ class FixtureLoader:
 
         """
         return [d for d in self.load_documents() if d["bucket"] == bucket]
+
+    def get_coarse_to_fine_queries(self) -> list[Query]:
+        """Get queries designed for coarse-to-fine retrieval tests.
+
+        Returns:
+            Queries with category 'coarse-to-fine'.
+
+        """
+        return self.get_queries_by_category("coarse-to-fine")
+
+    def get_sections_by_granularity(self, granularity: str) -> list[Section]:
+        """Get all sections with a specific granularity level.
+
+        Args:
+            granularity: Either 'coarse' or 'fine'.
+
+        Returns:
+            All sections matching the granularity.
+
+        """
+        sections: list[Section] = []
+        for doc in self.load_documents():
+            for section in doc.get("sections", []):
+                if section.get("granularity") == granularity:
+                    sections.append(section)
+        return sections
+
+    def get_fine_sections_for_parent(self, parent_id: str) -> list[Section]:
+        """Get fine-grained sections that belong to a coarse parent.
+
+        Args:
+            parent_id: ID of the coarse parent section.
+
+        Returns:
+            Fine sections with matching parent_section.
+
+        """
+        sections: list[Section] = []
+        for doc in self.load_documents():
+            for section in doc.get("sections", []):
+                if section.get("parent_section") == parent_id:
+                    sections.append(section)
+        return sections
 
     def get_document_by_id(self, doc_id: str) -> Document | None:
         """Get a specific document by ID.

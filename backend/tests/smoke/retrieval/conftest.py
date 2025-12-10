@@ -140,6 +140,12 @@ def edge_queries(fixture_loader: FixtureLoader):
     return fixture_loader.get_queries_by_category("edge")
 
 
+@pytest.fixture
+def coarse_to_fine_queries(fixture_loader: FixtureLoader):
+    """Get coarse-to-fine hierarchical test queries."""
+    return fixture_loader.get_coarse_to_fine_queries()
+
+
 def requires_embedding_service():
     """Check if embedding service is available.
 
@@ -359,6 +365,7 @@ THRESHOLDS = {
         "specific": {"min_recall": 0.70, "min_mrr": 0.60, "min_ndcg": 0.65},
         "broad": {"min_recall": 0.50, "min_mrr": 0.40, "min_ndcg": 0.45},
         "negative": {"max_score": 0.40},
+        "coarse-to-fine": {"min_recall": 0.50, "min_mrr": 0.40, "min_ndcg": 0.45},
     },
     "keyword": {
         "specific": {"min_recall": 0.60, "min_mrr": 0.50, "min_ndcg": 0.55},
@@ -367,6 +374,12 @@ THRESHOLDS = {
     "hybrid": {
         "specific": {"min_recall": 0.75, "min_mrr": 0.65, "min_ndcg": 0.70},
         "broad": {"min_recall": 0.55, "min_mrr": 0.45, "min_ndcg": 0.50},
+        "coarse-to-fine": {"min_recall": 0.60, "min_mrr": 0.50, "min_ndcg": 0.55},
+    },
+    "coarse_to_fine": {
+        "coarse": {"min_recall": 0.50, "min_mrr": 0.40},
+        "fine": {"min_recall": 0.40, "min_mrr": 0.30},
+        "hierarchy": {"min_hierarchy_score": 0.50},
     },
 }
 

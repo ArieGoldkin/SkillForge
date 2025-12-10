@@ -1,6 +1,6 @@
 # Issue #223: Retrieval Smoke Tests
 
-**Status:** ✅ Phase 1 Complete (Core Tests) | Phase 2-3 Planned
+**Status:** ✅ Phase 1-3 Complete | Ready for Review
 **Branch:** `feature/223-retrieval-smoke-tests`
 **Sprint:** Sprint 8 - Embeddings & Search
 **Priority:** MEDIUM
@@ -62,20 +62,32 @@ This issue includes comprehensive design documentation:
 
 **Test Results:** 26 tests passing with real OpenAI API (~2 min runtime)
 
-### 🔲 Phase 2: Coarse-to-Fine Tests (PLANNED)
+### ✅ Phase 2: Coarse-to-Fine Tests (COMPLETE)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Two-stage retrieval tests | 🔲 | Section → Paragraph hierarchy |
-| Hierarchical navigation | 🔲 | Uses `path` field from chunks |
+| Two-stage retrieval tests | ✅ | Section → Paragraph hierarchy |
+| Hierarchical navigation | ✅ | Uses `path` field from chunks |
+| Granularity filtering | ✅ | Coarse/fine section validation |
+| 5 test queries | ✅ | Coarse, fine, and both granularity |
 
-### 🔲 Phase 3: CI Integration (PLANNED)
+### ✅ Phase 3: CI Integration (COMPLETE)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| GitHub Actions workflow | 🔲 | PostgreSQL + pgvector service |
-| Embedding cache | 🔲 | Pre-computed for offline CI |
-| PR comments | 🔲 | Markdown report on PR |
+| GitHub Actions workflow | ✅ | `retrieval-smoke-tests.yml` |
+| PostgreSQL + pgvector | ✅ | `pgvector/pgvector:pg17` service |
+| Alembic migrations | ✅ | Auto-run in CI |
+| PR comments | ✅ | Markdown summary on PR |
+| Test artifacts | ✅ | 7-day retention |
+
+### ✅ Phase 4: Documentation (COMPLETE)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| FIXTURE_GUIDE.md | ✅ | How to add/modify fixtures |
+| CI_WORKFLOW_GUIDE.md | ✅ | CI workflow documentation |
+| QUICK_REFERENCE.md | ✅ | One-page quick reference |
 
 ---
 

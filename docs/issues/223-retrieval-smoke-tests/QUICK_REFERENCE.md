@@ -1,181 +1,166 @@
-# Issue #223 Quick Reference
+# Quick Reference - Retrieval Smoke Tests CI
 
-## Commands
-
-```bash
-# Run all smoke tests
-cd backend
-poetry run pytest tests/smoke/retrieval/ -v
-
-# Run specific search mode
-poetry run pytest tests/smoke/retrieval/test_semantic_search.py -v
-poetry run pytest tests/smoke/retrieval/test_hybrid_search.py -v
-
-# Run with coverage
-poetry run pytest tests/smoke/retrieval/ --cov=app/services/search
-
-# Generate report
-poetry run python scripts/smoke_test_retrieval.py --format markdown --output report.md
-
-# CI mode (strict)
-poetry run pytest tests/smoke/retrieval/ -v --tb=short -x
-```
-
-## Test Markers
-
-```python
-# In test files
-@pytest.mark.smoke           # Smoke test marker
-@pytest.mark.asyncio         # Async test
-@pytest.mark.slow            # Slower tests (skip in quick runs)
-```
-
-```bash
-# Run only smoke tests
-poetry run pytest -m smoke
-
-# Skip slow tests
-poetry run pytest -m "smoke and not slow"
-```
-
-## Metrics Thresholds
-
-| Metric | Pass | Fail |
-|--------|------|------|
-| Recall@5 | ≥ 0.8 | < 0.8 |
-| MRR | ≥ 0.6 | < 0.6 |
-| Pass Rate | 100% | < 100% |
-| Max Latency | < 500ms | ≥ 500ms |
-
-## File Locations
-
-```
-backend/
-├── tests/smoke/retrieval/
-│   ├── conftest.py              # Fixtures setup
-│   ├── test_semantic_search.py  # Semantic tests
-│   ├── test_keyword_search.py   # Keyword tests
-│   ├── test_hybrid_search.py    # Hybrid tests
-│   ├── test_coarse_to_fine.py   # Two-stage tests
-│   ├── metrics.py               # Metrics computation
-│   ├── reporter.py              # Report generation
-│   └── fixtures/
-│       ├── documents.json       # Test documents
-│       └── queries.json         # Test queries
-├── scripts/
-│   └── smoke_test_retrieval.py  # CLI runner
-└── docs/issues/223-*/
-    ├── README.md                # Main documentation
-    ├── ARCHITECTURE.md          # System design
-    ├── FIXTURES.md              # Fixture design
-    └── QUICK_REFERENCE.md       # This file
-```
-
-## Query Categories
-
-| Category | Purpose | Expected Behavior |
-|----------|---------|-------------------|
-| `specific` | Exact content match | High recall, high score |
-| `broad` | Multiple matches | Moderate recall, varied scores |
-| `negative` | No relevant content | Empty or low-score results |
-| `edge` | Boundary conditions | Graceful handling |
-
-## Search Modes
-
-| Mode | Mechanism | Best For |
-|------|-----------|----------|
-| `semantic` | Vector similarity (cosine) | Synonyms, paraphrases |
-| `keyword` | Full-text (tsvector) | Exact terms, acronyms |
-| `hybrid` | RRF fusion (k=60) | General queries |
-| `coarse-to-fine` | Two-stage | Long documents |
-
-## Common Issues
-
-### Test Fails with "No chunks found"
-- Check database is running with pgvector
-- Verify fixtures were loaded in conftest
-- Check `DATABASE_URL` environment variable
-
-### Low Recall Scores
-- Review expected_chunks in queries.json
-- Check if document content matches query intent
-- Verify embeddings were generated correctly
-
-### Timeout Errors
-- Increase timeout in conftest (default 2s)
-- Check database connection pool settings
-- Verify no conflicting database operations
-
-## Environment Variables
-
-```bash
-# Required
-DATABASE_URL=postgresql://user:pass@localhost:5432/skillforge_test
-OPENAI_API_KEY=sk-...
-
-# Optional
-SMOKE_TEST_TIMEOUT=30           # Max test duration (seconds)
-SMOKE_TEST_VERBOSE=true         # Detailed logging
-EMBEDDING_CACHE_ENABLED=true    # Use cached embeddings
-```
-
-## Adding New Tests
-
-### 1. Add Document Fixture
-```json
-// fixtures/documents.json
-{
-  "id": "new-doc",
-  "title": "New Document Title",
-  "content_type": "article",
-  "bucket": "short",
-  "sections": [
-    {
-      "id": "new-doc/section1",
-      "title": "Section Title",
-      "content": "Section content..."
-    }
-  ]
-}
-```
-
-### 2. Add Query Fixture
-```json
-// fixtures/queries.json
-{
-  "id": "q-new-query",
-  "query": "search query text",
-  "modes": ["semantic", "hybrid"],
-  "category": "specific",
-  "expected_chunks": ["new-doc/section1"],
-  "min_score": 0.7
-}
-```
-
-### 3. Run Validation
-```bash
-poetry run python -c "from tests.smoke.retrieval.fixtures.loader import FixtureLoader; FixtureLoader().validate()"
-```
-
-## CI Integration
-
-### GitHub Actions Trigger Paths
-```yaml
-paths:
-  - 'backend/app/services/search/**'
-  - 'backend/app/services/chunking/**'
-  - 'backend/app/db/repositories/chunk_repository.py'
-  - 'backend/tests/smoke/**'
-```
-
-### Required Secrets
-- `OPENAI_API_KEY` - For embedding generation
-
-### Exit Codes
-- `0` - All tests passed
-- `1` - Test failures
-- `2` - Setup/configuration error
+**Workflow:** `.github/workflows/retrieval-smoke-tests.yml`
+**Issue:** #223
 
 ---
 
-**Version:** 1.0 | **Updated:** December 10, 2025
+## Setup Checklist
+
+- [ ] **GitHub Secret:** Add `OPENAI_API_KEY` to repo secrets
+  - Settings → Secrets and variables → Actions → New repository secret
+  - Use REAL OpenAI key (not test placeholder: `sk-test-...`)
+
+- [ ] **Pytest Markers:** Added to `backend/pyproject.toml` (✅ Done)
+  ```toml
+  markers = [
+      "smoke: marks tests as smoke tests",
+      "retrieval: marks tests for retrieval/search functionality",
+      "semantic: marks semantic search tests",
+      "keyword: marks keyword search tests",
+      "hybrid: marks hybrid search tests",
+  ]
+  ```
+
+- [ ] **Test Fixtures:** Generated in `backend/tests/fixtures/retrieval/` (✅ Done)
+  - `analyses.jsonl` (~50KB)
+  - `chunks.jsonl` (~200KB)
+  - `embeddings.jsonl` (~500KB)
+  - `queries.jsonl` (~20KB)
+  - `metadata.json` (~2KB)
+
+---
+
+## Workflow Triggers
+
+| Event | Branches | Paths |
+|-------|----------|-------|
+| **Pull Request** | main, dev | chunking/**, retrieval/**, embeddings/**, search/**, tests/smoke/retrieval/**, fixtures/retrieval/** |
+| **Push** | main, dev | chunking/**, retrieval/**, embeddings/**, search/** |
+| **Manual** | Any | workflow_dispatch |
+
+---
+
+## Test Execution
+
+```bash
+# Locally run same tests as CI:
+cd backend
+
+# Semantic search tests
+poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval and semantic" -v
+
+# Keyword search tests
+poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval and keyword" -v
+
+# Hybrid search tests
+poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval and hybrid" -v
+
+# All retrieval smoke tests
+poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval" -v
+```
+
+---
+
+## Expected Results
+
+### Test Counts
+- **Semantic:** 8 tests (~40s)
+- **Keyword:** 7 tests (~30s)
+- **Hybrid:** 7 tests (~35s)
+- **Total:** 22 tests (~105s)
+
+### Performance Targets
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Total runtime | <5 min | ~3 min |
+| Cache hit rate | >90% | ~95% |
+| API cost/run | <$0.001 | ~$0.0003 |
+
+### Quality Thresholds
+| Mode | Category | Recall@5 | MRR | NDCG@5 |
+|------|----------|----------|-----|--------|
+| Semantic | Specific | ≥0.70 | ≥0.60 | ≥0.65 |
+| Semantic | Broad | ≥0.50 | ≥0.40 | ≥0.45 |
+| Keyword | Specific | ≥0.60 | ≥0.50 | ≥0.55 |
+| Hybrid | Specific | ≥0.75 | ≥0.65 | ≥0.70 |
+
+---
+
+## Common Issues
+
+### Issue: "No module named 'app'"
+**Fix:** Ensure `poetry install` runs before tests
+```yaml
+- name: Install dependencies
+  run: poetry install --no-interaction --no-root
+```
+
+### Issue: "Extension 'vector' does not exist"
+**Fix:** Install pgvector BEFORE Alembic migrations
+```yaml
+- name: Install pgvector extension
+  run: |
+    PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test \
+      -c "CREATE EXTENSION IF NOT EXISTS vector;"
+```
+
+### Issue: "OPENAI_API_KEY not found"
+**Fix:** Add GitHub secret `OPENAI_API_KEY` with real key (not `sk-test-...`)
+
+### Issue: Tests fail with low recall
+**Fix:** Check if code change legitimately affects retrieval, then adjust thresholds in `conftest.py`
+
+---
+
+## Maintenance
+
+### Update Fixtures (when needed)
+```bash
+cd backend
+poetry run python scripts/generate_retrieval_fixtures.py
+
+# Update version in metadata.json
+# Commit changes - cache will auto-invalidate
+git add tests/fixtures/retrieval/
+git commit -m "chore(#223): regenerate retrieval fixtures"
+```
+
+### Adjust Thresholds (if needed)
+Edit `backend/tests/smoke/retrieval/conftest.py`:
+```python
+THRESHOLDS = {
+    "semantic": {
+        "specific": {"min_recall": 0.70, "min_mrr": 0.60, "min_ndcg": 0.65},
+    }
+}
+```
+
+### Monitor Health
+- **Weekly:** Check runtime <5 min, cache hit >90%, pass rate >95%
+- **Monthly:** Review fixture versions, check pgvector updates, audit API costs
+
+---
+
+## Files Changed
+
+### New Files
+- `.github/workflows/retrieval-smoke-tests.yml` (CI workflow)
+- `docs/issues/223-retrieval-smoke-tests/CI_WORKFLOW_GUIDE.md` (full docs)
+- `docs/issues/223-retrieval-smoke-tests/QUICK_REFERENCE.md` (this file)
+
+### Modified Files
+- `backend/pyproject.toml` (added pytest markers: smoke, retrieval, semantic, keyword, hybrid)
+
+---
+
+## Resources
+
+- **Full Guide:** `docs/issues/223-retrieval-smoke-tests/CI_WORKFLOW_GUIDE.md`
+- **Design Doc:** `docs/issues/223-retrieval-smoke-tests/DESIGN_DOCUMENT.md`
+- **Implementation:** `docs/issues/223-retrieval-smoke-tests/IMPLEMENTATION_CHECKLIST.md`
+- **GitHub Actions:** https://github.com/[repo]/actions/workflows/retrieval-smoke-tests.yml
+
+---
+
+**Last Updated:** December 10, 2025

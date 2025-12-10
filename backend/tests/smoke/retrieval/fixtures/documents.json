@@ -129,16 +129,44 @@
           "granularity": "coarse"
         },
         {
+          "id": "langchain-agents/intro/what-agents-do",
+          "title": "What Agents Do",
+          "content": "Agents break down complex tasks into steps. They observe the current state, reason about what to do next, execute an action, and repeat until the task is complete. This autonomous behavior distinguishes them from simple prompt-response systems.",
+          "granularity": "fine",
+          "parent_section": "langchain-agents/intro"
+        },
+        {
           "id": "langchain-agents/architecture",
           "title": "Agent Architecture",
           "content": "A LangChain agent consists of three main components: the LLM (brain), tools (capabilities), and memory (context). The agent loop follows: observe input, think about next action, act using a tool, observe result, repeat until done. ReAct (Reasoning + Acting) is the most common agent pattern.",
           "granularity": "coarse"
         },
         {
+          "id": "langchain-agents/architecture/react-pattern",
+          "title": "ReAct Pattern Details",
+          "content": "The ReAct pattern interleaves reasoning and acting. First, the agent generates a Thought explaining its reasoning. Then it produces an Action to execute. After observing the Action Result, it generates another Thought. This loop continues until a Final Answer is reached.",
+          "granularity": "fine",
+          "parent_section": "langchain-agents/architecture"
+        },
+        {
           "id": "langchain-agents/tools",
           "title": "Building Custom Tools",
           "content": "Tools extend agent capabilities. Create tools using the @tool decorator or Tool class. Each tool needs a name, description (critical for LLM selection), and function. Tools can be synchronous or async. Common tools include search, calculators, APIs, and database queries. Structure descriptions clearly for reliable tool selection.",
           "granularity": "coarse"
+        },
+        {
+          "id": "langchain-agents/tools/decorator-usage",
+          "title": "Tool Decorator Usage",
+          "content": "Use @tool decorator for simple functions: @tool def search(query: str) -> str. The decorator extracts the docstring as description. For more control, use Tool(name='search', func=search_fn, description='...'). Always include type hints for automatic schema generation.",
+          "granularity": "fine",
+          "parent_section": "langchain-agents/tools"
+        },
+        {
+          "id": "langchain-agents/tools/best-practices",
+          "title": "Tool Description Best Practices",
+          "content": "Write clear, specific tool descriptions. Include: what the tool does, when to use it, input format expected, output format returned. Bad: 'Search tool'. Good: 'Search the web for current information. Use when asked about recent events or facts you dont know. Input: search query string. Returns: relevant text snippets.'",
+          "granularity": "fine",
+          "parent_section": "langchain-agents/tools"
         },
         {
           "id": "langchain-agents/memory",
