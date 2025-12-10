@@ -63,15 +63,11 @@ class TestCoarseStageRetrieval:
                 top_k=5,
             )
 
-            # Build chunk-to-section mapping
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             # Filter to only coarse sections in retrieved results
@@ -152,15 +148,11 @@ class TestFineStageRetrieval:
                 top_k=5,
             )
 
-            # Build chunk-to-section mapping
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             metrics = metrics_calculator.compute(
@@ -287,14 +279,12 @@ class TestHierarchicalNavigation:
 
         assert len(coarse_results) > 0, "Coarse stage should return results"
 
-        # Get section IDs from coarse results
-        chunk_to_section = {
-            str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-            for chunk in seeded_chunks
-            if chunk.metadata
+        # Extract section IDs from search result metadata
+        # The path is stored as [doc_id, section_id] in the database
+        coarse_section_ids = {
+            r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+            for r in coarse_results
         }
-
-        coarse_section_ids = {chunk_to_section.get(r.chunk_id, r.chunk_id) for r in coarse_results}
 
         print(f"\nCoarse stage found sections: {coarse_section_ids}")
 
@@ -377,14 +367,12 @@ class TestGranularityFiltering:
                 top_k=10,
             )
 
-            # Map results to section IDs
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
-            retrieved_ids = [chunk_to_section.get(r.chunk_id, r.chunk_id) for r in results]
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
+            retrieved_ids = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in results
+            ]
 
             # Check if results include expected chunks (can be mix of granularities)
             expected = set(query.get("expected_chunks", []))

@@ -62,15 +62,11 @@ class TestHybridSearchPositive:
                 top_k=5,
             )
 
-            # Build chunk-to-section mapping
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             metrics = metrics_calculator.compute(
@@ -134,13 +130,11 @@ class TestHybridSearchPositive:
             )
 
             # Track unique source documents
-            chunk_to_doc = {
-                str(chunk.id): chunk.metadata.get("doc_id", "unknown")
-                for chunk in seeded_chunks
-                if chunk.metadata
+            # The path is stored as [doc_id, section_id] in the database
+            unique_docs = {
+                r.metadata.path[0] if r.metadata.path and len(r.metadata.path) > 0 else "unknown"
+                for r in search_results
             }
-
-            unique_docs = {chunk_to_doc.get(r.chunk_id, "unknown") for r in search_results}
 
             # Broad queries should find results from multiple documents
             min_unique_docs = 2
@@ -190,17 +184,16 @@ class TestHybridVsSingleMode:
                 top_k=5,
             )
 
-            # Map to section IDs
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             semantic_sections = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in semantic_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in semantic_results
             ]
-            hybrid_sections = [chunk_to_section.get(r.chunk_id, r.chunk_id) for r in hybrid_results]
+            hybrid_sections = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in hybrid_results
+            ]
 
             semantic_metrics = metrics_calculator.compute(
                 retrieved_ids=semantic_sections,
@@ -252,16 +245,16 @@ class TestHybridVsSingleMode:
                 top_k=5,
             )
 
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             keyword_sections = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in keyword_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in keyword_results
             ]
-            hybrid_sections = [chunk_to_section.get(r.chunk_id, r.chunk_id) for r in hybrid_results]
+            hybrid_sections = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in hybrid_results
+            ]
 
             keyword_metrics = metrics_calculator.compute(
                 retrieved_ids=keyword_sections,
@@ -398,13 +391,12 @@ class TestHybridSearchEdgeCases:
             assert isinstance(results, list), "Should return list of results"
 
             # Check if expected chunks are found
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
-            retrieved_sections = [chunk_to_section.get(r.chunk_id, r.chunk_id) for r in results]
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
+            retrieved_sections = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in results
+            ]
 
             # At least one expected chunk should be found
             found_any = any(section in query["expected_chunks"] for section in retrieved_sections)

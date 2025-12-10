@@ -63,15 +63,11 @@ class TestKeywordSearchPositive:
                 top_k=5,
             )
 
-            # Build chunk-to-section mapping
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             metrics = metrics_calculator.compute(
@@ -91,6 +87,9 @@ class TestKeywordSearchPositive:
             if not passed:
                 print(f"\n  FAIL: {query['id']}")
                 print(f"    Query: {query['query'][:60]}...")
+                print(f"    Expected: {query['expected_chunks']}")
+                print(f"    Retrieved: {retrieved_section_ids}")
+                print(f"    Paths: {[r.metadata.path for r in search_results]}")
                 print(f"    {metrics.summary()}")
 
         aggregate = aggregate_metrics(results)
@@ -138,14 +137,12 @@ class TestKeywordSearchEdgeCases:
             # Should find results for single term
             assert len(results) > 0, f"Short query '{query['query']}' found no results"
 
-            # Check if expected chunk is found
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
-            retrieved_sections = [chunk_to_section.get(r.chunk_id, r.chunk_id) for r in results]
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
+            retrieved_sections = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in results
+            ]
 
             found_expected = any(
                 section in query["expected_chunks"] for section in retrieved_sections

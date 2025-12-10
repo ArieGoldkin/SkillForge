@@ -65,24 +65,12 @@ class TestSemanticSearchPositive:
                 top_k=5,
             )
 
-            # Extract chunk IDs from results (need to map section_id from metadata)
-            retrieved_ids = []
-            for result in search_results:
-                # Get section_id from chunk metadata
-                if result.metadata and hasattr(result.metadata, "section"):
-                    # The metadata.section contains section_title, need section_id from metadata dict
-                    pass
-                # For now, use chunk content to match expected sections
-                # In production, we'd have proper section_id mapping
-                retrieved_ids.append(result.chunk_id)
-
-            # Map retrieved chunks to section IDs for comparison
-            chunk_to_section: dict[str, str] = {}
-            for chunk in seeded_chunks:
-                if chunk.metadata and "section_id" in chunk.metadata:
-                    chunk_to_section[str(chunk.id)] = chunk.metadata["section_id"]
-
-            retrieved_section_ids = [chunk_to_section.get(cid, cid) for cid in retrieved_ids]
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
+            retrieved_section_ids = [
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
+            ]
 
             # Compute metrics
             metrics = metrics_calculator.compute(
@@ -147,15 +135,11 @@ class TestSemanticSearchPositive:
                 top_k=5,
             )
 
-            # Build chunk-to-section mapping
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             metrics = metrics_calculator.compute(
@@ -197,15 +181,11 @@ class TestSemanticSearchPositive:
                 top_k=5,
             )
 
-            # Verify at least one expected chunk is found
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             found_expected = any(
@@ -324,14 +304,11 @@ class TestSemanticSearchBroad:
                 top_k=10,  # Larger k for broad queries
             )
 
-            chunk_to_section = {
-                str(chunk.id): chunk.metadata.get("section_id", str(chunk.id))
-                for chunk in seeded_chunks
-                if chunk.metadata
-            }
-
+            # Extract section IDs from search result metadata
+            # The path is stored as [doc_id, section_id] in the database
             retrieved_section_ids = [
-                chunk_to_section.get(r.chunk_id, r.chunk_id) for r in search_results
+                r.metadata.path[1] if r.metadata.path and len(r.metadata.path) > 1 else r.chunk_id
+                for r in search_results
             ]
 
             # Use k=10 for broad queries
