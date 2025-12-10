@@ -4,17 +4,31 @@ This module provides tools for extracting evaluation examples from various sourc
 - LangSmith production traces
 - GitHub issues and discussions
 - Edge case generation
+- Adversarial example generation
 - Stack Overflow Q&A (planned)
 
 Also provides PII anonymization for safe data handling.
 """
 
+from app.evaluation.ingestion.adversarial_generator import (
+    ALL_CATEGORIES as ADVERSARIAL_CATEGORIES,
+)
+from app.evaluation.ingestion.adversarial_generator import (
+    AdversarialConfig,
+    AdversarialGenerator,
+)
+from app.evaluation.ingestion.adversarial_templates import AdversarialTemplates
 from app.evaluation.ingestion.edge_case_generator import (
-    ALL_CATEGORIES,
+    ALL_CATEGORIES as EDGE_CASE_CATEGORIES,
+)
+from app.evaluation.ingestion.edge_case_generator import (
     EdgeCaseConfig,
     EdgeCaseGenerator,
 )
 from app.evaluation.ingestion.edge_case_templates import EdgeCaseTemplates
+
+# Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
+ALL_CATEGORIES = EDGE_CASE_CATEGORIES
 from app.evaluation.ingestion.github_importer import (
     GitHubImportConfig,
     GitHubImporter,
@@ -49,6 +63,12 @@ if LANGSMITH_AVAILABLE:
         "EdgeCaseConfig",
         "EdgeCaseTemplates",
         "ALL_CATEGORIES",
+        "EDGE_CASE_CATEGORIES",
+        # Adversarial Examples
+        "AdversarialGenerator",
+        "AdversarialConfig",
+        "AdversarialTemplates",
+        "ADVERSARIAL_CATEGORIES",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",
@@ -69,6 +89,12 @@ else:
         "EdgeCaseConfig",
         "EdgeCaseTemplates",
         "ALL_CATEGORIES",
+        "EDGE_CASE_CATEGORIES",
+        # Adversarial Examples
+        "AdversarialGenerator",
+        "AdversarialConfig",
+        "AdversarialTemplates",
+        "ADVERSARIAL_CATEGORIES",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",
