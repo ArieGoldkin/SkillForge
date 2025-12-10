@@ -724,6 +724,93 @@
         "overview": 300,
         "full": 1000
       }
+    },
+
+    "brainstorming": {
+      "display_name": "Brainstorming",
+      "path": ".claude/skills/brainstorming",
+      "provides": [
+        "socratic-questioning",
+        "alternative-exploration",
+        "incremental-validation",
+        "idea-refinement"
+      ],
+      "used_by_agents": ["product-manager", "ux-researcher", "studio-coach"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 300,
+        "full": 800
+      }
+    },
+
+    "edge-computing-patterns": {
+      "display_name": "Edge Computing Patterns",
+      "path": ".claude/skills/edge-computing-patterns",
+      "provides": [
+        "cloudflare-workers",
+        "vercel-edge",
+        "edge-constraints",
+        "edge-caching",
+        "deno-deploy"
+      ],
+      "used_by_agents": ["backend-system-architect", "frontend-ui-developer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "devops-deployment": {
+      "display_name": "DevOps Deployment",
+      "path": ".claude/skills/devops-deployment",
+      "provides": [
+        "ci-cd-pipelines",
+        "docker-containerization",
+        "kubernetes",
+        "infrastructure-as-code",
+        "deployment-strategies"
+      ],
+      "used_by_agents": ["backend-system-architect", "studio-coach"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "performance-optimization": {
+      "display_name": "Performance Optimization",
+      "path": ".claude/skills/performance-optimization",
+      "provides": [
+        "database-query-optimization",
+        "bundle-size-reduction",
+        "core-web-vitals",
+        "caching-strategies",
+        "profiling"
+      ],
+      "used_by_agents": ["backend-system-architect", "frontend-ui-developer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
     }
   },
 

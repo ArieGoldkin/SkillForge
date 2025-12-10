@@ -9,6 +9,7 @@ Requires:
 Notes:
 - To keep cost low, we patch supervisor/agent fan-out and artifact generation.
 - Embeddings and extraction are real; agents and artifact LLM are skipped.
+
 """
 
 import asyncio
@@ -19,11 +20,10 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select
 
-from app.models.analysis_chunk import AnalysisChunk
-
 from app.core.config import get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.analysis import Analysis
+from app.models.analysis_chunk import AnalysisChunk
 from app.workflows.analysis import analysis_workflow
 
 
@@ -124,4 +124,3 @@ async def test_analysis_workflow_live_embeddings_and_extraction(requires_live_en
             assert chunk_count > 0
     finally:
         await engine.dispose()
-

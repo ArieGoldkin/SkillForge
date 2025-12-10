@@ -1,4 +1,5 @@
-import asyncio
+"""Unit tests for store_embeddings workflow task."""
+
 from uuid import uuid4
 
 import pytest
@@ -7,10 +8,14 @@ from app.workflows.tasks.store_embeddings import store_embeddings
 
 
 class FakeChunkRepo:
+    """Fake repository for testing chunk storage."""
+
     def __init__(self) -> None:
+        """Initialize empty items list."""
         self.items: list[dict] = []
 
-    async def create_many(self, items):
+    async def create_many(self, items: list[dict]) -> None:
+        """Store items in memory."""
         self.items.extend(items)
 
 
@@ -41,4 +46,3 @@ async def test_store_embeddings_persists_payloads():
     assert repo.items[0]["analysis_id"] == analysis_id
     assert repo.items[0]["granularity"] == "fine"
     assert repo.items[0]["path"] == ["Intro"]
-

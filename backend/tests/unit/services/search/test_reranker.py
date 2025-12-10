@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.constants import RERANK_ALPHA, RERANK_BETA, RERANK_GAMMA
 from app.schemas.search import ChunkMetadata, ReRankConfig, SearchResult
 from app.services.search.reranker import ReRanker, ReRankScore
 
@@ -77,9 +76,7 @@ class TestReRankerBasic:
     """Tests for basic re-ranking functionality."""
 
     @pytest.mark.asyncio
-    async def test_rerank_reduces_candidates_to_final_count(
-        self, reranker, sample_search_results
-    ):
+    async def test_rerank_reduces_candidates_to_final_count(self, reranker, sample_search_results):
         """Test that re-ranking reduces candidates to final_count."""
         config = ReRankConfig(enabled=True, candidate_count=50, final_count=2)
 
@@ -107,9 +104,7 @@ class TestReRankerBasic:
         assert len(results) == 3
 
     @pytest.mark.asyncio
-    async def test_disabled_config_returns_truncated_results(
-        self, reranker, sample_search_results
-    ):
+    async def test_disabled_config_returns_truncated_results(self, reranker, sample_search_results):
         """Test that disabled config returns original results truncated."""
         config = ReRankConfig(enabled=False, final_count=2)
 
@@ -367,9 +362,7 @@ class TestReRankerScoreParsing:
         """Test that scores with various formatting are parsed correctly."""
         mock_model = MagicMock()
         # Various formatting styles the LLM might return
-        mock_model.ainvoke = AsyncMock(
-            return_value=MagicMock(content="[1] 0.95\n2. 0.85\n0.75")
-        )
+        mock_model.ainvoke = AsyncMock(return_value=MagicMock(content="[1] 0.95\n2. 0.85\n0.75"))
 
         reranker = ReRanker(model=mock_model)
         config = ReRankConfig(enabled=True, final_count=3, use_structural_priors=False)

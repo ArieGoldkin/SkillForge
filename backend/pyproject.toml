@@ -112,6 +112,7 @@ ignore = [
 ]
 # Alembic migration files have specific format requirements
 "alembic/versions/**/*.py" = [
+    "D103",     # Missing function docstring - alembic upgrade/downgrade don't need docstrings
     "D400",     # First line ending - alembic format doesn't require period
     "D415",     # First line punctuation - alembic format is specific
 ]

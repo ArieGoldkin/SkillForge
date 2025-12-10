@@ -9,12 +9,8 @@ Tests cover:
 - Custom weights
 """
 
-import pytest
-
 from app.core.constants import (
     STRUCTURAL_PATH_DEPTH_THRESHOLD,
-    STRUCTURAL_POSITION_EARLY_THRESHOLD,
-    STRUCTURAL_POSITION_LATE_THRESHOLD,
     STRUCTURAL_WEIGHT_CODE_BLOCK,
     STRUCTURAL_WEIGHT_HEADING,
     STRUCTURAL_WEIGHT_PATH_DEPTH_PENALTY,
@@ -77,7 +73,9 @@ class TestStructuralPriorScorerPathDepth:
 
         score = scorer.score_single(metadata)
 
-        expected_penalty = -STRUCTURAL_WEIGHT_PATH_DEPTH_PENALTY * (4 - STRUCTURAL_PATH_DEPTH_THRESHOLD)
+        expected_penalty = -STRUCTURAL_WEIGHT_PATH_DEPTH_PENALTY * (
+            4 - STRUCTURAL_PATH_DEPTH_THRESHOLD
+        )
         assert score == expected_penalty
 
     def test_empty_path_no_penalty(self):

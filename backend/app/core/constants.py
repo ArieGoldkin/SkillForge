@@ -8,6 +8,8 @@ the application to improve maintainability and consistency.
 HTTP_OK = 200
 HTTP_NOT_FOUND = 404
 HTTP_ERROR_THRESHOLD = 400
+HTTP_RATE_LIMITED = 429
+HTTP_SERVER_ERROR_THRESHOLD = 500
 
 # Timeout Configuration (in seconds)
 DEFAULT_TIMEOUT = 30.0  # Default HTTP client timeout

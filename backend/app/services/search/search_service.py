@@ -16,6 +16,7 @@ Architecture:
 - L2 normalized vectors for cosine similarity search
 - RRF fusion with k=60 for hybrid search
 - Snippet generation with <mark> tags for highlighting
+- Metrics collection via MetricsService for observability
 
 Example:
     >>> service = SearchService(session, embedding_service)
@@ -26,6 +27,7 @@ Example:
 """
 
 import re
+import time
 from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +43,7 @@ from app.schemas.search import (
     SearchResult,
 )
 from app.services.embeddings import EmbeddingService
+from app.services.metrics import get_metrics_service
 from app.services.search.reranker import ReRanker
 
 if TYPE_CHECKING:
@@ -82,6 +85,7 @@ class SearchService:
         self.session = session
         self.embedding_service = embedding_service
         self.reranker = reranker or ReRanker()
+        self._metrics = get_metrics_service()
 
         # Import here to avoid circular dependency
         from app.db.repositories.chunk_repository import ChunkRepository
@@ -158,6 +162,10 @@ class SearchService:
             rerank_enabled=rerank.enabled if rerank else False,
         )
 
+        # Track timing for metrics
+        start_time = time.perf_counter()
+        reranked = False
+
         # Route to appropriate search method
         if mode == SearchMode.SEMANTIC:
             results = await self._semantic_search(query, fetch_k, filters)
@@ -173,9 +181,19 @@ class SearchService:
                 results=results,
                 config=rerank,
             )
+            reranked = True
         else:
             # Truncate to top_k if not re-ranking
             results = results[:top_k]
+
+        # Calculate latency and record metrics
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        self._metrics.record_search_request(
+            mode=mode.value,
+            reranked=reranked,
+            latency_ms=latency_ms,
+            results_count=len(results),
+        )
 
         logger.info(
             "search_completed",
@@ -183,7 +201,8 @@ class SearchService:
             mode=mode.value,
             results_count=len(results),
             top_score=results[0].score if results else None,
-            reranked=rerank.enabled if rerank else False,
+            reranked=reranked,
+            latency_ms=latency_ms,
         )
 
         return results
