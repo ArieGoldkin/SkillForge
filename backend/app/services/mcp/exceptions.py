@@ -60,16 +60,53 @@ class MCPConnectionError(MCPError):
     - Server process spawn failures (stdio)
     - Connection pool exhausted
 
+    Attributes:
+        attempt: Current retry attempt number
+        max_attempts: Maximum retry attempts configured
+
     Example:
         >>> raise MCPConnectionError(
         ...     "Failed to connect",
         ...     server_name="github",
-        ...     details={"attempts": 3, "last_error": "Connection refused"},
+        ...     attempt=2,
+        ...     max_attempts=3,
+        ...     details={"last_error": "Connection refused"},
         ... )
 
     """
 
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        server_name: str | None = None,
+        attempt: int | None = None,
+        max_attempts: int | None = None,
+        details: dict | None = None,
+    ) -> None:
+        """Initialize connection error with retry context.
+
+        Args:
+            message: Error description
+            server_name: MCP server name
+            attempt: Current retry attempt number
+            max_attempts: Maximum retry attempts configured
+            details: Additional context
+
+        """
+        super().__init__(message, server_name=server_name, details=details)
+        self.attempt = attempt
+        self.max_attempts = max_attempts
+
+    def __str__(self) -> str:
+        """Format error with server and retry context."""
+        parts = []
+        if self.server_name:
+            parts.append(f"[{self.server_name}]")
+        parts.append(self.message)
+        if self.attempt is not None and self.max_attempts is not None:
+            parts.append(f"(attempt {self.attempt}/{self.max_attempts})")
+        return " ".join(parts)
 
 
 class MCPTimeoutError(MCPError):

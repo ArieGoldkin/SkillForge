@@ -22,7 +22,15 @@ Example:
 
 """
 
-from app.services.mcp.client import MCPClientPool
+from app.services.mcp.client import (
+    MCP_RETRY_ATTEMPTS,
+    MCP_RETRY_MAX_WAIT,
+    MCP_RETRY_MIN_WAIT,
+    MCP_RETRY_MULTIPLIER,
+    MCPClientPool,
+    create_mcp_retry_decorator,
+    execute_with_timeout,
+)
 from app.services.mcp.config import (
     MCPServerConfig,
     MCPSettings,
@@ -45,6 +53,10 @@ from app.services.mcp.registry import (
 
 __all__ = [
     "AGENT_TOOL_CONFIGS",
+    "MCP_RETRY_ATTEMPTS",
+    "MCP_RETRY_MAX_WAIT",
+    "MCP_RETRY_MIN_WAIT",
+    "MCP_RETRY_MULTIPLIER",
     "AgentToolConfig",
     "MCPClientPool",
     "MCPConfigurationError",
@@ -57,5 +69,7 @@ __all__ = [
     "MCPTransport",
     "ToolCapability",
     "ToolRegistry",
+    "create_mcp_retry_decorator",
+    "execute_with_timeout",
     "get_mcp_settings",
 ]

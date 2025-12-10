@@ -22,15 +22,25 @@ Example:
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from app.core.logging import get_logger
 from app.services.mcp.config import MCPServerConfig
-from app.services.mcp.exceptions import MCPConnectionError
+from app.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -41,6 +51,102 @@ logger = get_logger(__name__)
 
 # Circuit breaker threshold - mark connection as ERROR after this many failures
 MAX_CONSECUTIVE_ERRORS = 3
+
+# Retry configuration constants
+MCP_RETRY_ATTEMPTS = 3
+MCP_RETRY_MIN_WAIT = 1.0  # seconds
+MCP_RETRY_MAX_WAIT = 16.0  # seconds
+MCP_RETRY_MULTIPLIER = 2.0  # exponential backoff multiplier
+
+
+async def execute_with_timeout[T](
+    coro: Awaitable[T],
+    timeout_seconds: float,
+    operation_name: str,
+    server_name: str | None = None,
+) -> T:
+    """Execute an awaitable with timeout enforcement.
+
+    Wraps any async operation with asyncio.timeout to ensure it completes
+    within the specified time limit. Converts TimeoutError to MCPTimeoutError
+    with rich context for debugging and monitoring.
+
+    Args:
+        coro: The awaitable to execute
+        timeout_seconds: Maximum execution time in seconds
+        operation_name: Name for logging (e.g., "load_tools", "tool_call")
+        server_name: Optional MCP server name for context
+
+    Returns:
+        Result of the awaitable
+
+    Raises:
+        MCPTimeoutError: If timeout exceeded, with context about the operation
+
+    Example:
+        >>> result = await execute_with_timeout(
+        ...     client.load_tools(),
+        ...     timeout_seconds=30.0,
+        ...     operation_name="load_tools",
+        ...     server_name="github",
+        ... )
+
+    """
+    try:
+        async with asyncio.timeout(timeout_seconds):
+            return await coro
+    except TimeoutError as e:
+        logger.warning(
+            "mcp_operation_timeout",
+            operation=operation_name,
+            server=server_name,
+            timeout_seconds=timeout_seconds,
+        )
+        msg = f"{operation_name} timed out after {timeout_seconds}s"
+        raise MCPTimeoutError(
+            msg,
+            server_name=server_name,
+            tool_name=operation_name,
+            timeout_seconds=timeout_seconds,
+        ) from e
+
+
+def create_mcp_retry_decorator(
+    max_attempts: int = MCP_RETRY_ATTEMPTS,
+    min_wait: float = MCP_RETRY_MIN_WAIT,
+    max_wait: float = MCP_RETRY_MAX_WAIT,
+) -> Callable[[Callable[..., Awaitable[Any]]], Callable[..., Awaitable[Any]]]:
+    """Create a retry decorator for MCP operations.
+
+    Returns a tenacity retry decorator configured for MCP-specific error
+    handling with exponential backoff. Only retries on transient errors
+    (connection failures, timeouts), not on permanent errors.
+
+    Args:
+        max_attempts: Maximum number of retry attempts (default: 3)
+        min_wait: Minimum wait time between retries in seconds (default: 1.0)
+        max_wait: Maximum wait time between retries in seconds (default: 16.0)
+
+    Returns:
+        Configured retry decorator
+
+    Example:
+        >>> @create_mcp_retry_decorator(max_attempts=3)
+        ... async def load_tools_with_retry():
+        ...     return await client.load_tools()
+
+    Note:
+        The decorator logs before each retry using structlog at WARNING level.
+        Wait times follow exponential backoff: 1s, 2s, 4s, 8s, 16s (capped)
+
+    """
+    return retry(
+        stop=stop_after_attempt(max_attempts),
+        wait=wait_exponential(multiplier=MCP_RETRY_MULTIPLIER, min=min_wait, max=max_wait),
+        retry=retry_if_exception_type((MCPConnectionError, MCPTimeoutError)),
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
+        reraise=True,
+    )
 
 
 class ConnectionState(Enum):
@@ -284,48 +390,77 @@ class MCPClientPool:
             ) from e
 
     async def _load_tools(self, conn: MCPConnection) -> None:
-        """Load tools from MCP server into connection.
+        """Load tools from MCP server into connection with retry logic.
+
+        Uses exponential backoff retry for transient failures and timeout
+        enforcement for tool loading operations.
 
         Args:
             conn: Connection to load tools for
 
         Raises:
-            MCPConnectionError: If tool loading fails
+            MCPConnectionError: If tool loading fails after all retries
+            MCPTimeoutError: If tool loading exceeds timeout
 
         """
         conn.state = ConnectionState.CONNECTING
 
-        try:
+        # Get timeout and max_retries from config
+        timeout = conn.config.timeout if conn.config else 30.0
+        max_retries = conn.config.max_retries if conn.config else MCP_RETRY_ATTEMPTS
+
+        # Create retry decorator with config-based settings
+        retry_decorator = create_mcp_retry_decorator(max_attempts=max_retries)
+
+        @retry_decorator
+        async def _load_with_retry() -> list[BaseTool]:
+            """Inner function with retry logic."""
             client = await self._ensure_client()
 
-            # Load tools from specific server
-            # Note: langchain-mcp-adapters API may vary - adjust as needed
-            async with client:
-                tools = client.get_tools()
+            # Load tools with timeout enforcement
+            async def _do_load() -> list[BaseTool]:
+                async with client:
+                    tools: list[BaseTool] = client.get_tools()
+                    return tools
 
-                # Filter to tools from this specific server
-                # Tool names are typically prefixed with server name
-                server_tools = [
-                    t
-                    for t in tools
-                    if t.name.startswith(f"{conn.server_name}_")
-                    or conn.server_name in getattr(t, "metadata", {}).get("server", "")
-                ]
+            tools = await execute_with_timeout(
+                _do_load(),
+                timeout_seconds=timeout,
+                operation_name="load_tools",
+                server_name=conn.server_name,
+            )
 
-                # If no prefix filtering works, use all tools for this server
-                if not server_tools:
-                    server_tools = tools
+            # Filter to tools from this specific server
+            # Tool names are typically prefixed with server name
+            server_tools = [
+                t
+                for t in tools
+                if t.name.startswith(f"{conn.server_name}_")
+                or conn.server_name in getattr(t, "metadata", {}).get("server", "")
+            ]
 
-                conn.tools = server_tools
-                conn.state = ConnectionState.CONNECTED
-                conn.record_success()
+            # If no prefix filtering works, use all tools for this server
+            if not server_tools:
+                server_tools = list(tools)
 
-                logger.info(
-                    "mcp_tools_loaded",
-                    server=conn.server_name,
-                    tool_count=len(conn.tools),
-                    tools=[t.name for t in conn.tools],
-                )
+            return server_tools
+
+        try:
+            conn.tools = await _load_with_retry()
+            conn.state = ConnectionState.CONNECTED
+            conn.record_success()
+
+            logger.info(
+                "mcp_tools_loaded",
+                server=conn.server_name,
+                tool_count=len(conn.tools),
+                tools=[t.name for t in conn.tools],
+            )
+
+        except (MCPConnectionError, MCPTimeoutError) as e:
+            conn.state = ConnectionState.ERROR
+            conn.record_error(str(e))
+            raise
 
         except Exception as e:
             conn.state = ConnectionState.ERROR
