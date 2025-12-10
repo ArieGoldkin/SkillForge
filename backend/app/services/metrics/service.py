@@ -265,6 +265,64 @@ class MetricsService:
 
         self.cache_hits.inc(cache_type=cache_type)
 
+    def record_batch_embedding(
+        self,
+        *,
+        batch_count: int,
+        total_latency_ms: float,
+        avg_batch_size: int,
+    ) -> None:
+        """Record batch embedding metrics for Issue #215 hardening.
+
+        Args:
+            batch_count: Total number of texts embedded
+            total_latency_ms: Total latency across all batches
+            avg_batch_size: Average batch size used
+
+        """
+        if not self._enabled:
+            return
+
+        # Use existing counters to track batch-level stats
+        self.batch_sizes.observe(avg_batch_size)
+
+        logger.info(
+            "batch_embedding_recorded",
+            batch_count=batch_count,
+            total_latency_ms=total_latency_ms,
+            avg_batch_size=avg_batch_size,
+            throughput_per_second=batch_count / (total_latency_ms / 1000) if total_latency_ms > 0 else 0,
+        )
+
+    def record_dedup_stats(
+        self,
+        *,
+        total: int,
+        skipped: int,
+        embedded: int,
+    ) -> None:
+        """Record deduplication statistics for Issue #215 hardening.
+
+        Args:
+            total: Total chunks before deduplication
+            skipped: Chunks skipped due to existing embeddings
+            embedded: Chunks that needed embedding
+
+        """
+        if not self._enabled:
+            return
+
+        # Record as dedup kept/removed
+        self.record_dedup(kept=embedded, removed=skipped)
+
+        logger.info(
+            "dedup_stats_recorded",
+            total=total,
+            skipped=skipped,
+            embedded=embedded,
+            skip_rate=skipped / total if total > 0 else 0,
+        )
+
     def get_summary(self) -> dict[str, Any]:
         """Get a summary of all metrics."""
         return {

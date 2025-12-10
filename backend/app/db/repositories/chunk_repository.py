@@ -406,3 +406,45 @@ class ChunkRepository:
         stmt = select(AnalysisChunk).where(AnalysisChunk.granularity == "fine").limit(limit)
         result = await self.session.execute(stmt)
         return [(row, 0.0) for row in result.scalars().all()]
+
+    async def get_existing_hashes(
+        self,
+        analysis_id: UUID,
+        hashes: list[str],
+    ) -> set[str]:
+        """Get hashes that already exist in the database for deduplication.
+
+        Used by Issue #215 hash-based deduplication to skip chunks that
+        already have embeddings. Uses the hash index for efficient lookup.
+
+        Args:
+            analysis_id: UUID of the analysis to check
+            hashes: List of chunk hashes to check for existence
+
+        Returns:
+            Set of hashes that already exist in the database
+
+        Example:
+            ```python
+            chunk_hashes = [compute_chunk_hash(c.text, model, version) for c in chunks]
+            existing = await repo.get_existing_hashes(analysis_id, chunk_hashes)
+            new_chunks = [c for c, h in zip(chunks, chunk_hashes) if h not in existing]
+            ```
+
+        Technical Notes:
+            - Uses the ix_analysis_chunks_hash index for fast lookups
+            - Query uses IN clause which is efficient for small-medium hash lists
+            - For very large lists (>1000), consider batching
+
+        """
+        if not hashes:
+            return set()
+
+        stmt = (
+            select(AnalysisChunk.hash)
+            .where(AnalysisChunk.analysis_id == analysis_id)
+            .where(AnalysisChunk.hash.in_(hashes))
+        )
+
+        result = await self.session.execute(stmt)
+        return {row[0] for row in result.all()}
