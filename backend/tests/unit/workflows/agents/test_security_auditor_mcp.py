@@ -15,7 +15,6 @@ from langchain_core.tools import BaseTool
 
 from app.workflows.agents.security_auditor import run_security_auditor
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -272,6 +271,7 @@ class TestSecurityAuditorWithSessionMCP:
     def test_runner_has_tools_parameter(self):
         """Verify runner function signature includes tools parameter."""
         import inspect
+
         from app.workflows.tasks.runners import run_security_auditor_with_session
 
         sig = inspect.signature(run_security_auditor_with_session)
@@ -285,6 +285,7 @@ class TestSecurityAuditorWithSessionMCP:
     def test_runner_imports_mcp_modules(self):
         """Verify runner file has proper MCP imports."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
@@ -297,6 +298,7 @@ class TestSecurityAuditorWithSessionMCP:
     def test_runner_has_graceful_degradation(self):
         """Verify runner has exception handling for MCP failures."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
@@ -308,6 +310,7 @@ class TestSecurityAuditorWithSessionMCP:
     def test_runner_checks_registry_enabled(self):
         """Verify runner checks if agent is enabled in registry."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
@@ -318,6 +321,7 @@ class TestSecurityAuditorWithSessionMCP:
     def test_runner_passes_tools_to_agent(self):
         """Verify runner passes tools parameter to run_security_auditor."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
@@ -394,9 +398,7 @@ class TestSkillLevelIntegration:
     @pytest.mark.asyncio
     @patch("app.workflows.agents.security_auditor.run_agent_with_tracking")
     @patch("app.workflows.agents.security_auditor.create_structured_agent")
-    async def test_skill_level_without_tools(
-        self, mock_create_structured, mock_run_tracking
-    ):
+    async def test_skill_level_without_tools(self, mock_create_structured, mock_run_tracking):
         """Skill level instructions work with structured-only agent."""
         mock_agent = MagicMock()
         mock_create_structured.return_value = mock_agent

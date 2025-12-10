@@ -10,10 +10,8 @@ Reference: tenacity retry pattern from jina_reader.py
 """
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from tenacity import RetryError
 
 from app.services.mcp.client import (
     MCP_RETRY_ATTEMPTS,
@@ -24,7 +22,6 @@ from app.services.mcp.client import (
     execute_with_timeout,
 )
 from app.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
-
 
 # ============================================================================
 # Test Constants
@@ -396,8 +393,6 @@ class TestBackoffTiming:
 
     def test_exponential_backoff_configuration(self):
         """Verify exponential backoff is configured correctly."""
-        from tenacity import wait_exponential
-
         # The decorator should use wait_exponential with correct params
         decorator = create_mcp_retry_decorator()
         # Check the decorator was created (basic sanity check)

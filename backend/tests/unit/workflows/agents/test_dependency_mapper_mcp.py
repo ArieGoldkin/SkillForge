@@ -15,7 +15,6 @@ from langchain_core.tools import BaseTool
 
 from app.workflows.agents.dependency_mapper import run_dependency_mapper
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -276,6 +275,7 @@ class TestDependencyMapperWithSessionMCP:
     def test_runner_has_tools_parameter(self):
         """Verify runner function signature includes tools parameter."""
         import inspect
+
         from app.workflows.tasks.runners import run_dependency_mapper_with_session
 
         sig = inspect.signature(run_dependency_mapper_with_session)
@@ -289,6 +289,7 @@ class TestDependencyMapperWithSessionMCP:
     def test_runner_imports_mcp_modules(self):
         """Verify runner file has proper MCP imports."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
@@ -301,6 +302,7 @@ class TestDependencyMapperWithSessionMCP:
     def test_runner_has_graceful_degradation(self):
         """Verify runner has exception handling for MCP failures."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
@@ -312,6 +314,7 @@ class TestDependencyMapperWithSessionMCP:
     def test_runner_checks_registry_enabled(self):
         """Verify runner checks if agent is enabled in registry."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
@@ -322,6 +325,7 @@ class TestDependencyMapperWithSessionMCP:
     def test_runner_passes_tools_to_agent(self):
         """Verify runner passes tools parameter to run_dependency_mapper."""
         import inspect
+
         from app.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
@@ -398,9 +402,7 @@ class TestSkillLevelIntegration:
     @pytest.mark.asyncio
     @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
     @patch("app.workflows.agents.dependency_mapper.create_structured_agent")
-    async def test_skill_level_without_tools(
-        self, mock_create_structured, mock_run_tracking
-    ):
+    async def test_skill_level_without_tools(self, mock_create_structured, mock_run_tracking):
         """Skill level instructions work with structured-only agent."""
         mock_agent = MagicMock()
         mock_create_structured.return_value = mock_agent

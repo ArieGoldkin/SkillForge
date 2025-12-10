@@ -99,11 +99,14 @@ ignore = [
     "PLR0913",  # Too many arguments - common in test functions with many mocks
     "PLR0915",  # Too many statements - e2e tests can be long
     "D100",     # Missing module docstring
+    "D101",     # Missing class docstring - test class names are self-descriptive
+    "D102",     # Missing method docstring - test method names are self-descriptive
     "D103",     # Missing function docstring
     "D104",     # Missing package docstring
     "BLE001",   # Blind exception - acceptable in test cleanup/teardown
     "EM101",    # Exception string literal - acceptable in test mocks
     "F841",     # Unused variable - test fixtures may define for documentation
+    "TRY003",   # Long exception message - acceptable in test error scenarios
 ]
 # Diagnostic scripts can have more complex error handling
 "scripts/**/*.py" = [
