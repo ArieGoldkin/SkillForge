@@ -2,14 +2,14 @@
 
 **Last Updated:** December 10, 2025
 **Status:** ✅ **ORGANIZED**
-**Current Sprint:** Sprint 9 - MCP Integration
+**Current Sprint:** Sprint 8 - Embeddings & Search
 
 ---
 
 ## 🗺️ Sprint Progression
 
 ```
-Sprint 8 (Complete) → 9 (MCP Consumer - Current) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server) → Testing
+Sprint 8 (Current) → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server) → Testing
 ```
 
 ---
@@ -82,18 +82,8 @@ docs/issues/
 │   └── README.md                         # Issue #92 open doc
 ├── 164-sse-progress-stuck/
 │   └── README.md                         # Issue #164 complete doc
-├── 165-skipped-agents-pending/
-│   └── README.md                         # Issue #165 complete doc
-├── 230-mcp-client-pool/
-│   └── README.md                         # Issue #230 Sprint 9 MCP Client Pool
-├── 231-tool-registry/
-│   ├── PLAN.md                           # Issue #231 implementation plan
-│   └── README.md                         # Issue #231 Sprint 9 Tool Registry
-├── 232-tool-enabled-agent-factory/
-│   ├── PLAN.md                           # Issue #232 implementation plan
-│   └── README.md                         # Issue #232 Sprint 9 Agent Factory
-└── mcp-integration/
-    └── github-issues-plan.md             # Sprint 9 MCP planning docs
+└── 165-skipped-agents-pending/
+    └── README.md                         # Issue #165 complete doc
 ```
 
 ---
@@ -271,33 +261,6 @@ docs/issues/
 | Supervisor Pattern | Agent coordination | ✅ Ready |
 | Frontend SSE Hook | `useSSE` hook | ✅ Ready |
 | ProgressTracker | Progress UI component | ✅ Ready |
-
----
-
-## 🔌 Sprint 9: MCP Integration (27 pts)
-
-**Epic:** [#229](https://github.com/ArieGoldkin/SkillForge/issues/229) MCP Integration
-**Focus:** Integrate Model Context Protocol (MCP) tools into analysis agents for real-time data grounding.
-
-### Backend Issues (Yonatan)
-
-| Issue | Title | Points | Status | Docs | GitHub |
-|-------|-------|--------|--------|------|--------|
-| [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) | MCP Client Pool & Connection Management | 5 | ✅ Complete | [📄 Docs](./230-mcp-client-pool/README.md) | [#230](https://github.com/ArieGoldkin/SkillForge/issues/230) |
-| [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) | Tool Registry & Agent Capability Mapping | 3 | ✅ Complete | [📄 Docs](./231-tool-registry/README.md) | [#231](https://github.com/ArieGoldkin/SkillForge/issues/231) |
-| [#232](https://github.com/ArieGoldkin/SkillForge/issues/232) | Tool-Enabled Agent Factory | 5 | ✅ Complete | [📄 Docs](./232-tool-enabled-agent-factory/README.md) | [#232](https://github.com/ArieGoldkin/SkillForge/issues/232) |
-| [#233](https://github.com/ArieGoldkin/SkillForge/issues/233) | Security Auditor MCP Integration | 3 | 🔜 Pending | — | [#233](https://github.com/ArieGoldkin/SkillForge/issues/233) |
-| [#234](https://github.com/ArieGoldkin/SkillForge/issues/234) | Dependency Mapper MCP Integration | 3 | 🔜 Pending | — | [#234](https://github.com/ArieGoldkin/SkillForge/issues/234) |
-| [#235](https://github.com/ArieGoldkin/SkillForge/issues/235) | MCP Error Handling & Resilience | 3 | 🔜 Pending | — | [#235](https://github.com/ArieGoldkin/SkillForge/issues/235) |
-| [#236](https://github.com/ArieGoldkin/SkillForge/issues/236) | MCP Integration Tests | 3 | 🔜 Pending | — | [#236](https://github.com/ArieGoldkin/SkillForge/issues/236) |
-| [#243](https://github.com/ArieGoldkin/SkillForge/issues/243) | MCP Bulk Operations Support | 2 | 🔜 Pending | — | [#243](https://github.com/ArieGoldkin/SkillForge/issues/243) |
-
-**Sprint 9 Progress:** 13/27 pts (48%) - In progress
-
-### Key Architecture
-
-- **Transport Types:** STDIO (local subprocess) and Streamable HTTP (MCP spec 2025-03-26)
-- **Design Doc:** [`docs/architecture/mcp-tool-service-design.md`](../architecture/mcp-tool-service-design.md)
 
 ---
 

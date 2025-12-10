@@ -5,8 +5,12 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import tiktoken
+
+if TYPE_CHECKING:
+    from app.services.chunking.parsers import ContentParser
 
 DEFAULT_SHORT_WINDOW = 900
 DEFAULT_LONG_WINDOW = 600
@@ -154,6 +158,8 @@ def build_chunks(  # noqa: PLR0913
     long_threshold_tokens: int = 4000,
     section_title: str | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    parser: ContentParser | None = None,
+    content_type: str | None = None,
 ) -> tuple[list[ChunkText], list[ChunkText]]:
     """Produce coarse and fine chunks with path metadata and token validation.
 
@@ -165,6 +171,8 @@ def build_chunks(  # noqa: PLR0913
         long_threshold_tokens: Token count threshold to switch windows
         section_title: Optional section title for path metadata
         max_tokens: Hard limit for tokens per chunk (default 7500)
+        parser: Optional ContentParser for format-aware pre-splitting (e.g., MarkdownParser)
+        content_type: Optional content type hint for parser (e.g., "text/markdown")
 
     Returns:
         Tuple of (coarse_chunks, fine_chunks) with token metadata populated
@@ -173,7 +181,16 @@ def build_chunks(  # noqa: PLR0913
     if not text or not text.strip():
         return [], []
 
-    paragraphs = _split_to_paragraphs(text)
+    # Use parser if provided, otherwise fall back to paragraph splitting
+    if parser is not None:
+        sections = parser.parse(text, content_type)
+        # Convert parsed sections to paragraph-like units for downstream processing
+        paragraphs = [s.content for s in sections if s.content.strip()]
+        # If parser produced nothing, fall back to default splitting
+        if not paragraphs:
+            paragraphs = _split_to_paragraphs(text)
+    else:
+        paragraphs = _split_to_paragraphs(text)
     total_tokens = _token_count(text)
     window_tokens = _window_size(total_tokens, short_window, long_window, long_threshold_tokens)
 
@@ -230,6 +247,8 @@ def chunk_document(  # noqa: PLR0913
     max_coarse: int = DEFAULT_MAX_COARSE,
     max_fine: int = DEFAULT_MAX_FINE,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    parser: ContentParser | None = None,
+    content_type: str | None = None,
 ) -> tuple[list[ChunkText], list[ChunkText]]:
     """Chunk a full document into coarse and fine lists with optional caps.
 
@@ -242,6 +261,8 @@ def chunk_document(  # noqa: PLR0913
         max_coarse: Maximum number of coarse chunks (truncates if exceeded)
         max_fine: Maximum number of fine chunks (truncates if exceeded)
         max_tokens: Hard limit for tokens per chunk (default 7500)
+        parser: Optional ContentParser for format-aware pre-splitting (e.g., MarkdownParser)
+        content_type: Optional content type hint for parser (e.g., "text/markdown")
 
     Returns:
         Tuple of (coarse_chunks, fine_chunks), each capped at their max
@@ -255,6 +276,8 @@ def chunk_document(  # noqa: PLR0913
         long_threshold_tokens=long_threshold_tokens,
         section_title=None,
         max_tokens=max_tokens,
+        parser=parser,
+        content_type=content_type,
     )
 
     # Enforce caps to prevent runaway chunk counts on very large documents
