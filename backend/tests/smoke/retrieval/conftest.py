@@ -163,26 +163,29 @@ def requires_embedding_service():
 async def embedding_service(ensure_real_api_keys) -> EmbeddingService:
     """Create embedding service for tests.
 
-    Requires valid OpenAI API key from .env file.
+    Requires valid OpenAI API key from environment variable or .env file.
     Directly reads the key and patches the settings module to bypass
     any cached references to placeholder keys from test fixtures.
     """
-    # Read directly from .env to bypass any test mocking
-    env_file = Path(__file__).parent.parent.parent.parent / ".env"
-    if not env_file.exists():
-        env_file = Path(__file__).parent.parent.parent / ".." / ".env"
-    if not env_file.exists():
-        env_file = Path(".env")
+    # First check environment variable (set by CI from GitHub Secrets)
+    api_key = os.environ.get("OPENAI_API_KEY")
 
-    api_key = None
-    if env_file.exists():
-        from dotenv import dotenv_values
+    # If not found or is placeholder, try .env file
+    if not api_key or api_key.startswith("sk-test"):
+        env_file = Path(__file__).parent.parent.parent.parent / ".env"
+        if not env_file.exists():
+            env_file = Path(__file__).parent.parent.parent / ".." / ".env"
+        if not env_file.exists():
+            env_file = Path(".env")
 
-        env_vars = dotenv_values(env_file)
-        api_key = env_vars.get("OPENAI_API_KEY")
+        if env_file.exists():
+            from dotenv import dotenv_values
+
+            env_vars = dotenv_values(env_file)
+            api_key = env_vars.get("OPENAI_API_KEY")
 
     if not api_key or api_key.startswith("sk-test"):
-        pytest.skip("Valid OPENAI_API_KEY required in .env for embedding service")
+        pytest.skip("Valid OPENAI_API_KEY required (env var or .env) for embedding service")
 
     # CRITICAL: Must set OS env var AND patch app.core.config.settings
     # because EmbeddingService imports settings at module level
