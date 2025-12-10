@@ -6,7 +6,9 @@ from app.services.chunking.dedup import deduplicate
 
 def test_chunk_document_produces_coarse_and_fine():
     text = "Intro paragraph.\n\nSecond paragraph with more words to ensure some length."
-    coarse, fine = chunk_document(text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10)
+    coarse, fine = chunk_document(
+        text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10
+    )
     assert coarse, "expected coarse chunks"
     assert fine, "expected fine chunks"
     assert all(c.granularity == "coarse" for c in coarse)
@@ -17,7 +19,9 @@ def test_chunk_document_produces_coarse_and_fine():
 
 def test_dedup_removes_duplicates():
     text = "Same para.\n\nSame para."
-    coarse, fine = chunk_document(text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10)
+    coarse, fine = chunk_document(
+        text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10
+    )
     deduped, stats = deduplicate(coarse)
     assert stats.dropped >= 1
     assert len(deduped) == 1
@@ -30,7 +34,9 @@ def test_chunk_document_enforces_max_caps():
     text = "\n\n".join(paragraphs)
 
     # Without caps - should produce many chunks
-    coarse_all, fine_all = chunk_document(text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10)
+    coarse_all, fine_all = chunk_document(
+        text, short_window=50, long_window=40, overlap_pct=0.1, long_threshold_tokens=10
+    )
     assert len(coarse_all) == 20, "expect 20 coarse chunks without cap"
 
     # With caps - should truncate
@@ -50,4 +56,3 @@ def test_chunk_document_enforces_max_caps():
     # Verify chunk_total is updated to reflect truncation
     for chunk in coarse_capped:
         assert chunk.chunk_total == 5, "chunk_total should reflect cap"
-

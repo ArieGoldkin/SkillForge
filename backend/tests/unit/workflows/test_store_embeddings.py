@@ -41,4 +41,3 @@ async def test_store_embeddings_persists_payloads():
     assert repo.items[0]["analysis_id"] == analysis_id
     assert repo.items[0]["granularity"] == "fine"
     assert repo.items[0]["path"] == ["Intro"]
-

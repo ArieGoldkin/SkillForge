@@ -188,7 +188,9 @@ async def test_create_and_get_session(async_client: AsyncClient, stub_tutor_work
 
 
 @pytest.mark.asyncio
-async def test_send_message_and_stream(async_client: AsyncClient, stub_tutor_workflow: None) -> None:
+async def test_send_message_and_stream(
+    async_client: AsyncClient, stub_tutor_workflow: None
+) -> None:
     """Send a message and observe SSE stream output."""
     create_resp = await async_client.post(
         "/api/v1/tutor/sessions",
@@ -227,4 +229,3 @@ async def test_send_message_and_stream(async_client: AsyncClient, stub_tutor_wor
 
     types = {event.get("type") for event in events}
     assert {"typing_start", "chunk", "done"}.issubset(types)
-

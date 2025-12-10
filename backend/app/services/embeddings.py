@@ -5,17 +5,22 @@ This service provides:
 - L2 normalization for cosine similarity search
 - Retry logic with exponential backoff
 - Comprehensive error handling
+- Metrics collection and telemetry
+- Backpressure handling with adaptive rate limiting
 
 Architecture:
 - Uses OpenAI SDK for async requests
 - Generates 1536-dimensional embeddings (text-embedding-3-small)
 - Returns normalized vectors for pgvector cosine similarity
+- Records metrics via MetricsService for observability
+- Integrates error tracking and rate limiting for resilience
 """
 
+import time
 from typing import cast
 
 import tiktoken
-from openai import AsyncOpenAI
+from openai import APIStatusError, AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.core.config import settings
@@ -28,7 +33,14 @@ from app.core.constants import (
 from app.core.exceptions import EmbeddingError
 from app.core.logging import get_logger
 from app.core.types import EmbeddingVector
+from app.services.backpressure import (
+    ErrorType,
+    get_embedding_batch_sizer,
+    get_embedding_error_tracker,
+    get_embedding_rate_limiter,
+)
 from app.services.embeddings_utils import normalize_vector
+from app.services.metrics import get_metrics_service
 
 logger = get_logger(__name__)
 
@@ -48,7 +60,7 @@ class EmbeddingService:
     """
 
     def __init__(self) -> None:
-        """Initialize EmbeddingService with OpenAI client.
+        """Initialize EmbeddingService with OpenAI client and telemetry.
 
         Raises:
             ValueError: If OPENAI_API_KEY is not configured.
@@ -66,6 +78,12 @@ class EmbeddingService:
         # Encoding will be initialized on first use in generate_embedding()
         self._encoding: tiktoken.Encoding | None = None
 
+        # Telemetry components (lazy-loaded singletons)
+        self._metrics = get_metrics_service()
+        self._rate_limiter = get_embedding_rate_limiter()
+        self._error_tracker = get_embedding_error_tracker()
+        self._batch_sizer = get_embedding_batch_sizer()
+
         logger.info(
             "embedding_service_initialized",
             model=self.model,
@@ -73,6 +91,7 @@ class EmbeddingService:
             max_tokens=self.max_tokens,
             encoding="cl100k_base",  # text-embedding-3-small uses cl100k_base
             provider="openai",
+            metrics_enabled=settings.METRICS_ENABLED,
         )
 
     @retry(
@@ -119,11 +138,13 @@ class EmbeddingService:
         tokens = self._encoding.encode(text)
         original_token_count = len(tokens)
         original_length = len(text)
+        truncated = False
 
         if original_token_count > self.max_tokens:
             # Truncate tokens, then decode back to text
             truncated_tokens = tokens[: self.max_tokens]
             text = self._encoding.decode(truncated_tokens)
+            truncated = True
             logger.warning(
                 "embedding_text_truncated",
                 original_tokens=original_token_count,
@@ -131,6 +152,12 @@ class EmbeddingService:
                 original_chars=original_length,
                 truncated_chars=len(text),
             )
+
+        # Apply rate limiting before API call
+        await self._rate_limiter.acquire_async(tokens=1)
+
+        # Track timing for metrics
+        start_time = time.perf_counter()
 
         try:
             # Call OpenAI embeddings API
@@ -161,21 +188,84 @@ class EmbeddingService:
             if normalize:
                 embedding = normalize_vector(embedding)
 
+            # Calculate latency and record success metrics
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_success()
+            self._metrics.record_embedding_request(
+                status="success",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+                batch_size=1,
+            )
+
             logger.info(
                 "embedding_generated",
                 text_length=len(text),
                 token_count=original_token_count,
                 embedding_dimensions=len(embedding),
                 normalized=normalize,
+                latency_ms=latency_ms,
             )
 
             return embedding
 
         except EmbeddingError:
             # Re-raise EmbeddingError without modification
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._metrics.record_embedding_request(
+                status="error",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
             raise
 
+        except APIStatusError as e:
+            # Handle OpenAI API errors with proper error tracking
+            latency_ms = (time.perf_counter() - start_time) * 1000
+
+            # Track error type for backpressure decisions
+            if e.status_code == 429:
+                self._error_tracker.record_rate_limit()
+                self._batch_sizer.decrease_for_rate_limit()
+                self._metrics.record_api_error(provider="openai", status=429)
+            elif e.status_code >= 500:
+                self._error_tracker.record_server_error(e.status_code)
+                self._batch_sizer.decrease_for_server_error()
+                self._metrics.record_api_error(provider="openai", status=e.status_code)
+            else:
+                self._error_tracker.record_error(ErrorType.OTHER, e.status_code)
+                self._metrics.record_api_error(provider="openai", status=e.status_code)
+
+            self._metrics.record_embedding_request(
+                status="api_error",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
+
+            error_msg = f"Embedding generation failed: {e!s}"
+            logger.exception(
+                "embedding_generation_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                status_code=e.status_code,
+            )
+            raise EmbeddingError(error_msg) from e
+
         except Exception as e:
+            # Handle unexpected errors
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_error(ErrorType.OTHER)
+            self._metrics.record_embedding_request(
+                status="error",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
+            self._metrics.record_api_error(provider="openai", status="unknown")
+
             error_msg = f"Embedding generation failed: {e!s}"
             logger.exception(
                 "embedding_generation_failed",

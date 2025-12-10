@@ -277,6 +277,80 @@ class Settings(BaseSettings):
     # Content Extraction (to be used in Task 1.4.2)
     JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
+    # Telemetry & Metrics Configuration
+    METRICS_ENABLED: bool = Field(
+        default=True,
+        description="Enable metrics collection and emission via structlog",
+    )
+    METRICS_FLUSH_INTERVAL: int = Field(
+        default=60,
+        description="Interval in seconds for emitting metrics summaries",
+    )
+
+    # Rate Limiting Configuration (Token Bucket)
+    RATE_LIMIT_TOKENS_PER_MINUTE: int = Field(
+        default=10000,
+        description="Maximum sustained API request rate (tokens per minute)",
+    )
+    RATE_LIMIT_BURST_CAPACITY: int = Field(
+        default=2000,
+        description="Maximum burst capacity for rate limiter",
+    )
+
+    # Adaptive Batch Sizing Configuration
+    BATCH_SIZE_INITIAL: int = Field(
+        default=20,
+        description="Initial batch size for embedding requests",
+    )
+    BATCH_SIZE_MIN: int = Field(
+        default=1,
+        description="Minimum batch size (floor during backpressure)",
+    )
+    BATCH_SIZE_MAX: int = Field(
+        default=100,
+        description="Maximum batch size (ceiling during healthy periods)",
+    )
+    BATCH_DECREASE_FACTOR_429: float = Field(
+        default=0.5,
+        description="Batch size multiplier on 429 rate limit (0.5 = halve)",
+    )
+    BATCH_DECREASE_FACTOR_5XX: float = Field(
+        default=0.75,
+        description="Batch size multiplier on 5xx server error (0.75 = reduce 25%)",
+    )
+    BATCH_INCREASE_FACTOR: float = Field(
+        default=1.1,
+        description="Batch size multiplier during healthy periods (1.1 = increase 10%)",
+    )
+    BATCH_COOLDOWN_SECONDS: float = Field(
+        default=30.0,
+        description="Minimum seconds between batch size adjustments",
+    )
+    BATCH_HEALTHY_WINDOW_SECONDS: float = Field(
+        default=300.0,
+        description="Duration of healthy operation required before increasing batch size",
+    )
+
+    # Error Tracking Configuration (Sliding Window)
+    ERROR_RATE_WINDOW_SECONDS: int = Field(
+        default=60,
+        description="Time window for error rate calculation",
+    )
+    ERROR_RATE_THRESHOLD_PERCENT: float = Field(
+        default=5.0,
+        description="Error rate percentage threshold for triggering backoff",
+    )
+
+    # Vector Validation Configuration
+    VECTOR_VALIDATION_ENABLED: bool = Field(
+        default=True,
+        description="Enable embedding vector validation (dimension, NaN, zero checks)",
+    )
+    VECTOR_ZERO_THRESHOLD: float = Field(
+        default=1e-10,
+        description="Threshold below which a vector is considered zero/invalid",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

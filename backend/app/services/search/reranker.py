@@ -9,6 +9,7 @@ Architecture:
 - Applies structural priors based on chunk position/path
 - Gracefully falls back to base ranking on timeout/error
 - Batch processes candidates for efficiency
+- Records metrics via MetricsService for observability
 
 Example:
     >>> from app.services.search.reranker import ReRanker
@@ -23,6 +24,7 @@ Example:
 """
 
 import asyncio
+import time
 from dataclasses import dataclass
 
 from langchain_core.language_models import BaseChatModel
@@ -37,6 +39,7 @@ from app.core.constants import (
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.schemas.search import ReRankConfig, SearchResult
+from app.services.metrics import get_metrics_service
 from app.services.search.structural_priors import StructuralPriorScorer
 
 logger = get_logger(__name__)
@@ -92,6 +95,7 @@ class ReRanker:
         """
         self._model = model
         self._structural_scorer = StructuralPriorScorer()
+        self._metrics = get_metrics_service()
 
     @property
     def model(self) -> BaseChatModel:
@@ -131,6 +135,9 @@ class ReRanker:
         if len(results) <= config.final_count:
             return results
 
+        # Track timing for metrics
+        start_time = time.perf_counter()
+
         try:
             async with asyncio.timeout(config.timeout_seconds):
                 # Score all candidates
@@ -155,29 +162,57 @@ class ReRanker:
                 # Sort by new score (with tiebreaker) and truncate
                 reranked.sort(key=lambda r: (-r.score, r.chunk_id))
 
+                # Record success metrics
+                latency_ms = (time.perf_counter() - start_time) * 1000
+                output_count = min(len(reranked), config.final_count)
+                self._metrics.record_rerank_request(
+                    latency_ms=latency_ms,
+                    input_count=len(results),
+                    output_count=output_count,
+                )
+
                 logger.info(
                     "rerank_complete",
                     query_length=len(query),
                     input_count=len(results),
-                    output_count=min(len(reranked), config.final_count),
+                    output_count=output_count,
+                    latency_ms=latency_ms,
                 )
 
                 return reranked[: config.final_count]
 
         except TimeoutError:
+            # Record timeout (still log latency)
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._metrics.record_rerank_request(
+                latency_ms=latency_ms,
+                input_count=len(results),
+                output_count=config.final_count,
+            )
+
             logger.warning(
                 "rerank_timeout",
                 query=query[:100],
                 timeout=config.timeout_seconds,
                 candidate_count=len(results),
+                latency_ms=latency_ms,
             )
             return self._fallback_rank(results, config.final_count)
 
         except (ValueError, RuntimeError, ConnectionError, OSError) as e:
+            # Record error
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._metrics.record_rerank_request(
+                latency_ms=latency_ms,
+                input_count=len(results),
+                output_count=config.final_count,
+            )
+
             logger.warning(
                 "rerank_failed",
                 query=query[:100],
                 error=str(e),
+                latency_ms=latency_ms,
             )
             return self._fallback_rank(results, config.final_count)
 

@@ -135,7 +135,9 @@ async def test_graph_execution_with_mocks(
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
-        patch("app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory),
+        patch(
+            "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
+        ),
         patch(
             "app.services.sse_helpers.persist_progress_event_async",
             return_value=None,
@@ -255,7 +257,9 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
             "app.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
-        patch("app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory),
+        patch(
+            "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
+        ),
         patch(
             "app.services.sse_helpers.persist_progress_event_async",
             return_value=None,
