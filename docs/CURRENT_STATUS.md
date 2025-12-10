@@ -1,8 +1,8 @@
 # 📊 SkillForge - Current Status & Next Steps
 
 **Date:** December 10, 2025
-**Branch:** `feature/223-retrieval-smoke-tests`
-**Sprint:** Sprint 8 - Embeddings & Search ✅
+**Branch:** `dev`
+**Sprint:** Sprint 8 - Embeddings & Search ✅ **COMPLETE**
 **Next Sprint:** Sprint 9 - MCP Consumer
 
 ---
@@ -343,31 +343,31 @@ Sprint 8 (Current) → Sprint 9 (MCP Consumer) → Sprint 10 (Context Engineerin
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### Sprint 8 Issues Overview
+### Sprint 8 Issues Overview ✅ ALL COMPLETE
 
 | # | Issue | Title | Status | Priority |
 |---|-------|-------|--------|----------|
 | 215 | Embedding pipeline hardening | Chunk + batch + hash | ✅ Complete | HIGH |
 | 216 | Retrieval & search API | Semantic + hybrid search | ✅ Complete | HIGH |
 | 217 | Re-ranker | Search result re-ranking | ✅ Complete | MEDIUM |
-| 218 | Telemetry & metrics | Backpressure for embeddings | 🔲 Open | MEDIUM |
-| 219 | Eval harness | Embedding model A/B testing | 🔲 Open | LOW |
+| 218 | Telemetry & metrics | Backpressure for embeddings | ✅ Complete | MEDIUM |
+| 219 | Eval harness | Embedding model A/B testing | ✅ Complete | LOW |
 | 220 | PII/safety guardrails | Vector cleanup | ✅ Complete | MEDIUM |
 | 221 | Hierarchical chunking | Coarse-to-fine retrieval | ✅ Complete | HIGH |
-| 222 | Pluggable parsers | Chunking extensibility | 🔲 Open | LOW |
-| **223** | **Retrieval smoke tests** | **Offline fixtures** | **🚧 IN PROGRESS** | **MEDIUM** |
+| 222 | Pluggable parsers | Chunking extensibility | ✅ Complete | LOW |
+| 223 | Retrieval smoke tests | Offline fixtures | ✅ Complete | MEDIUM |
 
-**Total:** 9 issues | **Complete:** 5 | **Open:** 3 | **In Progress:** 1
+**Total:** 9 issues | **Complete:** 9/9 ✅ | **Milestone:** CLOSED
 
 ---
 
-## 🚧 Issue #223 - Retrieval Smoke Tests (CURRENT WORK)
+## ✅ Issue #223 - Retrieval Smoke Tests (COMPLETE)
 
-**Branch:** `feature/223-retrieval-smoke-tests`
+**Branch:** Merged to `dev`
 **Documentation:** [docs/issues/223-retrieval-smoke-tests/README.md](./issues/223-retrieval-smoke-tests/README.md)
-**PR:** [#250](https://github.com/ArieGoldkin/SkillForge/pull/250)
+**PR:** Merged
 
-### Implementation Progress
+### Implementation (Complete)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
@@ -583,25 +583,25 @@ Sprint 8 (Current) → Sprint 9 (MCP Consumer) → Sprint 10 (Context Engineerin
 ║   COMPLETED SPRINTS                      CURRENT SPRINT                      ║
 ║   ═════════════════                      ══════════════                      ║
 ║   ✅ Sprint 1-7: Foundation-Polish       ✅ Sprint 8: Embeddings & Search   ║
-║                                              └─ 5/9 issues complete          ║
+║   ✅ Sprint 8: Embeddings & Search           └─ 9/9 issues ✅ CLOSED        ║
 ║                                                                              ║
-║   SPRINT 8 PROGRESS                      CURRENT BRANCH                      ║
-║   ════════════════                       ══════════════                      ║
-║   ✅ #215 Embedding Pipeline             feature/223-retrieval-smoke-tests  ║
+║   SPRINT 8 COMPLETE ✅                   NEXT SPRINT                        ║
+║   ═══════════════════                    ═══════════                         ║
+║   ✅ #215 Embedding Pipeline             Sprint 9: MCP Consumer              ║
 ║   ✅ #216 Retrieval API                                                      ║
 ║   ✅ #217 Re-ranker                                                          ║
-║   🔲 #218 Telemetry                                                          ║
-║   🔲 #219 Eval Harness                                                       ║
+║   ✅ #218 Telemetry                                                          ║
+║   ✅ #219 Eval Harness                                                       ║
 ║   ✅ #220 PII/Safety                                                         ║
 ║   ✅ #221 Hierarchical Chunking                                              ║
-║   🔲 #222 Pluggable Parsers                                                  ║
-║   🚧 #223 Smoke Tests                                                        ║
+║   ✅ #222 Pluggable Parsers                                                  ║
+║   ✅ #223 Smoke Tests                                                        ║
 ║                                                                              ║
-║   KEY DELIVERABLES (#223)                                                    ║
-║   ═══════════════════════                                                    ║
-║   ✅ 34 smoke tests                      ✅ CI workflow                     ║
-║   ✅ IR metrics suite                    ✅ Fixture system                  ║
-║   ✅ Coarse-to-fine tests                ✅ Documentation                   ║
+║   KEY ACHIEVEMENTS (Sprint 8)                                                ║
+║   ═══════════════════════════                                                ║
+║   ✅ Full RAG pipeline                   ✅ 37+ smoke tests                 ║
+║   ✅ Hybrid search (semantic+keyword)    ✅ Pluggable parsers               ║
+║   ✅ PII detection & safety              ✅ Telemetry & metrics             ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -687,7 +687,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** December 10, 2025 (Sprint 8 - Retrieval Smoke Tests in progress)
+**Last Updated:** December 10, 2025 (Sprint 8 COMPLETE - Milestone CLOSED)
 **Maintained By:** Yonatan & Arie
 
 ---

@@ -12,6 +12,7 @@ returns empty findings on error, allowing other agents to continue.
 
 import time
 
+from langchain_core.tools import BaseTool
 from langsmith import get_current_run_tree
 
 from app.core.logging import get_logger
@@ -223,9 +224,39 @@ async def run_security_auditor_with_session(
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
+    # Load MCP tools for security auditor if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("security_auditor"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(settings.get_enabled_servers())
+                capabilities = registry.get_capabilities("security_auditor")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_security_auditor",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="security_auditor",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
-            return await run_security_auditor(content, content_type, analysis_id, session, state)
+            return await run_security_auditor(
+                content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -448,9 +479,39 @@ async def run_dependency_mapper_with_session(
         # LangSmith not available or not in trace context - continue without trace_id
         pass
 
+    # Load MCP tools for dependency mapper if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("dependency_mapper"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(settings.get_enabled_servers())
+                capabilities = registry.get_capabilities("dependency_mapper")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_dependency_mapper",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="dependency_mapper",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
-            return await run_dependency_mapper(content, content_type, analysis_id, session, state)
+            return await run_dependency_mapper(
+                content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
