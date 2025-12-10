@@ -107,10 +107,10 @@ async def test_graph_execution_with_mocks(
         def __init__(self) -> None:
             self.session = _DummySession()
 
-        async def __aenter__(self):  # noqa: D401
+        async def __aenter__(self):
             return self.session
 
-        async def __aexit__(self, exc_type, exc, tb):  # noqa: D401
+        async def __aexit__(self, exc_type, exc, tb):
             return False
 
     def _dummy_session_factory():
@@ -229,10 +229,10 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
         def __init__(self) -> None:
             self.session = _DummySession()
 
-        async def __aenter__(self):  # noqa: D401
+        async def __aenter__(self):
             return self.session
 
-        async def __aexit__(self, exc_type, exc, tb):  # noqa: D401
+        async def __aexit__(self, exc_type, exc, tb):
             return False
 
     def _dummy_session_factory():

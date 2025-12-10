@@ -17,7 +17,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.constants import RERANK_ALPHA, RERANK_BETA, RERANK_GAMMA
 from app.schemas.search import ChunkMetadata, ReRankConfig, SearchResult
 from app.services.search.reranker import ReRanker, ReRankScore
 
