@@ -37,6 +37,7 @@ Examples:
 
     # Monthly full cleanup
     0 4 1 * * cd /app && python scripts/cleanup.py --full --include-superseded
+
 """
 
 import argparse
@@ -47,7 +48,6 @@ from pathlib import Path
 # Add backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import get_async_session
 from app.services.cleanup import CleanupService
@@ -172,7 +172,7 @@ async def run_health_check(service: CleanupService) -> None:
 
     status_emoji = "✅" if health["healthy"] else "⚠️"
     print(f"{status_emoji} Overall Status: {'Healthy' if health['healthy'] else 'Issues Found'}")
-    print(f"\nIssue Counts:")
+    print("\nIssue Counts:")
     print(f"  • Orphan chunks: {health['orphan_chunks']}")
     print(f"  • Expired analyses: {health['expired_analyses']}")
     print(f"  • Integrity issues: {health['integrity_issues']}")
@@ -278,7 +278,7 @@ async def generate_report(service: CleanupService, output_file: str) -> None:
 
     report = await service.generate_cleanup_report_markdown()
 
-    with open(output_file, "w") as f:
+    with Path(output_file).open("w") as f:
         f.write(report)
 
     print(f"✅ Report saved to: {output_file}")

@@ -67,15 +67,18 @@ class QueryData(TypedDict):
 class FixtureLoader:
     """Load and manage test fixtures for smoke tests."""
 
-    def __init__(self, fixtures_dir: Path | None = None) -> None:
+    def __init__(self, fixtures_dir: Path | None = None, use_expanded: bool = False) -> None:
         """Initialize fixture loader.
 
         Args:
             fixtures_dir: Directory containing fixture JSON files.
                          Defaults to the fixtures directory adjacent to this file.
+            use_expanded: If True, load from documents_expanded.json and
+                         queries_expanded.json instead of the default files.
 
         """
         self.fixtures_dir = fixtures_dir or Path(__file__).parent
+        self.use_expanded = use_expanded
 
     def load_documents(self) -> list[Document]:
         """Load test documents from JSON fixture.
@@ -87,7 +90,8 @@ class FixtureLoader:
             FileNotFoundError: If documents.json doesn't exist.
 
         """
-        path = self.fixtures_dir / "documents.json"
+        filename = "documents_expanded.json" if self.use_expanded else "documents.json"
+        path = self.fixtures_dir / filename
         with path.open() as f:
             data: FixtureData = json.load(f)
         return data["documents"]
@@ -102,7 +106,8 @@ class FixtureLoader:
             FileNotFoundError: If queries.json doesn't exist.
 
         """
-        path = self.fixtures_dir / "queries.json"
+        filename = "queries_expanded.json" if self.use_expanded else "queries.json"
+        path = self.fixtures_dir / filename
         with path.open() as f:
             data: QueryData = json.load(f)
         return data["queries"]
