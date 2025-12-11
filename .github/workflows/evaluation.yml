@@ -75,6 +75,15 @@ jobs:
           # Run migrations to set up schema
           poetry run alembic upgrade head
 
+      - name: Load evaluation fixtures
+        working-directory: backend
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: |
+          # Load fixture data with embeddings for evaluation
+          poetry run python scripts/load_expanded_fixtures.py --expanded --replace
+
       - name: Download baseline results (if exists)
         id: baseline
         continue-on-error: true
@@ -98,11 +107,13 @@ jobs:
           # Run evaluation with baseline if available
           if [ -f baseline/evaluation_results.json ]; then
             poetry run python scripts/run_evaluation.py \
+              --expanded \
               --output evaluation_results.json \
               --baseline baseline/evaluation_results.json \
               ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
           else
             poetry run python scripts/run_evaluation.py \
+              --expanded \
               --output evaluation_results.json \
               ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
           fi
