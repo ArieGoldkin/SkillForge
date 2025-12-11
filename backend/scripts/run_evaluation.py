@@ -111,36 +111,64 @@ def parse_args() -> argparse.Namespace:
         help="Enable verbose logging",
     )
 
+    parser.add_argument(
+        "--expanded",
+        action="store_true",
+        help="Use expanded fixtures (queries_expanded.json)",
+    )
+
     return parser.parse_args()
 
 
 async def run_evaluation(
     difficulties: list[Difficulty] | None = None,
+    expanded: bool = False,
 ) -> PipelineResult:
     """Run evaluation pipeline.
 
     Args:
         difficulties: List of difficulties to evaluate (None = all)
+        expanded: Use expanded fixtures (queries_expanded.json)
 
     Returns:
         PipelineResult with evaluation results
 
     """
+    import json
+
     from sqlalchemy.ext.asyncio import create_async_engine
 
-    from app.db.session import AsyncSessionLocal
+    from app.db.session import AsyncSessionLocal, get_async_database_url
     from app.services.embeddings import EmbeddingService
 
     # Check for API key
     settings = get_settings()
-    if not settings.openai_api_key or settings.openai_api_key.startswith("sk-test"):
+    if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.startswith("sk-test"):
         logger.error("Valid OPENAI_API_KEY required for evaluation")
         print("Error: Valid OPENAI_API_KEY required", file=sys.stderr)
         print("Set OPENAI_API_KEY environment variable or add to .env file", file=sys.stderr)
         sys.exit(2)
 
-    # Create database session
-    engine = create_async_engine(settings.database_url, echo=False)
+    # Determine fixtures directory and queries file
+    fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
+    queries_file = "queries_expanded.json" if expanded else "queries.json"
+    queries_path = fixtures_dir / queries_file
+
+    if not queries_path.exists():
+        logger.error(f"Queries file not found: {queries_path}")
+        print(f"Error: Queries file not found: {queries_path}", file=sys.stderr)
+        sys.exit(2)
+
+    # Load queries
+    with queries_path.open() as f:
+        data = json.load(f)
+
+    queries = data.get("queries", data) if isinstance(data, dict) else data
+    logger.info(f"Loaded {len(queries)} queries from {queries_file}")
+
+    # Create database session with async URL
+    async_url = get_async_database_url()
+    engine = create_async_engine(async_url, echo=False)
 
     try:
         async with AsyncSessionLocal() as session:
@@ -152,6 +180,9 @@ async def run_evaluation(
                 session=session,
                 embedding_service=embedding_service,
             )
+
+            # Load queries into runner
+            runner._queries = queries
 
             logger.info("Starting evaluation pipeline", difficulties=difficulties)
             result = await runner.run_all(difficulties=difficulties)
@@ -238,7 +269,7 @@ async def main() -> int:
 
     # Run evaluation
     try:
-        result = await run_evaluation(difficulties)
+        result = await run_evaluation(difficulties, expanded=args.expanded)
     except Exception as e:
         logger.error("Evaluation failed", error=str(e), exc_info=True)
         print(f"Error: {e}", file=sys.stderr)
