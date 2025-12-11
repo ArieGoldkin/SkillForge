@@ -150,6 +150,9 @@ def main() -> None:
         fixtures_dir / "aiml_docs.json",
         fixtures_dir / "sysdesign_docs.json",
         fixtures_dir / "tech_fundamentals_docs.json",
+        fixtures_dir / "ab_testing_docs.json",
+        fixtures_dir / "agentic_rag_docs.json",
+        fixtures_dir / "context_engineering_docs.json",
     ]
 
     if args.sources:

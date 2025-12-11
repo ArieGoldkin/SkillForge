@@ -1,15 +1,21 @@
 {
   "version": "2.0",
   "generated": "2025-12-11",
-  "source": "Sprint 12 - Comprehensive Evaluation Dataset (100+ queries)",
+  "source": "Sprint 12 - Comprehensive Evaluation Dataset (130+ queries) - Added A/B Testing, Agentic RAG, Context Engineering",
   "queries": [
     {
       "id": "q-context-eng-principles",
       "query": "How to structure information for AI agents",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["context-engineering/principles", "context-engineering/agents"],
+      "expected_chunks": [
+        "context-engineering/principles",
+        "context-engineering/agents"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Context engineering for agents - should find principles and agent sections"
@@ -17,10 +23,15 @@
     {
       "id": "q-context-eng-clarity",
       "query": "clarity relevance structure AI context",
-      "modes": ["keyword", "hybrid"],
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["context-engineering/principles"],
+      "expected_chunks": [
+        "context-engineering/principles"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Keyword match for core principles"
@@ -28,10 +39,16 @@
     {
       "id": "q-context-eng-xml-tags",
       "query": "XML tags markdown headers context organization",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["context-engineering/principles"],
+      "expected_chunks": [
+        "context-engineering/principles"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Structural formatting in context engineering"
@@ -39,10 +56,16 @@
     {
       "id": "q-rag-paradigms",
       "query": "Naive RAG versus Advanced RAG differences",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-survey/naive", "rag-survey/advanced"],
+      "expected_chunks": [
+        "rag-survey/naive",
+        "rag-survey/advanced"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Comparing RAG paradigms - should find both naive and advanced sections"
@@ -50,10 +73,16 @@
     {
       "id": "q-rag-modular",
       "query": "modular RAG composable modules routing",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["rag-survey/modular"],
+      "expected_chunks": [
+        "rag-survey/modular"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Modular RAG architecture - should find modular section"
@@ -61,10 +90,15 @@
     {
       "id": "q-rag-evolution",
       "query": "RAG paradigm evolution three stages",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["rag-survey/intro"],
+      "expected_chunks": [
+        "rag-survey/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "RAG evolution overview"
@@ -72,10 +106,16 @@
     {
       "id": "q-rag-query-rewriting",
       "query": "query rewriting expansion decomposition pre-retrieval",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-survey/advanced"],
+      "expected_chunks": [
+        "rag-survey/advanced"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Pre-retrieval optimization techniques"
@@ -83,10 +123,16 @@
     {
       "id": "q-cot-technique",
       "query": "step-by-step reasoning in language models",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["chain-of-thought/intro", "chain-of-thought/techniques"],
+      "expected_chunks": [
+        "chain-of-thought/intro",
+        "chain-of-thought/techniques"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Chain-of-Thought prompting - should find intro and techniques"
@@ -94,10 +140,16 @@
     {
       "id": "q-cot-self-consistency",
       "query": "self-consistency multiple reasoning paths",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["chain-of-thought/techniques"],
+      "expected_chunks": [
+        "chain-of-thought/techniques"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Self-consistency technique in CoT"
@@ -105,10 +157,15 @@
     {
       "id": "q-cot-phrases",
       "query": "Let's think step by step prompting phrase",
-      "modes": ["keyword", "hybrid"],
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["chain-of-thought/intro"],
+      "expected_chunks": [
+        "chain-of-thought/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Direct phrase match for CoT"
@@ -116,10 +173,15 @@
     {
       "id": "q-tot-backtrack",
       "query": "How does Tree-of-Thoughts handle backtracking",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["tree-of-thoughts/algorithm"],
+      "expected_chunks": [
+        "tree-of-thoughts/algorithm"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "ToT backtracking mechanism"
@@ -127,10 +189,14 @@
     {
       "id": "q-tot-applications",
       "query": "When to use Tree-of-Thoughts reasoning",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["tree-of-thoughts/applications"],
+      "expected_chunks": [
+        "tree-of-thoughts/applications"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "ToT use cases and tradeoffs"
@@ -138,10 +204,16 @@
     {
       "id": "q-tot-search-space",
       "query": "tree search beam search Tree-of-Thoughts exploration",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["tree-of-thoughts/algorithm"],
+      "expected_chunks": [
+        "tree-of-thoughts/algorithm"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "ToT search algorithms"
@@ -149,10 +221,16 @@
     {
       "id": "q-langgraph-supervisor",
       "query": "LangGraph supervisor pattern multi-agent",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["langgraph-multiagent/patterns"],
+      "expected_chunks": [
+        "langgraph-multiagent/patterns"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Supervisor coordination pattern"
@@ -160,10 +238,15 @@
     {
       "id": "q-langgraph-state",
       "query": "typed state management in LangGraph agents",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["langgraph-multiagent/state"],
+      "expected_chunks": [
+        "langgraph-multiagent/state"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "State management in LangGraph"
@@ -171,10 +254,15 @@
     {
       "id": "q-langgraph-production",
       "query": "LangGraph production deployment checkpointing",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["langgraph-multiagent/production"],
+      "expected_chunks": [
+        "langgraph-multiagent/production"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Production features in LangGraph"
@@ -182,10 +270,15 @@
     {
       "id": "q-langsmith-offline",
       "query": "golden dataset offline evaluation LLM",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["langsmith-evaluation/offline"],
+      "expected_chunks": [
+        "langsmith-evaluation/offline"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Offline evaluation with datasets"
@@ -193,10 +286,15 @@
     {
       "id": "q-langsmith-monitoring",
       "query": "production LLM monitoring and alerting",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["langsmith-evaluation/online"],
+      "expected_chunks": [
+        "langsmith-evaluation/online"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Online monitoring in production"
@@ -204,10 +302,16 @@
     {
       "id": "q-langsmith-metrics",
       "query": "LangSmith custom evaluators metrics",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["langsmith-evaluation/metrics"],
+      "expected_chunks": [
+        "langsmith-evaluation/metrics"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Custom evaluation metrics"
@@ -215,10 +319,15 @@
     {
       "id": "q-rag-triad-metrics",
       "query": "What are the three RAG Triad metrics",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["rag-triad/intro"],
+      "expected_chunks": [
+        "rag-triad/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Direct question about RAG Triad"
@@ -226,10 +335,14 @@
     {
       "id": "q-rag-groundedness",
       "query": "How to prevent hallucinations in RAG systems",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-triad/groundedness"],
+      "expected_chunks": [
+        "rag-triad/groundedness"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Groundedness and hallucination prevention"
@@ -237,10 +350,16 @@
     {
       "id": "q-rag-context-relevance",
       "query": "retrieved context relevance measurement",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["rag-triad/context-relevance"],
+      "expected_chunks": [
+        "rag-triad/context-relevance"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Context relevance metric"
@@ -248,10 +367,15 @@
     {
       "id": "q-rag-answer-relevance",
       "query": "answer relevance query alignment RAG evaluation",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-triad/answer-relevance"],
+      "expected_chunks": [
+        "rag-triad/answer-relevance"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Answer relevance metric"
@@ -259,10 +383,16 @@
     {
       "id": "q-microservices-decompose",
       "query": "service decomposition patterns bounded contexts",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["microservices-patterns/decomposition"],
+      "expected_chunks": [
+        "microservices-patterns/decomposition"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Service decomposition strategies"
@@ -270,10 +400,15 @@
     {
       "id": "q-microservices-saga",
       "query": "distributed transaction patterns in microservices",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["microservices-patterns/data"],
+      "expected_chunks": [
+        "microservices-patterns/data"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Saga pattern for distributed transactions"
@@ -281,10 +416,15 @@
     {
       "id": "q-microservices-communication",
       "query": "synchronous versus asynchronous microservice communication",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["microservices-patterns/communication"],
+      "expected_chunks": [
+        "microservices-patterns/communication"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Communication patterns in microservices"
@@ -292,10 +432,16 @@
     {
       "id": "q-rest-constraints",
       "query": "six REST architectural constraints",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["rest-api-principles/intro"],
+      "expected_chunks": [
+        "rest-api-principles/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "REST constraints - direct match"
@@ -303,10 +449,15 @@
     {
       "id": "q-rest-versioning",
       "query": "API versioning best practices REST",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["rest-api-principles/best-practices"],
+      "expected_chunks": [
+        "rest-api-principles/best-practices"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "REST API versioning"
@@ -314,10 +465,16 @@
     {
       "id": "q-rest-resources",
       "query": "REST resource naming conventions URI design",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["rest-api-principles/resources"],
+      "expected_chunks": [
+        "rest-api-principles/resources"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "REST resource design"
@@ -325,10 +482,16 @@
     {
       "id": "q-grpc-protobuf",
       "query": "Protocol Buffers service definition",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["grpc-guide/protobuf"],
+      "expected_chunks": [
+        "grpc-guide/protobuf"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Protocol Buffers in gRPC"
@@ -336,10 +499,16 @@
     {
       "id": "q-grpc-streaming",
       "query": "bidirectional streaming gRPC patterns",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["grpc-guide/streaming"],
+      "expected_chunks": [
+        "grpc-guide/streaming"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "gRPC streaming capabilities"
@@ -347,10 +516,15 @@
     {
       "id": "q-grpc-http2",
       "query": "gRPC HTTP/2 performance advantages",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["grpc-guide/intro"],
+      "expected_chunks": [
+        "grpc-guide/intro"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "gRPC fundamentals and HTTP/2"
@@ -358,10 +532,16 @@
     {
       "id": "q-graphql-schema",
       "query": "GraphQL schema definition language types",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["graphql-basics/schema"],
+      "expected_chunks": [
+        "graphql-basics/schema"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "GraphQL schema and SDL"
@@ -369,10 +549,14 @@
     {
       "id": "q-graphql-overfetch",
       "query": "How does GraphQL solve over-fetching",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["graphql-basics/intro"],
+      "expected_chunks": [
+        "graphql-basics/intro"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "GraphQL advantages over REST"
@@ -380,10 +564,16 @@
     {
       "id": "q-graphql-queries",
       "query": "GraphQL query syntax mutations subscriptions",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["graphql-basics/queries"],
+      "expected_chunks": [
+        "graphql-basics/queries"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "GraphQL query operations"
@@ -391,10 +581,16 @@
     {
       "id": "q-embeddings-semantic",
       "query": "semantic similarity vector embeddings",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["vector-embeddings/intro"],
+      "expected_chunks": [
+        "vector-embeddings/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Embeddings fundamentals"
@@ -402,10 +598,15 @@
     {
       "id": "q-embeddings-models",
       "query": "OpenAI versus Cohere embedding models comparison",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["vector-embeddings/models"],
+      "expected_chunks": [
+        "vector-embeddings/models"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Embedding model comparison"
@@ -413,10 +614,16 @@
     {
       "id": "q-embeddings-similarity",
       "query": "cosine similarity distance metrics embeddings",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["vector-embeddings/similarity"],
+      "expected_chunks": [
+        "vector-embeddings/similarity"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Similarity metrics for embeddings"
@@ -424,10 +631,16 @@
     {
       "id": "q-pgvector-index",
       "query": "IVFFlat HNSW indexing in pgvector",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["pgvector-guide/indexing"],
+      "expected_chunks": [
+        "pgvector-guide/indexing"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "pgvector indexing strategies"
@@ -435,10 +648,15 @@
     {
       "id": "q-pgvector-operators",
       "query": "cosine distance L2 distance vector operators",
-      "modes": ["keyword", "hybrid"],
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["pgvector-guide/usage"],
+      "expected_chunks": [
+        "pgvector-guide/usage"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "pgvector distance operators"
@@ -446,10 +664,15 @@
     {
       "id": "q-pgvector-intro",
       "query": "PostgreSQL vector similarity search extension",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["pgvector-guide/intro"],
+      "expected_chunks": [
+        "pgvector-guide/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "pgvector overview"
@@ -457,10 +680,16 @@
     {
       "id": "q-hnsw-layers",
       "query": "hierarchical graph structure HNSW algorithm",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["hnsw-algorithm/structure"],
+      "expected_chunks": [
+        "hnsw-algorithm/structure"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "HNSW graph architecture"
@@ -468,10 +697,15 @@
     {
       "id": "q-hnsw-complexity",
       "query": "HNSW search time complexity and memory usage",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["hnsw-algorithm/performance"],
+      "expected_chunks": [
+        "hnsw-algorithm/performance"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "HNSW performance characteristics"
@@ -479,10 +713,16 @@
     {
       "id": "q-hnsw-ann",
       "query": "approximate nearest neighbor HNSW algorithm",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["hnsw-algorithm/intro"],
+      "expected_chunks": [
+        "hnsw-algorithm/intro"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "HNSW fundamentals"
@@ -490,10 +730,16 @@
     {
       "id": "q-rlhf-stages",
       "query": "supervised fine-tuning reward model PPO",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["rlhf-guide/stages"],
+      "expected_chunks": [
+        "rlhf-guide/stages"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "RLHF training stages"
@@ -501,10 +747,16 @@
     {
       "id": "q-rlhf-reward-hacking",
       "query": "reward hacking challenges in RLHF",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rlhf-guide/challenges"],
+      "expected_chunks": [
+        "rlhf-guide/challenges"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "RLHF challenges and limitations"
@@ -512,10 +764,15 @@
     {
       "id": "q-rlhf-overview",
       "query": "reinforcement learning from human feedback alignment",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["rlhf-guide/intro"],
+      "expected_chunks": [
+        "rlhf-guide/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "RLHF fundamentals"
@@ -523,10 +780,16 @@
     {
       "id": "q-lora-efficiency",
       "query": "low-rank adaptation parameter efficient fine-tuning",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["lora-finetuning/intro"],
+      "expected_chunks": [
+        "lora-finetuning/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "LoRA fundamentals"
@@ -534,10 +797,16 @@
     {
       "id": "q-lora-qlora",
       "query": "QLoRA quantized training 4-bit",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["lora-finetuning/practice"],
+      "expected_chunks": [
+        "lora-finetuning/practice"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "QLoRA quantized LoRA"
@@ -545,10 +814,15 @@
     {
       "id": "q-lora-technique",
       "query": "LoRA rank decomposition matrices fine-tuning",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["lora-finetuning/technique"],
+      "expected_chunks": [
+        "lora-finetuning/technique"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "LoRA technical details"
@@ -556,10 +830,16 @@
     {
       "id": "q-mlops-components",
       "query": "feature store model registry MLOps infrastructure",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["mlops-guide/components"],
+      "expected_chunks": [
+        "mlops-guide/components"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "MLOps core components"
@@ -567,10 +847,16 @@
     {
       "id": "q-mlops-drift",
       "query": "data drift concept drift monitoring",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["mlops-guide/monitoring"],
+      "expected_chunks": [
+        "mlops-guide/monitoring"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Model drift detection"
@@ -578,10 +864,15 @@
     {
       "id": "q-mlops-best-practices",
       "query": "MLOps CI/CD automation best practices",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["mlops-guide/best-practices"],
+      "expected_chunks": [
+        "mlops-guide/best-practices"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "MLOps best practices"
@@ -589,10 +880,16 @@
     {
       "id": "q-llm-agents-react",
       "query": "ReAct pattern reasoning and acting",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["llm-agents-guide/architectures"],
+      "expected_chunks": [
+        "llm-agents-guide/architectures"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "ReAct agent architecture"
@@ -600,10 +897,16 @@
     {
       "id": "q-llm-agents-reliability",
       "query": "LLM agent production challenges hallucination",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["llm-agents-guide/challenges", "llm-agents-guide/production"],
+      "expected_chunks": [
+        "llm-agents-guide/challenges",
+        "llm-agents-guide/production"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Agent reliability challenges"
@@ -611,10 +914,15 @@
     {
       "id": "q-llm-agents-intro",
       "query": "autonomous AI agents tool use reasoning",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["llm-agents-guide/intro"],
+      "expected_chunks": [
+        "llm-agents-guide/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "LLM agents fundamentals"
@@ -622,10 +930,16 @@
     {
       "id": "q-service-mesh-envoy",
       "query": "Envoy sidecar proxy service mesh",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["service-mesh/envoy"],
+      "expected_chunks": [
+        "service-mesh/envoy"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Envoy proxy in service mesh"
@@ -633,10 +947,15 @@
     {
       "id": "q-service-mesh-benefits",
       "query": "mutual TLS observability service mesh advantages",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["service-mesh/benefits"],
+      "expected_chunks": [
+        "service-mesh/benefits"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Service mesh benefits"
@@ -644,10 +963,15 @@
     {
       "id": "q-service-mesh-tradeoffs",
       "query": "service mesh complexity latency tradeoffs",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["service-mesh/tradeoffs"],
+      "expected_chunks": [
+        "service-mesh/tradeoffs"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Service mesh tradeoffs"
@@ -655,10 +979,16 @@
     {
       "id": "q-wal-durability",
       "query": "write-ahead logging crash recovery",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["write-ahead-log/intro"],
+      "expected_chunks": [
+        "write-ahead-log/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "WAL fundamentals"
@@ -666,10 +996,15 @@
     {
       "id": "q-wal-kafka",
       "query": "event sourcing Kafka log-structured storage",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["write-ahead-log/applications"],
+      "expected_chunks": [
+        "write-ahead-log/applications"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "WAL applications in distributed systems"
@@ -677,10 +1012,16 @@
     {
       "id": "q-wal-implementation",
       "query": "WAL implementation fsync checkpointing",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["write-ahead-log/implementation"],
+      "expected_chunks": [
+        "write-ahead-log/implementation"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "WAL implementation details"
@@ -688,10 +1029,16 @@
     {
       "id": "q-prompt-eng-cot",
       "query": "chain-of-thought prompt engineering techniques",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["prompt-engineering/techniques"],
+      "expected_chunks": [
+        "prompt-engineering/techniques"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Advanced prompting techniques"
@@ -699,10 +1046,15 @@
     {
       "id": "q-prompt-optimization",
       "query": "How to optimize and test prompts",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["prompt-engineering/optimization"],
+      "expected_chunks": [
+        "prompt-engineering/optimization"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Prompt optimization workflow"
@@ -710,10 +1062,15 @@
     {
       "id": "q-prompt-intro",
       "query": "effective prompting LLM instructions",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["prompt-engineering/intro"],
+      "expected_chunks": [
+        "prompt-engineering/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Prompt engineering overview"
@@ -721,10 +1078,16 @@
     {
       "id": "q-semantic-kernel-planners",
       "query": "Semantic Kernel planner orchestration",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["semantic-kernel/functions"],
+      "expected_chunks": [
+        "semantic-kernel/functions"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Semantic Kernel planners"
@@ -732,10 +1095,15 @@
     {
       "id": "q-semantic-kernel-memory",
       "query": "semantic memory vector database integration",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["semantic-kernel/memory"],
+      "expected_chunks": [
+        "semantic-kernel/memory"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Semantic Kernel memory abstraction"
@@ -743,10 +1111,15 @@
     {
       "id": "q-semantic-kernel-intro",
       "query": "Microsoft Semantic Kernel AI orchestration",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["semantic-kernel/intro"],
+      "expected_chunks": [
+        "semantic-kernel/intro"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Semantic Kernel overview"
@@ -754,10 +1127,16 @@
     {
       "id": "q-disney-hotstar-scale",
       "query": "Disney+ Hotstar 25 million concurrent streaming",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["disney-hotstar-scale/challenge"],
+      "expected_chunks": [
+        "disney-hotstar-scale/challenge"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Disney+ Hotstar scale challenge"
@@ -765,10 +1144,15 @@
     {
       "id": "q-disney-architecture",
       "query": "Disney Hotstar CDN edge caching architecture",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["disney-hotstar-scale/architecture"],
+      "expected_chunks": [
+        "disney-hotstar-scale/architecture"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Disney Hotstar architecture"
@@ -776,10 +1160,16 @@
     {
       "id": "q-disney-streaming",
       "query": "HLS ABR streaming protocol Disney Hotstar",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["disney-hotstar-scale/streaming-protocol"],
+      "expected_chunks": [
+        "disney-hotstar-scale/streaming-protocol"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Streaming protocol implementation"
@@ -787,10 +1177,16 @@
     {
       "id": "q-doordash-matching",
       "query": "DoorDash dasher delivery matching engine",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["doordash-logistics/matching-engine"],
+      "expected_chunks": [
+        "doordash-logistics/matching-engine"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "DoorDash matching algorithm"
@@ -798,10 +1194,15 @@
     {
       "id": "q-doordash-batching",
       "query": "order batching delivery route optimization DoorDash",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["doordash-logistics/batching"],
+      "expected_chunks": [
+        "doordash-logistics/batching"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "DoorDash batching strategy"
@@ -809,10 +1210,16 @@
     {
       "id": "q-doordash-eta",
       "query": "ETA prediction machine learning DoorDash",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["doordash-logistics/eta-prediction"],
+      "expected_chunks": [
+        "doordash-logistics/eta-prediction"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "ETA prediction models"
@@ -820,10 +1227,15 @@
     {
       "id": "q-netflix-microservices",
       "query": "Netflix monolith to microservices evolution",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["netflix-microservices/evolution"],
+      "expected_chunks": [
+        "netflix-microservices/evolution"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Netflix architecture evolution"
@@ -831,10 +1243,16 @@
     {
       "id": "q-netflix-zuul",
       "query": "Netflix Zuul API gateway routing",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["netflix-microservices/api-gateway"],
+      "expected_chunks": [
+        "netflix-microservices/api-gateway"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Netflix API gateway"
@@ -842,10 +1260,16 @@
     {
       "id": "q-netflix-hystrix",
       "query": "Hystrix circuit breaker fault tolerance",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["netflix-microservices/hystrix"],
+      "expected_chunks": [
+        "netflix-microservices/hystrix"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Netflix Hystrix resilience"
@@ -853,10 +1277,16 @@
     {
       "id": "q-netflix-chaos",
       "query": "Chaos Monkey chaos engineering Netflix",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["netflix-microservices/chaos-engineering"],
+      "expected_chunks": [
+        "netflix-microservices/chaos-engineering"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "Netflix chaos engineering"
@@ -864,10 +1294,15 @@
     {
       "id": "q-spotify-event-delivery",
       "query": "Spotify event-driven architecture messaging",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["spotify-backend/event-delivery"],
+      "expected_chunks": [
+        "spotify-backend/event-delivery"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Spotify event delivery"
@@ -875,10 +1310,16 @@
     {
       "id": "q-spotify-bff",
       "query": "backend for frontend pattern Spotify",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["spotify-backend/backend-for-frontend"],
+      "expected_chunks": [
+        "spotify-backend/backend-for-frontend"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Spotify BFF pattern"
@@ -886,10 +1327,15 @@
     {
       "id": "q-spotify-personalization",
       "query": "Spotify recommendation engine personalization",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["spotify-backend/personalization"],
+      "expected_chunks": [
+        "spotify-backend/personalization"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Spotify personalization"
@@ -897,10 +1343,16 @@
     {
       "id": "q-uber-ringpop",
       "query": "Uber Ringpop consistent hashing distributed coordination",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["uber-dispatch/ringpop"],
+      "expected_chunks": [
+        "uber-dispatch/ringpop"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Uber Ringpop architecture"
@@ -908,10 +1360,15 @@
     {
       "id": "q-uber-matching",
       "query": "Uber driver rider matching algorithm",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["uber-dispatch/matching-algorithm"],
+      "expected_chunks": [
+        "uber-dispatch/matching-algorithm"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Uber matching algorithm"
@@ -919,10 +1376,16 @@
     {
       "id": "q-uber-geospatial",
       "query": "geospatial indexing H3 hexagonal grid Uber",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["uber-dispatch/geospatial-index"],
+      "expected_chunks": [
+        "uber-dispatch/geospatial-index"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Uber geospatial indexing"
@@ -930,10 +1393,16 @@
     {
       "id": "q-uber-surge",
       "query": "surge pricing dynamic pricing Uber",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["uber-dispatch/surge-pricing"],
+      "expected_chunks": [
+        "uber-dispatch/surge-pricing"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Uber surge pricing"
@@ -941,10 +1410,15 @@
     {
       "id": "q-reddit-sharding",
       "query": "Reddit database sharding motivation growth",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["reddit-sharding/motivation"],
+      "expected_chunks": [
+        "reddit-sharding/motivation"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Reddit sharding motivation"
@@ -952,10 +1426,16 @@
     {
       "id": "q-reddit-scheme",
       "query": "Reddit sharding scheme key distribution",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["reddit-sharding/scheme"],
+      "expected_chunks": [
+        "reddit-sharding/scheme"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Reddit sharding scheme"
@@ -963,10 +1443,15 @@
     {
       "id": "q-datadog-ingestion",
       "query": "Datadog metrics ingestion pipeline throughput",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["datadog-monitoring/ingestion"],
+      "expected_chunks": [
+        "datadog-monitoring/ingestion"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Datadog metrics ingestion"
@@ -974,10 +1459,15 @@
     {
       "id": "q-datadog-storage",
       "query": "time-series data storage compression Datadog",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["datadog-monitoring/storage"],
+      "expected_chunks": [
+        "datadog-monitoring/storage"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Datadog storage optimization"
@@ -985,10 +1475,16 @@
     {
       "id": "q-pinterest-visual",
       "query": "Pinterest visual embeddings image search",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["pinterest-search/visual-embeddings"],
+      "expected_chunks": [
+        "pinterest-search/visual-embeddings"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Pinterest visual embeddings"
@@ -996,10 +1492,15 @@
     {
       "id": "q-pinterest-vector",
       "query": "Pinterest vector search similarity matching",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["pinterest-search/vector-search"],
+      "expected_chunks": [
+        "pinterest-search/vector-search"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Pinterest vector search"
@@ -1007,10 +1508,15 @@
     {
       "id": "q-flipkart-flash-sales",
       "query": "Flipkart flash sales traffic spike handling",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["flipkart-flash-sales/traffic-spike"],
+      "expected_chunks": [
+        "flipkart-flash-sales/traffic-spike"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Flipkart flash sales scale"
@@ -1018,10 +1524,16 @@
     {
       "id": "q-flipkart-queue",
       "query": "virtual waiting room queue system Flipkart",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["flipkart-flash-sales/queue-system"],
+      "expected_chunks": [
+        "flipkart-flash-sales/queue-system"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Flipkart queue system"
@@ -1029,10 +1541,16 @@
     {
       "id": "q-facebook-foqs",
       "query": "Facebook FOQS distributed queueing system",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["facebook-foqs/architecture"],
+      "expected_chunks": [
+        "facebook-foqs/architecture"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Facebook FOQS architecture"
@@ -1040,10 +1558,16 @@
     {
       "id": "q-linkedin-kafka",
       "query": "LinkedIn Kafka real-time data streaming",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "trivial",
-      "expected_chunks": ["linkedin-real-time-analytics/kafka"],
+      "expected_chunks": [
+        "linkedin-real-time-analytics/kafka"
+      ],
       "min_score": 0.7,
       "max_score": null,
       "description": "LinkedIn Kafka infrastructure"
@@ -1051,10 +1575,16 @@
     {
       "id": "q-linkedin-samza",
       "query": "Apache Samza stream processing LinkedIn",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["linkedin-real-time-analytics/samza"],
+      "expected_chunks": [
+        "linkedin-real-time-analytics/samza"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "LinkedIn Samza processing"
@@ -1062,10 +1592,16 @@
     {
       "id": "q-linkedin-pinot",
       "query": "Apache Pinot OLAP analytics LinkedIn",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["linkedin-real-time-analytics/pinot"],
+      "expected_chunks": [
+        "linkedin-real-time-analytics/pinot"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "LinkedIn Pinot analytics"
@@ -1073,10 +1609,15 @@
     {
       "id": "q-grab-routing",
       "query": "Grab routing engine pathfinding optimization",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["grab-geospatial/routing-engine"],
+      "expected_chunks": [
+        "grab-geospatial/routing-engine"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Grab routing engine"
@@ -1084,10 +1625,16 @@
     {
       "id": "q-grab-s2",
       "query": "S2 geometry cells geospatial indexing Grab",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["grab-geospatial/s2-cells"],
+      "expected_chunks": [
+        "grab-geospatial/s2-cells"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Grab S2 cells"
@@ -1095,10 +1642,15 @@
     {
       "id": "q-perplexity-model-serving",
       "query": "Perplexity LLM model serving inference optimization",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["perplexity-llm-infra/model-serving"],
+      "expected_chunks": [
+        "perplexity-llm-infra/model-serving"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Perplexity model serving"
@@ -1106,10 +1658,15 @@
     {
       "id": "q-perplexity-caching",
       "query": "LLM response caching latency reduction Perplexity",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["perplexity-llm-infra/caching"],
+      "expected_chunks": [
+        "perplexity-llm-infra/caching"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Perplexity caching strategy"
@@ -1117,10 +1674,15 @@
     {
       "id": "q-perplexity-retrieval",
       "query": "Perplexity RAG retrieval augmentation search",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["perplexity-llm-infra/retrieval-augmentation"],
+      "expected_chunks": [
+        "perplexity-llm-infra/retrieval-augmentation"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Perplexity RAG implementation"
@@ -1128,10 +1690,15 @@
     {
       "id": "q-nubank-serverless",
       "query": "Nubank serverless AWS Lambda microservices",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["nubank-serverless/function-design"],
+      "expected_chunks": [
+        "nubank-serverless/function-design"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Nubank serverless architecture"
@@ -1139,10 +1706,15 @@
     {
       "id": "q-zalando-microservices",
       "query": "Zalando microservices decomposition strategy",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["zalando-microservices/decomposition"],
+      "expected_chunks": [
+        "zalando-microservices/decomposition"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Zalando microservices"
@@ -1150,10 +1722,16 @@
     {
       "id": "q-tinder-elo",
       "query": "Tinder Elo rating matching algorithm",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["tinder-matching/elo-rating"],
+      "expected_chunks": [
+        "tinder-matching/elo-rating"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Tinder Elo rating system"
@@ -1161,10 +1739,16 @@
     {
       "id": "q-openai-kv-cache",
       "query": "OpenAI KV cache inference optimization",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["openai-inference/kv-cache"],
+      "expected_chunks": [
+        "openai-inference/kv-cache"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "OpenAI KV cache optimization"
@@ -1172,10 +1756,16 @@
     {
       "id": "q-openai-batching",
       "query": "continuous batching dynamic batching OpenAI",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["openai-inference/batching"],
+      "expected_chunks": [
+        "openai-inference/batching"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "OpenAI batching strategy"
@@ -1183,10 +1773,15 @@
     {
       "id": "q-meta-ai-agents",
       "query": "Meta AI agent framework tool integration",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["meta-ai-agents/agent-framework"],
+      "expected_chunks": [
+        "meta-ai-agents/agent-framework"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Meta AI agent framework"
@@ -1194,10 +1789,16 @@
     {
       "id": "q-databricks-delta",
       "query": "Delta Lake ACID transactions lakehouse",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["databricks-lakehouse/delta-lake"],
+      "expected_chunks": [
+        "databricks-lakehouse/delta-lake"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Databricks Delta Lake"
@@ -1205,10 +1806,15 @@
     {
       "id": "q-dropbox-sync",
       "query": "Dropbox sync engine block-level deduplication",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["dropbox-sync-engine/block-sync"],
+      "expected_chunks": [
+        "dropbox-sync-engine/block-sync"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Dropbox sync engine"
@@ -1216,10 +1822,15 @@
     {
       "id": "q-chunking-semantic",
       "query": "semantic chunking natural boundaries RAG",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["chunking-strategies/semantic"],
+      "expected_chunks": [
+        "chunking-strategies/semantic"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Semantic chunking strategies"
@@ -1227,10 +1838,16 @@
     {
       "id": "q-chunking-hierarchical",
       "query": "hierarchical chunking parent-child relationships",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["chunking-strategies/hierarchical"],
+      "expected_chunks": [
+        "chunking-strategies/hierarchical"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Hierarchical chunking"
@@ -1238,10 +1855,16 @@
     {
       "id": "q-reranking-cross-encoder",
       "query": "cross-encoder reranking bi-encoder comparison",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["reranking-models/cross-encoders"],
+      "expected_chunks": [
+        "reranking-models/cross-encoders"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Cross-encoder reranking"
@@ -1249,10 +1872,16 @@
     {
       "id": "q-hybrid-search-fusion",
       "query": "reciprocal rank fusion hybrid search combination",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["hybrid-search/fusion"],
+      "expected_chunks": [
+        "hybrid-search/fusion"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Hybrid search fusion"
@@ -1260,10 +1889,16 @@
     {
       "id": "q-hybrid-bm25",
       "query": "BM25 keyword search algorithm ranking",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["hybrid-search/bm25"],
+      "expected_chunks": [
+        "hybrid-search/bm25"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "BM25 algorithm"
@@ -1271,10 +1906,16 @@
     {
       "id": "q-constitutional-ai",
       "query": "Constitutional AI self-critique RLAIF principles",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["constitutional-ai/overview"],
+      "expected_chunks": [
+        "constitutional-ai/overview"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Constitutional AI overview"
@@ -1282,10 +1923,16 @@
     {
       "id": "q-dpo-alignment",
       "query": "Direct Preference Optimization DPO training",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["dpo-alignment/training"],
+      "expected_chunks": [
+        "dpo-alignment/training"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "DPO training method"
@@ -1293,10 +1940,16 @@
     {
       "id": "q-agent-memory-types",
       "query": "episodic semantic procedural agent memory",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["agent-memory/types"],
+      "expected_chunks": [
+        "agent-memory/types"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Agent memory types"
@@ -1304,10 +1957,16 @@
     {
       "id": "q-query-hyde",
       "query": "HyDE hypothetical document embeddings query",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["query-optimization/hyde"],
+      "expected_chunks": [
+        "query-optimization/hyde"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "HyDE query optimization"
@@ -1315,10 +1974,15 @@
     {
       "id": "q-output-json-mode",
       "query": "structured JSON output LLM formatting",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["output-formatting/json-mode"],
+      "expected_chunks": [
+        "output-formatting/json-mode"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "JSON mode output formatting"
@@ -1326,10 +1990,16 @@
     {
       "id": "q-rest-pagination",
       "query": "cursor pagination offset pagination REST API",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rest-api-design/pagination"],
+      "expected_chunks": [
+        "rest-api-design/pagination"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "REST API pagination"
@@ -1337,10 +2007,16 @@
     {
       "id": "q-graphql-n-plus-one",
       "query": "GraphQL N+1 problem dataloader batching",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "hard",
-      "expected_chunks": ["graphql-api/n-plus-one"],
+      "expected_chunks": [
+        "graphql-api/n-plus-one"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "GraphQL N+1 problem"
@@ -1348,10 +2024,15 @@
     {
       "id": "q-grpc-load-balancing",
       "query": "gRPC client-side load balancing strategies",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["grpc-services/load-balancing"],
+      "expected_chunks": [
+        "grpc-services/load-balancing"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "gRPC load balancing"
@@ -1359,10 +2040,15 @@
     {
       "id": "q-mlops-pipeline",
       "query": "MLOps pipeline stages continuous training",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["mlops-pipeline-fundamentals/core-mlops-pipeline-stages"],
+      "expected_chunks": [
+        "mlops-pipeline-fundamentals/core-mlops-pipeline-stages"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "MLOps pipeline fundamentals"
@@ -1370,10 +2056,16 @@
     {
       "id": "q-ml-drift-detection",
       "query": "data drift concept drift model monitoring",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["ml-model-monitoring-drift/understanding-data-drift-and-concept-dri"],
+      "expected_chunks": [
+        "ml-model-monitoring-drift/understanding-data-drift-and-concept-dri"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "ML drift detection"
@@ -1381,10 +2073,15 @@
     {
       "id": "q-langsmith-tracing",
       "query": "LangSmith distributed tracing LLM chains debugging",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["langsmith-observability-guide/debugging-llm-chains-with-traces"],
+      "expected_chunks": [
+        "langsmith-observability-guide/debugging-llm-chains-with-traces"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "LangSmith tracing"
@@ -1392,10 +2089,16 @@
     {
       "id": "q-prometheus-promql",
       "query": "PromQL query language metrics aggregation",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["prometheus-grafana-monitoring/promql-query-language"],
+      "expected_chunks": [
+        "prometheus-grafana-monitoring/promql-query-language"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Prometheus PromQL"
@@ -1403,10 +2106,16 @@
     {
       "id": "q-feature-store-feast",
       "query": "Feast feature store online offline serving",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["feature-stores-mlops/implementation-with-feast"],
+      "expected_chunks": [
+        "feature-stores-mlops/implementation-with-feast"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Feast feature store"
@@ -1414,10 +2123,16 @@
     {
       "id": "q-postgres-btree",
       "query": "B-tree index PostgreSQL query optimization",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["postgresql-indexing-strategies/b-tree-indexes-the-default-workhorse"],
+      "expected_chunks": [
+        "postgresql-indexing-strategies/b-tree-indexes-the-default-workhorse"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "PostgreSQL B-tree indexes"
@@ -1425,10 +2140,16 @@
     {
       "id": "q-timescaledb",
       "query": "TimescaleDB time-series PostgreSQL extension",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["time-series-databases/timescaledb-time-series-on-postgresql"],
+      "expected_chunks": [
+        "time-series-databases/timescaledb-time-series-on-postgresql"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "TimescaleDB overview"
@@ -1436,10 +2157,16 @@
     {
       "id": "q-neo4j-cypher",
       "query": "Cypher query language Neo4j graph patterns",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["neo4j-graph-databases/cypher-query-language"],
+      "expected_chunks": [
+        "neo4j-graph-databases/cypher-query-language"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Neo4j Cypher language"
@@ -1447,10 +2174,15 @@
     {
       "id": "q-mongodb-embedding",
       "query": "MongoDB document embedding vs referencing",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["mongodb-document-design/document-model-and-embedding-vs-referenc"],
+      "expected_chunks": [
+        "mongodb-document-design/document-model-and-embedding-vs-referenc"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "MongoDB design patterns"
@@ -1458,10 +2190,15 @@
     {
       "id": "q-connection-pooling",
       "query": "database connection pooling sizing configuration",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["database-connection-pooling/sizing-and-configuration"],
+      "expected_chunks": [
+        "database-connection-pooling/sizing-and-configuration"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Connection pooling configuration"
@@ -1469,10 +2206,16 @@
     {
       "id": "q-oauth2-flows",
       "query": "OAuth2 authorization code PKCE grant types",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["oauth2-oidc-fundamentals/oauth2-flows-and-grant-types"],
+      "expected_chunks": [
+        "oauth2-oidc-fundamentals/oauth2-flows-and-grant-types"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "OAuth2 flows"
@@ -1480,10 +2223,16 @@
     {
       "id": "q-api-rate-limiting",
       "query": "rate limiting token bucket DDoS protection",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["api-security-best-practices/rate-limiting-and-ddos-protection"],
+      "expected_chunks": [
+        "api-security-best-practices/rate-limiting-and-ddos-protection"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "API rate limiting"
@@ -1491,10 +2240,16 @@
     {
       "id": "q-zero-trust",
       "query": "zero trust architecture never trust always verify",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["zero-trust-architecture/zero-trust-principles-and-philosophy"],
+      "expected_chunks": [
+        "zero-trust-architecture/zero-trust-principles-and-philosophy"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Zero trust principles"
@@ -1502,10 +2257,16 @@
     {
       "id": "q-kubernetes-pods",
       "query": "Kubernetes pods containers workload resources",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["kubernetes-fundamentals/workload-resources-and-patterns"],
+      "expected_chunks": [
+        "kubernetes-fundamentals/workload-resources-and-patterns"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Kubernetes workload resources"
@@ -1513,10 +2274,16 @@
     {
       "id": "q-sidecar-pattern",
       "query": "sidecar pattern ambassador container orchestration",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["container-orchestration-patterns/sidecar-and-ambassador-patterns"],
+      "expected_chunks": [
+        "container-orchestration-patterns/sidecar-and-ambassador-patterns"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Sidecar pattern"
@@ -1524,10 +2291,16 @@
     {
       "id": "q-terraform-iac",
       "query": "Terraform infrastructure as code declarative",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "specific",
       "difficulty": "easy",
-      "expected_chunks": ["terraform-infrastructure-as-code/terraform-workflow-and-state-management"],
+      "expected_chunks": [
+        "terraform-infrastructure-as-code/terraform-workflow-and-state-management"
+      ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Terraform IaC"
@@ -1535,10 +2308,17 @@
     {
       "id": "q-broad-agent-architecture",
       "query": "How to design AI agent systems with tools and memory",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "medium",
-      "expected_chunks": ["llm-agents-guide/intro", "context-engineering/agents", "langgraph-multiagent/intro"],
+      "expected_chunks": [
+        "llm-agents-guide/intro",
+        "context-engineering/agents",
+        "langgraph-multiagent/intro"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad agent architecture query - should find multiple agent-related sections"
@@ -1546,10 +2326,17 @@
     {
       "id": "q-broad-rag-systems",
       "query": "Building production RAG systems with evaluation",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "hard",
-      "expected_chunks": ["rag-survey/intro", "rag-triad/intro", "vector-embeddings/intro"],
+      "expected_chunks": [
+        "rag-survey/intro",
+        "rag-triad/intro",
+        "vector-embeddings/intro"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad RAG query - retrieval, evaluation, embeddings"
@@ -1557,10 +2344,17 @@
     {
       "id": "q-broad-vector-search",
       "query": "Vector similarity search and indexing techniques",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "medium",
-      "expected_chunks": ["vector-embeddings/similarity", "pgvector-guide/intro", "hnsw-algorithm/intro"],
+      "expected_chunks": [
+        "vector-embeddings/similarity",
+        "pgvector-guide/intro",
+        "hnsw-algorithm/intro"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad vector search - embeddings, pgvector, HNSW"
@@ -1568,10 +2362,17 @@
     {
       "id": "q-broad-api-design",
       "query": "API design patterns REST GraphQL gRPC",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "medium",
-      "expected_chunks": ["rest-api-principles/intro", "graphql-basics/intro", "grpc-guide/intro"],
+      "expected_chunks": [
+        "rest-api-principles/intro",
+        "graphql-basics/intro",
+        "grpc-guide/intro"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad API design - multiple paradigms"
@@ -1579,10 +2380,17 @@
     {
       "id": "q-broad-mlops",
       "query": "MLOps monitoring feature stores drift detection",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "hard",
-      "expected_chunks": ["mlops-guide/monitoring", "feature-stores-mlops/feature-store-architecture-and-benefits", "ml-model-monitoring-drift/understanding-data-drift-and-concept-dri"],
+      "expected_chunks": [
+        "mlops-guide/monitoring",
+        "feature-stores-mlops/feature-store-architecture-and-benefits",
+        "ml-model-monitoring-drift/understanding-data-drift-and-concept-dri"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad MLOps infrastructure query"
@@ -1590,10 +2398,17 @@
     {
       "id": "q-broad-microservices",
       "query": "Microservices patterns service mesh distributed systems",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "broad",
       "difficulty": "medium",
-      "expected_chunks": ["microservices-patterns/intro", "service-mesh/intro", "netflix-microservices/evolution"],
+      "expected_chunks": [
+        "microservices-patterns/intro",
+        "service-mesh/intro",
+        "netflix-microservices/evolution"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Broad microservices query"
@@ -1601,10 +2416,16 @@
     {
       "id": "q-cross-rag-chunking-reranking",
       "query": "How do chunking strategies affect reranking performance in RAG",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["chunking-strategies/semantic", "reranking-models/cross-encoders", "rag-architecture-patterns/advanced-rag"],
+      "expected_chunks": [
+        "chunking-strategies/semantic",
+        "reranking-models/cross-encoders",
+        "rag-architecture-patterns/advanced-rag"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: chunking + reranking + RAG"
@@ -1612,10 +2433,16 @@
     {
       "id": "q-cross-agent-memory-rag",
       "query": "Integrating RAG with agent memory for long-term context",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["agent-memory/retrieval", "rag-survey/modular", "agent-architectures/multi-agent"],
+      "expected_chunks": [
+        "agent-memory/retrieval",
+        "rag-survey/modular",
+        "agent-architectures/multi-agent"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: agent memory + RAG integration"
@@ -1623,10 +2450,16 @@
     {
       "id": "q-cross-embedding-pgvector-hnsw",
       "query": "Choosing embedding models and indexes for pgvector HNSW",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["embedding-models/benchmarks", "pgvector-postgres/indexing", "hnsw-algorithm/performance"],
+      "expected_chunks": [
+        "embedding-models/benchmarks",
+        "pgvector-postgres/indexing",
+        "hnsw-algorithm/performance"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: embeddings + pgvector + HNSW"
@@ -1634,10 +2467,16 @@
     {
       "id": "q-cross-llm-observability",
       "query": "Monitoring LLM agents with LangSmith and Prometheus",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["langsmith-observability-guide/production-monitoring-and-alerting", "prometheus-grafana-monitoring/prometheus-architecture-and-data-model", "llm-agents-guide/production"],
+      "expected_chunks": [
+        "langsmith-observability-guide/production-monitoring-and-alerting",
+        "prometheus-grafana-monitoring/prometheus-architecture-and-data-model",
+        "llm-agents-guide/production"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: LLM monitoring + observability"
@@ -1645,10 +2484,16 @@
     {
       "id": "q-cross-microservices-api-gateway",
       "query": "API gateway patterns in microservices architectures",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "medium",
-      "expected_chunks": ["microservices-patterns/communication", "netflix-microservices/api-gateway", "zalando-microservices/api-gateway"],
+      "expected_chunks": [
+        "microservices-patterns/communication",
+        "netflix-microservices/api-gateway",
+        "zalando-microservices/api-gateway"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: microservices + API gateway patterns"
@@ -1656,10 +2501,16 @@
     {
       "id": "q-cross-streaming-real-time",
       "query": "Real-time event streaming architectures Kafka design patterns",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["linkedin-real-time-analytics/kafka", "spotify-backend/event-delivery", "zalando-microservices/event-streaming"],
+      "expected_chunks": [
+        "linkedin-real-time-analytics/kafka",
+        "spotify-backend/event-delivery",
+        "zalando-microservices/event-streaming"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: Kafka + event streaming across companies"
@@ -1667,10 +2518,16 @@
     {
       "id": "q-cross-geospatial-matching",
       "query": "Geospatial indexing for ride-sharing matching algorithms",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["uber-dispatch/geospatial-index", "grab-geospatial/s2-cells", "doordash-logistics/geospatial"],
+      "expected_chunks": [
+        "uber-dispatch/geospatial-index",
+        "grab-geospatial/s2-cells",
+        "doordash-logistics/geospatial"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: geospatial systems across ride-sharing"
@@ -1678,10 +2535,16 @@
     {
       "id": "q-cross-fine-tuning-alignment",
       "query": "Comparing RLHF, LoRA, and DPO for LLM alignment",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["rlhf-training/overview", "lora-qlora/lora-overview", "dpo-alignment/comparison"],
+      "expected_chunks": [
+        "rlhf-training/overview",
+        "lora-qlora/lora-overview",
+        "dpo-alignment/comparison"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: LLM fine-tuning and alignment methods"
@@ -1689,10 +2552,16 @@
     {
       "id": "q-cross-security-api",
       "query": "Implementing OAuth2 with zero-trust API security",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "hard",
-      "expected_chunks": ["oauth2-oidc-fundamentals/security-best-practices", "zero-trust-architecture/identity-and-access-management", "api-security-best-practices/authentication-and-authorization"],
+      "expected_chunks": [
+        "oauth2-oidc-fundamentals/security-best-practices",
+        "zero-trust-architecture/identity-and-access-management",
+        "api-security-best-practices/authentication-and-authorization"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: OAuth2 + zero-trust + API security"
@@ -1700,10 +2569,16 @@
     {
       "id": "q-cross-database-choice",
       "query": "When to use PostgreSQL vs MongoDB vs Neo4j",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "cross-document",
       "difficulty": "medium",
-      "expected_chunks": ["postgresql-indexing-strategies/b-tree-indexes-the-default-workhorse", "mongodb-document-design/document-model-and-embedding-vs-referenc", "neo4j-graph-databases/graph-data-model-fundamentals"],
+      "expected_chunks": [
+        "postgresql-indexing-strategies/b-tree-indexes-the-default-workhorse",
+        "mongodb-document-design/document-model-and-embedding-vs-referenc",
+        "neo4j-graph-databases/graph-data-model-fundamentals"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Cross-document: database paradigm comparison"
@@ -1711,7 +2586,11 @@
     {
       "id": "q-neg-blockchain",
       "query": "blockchain smart contracts ethereum consensus",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "negative",
       "difficulty": "adversarial",
       "expected_chunks": [],
@@ -1722,7 +2601,11 @@
     {
       "id": "q-neg-mobile-dev",
       "query": "iOS Swift SwiftUI mobile app development",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "negative",
       "difficulty": "adversarial",
       "expected_chunks": [],
@@ -1733,7 +2616,11 @@
     {
       "id": "q-neg-game-engine",
       "query": "Unity game engine 3D rendering physics",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "negative",
       "difficulty": "adversarial",
       "expected_chunks": [],
@@ -1744,7 +2631,11 @@
     {
       "id": "q-neg-cooking",
       "query": "Italian pasta carbonara recipe ingredients",
-      "modes": ["semantic", "keyword", "hybrid"],
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
       "category": "negative",
       "difficulty": "adversarial",
       "expected_chunks": [],
@@ -1755,7 +2646,10 @@
     {
       "id": "q-neg-fashion",
       "query": "sustainable fashion trends textile manufacturing",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "negative",
       "difficulty": "adversarial",
       "expected_chunks": [],
@@ -1766,10 +2660,15 @@
     {
       "id": "q-edge-acronym",
       "query": "RAG",
-      "modes": ["keyword", "hybrid"],
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
       "category": "edge",
       "difficulty": "adversarial",
-      "expected_chunks": ["rag-survey/intro"],
+      "expected_chunks": [
+        "rag-survey/intro"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Very short query (acronym) - should still find RAG content"
@@ -1777,10 +2676,16 @@
     {
       "id": "q-edge-special-chars",
       "query": "gRPC (HTTP/2) + Protocol-Buffers & streaming",
-      "modes": ["keyword", "hybrid"],
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
       "category": "edge",
       "difficulty": "adversarial",
-      "expected_chunks": ["grpc-guide/intro", "grpc-guide/streaming"],
+      "expected_chunks": [
+        "grpc-guide/intro",
+        "grpc-guide/streaming"
+      ],
       "min_score": 0.4,
       "max_score": null,
       "description": "Special characters in query - should handle gracefully"
@@ -1788,10 +2693,16 @@
     {
       "id": "q-edge-very-long",
       "query": "I'm building a production system that needs to implement retrieval-augmented generation with semantic search capabilities using vector embeddings and I want to know what are the best practices for chunking strategies hierarchical indexing approaches and how to integrate cross-encoder reranking with hybrid search that combines BM25 keyword matching and dense vector similarity while also ensuring proper monitoring and evaluation",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "edge",
       "difficulty": "adversarial",
-      "expected_chunks": ["rag-survey/advanced", "chunking-strategies/hierarchical", "reranking-models/cross-encoders"],
+      "expected_chunks": [
+        "rag-survey/advanced",
+        "chunking-strategies/hierarchical",
+        "reranking-models/cross-encoders"
+      ],
       "min_score": 0.3,
       "max_score": null,
       "description": "Very long query - tests robustness"
@@ -1799,10 +2710,14 @@
     {
       "id": "q-edge-misspelled",
       "query": "machien lerning operashuns drift detekshun",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "edge",
       "difficulty": "adversarial",
-      "expected_chunks": ["mlops-guide/monitoring"],
+      "expected_chunks": [
+        "mlops-guide/monitoring"
+      ],
       "min_score": 0.3,
       "max_score": null,
       "description": "Misspelled query - semantic search should still work"
@@ -1810,10 +2725,15 @@
     {
       "id": "q-sem-paraphrase-retrieval",
       "query": "getting relevant documents from large knowledge bases",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-survey/intro", "vector-embeddings/similarity"],
+      "expected_chunks": [
+        "rag-survey/intro",
+        "vector-embeddings/similarity"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Paraphrase test - should match RAG and embeddings semantically"
@@ -1821,10 +2741,14 @@
     {
       "id": "q-sem-synonym-monitoring",
       "query": "observing and tracking machine learning system performance",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["mlops-guide/monitoring"],
+      "expected_chunks": [
+        "mlops-guide/monitoring"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Synonym test - 'observing/tracking' should match monitoring"
@@ -1832,10 +2756,15 @@
     {
       "id": "q-sem-concept-matching",
       "query": "preventing AI models from making up false information",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "specific",
       "difficulty": "medium",
-      "expected_chunks": ["rag-triad/groundedness", "rag-survey/intro"],
+      "expected_chunks": [
+        "rag-triad/groundedness",
+        "rag-survey/intro"
+      ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Concept matching - 'making up false information' = hallucination"
@@ -1843,11 +2772,20 @@
     {
       "id": "q-c2f-rag-coarse",
       "query": "RAG architecture paradigms and techniques",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "medium",
-      "expected_chunks": ["rag-survey/intro"],
-      "expected_fine_chunks": ["rag-survey/naive", "rag-survey/advanced", "rag-survey/modular"],
+      "expected_chunks": [
+        "rag-survey/intro"
+      ],
+      "expected_fine_chunks": [
+        "rag-survey/naive",
+        "rag-survey/advanced",
+        "rag-survey/modular"
+      ],
       "granularity": "coarse",
       "min_score": 0.6,
       "max_score": null,
@@ -1856,10 +2794,14 @@
     {
       "id": "q-c2f-rag-fine",
       "query": "query rewriting re-ranking post-retrieval optimization",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "hard",
-      "expected_chunks": ["rag-survey/advanced"],
+      "expected_chunks": [
+        "rag-survey/advanced"
+      ],
       "expected_coarse_parent": "rag-survey/intro",
       "granularity": "fine",
       "min_score": 0.5,
@@ -1869,11 +2811,18 @@
     {
       "id": "q-c2f-agents-coarse",
       "query": "LLM agent architectures and patterns",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "medium",
-      "expected_chunks": ["llm-agents-guide/intro"],
-      "expected_fine_chunks": ["llm-agents-guide/architectures"],
+      "expected_chunks": [
+        "llm-agents-guide/intro"
+      ],
+      "expected_fine_chunks": [
+        "llm-agents-guide/architectures"
+      ],
       "granularity": "coarse",
       "min_score": 0.6,
       "max_score": null,
@@ -1882,10 +2831,14 @@
     {
       "id": "q-c2f-agents-fine",
       "query": "Plan-and-Execute agent architecture details",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "hard",
-      "expected_chunks": ["llm-agents-guide/architectures"],
+      "expected_chunks": [
+        "llm-agents-guide/architectures"
+      ],
       "expected_coarse_parent": "llm-agents-guide/intro",
       "granularity": "fine",
       "min_score": 0.5,
@@ -1895,11 +2848,19 @@
     {
       "id": "q-c2f-microservices-coarse",
       "query": "Microservices architecture patterns",
-      "modes": ["semantic", "hybrid"],
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "medium",
-      "expected_chunks": ["microservices-patterns/intro"],
-      "expected_fine_chunks": ["microservices-patterns/decomposition", "microservices-patterns/data"],
+      "expected_chunks": [
+        "microservices-patterns/intro"
+      ],
+      "expected_fine_chunks": [
+        "microservices-patterns/decomposition",
+        "microservices-patterns/data"
+      ],
       "granularity": "coarse",
       "min_score": 0.6,
       "max_score": null,
@@ -1908,15 +2869,510 @@
     {
       "id": "q-c2f-microservices-fine",
       "query": "CQRS event sourcing saga pattern implementation",
-      "modes": ["semantic"],
+      "modes": [
+        "semantic"
+      ],
       "category": "coarse-to-fine",
       "difficulty": "hard",
-      "expected_chunks": ["microservices-patterns/data"],
+      "expected_chunks": [
+        "microservices-patterns/data"
+      ],
       "expected_coarse_parent": "microservices-patterns/intro",
       "granularity": "fine",
       "min_score": 0.5,
       "max_score": null,
       "description": "Fine: Should find specific data patterns"
+    },
+    {
+      "id": "q-abtesting-fundamentals",
+      "query": "A/B testing split testing machine learning models",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-abtesting-1-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Direct A/B testing fundamentals - keyword match"
+    },
+    {
+      "id": "q-abtesting-statistical-significance",
+      "query": "statistical significance p-value hypothesis testing",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-abtesting-2-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Statistical significance basics - direct match"
+    },
+    {
+      "id": "q-abtesting-bandit-algorithms",
+      "query": "multi-armed bandit epsilon-greedy Thompson Sampling",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-abtesting-3-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Multi-armed bandit algorithms - direct terminology"
+    },
+    {
+      "id": "q-abtesting-experiment-design",
+      "query": "How to design effective ML model experiments",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-abtesting-1-sec-2"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "ML experiment design principles"
+    },
+    {
+      "id": "q-abtesting-sample-size",
+      "query": "calculating sample size for A/B tests",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-abtesting-2-sec-3"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Sample size calculation methods"
+    },
+    {
+      "id": "q-abtesting-traffic-splitting",
+      "query": "traffic allocation randomization techniques A/B testing",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-abtesting-1-sec-3"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Traffic splitting and randomization"
+    },
+    {
+      "id": "q-abtesting-metrics-evaluation",
+      "query": "selecting metrics and evaluation criteria for ML experiments",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-abtesting-1-sec-4",
+        "doc-abtesting-2-sec-5"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Metrics selection and practical significance"
+    },
+    {
+      "id": "q-abtesting-multiple-testing",
+      "query": "Bonferroni correction false discovery rate multiple hypothesis testing",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-abtesting-2-sec-4"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Multiple testing correction methods"
+    },
+    {
+      "id": "q-abtesting-variance-reduction",
+      "query": "advanced techniques to reduce experiment variance and sample size",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "hard",
+      "expected_chunks": [
+        "doc-abtesting-1-sec-7",
+        "doc-abtesting-2-sec-3"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "CUPED and variance reduction techniques"
+    },
+    {
+      "id": "q-abtesting-sequential-early-stopping",
+      "query": "When can I peek at experiment results without inflating false positive rates",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "adversarial",
+      "expected_chunks": [
+        "doc-abtesting-2-sec-6"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Sequential testing and early stopping edge case"
+    },
+    {
+      "id": "q-agenticrag-introduction",
+      "query": "agentic RAG autonomous decision-making retrieval generation",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-agenticrag-1-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Agentic RAG fundamentals - direct match"
+    },
+    {
+      "id": "q-agenticrag-knowledge-graphs",
+      "query": "knowledge graphs graph-enhanced retrieval entity relationships",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-agenticrag-2-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Knowledge graph fundamentals - keyword match"
+    },
+    {
+      "id": "q-agenticrag-self-reflection",
+      "query": "self-assessment reflection metacognitive RAG agents",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-agenticrag-3-sec-1"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Self-reflective agents - direct terminology"
+    },
+    {
+      "id": "q-agenticrag-planning-reasoning",
+      "query": "planning and reasoning components in agentic RAG",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-agenticrag-1-sec-2"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Planning and reasoning layer"
+    },
+    {
+      "id": "q-agenticrag-memory-state",
+      "query": "memory architecture state management agentic systems",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-agenticrag-1-sec-5"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Memory and state management"
+    },
+    {
+      "id": "q-agenticrag-graph-construction",
+      "query": "dynamic knowledge graph construction entity extraction",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-agenticrag-2-sec-3"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Graph construction and maintenance"
+    },
+    {
+      "id": "q-agenticrag-tool-integration",
+      "query": "integrating external tools and APIs with agentic RAG",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-agenticrag-1-sec-6"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Tool integration and function calling"
+    },
+    {
+      "id": "q-agenticrag-hybrid-search",
+      "query": "combining vector search with graph traversal strategies",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-agenticrag-2-sec-2"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Hybrid vector-graph search"
+    },
+    {
+      "id": "q-agenticrag-reflection-refinement",
+      "query": "How do self-reflective agents improve retrieval through refinement",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "hard",
+      "expected_chunks": [
+        "doc-agenticrag-3-sec-2",
+        "doc-agenticrag-1-sec-4"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Reflection-driven refinement mechanisms"
+    },
+    {
+      "id": "q-agenticrag-graph-explanation",
+      "query": "generating explanations with reasoning chains from knowledge graphs",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "adversarial",
+      "expected_chunks": [
+        "doc-agenticrag-2-sec-7"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Graph-driven answer synthesis edge case"
+    },
+    {
+      "id": "q-context-fundamentals",
+      "query": "context engineering context window management AI agents",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-context-001-sec-001"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Context engineering fundamentals - direct match"
+    },
+    {
+      "id": "q-context-window-constraints",
+      "query": "context window limitations token limits LLM constraints",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-context-002-sec-001"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Context window constraints - keyword match"
+    },
+    {
+      "id": "q-context-memory-architecture",
+      "query": "memory systems working memory long-term memory LLM applications",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "doc-context-003-sec-001"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Memory architecture fundamentals - direct terminology"
+    },
+    {
+      "id": "q-context-principles",
+      "query": "core principles of context management for AI systems",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-context-001-sec-002"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Context management principles"
+    },
+    {
+      "id": "q-context-injection-strategies",
+      "query": "context injection techniques static dynamic predictive",
+      "modes": [
+        "semantic",
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-context-001-sec-004"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Context injection strategies"
+    },
+    {
+      "id": "q-context-token-optimization",
+      "query": "token-level optimization techniques compression formats",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "doc-context-002-sec-002"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Token optimization methods"
+    },
+    {
+      "id": "q-context-hierarchical-loading",
+      "query": "hierarchical context loading progressive disclosure strategies",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-context-002-sec-003"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Hierarchical context loading techniques"
+    },
+    {
+      "id": "q-context-semantic-chunking",
+      "query": "semantic chunking versus fixed-size chunking strategies",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "doc-context-002-sec-004"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Semantic chunking and clustering"
+    },
+    {
+      "id": "q-context-adaptive-management",
+      "query": "How to dynamically adjust context based on task complexity",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "hard",
+      "expected_chunks": [
+        "doc-context-002-sec-007",
+        "doc-context-001-sec-003"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Adaptive context window management"
+    },
+    {
+      "id": "q-context-multi-agent-coordination",
+      "query": "coordinating context across multiple agents with shared memory",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "adversarial",
+      "expected_chunks": [
+        "doc-context-001-sec-006"
+      ],
+      "min_score": 0.5,
+      "max_score": null,
+      "description": "Multi-agent context coordination edge case"
     }
   ]
 }
