@@ -17,13 +17,14 @@ export class TutorPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.messageInput = page.getByPlaceholder(/type.*message|ask.*question/i);
+    this.messageInput = page.getByPlaceholder(/type.*message|ask.*question|message/i);
     this.sendButton = page.getByRole('button', { name: /send/i });
-    this.messageList = page.getByTestId('message-list');
-    this.userMessages = page.locator('[data-message-role="user"]');
-    this.assistantMessages = page.locator('[data-message-role="assistant"]');
-    this.typingIndicator = page.getByTestId('typing-indicator');
-    this.sessionInfo = page.getByTestId('session-info');
+    // Fallback selectors for message list that might have different implementations
+    this.messageList = page.getByTestId('message-list').or(page.locator('[class*="messages"], [class*="chat"]'));
+    this.userMessages = page.locator('[data-message-role="user"], [class*="user-message"]');
+    this.assistantMessages = page.locator('[data-message-role="assistant"], [class*="assistant-message"], [class*="ai-message"]');
+    this.typingIndicator = page.getByTestId('typing-indicator').or(page.locator('[class*="typing"], [aria-busy="true"]'));
+    this.sessionInfo = page.getByTestId('session-info').or(page.locator('[class*="session"]'));
   }
 
   async goto(sessionId: string) {

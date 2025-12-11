@@ -1,0 +1,59 @@
+# Docker Compose for E2E Testing
+# Usage: docker compose -f docker-compose.e2e.yml up --build
+#
+# This configuration runs the frontend with mocked APIs for E2E testing.
+# Tests use Playwright's route mocking, so no backend is required.
+
+services:
+  # Frontend development server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: skillforge-frontend-e2e
+    environment:
+      NODE_ENV: test
+      VITE_API_BASE_URL: http://localhost:8500
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Playwright E2E test runner
+  e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: e2e
+    container_name: skillforge-e2e-runner
+    environment:
+      CI: "true"
+      PLAYWRIGHT_BASE_URL: http://frontend:5173
+    depends_on:
+      frontend:
+        condition: service_healthy
+    volumes:
+      - ./frontend/test-results:/app/test-results
+      - ./frontend/playwright-report:/app/playwright-report
+    # Override playwright config to point to frontend container
+    command: >
+      sh -c "
+        echo 'Waiting for frontend...' &&
+        sleep 5 &&
+        npx playwright test --project=chromium --reporter=list,html
+      "
+
+networks:
+  default:
+    name: skillforge-e2e-network
+
+volumes:
+  node_modules:

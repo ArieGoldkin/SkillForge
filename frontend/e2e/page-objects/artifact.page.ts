@@ -17,11 +17,13 @@ export class ArtifactPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.markdownContent = page.getByTestId('markdown-content');
+    // Use specific markdown class that we found - use .first() to handle multiple matches
+    this.markdownContent = page.locator('.markdown-preview');
     this.downloadButton = page.getByRole('button', { name: /download/i });
     this.copyButton = page.getByRole('button', { name: /copy/i });
-    this.title = page.getByRole('heading', { level: 1 });
-    this.metadata = page.getByTestId('artifact-metadata');
+    // Use specific heading name to avoid multiple h1 matches
+    this.title = page.getByRole('heading', { name: /implementation guide/i });
+    this.metadata = page.locator('[data-testid="artifact-metadata"], .artifact-metadata, [class*="metadata"]');
     this.codeBlocks = page.locator('pre code');
     this.startTutorButton = page.getByRole('button', { name: /start.*tutor|ask.*question/i });
   }

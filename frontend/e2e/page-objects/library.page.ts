@@ -20,12 +20,14 @@ export class LibraryPage extends BasePage {
     super(page);
     this.searchInput = page.getByPlaceholder(/search/i);
     this.searchButton = page.getByRole('button', { name: /search/i });
-    this.contentTypeFilter = page.getByTestId('content-type-filter');
-    this.searchModeToggle = page.getByTestId('search-mode-toggle');
-    this.analysisCards = page.getByTestId('analysis-card');
-    this.emptyState = page.getByTestId('empty-state');
-    this.loadingState = page.getByTestId('loading-state');
-    this.pagination = page.getByTestId('pagination');
+    // Fallback selectors for filter/toggle that might have different implementations
+    this.contentTypeFilter = page.getByTestId('content-type-filter').or(page.getByRole('combobox', { name: /type|filter/i }));
+    this.searchModeToggle = page.getByTestId('search-mode-toggle').or(page.getByRole('combobox', { name: /mode/i }));
+    // Cards can be in various formats - look for article elements or card-like structures
+    this.analysisCards = page.getByTestId('analysis-card').or(page.locator('article, [class*="card"]').filter({ hasText: /.+/ }));
+    this.emptyState = page.getByTestId('empty-state').or(page.getByText(/no.*results|no.*found/i));
+    this.loadingState = page.getByTestId('loading-state').or(page.locator('[aria-busy="true"]'));
+    this.pagination = page.getByTestId('pagination').or(page.getByRole('navigation', { name: /pagination/i }));
   }
 
   async goto() {

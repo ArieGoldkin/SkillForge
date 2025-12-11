@@ -31,7 +31,10 @@ export class AnalyzePage extends BasePage {
   }
 
   async waitForComplete(timeout = 60000) {
-    await expect(this.page.getByText(/complete|done|finished/i)).toBeVisible({ timeout });
+    // Use a specific heading that indicates completion rather than broad pattern
+    await expect(
+      this.page.getByRole('heading', { name: /analysis complete/i })
+    ).toBeVisible({ timeout });
   }
 
   async getProgress(): Promise<number> {
