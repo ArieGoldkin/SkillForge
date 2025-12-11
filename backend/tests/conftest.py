@@ -18,9 +18,10 @@ if "DATABASE_URL" not in os.environ:
         # Only set fallback if .env.test doesn't exist (for CI)
         # Use port 5437 to match Docker setup
         os.environ["DATABASE_URL"] = "postgresql://dev:devpass@localhost:5437/skillforge_test"
-# NOTE: Do NOT set OPENAI_API_KEY placeholder at module level!
-# This allows integration tests to load real keys from .env BEFORE settings are cached.
-# The ensure_test_env_vars fixture will set placeholder for unit tests only.
+# Set OPENAI_API_KEY placeholder at module level for unit tests that need it during fixture setup.
+# Integration tests will override this by loading real keys from .env with override=True.
+if "OPENAI_API_KEY" not in os.environ:
+    os.environ["OPENAI_API_KEY"] = "sk-test-placeholder-for-unit-tests"
 
 # CRITICAL: Disable LangSmith tracing for UNIT tests only
 # Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
