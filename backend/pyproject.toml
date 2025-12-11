@@ -49,6 +49,7 @@ isort = "^7.0.0"
 # langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
 # Install with: poetry run pip install "langgraph-cli[inmem]"
 # Note: This will downgrade sse-starlette temporarily - use separate venv for Studio debugging
+jsonschema = "^4.25.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -226,7 +227,7 @@ filterwarnings = [
 [tool.coverage.run]
 # Measure code coverage but omit experimental and placeholder modules
 omit = [
-    "app/evaluation/*",          # Experimental benchmarking framework
+    # Note: app/evaluation/* removed - now has proper tests (issue #252)
     "app/workflows/studio_compat.py",  # LangGraph Studio compatibility placeholder
     "app/workflows/tutor/tasks/*",     # Tutor task placeholders
     "app/workflows/tutor/context.py",  # Tutor context placeholder

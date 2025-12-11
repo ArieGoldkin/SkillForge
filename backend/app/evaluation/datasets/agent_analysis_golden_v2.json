@@ -1,0 +1,329 @@
+{
+  "version": "2.0.0",
+  "metadata": {
+    "dataset_name": "agent_analysis_golden_v2",
+    "task_type": "agent",
+    "agent_types": ["tech_comparator", "security_auditor"],
+    "domains": ["web-dev", "backend", "security"],
+    "created_at": "2025-12-10T00:00:00Z",
+    "updated_at": "2025-12-10T00:00:00Z",
+    "release_tag": "v2.0.0",
+    "description": "Golden dataset for agent analysis evaluation with provenance tracking and validation",
+    "maintainers": ["yonatangross"]
+  },
+  "examples": [
+    {
+      "id": "agent-tech-001-v2",
+      "inputs": {
+        "content": "# React 19 vs Vue 3.5: Complete Comparison 2025\n\nReact 19 introduces the new React Compiler that automatically memoizes components, eliminating the need for useMemo and useCallback in most cases. Server Components are now stable, allowing for true server-first architecture.\n\nVue 3.5 brings Vapor Mode, a compilation strategy that eliminates the Virtual DOM entirely for static content. The Composition API has matured with better TypeScript inference.\n\n## Performance Benchmarks\n- React 19 with compiler: 40% faster re-renders\n- Vue 3.5 Vapor Mode: 50% faster initial load\n\n## Developer Experience\n- React: JSX, large ecosystem, Meta backing\n- Vue: Templates + Composition API, progressive adoption",
+        "content_type": "article",
+        "agent_type": "tech_comparator"
+      },
+      "expected_outputs": {
+        "primary": {
+          "primary_tech": "React 19",
+          "alternatives": ["Vue 3.5", "Svelte 5", "Solid.js"],
+          "comparison": {
+            "React 19": {
+              "pros": [
+                "React Compiler eliminates manual memoization",
+                "Stable Server Components",
+                "Largest ecosystem and job market"
+              ],
+              "cons": ["Steeper learning curve", "JSX syntax verbosity"],
+              "use_cases": ["Large enterprise applications", "Teams with React expertise"]
+            }
+          },
+          "recommendation": "Choose React 19 for large-scale applications",
+          "confidence_score": 0.85
+        },
+        "acceptable_alternatives": [
+          {
+            "primary_tech": "React",
+            "alternatives": ["Vue"],
+            "note": "Acceptable if less specific (missing version numbers)"
+          }
+        ],
+        "forbidden_outputs": [
+          {
+            "primary_tech": "Angular",
+            "note": "Angular not mentioned in content - indicates hallucination"
+          }
+        ]
+      },
+      "evaluation_criteria": {
+        "scoring_rubric": {
+          "correctness": {
+            "weight": 0.5,
+            "thresholds": {
+              "perfect": 1.0,
+              "acceptable": 0.7,
+              "failing": 0.5
+            },
+            "description": "Correct identification of React 19 as primary tech and Vue 3.5 as alternative"
+          },
+          "completeness": {
+            "weight": 0.3,
+            "required_fields": [
+              "primary_tech",
+              "alternatives",
+              "comparison",
+              "recommendation",
+              "confidence_score"
+            ],
+            "optional_fields": ["trade_offs", "migration_path"]
+          },
+          "quality": {
+            "weight": 0.2,
+            "min_length": 100,
+            "max_length": 2000,
+            "keywords": [
+              "React Compiler",
+              "Server Components",
+              "Vapor Mode",
+              "Virtual DOM",
+              "ecosystem"
+            ]
+          }
+        },
+        "custom_evaluators": [
+          {
+            "name": "tech_name_accuracy",
+            "type": "regex",
+            "config": {
+              "pattern": "React 19|Vue 3\\.5",
+              "description": "Must mention specific versions"
+            }
+          }
+        ]
+      },
+      "provenance": {
+        "source": "synthetic",
+        "created_at": "2025-12-10T00:00:00Z",
+        "created_by": "yonatangross",
+        "notes": "Hand-crafted example based on React 19 and Vue 3.5 feature analysis"
+      },
+      "validation": {
+        "status": "pending_review",
+        "validated_by": [
+          {
+            "reviewer": "yonatangross",
+            "validated_at": "2025-12-10T00:00:00Z",
+            "approved": true,
+            "comments": "Comprehensive comparison with accurate 2025 feature set"
+          }
+        ],
+        "quality_score": 0.95
+      },
+      "metadata": {
+        "difficulty": "medium",
+        "edge_case": false,
+        "adversarial": false,
+        "tags": ["frontend", "frameworks", "comparison"],
+        "notes": "Standard tech comparison example for baseline evaluation"
+      }
+    },
+    {
+      "id": "agent-sec-001-langsmith",
+      "inputs": {
+        "content": "# Building JWT Authentication in FastAPI\n\nHere's our auth implementation:\n\n```python\nfrom jose import jwt\nimport os\n\nSECRET_KEY = os.getenv('JWT_SECRET', 'development-secret')\nALGORITHM = 'HS256'\n\ndef create_token(user_id: str) -> str:\n    payload = {'sub': user_id}\n    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)\n\ndef verify_token(token: str) -> dict:\n    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])\n```\n\nStore tokens in localStorage for persistence. Tokens never expire to simplify UX.",
+        "content_type": "tutorial",
+        "agent_type": "security_auditor"
+      },
+      "expected_outputs": {
+        "primary": {
+          "security_risks": [
+            {
+              "risk_type": "authentication",
+              "severity": "critical",
+              "description": "Tokens without expiration create permanent session vulnerabilities",
+              "mitigation": "Implement token expiration with 'exp' claim"
+            },
+            {
+              "risk_type": "data_exposure",
+              "severity": "high",
+              "description": "Hardcoded fallback secret may leak to production",
+              "mitigation": "Remove default secret value, fail fast if JWT_SECRET unset"
+            },
+            {
+              "risk_type": "xss",
+              "severity": "high",
+              "description": "localStorage vulnerable to XSS attacks",
+              "mitigation": "Store tokens in httpOnly cookies"
+            }
+          ],
+          "confidence_score": 0.88
+        },
+        "acceptable_alternatives": [
+          {
+            "note": "Acceptable if identifies at least 2 of 3 critical risks"
+          }
+        ],
+        "forbidden_outputs": [
+          {
+            "security_risks": [],
+            "note": "Empty risks array indicates complete failure"
+          }
+        ]
+      },
+      "evaluation_criteria": {
+        "scoring_rubric": {
+          "correctness": {
+            "weight": 0.6,
+            "thresholds": {
+              "perfect": 0.95,
+              "acceptable": 0.75,
+              "failing": 0.6
+            },
+            "description": "Must identify all 3 critical security issues"
+          },
+          "completeness": {
+            "weight": 0.3,
+            "required_fields": ["security_risks", "confidence_score"],
+            "optional_fields": ["best_practices", "compliance_notes"]
+          },
+          "quality": {
+            "weight": 0.1,
+            "min_length": 200,
+            "max_length": 3000,
+            "keywords": [
+              "expiration",
+              "hardcoded secret",
+              "localStorage",
+              "XSS",
+              "httpOnly"
+            ]
+          }
+        },
+        "custom_evaluators": [
+          {
+            "name": "severity_accuracy",
+            "type": "custom_function",
+            "config": {
+              "function": "validate_severity_levels",
+              "description": "Verifies critical/high severity assignments are accurate"
+            }
+          }
+        ]
+      },
+      "provenance": {
+        "source": "langsmith",
+        "created_at": "2025-12-09T15:30:00Z",
+        "created_by": "langsmith_extractor",
+        "source_url": "https://smith.langchain.com/o/abc123/projects/p/def456/r/run789",
+        "langsmith_trace_id": "run789-trace-2025-12-09",
+        "notes": "Extracted from production trace where security agent identified 4 vulnerabilities with high confidence"
+      },
+      "validation": {
+        "status": "pending_review",
+        "validated_by": [
+          {
+            "reviewer": "security_team",
+            "validated_at": "2025-12-09T18:00:00Z",
+            "approved": true,
+            "comments": "Excellent security audit example. All risks are accurate and well-documented."
+          }
+        ],
+        "quality_score": 0.92
+      },
+      "metadata": {
+        "difficulty": "medium",
+        "edge_case": false,
+        "adversarial": false,
+        "tags": ["security", "authentication", "jwt", "fastapi"],
+        "notes": "Real production example demonstrating security agent effectiveness",
+        "related_examples": ["agent-sec-002-oauth", "agent-sec-003-rate-limiting"]
+      }
+    },
+    {
+      "id": "agent-tech-adversarial-001",
+      "inputs": {
+        "content": "# Why I Switched from NumPy to Excel for Machine Learning\n\nAfter years of struggling with Python's NumPy library, I discovered that Excel is actually the best tool for machine learning. Here's why:\n\n1. **Ease of Use**: Excel has a familiar interface everyone knows\n2. **Built-in Visualizations**: Charts are just one click away\n3. **No Installation Required**: Ships with Microsoft Office\n\nI now train all my neural networks in Excel using VBA macros. The performance is comparable to TensorFlow for datasets under 10,000 rows. Plus, I can email my models as .xlsx files!\n\nFor production deployment, I simply share the Excel file via OneDrive.",
+        "content_type": "article",
+        "agent_type": "tech_comparator"
+      },
+      "expected_outputs": {
+        "primary": {
+          "primary_tech": "Excel",
+          "alternatives": ["NumPy", "TensorFlow", "pandas"],
+          "comparison": {
+            "Excel": {
+              "pros": ["Familiar interface", "Built-in visualizations"],
+              "cons": [
+                "Not designed for ML workloads",
+                "Severe scalability limitations",
+                "Lack of GPU support",
+                "Poor reproducibility"
+              ],
+              "use_cases": ["Data exploration only", "Small datasets", "Quick prototyping"]
+            },
+            "NumPy": {
+              "pros": ["Industry-standard for numerical computing", "GPU acceleration", "Scalable"],
+              "cons": ["Steeper learning curve"],
+              "use_cases": ["Production ML", "Large-scale data processing"]
+            }
+          },
+          "recommendation": "Excel is not recommended for machine learning beyond basic data exploration. Use NumPy/pandas for production ML workloads.",
+          "confidence_score": 0.95
+        },
+        "acceptable_alternatives": [],
+        "forbidden_outputs": [
+          {
+            "recommendation": "Excel is a good choice for machine learning",
+            "note": "Agent should recognize this is a bad recommendation despite content claims"
+          }
+        ]
+      },
+      "evaluation_criteria": {
+        "scoring_rubric": {
+          "correctness": {
+            "weight": 0.7,
+            "thresholds": {
+              "perfect": 1.0,
+              "acceptable": 0.8,
+              "failing": 0.6
+            },
+            "description": "Agent must identify Excel as inappropriate for ML despite persuasive content"
+          },
+          "completeness": {
+            "weight": 0.2,
+            "required_fields": ["primary_tech", "alternatives", "recommendation"],
+            "optional_fields": []
+          },
+          "quality": {
+            "weight": 0.1,
+            "min_length": 150,
+            "max_length": 2000,
+            "keywords": ["scalability", "production", "limitations", "not recommended"]
+          }
+        }
+      },
+      "provenance": {
+        "source": "synthetic",
+        "created_at": "2025-12-10T00:00:00Z",
+        "created_by": "yonatangross",
+        "notes": "Adversarial example testing agent's ability to reject inappropriate tech choices"
+      },
+      "validation": {
+        "status": "pending_review",
+        "validated_by": [
+          {
+            "reviewer": "yonatangross",
+            "validated_at": "2025-12-10T00:00:00Z",
+            "approved": true,
+            "comments": "Strong adversarial example. Tests agent's domain knowledge and critical thinking."
+          }
+        ],
+        "quality_score": 0.88
+      },
+      "metadata": {
+        "difficulty": "hard",
+        "edge_case": true,
+        "adversarial": true,
+        "tags": ["ml", "adversarial", "robustness-test"],
+        "notes": "Tests if agent blindly follows content or applies domain knowledge",
+        "related_examples": ["agent-tech-adversarial-002", "agent-tech-adversarial-003"]
+      }
+    }
+  ]
+}

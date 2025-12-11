@@ -1,0 +1,103 @@
+"""Ingestion utilities for evaluation datasets.
+
+This module provides tools for extracting evaluation examples from various sources:
+- LangSmith production traces
+- GitHub issues and discussions
+- Edge case generation
+- Adversarial example generation
+- Stack Overflow Q&A (planned)
+
+Also provides PII anonymization for safe data handling.
+"""
+
+from app.evaluation.ingestion.adversarial_generator import (
+    ALL_CATEGORIES as ADVERSARIAL_CATEGORIES,
+)
+from app.evaluation.ingestion.adversarial_generator import (
+    AdversarialConfig,
+    AdversarialGenerator,
+)
+from app.evaluation.ingestion.adversarial_templates import AdversarialTemplates
+from app.evaluation.ingestion.edge_case_generator import (
+    ALL_CATEGORIES as EDGE_CASE_CATEGORIES,
+)
+from app.evaluation.ingestion.edge_case_generator import (
+    EdgeCaseConfig,
+    EdgeCaseGenerator,
+)
+from app.evaluation.ingestion.edge_case_templates import EdgeCaseTemplates
+from app.evaluation.ingestion.github_importer import (
+    GitHubImportConfig,
+    GitHubImporter,
+    GitHubIssue,
+)
+from app.evaluation.ingestion.langsmith_extractor import (
+    LANGSMITH_AVAILABLE,
+    ExtractionConfig,
+)
+from app.evaluation.ingestion.pii_anonymizer import (
+    AnonymizedResult,
+    PIIAnonymizer,
+    PIIReplacement,
+    get_anonymizer,
+)
+
+# Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
+ALL_CATEGORIES = EDGE_CASE_CATEGORIES
+
+# LangSmithExtractor requires langsmith package
+if LANGSMITH_AVAILABLE:
+    from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
+
+    __all__ = [
+        # LangSmith
+        "ExtractionConfig",
+        "LangSmithExtractor",
+        "LANGSMITH_AVAILABLE",
+        # GitHub
+        "GitHubImporter",
+        "GitHubImportConfig",
+        "GitHubIssue",
+        # Edge Cases
+        "EdgeCaseGenerator",
+        "EdgeCaseConfig",
+        "EdgeCaseTemplates",
+        "ALL_CATEGORIES",
+        "EDGE_CASE_CATEGORIES",
+        # Adversarial Examples
+        "AdversarialGenerator",
+        "AdversarialConfig",
+        "AdversarialTemplates",
+        "ADVERSARIAL_CATEGORIES",
+        # PII Anonymization
+        "PIIAnonymizer",
+        "PIIReplacement",
+        "AnonymizedResult",
+        "get_anonymizer",
+    ]
+else:
+    __all__ = [
+        # LangSmith
+        "ExtractionConfig",
+        "LANGSMITH_AVAILABLE",
+        # GitHub
+        "GitHubImporter",
+        "GitHubImportConfig",
+        "GitHubIssue",
+        # Edge Cases
+        "EdgeCaseGenerator",
+        "EdgeCaseConfig",
+        "EdgeCaseTemplates",
+        "ALL_CATEGORIES",
+        "EDGE_CASE_CATEGORIES",
+        # Adversarial Examples
+        "AdversarialGenerator",
+        "AdversarialConfig",
+        "AdversarialTemplates",
+        "ADVERSARIAL_CATEGORIES",
+        # PII Anonymization
+        "PIIAnonymizer",
+        "PIIReplacement",
+        "AnonymizedResult",
+        "get_anonymizer",
+    ]

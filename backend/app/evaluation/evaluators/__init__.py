@@ -10,6 +10,8 @@ This module provides evaluators compatible with LangSmith's evaluate() method:
 from app.evaluation.evaluators.correctness import (
     agent_correctness_evaluator,
     supervisor_correctness_evaluator,
+    supervisor_coverage_evaluator,
+    supervisor_precision_evaluator,
     synthesis_correctness_evaluator,
 )
 from app.evaluation.evaluators.cost import cost_evaluator, cost_per_correct_evaluator
@@ -26,6 +28,8 @@ from app.evaluation.evaluators.quality import (
 __all__ = [
     # Correctness evaluators
     "supervisor_correctness_evaluator",
+    "supervisor_coverage_evaluator",
+    "supervisor_precision_evaluator",
     "agent_correctness_evaluator",
     "synthesis_correctness_evaluator",
     # Quality evaluators

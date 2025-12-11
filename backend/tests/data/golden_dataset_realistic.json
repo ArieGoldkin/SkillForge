@@ -1,0 +1,249 @@
+[
+  {
+    "id": "real-001",
+    "inputs": {
+      "content": "Our k8s cluster keeps crashing when we hit ~500 concurrent users. We're running on GKE with n1-standard-2 nodes (3 of them). Pods get OOMKilled but the memory graphs in Grafana don't show anything crazy? HPA is set to target 70% CPU but it never seems to trigger in time. Also we upgraded to k8s 1.28 last week, not sure if related. Here's a snippet from the logs:\n\n```\nkubernetes.io/limit-ranger: LimitRanger plugin set: cpu, memory request for container app; cpu, memory limit for container app\nWarning: Failed to pull image \"myapp:v2.3.1\": rpc error: code = Unknown desc = Error response from daemon: pull access denied\nError: ImagePullBackOff\n```\n\nBut the image DOES exist in our private GCR, we can docker pull it manually. Rate limiting maybe??\n\nAlso seeing this in describe:\n```\nConditions:\n  Type           Status  Reason\n  ----           ------  ------\n  PodScheduled   False   Unschedulable\n```\n\nHelp?",
+      "content_type": "github_issue",
+      "source_simulation": "github_issue"
+    },
+    "expected_outputs": {
+      "primary_agent": "DevOps Engineer",
+      "key_findings": [
+        "Multiple concurrent issues: OOMKilled pods, ImagePullBackOff, unschedulable pods",
+        "Resource constraints: n1-standard-2 nodes may be undersized for 500 concurrent users",
+        "HPA configuration may be suboptimal (CPU-only targeting)",
+        "Image pull authentication issue despite manual pull working (likely ServiceAccount/RBAC)",
+        "Recent k8s upgrade (1.28) could have introduced breaking changes"
+      ],
+      "edge_case_notes": "This is tricky because it presents multiple symptoms that could have different root causes. A DevOps agent needs to triage: is it capacity (OOM), configuration (HPA), or infrastructure (image pull)? Real-world issues often have cascading failures like this."
+    },
+    "metadata": {
+      "difficulty": "hard",
+      "domains": ["kubernetes", "devops", "infrastructure", "troubleshooting"],
+      "why_realistic": "Contains multiple interleaved problems (classic production debugging), incomplete information (no resource limits shown), casual language ('Help??'), and red herrings (Grafana not showing high memory could be a monitoring lag issue). The image pull error is buried in other symptoms."
+    }
+  },
+  {
+    "id": "real-002",
+    "inputs": {
+      "content": "# GitHub Actions vs GitLab CI for our monorepo\n\nWe're migrating from Jenkins (finally lol) and debating between GHA and GitLab CI. Here's our setup:\n\n- Monorepo with ~12 microservices (Go, Python, Node)\n- Need to run tests only for changed services\n- Deploy to AWS ECS (production) and dev clusters\n- Some builds take 15-20min (looking at you, frontend webpack)\n\nCurrent pain points:\n- Jenkins pipeline DSL is unmaintainable\n- No good way to share pipeline code between services\n- Artifacts are stored... somewhere? No one knows\n\n**What we've heard:**\n- GHA has better marketplace/actions but cache can be slow\n- GitLab CI has better caching and monorepo support (path rules)\n- GitLab CI runners are expensive if self-hosted on AWS\n- GHA minutes are pricy at scale\n\nBudget: ~$500/month for CI (current Jenkins costs including DevOps time)\n\nDoes anyone have experience with either for large monorepos? I saw GitLab has this `needs:` keyword for DAGs which seems powerful but docs are confusing.\n\nAlso we use Terraform for infra - does that change anything?",
+      "content_type": "blog_post",
+      "source_simulation": "internal_rfc_document"
+    },
+    "expected_outputs": {
+      "primary_agent": "Tech Comparator",
+      "key_findings": [
+        "Clear comparison scenario: GitHub Actions vs GitLab CI for CI/CD",
+        "Specific constraints: monorepo with 12 microservices, multiple languages, AWS ECS deployment",
+        "Performance concerns: 15-20min build times, caching optimization needed",
+        "Cost constraint: $500/month budget",
+        "Monorepo-specific features: path-based triggering, pipeline code reuse, DAG dependencies"
+      ],
+      "edge_case_notes": "Could route to DevOps Engineer instead of Tech Comparator since implementation details are mentioned. The Terraform mention at the end is a potential red herring. Real ambiguity: is this a 'help us decide' (Tech Comparator) or 'help us implement' (DevOps) question?"
+    },
+    "metadata": {
+      "difficulty": "medium",
+      "domains": ["cicd", "devops", "tool_comparison", "monorepo"],
+      "why_realistic": "Written like an internal RFC with incomplete information (no mention of security/compliance requirements), casual tone ('finally lol'), mentions hearsay ('what we've heard'), and includes a late-added question that could change the scope (Terraform). Budget constraint is realistic but vague about whether it includes DevOps time."
+    }
+  },
+  {
+    "id": "real-003",
+    "inputs": {
+      "content": "Deciding between React Native and Flutter for a new fintech app. Need both iOS and Android, obviously.\n\n**Requirements:**\n- Biometric auth (FaceID, fingerprint)\n- Real-time stock price updates (WebSocket)\n- Complex charts (candlestick, line, indicators)\n- Needs to feel NATIVE, not webview-y\n- Push notifications\n- Plaid integration for bank linking\n\n**Team context:**\n- 2 iOS devs (Swift), 1 Android dev (Kotlin), 3 React web devs\n- Want to move fast, MVP in 3 months\n- Long-term: might need Apple Watch app later?\n\n**Concerns:**\n- Flutter is faster they say, but is it actually native or just faster rendering?\n- React Native lets us reuse web code (we have a web app already in React)\n- Heard RN has issues with memory leaks on Android\n- Flutter uses Dart which no one knows\n\n**Performance:**\nApp needs to handle:\n- 100+ stock symbols updating every second\n- Smooth 60fps scrolling through lists\n- Background data sync even when app is closed\n\nI saw Revolut uses RN but also heard they had to rewrite parts in native. Is that normal? How much native code should we expect to write anyway?\n\nBudget isn't infinite but we can hire 1-2 mobile devs if needed.",
+      "content_type": "technical_comparison",
+      "source_simulation": "slack_thread"
+    },
+    "expected_outputs": {
+      "primary_agent": "Tech Comparator",
+      "key_findings": [
+        "Clear framework comparison: React Native vs Flutter for fintech mobile app",
+        "Performance-critical requirements: real-time WebSocket updates, 60fps scrolling, background sync",
+        "Team skill mismatch: existing native mobile devs + React web devs, but no Dart experience",
+        "Complex native integrations: biometric auth, Plaid SDK, push notifications",
+        "Timeline pressure: 3-month MVP deadline",
+        "Existing React codebase to potentially leverage"
+      ],
+      "edge_case_notes": "Could also route to Mobile Performance agent due to emphasis on 60fps and real-time updates. The question about Revolut's native rewrites shows uncertainty about hybrid app architecture. Team composition is a critical factor often overlooked in pure technical comparisons."
+    },
+    "metadata": {
+      "difficulty": "medium",
+      "domains": ["mobile", "react_native", "flutter", "tool_comparison", "fintech"],
+      "why_realistic": "Mixes technical requirements with team/business constraints (MVP deadline, existing team skills), contains hearsay ('they say', 'heard'), and asks meta-questions about whether hybrid approaches are normal. The Apple Watch mention is a classic 'oh also maybe this' that changes scope. Budget is mentioned but vague."
+    }
+  },
+  {
+    "id": "real-004",
+    "inputs": {
+      "content": "our ios app is slow af. launch time is like 6-7 seconds on iphone 12. users are complaining in reviews.\n\n**what we've tried:**\n- moved some analytics init to background thread - helped a little\n- lazy loaded some view controllers\n- reduced app size by 15mb (was 80mb, now 65mb)\n\n**app details:**\n- swift + swiftui (mostly swiftui, some uikit for legacy screens)\n- realm database (~500mb of data on device)\n- firebase for analytics, crashlytics, remote config\n- ~30 third party frameworks via cocoapods\n- support ios 14+\n\n**launch sequence:**\n1. app delegate: init firebase, appsflyer, amplitude, braze\n2. load user session from keychain\n3. init realm db\n4. fetch remote config (firebase)\n5. check for app update\n6. show main screen\n\ntime profiler shows realm init takes 2.3s, firebase init takes 1.8s. rest is scattered.\n\n**weird thing:** app launches fast on newer devices (iphone 15 is like 2s), but we still have lots of users on iphone x/11/12.\n\ndo we need to rewrite in react native or something? competitor apps launch instantly. we're losing users over this.\n\nalso the app uses 200mb of memory on launch which seems high?? is that normal for a db app?\n\ncode snippet of launch:\n```swift\nfunc application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {\n    FirebaseApp.configure()\n    Realm.Configuration.defaultConfiguration = getRealmConfig()\n    AnalyticsManager.shared.initialize()\n    // ... more init\n    return true\n}\n```",
+      "content_type": "stackoverflow_question",
+      "source_simulation": "stackoverflow"
+    },
+    "expected_outputs": {
+      "primary_agent": "Performance Optimization Specialist",
+      "key_findings": [
+        "Blocking initialization: Firebase (1.8s) + Realm (2.3s) on main thread during app launch",
+        "Multiple analytics SDKs initialized synchronously (Firebase, AppsFlyer, Amplitude, Braze)",
+        "Device-specific performance: fast on iPhone 15, slow on older devices (compute-bound issue)",
+        "Remote config fetch blocks launch (network dependency)",
+        "Large memory footprint (200MB) suggests data loading optimization needed",
+        "30 third-party frameworks - potential framework load time impact"
+      ],
+      "edge_case_notes": "Tone suggests frustration and desperation ('slow af', 'do we need to rewrite'), which is realistic. The question about rewriting in React Native is a red herring - this is an optimization problem, not a framework problem. User conflates multiple issues: launch time, memory usage, and framework bloat."
+    },
+    "metadata": {
+      "difficulty": "medium",
+      "domains": ["mobile", "ios", "performance", "optimization", "swift"],
+      "why_realistic": "Casual frustrated tone, includes measurements but incomplete (no Instruments screenshots), lists what they tried showing they're not complete beginners, compares to competitors, includes code but not full context. The React Native rewrite question is a classic 'grass is greener' fallacy. Memory usage question shows confusion about what's normal."
+    }
+  },
+  {
+    "id": "real-005",
+    "inputs": {
+      "content": "## MySQL to PostgreSQL Migration - Need Advice\n\nWe're planning to migrate from MySQL 8.0 to Postgres 15 for our e-commerce platform. Reasons:\n- Better JSON support (we're storing more unstructured data)\n- Need full-text search (current mysql fulltext search is mehh)\n- Team wants to use PostGIS for future location features\n- Heard postgres is more \"standard\" SQL\n\n**Current DB:**\n- ~500GB of data across 200 tables\n- Busiest table: `orders` (80M rows, ~100GB)\n- Heavy read traffic: 5k QPS peak, 2k QPS average\n- Writes: ~200 TPS\n- Currently using read replicas (1 primary, 3 read replicas)\n- RDS MySQL on AWS (db.r5.2xlarge instances)\n\n**Schema challenges we've identified:**\n1. We use `AUTO_INCREMENT` everywhere - becomes `SERIAL`?\n2. Lots of `DATETIME` columns - Postgres has `TIMESTAMP` but timezone handling is different\n3. Some tables use MySQL's `ENUM` type\n4. We have a few stored procedures (not many, maybe 10)\n5. Using `GROUP_CONCAT` in some reports\n\n**Migration plan (draft):**\n1. Schema conversion using aws schema conversion tool\n2. Initial data load using aws dms\n3. CDC (change data capture) to keep in sync\n4. Cutover during low-traffic window (3am sunday)\n\n**Questions:**\n- How long does DMS usually take for 500GB? (AWS docs say \"it depends\" lol)\n- Can we test postgres performance without full data load? Don't want surprises\n- Indexing strategy - do we just copy indexes or rethink them?\n- Connection pooling - we use ProxySQL now, what's the postgres equivalent?\n- We have some queries with `FORCE INDEX` hints - will those break?\n\n**Timeline:** Aiming for Q2 2025, but flexible\n\n**Risk:** This is our prod db, can't afford multi-hour downtime. 30min window max.",
+      "content_type": "technical_rfc",
+      "source_simulation": "github_discussion"
+    },
+    "expected_outputs": {
+      "primary_agent": "Database Schema Designer",
+      "key_findings": [
+        "Large-scale migration: 500GB, 200 tables, 80M rows in busiest table",
+        "High-traffic system: 5k QPS reads, 200 TPS writes with read replicas",
+        "Schema compatibility issues: AUTO_INCREMENT, DATETIME, ENUM, GROUP_CONCAT",
+        "Zero-downtime requirement: 30min max cutover window",
+        "Performance validation needed before migration",
+        "Infrastructure considerations: connection pooling (ProxySQL → PgBouncer), query hints"
+      ],
+      "edge_case_notes": "Could also route to DevOps Engineer due to infrastructure/migration tooling aspects (AWS DMS, RDS). Ambiguity between database design consultation vs migration execution guidance. The 'heard postgres is more standard SQL' shows some cargo-culting. Questions are good but show gaps in migration planning."
+    },
+    "metadata": {
+      "difficulty": "hard",
+      "domains": ["database", "migration", "postgresql", "mysql", "devops"],
+      "why_realistic": "Mixes strategic reasons with tactical concerns, includes specific metrics but some are estimates, acknowledges unknowns ('AWS docs say it depends'), timeline is flexible showing this is planning phase not execution. Risk-averse language about prod DB is very real. Some reasons for migration are solid (JSON, FTS) while others are vague ('more standard')."
+    }
+  },
+  {
+    "id": "real-006",
+    "inputs": {
+      "content": "Building a data pipeline to process user events from our mobile apps and web. Need architecture review before we commit to this.\n\n**Current (broken) setup:**\n- Mobile/web sends events to our api (rest)\n- API writes to mysql `events` table\n- Cron job runs every 5 min to process events and update user profiles\n- Another cron to calculate daily metrics\n\n**Problems:**\n- Events table is 2TB and growing, mysql is crying\n- 5min delay is too slow (marketing wants real-time segments)\n- Cron jobs sometimes overlap and cause deadlocks\n- Can't scale writes (hitting ~8k writes/sec at peak)\n\n**Proposed new architecture:**\n```\nMobile/Web → API Gateway → Kinesis → Lambda → S3 (raw events)\n                              ↓\n                           Lambda → DynamoDB (user profiles)\n                              ↓\n                           Lambda → Redshift (analytics)\n```\n\n**Event volume:**\n- 50M events/day currently\n- Expecting 200M/day by end of year\n- Each event ~2kb json\n- 500k MAU\n\n**Use cases:**\n1. Real-time: User does action → trigger push notification (sub-second)\n2. Near real-time: Update user segment membership (30sec ok)\n3. Batch: Generate daily/weekly reports\n\n**Team concerns:**\n- Backend team knows MySQL, not DynamoDB (learning curve?)\n- Lambda costs could spiral out of control at 200M events/day\n- Kinesis vs Kafka? Some people want Kafka for \"resume support\"\n- Do we need a warehouse (Redshift) or is S3 + Athena enough?\n- Data engineering team (2 people) will maintain this\n\n**Compliance:**\nGDPR + CCPA (we need to delete user data on request). How does that work with S3 immutability?\n\nNot sure if this is over-engineered or under-engineered lol. Halp.",
+      "content_type": "architecture_review",
+      "source_simulation": "slack_thread"
+    },
+    "expected_outputs": {
+      "primary_agent": "Backend System Architect",
+      "key_findings": [
+        "Scale problem: 2TB events table, 8k writes/sec, projecting 200M events/day",
+        "Latency requirements vary: sub-second (push notifications), 30sec (segmentation), batch (reports)",
+        "Architectural shift: monolithic cron jobs → event-driven serverless pipeline",
+        "Data storage strategy: hot (DynamoDB), warm (Redshift), cold (S3)",
+        "Team capability constraint: MySQL expertise, limited DynamoDB/Lambda experience, small data eng team (2 people)",
+        "Compliance requirement: GDPR/CCPA right-to-erasure conflicts with S3 immutability"
+      ],
+      "edge_case_notes": "Could route to Data Engineering specialist or DevOps Engineer. The architecture spans multiple domains: event streaming (Kinesis vs Kafka), serverless compute (Lambda), data warehousing (Redshift vs Athena), real-time processing. Compliance mention at the end is critical but easy to overlook. Classic case of proposing AWS-heavy solution without cost analysis."
+    },
+    "metadata": {
+      "difficulty": "hard",
+      "domains": ["data_engineering", "event_streaming", "architecture", "aws", "scalability"],
+      "why_realistic": "Shows evolution from simple (cron jobs) to complex (event-driven), includes specific pain points with current system, proposed solution has gaps (no cost estimate, no data retention policy, vague Lambda trigger logic). Team concerns about learning curve and costs are realistic. GDPR question at the end shows compliance is an afterthought. Casual 'over-engineered or under-engineered lol' shows genuine uncertainty."
+    }
+  },
+  {
+    "id": "real-007",
+    "inputs": {
+      "content": "found this in a code review, seems fine to me but security team flagged it. thoughts?\n\n```python\nfrom flask import Flask, request, jsonify\nimport sqlite3\n\napp = Flask(__name__)\n\n@app.route('/api/users/search', methods=['GET'])\ndef search_users():\n    query = request.args.get('q', '')\n    role = request.args.get('role', 'user')\n    \n    # Only admins can search all roles\n    if role != 'user' and not request.headers.get('X-Admin-Token') == 'abc123':\n        return jsonify({'error': 'Unauthorized'}), 403\n    \n    conn = sqlite3.connect('users.db')\n    cursor = conn.cursor()\n    \n    # Build query dynamically for flexibility\n    sql = f\"SELECT id, username, email FROM users WHERE username LIKE '%{query}%' AND role = ?\"\n    cursor.execute(sql, (role,))\n    \n    results = cursor.fetchall()\n    conn.close()\n    \n    return jsonify({\n        'results': [{'id': r[0], 'username': r[1], 'email': r[2]} for r in results]\n    })\n```\n\n**Context:**\n- This is an internal admin tool, not public-facing\n- Only deployed to our VPC, not internet-exposed\n- We validate the admin token at the API gateway level too (nginx checks it)\n- DB only has like 500 users so performance isn't an issue\n\nSecurity team says it's a SQL injection vuln but the `role` parameter IS parameterized (see the `?`). The `query` param is just for search, users type in partial usernames. It's not like we're letting them type raw SQL?\n\nAlso they want us to \"use an ORM\" but this is a simple tool, feels like overkill. We'd have to add SQLAlchemy which is another dependency to maintain.\n\n**Question:** Is this actually exploitable? If so, how? I tried injecting `' OR '1'='1` in the query param but it just searches for that literal string.\n\nSecurity team sometimes flags false positives IMO. But wanted to check here before pushing back.",
+      "content_type": "code_review",
+      "source_simulation": "github_pr_comment"
+    },
+    "expected_outputs": {
+      "primary_agent": "Security Auditor",
+      "key_findings": [
+        "SQL Injection vulnerability: `query` parameter directly interpolated with f-string, not parameterized",
+        "Weak authentication: hardcoded token 'abc123' in source code",
+        "Authorization bypass potential: role parameter could be manipulated despite partial parameterization",
+        "False security assumption: 'internal tool' and 'VPC only' don't eliminate attack surface (insider threats, lateral movement)",
+        "Misunderstanding of parameterization: developer thinks LIKE with f-string interpolation is safe"
+      ],
+      "edge_case_notes": "This is tricky because the developer genuinely doesn't understand why it's vulnerable (tried basic injection but wrong approach). The code is almost right (parameterizes role) but critically wrong (f-string for query). Developer's defense ('internal tool', 'small DB', 'tried to exploit it myself') represents common security misconceptions. Security team is correct but developer is skeptical."
+    },
+    "metadata": {
+      "difficulty": "hard",
+      "domains": ["security", "sql_injection", "python", "authentication", "code_review"],
+      "why_realistic": "Developer shows partial security knowledge (knows about parameterization, mentions admin token validation) but has dangerous blind spots (f-string interpolation, hardcoded secrets). Defensive tone ('security team sometimes flags false positives') is very real. The 'I tried to exploit it' shows Dunning-Kruger effect - testing wrong payload type. Internal tool justification is a classic security anti-pattern."
+    }
+  },
+  {
+    "id": "real-008",
+    "inputs": {
+      "content": "## Performance vs Security Tradeoff - Need Decision\n\nWe're implementing rate limiting for our api. Two approaches being debated:\n\n**Approach A: Redis-based (current POC)**\n```typescript\nasync function checkRateLimit(userId: string): Promise<boolean> {\n  const key = `ratelimit:${userId}`;\n  const requests = await redis.incr(key);\n  if (requests === 1) {\n    await redis.expire(key, 60); // 60 second window\n  }\n  return requests <= 100; // 100 req/min\n}\n```\n- Pro: Fast (< 1ms), proven, easy to scale\n- Con: If Redis goes down, all rate limiting stops (fail open or fail closed?)\n\n**Approach B: JWT-based with sliding window**\n```typescript\nfunction checkRateLimit(token: string): boolean {\n  const payload = jwt.verify(token, SECRET);\n  const now = Date.now();\n  const requests = payload.requests || [];\n  \n  // Filter requests in last minute\n  const recentRequests = requests.filter(t => now - t < 60000);\n  \n  if (recentRequests.length >= 100) {\n    return false;\n  }\n  \n  // Issue new token with updated count\n  recentRequests.push(now);\n  return jwt.sign({ ...payload, requests: recentRequests }, SECRET);\n}\n```\n- Pro: No external dependency, works without Redis, cryptographically secure\n- Con: JWT gets huge (100 timestamps = ~1-2kb), client can't parallelize requests easily\n\n**Our context:**\n- 50k RPS at peak\n- Need to prevent abuse (we've seen DDoS attempts)\n- Also need to rate limit by IP for unauthenticated endpoints\n- Currently using Redis for sessions anyway\n\n**Security team says:**\nJWT approach is more secure because client can't lie about rate limit state (cryptographically signed). Redis keys could be manipulated if Redis is compromised.\n\n**DevOps team says:**\nRedis approach is standard, JWT approach is \"creative\" but untested at scale. Worried about JWT size causing perf issues. Also what about IP-based limiting (can't use JWT for that).\n\n**What I'm thinking:**\nHybrid? Use Redis for most cases, JWT as fallback if Redis unavailable? But that's complex.\n\nWe need to ship this by next sprint (2 weeks). Help me break this tie?",
+      "content_type": "technical_decision",
+      "source_simulation": "slack_thread"
+    },
+    "expected_outputs": {
+      "primary_agent": "Security Auditor",
+      "key_findings": [
+        "False security dichotomy: JWT approach provides integrity but doesn't prevent abuse (client controls request timing)",
+        "Performance concern legitimate: 1-2KB JWTs at 50k RPS = significant bandwidth overhead",
+        "Operational complexity: JWT approach requires issuing new token on every request (not RESTful)",
+        "Redis compromise is wrong threat model: if Redis is compromised, bigger problems exist",
+        "IP-based rate limiting requirement makes JWT approach incomplete",
+        "Fail-open vs fail-closed decision for Redis not addressed"
+      ],
+      "edge_case_notes": "This is genuinely ambiguous - could route to Security Auditor (threat modeling), Backend Architect (system design), or Performance specialist (scaling). The security team's reasoning is flawed (JWT doesn't prevent abuse, just tampering). The JWT approach has a fundamental flaw: timestamps are client-provided via token, so an attacker could request multiple tokens. This is a case where domain expertise reveals a subtle vulnerability in the 'secure' approach."
+    },
+    "metadata": {
+      "difficulty": "adversarial",
+      "domains": ["security", "performance", "rate_limiting", "architecture", "tradeoff_analysis"],
+      "why_realistic": "Presents two reasonable-sounding approaches with pros/cons, includes input from multiple teams with different priorities (security vs devops), time pressure (2 weeks), and a proposed 'hybrid' solution that adds complexity. The JWT approach sounds clever but has a fatal flaw that requires security expertise to identify. This tests whether the agent can identify that the 'secure' solution actually isn't."
+    }
+  },
+  {
+    "id": "real-009",
+    "inputs": {
+      "content": "Need help understanding some conflicting info about Next.js server components vs client components.\n\n**Source 1: Next.js docs (nextjs.org)**\n> \"Server Components are rendered on the server and sent to the client as HTML. They cannot use hooks or browser APIs. Use 'use client' directive for interactive components.\"\n\n**Source 2: Blog post from Vercel engineer (Dec 2024)**\n> \"Common misconception: Server Components don't re-render on navigation. They're actually re-fetched and React reconciles the tree. This is why you don't lose client state during navigation.\"\n\n**Source 3: Our team's internal wiki (written by a senior dev)**\n> \"Avoid server components for anything that needs real-time updates. Server components are static - they only render once at build time. Use client components with SWR for dynamic data.\"\n\n**Our situation:**\nBuilding a dashboard that shows:\n- User profile (changes rarely)\n- Notifications (real-time, updates every 5sec)\n- Analytics charts (updated daily)\n- Activity feed (paginated, user can load more)\n\nOriginally planned to make everything client components with SWR, but then read that we should \"use server components by default\" (Next.js docs).\n\nThen I read server components can fetch data, but I'm confused:\n- Do they fetch on every page load?\n- Do they fetch at build time?\n- Can they fetch on navigation?\n- Source 3 says they're static but Source 2 says they re-fetch?\n\n**What we've tried:**\n```tsx\n// This works but not sure if correct\nexport default async function Dashboard() {\n  const profile = await fetchProfile(); // is this called every time??\n  \n  return (\n    <div>\n      <Profile data={profile} />\n      <Notifications /> {/* should this be 'use client'? */}\n    </div>\n  );\n}\n```\n\nBuild output shows:\n```\nRoute (app)                              Size     First Load JS\n┌ ○ /dashboard                           1.2 kB         85.3 kB\n```\n\nThe ○ means static but docs say server components can be dynamic??? I'm so confused.\n\nAlso our senior dev insists we need client components for anything interactive, but I watched a talk where they said forms can be server components with server actions?\n\nCan someone clarify what's actually true here? Feeling like the docs, blog posts, and our team are all saying different things.",
+      "content_type": "stackoverflow_question",
+      "source_simulation": "stackoverflow"
+    },
+    "expected_outputs": {
+      "primary_agent": "Tech Comparator",
+      "key_findings": [
+        "Conflicting mental models: static site generation vs server-side rendering vs streaming",
+        "Terminology confusion: 'server component' (React concept) vs 'static/dynamic rendering' (Next.js concept)",
+        "Source 3 (internal wiki) is incorrect: conflates server components with static generation",
+        "Valid confusion about fetch timing: depends on Next.js caching strategy (force-cache, no-store, revalidate)",
+        "Build output symbols (○, ●, ƒ) indicate rendering strategy, not component type",
+        "Real-time requirements (notifications every 5sec) do require client-side data fetching"
+      ],
+      "edge_case_notes": "This is adversarial because it requires disambiguating between React Server Components (RSC) architecture and Next.js rendering strategies. All three sources are partially correct in different contexts. Needs an agent that can identify which source applies to which aspect of the question, and explain the mental model shift from traditional React to RSC. Also tests if agent can identify the internal wiki as source of confusion."
+    },
+    "metadata": {
+      "difficulty": "adversarial",
+      "domains": ["react", "nextjs", "server_components", "frontend_architecture", "documentation"],
+      "why_realistic": "Mirrors real confusion when new paradigms (RSC) challenge established mental models. Sources are all semi-authoritative (docs, Vercel engineer, senior dev), creating genuine ambiguity. Code example shows it works but developer doesn't understand why. Build output symbols add to confusion. The rapid evolution of Next.js (13.x → 14.x → 15.x) means older advice (Source 3) conflicts with current best practices."
+    }
+  },
+  {
+    "id": "real-010",
+    "inputs": {
+      "content": "Debugging a weird issue and not sure if it's a backend problem, frontend problem, or infrastructure problem. Need help figuring out which team should own this.\n\n**Symptom:**\nUsers report that sometimes their uploaded images appear corrupted (grey boxes) in the feed. Happens ~5% of the time, can't reproduce consistently.\n\n**Our stack:**\n- Frontend: React SPA, uploads to S3 via presigned URLs\n- Backend: FastAPI, generates presigned URLs, stores metadata in Postgres\n- Infrastructure: CloudFront CDN in front of S3\n- Image processing: Lambda resizes images after upload (triggered by S3 event)\n\n**What we know:**\n1. Image uploads to S3 succeed (checked S3 logs)\n2. Lambda processes the image (CloudWatch shows success)\n3. Metadata is saved to Postgres with correct S3 key\n4. Sometimes the image displays, sometimes it doesn't (same URL)\n5. Hard refresh sometimes fixes it, sometimes doesn't\n6. Happens more on mobile (80% of reports) vs desktop (20%)\n\n**Things we've tried:**\n- Added Cache-Control headers to S3 objects → no change\n- Increased Lambda timeout from 30s to 60s → no change\n- Checked CloudFront cache hit ratio → 85%, seems normal\n- Added retry logic to Lambda → still happens\n\n**Logs from different sources:**\n\nBackend log (FastAPI):\n```\n2025-12-08 14:23:45 INFO Generated presigned URL for upload: abc123.jpg\n2025-12-08 14:23:47 INFO Metadata saved: image_id=789, s3_key=uploads/abc123.jpg\n```\n\nLambda log (image processor):\n```\n2025-12-08 14:23:50 INFO Processing uploads/abc123.jpg\n2025-12-08 14:23:52 INFO Resized to 800x600, saved to uploads/processed/abc123.jpg\n```\n\nCloudFront access log (one of the failures):\n```\n2025-12-08 14:24:10 200 GET /uploads/processed/abc123.jpg\n2025-12-08 14:24:15 200 GET /uploads/processed/abc123.jpg\n```\n\nFrontend (browser console for a failed load):\n```\nGET https://cdn.example.com/uploads/processed/abc123.jpg net::ERR_FAILED 200\nImage failed to load\n```\n\n**Theories from different teams:**\n\n**Frontend team:** \"It's a race condition. React tries to display the image before Lambda finishes processing. We should poll the URL until it returns 200.\"\n\n**Backend team:** \"Presigned URLs expire after 15 minutes. Maybe users are taking too long to upload? But logs show successful uploads...\"\n\n**DevOps team:** \"CloudFront is probably serving stale cached responses. We should lower TTL or add cache invalidation.\"\n\n**My theory:** Not sure but the `net::ERR_FAILED 200` in browser console is weird - how can it fail AND return 200?\n\nUsers are getting frustrated (app store reviews dropping). Need to fix this ASAP but we're going in circles. Where should we even start looking?",
+      "content_type": "debugging_request",
+      "source_simulation": "slack_thread"
+    },
+    "expected_outputs": {
+      "primary_agent": "Backend System Architect",
+      "key_findings": [
+        "Cross-domain issue spanning frontend (React), backend (FastAPI), infrastructure (S3/CloudFront/Lambda)",
+        "Race condition confirmed by Frontend team theory: React displays image URL before Lambda finishes processing",
+        "Timing analysis: Upload at 14:23:45, processed at 14:23:52 (7 sec), frontend request at 14:24:10 (25 sec later) - so NOT a race condition in this example",
+        "Browser error anomaly: net::ERR_FAILED with 200 status suggests CORS, Content-Type, or image corruption",
+        "Mobile bias (80% reports) suggests network condition sensitivity (slower connections, mobile CDN edge locations)",
+        "Lambda success logs don't confirm image validity, only that Lambda completed"
+      ],
+      "edge_case_notes": "Highly ambiguous - could legitimately go to Backend Architect (system design), DevOps Engineer (CDN/Lambda), Frontend Developer (React image loading), or Performance specialist (CDN optimization). Multiple plausible theories from different teams, each partially correct. Tests whether agent can do root cause analysis across domains and identify that the theories don't match the log evidence (timing shows it's NOT a race condition in the example). The net::ERR_FAILED 200 is the key clue that points to content corruption or CORS, not timing."
+    },
+    "metadata": {
+      "difficulty": "adversarial",
+      "domains": ["debugging", "fullstack", "cdn", "serverless", "image_processing", "race_conditions"],
+      "why_realistic": "Classic 'it works 95% of the time' bug that's hardest to debug. Includes logs from multiple systems that seem to contradict the symptom (all success, but users see failures). Each team has a theory based on their domain knowledge, creating competing explanations. The browser console error is a real anomaly that requires deep debugging knowledge. Mobile bias is a real clue often overlooked. Tests whether agent can synthesize cross-domain knowledge and spot the inconsistency between logs and theories."
+    }
+  }
+]
