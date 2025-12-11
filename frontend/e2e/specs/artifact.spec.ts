@@ -4,6 +4,7 @@ import { waitForBackend, getCompletedAnalysis } from '../utils/api-helpers';
 
 test.describe('Artifact Page - Preview and Download', () => {
   let artifactPage: ArtifactPage;
+  let artifactId: string | null = null;
   let analysisId: string | null = null;
 
   test.beforeAll(async ({ request }) => {
@@ -14,6 +15,7 @@ test.describe('Artifact Page - Preview and Download', () => {
     const completedAnalysis = await getCompletedAnalysis(request);
 
     if (completedAnalysis) {
+      artifactId = completedAnalysis.artifact_id;
       analysisId = completedAnalysis.analysis_id;
     }
     // If no completed analysis, tests will be skipped in beforeEach
@@ -21,10 +23,11 @@ test.describe('Artifact Page - Preview and Download', () => {
 
   test.beforeEach(async ({ page }) => {
     // Skip all artifact tests if no completed analysis with artifact exists
-    test.skip(!analysisId, 'No completed analysis with artifact found - run a full analysis first');
+    test.skip(!artifactId, 'No completed analysis with artifact found - run a full analysis first');
 
     artifactPage = new ArtifactPage(page);
-    await artifactPage.goto(analysisId!);
+    // Navigate using the artifact ID, not analysis ID
+    await artifactPage.goto(artifactId!, analysisId);
   });
 
   test('should display artifact page with title', async () => {
@@ -67,13 +70,10 @@ test.describe('Artifact Page - Preview and Download', () => {
     // Grant clipboard permissions
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-    // Find copy button for first code block
-    const codeBlock = artifactPage.codeBlocks.first();
-    await codeBlock.hover();
-
-    const copyButton = page.getByRole('button', { name: /copy/i }).first();
-    if (await copyButton.isVisible()) {
-      await copyButton.click();
+    // Use the page object method to copy the first code block
+    const codeBlockCount = await artifactPage.codeBlocks.count();
+    if (codeBlockCount > 0) {
+      await artifactPage.copyCodeBlock(0);
 
       // Verify clipboard contains code
       const clipboardContent = await page.evaluate(() => navigator.clipboard.readText());

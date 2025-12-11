@@ -17,19 +17,22 @@ export class ArtifactPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    // Use specific markdown class that we found - use .first() to handle multiple matches
-    this.markdownContent = page.locator('.markdown-preview');
-    this.downloadButton = page.getByRole('button', { name: /download/i });
-    this.copyButton = page.getByRole('button', { name: /copy/i });
-    // Use specific heading name to avoid multiple h1 matches
-    this.title = page.getByRole('heading', { name: /implementation guide/i });
+    // Use data-testid for more reliable selectors
+    this.markdownContent = page.getByTestId('markdown-preview');
+    this.downloadButton = page.getByTestId('download-button');
+    this.copyButton = page.getByTestId('copy-button');
+    // Use header-specific h1 to avoid matching markdown content headings
+    this.title = page.locator('header h1');
     this.metadata = page.locator('[data-testid="artifact-metadata"], .artifact-metadata, [class*="metadata"]');
-    this.codeBlocks = page.locator('pre code');
+    this.codeBlocks = page.getByTestId('code-block');
     this.startTutorButton = page.getByRole('button', { name: /start.*tutor|ask.*question/i });
   }
 
-  async goto(artifactId: string) {
-    await this.navigate(`/artifact/${artifactId}`);
+  async goto(artifactId: string, analysisId?: string | null) {
+    const url = analysisId
+      ? `/artifact/${artifactId}?analysisId=${analysisId}`
+      : `/artifact/${artifactId}`;
+    await this.navigate(url);
   }
 
   async expectMarkdownVisible() {
@@ -47,9 +50,11 @@ export class ArtifactPage extends BasePage {
   }
 
   async copyCodeBlock(index = 0) {
-    const codeBlock = this.codeBlocks.nth(index);
-    await codeBlock.hover();
-    await this.page.getByRole('button', { name: /copy/i }).first().click();
+    // Get the code block container (which includes the copy button)
+    const codeBlockContainer = this.page.getByTestId('code-block-container').nth(index);
+    // Find the copy button within the container
+    const copyButton = codeBlockContainer.getByTestId('copy-button');
+    await copyButton.click();
   }
 
   async expectCodeBlocksCount(count: number) {

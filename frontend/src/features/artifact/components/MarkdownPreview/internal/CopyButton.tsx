@@ -34,6 +34,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
     <button
       type="button"
       onClick={handleCopy}
+      data-testid="copy-button"
       className={cn(
         'inline-flex items-center gap-1.5 px-2.5 py-1.5',
         'bg-(--code-border) border border-(--code-border)',

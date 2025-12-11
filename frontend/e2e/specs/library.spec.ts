@@ -27,8 +27,12 @@ test.describe('Library Page - Search and Filter', () => {
     // Get real data from backend
     const library = await getLibrary(request, { limit: 10 });
 
-    // Wait for page to load fully
-    await page.waitForLoadState('networkidle');
+    // Wait for page to load - use domcontentloaded instead of networkidle
+    // because infinite scroll keeps network active
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the grid to be visible
+    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
 
     // Check that the library page has loaded with content
     const cardCount = await libraryPage.analysisCards.count();
@@ -53,19 +57,21 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Ensure page is loaded
-    await page.waitForLoadState('networkidle');
+    // Ensure page is loaded - use domcontentloaded instead of networkidle
+    // because infinite scroll keeps network active
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(500);
 
     // Get a real search term from existing data if possible
     const searchTerm = library.items[0]?.title || library.items[0]?.url || 'React';
 
     await libraryPage.search(searchTerm);
 
-    // Wait for search to complete
+    // Wait for search to complete and verify search was triggered
     await page.waitForTimeout(1000);
 
-    // Search should trigger and page should still be functional
-    await expect(page.locator('body')).toBeVisible();
+    // Verify search input has the value
+    await expect(libraryPage.searchInput).toHaveValue(searchTerm);
     console.log(`Searched for: ${searchTerm}`);
   });
 
@@ -122,8 +128,11 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    // Wait for page to load - use domcontentloaded instead of networkidle
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the grid to be visible
+    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
 
     // Check if there are any cards to click
     const cardCount = await libraryPage.analysisCards.count();
@@ -162,14 +171,15 @@ test.describe('Library Page - Search and Filter', () => {
   });
 
   test('should show empty state when filtering by non-existent status', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-
     // Navigate with a filter parameter that returns no results
     await page.goto('/library?status=nonexistent-status-filter');
 
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    // Wait for page to load - use domcontentloaded instead of networkidle
+    // because infinite scroll keeps network active
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the grid to render (either with content or empty state)
+    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
 
     // Either shows empty state or page is functional with no data
     await expect(page.locator('body')).toBeVisible();
@@ -185,8 +195,11 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    // Wait for page to load - use domcontentloaded instead of networkidle
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the grid to be visible
+    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
 
     // Check if there are cards
     const cardCount = await libraryPage.analysisCards.count();

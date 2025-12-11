@@ -56,7 +56,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
 
       {/* Content area with proper padding */}
       <div className="markdown-content-area">
-        <div className="markdown-preview">
+        <div className="markdown-preview" data-testid="markdown-preview">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
             {content}
           </ReactMarkdown>

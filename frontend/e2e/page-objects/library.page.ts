@@ -36,7 +36,10 @@ export class LibraryPage extends BasePage {
 
   async search(query: string) {
     await this.searchInput.fill(query);
-    await this.searchButton.click();
+    // Trigger immediate search with Enter key (no search button exists)
+    await this.searchInput.press('Enter');
+    // Wait for debounce and API call
+    await this.page.waitForTimeout(500);
   }
 
   async filterByContentType(type: 'all' | 'article' | 'video' | 'repository') {
