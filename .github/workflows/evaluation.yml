@@ -65,7 +65,7 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: |
-          poetry install --with dev,test
+          poetry install --no-interaction --no-root
 
       - name: Setup database
         working-directory: backend
