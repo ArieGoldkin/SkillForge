@@ -1,0 +1,109 @@
+{
+  "version": "1.0.0",
+  "description": "System design documents covering APIs, microservices, distributed systems, and infrastructure patterns",
+  "total_documents": 25,
+  "documents": [
+    {
+      "id": "rest-api-design",
+      "title": "REST API Design Best Practices",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rest", "api-design", "http", "best-practices"],
+      "sections": [
+        {
+          "id": "rest-api-design/resource-naming",
+          "title": "Resource Naming and URL Structure",
+          "content": "RESTful API design centers on resources accessed via HTTP URLs. Best practices for resource naming: use nouns (not verbs) for resource names—'/users' not '/getUsers', use plural nouns for collections ('/api/v1/users'), singular for specific resources ('/api/v1/users/123'), create hierarchical relationships via nesting ('/api/v1/users/123/orders'), and keep URLs lowercase with hyphens for readability ('/api/v1/order-items'). Avoid deep nesting beyond 2-3 levels—'/users/123/orders/456/items/789' is complex, prefer '/order-items/789' with query params '?order_id=456'. Version APIs explicitly in URL ('/api/v1/users') or header ('Accept: application/vnd.api+json;version=1') to enable evolution without breaking clients. Resource identifiers should be opaque (UUIDs or database IDs) not exposing internal structure. Use query parameters for filtering, sorting, and pagination: '/api/v1/users?role=admin&sort=created_at&limit=20&offset=40'. Consistent naming conventions across resources create predictable, developer-friendly APIs.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rest-api-design/http-methods",
+          "title": "HTTP Methods and Semantic Correctness",
+          "content": "REST leverages HTTP methods for semantic operations: GET retrieves resources (idempotent, cacheable, no side effects), POST creates resources or non-idempotent actions (returns 201 Created with Location header), PUT updates entire resource (idempotent, replaces full resource), PATCH partially updates resource (idempotent, modifies specific fields), and DELETE removes resource (idempotent). Idempotency is critical—GET, PUT, PATCH, DELETE can be safely retried without duplicate effects. For example, 'PUT /users/123 {name: 'Alice'}' sets name to Alice; calling twice has same effect as once. POST is not idempotent—'POST /orders' creates a new order each call. Use appropriate status codes: 200 OK (successful GET/PUT/PATCH), 201 Created (successful POST), 204 No Content (successful DELETE), 400 Bad Request (validation error), 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict (duplicate/constraint violation), 422 Unprocessable Entity (semantic errors), 500 Internal Server Error. Avoid misusing methods—don't use GET for state-changing operations or POST when PUT is semantically correct. Proper HTTP method usage enables intermediary caching, retry logic, and client-side tooling to work correctly.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rest-api-design/pagination",
+          "title": "Pagination Strategies",
+          "content": "Large collections require pagination to limit response size and improve performance. Offset-based pagination uses 'limit' and 'offset' parameters: 'GET /users?limit=20&offset=40' returns items 41-60. Simple to implement but has issues: inconsistent results when data changes between pages (items inserted/deleted shift offsets), and poor performance for large offsets (database must skip offset rows). Cursor-based pagination uses opaque cursors pointing to specific items: 'GET /users?limit=20&after=cursor123'. The response includes cursors for next/previous pages. Implementation typically encodes the last item's ID and sort key: cursor='base64({id: 123, created_at: 2024-01-15})'. Benefits include consistent pagination (cursors remain valid despite data changes), efficient queries (database uses indexed seek instead of offset), and support for real-time data. The tradeoff is complexity—clients can't jump to arbitrary pages. Hybrid approaches support both: offset for UI page numbers, cursor for infinite scroll. Response envelope includes pagination metadata: {data: [...], pagination: {limit: 20, offset: 40, total: 1000, next_offset: 60}}. This enables clients to build pagination controls.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rest-api-design/error-handling",
+          "title": "Error Handling and Response Format",
+          "content": "Consistent error responses improve API usability. Standard format includes: HTTP status code (4xx for client errors, 5xx for server errors), error code (machine-readable identifier like 'INVALID_EMAIL'), human-readable message, and optional details (field-level errors for validation). Example: {error: {code: 'VALIDATION_ERROR', message: 'Invalid request data', details: [{field: 'email', message: 'Invalid email format'}]}}. Use specific status codes: 400 for general validation errors, 401 when authentication required, 403 when authenticated but lacking permissions, 404 when resource not found, 409 for conflicts (duplicate email), 422 for semantic errors (trying to cancel an already-shipped order), 429 for rate limit exceeded (include Retry-After header), 500 for unexpected server errors, 503 for temporary unavailability (maintenance, overload). Avoid exposing sensitive details in errors—'Invalid credentials' rather than 'Email not found' prevents user enumeration. Include request IDs in error responses for debugging: {error: {...}, request_id: 'req_abc123'}. Clients can provide request_id when reporting issues. For async operations that fail, use webhooks or polling endpoints to communicate errors rather than long-hanging connections.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "graphql-api",
+      "title": "GraphQL API Design and Implementation",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["graphql", "api-design", "schema", "resolvers"],
+      "sections": [
+        {
+          "id": "graphql-api/schema-design",
+          "title": "Schema Design Best Practices",
+          "content": "GraphQL schemas define the type system and available operations. Schema design principles: create cohesive types modeling domain entities (User, Post, Comment), use nullable fields by default (required fields with '!' should truly be non-null always), design for client needs not database structure (denormalize if beneficial), and use interfaces/unions for polymorphism. Example schema: 'type User {id: ID!, name: String!, email: String!, posts: [Post!]!}'. The 'posts' field demonstrates relationship modeling—clients can fetch user and posts in single query. Use input types for mutations: 'input CreateUserInput {name: String!, email: String!}' separates read models (types) from write models (inputs). Employ relay-style connections for pagination: 'type UserConnection {edges: [UserEdge!]!, pageInfo: PageInfo!}' where each edge contains node and cursor. This enables cursor-based pagination in GraphQL's standard format. Avoid exposing internal IDs directly—use globally unique IDs encoding type and ID: 'base64(User:123)'. This prevents ID collisions and enables client-side caching.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "graphql-api/n-plus-one",
+          "title": "N+1 Problem and DataLoader Pattern",
+          "content": "GraphQL's flexibility creates N+1 query problems: fetching a list of users then each user's posts issues 1 query for users + N queries for posts. The DataLoader pattern solves this using batching and caching. DataLoader collects requests within a single tick of the event loop, batches them into single queries, and caches results. Implementation: create DataLoader instances per request (avoid cross-request data leakage), define batch functions that load multiple items efficiently ('batchUsers([1,2,3])' → single SQL 'WHERE id IN (1,2,3)'), and call DataLoader in resolvers ('dataLoaders.userLoader.load(userId)'). Example: resolver for 'Post.author' uses 'dataLoaders.userLoader.load(post.author_id)'. When resolving 10 posts, 10 load calls are batched into single query. DataLoader also implements per-request caching—if user ID 5 is loaded twice in same request, the second load returns cached result. This is critical for GraphQL where the same entity may be fetched via multiple query paths. Monitoring DataLoader hit rates and batch sizes helps optimize performance.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "graphql-api/authorization",
+          "title": "Field-Level Authorization",
+          "content": "GraphQL field-level resolution enables granular authorization—different fields can have different permissions. Authorization approaches: directive-based (schema annotations like '@auth(requires: ADMIN)'), resolver-level checks (each resolver validates access), or middleware layer (intercepts before resolvers). Directive approach: 'type User {id: ID!, email: String! @auth(requires: OWNER)}' allows any authenticated user to see ID but only the user themselves to see their email. Implementation uses schema directives that wrap resolvers with authorization logic. Resolver-level approach: 'resolvers: {User: {email: (parent, args, context) => {if (context.user.id !== parent.id) throw new ForbiddenError(); return parent.email;}}}'. This provides maximum flexibility but duplicates authorization logic. Middleware approach uses libraries like graphql-shield defining authorization rules separately from resolvers. Best practice combines approaches: authentication in middleware (validates JWT, loads user into context), coarse authorization in directives (role-based), fine-grained in resolvers (ownership checks). Handle authorization errors gracefully—return null for unauthorized fields (with errors array) rather than failing entire query.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "graphql-api/performance",
+          "title": "Performance Optimization Strategies",
+          "content": "GraphQL performance challenges include unbounded queries (deeply nested, many fields), expensive resolvers, and schema complexity. Mitigations: query complexity limits calculate cost of queries (each field has cost, nesting multiplies cost, reject queries exceeding budget), depth limiting (max 5-7 levels of nesting), pagination enforcement (require pagination arguments on list fields), and query timeout (abort queries exceeding time limit). Persisted queries improve security and performance—clients register queries by hash, then send hash instead of full query. This reduces payload size and prevents arbitrary query execution. Caching strategies include: field-level caching (cache expensive resolver results in Redis), whole-query caching (cache responses for entire queries with TTL), and CDN caching for public data (use GET requests with query as URL param, enable HTTP caching). Monitoring includes: query execution time by field, resolver performance metrics, cache hit rates, and complexity scores. APM tools like Apollo Studio provide GraphQL-specific insights. For extremely hot paths, consider adding REST endpoints as alternative—GraphQL's flexibility isn't free, and sometimes a specialized endpoint outperforms generic querying.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "grpc-services",
+      "title": "gRPC: High-Performance RPC Framework",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["grpc", "rpc", "protobuf", "microservices"],
+      "sections": [
+        {
+          "id": "grpc-services/overview",
+          "title": "gRPC Architecture and Protocol Buffers",
+          "content": "gRPC is a high-performance RPC framework using HTTP/2 and Protocol Buffers (protobuf). gRPC excels at service-to-service communication within microservices architectures. Key advantages: protobuf binary serialization is 3-10x faster and smaller than JSON, HTTP/2 multiplexing enables multiple concurrent requests on single connection, bidirectional streaming supports real-time communication, and code generation provides type-safe clients in 10+ languages. Protobuf definitions (.proto files) specify services and messages: 'service UserService {rpc GetUser(GetUserRequest) returns (User);} message User {int32 id = 1; string name = 2;}'. The protoc compiler generates client stubs and server interfaces. Numbers (1, 2) are field tags used in binary encoding—never change tags as it breaks compatibility. gRPC uses four call types: unary (single request, single response—standard RPC), server streaming (single request, stream of responses—watching events), client streaming (stream requests, single response—uploading data), and bidirectional streaming (both sides stream—chat). gRPC is ideal for internal microservices but less suitable for browser-frontend communication (limited browser support).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "grpc-services/streaming",
+          "title": "Streaming Patterns and Use Cases",
+          "content": "gRPC streaming enables efficient communication for continuous data flows. Server streaming: 'rpc WatchOrders(WatchRequest) returns (stream Order);' sends order updates to client as they occur, avoiding polling. Implementation uses async generators or observables on the server yielding values continuously. Use cases include real-time dashboards, log tailing, and event streams. Client streaming: 'rpc UploadFile(stream Chunk) returns (UploadResponse);' accepts chunks from client, useful for large file uploads without loading entire file in memory. Server accumulates chunks and processes once stream completes. Bidirectional streaming: 'rpc Chat(stream Message) returns (stream Message);' enables real-time communication where both sides send and receive concurrently. Implementation requires careful synchronization—separate goroutines/threads handle sending and receiving. Streaming provides backpressure naturally—slow consumers pause producers via flow control. Error handling in streams: errors terminate the stream, use trailing metadata to communicate partial success. Streams should be short-lived or have explicit heartbeat mechanisms to detect disconnections. Monitoring stream durations and active stream count helps identify resource leaks (unclosed streams).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "grpc-services/error-handling",
+          "title": "Error Handling and Status Codes",
+          "content": "gRPC uses status codes for error semantics: OK (success), CANCELLED (client cancelled), INVALID_ARGUMENT (invalid request), DEADLINE_EXCEEDED (timeout), NOT_FOUND, PERMISSION_DENIED, UNAUTHENTICATED, RESOURCE_EXHAUSTED (rate limit), FAILED_PRECONDITION (operation not allowed in current state), ABORTED (conflict), OUT_OF_RANGE, UNIMPLEMENTED, INTERNAL (server error), UNAVAILABLE (service down), DATA_LOSS. Use specific codes—INVALID_ARGUMENT for validation errors with details in metadata, UNAUTHENTICATED when auth token missing/invalid, PERMISSION_DENIED when authenticated but unauthorized. Rich error model uses status proto with details: 'google.rpc.Status' includes code, message, and repeated Any details containing structured error info like field violations. Example: return BadRequest with field violations: '{code: INVALID_ARGUMENT, message: 'Validation failed', details: [{fieldViolations: [{field: 'email', description: 'invalid format'}]}]}'. Clients handle errors using try-catch (in languages with exceptions) or checking returned status. Implement retry logic with exponential backoff for transient errors (UNAVAILABLE, RESOURCE_EXHAUSTED, DEADLINE_EXCEEDED). gRPC interceptors (middleware) can add cross-cutting error handling like automatic retries and logging.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "grpc-services/load-balancing",
+          "title": "Load Balancing and Service Discovery",
+          "content": "gRPC load balancing differs from HTTP due to persistent connections. Client-side load balancing is recommended: clients maintain connections to multiple server instances and balance requests across them. gRPC supports pluggable load balancing policies: pick_first (use first available), round_robin (distribute evenly), and custom policies. Service discovery integration: use DNS with SRV records listing service instances, clients query DNS and create connections to all instances. For Kubernetes, use headless services—DNS returns pod IPs, not service IP, enabling client-side load balancing. Consul, Etcd, or ZooKeeper provide dynamic service discovery—clients watch service registry and update connection pool as instances change. Look-aside load balancing uses a load balancer (like Envoy) that doesn't proxy data but provides service discovery and policy. Clients query load balancer for backend addresses, then connect directly. This reduces load balancer bottleneck while providing centralized configuration. Connection pooling: maintain multiple connections per backend (typically 1-10) to increase throughput via HTTP/2 multiplexing. Monitor connection health and reconnect on failures. gRPC's built-in health checking protocol enables load balancers to avoid unhealthy instances.",
+          "granularity": "coarse"
+        }
+      ]
+    }
+  ]
+}

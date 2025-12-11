@@ -1,0 +1,78 @@
+{
+  "overall_status": "fail",
+  "total_examples": 173,
+  "total_passed": 162,
+  "execution_time_seconds": 92.94659781455994,
+  "timestamp": "2025-12-11T17:31:33Z",
+  "results": {
+    "trivial": {
+      "difficulty": "trivial",
+      "recall_at_5": 1.0,
+      "mrr": 0.8444444444444444,
+      "ndcg_at_5": 0.884123967142861,
+      "examples_evaluated": 15,
+      "examples_passed": 15,
+      "failed_example_ids": [],
+      "execution_time_seconds": 6.984683990478516,
+      "status": "fail"
+    },
+    "easy": {
+      "difficulty": "easy",
+      "recall_at_5": 0.90625,
+      "mrr": 0.7583333333333333,
+      "ndcg_at_5": 0.7899609915483735,
+      "examples_evaluated": 64,
+      "examples_passed": 59,
+      "failed_example_ids": [
+        "q-tot-applications",
+        "q-langgraph-supervisor",
+        "q-mlops-best-practices",
+        "q-perplexity-retrieval",
+        "q-terraform-iac"
+      ],
+      "execution_time_seconds": 39.27951407432556,
+      "status": "warn"
+    },
+    "medium": {
+      "difficulty": "medium",
+      "recall_at_5": 0.8802816901408451,
+      "mrr": 0.7887323943661971,
+      "ndcg_at_5": 0.79683900765659,
+      "examples_evaluated": 71,
+      "examples_passed": 66,
+      "failed_example_ids": [
+        "q-langgraph-production",
+        "q-rag-groundedness",
+        "q-rag-answer-relevance",
+        "q-sem-paraphrase-retrieval",
+        "q-sem-concept-matching"
+      ],
+      "execution_time_seconds": 36.48982381820679,
+      "status": "pass"
+    },
+    "hard": {
+      "difficulty": "hard",
+      "recall_at_5": 0.6428571428571429,
+      "mrr": 0.619047619047619,
+      "ndcg_at_5": 0.569291458110778,
+      "examples_evaluated": 14,
+      "examples_passed": 13,
+      "failed_example_ids": [
+        "q-cross-agent-memory-rag"
+      ],
+      "execution_time_seconds": 6.179805040359497,
+      "status": "fail"
+    },
+    "adversarial": {
+      "difficulty": "adversarial",
+      "recall_at_5": 0.925925925925926,
+      "mrr": 0.24444444444444446,
+      "ndcg_at_5": 0.8339886610806757,
+      "examples_evaluated": 9,
+      "examples_passed": 9,
+      "failed_example_ids": [],
+      "execution_time_seconds": 4.0123090744018555,
+      "status": "fail"
+    }
+  }
+}
