@@ -67,8 +67,22 @@ async def test_analysis_workflow_with_mocked_services(
     mock_artifact_repo = AsyncMock()
     mock_artifact_repo.create_artifact = AsyncMock(return_value=mock_artifact)
 
+    # Mock _create_artifact_ref to avoid database calls (Issue #244 Handle Pattern)
+    mock_content_ref = {
+        "uri": f"analysis://{TEST_ANALYSIS_ID}/content",
+        "summary": "Test Article - This is test content.",
+        "size_bytes": len(sample_extraction_result["content"]),
+        "content_type": "text/markdown",
+        "available_sections": ["full", "summary", "headings"],
+    }
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch(
+            "app.workflows.tasks.extract_content._create_artifact_ref",
+            new_callable=AsyncMock,
+            return_value=mock_content_ref,
+        ),
         patch(
             "app.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
