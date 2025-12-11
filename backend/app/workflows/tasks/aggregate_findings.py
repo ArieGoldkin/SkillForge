@@ -2,13 +2,20 @@
 
 This module handles the fan-in pattern for collecting and synthesizing
 results from parallel agent execution using LLM synthesis.
+
+Issue #269: Stores agent findings as memories after aggregation for
+the Context Engineering feedback loop.
 """
 
 import time
+from uuid import UUID
 
 from app.core.logging import get_logger
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.tracing import robust_traceable
+from app.db.session import get_session_factory
+from app.models.agent_memory import MemoryType
+from app.services.memory.agent_memory_service import AgentMemoryService
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
@@ -36,6 +43,252 @@ from app.workflows.tasks.aggregation_postprocessing import validate_and_format_a
 from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
+
+
+# Agent type to memory type mapping for storing findings
+AGENT_MEMORY_TYPE_MAP: dict[str, MemoryType] = {
+    "security_auditor": MemoryType.VULNERABILITY_PATTERN,
+    "code_quality_critic": MemoryType.BEST_PRACTICE,
+    "tech_comparator": MemoryType.ANALYSIS_SUMMARY,
+    "implementation_planner": MemoryType.BEST_PRACTICE,
+    "performance_analyst": MemoryType.BEST_PRACTICE,
+    "dependency_mapper": MemoryType.ANALYSIS_SUMMARY,
+    "trend_validator": MemoryType.ANALYSIS_SUMMARY,
+    "integration_feasibility": MemoryType.BEST_PRACTICE,
+}
+
+
+async def _store_findings_as_memories(
+    analysis_id: str,
+    agent_findings: list[dict[str, object]],
+) -> int:
+    """Store agent findings as memories for future proactive recall.
+
+    Issue #269: Closes the Context Engineering feedback loop by storing
+    findings from each agent as searchable memories with embeddings.
+
+    Args:
+        analysis_id: The analysis that produced these findings
+        agent_findings: List of validated agent findings
+
+    Returns:
+        Number of memories successfully stored
+
+    Note:
+        Failures are logged but don't raise - memory storage should never
+        break the aggregation flow.
+
+    """
+    if not agent_findings:
+        return 0
+
+    stored_count = 0
+
+    try:
+        # Get database session
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            memory_service = AgentMemoryService(session)
+
+            for finding in agent_findings:
+                agent_type = finding.get("agent_type")
+                finding_data = finding.get("findings", {})
+
+                if not agent_type or not finding_data:
+                    continue
+
+                # Ensure agent_type is a string
+                agent_type_str = str(agent_type)
+
+                # Get appropriate memory type for this agent
+                memory_type = AGENT_MEMORY_TYPE_MAP.get(agent_type_str, MemoryType.AGENT_FINDING)
+
+                # Create content string from findings
+                content = _extract_finding_content(agent_type_str, finding_data)
+
+                if not content:
+                    continue
+
+                try:
+                    # Parse analysis_id to UUID
+                    analysis_uuid = UUID(analysis_id)
+
+                    # Extract confidence score if available
+                    confidence = finding.get("confidence_score", 1.0)
+                    relevance_score = (
+                        float(confidence) if isinstance(confidence, (int, float)) else 1.0
+                    )
+
+                    # Store the memory
+                    await memory_service.store(
+                        content=content,
+                        memory_type=memory_type,
+                        analysis_id=analysis_uuid,
+                        agent_type=agent_type_str,
+                        metadata={
+                            "source": "aggregation",
+                            "finding_keys": list(finding_data.keys())
+                            if isinstance(finding_data, dict)
+                            else [],
+                        },
+                        relevance_score=relevance_score,
+                    )
+
+                    stored_count += 1
+
+                    logger.debug(
+                        "finding_stored_as_memory",
+                        analysis_id=analysis_id,
+                        agent_type=agent_type_str,
+                        memory_type=memory_type.value,
+                        content_length=len(content),
+                    )
+
+                except Exception as e:  # noqa: BLE001
+                    # Log but don't fail - individual memory failures shouldn't break flow
+                    logger.warning(
+                        "finding_memory_store_error",
+                        analysis_id=analysis_id,
+                        agent_type=agent_type_str,
+                        error=str(e),
+                        error_type=type(e).__name__,
+                    )
+
+    except Exception as e:  # noqa: BLE001
+        # Database connection or session errors
+        logger.warning(
+            "findings_memory_store_session_error",
+            analysis_id=analysis_id,
+            error=str(e),
+            error_type=type(e).__name__,
+            fallback="continuing_without_memory_storage",
+        )
+        return 0
+
+    logger.info(
+        "findings_stored_as_memories",
+        analysis_id=analysis_id,
+        total_findings=len(agent_findings),
+        stored_count=stored_count,
+    )
+
+    return stored_count
+
+
+def _extract_finding_content(agent_type: str, finding_data: object) -> str:
+    """Extract meaningful content string from agent finding data.
+
+    Args:
+        agent_type: Type of agent that produced the finding
+        finding_data: The findings dictionary or object
+
+    Returns:
+        Formatted content string suitable for embedding
+
+    """
+    if not finding_data:
+        return ""
+
+    if not isinstance(finding_data, dict):
+        return str(finding_data)[:2000]
+
+    # Build content from key finding fields based on agent type
+    parts = _extract_common_fields(finding_data)
+    parts.extend(_extract_agent_specific_fields(agent_type, finding_data))
+
+    # If no specific fields found, create general summary
+    if not parts:
+        parts = _extract_fallback_summary(finding_data)
+
+    # Join all parts and truncate if too long
+    content = "\n".join(parts)
+    return content[:2000]  # Max 2000 chars for embedding
+
+
+def _extract_common_fields(finding_data: dict) -> list[str]:
+    """Extract common fields present in most findings."""
+    parts = []
+    if "recommendation" in finding_data:
+        parts.append(f"Recommendation: {finding_data['recommendation']}")
+    if "summary" in finding_data:
+        parts.append(f"Summary: {finding_data['summary']}")
+    return parts
+
+
+def _extract_agent_specific_fields(agent_type: str, finding_data: dict) -> list[str]:
+    """Extract agent-specific fields based on agent type."""
+    extractors = {
+        "security_auditor": _extract_security_fields,
+        "tech_comparator": _extract_tech_fields,
+        "implementation_planner": _extract_implementation_fields,
+        "performance_analyst": _extract_performance_fields,
+        "code_quality_critic": _extract_quality_fields,
+    }
+    extractor = extractors.get(agent_type)
+    return extractor(finding_data) if extractor else []
+
+
+def _extract_security_fields(finding_data: dict) -> list[str]:
+    """Extract security auditor specific fields."""
+    parts = []
+    risks = finding_data.get("security_risks")
+    if risks and isinstance(risks, list):
+        risk_strs = [
+            f"{r.get('risk_type', 'unknown')}: {r.get('description', '')}"
+            for r in risks[:5]
+            if isinstance(r, dict)
+        ]
+        if risk_strs:
+            parts.append(f"Security Risks: {'; '.join(risk_strs)}")
+    return parts
+
+
+def _extract_tech_fields(finding_data: dict) -> list[str]:
+    """Extract tech comparator specific fields."""
+    parts = []
+    if "primary_tech" in finding_data:
+        parts.append(f"Primary Technology: {finding_data['primary_tech']}")
+    alts = finding_data.get("alternatives")
+    if alts and isinstance(alts, list):
+        parts.append(f"Alternatives: {', '.join(str(a) for a in alts[:5])}")
+    return parts
+
+
+def _extract_implementation_fields(finding_data: dict) -> list[str]:
+    """Extract implementation planner specific fields."""
+    parts = []
+    prereqs = finding_data.get("prerequisites")
+    if prereqs and isinstance(prereqs, list):
+        parts.append(f"Prerequisites: {', '.join(str(p) for p in prereqs[:5])}")
+    return parts
+
+
+def _extract_performance_fields(finding_data: dict) -> list[str]:
+    """Extract performance analyst specific fields."""
+    parts = []
+    if "performance_concerns" in finding_data:
+        parts.append(f"Performance Concerns: {finding_data['performance_concerns']}")
+    return parts
+
+
+def _extract_quality_fields(finding_data: dict) -> list[str]:
+    """Extract code quality critic specific fields."""
+    parts = []
+    issues = finding_data.get("quality_issues")
+    if issues and isinstance(issues, list):
+        parts.append(f"Quality Issues: {'; '.join(str(i) for i in issues[:5])}")
+    return parts
+
+
+def _extract_fallback_summary(finding_data: dict) -> list[str]:
+    """Extract fallback summary when no specific fields found."""
+    summary_parts = []
+    for key, value in list(finding_data.items())[:5]:
+        if isinstance(value, (str, int, float, bool)):
+            summary_parts.append(f"{key}: {value}")
+        elif isinstance(value, list):
+            summary_parts.append(f"{key}: {len(value)} items")
+    return ["; ".join(summary_parts)] if summary_parts else []
 
 
 async def _aggregate_findings_impl(
@@ -212,6 +465,19 @@ async def _aggregate_findings_impl(
             findings_count=len(validated_findings),
             conflicts_resolved=conflicts_resolved_for_log,
         )
+
+        # Step 9: Store findings as memories for future recall (Issue #269)
+        # This enables the Context Engineering feedback loop
+        stored_memories = await _store_findings_as_memories(
+            analysis_id=analysis_id,
+            agent_findings=validated_findings,
+        )
+
+        # Add memory storage metadata to insights
+        metadata = aggregated_insights_dict.get("metadata", {})
+        if isinstance(metadata, dict):
+            metadata["memories_stored"] = stored_memories
+            aggregated_insights_dict["metadata"] = metadata
 
         # Return only updated fields, not entire state
         return {"aggregated_insights": aggregated_insights_dict}

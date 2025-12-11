@@ -3,19 +3,30 @@
 This node generates contextual Socratic questions based on user level.
 """
 
-from langchain_core.messages import HumanMessage, SystemMessage
 from langsmith import get_current_run_tree
 
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
-from app.workflows.tutor.config import SOCRATIC_QUESTION_PROMPT
+from app.workflows.context_compiler import create_workflow_compiler
+from app.workflows.tutor.config import SOCRATIC_QUESTION_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.state import TutorState
 
 logger = get_logger(__name__)
+
+# Module-level compiler (lazy init)
+_tutor_compiler = None
+
+
+def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization)."""
+    global _tutor_compiler  # noqa: PLW0603
+    if _tutor_compiler is None:
+        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+    return _tutor_compiler
 
 
 @robust_traceable(
@@ -99,19 +110,19 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:  # noqa: PLR0915
             user_level=user_level,
         )
 
-        # Get LLM model
+        # Get LLM model and compiler
         model = get_chat_model()
+        compiler = _get_tutor_compiler()
 
-        # Generate Socratic question
-        messages = [
-            SystemMessage(
-                content=(
-                    "You are a Socratic tutor. "
-                    "Ask thoughtful questions that guide learning through discovery."
-                )
-            ),
-            HumanMessage(content=prompt),
-        ]
+        # Get conversation history for context compaction (Issue #270)
+        conversation_history = state.get("conversation_history", [])
+
+        # Compile context with history compaction
+        messages = await compiler.compile_for_invocation(
+            session_history=conversation_history,
+            current_input=prompt,
+            injected_memory=None,  # Future RAG integration point
+        )
 
         response = await model.ainvoke(messages)
         question = extract_string_content(response)

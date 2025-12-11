@@ -6,7 +6,6 @@ This node evaluates user understanding using LLM-based assessment.
 import json
 from datetime import UTC, datetime
 
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langsmith import get_current_run_tree
 
@@ -16,13 +15,25 @@ from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
 from app.db.session import get_session_factory
-from app.workflows.tutor.config import READINESS_ASSESSMENT_PROMPT
+from app.workflows.context_compiler import create_workflow_compiler
+from app.workflows.tutor.config import READINESS_ASSESSMENT_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.workflows.tutor.schemas.assessment import ReadinessAssessment
 from app.workflows.tutor.state import TutorState
 
 logger = get_logger(__name__)
+
+# Module-level compiler (lazy init)
+_tutor_compiler = None
+
+
+def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization)."""
+    global _tutor_compiler  # noqa: PLW0603
+    if _tutor_compiler is None:
+        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+    return _tutor_compiler
 
 
 @robust_traceable(
@@ -107,22 +118,22 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
             understanding_scores=json.dumps(understanding_scores),
         )
 
-        # Get LLM model with structured output
+        # Get LLM model and compiler
         model = get_chat_model()
+        compiler = _get_tutor_compiler()
 
         # Create parser for ReadinessAssessment
         parser = JsonOutputParser(pydantic_object=ReadinessAssessment)
 
-        # Generate assessment with structured output
-        messages = [
-            SystemMessage(
-                content=(
-                    "You are an expert educational assessor. "
-                    "Evaluate understanding accurately and provide actionable feedback."
-                )
-            ),
-            HumanMessage(content=f"{prompt}\n\n{parser.get_format_instructions()}"),
-        ]
+        # Get conversation history for context compaction (Issue #270)
+        conversation_history = state.get("conversation_history", [])
+
+        # Compile context with history compaction (include format instructions in current_input)
+        messages = await compiler.compile_for_invocation(
+            session_history=conversation_history,
+            current_input=f"{prompt}\n\n{parser.get_format_instructions()}",
+            injected_memory=None,  # Future RAG integration point
+        )
 
         response = await model.ainvoke(messages)
         response_text = extract_string_content(response)

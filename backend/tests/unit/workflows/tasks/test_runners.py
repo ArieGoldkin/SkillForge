@@ -1,11 +1,15 @@
-"""Unit tests for agent runner functions with session management."""
+"""Unit tests for agent runner functions with session management.
+
+Tests verify Issue #268: Agent nodes load content from artifact store
+with fallback to raw_content for backward compatibility.
+"""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.state import AnalysisState
+from app.workflows.state import AnalysisState, ContentRef
 from app.workflows.tasks.runners import (
     run_code_quality_critic_with_session,
     run_dependency_mapper_with_session,
@@ -481,3 +485,170 @@ async def test_run_dependency_mapper_with_session_handles_generatorexit(
     # Should return empty dict on GeneratorExit for graceful degradation
     assert result == {}
     mock_run_agent.assert_called_once()
+
+
+# Issue #268: Test artifact loading with content_ref
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.ArtifactStore")
+@patch("app.workflows.tasks.runners.run_tech_comparator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_tech_comparator_loads_from_artifact(
+    mock_session_local,
+    mock_run_agent,
+    mock_artifact_store_class,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that tech comparator loads content from artifact store when content_ref present."""
+    # Setup content_ref in state
+    analysis_id = str(mock_analysis_id)
+    content_ref: ContentRef = {
+        "uri": f"analysis://{analysis_id}/content",
+        "summary": "Test summary",
+        "size_bytes": 1000,
+        "content_type": "text/markdown",
+        "available_sections": ["summary", "full"],
+    }
+    state = AnalysisState(
+        analysis_id=mock_analysis_id,
+        url="https://example.com",
+        content_type="article",
+        skill_level="intermediate",
+        raw_content="fallback content",
+        content_ref=content_ref,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
+    # Mock artifact store load
+    mock_store_instance = MagicMock()
+    mock_store_instance.load = AsyncMock(return_value="loaded from artifact")
+    mock_artifact_store_class.return_value = mock_store_instance
+
+    # Mock session and agent
+    mock_session_local.return_value = mock_session
+    mock_run_agent.return_value = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent):
+        result = await run_tech_comparator_with_session(
+            test_content, test_content_type, mock_analysis_id, state
+        )
+
+    # Verify artifact store was used
+    mock_artifact_store_class.assert_called_once_with(mock_session)
+    mock_store_instance.load.assert_called_once()
+
+    # Verify agent was called with loaded content, not fallback
+    assert mock_run_agent.call_count == 1
+    call_args = mock_run_agent.call_args[0]
+    assert call_args[0] == "loaded from artifact"  # First argument should be loaded content
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.run_tech_comparator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_tech_comparator_falls_back_to_raw_content(
+    mock_session_local,
+    mock_run_agent,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that tech comparator falls back to raw_content when content_ref missing."""
+    # State without content_ref
+    state = AnalysisState(
+        analysis_id=mock_analysis_id,
+        url="https://example.com",
+        content_type="article",
+        skill_level="intermediate",
+        raw_content="fallback content",
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
+    # Mock session and agent
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent):
+        result = await run_tech_comparator_with_session(
+            test_content, test_content_type, mock_analysis_id, state
+        )
+
+    # Verify agent was called with fallback content
+    assert mock_run_agent.call_count == 1
+    call_args = mock_run_agent.call_args[0]
+    assert call_args[0] == test_content  # Should use fallback content
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.tasks.runners.ArtifactStore")
+@patch("app.workflows.tasks.runners.run_tech_comparator")
+@patch("app.db.session.AsyncSessionLocal")
+async def test_run_tech_comparator_falls_back_on_artifact_error(
+    mock_session_local,
+    mock_run_agent,
+    mock_artifact_store_class,
+    mock_analysis_id,
+    test_content,
+    test_content_type,
+    mock_session,
+):
+    """Test that tech comparator falls back to raw_content when artifact loading fails."""
+    # Setup content_ref in state
+    analysis_id = str(mock_analysis_id)
+    content_ref: ContentRef = {
+        "uri": f"analysis://{analysis_id}/content",
+        "summary": "Test summary",
+        "size_bytes": 1000,
+        "content_type": "text/markdown",
+        "available_sections": ["summary", "full"],
+    }
+    state = AnalysisState(
+        analysis_id=mock_analysis_id,
+        url="https://example.com",
+        content_type="article",
+        skill_level="intermediate",
+        raw_content="fallback content",
+        content_ref=content_ref,
+        extraction_metadata={},
+        content_embedding=[0.1] * 1536,
+        supervisor_decision={},
+        agent_findings=[],
+        aggregated_insights={},
+        artifact_id=None,
+    )
+
+    # Mock artifact store load to raise error
+    mock_store_instance = MagicMock()
+    mock_store_instance.load = AsyncMock(side_effect=Exception("Database error"))
+    mock_artifact_store_class.return_value = mock_store_instance
+
+    # Mock session and agent
+    mock_session_local.return_value = mock_session
+    mock_run_agent = AsyncMock(return_value={"findings": "test"})
+
+    with patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent):
+        result = await run_tech_comparator_with_session(
+            test_content, test_content_type, mock_analysis_id, state
+        )
+
+    # Verify artifact store was attempted
+    mock_artifact_store_class.assert_called_once_with(mock_session)
+    mock_store_instance.load.assert_called_once()
+
+    # Verify agent was called with fallback content after error
+    assert mock_run_agent.call_count == 1
+    call_args = mock_run_agent.call_args[0]
+    assert call_args[0] == test_content  # Should fall back to original content

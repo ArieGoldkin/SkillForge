@@ -207,7 +207,7 @@ class ArtifactStore:
     def _generate_summary(self, content: str, size_bytes: int) -> str:
         """Generate summary from content.
 
-        For now, uses first ~500 words as summary.
+        For now, uses first ~500 words as summary, capped at 2000 chars.
         Future: Use LLM for better summarization.
         """
         if size_bytes < SUMMARY_THRESHOLD_BYTES:
@@ -221,6 +221,10 @@ class ArtifactStore:
 
         if len(words) > SUMMARY_MAX_WORDS:
             summary += "..."
+
+        # Ensure summary doesn't exceed max chars (for Pydantic validation)
+        if len(summary) > SUMMARY_MAX_CHARS:
+            summary = summary[: SUMMARY_MAX_CHARS - 3] + "..."
 
         return summary
 

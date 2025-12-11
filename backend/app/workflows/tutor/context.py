@@ -2,7 +2,14 @@
 
 Implements sliding window and conversation summarization for efficient
 context management within token budget.
+
+.. deprecated::
+    This module is deprecated in favor of ContextCompiler (Issue #270).
+    Use ContextCompiler.compile_for_invocation() instead of build_conversation_context().
+    This module will be removed in Sprint 14.
 """
+
+import warnings
 
 from app.core.logging import get_logger
 from app.workflows.tutor.config import SLIDING_WINDOW_SIZE, SUMMARY_THRESHOLD
@@ -13,6 +20,10 @@ logger = get_logger(__name__)
 
 def build_conversation_context(state: TutorState) -> str:
     """Build conversation context using sliding window + summarization.
+
+    .. deprecated::
+        Use ContextCompiler.compile_for_invocation() instead.
+        This function will be removed in Sprint 14.
 
     Strategy:
     - Last N messages kept verbatim (sliding window)
@@ -26,6 +37,12 @@ def build_conversation_context(state: TutorState) -> str:
         Formatted conversation context string
 
     """
+    warnings.warn(
+        "build_conversation_context is deprecated. "
+        "Use ContextCompiler.compile_for_invocation() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     conversation_history = state.get("conversation_history", [])
     conversation_summary = state.get("conversation_summary")
 

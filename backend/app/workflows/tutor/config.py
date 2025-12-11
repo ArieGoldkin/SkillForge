@@ -1,5 +1,7 @@
 """Configuration constants for tutor workflow."""
 
+from app.services.context.compaction import CompactionConfig
+
 # Syllabus generation settings
 SYLLABUS_MIN_SECTIONS = 2
 SYLLABUS_MAX_SECTIONS = 4
@@ -98,3 +100,12 @@ TUTOR_CONFIG = {
         "chunk_size": STREAMING_CHUNK_SIZE,
     },
 }
+
+# Tutor-specific compaction config (Issue #270)
+TUTOR_COMPACTION_CONFIG = CompactionConfig(
+    max_turns_full=5,  # Keep last 5 turns verbatim
+    summarize_after=10,  # Summarize after 10 turns
+    summary_max_tokens=500,  # Limit summary length
+    preserve_tool_calls=True,
+    token_budget=6000,
+)
