@@ -77,6 +77,68 @@ npm run typecheck          # Type checking
 - ✅ Run ALL three commands above (format, lint, mypy)
 
 
+## 🛑 ABSOLUTE: Git Branch & PR Workflow (NEVER VIOLATE)
+
+**THIS IS NON-NEGOTIABLE. VIOLATING THIS WORKFLOW IS A CRITICAL FAILURE.**
+
+### The Rule
+**NEVER commit directly to `dev` or `main` branches. ALWAYS use feature branches + PRs.**
+
+### Required Workflow
+```bash
+# 1. Create feature branch from dev (ALWAYS)
+git checkout dev
+git pull origin dev
+git checkout -b issue/<issue-number>-<brief-description>
+
+# 2. Do your work, commit to feature branch
+git add .
+git commit -m "feat(#<issue>): Description"
+
+# 3. Push feature branch
+git push -u origin issue/<issue-number>-<brief-description>
+
+# 4. Create PR to dev (NEVER skip this)
+gh pr create --base dev --head issue/<issue-number>-<brief-description> --title "..." --body "..."
+```
+
+### Branch Naming Convention
+- `issue/<number>-<description>` - For GitHub issues (e.g., `issue/273-golden-dataset-expansion`)
+- `feature/<description>` - For features without issues
+- `fix/<description>` - For bug fixes without issues
+
+### FORBIDDEN Actions (Will cause rollback + shame)
+- ❌ `git commit` while on `dev` branch
+- ❌ `git commit` while on `main` branch
+- ❌ `git push origin dev` with new commits
+- ❌ `git push origin main` with new commits
+- ❌ Skipping PR creation after feature work
+
+### Pre-Commit Branch Check
+**BEFORE any commit, ALWAYS verify:**
+```bash
+# Check current branch - if dev or main, STOP and create feature branch
+git branch --show-current
+```
+
+### If You Accidentally Commit to dev/main
+```bash
+# 1. Create feature branch at current commit
+git checkout -b issue/<number>-<description>
+
+# 2. Reset dev/main to remote state
+git checkout dev
+git reset --hard origin/dev
+
+# 3. Push feature branch and create PR
+git checkout issue/<number>-<description>
+git push -u origin issue/<number>-<description>
+gh pr create --base dev ...
+```
+
+**Remember: PRs enable code review, CI checks, and audit trails. Direct commits bypass all safety nets.**
+
+
 ## 📋 Modular Instruction System
 
 This project uses specialized instruction files to optimize tokens while maintaining agent capabilities.
