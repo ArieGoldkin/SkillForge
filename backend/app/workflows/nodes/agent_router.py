@@ -2,11 +2,14 @@
 
 This module provides the routing function that uses LangGraph's Send API to
 dynamically route to selected agent nodes for parallel execution.
+
+Issue #246: Uses context scoping to pass minimal state to each agent.
 """
 
 from langgraph.types import Send
 
 from app.core.logging import get_logger
+from app.workflows.context_scope import build_scoped_context
 from app.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
@@ -61,17 +64,22 @@ def route_to_agents(state: AnalysisState) -> list[Send]:
         "integration_feasibility": "integration_feasibility",
     }
 
-    # Create Send objects for each selected agent
+    # Create Send objects for each selected agent with scoped context
     sends = []
     for agent_type in selected_agents:
         if agent_type in agent_node_map:
             node_name = agent_node_map[agent_type]
-            sends.append(Send(node_name, state))
+
+            # Build scoped context for this agent (Issue #246)
+            scoped_state = build_scoped_context(state, agent_type)
+
+            sends.append(Send(node_name, scoped_state))
             logger.debug(
                 "agent_router_send_created",
                 agent_type=agent_type,
                 node_name=node_name,
                 analysis_id=state.get("analysis_id"),
+                scoped_fields=list(scoped_state.keys()),
             )
         else:
             logger.warning(
