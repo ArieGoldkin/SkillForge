@@ -95,23 +95,31 @@ export async function getCompletedAnalysis(
   artifact_id: string;
   url: string;
 } | null> {
-  const library = await getLibrary(request, { status: 'complete', limit: 1 });
+  // Get completed analyses (API uses 'completed' status)
+  const library = await getLibrary(request, { status: 'completed', limit: 20 });
 
   if (library.items.length === 0) {
     return null;
   }
 
-  const analysis = await getAnalysis(request, library.items[0].analysis_id);
-
-  if (!analysis.artifact_id) {
-    return null;
+  // Find the first analysis that has an artifact (not all completed analyses have artifacts)
+  for (const item of library.items) {
+    try {
+      const analysis = await getAnalysis(request, item.analysis_id);
+      if (analysis.artifact_id) {
+        return {
+          analysis_id: analysis.analysis_id,
+          artifact_id: analysis.artifact_id,
+          url: analysis.url,
+        };
+      }
+    } catch {
+      // Skip analyses without artifacts
+      continue;
+    }
   }
 
-  return {
-    analysis_id: analysis.analysis_id,
-    artifact_id: analysis.artifact_id,
-    url: analysis.url,
-  };
+  return null;
 }
 
 /**

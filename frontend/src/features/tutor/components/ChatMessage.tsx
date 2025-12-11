@@ -84,6 +84,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         isUser ? 'flex-row-reverse' : 'flex-row',
         className
       )}
+      data-message-role={role}
     >
       {/* Avatar */}
       <div

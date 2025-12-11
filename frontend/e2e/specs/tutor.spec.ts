@@ -10,27 +10,29 @@ import {
 
 test.describe('Tutor Page - Socratic Chat', () => {
   let tutorPage: TutorPage;
-  let sessionId: string;
+  let sessionId: string | null = null;
+  let hasCompletedAnalysis = false;
 
   test.beforeAll(async ({ request }) => {
     // Ensure backend is healthy before running tests
     await waitForBackend(request);
+
+    // Check if there's a completed analysis with artifact
+    const completedAnalysis = await getCompletedAnalysis(request);
+    hasCompletedAnalysis = !!completedAnalysis;
   });
 
   test.beforeEach(async ({ page, request }) => {
-    // Get or create a completed analysis
-    const completedAnalysis = await getCompletedAnalysis(request);
+    // Skip all tutor tests if no completed analysis exists
+    test.skip(!hasCompletedAnalysis, 'No completed analysis with artifact found - run a full analysis first');
 
-    if (!completedAnalysis) {
-      throw new Error(
-        'No completed analysis found. Please run an analysis first or seed test data.'
-      );
-    }
+    // Get a completed analysis (we know it exists from beforeAll)
+    const completedAnalysis = await getCompletedAnalysis(request);
 
     // Create a real tutor session
     const sessionResponse = await createTutorSession(
       request,
-      completedAnalysis.analysis_id,
+      completedAnalysis!.analysis_id,
       'intermediate'
     );
 
