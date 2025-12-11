@@ -5,6 +5,7 @@ This module provides tools for extracting evaluation examples from various sourc
 - GitHub issues and discussions
 - Edge case generation
 - Adversarial example generation
+- Cutting-edge topics (Dec 2025)
 - Stack Overflow Q&A (planned)
 
 Also provides PII anonymization for safe data handling.
@@ -18,6 +19,13 @@ from app.evaluation.ingestion.adversarial_generator import (
     AdversarialGenerator,
 )
 from app.evaluation.ingestion.adversarial_templates import AdversarialTemplates
+from app.evaluation.ingestion.cutting_edge_generator import (
+    ALL_TOPICS,
+    CuttingEdgeConfig,
+    CuttingEdgeGenerator,
+    Topic,
+    generate_all_cutting_edge,
+)
 from app.evaluation.ingestion.edge_case_generator import (
     ALL_CATEGORIES as EDGE_CASE_CATEGORIES,
 )
@@ -69,6 +77,12 @@ if LANGSMITH_AVAILABLE:
         "AdversarialConfig",
         "AdversarialTemplates",
         "ADVERSARIAL_CATEGORIES",
+        # Cutting-Edge Topics
+        "CuttingEdgeGenerator",
+        "CuttingEdgeConfig",
+        "Topic",
+        "ALL_TOPICS",
+        "generate_all_cutting_edge",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",
@@ -95,6 +109,12 @@ else:
         "AdversarialConfig",
         "AdversarialTemplates",
         "ADVERSARIAL_CATEGORIES",
+        # Cutting-Edge Topics
+        "CuttingEdgeGenerator",
+        "CuttingEdgeConfig",
+        "Topic",
+        "ALL_TOPICS",
+        "generate_all_cutting_edge",
         # PII Anonymization
         "PIIAnonymizer",
         "PIIReplacement",

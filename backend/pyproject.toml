@@ -141,6 +141,7 @@ ignore = [
     "PTH123",   # Path.open() - json.load compatibility
     "C401",     # set comprehension - readability preference
     "D401",     # Imperative mood - acceptable for main() functions
+    "D413",     # Missing blank line after last section - conflicts with ruff formatter
     "D417",     # Missing argument description - optional param docs
     "RUF022",   # __all__ sorting - organized by category intentionally
     "RUF100",   # Unused noqa - keep for clarity

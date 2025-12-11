@@ -1,0 +1,209 @@
+name: Evaluation Pipeline
+
+on:
+  pull_request:
+    branches: [main, dev]
+    paths:
+      # Run on changes to agent code
+      - "backend/app/agents/**"
+      - "backend/app/workflows/**"
+      - "backend/app/services/**"
+      # Run on changes to evaluation infrastructure
+      - "backend/app/evaluation/**"
+      - "backend/tests/smoke/retrieval/**"
+      # Run on changes to this workflow
+      - ".github/workflows/evaluation.yml"
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      fail_on_warn:
+        description: "Fail on warnings"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  evaluate:
+    name: Run Evaluation Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Service container for PostgreSQL with pgvector
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillforge_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for baseline comparison
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          poetry install --with dev,test
+
+      - name: Setup database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: |
+          # Run migrations to set up schema
+          poetry run alembic upgrade head
+
+      - name: Download baseline results (if exists)
+        id: baseline
+        continue-on-error: true
+        run: |
+          # Try to download baseline from main branch
+          gh run download \
+            --repo ${{ github.repository }} \
+            --branch main \
+            --name evaluation-results \
+            --dir baseline/ || echo "No baseline found"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run evaluation pipeline
+        id: evaluation
+        working-directory: backend
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: |
+          # Run evaluation with baseline if available
+          if [ -f baseline/evaluation_results.json ]; then
+            poetry run python scripts/run_evaluation.py \
+              --output evaluation_results.json \
+              --baseline baseline/evaluation_results.json \
+              ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
+          else
+            poetry run python scripts/run_evaluation.py \
+              --output evaluation_results.json \
+              ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
+          fi
+
+      - name: Generate markdown report
+        if: always()
+        working-directory: backend
+        run: |
+          # Generate markdown report from JSON results
+          poetry run python -c "
+          import json
+          from pathlib import Path
+          from app.evaluation.pipeline.runner import PipelineResult
+
+          with open('evaluation_results.json') as f:
+              data = json.load(f)
+
+          # Reconstruct PipelineResult for markdown generation
+          # This is a simplified version - real implementation would deserialize properly
+          print('# Evaluation Results')
+          print()
+          print(f\"**Status**: {data['overall_status']}\")
+          print(f\"**Examples**: {data['total_passed']}/{data['total_examples']}\")
+          print(f\"**Time**: {data['execution_time_seconds']:.1f}s\")
+          " > evaluation_report.md
+
+          # Append regression report if it exists
+          if [ -f evaluation_results_regression.md ]; then
+            echo "" >> evaluation_report.md
+            cat evaluation_results_regression.md >> evaluation_report.md
+          fi
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('backend/evaluation_report.md', 'utf8');
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('# Evaluation')
+            );
+
+            const commentBody = `${report}\n\n---\n*Automated evaluation from [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*`;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Upload evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: |
+            backend/evaluation_results.json
+            backend/evaluation_report.md
+            backend/evaluation_results_regression.md
+          retention-days: 30
+
+      - name: Upload to baseline (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-baseline
+          path: backend/evaluation_results.json
+          retention-days: 90  # Keep baseline longer
+
+      - name: Check evaluation status
+        if: always()
+        working-directory: backend
+        run: |
+          # Exit with error if evaluation failed
+          STATUS=$(jq -r '.overall_status' evaluation_results.json)
+          if [ "$STATUS" = "fail" ]; then
+            echo "::error::Evaluation failed - see results above"
+            exit 1
+          elif [ "$STATUS" = "warn" ] && [ "${{ inputs.fail_on_warn }}" = "true" ]; then
+            echo "::error::Evaluation has warnings (strict mode enabled)"
+            exit 1
+          fi
