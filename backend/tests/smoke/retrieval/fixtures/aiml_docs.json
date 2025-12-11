@@ -1,0 +1,653 @@
+{
+  "version": "1.0.0",
+  "description": "AI/ML technical documents covering RAG, embeddings, training techniques, and agent architectures",
+  "total_documents": 25,
+  "documents": [
+    {
+      "id": "rag-architecture-patterns",
+      "title": "RAG Architecture Patterns and Best Practices",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rag", "llm", "architecture", "retrieval"],
+      "sections": [
+        {
+          "id": "rag-architecture-patterns/overview",
+          "title": "RAG Fundamentals and Motivation",
+          "content": "Retrieval-Augmented Generation (RAG) combines large language models with information retrieval to ground responses in external knowledge. Pure LLMs are limited to training data knowledge, leading to outdated information and hallucinations. RAG addresses this by retrieving relevant documents from a knowledge base and injecting them into the LLM prompt as context. The basic RAG pipeline has three stages: retrieval (find relevant documents using semantic search), augmentation (format documents into prompt context), and generation (LLM generates response conditioned on retrieved context). This architecture enables LLMs to answer questions about proprietary data, recent events, and domain-specific knowledge without fine-tuning. RAG is particularly effective for question-answering, document summarization, and chatbots requiring factual accuracy. Typical applications include customer support chatbots over product documentation, legal research over case law, and scientific literature search. RAG systems must balance retrieval quality, context window limits, and inference latency.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-architecture-patterns/naive-rag",
+          "title": "Naive RAG Implementation",
+          "content": "The simplest RAG architecture uses dense vector embeddings for retrieval. Documents are chunked (typically 200-500 tokens per chunk), embedded using a model like sentence-transformers (all-MiniLM-L6-v2 or OpenAI text-embedding-ada-002), and stored in a vector database (Pinecone, Weaviate, or pgvector). At query time, the user question is embedded with the same model, and k-nearest neighbors search retrieves the top-k most similar chunks (typically k=5-10). Retrieved chunks are concatenated into the prompt with the user query, and the LLM generates a response. This approach is simple to implement but has limitations: semantic similarity doesn't always correlate with relevance (a chunk mentioning 'Paris' might be retrieved for 'French cuisine' but not actually answer the question), chunk boundaries can split important information, and retrieved chunks may be redundant or contradictory. Despite limitations, naive RAG works surprisingly well for many use cases and serves as a baseline for more sophisticated approaches.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-architecture-patterns/advanced-rag",
+          "title": "Advanced RAG Techniques",
+          "content": "Advanced RAG systems improve retrieval quality through several techniques. Query expansion generates multiple variations of the user query using an LLM ('Explain photosynthesis' → ['What is photosynthesis?', 'How does photosynthesis work?', 'Steps of photosynthesis']), then retrieves documents for all variations and merges results. Hypothetical document embeddings (HyDE) generate a hypothetical answer to the query, embed it, then retrieve documents similar to the hypothetical answer rather than the query—this works because answers are semantically closer to relevant documents than questions. Re-ranking uses a cross-encoder model to score query-document pairs more accurately than pure embedding similarity, typically rescoring top-100 from vector search to select top-10 for LLM context. Contextual compression uses an LLM to extract only relevant sentences from retrieved chunks, reducing noise and saving context window space. Recursive retrieval follows citations and references within retrieved documents to find additional relevant content. These techniques increase RAG accuracy from ~60% (naive) to ~80-90% but add latency and complexity.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-architecture-patterns/production-considerations",
+          "title": "Production RAG System Design",
+          "content": "Production RAG systems require careful architectural decisions beyond the basic pipeline. Caching improves latency and reduces costs—semantic caches store embeddings of recent queries and return cached results for similar queries (cosine similarity > 0.95). Hybrid search combines dense vectors with keyword search (BM25) to capture both semantic similarity and exact term matches, using a weighted combination like 0.7 * vector_score + 0.3 * BM25_score. Metadata filtering allows combining semantic search with structured filters ('find documents about RAG published after 2023'). Streaming generation starts LLM response before all retrievals complete, showing partial results faster. Error handling includes fallbacks when retrieval fails (use LLM without RAG) and confidence scoring to detect when retrieved context is insufficient. Monitoring tracks retrieval latency, cache hit rate, LLM token usage, and answer quality metrics. Document update strategies vary: incremental updates add new chunks to vector DB in real-time, while full rebuilds re-embed all content periodically to incorporate embedding model improvements. These production concerns significantly impact system reliability and cost at scale.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "chunking-strategies",
+      "title": "Document Chunking Strategies for RAG",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rag", "chunking", "document-processing", "embeddings"],
+      "sections": [
+        {
+          "id": "chunking-strategies/fixed-size",
+          "title": "Fixed-Size Chunking",
+          "content": "Fixed-size chunking splits documents into chunks of fixed token count, typically 200-512 tokens. This simple approach uses a sliding window with optional overlap—for example, chunks of 256 tokens with 50 token overlap to prevent splitting related sentences across chunks. The chunk size is a critical hyperparameter: smaller chunks provide precise retrieval (only relevant sentences) but lose context, while larger chunks provide more context but may include irrelevant information and hit LLM context window limits. Empirical research suggests 256-512 tokens is optimal for most use cases. Fixed-size chunking ignores document structure—it may split paragraphs, code blocks, or tables inappropriately. However, its simplicity and predictability make it a strong baseline. The overlap parameter (typically 10-20% of chunk size) ensures that information split across a boundary appears in both chunks, improving retrieval recall. This approach works well for unstructured text like articles and documentation but struggles with structured content like code or tables.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "chunking-strategies/semantic",
+          "title": "Semantic Chunking",
+          "content": "Semantic chunking uses document structure and semantics to create natural chunk boundaries. The approach segments documents by paragraphs, sections, or topics rather than arbitrary token counts. For markdown/HTML, chunks align with headers (<h1>, <h2>, ##) preserving hierarchical structure. For code, chunks align with functions or classes. For academic papers, chunks correspond to sections (Introduction, Methods, Results). Semantic chunking requires document-specific logic—PDF parsers extract sections differently than HTML parsers. Advanced techniques use embedding similarity to detect topic shifts: compute embeddings for consecutive sentences, identify points where embedding similarity drops (indicating topic change), and create chunk boundaries at these points. This 'topic segmentation' approach produces variable-sized chunks that maintain topical coherence. Semantic chunking improves retrieval quality by ensuring chunks are semantically complete units, but implementation complexity is higher than fixed-size chunking. Hybrid approaches combine both methods: use semantic boundaries where available (section headers) and fall back to fixed-size for unstructured portions.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "chunking-strategies/hierarchical",
+          "title": "Hierarchical Chunking",
+          "content": "Hierarchical chunking creates multiple granularities of chunks for the same content, enabling multi-level retrieval. Documents are chunked at multiple levels: paragraph-level (100-200 tokens), section-level (500-1000 tokens), and document-level (full document summary). All levels are embedded and stored in the vector database with metadata indicating the hierarchy. At retrieval time, the system first retrieves at paragraph level for precision, then fetches parent section or full document to provide context. For example, if a paragraph about 'transformer attention mechanism' is retrieved, the system includes the parent section 'Transformer Architecture Overview' in the LLM prompt. This approach balances precision (finding exact relevant sentences) with context (providing surrounding information for comprehension). Implementation requires tracking parent-child relationships between chunks, typically using document IDs like 'doc123/section2/paragraph5'. Hierarchical chunking significantly improves RAG quality in complex domains like technical documentation or legal texts where specific details require surrounding context for interpretation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "chunking-strategies/metadata-enrichment",
+          "title": "Chunk Metadata Enrichment",
+          "content": "Enriching chunks with metadata enables powerful filtering and contextualization. Basic metadata includes document source, author, timestamp, and section headers. Advanced metadata uses LLMs to generate chunk summaries, extract entities (people, organizations, locations), identify topics, and assess chunk type (definition, example, comparison, procedure). This metadata serves two purposes: filtering (retrieve only chunks from 2023-2024) and contextualization (prepend section headers to chunk content in LLM prompt). For example, a chunk about 'performance optimization' becomes more useful when prefixed with its section hierarchy: 'Database Design > Query Optimization > Index Selection > performance optimization'. Metadata extraction can be expensive—running an LLM over every chunk to extract entities adds significant preprocessing cost. Approaches to manage this include batch processing during ingestion, caching extraction results, and using lightweight models (e.g., spaCy NER instead of GPT-4). Metadata-enriched chunks enable sophisticated RAG systems that combine semantic search with structured filtering, dramatically improving retrieval precision.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "embedding-models",
+      "title": "Text Embedding Models Comparison",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["embeddings", "models", "comparison", "semantic-search"],
+      "sections": [
+        {
+          "id": "embedding-models/sentence-transformers",
+          "title": "Sentence-BERT and Sentence Transformers",
+          "content": "Sentence-BERT (SBERT) is a modification of BERT optimized for generating sentence embeddings. Standard BERT isn't designed for sentence similarity—it requires passing both sentences through the network simultaneously, making it impractical for large-scale similarity search. SBERT uses siamese networks with shared weights to generate fixed-size embeddings for individual sentences, enabling pre-computation and efficient similarity search. Popular SBERT models include all-MiniLM-L6-v2 (384 dimensions, 22M parameters, fast inference), all-mpnet-base-v2 (768 dimensions, 109M parameters, higher quality), and multi-qa-MiniLM-L6-cos-v1 (optimized for question-answering). These models are trained using contrastive learning on datasets like NLI (Natural Language Inference) and semantic textual similarity benchmarks. SBERT models are open-source, run locally without API costs, and provide a strong quality-performance tradeoff for most RAG applications. The sentence-transformers library supports easy model switching and fine-tuning on custom data.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "embedding-models/openai",
+          "title": "OpenAI Embedding Models",
+          "content": "OpenAI provides embedding models via API, with text-embedding-ada-002 being the most widely used. Ada-002 produces 1536-dimensional embeddings at $0.0001 per 1K tokens, supporting up to 8191 token inputs. The model is trained on diverse internet text and achieves strong performance on semantic similarity benchmarks (MTEB average: 61.0). Ada-002's primary advantages are ease of use (API call, no infrastructure needed), strong multilingual support (100+ languages), and regular updates incorporating latest research. Disadvantages include API dependency (requires internet connectivity and incurs per-request cost), higher latency than local models (50-200ms per request), and limited customization (cannot fine-tune). OpenAI also offers text-embedding-3-small (1536 dimensions, $0.00002 per 1K tokens, slightly better performance) and text-embedding-3-large (3072 dimensions, $0.00013 per 1K tokens, highest quality). For production RAG systems, OpenAI embeddings work well for moderate scale (<1M documents) where API costs are acceptable, but at larger scales, self-hosted models become more cost-effective.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "embedding-models/domain-specific",
+          "title": "Domain-Specific Embedding Models",
+          "content": "Domain-specific embedding models fine-tuned on specialized corpora outperform general-purpose models in their respective domains. Examples include BioBERT (biomedical text), SciBERT (scientific papers), CodeBERT (source code), and LegalBERT (legal documents). These models start from pretrained BERT/RoBERTa and continue training on domain-specific data using masked language modeling and domain-specific tasks. For instance, BioBERT is trained on PubMed abstracts and PMC full-text articles, learning medical terminology and relationships. Fine-tuning improves retrieval accuracy by 10-30% in specialized domains compared to general models. The tradeoff is that domain-specific models may underperform on out-of-domain queries. Production systems often use a hybrid approach: domain-specific models for domain queries (detected via keyword matching or classification) and general models as fallback. Creating custom domain-specific embeddings requires substantial data (millions of domain-specific documents) and compute (multiple GPU-days), but the quality improvement often justifies the investment for high-value applications.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "embedding-models/benchmarks",
+          "title": "Embedding Model Benchmarks and Selection",
+          "content": "The Massive Text Embedding Benchmark (MTEB) evaluates embedding models across 8 tasks including classification, clustering, retrieval, semantic similarity, and summarization. MTEB scores provide standardized comparison across 56 datasets and 112 languages. Top performers as of 2024 include OpenAI text-embedding-3-large (MTEB avg: 64.6), Cohere embed-v3 (62.3), and open-source models like gte-large (63.1) and e5-mistral-7b-instruct (66.6). However, benchmark scores don't always predict real-world performance—domain-specific accuracy matters more than average scores. Model selection should consider: retrieval quality on domain-specific test sets (build evaluation dataset with query-document pairs), inference latency (measure on target hardware), embedding dimensionality (higher dims improve quality but increase storage and search time), and deployment constraints (API vs. self-hosted). A/B testing different models on production traffic provides the most reliable quality signal. Many teams start with OpenAI or Cohere APIs for quick prototyping, then migrate to self-hosted models for cost optimization at scale.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "reranking-models",
+      "title": "Reranking Models for Retrieval Quality",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["reranking", "retrieval", "cross-encoder", "quality"],
+      "sections": [
+        {
+          "id": "reranking-models/motivation",
+          "title": "Why Reranking Improves Retrieval",
+          "content": "Bi-encoder models (like sentence-transformers) compute query and document embeddings independently, then use cosine similarity for retrieval. This independence enables fast search (pre-computed document embeddings, efficient vector search) but limits expressiveness—the model can't consider query-document interactions. Cross-encoder models process query and document together, learning fine-grained relevance patterns. For example, a bi-encoder might rank 'apple stock price' and 'apple fruit nutrition' similarly for query 'apple', while a cross-encoder distinguishes context. The typical RAG pipeline uses bi-encoders for fast initial retrieval (top-100 from millions of documents in <100ms), then cross-encoders for precise reranking (rescore top-100 to select top-10 in ~500ms). This two-stage approach balances speed and quality. Research shows reranking improves retrieval metrics (NDCG@10) by 10-30% compared to bi-encoders alone, translating to significantly better RAG response quality.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "reranking-models/cross-encoders",
+          "title": "Cross-Encoder Architecture and Training",
+          "content": "Cross-encoder models are typically BERT-based with a classification head that outputs a relevance score for a query-document pair. The input format is '[CLS] query [SEP] document [SEP]', allowing attention mechanisms to model interactions between query and document tokens. Training uses relevance datasets with labeled query-document pairs (relevant/irrelevant or graded relevance scores). Common training datasets include MS MARCO (8.8M query-passage pairs), Natural Questions, and domain-specific datasets. The training objective is typically binary classification (relevant vs. irrelevant) or ranking loss (e.g., pairwise ranking loss ensures relevant documents score higher than irrelevant ones). Popular cross-encoder models include ms-marco-MiniLM-L6-v2 (22M parameters, fast), ms-marco-electra-base (110M parameters, higher quality), and Cohere rerank-english-v2.0 (API-based, state-of-the-art quality). Fine-tuning pretrained cross-encoders on domain-specific data typically requires 10K-100K labeled query-document pairs and improves domain accuracy significantly.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "reranking-models/implementation",
+          "title": "Implementing Reranking in Production",
+          "content": "Production reranking pipelines balance quality and latency through careful engineering. The typical flow: retrieve top-100 candidates via vector search (50-100ms), batch candidates into groups of 10-20 for parallel reranking (cross-encoders process batches more efficiently than individual pairs), run cross-encoder inference (200-500ms for 100 pairs on CPU, 50-100ms on GPU), sort by relevance score, and select top-k. Optimization techniques include: caching (cache reranking results for frequent queries), pruning (skip reranking for high-confidence retrievals where bi-encoder scores are very high), and early stopping (rerank incrementally and stop when top-k stabilizes). GPU acceleration provides 5-10x speedup but adds infrastructure cost—teams typically use GPUs for high-traffic applications and CPUs for moderate traffic. Latency budgets guide deployment: if total RAG latency target is <2 seconds and LLM generation takes 1.5 seconds, reranking must complete in <500ms, limiting batch size and model complexity. A/B testing measures reranking's impact on end-to-end quality metrics like user satisfaction and task success rate.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "reranking-models/alternatives",
+          "title": "Alternative Reranking Approaches",
+          "content": "Beyond cross-encoders, several reranking approaches exist. LLM-based reranking uses large language models to assess relevance: present query and document to GPT-4 with a prompt like 'Rate relevance from 0-10'. This achieves state-of-the-art quality but is expensive ($0.01-0.10 per query) and slow (1-3 seconds). Practical use is limited to high-value queries or offline evaluation. Lightweight rerankers use feature-based models (gradient boosted trees) trained on features like BM25 score, embedding similarity, query-document term overlap, and document length. These run faster than cross-encoders (10-20ms for 100 candidates) with moderate quality improvement. Hybrid reranking combines multiple signals: 0.4 * cross_encoder_score + 0.3 * bm25_score + 0.3 * embedding_similarity. The weights are learned using linear regression or listwise ranking on validation data. Ensemble reranking uses multiple cross-encoders (different architectures or training data) and averages scores, improving robustness at the cost of increased inference time. Selection depends on latency budget and quality requirements: high-value applications use LLM reranking, latency-sensitive use lightweight rerankers, most use cross-encoders.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "pgvector-postgres",
+      "title": "pgvector: Vector Search in PostgreSQL",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["vector-database", "postgresql", "pgvector", "embeddings"],
+      "sections": [
+        {
+          "id": "pgvector-postgres/overview",
+          "title": "pgvector Extension Overview",
+          "content": "pgvector is a PostgreSQL extension that adds vector similarity search capabilities, enabling storing and querying vector embeddings alongside traditional relational data. This simplifies RAG architectures by consolidating vector search and metadata storage in a single database, eliminating the need for specialized vector databases like Pinecone or Weaviate. pgvector supports vectors up to 16,000 dimensions (sufficient for all major embedding models) and provides distance functions: L2 distance (Euclidean), inner product (dot product), and cosine distance. The extension is open-source, widely supported by managed PostgreSQL services (AWS RDS, Google Cloud SQL, Azure Database, Supabase), and integrates seamlessly with existing PostgreSQL tooling for backups, replication, and administration. For moderate scale applications (<10M vectors), pgvector performance is competitive with dedicated vector databases while offering SQL's expressiveness for complex queries combining vector similarity with filters and joins.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "pgvector-postgres/indexing",
+          "title": "IVF and HNSW Indexing",
+          "content": "pgvector supports two indexing algorithms for fast approximate nearest neighbor search. IVF (Inverted File Index) clusters vectors into N lists during index build (typically N = sqrt(num_rows)), storing cluster centroids. At query time, the algorithm finds the nearest M centroids (typically M = 10-20) and searches only vectors in those clusters. IVF index build is fast and uses moderate memory but requires tuning lists and probes parameters. HNSW (Hierarchical Navigable Small World) builds a multi-layer graph where each vector connects to neighbors at multiple hierarchical levels. Search starts at the top layer and greedily navigates toward nearest neighbors, dropping to lower layers. HNSW provides better recall than IVF (90-95% vs. 80-90%) but uses more memory and has slower index build. pgvector's HNSW implementation is competitive with specialized libraries like hnswlib. For production, HNSW is recommended for read-heavy workloads prioritizing quality, while IVF suits write-heavy workloads or memory-constrained environments. Both indexes support incremental updates (adding vectors doesn't require full rebuild) though frequent updates degrade index quality over time.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "pgvector-postgres/hybrid-search",
+          "title": "Hybrid Search with Full-Text and Vectors",
+          "content": "pgvector's integration with PostgreSQL enables hybrid search combining vector similarity with full-text search and metadata filters in a single query. A typical hybrid query uses PostgreSQL's full-text search (ts_vector, ts_query) to find candidate documents matching keywords, then reranks using vector similarity. For example: 'SELECT * FROM documents WHERE to_tsvector(content) @@ to_tsquery('RAG') ORDER BY embedding <-> query_embedding LIMIT 10'. This combines keyword matching (to_tsvector) with semantic similarity (embedding <-> query_embedding). Advanced queries add metadata filters: 'WHERE category = 'technical' AND published_at > '2023-01-01''. The query planner uses indexes efficiently—it can use GIN index for full-text search, filter by metadata using B-tree indexes, then apply vector similarity on the reduced candidate set. Hybrid search significantly improves precision compared to pure vector search by ensuring exact term matches when needed. Weighting combines BM25 scores from full-text search with cosine similarity scores: 'ORDER BY 0.7 * ts_rank(content_tsvector, query) + 0.3 * (1 - (embedding <=> query_embedding)) DESC'.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "pgvector-postgres/performance",
+          "title": "Performance Tuning and Scalability",
+          "content": "pgvector performance depends on several factors: vector dimensionality (higher dims slow searches), index type and parameters, hardware (SSD for index I/O, RAM for caching), and query patterns. Benchmark results show pgvector can handle 10M vectors (1536 dimensions) with HNSW indexing achieving p95 query latency <100ms on modest hardware (16GB RAM, 4 cores). Optimization techniques include: using HNSW with m=16 and ef_construction=64 for quality, increasing ef_search at query time for better recall (tradeoff with latency), enabling parallel query execution (set max_parallel_workers_per_gather), and partitioning large tables by metadata (e.g., partition by month) to reduce search space. For scales beyond 100M vectors, consider sharding across multiple PostgreSQL instances using tools like Citus or application-level sharding. Supabase's pgvector implementation has demonstrated billion-scale vector search using PostgreSQL partitioning and read replicas. Cost comparison favors pgvector at moderate scales—a managed PostgreSQL instance costs $50-200/month vs. $70-300/month for dedicated vector databases, while providing additional relational database capabilities.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "rlhf-training",
+      "title": "RLHF: Reinforcement Learning from Human Feedback",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rlhf", "training", "fine-tuning", "alignment"],
+      "sections": [
+        {
+          "id": "rlhf-training/overview",
+          "title": "RLHF Methodology Overview",
+          "content": "Reinforcement Learning from Human Feedback (RLHF) is a technique for aligning language models with human preferences, used to train models like ChatGPT and Claude. The process has three stages: supervised fine-tuning (SFT) on high-quality demonstrations, reward model training using human preference comparisons, and reinforcement learning to optimize the model using the reward model. RLHF addresses a fundamental challenge: it's easier for humans to compare two outputs than to generate perfect outputs. The approach leverages this by collecting preference data (given a prompt, which of two responses is better?) rather than demonstrations. This enables training on subjective qualities like helpfulness, harmlessness, and honesty that are hard to capture in supervised datasets. RLHF has proven essential for making LLMs useful and safe for real-world applications, reducing harmful outputs while maintaining capabilities.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rlhf-training/reward-model",
+          "title": "Reward Model Training",
+          "content": "The reward model is a neural network (typically the base LLM with a scalar output head) trained to predict human preferences. Training data consists of prompts with pairs of responses ranked by humans: (prompt, response_A, response_B, preference) where preference indicates which response is better. The model is trained using a pairwise ranking loss: given a prompt and two responses, the model outputs scalar rewards r_A and r_B, and the loss encourages r_A > r_B when humans prefer A. Typically, thousands of prompts are rated with 3-9 comparisons each, totaling 50K-500K comparisons. The reward model must generalize from these comparisons to score arbitrary responses. Challenges include: ensuring diverse prompts covering various tasks, handling disagreement between raters (addressed by modeling uncertainty or majority vote), and preventing reward hacking where the model exploits reward model flaws. The reward model's quality is critical—poor reward models lead to models optimizing for unintended behaviors. Validation involves held-out preference data and probing for reward model biases.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rlhf-training/ppo",
+          "title": "PPO Optimization Phase",
+          "content": "The final RLHF phase uses Proximal Policy Optimization (PPO), a reinforcement learning algorithm, to optimize the language model using the trained reward model. The setup treats text generation as a sequential decision problem: at each step, the model (policy) selects a token (action) and receives a reward (from the reward model) after generating the complete response. PPO updates the model to maximize expected reward while constraining how much the policy changes per update (the 'proximal' constraint prevents catastrophic policy collapse). The objective function includes: reward from the reward model (positive for preferred responses), KL divergence penalty between current policy and original SFT model (prevents the model from drifting too far from sensible outputs), and optional auxiliary losses. Training runs for thousands of steps, each involving generating responses to prompts, scoring them with the reward model, computing policy gradients, and updating model weights. The KL penalty is crucial—without it, models exploit reward model flaws and generate nonsensical high-reward outputs. Hyperparameter tuning (learning rate, KL coefficient, batch size) significantly impacts final model quality.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rlhf-training/challenges",
+          "title": "RLHF Challenges and Limitations",
+          "content": "RLHF faces several practical challenges. Reward hacking occurs when models find unexpected ways to maximize reward—for example, generating extremely long responses if the reward model favors length, or using rare tokens the reward model hasn't seen. Mitigation includes comprehensive reward model evaluation, KL divergence penalties, and length normalization. Distribution shift happens when RL training produces outputs different from the reward model's training data, causing inaccurate reward predictions. Continual reward model retraining on RL-generated data helps. Scalability challenges include high computational cost (RL training requires many forward passes through both policy and reward models) and human annotation cost (collecting preferences is expensive). Recent improvements include: Direct Preference Optimization (DPO) which eliminates the separate reward model and RL phases, Constitutional AI which uses AI feedback instead of human feedback for scalability, and RLAIF (RL from AI Feedback) using strong models to generate preferences. Despite challenges, RLHF remains the most effective known method for aligning LLMs with human preferences at scale.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "lora-qlora",
+      "title": "LoRA and QLoRA: Efficient Fine-Tuning",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["fine-tuning", "lora", "qlora", "parameter-efficient"],
+      "sections": [
+        {
+          "id": "lora-qlora/lora-overview",
+          "title": "Low-Rank Adaptation (LoRA) Fundamentals",
+          "content": "Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning technique that drastically reduces the number of trainable parameters and memory requirements. Instead of updating all model parameters during fine-tuning, LoRA freezes the pretrained weights and injects trainable low-rank matrices into each transformer layer. For a pretrained weight matrix W, LoRA adds a low-rank update: W' = W + BA, where B and A are much smaller matrices (if W is 1024x1024, B might be 1024x8 and A might be 8x1024, giving only 16,384 trainable parameters vs. 1,048,576). During inference, BA can be merged into W, adding no latency. LoRA typically updates only 0.1-1% of parameters compared to full fine-tuning while achieving comparable or better performance on downstream tasks. The rank r (typically 4-64) controls the tradeoff between expressiveness and efficiency. LoRA enables fine-tuning 70B parameter models on a single GPU by drastically reducing optimizer state memory (Adam requires 12-16 bytes per parameter for momentum and variance).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "lora-qlora/qlora-quantization",
+          "title": "QLoRA: Quantized Low-Rank Adaptation",
+          "content": "QLoRA extends LoRA with quantization to further reduce memory requirements, enabling fine-tuning of 65B parameter models on a single 48GB GPU. The key innovation is storing base model weights in 4-bit quantization (NormalFloat4, a specialized format optimized for neural network weights) while keeping LoRA adapters in full precision. During forward pass, 4-bit weights are dequantized to 16-bit, computation proceeds normally, and gradients only flow through LoRA parameters. QLoRA introduces two additional techniques: double quantization (quantizing the quantization constants themselves to save memory) and paged optimizers (using NVIDIA unified memory to offload optimizer states to CPU RAM when GPU memory is tight). Empirical results show QLoRA matches full fine-tuning quality while using 10-20x less memory. For example, fine-tuning Llama 2 70B requires 1,400GB GPU memory with standard fine-tuning, 160GB with LoRA, and only 48GB with QLoRA. This democratizes large model fine-tuning for researchers without access to massive GPU clusters.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "lora-qlora/implementation",
+          "title": "Implementing LoRA in Practice",
+          "content": "Implementing LoRA using the Hugging Face PEFT (Parameter-Efficient Fine-Tuning) library is straightforward. The process: load a pretrained model, wrap it with LoRA using LoraConfig (specifying rank, target modules like q_proj/v_proj, alpha scaling factor), and train normally. Key hyperparameters include rank r (typically 8-64; higher rank increases expressiveness but uses more memory), alpha (scaling factor, typically 16-32; controls how much LoRA updates affect the model), and target_modules (which layers to adapt; adapting all attention layers is common). Training uses standard techniques: cross-entropy loss, AdamW optimizer, learning rate scheduling. LoRA adapters are small (typically 10-100MB vs. multi-GB base models), enabling efficient storage of multiple task-specific adapters. At inference, adapters can be swapped dynamically—load base model once, swap LoRA adapters to switch between tasks. This enables serving multiple fine-tuned models with minimal memory overhead. Production deployments use adapter routing—given a request, select appropriate adapter based on task or user. Popular applications include instruction tuning, domain adaptation, and multi-tenant serving.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "lora-qlora/alternatives",
+          "title": "Alternative Parameter-Efficient Methods",
+          "content": "Beyond LoRA/QLoRA, several parameter-efficient fine-tuning methods exist. Adapter layers insert small feedforward networks between transformer layers—only adapters train while base model is frozen. Adapters add minimal latency (typically <5%) and use slightly more parameters than LoRA but enable architectural flexibility. Prefix tuning prepends trainable vectors (virtual tokens) to each layer's keys and values, guiding the model's behavior without modifying weights. Prompt tuning (a simplified prefix tuning) learns a single set of continuous prompt embeddings prepended to inputs. IA3 (Infused Adapter by Inhibiting and Amplifying Inner Activations) multiplies activations by learned vectors, requiring even fewer parameters than LoRA. BitFit updates only bias terms, the smallest intervention. Method selection depends on constraints: LoRA offers the best quality-efficiency tradeoff for most use cases, QLoRA for extreme memory constraints, and adapters when serving multiple tasks simultaneously. Emerging research explores combining methods (LoRA + quantization + pruning) for maximum efficiency. The field continues rapid development with new methods published frequently.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "agent-architectures",
+      "title": "LLM Agent Architectures and Patterns",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["agents", "llm", "architecture", "tool-use"],
+      "sections": [
+        {
+          "id": "agent-architectures/react",
+          "title": "ReAct: Reasoning and Acting",
+          "content": "The ReAct (Reasoning + Acting) pattern interleaves reasoning traces with action execution, enabling LLM agents to solve complex tasks. The agent operates in a loop: generate reasoning (think step about what to do next), select action (call a tool like web_search or calculator), receive observation (action result), and repeat until the task is solved. For example, answering 'Who is the current president of France?' might produce: Thought: 'I need current information about France's president' → Action: web_search('current president of France') → Observation: 'Emmanuel Macron is president...' → Thought: 'I have the answer' → Final Answer: 'Emmanuel Macron'. The reasoning traces make the agent's decision process transparent and debuggable. ReAct is implemented via carefully crafted prompts showing examples of reasoning-action-observation cycles. The pattern significantly outperforms pure reasoning (without actions) or pure acting (without reasoning) on complex tasks requiring multiple steps. ReAct is the foundation for popular agent frameworks like LangChain's agents and AutoGPT.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-architectures/tool-use",
+          "title": "Tool Use and Function Calling",
+          "content": "LLM agents extend their capabilities through tool use—invoking external functions like web search, calculators, APIs, or code execution. The architecture provides tools as a catalog with descriptions and schemas. For example: {name: 'web_search', description: 'Search the internet for information', parameters: {query: 'string'}}. The LLM receives tool descriptions in its prompt and generates structured tool calls when needed, typically as JSON: {tool: 'web_search', arguments: {query: 'Python pandas documentation'}}. The agent framework parses the tool call, executes the function, and injects results back into the conversation. Modern LLMs like GPT-4 and Claude are fine-tuned specifically for tool use, learning when to use tools vs. generate direct answers. Challenges include: ensuring the LLM uses correct tool schemas (addressed via few-shot examples), handling tool errors gracefully, and preventing infinite loops. Best practices include tool timeouts, maximum iteration limits, and validation of tool arguments before execution. Tool use transforms LLMs from passive text generators to active problem solvers.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-architectures/plan-execute",
+          "title": "Plan-and-Execute Architecture",
+          "content": "Plan-and-execute agents separate planning (generating a task plan) from execution (carrying out plan steps), improving efficiency and reliability. The architecture has two phases: planning LLM receives the task and generates a step-by-step plan ('1. Search for information about X, 2. Analyze data, 3. Synthesize answer'), then executor LLM executes each step sequentially using available tools. This separation provides benefits: plans can be validated or modified by humans before execution, execution can be parallelized when steps are independent, and failures can be handled by replanning rather than starting over. Variations include hierarchical planning where complex steps are decomposed recursively, and reactive replanning where the plan is updated based on execution outcomes. The BabyAGI and AutoGPT frameworks use plan-and-execute patterns. Challenges include: ensuring plans are realistic given available tools, handling plan failures gracefully, and balancing planning detail with flexibility. Plan-and-execute excels at complex multi-step tasks like data analysis or research where upfront planning improves efficiency.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-architectures/multi-agent",
+          "title": "Multi-Agent Systems and Collaboration",
+          "content": "Multi-agent systems use multiple specialized agents collaborating to solve complex tasks. Each agent has specific expertise and tools—for example, a research agent with web search, a coding agent with code execution, and a writing agent for synthesis. Collaboration patterns include: sequential (output of one agent becomes input to next), hierarchical (manager agent delegates to specialist agents), and collaborative (agents negotiate and share information). Implementation uses message passing between agents, typically managed by an orchestrator that routes messages and coordinates execution. LangGraph and AutoGen are frameworks designed for multi-agent systems. Multi-agent approaches improve on single agents by: enabling specialization (each agent optimizes for its domain), providing redundancy (if one agent fails, others continue), and decomposing complex tasks naturally. Challenges include: coordinating agents without conflicts, managing information sharing (what should agents communicate?), and preventing divergence (agents pursuing conflicting subgoals). Multi-agent systems show promise for complex domains like software development (design agent, coding agent, testing agent, review agent) where specialization significantly improves quality.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "langgraph-framework",
+      "title": "LangGraph: Stateful Multi-Agent Workflows",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["langgraph", "agents", "workflows", "state-management"],
+      "sections": [
+        {
+          "id": "langgraph-framework/overview",
+          "title": "LangGraph Architecture and Motivation",
+          "content": "LangGraph is a framework for building stateful, multi-actor applications with LLMs, created by LangChain to address limitations of chain-based architectures. Traditional LangChain chains are directed acyclic graphs (DAGs) with rigid execution paths, unsuitable for agents requiring loops, conditional branching, and state persistence. LangGraph uses a cyclic graph abstraction where nodes are functions (LLM calls, tools, or logic) and edges define transitions. State is explicitly managed in a shared state object that flows through the graph. The framework is inspired by Pregel and Apache Beam, bringing dataflow programming concepts to LLM applications. Key features include: cycles and conditional routing (enabling ReAct-style loops), state snapshots (checkpoint and resume execution), human-in-the-loop (pause for human input), and streaming (stream partial state updates). LangGraph is particularly suited for complex agents, multi-agent systems, and applications requiring auditability and control over execution flow.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "langgraph-framework/state-management",
+          "title": "State Management and Reducers",
+          "content": "LangGraph's state management uses a reducer pattern similar to Redux. State is defined as a TypedDict (Python) or interface (TypeScript) specifying all tracked information. For example: {messages: List[Message], iterations: int, context: str}. Each node receives current state and returns a partial state update. The framework merges updates using reducer functions that define how to combine new values with existing state. The default reducer replaces values, but custom reducers enable sophisticated updates—for messages, a reducer might append new messages to the list rather than replacing. State schemas enforce structure, preventing agents from accidentally corrupting state. Checkpointing persists state after each node execution, enabling recovery from failures and human-in-the-loop workflows. Checkpoint backends include memory (for development), SQLite (for single-machine persistence), and PostgreSQL (for production multi-instance deployments). Time-travel debugging allows inspecting state at any execution point, crucial for debugging complex agent behaviors. State management is LangGraph's key differentiator from simpler frameworks, enabling production-grade reliability.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "langgraph-framework/conditional-edges",
+          "title": "Conditional Routing and Cycles",
+          "content": "LangGraph enables dynamic execution flow through conditional edges and cycles, essential for agent applications. Conditional edges use routing functions that inspect state and return the next node to execute. For example, a ReAct agent might have: after LLM node, if tool_calls in state, route to tool_executor node; else route to end. This creates a loop: LLM → tool_executor → LLM → ... until task completes. The framework prevents infinite loops via configurable iteration limits and early stopping conditions. Multi-path routing enables complex control flow—a supervisor agent might route to different specialist agents based on task type. Implementation uses Python functions or lambda expressions returning node names: lambda state: 'tool_executor' if state.get('tool_calls') else END. LangGraph visualizations show graph structure including cycles and conditional branches, aiding development and debugging. Cycles enable agent patterns like ReAct, reflection (agent critiques its output and iterates), and iterative refinement (generate, evaluate, improve, repeat).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "langgraph-framework/production-features",
+          "title": "Production Deployment Features",
+          "content": "LangGraph includes features critical for production agent deployments. Human-in-the-loop uses interrupts to pause execution and request human input—for example, before executing irreversible actions like deleting data. The graph pauses, state is checkpointed, and a human provides input via API or UI before resuming. Streaming enables real-time updates by yielding state changes as they occur, allowing UIs to show agent progress. Observability integrates with LangSmith for tracing, providing visibility into LLM calls, tool usage, and state transitions. Error handling uses try-catch nodes that capture exceptions and route to error-handling logic (retry, fallback, or human escalation). Persistence backends (PostgreSQL, MongoDB) enable multi-instance deployments where multiple workers process different graph executions concurrently. Deployment typically uses FastAPI or Next.js backends exposing graph execution as APIs. LangGraph Cloud (LangChain's hosted offering) provides managed infrastructure with autoscaling, monitoring, and managed checkpointing. These features make LangGraph production-ready compared to research-oriented agent frameworks.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "prompt-engineering",
+      "title": "Prompt Engineering Best Practices",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["prompt-engineering", "llm", "few-shot", "techniques"],
+      "sections": [
+        {
+          "id": "prompt-engineering/zero-shot",
+          "title": "Zero-Shot and Instruction Design",
+          "content": "Zero-shot prompting provides task instructions without examples, relying on the LLM's pretrained capabilities. Effective zero-shot prompts are clear, specific, and structured. Components include: role (assign persona like 'You are an expert Python programmer'), task (explicit statement of what to do), context (relevant background information), and output format (specify structure like JSON or bullet points). For example: 'You are a technical writer. Explain the concept of RLHF to a software engineer in 2-3 paragraphs. Use simple language and provide a concrete example.' Specificity improves results—'summarize in 3 bullet points' outperforms 'summarize'. Formatting instructions help—'Output valid JSON with keys: summary, sentiment, entities' ensures parseable outputs. Zero-shot works well for common tasks the model has seen during training but struggles with novel or complex tasks. Best practices include: iterative refinement (test and adjust wording), providing constraints (word limits, style guidelines), and using delimiters (### or ``` to separate instructions from content). Zero-shot is the simplest approach and should be tried first before more complex techniques.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "prompt-engineering/few-shot",
+          "title": "Few-Shot Learning with Examples",
+          "content": "Few-shot prompting includes input-output examples demonstrating the desired task, teaching the LLM through in-context learning. The structure: provide 2-8 examples of (input, output) pairs, then present the actual input. For classification: 'Text: This product is amazing! Sentiment: Positive\\nText: Terrible service. Sentiment: Negative\\nText: [actual text]\\nSentiment:'. Example selection significantly impacts results: use diverse examples covering edge cases, ensure examples match the target domain, and order examples strategically (sometimes placing hardest examples last helps). Few-shot dramatically improves performance on tasks requiring specific output formats, domain-specific terminology, or subtle distinctions. Chain-of-thought few-shot includes reasoning steps in examples: 'Question: Roger has 5 tennis balls. He buys 2 more cans of 3 balls each. How many balls does he have? Reasoning: Roger started with 5 balls. 2 cans of 3 balls is 6 balls. 5 + 6 = 11. Answer: 11'. This improves LLM reasoning on math and logic problems. Limitations include context window constraints (examples consume tokens) and example bias (LLM may overfit to example specifics). Few-shot is the go-to technique when zero-shot underperforms.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "prompt-engineering/cot",
+          "title": "Chain-of-Thought Prompting",
+          "content": "Chain-of-thought (CoT) prompting elicits step-by-step reasoning, improving LLM performance on complex reasoning tasks. The technique uses the phrase 'Let's think step by step' or provides few-shot examples with reasoning traces. For example: 'Question: A cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many do they have? Let's think step by step.' The LLM then generates: 'Step 1: The cafeteria started with 23 apples. Step 2: They used 20, leaving 23 - 20 = 3. Step 3: They bought 6 more: 3 + 6 = 9. Answer: 9 apples.' CoT significantly improves accuracy on math word problems (GSM8K benchmark: 17% → 60% for GPT-3), commonsense reasoning, and multi-step tasks. The reasoning trace makes errors debuggable—you can see where reasoning went wrong. Variations include: zero-shot CoT (just add 'Let's think step by step'), few-shot CoT (provide examples with reasoning), and least-to-most prompting (decompose complex problems into simpler subproblems). CoT works best with larger models (>100B parameters); smaller models produce less coherent reasoning. Limitations include increased token usage (reasoning traces are verbose) and potential for reasoning errors. Despite this, CoT is essential for complex reasoning tasks.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "prompt-engineering/advanced",
+          "title": "Advanced Prompting Techniques",
+          "content": "Several advanced techniques push prompt engineering further. Self-consistency generates multiple reasoning paths (via temperature sampling) and selects the most common answer, improving robustness. Tree-of-thoughts enables exploring multiple reasoning branches, backtracking when paths fail—implemented via prompting 'Generate 3 different approaches to solve this problem' then evaluating each. ReAct combines reasoning and acting as discussed earlier. Automatic prompt engineering (APE) uses LLMs to generate and optimize prompts—GPT-4 generates candidate prompts, evaluates them on a validation set, and iteratively refines. Constitutional AI uses principles to guide behavior: 'Respond helpfully but refuse harmful requests. When uncertain, express uncertainty.' Meta-prompting provides meta-level instructions: 'When answering, first identify what type of question this is, then select appropriate reasoning approach.' Output formatting with JSON schema or Pydantic models ensures structured outputs: 'Output JSON matching this schema: {summary: string, entities: string[], sentiment: \"positive\"|\"negative\"|\"neutral\"}'. These techniques are often combined—for example, CoT + self-consistency + JSON output. The field evolves rapidly with new techniques emerging frequently.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "rag-evaluation-metrics",
+      "title": "RAG Evaluation Metrics and Benchmarks",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rag", "evaluation", "metrics", "benchmarks"],
+      "sections": [
+        {
+          "id": "rag-evaluation-metrics/retrieval",
+          "title": "Retrieval Quality Metrics",
+          "content": "Evaluating retrieval quality requires ground-truth datasets with query-document relevance labels. Standard metrics include: Precision@k (fraction of top-k results that are relevant), Recall@k (fraction of all relevant documents found in top-k), Mean Average Precision (MAP, average precision across multiple queries), and Normalized Discounted Cumulative Gain (NDCG, weights relevant documents by position). For example, if a query has 5 relevant documents and top-10 results include 3 relevant docs at positions 1, 3, 7, then Precision@10=0.3, Recall@10=0.6, NDCG@10≈0.72. Hit Rate (did top-k include at least one relevant document) is a simpler metric suitable for question-answering where any relevant document suffices. Mean Reciprocal Rank (MRR, average of 1/rank of first relevant document) measures how quickly users find relevant results. Evaluation requires datasets like MS MARCO (question-passage pairs), Natural Questions, or domain-specific labeled data. Building custom evaluation sets involves: collecting representative queries, labeling relevant documents (binary or graded relevance), and ensuring diversity (easy/hard queries, various topics). Retrieval metrics should be tracked continuously in production using implicit feedback (click-through rate) and periodic human evaluation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-evaluation-metrics/generation",
+          "title": "Generation Quality Metrics",
+          "content": "Evaluating generated responses uses both automatic metrics and human evaluation. Automatic metrics include: Faithfulness (does the response align with retrieved documents, measured by LLM-based entailment checking), Answer Relevance (does the response address the question, often measured by semantic similarity between question and answer), and Context Relevance (are retrieved documents relevant to the question). RAGAS (Retrieval Augmented Generation Assessment) framework computes these metrics using GPT-4 as an evaluator. For example, faithfulness uses the prompt: 'Given context: {context}, does this response contain only information from the context: {response}? Answer Yes/No'. Traditional NLG metrics like BLEU, ROUGE, and METEOR compare generated text to reference answers but correlate poorly with human judgment for open-ended generation. Human evaluation assesses helpfulness, accuracy, completeness, and fluency using Likert scales (1-5 rating). Human eval is expensive, so it's typically done on samples (100-500 responses) periodically. A/B testing compares RAG systems by showing users responses from each and measuring preference. Production monitoring tracks proxy metrics like user engagement (thumbs up/down), conversation length, and task completion rates.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-evaluation-metrics/end-to-end",
+          "title": "End-to-End RAG Evaluation",
+          "content": "End-to-end RAG evaluation assesses the complete pipeline from query to response. The RGB (Retrieval, Generation, Benchmark) framework evaluates across three dimensions: retrieval accuracy (did we find relevant documents), generation faithfulness (does response use only retrieved information), and answer correctness (is the final answer correct). TruthfulQA and Natural Questions datasets provide questions with ground-truth answers for end-to-end testing. Domain-specific evaluation requires custom datasets representing actual use cases. Building evaluation sets involves: collecting real user queries from production logs, creating ground-truth answers (expensive; requires domain experts), and defining success criteria (exact match, semantic equivalence, or human judgment). Regression testing runs evaluation sets on every system change, preventing quality degradation. Evaluation should cover: typical queries (common use cases), edge cases (ambiguous queries, queries with no answer), and adversarial queries (designed to expose weaknesses). Continuous evaluation pipelines run automated tests on scheduled intervals, alerting when metrics drop below thresholds. Cost management uses smaller models (GPT-3.5) for frequent evals and GPT-4 for periodic deep evaluation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "rag-evaluation-metrics/challenges",
+          "title": "Evaluation Challenges and Best Practices",
+          "content": "RAG evaluation faces several challenges. Subjectivity makes ground-truth labeling difficult—multiple valid answers may exist, and relevance is often context-dependent. Mitigation includes multi-rater labeling with agreement metrics (Cohen's kappa) and accepting answer variations. Dataset drift occurs when evaluation sets become stale—queries and documents evolve over time. Continuous dataset refreshes (adding recent queries, updating documents) keep evaluations representative. Overfitting to benchmarks happens when systems are tuned specifically for evaluation metrics, harming real-world performance. Using held-out datasets and production A/B tests prevents this. Cost constraints limit evaluation frequency and depth. Efficient evaluation uses: cached LLM responses, cheaper models for initial filtering (GPT-3.5 screens, GPT-4 verifies edge cases), and sampling (evaluate 10% of production traffic rather than 100%). Best practices include: multi-metric evaluation (no single metric captures all quality dimensions), stratified sampling (ensure evaluation covers all query types proportionally), and blind evaluation (raters don't know which system generated responses). Effective evaluation requires balancing rigor with practicality, using a mix of automated metrics, human evaluation, and production signals.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "hybrid-search",
+      "title": "Hybrid Search: Combining Dense and Sparse Retrieval",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["hybrid-search", "retrieval", "bm25", "semantic-search"],
+      "sections": [
+        {
+          "id": "hybrid-search/motivation",
+          "title": "Why Hybrid Search Outperforms Single Methods",
+          "content": "Hybrid search combines dense vector search (semantic similarity) with sparse keyword search (BM25/TF-IDF) to leverage strengths of both approaches. Dense retrieval excels at semantic matching—finding documents with similar meaning even without exact keyword matches. For example, query 'machine learning model training' retrieves documents about 'neural network optimization' despite no shared keywords. However, dense retrieval struggles with: rare entities (person names, product codes), acronyms, exact phrases, and negation. Sparse retrieval (BM25) excels at exact keyword matching and rare terms but misses semantic similarity. For query 'how to bake bread', BM25 requires documents contain those exact words, missing relevant documents using synonyms like 'bread making instructions'. Hybrid search combines both: use dense retrieval for semantic understanding and sparse retrieval for precise term matching. Research shows hybrid search improves retrieval metrics by 10-30% over single methods across benchmarks like MS MARCO and BEIR. The complementary strengths make hybrid search the recommended approach for production RAG systems.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hybrid-search/bm25",
+          "title": "BM25 Algorithm and Implementation",
+          "content": "BM25 (Best Match 25) is a probabilistic ranking function that scores documents based on term frequency and inverse document frequency. The formula considers: how often query terms appear in the document (term frequency, saturated to prevent over-weighting), how rare terms are across the corpus (inverse document frequency, privileging rare terms), and document length normalization (preventing bias toward long documents). BM25 has two parameters: k1 (term frequency saturation, typically 1.2-2.0) and b (length normalization, typically 0.75). Higher k1 increases weight of repeated terms; higher b increases length normalization strength. Implementation uses inverted indexes mapping terms to documents containing them, enabling fast lookup. Elasticsearch and PostgreSQL (via ts_vector) provide built-in BM25 search. For RAG systems, BM25 is typically implemented alongside vector search in the same database (e.g., pgvector + PostgreSQL full-text search) or using specialized tools (Elasticsearch for BM25, Pinecone for vectors). BM25 scoring complements vector search—queries with specific keywords (product names, technical terms) benefit heavily from BM25, while conceptual queries rely more on vectors.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hybrid-search/fusion",
+          "title": "Score Fusion Techniques",
+          "content": "Combining dense and sparse scores requires fusion techniques that normalize and merge heterogeneous score distributions. Linear combination: score = α * sparse_score + (1-α) * dense_score, where α ∈ [0,1] controls weighting (typically α=0.3-0.5). This requires score normalization since BM25 scores (~0-20) differ from cosine similarity (~0-1). Min-max normalization: score_norm = (score - min) / (max - min) brings both to [0,1] range. Z-score normalization: score_norm = (score - mean) / std_dev is more robust to outliers. Reciprocal Rank Fusion (RRF) avoids normalization by using ranks: RRF_score = Σ 1/(k + rank_i) where k is a constant (typically 60). RRF ranks documents by combining their positions in multiple ranked lists, avoiding score distribution issues. For example, if a document ranks 3rd in BM25 and 5th in vector search: RRF = 1/(60+3) + 1/(60+5) ≈ 0.031. RRF is simple and robust, often outperforming weighted combinations. Learning-to-rank uses machine learning to learn optimal fusion weights from labeled data, training a model (LambdaMART, XGBoost) to predict relevance from features: BM25_score, vector_score, query_length, document_length, etc. This achieves best results but requires training data.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hybrid-search/implementation",
+          "title": "Production Hybrid Search Architecture",
+          "content": "Production hybrid search requires architecture supporting both retrieval methods efficiently. Architecture patterns include: unified database (PostgreSQL with pgvector + full-text search, Elasticsearch with dense_vector field), dual retrieval (separate vector database and search engine, merge results in application layer), or specialized hybrid databases (Weaviate, Milvus 2.0, Vespa) supporting both natively. The unified database approach simplifies operations but may compromise on specialized optimizations. The query flow: parse query, execute BM25 search (retrieve top-100), execute vector search (retrieve top-100), merge results using fusion technique (RRF or weighted combination), and optionally rerank merged results using cross-encoder. Implementation details include: parallel execution (run BM25 and vector search concurrently for latency), caching (cache both BM25 and vector results for frequent queries), and adaptive weighting (adjust α based on query characteristics—increase BM25 weight for queries with rare terms). Monitoring tracks individual component performance: BM25 recall, vector recall, and hybrid recall. A/B testing validates fusion techniques by measuring end-to-end metrics like answer accuracy and user satisfaction. Hybrid search complexity is justified by quality improvements in production RAG systems.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "hnsw-algorithm",
+      "title": "HNSW: Hierarchical Navigable Small World Graphs",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["hnsw", "vector-search", "approximate-nn", "algorithms"],
+      "sections": [
+        {
+          "id": "hnsw-algorithm/overview",
+          "title": "HNSW Algorithm Fundamentals",
+          "content": "Hierarchical Navigable Small World (HNSW) is a state-of-the-art algorithm for approximate nearest neighbor search in high-dimensional spaces, widely used in vector databases. HNSW builds a multi-layer graph where vectors are nodes and edges connect similar vectors. The key insight: organize similar vectors into a navigable structure enabling efficient greedy search. The algorithm creates multiple layers with decreasing density—top layers are sparse (few nodes, long-range connections), bottom layer is dense (all nodes, local connections). Search starts at the top layer and greedily navigates toward nearest neighbors, dropping to lower layers as it gets closer to the query. This provides logarithmic search complexity O(log N) with high recall (95%+). HNSW consistently outperforms alternatives like IVF, LSH, and product quantization on speed-recall tradeoffs. The algorithm is used in production systems at massive scale—Spotify uses HNSW for music recommendations, Pinterest for visual search, and it's the default index in many vector databases.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hnsw-algorithm/construction",
+          "title": "Graph Construction Process",
+          "content": "HNSW index construction inserts vectors one at a time, each in O(log N) time. For each new vector: randomly assign it to a layer (higher layers have exponentially decreasing probability, controlled by parameter ml), start at the top layer and greedily search for nearest neighbors, at each layer, connect the new vector to M nearest neighbors (M is a key parameter, typically 16-64), and propagate downward through layers until reaching the assigned layer. The M parameter controls connectivity—higher M increases recall and robustness but uses more memory. During construction, layers maintain balanced connectivity through bidirectional edge insertion: when A connects to B, B also adds A to its neighbors (pruning older connections if exceeding M). This ensures navigability from any starting point. Construction can be parallelized by partitioning the vector space and building independent HNSW graphs per partition, then merging. Typical construction rates: 1000-5000 vectors per second on commodity hardware. The graph is persisted to disk, but search requires loading the graph structure (not all vectors) into memory for fast traversal. For billion-scale datasets, this requires hundreds of GB RAM.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hnsw-algorithm/search",
+          "title": "Search Algorithm and Parameters",
+          "content": "HNSW search uses greedy best-first traversal starting from designated entry points at the top layer. The algorithm maintains a dynamic list of candidates (priority queue ordered by distance to query) and a set of visited nodes. At each step: select the closest unvisited candidate, explore its neighbors, add unvisited neighbors to candidates, and move to next layer when no closer candidates exist. At the bottom layer, the algorithm returns the k closest vectors found. The key parameter is ef_search (exploration factor at search time), controlling how many candidates to evaluate—higher ef_search increases recall but slows search. Typical values: ef_search=50-200. The tradeoff: ef_search=50 gives 90% recall in 1ms, ef_search=200 gives 99% recall in 5ms. Search is highly parallelizable across queries (different queries are independent) and within queries (explore multiple branches simultaneously). GPU acceleration is possible but less beneficial than for dense neural networks since graph traversal involves irregular memory access patterns. HNSW search scales well—latency increases logarithmically with dataset size, making it suitable for billion-scale applications.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "hnsw-algorithm/optimizations",
+          "title": "Production Optimizations and Tradeoffs",
+          "content": "Production HNSW implementations use several optimizations. Memory optimization: store vectors in compressed formats (PQ, SQ8) to reduce memory footprint by 4-32x at the cost of slight recall degradation. The graph structure (edges) often requires more memory than vectors themselves. Dynamic updates: support inserting and deleting vectors without full index rebuild. Insertions use the standard construction algorithm. Deletions mark nodes as deleted without removing them (lazy deletion), with periodic garbage collection to compact the graph. Frequent updates degrade search quality, requiring periodic rebuilds (e.g., nightly). Disk-based HNSW: store vectors on SSD and only load graph structure in RAM, fetching vectors on-demand during search. This enables billion-scale indexes on machines with moderate RAM. Distributed HNSW: partition vectors across machines (by hash or clustering), search all partitions in parallel, and merge results. Challenges include load balancing and handling cross-partition edges. Parameter tuning: M=16 and ef_construction=200 are common defaults, but optimal values depend on data dimensionality and query patterns. Higher dimensions benefit from larger M. Production systems tune parameters via offline benchmarks measuring recall-latency tradeoffs on representative queries.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "constitutional-ai",
+      "title": "Constitutional AI: AI-Feedback Alignment",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["constitutional-ai", "alignment", "ai-feedback", "safety"],
+      "sections": [
+        {
+          "id": "constitutional-ai/overview",
+          "title": "Constitutional AI Methodology",
+          "content": "Constitutional AI (CAI) is an alignment technique developed by Anthropic that uses AI-generated feedback instead of human feedback to train safer, more helpful models. The approach addresses RLHF's scalability limitations—human feedback is expensive and slow to collect. CAI trains models to follow a 'constitution': a set of principles guiding model behavior. For example: 'Choose responses that are helpful, harmless, and honest', 'Avoid content that could be used to harm people', 'Express uncertainty when appropriate'. The process has two phases: supervised learning (generate responses, use LLM to critique and revise based on constitutional principles, train on revised responses) and reinforcement learning (generate response pairs, use LLM to evaluate which better follows the constitution, train reward model on AI preferences, optimize policy with RL). CAI enables rapid iteration on alignment objectives by modifying the constitution without collecting new human feedback. Anthropic used CAI to train Claude, demonstrating that AI feedback can match or exceed human feedback quality while being dramatically more scalable.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "constitutional-ai/self-critique",
+          "title": "Self-Critique and Revision Process",
+          "content": "The supervised CAI phase uses self-critique to improve model outputs. The process: model generates initial response to a prompt (potentially harmful or unhelpful), model receives critique prompt including constitutional principles ('Critique this response. Does it violate principles of harmlessness? Suggest improvements.'), model generates critique identifying issues, model revises original response based on critique, and final revised response is added to training data. This creates training examples of safe, helpful responses without human annotation. For example, initial response to 'How do I hack a computer?' might provide hacking steps. Critique identifies harm ('This response could enable illegal activity'), and revision refuses appropriately ('I can't help with illegal hacking, but I can explain ethical security testing'). The self-critique loop can iterate multiple times (generate → critique → revise → critique → revise) for complex cases. Training on revised responses makes the model internalize safe behavior, reducing harmful outputs at inference time. The technique is general—constitutions can encode any desired behaviors, not just safety. Potential applications include training domain-specific models, teaching specific writing styles, or enforcing company policies.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "constitutional-ai/rlaif",
+          "title": "RL from AI Feedback (RLAIF)",
+          "content": "The RL phase of Constitutional AI uses AI-generated preference data instead of human preferences. The process: generate pairs of responses to prompts, use a strong LLM (or the model itself) to evaluate which response better follows constitutional principles (prompt: 'Which response is more helpful and harmless? Response A: ... Response B: ...'), train a reward model on AI-generated preferences, and optimize the model using PPO with the reward model. This RLAIF approach scales to millions of comparisons without human labor. Research shows RLAIF achieves comparable or superior results to RLHF when using strong evaluator models (GPT-4, Claude). The key is evaluator quality—weak evaluators produce noisy preferences, harming alignment. Best practices: use diverse prompts covering various scenarios, include adversarial prompts designed to elicit undesired behaviors, validate AI preferences with small-scale human evaluation, and iterate on constitutional principles based on failure modes. RLAIF enables rapid experimentation with alignment objectives and faster model iteration. Companies increasingly use hybrid approaches: RLHF for initial alignment, RLAIF for continuous improvement and domain adaptation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "constitutional-ai/principles",
+          "title": "Designing Effective Constitutional Principles",
+          "content": "Constitutional principles must be clear, actionable, and comprehensive to effectively guide model behavior. Effective principles have characteristics: specificity ('Avoid generating code for illegal purposes' vs. vague 'Be ethical'), actionability (model can assess compliance in practice), coverage (principles address diverse situations), and balance (avoid conflicts between principles). Example principles: helpfulness ('Provide informative, detailed responses addressing the user's query'), harmlessness ('Refuse requests that could cause physical, psychological, or financial harm'), honesty ('Express uncertainty when lacking confidence, cite sources when making factual claims'), and respect ('Avoid biased or discriminatory content, respect diverse perspectives'). Principle hierarchies handle conflicts—for example, harmlessness overrides helpfulness when they conflict. Negative principles specify what to avoid ('Don't generate hateful content'), while positive principles specify desired behaviors ('Respond with empathy and understanding'). Effective constitutions emerge through iteration: start with broad principles, identify failure modes through red-teaming, add specific principles addressing failures, and validate with evaluation datasets. Open questions include: how many principles are optimal? How to handle cultural differences in values? Can constitutions encode complex nuanced ethics? Constitutional AI remains an active research area with rapid developments.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "dpo-alignment",
+      "title": "DPO: Direct Preference Optimization",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["dpo", "alignment", "preference-learning", "rlhf"],
+      "sections": [
+        {
+          "id": "dpo-alignment/motivation",
+          "title": "Simplifying RLHF with DPO",
+          "content": "Direct Preference Optimization (DPO) is an alignment technique that achieves RLHF's goals without explicitly training a reward model or using reinforcement learning. Standard RLHF requires: (1) training a reward model on preference data, (2) using RL (typically PPO) to optimize the LLM using the reward model. This pipeline is complex—reward models can be inaccurate, PPO is unstable and requires careful hyperparameter tuning, and the process is computationally expensive. DPO simplifies this by directly optimizing the LLM on preference data using supervised learning. The key insight: the optimal RLHF policy has a closed-form solution in terms of the reward model and reference policy. DPO reparameterizes this to eliminate the explicit reward model, deriving a loss function that directly updates the LLM to prefer chosen responses over rejected ones while staying close to the reference model (KL constraint). The DPO loss: L = -log σ(β log π(y_chosen|x)/π_ref(y_chosen|x) - β log π(y_rejected|x)/π_ref(y_rejected|x)), where β controls the strength of the KL constraint. DPO is simpler to implement, more stable to train, and computationally cheaper than RLHF while achieving comparable or better results.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "dpo-alignment/training",
+          "title": "DPO Training Process",
+          "content": "Training with DPO requires: preference dataset (prompts with chosen and rejected response pairs), reference model (typically the SFT model before alignment), and hyperparameters (β controlling KL penalty, learning rate, batch size). The training loop: sample a batch of preference pairs (x, y_chosen, y_rejected), compute log probabilities under current policy and reference model for both responses, compute DPO loss encouraging chosen over rejected while penalizing divergence from reference, and update model weights via gradient descent. The β parameter is critical—low β (e.g., 0.1) allows more deviation from reference model but risks losing general capabilities, high β (e.g., 0.5) stays closer to reference but may underfit preferences. Typical values: β=0.1-0.3. Training typically runs for 1-3 epochs on 50K-500K preference pairs. DPO is much faster than RLHF—it's standard supervised learning without the RL exploration phase. Implementation uses standard ML frameworks (PyTorch, JAX) without specialized RL libraries. The reference model is frozen, requiring only one set of parameters to be trained. Memory optimization: share parameters between policy and reference models, computing gradients only for policy.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "dpo-alignment/data-requirements",
+          "title": "Preference Data Collection and Quality",
+          "content": "DPO's effectiveness depends on preference data quality. Preference pairs can be collected via: human annotation (expensive, high quality), AI feedback (scalable, Constitutional AI approach), model-based generation (model generates multiple responses, best/worst are chosen based on heuristics), and offline preference mining (extract preferences from existing datasets). High-quality preference data has characteristics: clear preference (chosen is definitively better than rejected, not marginally), diversity (cover various prompts, tasks, and edge cases), and representativeness (match deployment distribution). Common issues: noisy labels (annotator disagreement—addressed via multiple ratings or filtering), trivial pairs (chosen is obviously better, e.g., coherent vs. gibberish—model learns little), and distribution mismatch (preference data doesn't match deployment). Data augmentation techniques: for each prompt, generate multiple responses and create multiple pairs (each response vs. worse responses), use rejection sampling to create strong chosen examples (generate many, select best via reward model), and adversarial generation (explicitly generate challenging rejected examples). Research suggests 10K-100K high-quality preference pairs suffice for significant alignment improvements, though more data generally helps.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "dpo-alignment/comparison",
+          "title": "DPO vs RLHF Comparison",
+          "content": "DPO and RLHF comparison across dimensions: Simplicity—DPO uses standard supervised learning, RLHF requires RL infrastructure (advantage DPO). Stability—DPO is stable with predictable training dynamics, PPO is notoriously unstable requiring extensive tuning (advantage DPO). Computational cost—DPO requires one model, RLHF requires policy, reward model, value function, and reference model (advantage DPO). Performance—empirical results show DPO matches or exceeds RLHF on benchmarks like HH-RLHF and TruthfulQA (roughly equal). Flexibility—RLHF can incorporate complex rewards and constraints, DPO is limited to pairwise preferences (advantage RLHF). Iteration speed—DPO trains faster, enabling rapid experimentation (advantage DPO). Despite advantages, DPO has limitations: it requires preference pairs (not scalar rewards), assumes preference transitivity (if A>B and B>C, then A>C), and may underfit compared to RLHF when preferences are noisy. In practice, many teams have switched from RLHF to DPO for alignment due to simplicity and stability benefits. Future directions include hybrid approaches combining DPO's simplicity with RLHF's flexibility, and extensions handling multi-turn conversations and non-pairwise preferences.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "agent-memory",
+      "title": "Agent Memory Systems and Architectures",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["agents", "memory", "context", "retrieval"],
+      "sections": [
+        {
+          "id": "agent-memory/types",
+          "title": "Memory Types and Tiers",
+          "content": "LLM agents require memory systems to maintain context across interactions, learn from experience, and personalize behavior. Memory architectures typically use multiple tiers: working memory (current conversation, stored in prompt context), short-term memory (recent interactions, stored in local cache with TTL), and long-term memory (persistent facts and experiences, stored in vector database). Working memory is limited by context window (4K-128K tokens depending on model) and refreshed each interaction. Short-term memory uses Redis or in-memory caches with eviction policies (LRU, time-based) to keep recent context accessible. Long-term memory uses vector databases (Pinecone, Weaviate, pgvector) for semantic retrieval of relevant past interactions. This tiered approach balances context richness with computational cost—working memory is always included, short-term memory is fully retrieved, long-term memory is selectively retrieved based on relevance. The architecture mirrors human memory systems: working memory for immediate context, short-term for recent events, long-term for general knowledge and experiences.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-memory/retrieval",
+          "title": "Memory Retrieval Strategies",
+          "content": "Retrieving relevant memories from long-term storage uses techniques adapted from RAG. Semantic retrieval embeds the current user message and retrieves similar past interactions from the vector database (top-k nearest neighbors). Metadata filtering combines semantic search with structured filters—'retrieve memories from last 30 days where user mentioned 'project X''. Temporal retrieval prioritizes recent memories, using recency-weighted scoring: score = α * semantic_similarity + (1-α) * recency_score where recency_score = exp(-age/decay_constant). This balances relevance with freshness. Hierarchical retrieval first retrieves summaries of past conversations, then fetches full details for most relevant conversations. Spreading activation, inspired by cognitive science, starts with query-related concepts and follows associative links to related memories. For example, query about 'React hooks' might activate memories about 'useState', 'useEffect', then broader 'React' discussions. Retrieval limits prevent context overflow—typically retrieve 3-10 memories consuming <2000 tokens. Irrelevant memories add noise, so precision is critical. Reranking can improve retrieval—use cross-encoder to rescore retrieved memories by relevance to current conversation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-memory/consolidation",
+          "title": "Memory Consolidation and Summarization",
+          "content": "Agents must consolidate memories to prevent unlimited growth and extract key information. Consolidation techniques include: summarization (use LLM to summarize conversations before storing—'User discussed React performance optimization, interested in code splitting and lazy loading'), entity extraction (identify and store key entities—people, projects, preferences), fact extraction (extract declarative facts—'User prefers TypeScript over JavaScript', 'User works at Company X'), and clustering (group similar memories and store cluster summaries). Periodic consolidation runs background jobs that process accumulated memories—for example, nightly jobs summarizing the day's interactions. Hierarchical summarization creates multi-level representations: conversation-level summaries (one per conversation), session-level summaries (aggregating multiple conversations in a session), and user-level profiles (long-term preferences and facts). Importance weighting scores memories by significance, prioritizing storage and retrieval of important information over trivial details. Factors include user-explicitly-stated preferences (high importance), task-relevant information (medium), and small talk (low). Memory pruning periodically removes low-importance, old memories to bound storage. These techniques transform raw interaction logs into structured, queryable knowledge.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "agent-memory/challenges",
+          "title": "Memory System Challenges",
+          "content": "Agent memory systems face several challenges. Consistency maintenance ensures memories don't contradict—if user says 'I work at Company A' then later 'I work at Company B', the system must update/invalidate old information. Conflict resolution strategies include timestamp-based (latest wins), source-based (explicitly-stated preferences override inferred), or LLM-based reasoning (use LLM to reconcile conflicting information). Privacy and security require careful handling of sensitive information—implement data encryption, access controls, and retention policies compliant with GDPR/CCPA. Memory contamination occurs when incorrect or hallucinated information is stored as fact—mitigation includes confidence scoring (only store high-confidence extractions) and validation (verify facts against authoritative sources). Scalability challenges arise with millions of user interactions—efficient vector databases and metadata indexing are essential. Context window limits constrain how much memory can be incorporated—prioritization and summarization address this. Evaluation of memory systems is difficult—metrics include memory retrieval accuracy (did we retrieve relevant past interactions?), fact recall (can agent recall previously stated facts?), and consistency (does agent behave consistently with past interactions?). Building effective memory systems remains an open challenge requiring domain-specific tuning.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "tree-of-thoughts",
+      "title": "Tree-of-Thoughts: Deliberate Problem Solving",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["tree-of-thoughts", "reasoning", "search", "problem-solving"],
+      "sections": [
+        {
+          "id": "tree-of-thoughts/overview",
+          "title": "Tree-of-Thoughts Framework",
+          "content": "Tree-of-Thoughts (ToT) is a prompting framework that enables LLMs to explore multiple reasoning paths, backtrack when paths fail, and search for solutions systematically. Unlike chain-of-thought which follows a single linear reasoning path, ToT treats problem-solving as a search over a tree where nodes represent partial solutions (thoughts) and edges represent reasoning steps. The framework decomposes problems into thought steps (intermediate states in problem-solving process), generates multiple candidate thoughts per step (exploring alternative approaches), evaluates thoughts (assessing which are most promising), and searches using strategies like BFS or DFS (systematically exploring the tree). ToT significantly improves performance on tasks requiring planning, creativity, and exploration—for example, solving 24 puzzles (use four numbers and arithmetic to make 24) where single-path reasoning often fails. The framework was introduced in a 2023 paper showing order-of-magnitude improvements over chain-of-thought on complex reasoning tasks. ToT represents a shift from linear generation to search-based generation.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "tree-of-thoughts/implementation",
+          "title": "Implementing ToT Search",
+          "content": "ToT implementation requires defining: thought decomposition (how to break problems into steps), thought generation (how many candidate thoughts per step, typically 3-5), thought evaluation (how to assess thought quality), and search strategy (BFS, DFS, beam search). For example, solving a logic puzzle: Step 1 thoughts might be different interpretations of clues, Step 2 thoughts are deductions from each interpretation, evaluation scores thoughts by consistency with all clues. Thought evaluation uses prompting: 'Rate the likelihood this reasoning is correct from 0-10' or 'Is this reasoning consistent with the problem? Yes/No'. The search algorithm maintains a frontier of promising partial solutions, selects the best to expand (based on evaluation scores), generates child thoughts, and repeats until finding a complete solution or exhausting the budget. Beam search is common—keep top-k paths (beam width k=3-5) at each level, pruning less promising alternatives. This balances exploration breadth with computational cost. Implementation uses LLM calls at each node for generation and evaluation, requiring multiple API calls per problem (10-50 depending on tree depth and breadth). Cost management uses: small beam widths, early stopping when a high-confidence solution is found, and cheaper models for evaluation (GPT-3.5) vs. generation (GPT-4).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "tree-of-thoughts/use-cases",
+          "title": "ToT Applications and Use Cases",
+          "content": "ToT excels at tasks where: single reasoning paths often fail (requiring exploration of alternatives), problems have clear evaluation criteria (enabling thought assessment), and solutions require multi-step planning. Applications include: mathematical problem-solving (exploring different solution approaches), creative writing (generating and evaluating multiple story branches), code generation (exploring alternative implementations and choosing best), strategic planning (considering multiple plans and selecting optimal), and constraint satisfaction problems (systematically exploring assignments). For example, generating a creative story: Step 1 generates 3 possible openings, each is evaluated for interest and coherence, the best 2 are expanded with 3 possible continuations each, evaluation considers consistency with opening and plot progression, and search continues until reaching a satisfying conclusion. ToT is overkill for simple tasks where chain-of-thought suffices—it should be reserved for genuinely difficult problems justifying the computational cost. Hybrid approaches use chain-of-thought by default and ToT when detecting reasoning failures (retries or low confidence). Emerging research explores: learning heuristics for thought evaluation from feedback, automated thought decomposition, and integrating ToT with external tools for verification.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "tree-of-thoughts/evaluation",
+          "title": "Evaluating Thought Quality",
+          "content": "Effective thought evaluation is critical for ToT's success. Evaluation approaches include: LLM-based scoring (prompt LLM to rate thought quality 0-10, or compare thoughts pairwise), heuristic scoring (use domain-specific rules—for math, check dimensional consistency; for coding, check syntax validity), value function (train a model to predict future success probability from current thought), and simulation (for game-playing or planning, simulate outcomes to estimate value). LLM-based evaluation typically uses prompts like: 'Given the problem [PROBLEM] and partial solution [THOUGHT], rate the likelihood this path leads to a correct solution from 0-10. Reasoning: [let model explain], Score: [0-10]'. The reasoning step improves scoring accuracy. Pairwise comparison is more reliable than absolute scoring: 'Which thought is more likely to lead to a solution? Thought A: [X], Thought B: [Y]'. Calibration of evaluation is important—noisy or biased evaluation derails search. Validation involves: comparing LLM evaluations to ground truth (when available), measuring evaluation consistency (does the LLM give similar scores to similar thoughts?), and tracking correlation between evaluation scores and actual solution success. Cost-quality tradeoffs exist: simple heuristics are fast but less accurate, LLM evaluation is accurate but expensive, trained value functions are fast and accurate but require training data. Production systems often use hybrid evaluation combining fast heuristics for pruning with LLM evaluation for final selection.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "query-optimization",
+      "title": "RAG Query Optimization Techniques",
+      "content_type": "tutorial",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["rag", "query", "optimization", "retrieval"],
+      "sections": [
+        {
+          "id": "query-optimization/expansion",
+          "title": "Query Expansion Strategies",
+          "content": "Query expansion improves retrieval by generating variations of the user query, retrieving documents for all variations, and merging results. Techniques include: LLM-based expansion (prompt: 'Generate 3 alternative phrasings of this query: [QUERY]'), synonym expansion (replace words with synonyms using WordNet or embeddings), and entity expansion (expand entities to related entities—'Paris' → ['Paris', 'Île-de-France', 'France capital']). For example, query 'how to speed up Python code' expands to: 'Python performance optimization', 'making Python faster', 'Python code acceleration'. Documents matching any variation are retrieved and deduplicated. Multi-query RAG, a specific expansion approach, generates sub-questions: query 'explain RAG architecture' generates ['What is RAG?', 'How does retrieval work in RAG?', 'What LLMs are used in RAG?']. Each sub-question retrieves documents, and all retrieved docs are merged. Query expansion improves recall (finding all relevant documents) at the cost of potentially lower precision (more irrelevant documents). Balancing requires: limiting expansion to 3-5 variations, using high-quality expansion (LLM-based preferred over synonym expansion), and reranking merged results to filter noise. Query expansion is particularly effective for short, ambiguous queries lacking context.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "query-optimization/hyde",
+          "title": "Hypothetical Document Embeddings (HyDE)",
+          "content": "HyDE improves retrieval by generating a hypothetical answer to the query, embedding it, then retrieving documents similar to the hypothetical answer. The insight: answers are semantically closer to relevant documents than questions. For query 'What is RLHF?', a question embedding might be distant from technical documents discussing RLHF. HyDE first generates a hypothetical answer: 'RLHF is Reinforcement Learning from Human Feedback, a technique for aligning language models with human preferences. It involves training a reward model on human preferences, then using RL to optimize the policy...' This hypothetical answer is embedded and used for retrieval, finding documents that look like answers. HyDE works even if the hypothetical answer is factually incorrect—semantic similarity still aligns with relevant documents. Implementation: generate hypothetical answer using LLM (temperature=0.7 for diversity), embed the answer, retrieve top-k documents using answer embedding, and optionally combine with query-based retrieval (merge HyDE results and direct query results). HyDE improves retrieval metrics by 5-20% on benchmarks like Natural Questions and MS MARCO, with largest gains on complex, specific queries. Limitations include increased latency (LLM call to generate hypothesis) and potential topic drift if hypothesis is off-target. Best used for complex queries where standard retrieval underperforms.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "query-optimization/decomposition",
+          "title": "Query Decomposition for Complex Questions",
+          "content": "Complex multi-part queries benefit from decomposition into simpler sub-queries answered independently. For example, 'Compare the architectures of GPT-4 and Claude and explain which is better for coding tasks' decomposes to: 'What is GPT-4 architecture?', 'What is Claude architecture?', 'How do GPT-4 and Claude differ?', 'Which model is better for coding tasks?'. Each sub-query retrieves relevant documents, and the LLM synthesizes a comprehensive answer using all retrieved context. Decomposition approaches include: LLM-based (prompt: 'Break this complex question into simpler sub-questions'), rule-based (split on conjunctions 'and', 'or'), and template-based (for specific question types like comparisons, causal questions). The execution strategy can be sequential (answer sub-queries in order, later sub-queries can use earlier answers) or parallel (answer all sub-queries independently, then synthesize). Sequential execution enables follow-up questions: answer to 'What is GPT-4?' informs 'How does GPT-4 differ from Claude?'. Decomposition improves answer quality for complex queries by ensuring all aspects are addressed with relevant context. Challenges include: decomposition errors (splitting incorrectly), overhead (multiple retrieval and LLM calls), and integration complexity (synthesizing sub-answers coherently). Decomposition is most beneficial for multi-part queries and comparative questions.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "query-optimization/routing",
+          "title": "Query Routing and Classification",
+          "content": "Query routing classifies queries and routes to specialized retrieval pipelines optimized for each query type. Classification dimensions include: complexity (simple factual vs. complex analytical), domain (technical vs. general), intent (question-answering vs. summarization vs. comparison), and temporal sensitivity (requires recent information vs. evergreen). For example, queries about 'current stock price' route to real-time data sources while 'explain photosynthesis' uses general knowledge base. Implementation uses: keyword-based routing (simple rules: 'current', 'latest', 'today' → real-time pipeline), embedding-based classification (embed query, classify using nearest neighbor against labeled query clusters), or LLM-based classification (prompt: 'Classify this query into: factual, analytical, creative, procedural'). Different pipelines use different: retrieval strategies (BM25 for factual, vector search for conceptual), data sources (Wikipedia for general knowledge, company docs for internal queries), and parameters (top-k=5 for simple queries, top-k=20 for complex). Query routing improves efficiency (simple queries use fast pipelines) and quality (each query type gets optimal treatment). Production systems use multi-stage routing: coarse classification first (factual vs. analytical), then fine-grained routing within categories. Monitoring tracks routing accuracy and per-route performance metrics to identify optimization opportunities.",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
+      "id": "output-formatting",
+      "title": "LLM Output Formatting and Structured Generation",
+      "content_type": "tutorial",
+      "bucket": "long",
+      "language": "en",
+      "tags": ["llm", "structured-output", "json", "parsing"],
+      "sections": [
+        {
+          "id": "output-formatting/json-mode",
+          "title": "JSON Mode and Schema Validation",
+          "content": "Modern LLMs support JSON mode, forcing outputs to be valid JSON. OpenAI's GPT-4 and Anthropic's Claude enable this via API parameters: {response_format: {type: 'json_object'}}. This guarantees valid JSON but doesn't enforce specific schemas. Schema enforcement requires additional techniques: prompt-based (include JSON schema in prompt and request compliance), validation-and-retry (parse output, validate against schema using jsonschema library, retry with error feedback if invalid), or constrained decoding (force model to generate only schema-compliant tokens). Prompt-based approach: 'Output JSON matching this schema: {name: string, age: number, hobbies: string[]}. Example: {name: 'Alice', age: 30, hobbies: ['reading', 'hiking']}'. This works well for simple schemas but fails for complex nested structures. Validation-and-retry improves reliability: parse JSON, validate with jsonschema, if validation fails, re-prompt with 'Previous output was invalid: [ERROR]. Please output valid JSON matching schema: [SCHEMA]'. This typically succeeds within 2-3 attempts. For mission-critical applications, use Pydantic models to define schemas and validate outputs in Python.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "output-formatting/constrained-decoding",
+          "title": "Constrained Decoding and Grammar-Based Generation",
+          "content": "Constrained decoding forces LLM generation to follow specific grammars or formats at the token level, guaranteeing structural validity. Libraries like guidance (from Microsoft), LMQL, and jsonformer implement constrained decoding. The approach: parse the desired schema or grammar, during generation, mask invalid tokens (set probability to 0 for tokens that would violate schema), and sample only from valid tokens. For example, when generating JSON object, after seeing '{', only allow valid key strings (quoted strings); after a key, only allow ':'; after ':', allow values of the appropriate type. This eliminates invalid outputs entirely. jsonformer specializes in JSON generation: given a JSON schema and LLM, it orchestrates generation filling schema placeholders with LLM outputs while ensuring structural validity. For example, schema {name: str, age: int} → jsonformer generates '{'name': '..LLM generates name...', 'age': ..LLM generates number..}'. Constrained decoding is slower than unconstrained (token masking overhead) but guarantees correctness. Best for: complex schemas, structured data extraction, and critical applications where retries are unacceptable. Open-source models support constrained decoding via libraries; API-based models (GPT-4) don't expose token-level control, limiting to prompt-based methods.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "output-formatting/function-calling",
+          "title": "Function Calling and Tool Schemas",
+          "content": "Function calling is a structured output format where LLMs generate tool/function invocations as JSON. Models like GPT-4 are fine-tuned to generate function calls matching provided schemas. Usage: define available functions with schemas (name, description, parameters), include in API request, and model generates function calls when appropriate. Example schema: {name: 'get_weather', description: 'Get current weather for a location', parameters: {type: 'object', properties: {location: {type: 'string'}}, required: ['location']}}. When user asks 'What's the weather in Tokyo?', model generates: {name: 'get_weather', arguments: {location: 'Tokyo'}}. The application parses this, executes the function, and returns results to the model. Function calling ensures structured tool use without parsing free-text. Benefits: reliable parsing (JSON format enforced), schema validation (arguments match expected types), and multiple tools (model chooses from many functions). Implementation in non-function-calling models uses prompt engineering: 'You have access to these functions: [schemas]. To call a function, output JSON: {tool: name, args: {...}}'. This works but is less reliable than native function calling. Function calling is the preferred method for agent tool use, API integrations, and structured data extraction.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "output-formatting/parsing-strategies",
+          "title": "Robust Parsing and Error Handling",
+          "content": "Even with structured output techniques, parsing failures occur. Robust systems implement defensive parsing and error handling. Strategies include: liberal parsing (accept minor formatting issues—missing quotes, trailing commas—using lenient parsers), regex extraction (use regex to extract JSON/XML from surrounding text if model adds explanatory prose), retry with feedback (on parse failure, re-prompt with error: 'Output was not valid JSON: [ERROR]. Please try again'), and fallback extraction (if parsing fails, extract key information using regex or LLM-based extraction). For example, model outputs 'Here's the JSON: {name: 'Alice', age: 30} Hope this helps!' Liberal parsing extracts the JSON portion. Validation layers check: structural validity (is it valid JSON?), schema compliance (does it match expected schema?), and semantic validity (do values make sense—age=-5 is invalid). Error messages should be specific: 'JSON missing required field: email' vs. generic 'invalid JSON'. Retry limits prevent infinite loops—typically allow 2-3 retries before returning error to user. Production logging captures parsing failures to identify systemic issues (e.g., model consistently fails on specific schemas → simplify schema or improve prompt). These defensive techniques dramatically improve reliability in production deployments.",
+          "granularity": "coarse"
+        }
+      ]
+    }
+  ]
+}
