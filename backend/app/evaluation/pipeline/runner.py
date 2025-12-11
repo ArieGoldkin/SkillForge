@@ -21,10 +21,11 @@ Usage:
 from __future__ import annotations
 
 import json
+import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
 from app.evaluation.pipeline.thresholds import (
@@ -33,8 +34,11 @@ from app.evaluation.pipeline.thresholds import (
     ThresholdStatus,
     get_threshold,
 )
+from app.schemas.search import SearchMode
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.services.embeddings import EmbeddingService
@@ -238,6 +242,7 @@ class EvaluationRunner:
             )
 
         self.search_service = search_service
+        self._queries: list[dict[str, Any]] = []
 
     async def run_all(
         self,
@@ -298,11 +303,8 @@ class EvaluationRunner:
     async def _run_difficulty(self, difficulty: Difficulty) -> EvaluationResult:
         """Run evaluation for a single difficulty level.
 
-        This is a placeholder implementation. The actual implementation should:
-        1. Load examples from evaluation dataset
-        2. Run retrieval for each query
-        3. Compute metrics (Recall@5, MRR, NDCG@5)
-        4. Compare against thresholds
+        Loads examples from the configured queries, runs retrieval,
+        and computes IR metrics (Recall@5, MRR, NDCG@5).
 
         Args:
             difficulty: Difficulty level to evaluate
@@ -313,25 +315,153 @@ class EvaluationRunner:
         """
         start_time = time.time()
 
-        # TODO: Implement actual evaluation logic
-        # For now, return a placeholder result
-        logger.warning(f"Placeholder evaluation for {difficulty.value} - implement dataset loading")
+        # Filter queries by difficulty
+        queries = [q for q in self._queries if q.get("difficulty") == difficulty.value]
 
-        config = get_threshold(difficulty)
+        if not queries:
+            logger.warning(f"No queries found for difficulty: {difficulty.value}")
+            config = get_threshold(difficulty)
+            return EvaluationResult(
+                difficulty=difficulty,
+                recall_at_5=config.recall_at_5,  # Return threshold as "no data"
+                mrr=config.mrr,
+                ndcg_at_5=config.ndcg_at_5,
+                examples_evaluated=0,
+                examples_passed=0,
+                failed_example_ids=[],
+                execution_time_seconds=time.time() - start_time,
+            )
 
-        # Placeholder: simulate perfect metrics
+        # Compute metrics for each query
+        recalls: list[float] = []
+        mrrs: list[float] = []
+        ndcgs: list[float] = []
+        failed_ids: list[str] = []
+        passed_count = 0
+
+        for query in queries:
+            query_id = query.get("id", "unknown")
+            query_text = query.get("query", "")
+            expected_chunks = query.get("expected_chunks", [])
+            min_score = query.get("min_score")
+
+            try:
+                # Run retrieval
+                results = await self.search_service.search(
+                    query=query_text,
+                    top_k=5,
+                    mode=SearchMode.HYBRID,
+                )
+
+                # Extract section IDs from path metadata for matching
+                # Path is stored as ["doc_id", "section_id"], e.g., ["fastapi-auth", "fastapi-auth/intro"]
+                # We use path[1] (section_id) to match against expected_chunks
+                retrieved_ids = []
+                for r in results:
+                    if r.metadata.path and len(r.metadata.path) > 1:
+                        retrieved_ids.append(r.metadata.path[1])
+                    else:
+                        # Fallback to chunk_id if path not available
+                        retrieved_ids.append(r.chunk_id)
+
+                # Compute metrics
+                metrics = self._compute_metrics(retrieved_ids, expected_chunks, k=5)
+                recalls.append(metrics["recall"])
+                mrrs.append(metrics["mrr"])
+                ndcgs.append(metrics["ndcg"])
+
+                # Check if query passed (based on min_score if provided)
+                query_passed = True
+                if min_score is not None and results and results[0].score < min_score:
+                    query_passed = False
+
+                # Also check recall - must have at least one hit
+                if metrics["recall"] == 0 and expected_chunks:
+                    query_passed = False
+
+                if query_passed:
+                    passed_count += 1
+                else:
+                    failed_ids.append(query_id)
+
+            except Exception as e:
+                logger.error(f"Error evaluating query {query_id}: {e}")
+                recalls.append(0.0)
+                mrrs.append(0.0)
+                ndcgs.append(0.0)
+                failed_ids.append(query_id)
+
+        # Aggregate metrics
+        mean_recall = sum(recalls) / len(recalls) if recalls else 0.0
+        mean_mrr = sum(mrrs) / len(mrrs) if mrrs else 0.0
+        mean_ndcg = sum(ndcgs) / len(ndcgs) if ndcgs else 0.0
+
         result = EvaluationResult(
             difficulty=difficulty,
-            recall_at_5=config.recall_at_5,
-            mrr=config.mrr,
-            ndcg_at_5=config.ndcg_at_5,
-            examples_evaluated=0,
-            examples_passed=0,
-            failed_example_ids=[],
+            recall_at_5=mean_recall,
+            mrr=mean_mrr,
+            ndcg_at_5=mean_ndcg,
+            examples_evaluated=len(queries),
+            examples_passed=passed_count,
+            failed_example_ids=failed_ids,
             execution_time_seconds=time.time() - start_time,
         )
 
+        logger.info(
+            f"Evaluated {difficulty.value}",
+            examples=len(queries),
+            passed=passed_count,
+            recall=f"{mean_recall:.3f}",
+            mrr=f"{mean_mrr:.3f}",
+            ndcg=f"{mean_ndcg:.3f}",
+            status=result.status.value,
+        )
+
         return result
+
+    def _compute_metrics(
+        self,
+        retrieved_ids: Sequence[str],
+        expected_ids: Sequence[str],
+        k: int = 5,
+    ) -> dict[str, float]:
+        """Compute IR metrics for a single query.
+
+        Args:
+            retrieved_ids: Ordered list of retrieved chunk IDs
+            expected_ids: Set of relevant chunk IDs (ground truth)
+            k: Number of top results to consider
+
+        Returns:
+            Dict with recall, mrr, ndcg values
+
+        """
+        expected_set = set(expected_ids)
+        top_k = list(retrieved_ids[:k])
+
+        # Recall@k = |relevant ∩ retrieved@k| / |relevant|
+        if not expected_set:
+            recall = 1.0  # No expected = trivially satisfied
+        else:
+            hits = sum(1 for doc_id in top_k if doc_id in expected_set)
+            recall = hits / len(expected_set)
+
+        # MRR = 1 / rank_of_first_relevant
+        mrr = 0.0
+        for i, doc_id in enumerate(retrieved_ids, start=1):
+            if doc_id in expected_set:
+                mrr = 1.0 / i
+                break
+
+        # NDCG@k = DCG@k / IDCG@k (binary relevance)
+        dcg = sum(
+            1.0 / math.log2(i + 2) for i, doc_id in enumerate(top_k) if doc_id in expected_set
+        )
+        ideal_count = min(len(expected_set), k)
+        idcg = sum(1.0 / math.log2(i + 2) for i in range(ideal_count))
+        ndcg = dcg / idcg if idcg > 0 else (1.0 if dcg == 0 else 0.0)
+
+        return {"recall": recall, "mrr": mrr, "ndcg": ndcg}
 
     async def run_from_fixtures(
         self,
@@ -340,16 +470,34 @@ class EvaluationRunner:
     ) -> PipelineResult:
         """Run evaluation using fixture files.
 
-        Alternative entry point for running evaluation from smoke test fixtures.
+        Loads queries from queries.json in the fixtures directory and
+        runs evaluation against the database.
 
         Args:
-            fixtures_dir: Directory containing queries.json and documents.json
+            fixtures_dir: Directory containing queries.json
             difficulties: List of difficulties to evaluate (default: all)
 
         Returns:
             PipelineResult with aggregated metrics
 
         """
-        # TODO: Implement fixture-based evaluation
-        logger.warning("Fixture-based evaluation not yet implemented")
+        queries_path = fixtures_dir / "queries.json"
+        if not queries_path.exists():
+            msg = f"Queries file not found: {queries_path}"
+            raise FileNotFoundError(msg)
+
+        with queries_path.open() as f:
+            data = json.load(f)
+
+        # Extract queries (handle both flat list and wrapped format)
+        if isinstance(data, dict) and "queries" in data:
+            self._queries = data["queries"]
+        elif isinstance(data, list):
+            self._queries = data
+        else:
+            msg = "Invalid queries.json format"
+            raise ValueError(msg)
+
+        logger.info(f"Loaded {len(self._queries)} queries from {queries_path}")
+
         return await self.run_all(difficulties)
