@@ -116,8 +116,22 @@ async def test_graph_execution_with_mocks(
     def _dummy_session_factory():
         return _DummySessionContext()
 
+    # Mock _create_artifact_ref to avoid database calls (Issue #244 Handle Pattern)
+    mock_content_ref = {
+        "uri": f"analysis://{TEST_ANALYSIS_ID}/content",
+        "summary": "Test content summary",
+        "size_bytes": len(sample_extraction_result["raw_content"]),
+        "content_type": "text/markdown",
+        "available_sections": ["full", "summary"],
+    }
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch(
+            "app.workflows.tasks.extract_content._create_artifact_ref",
+            new_callable=AsyncMock,
+            return_value=mock_content_ref,
+        ),
         patch(
             "app.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
@@ -238,8 +252,22 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
     def _dummy_session_factory():
         return _DummySessionContext()
 
+    # Mock _create_artifact_ref to avoid database calls (Issue #244 Handle Pattern)
+    mock_content_ref = {
+        "uri": f"analysis://{TEST_ANALYSIS_ID}/content",
+        "summary": "Test summary",
+        "size_bytes": 4,
+        "content_type": "text/markdown",
+        "available_sections": ["full", "summary"],
+    }
+
     with (
         patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch(
+            "app.workflows.tasks.extract_content._create_artifact_ref",
+            new_callable=AsyncMock,
+            return_value=mock_content_ref,
+        ),
         patch(
             "app.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
