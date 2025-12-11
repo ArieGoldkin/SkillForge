@@ -38,7 +38,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -125,6 +124,7 @@ async def run_evaluation(
 
     Returns:
         PipelineResult with evaluation results
+
     """
     from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -169,15 +169,13 @@ def write_output(result: PipelineResult, output_path: Path, format: str) -> None
         result: Pipeline result to write
         output_path: Path to output file
         format: Output format (json or markdown)
+
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if format == "json":
-        content = result.to_json()
-    else:  # markdown
-        content = result.to_markdown()
+    content = result.to_json() if format == "json" else result.to_markdown()
 
-    with open(output_path, "w") as f:
+    with output_path.open("w") as f:
         f.write(content)
 
     logger.info(f"Results written to {output_path}")
@@ -195,6 +193,7 @@ def check_status(
 
     Returns:
         True if passed, False if failed
+
     """
     if result.overall_status == ThresholdStatus.FAIL:
         logger.error("Evaluation FAILED", status=result.overall_status.value)
@@ -202,7 +201,9 @@ def check_status(
 
     if result.overall_status == ThresholdStatus.WARN:
         if fail_on_warn:
-            logger.error("Evaluation FAILED (warnings in strict mode)", status=result.overall_status.value)
+            logger.error(
+                "Evaluation FAILED (warnings in strict mode)", status=result.overall_status.value
+            )
             return False
         logger.warning("Evaluation passed with WARNINGS", status=result.overall_status.value)
         return True
@@ -216,6 +217,7 @@ async def main() -> int:
 
     Returns:
         Exit code (0=success, 1=failure, 2=error)
+
     """
     args = parse_args()
 
@@ -230,8 +232,8 @@ async def main() -> int:
     if args.datasets:
         try:
             difficulties = [Difficulty(d) for d in args.datasets]
-        except ValueError as e:
-            logger.error(f"Invalid difficulty: {e}")
+        except ValueError:
+            logger.exception("Invalid difficulty")
             return 2
 
     # Run evaluation
@@ -246,7 +248,7 @@ async def main() -> int:
     try:
         write_output(result, args.output, args.format)
     except Exception as e:
-        logger.error("Failed to write output", error=str(e))
+        logger.exception("Failed to write output", error=str(e))
         print(f"Error writing output: {e}", file=sys.stderr)
         return 2
 
@@ -261,7 +263,7 @@ async def main() -> int:
 
             # Write regression report
             regression_path = args.output.parent / f"{args.output.stem}_regression.md"
-            with open(regression_path, "w") as f:
+            with regression_path.open("w") as f:
                 f.write(regression_report.to_markdown())
 
             logger.info(f"Regression report written to {regression_path}")
@@ -272,7 +274,7 @@ async def main() -> int:
                 return 1
 
         except Exception as e:
-            logger.error("Regression check failed", error=str(e))
+            logger.exception("Regression check failed", error=str(e))
             print(f"Warning: Regression check failed: {e}", file=sys.stderr)
             # Continue - don't fail on regression check errors
 
