@@ -58,6 +58,7 @@ from app.services.mcp.exceptions import (
 )
 from app.services.mcp.registry import (
     AGENT_TOOL_CONFIGS,
+    ARTIFACT_LOAD_CAPABILITY,
     AgentToolConfig,
     ToolCapability,
     ToolRegistry,
@@ -65,6 +66,7 @@ from app.services.mcp.registry import (
 
 __all__ = [
     "AGENT_TOOL_CONFIGS",
+    "ARTIFACT_LOAD_CAPABILITY",
     "MAX_BATCH_SIZE",
     "MCP_RETRY_ATTEMPTS",
     "MCP_RETRY_MAX_WAIT",

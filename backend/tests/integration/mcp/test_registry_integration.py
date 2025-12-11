@@ -85,10 +85,13 @@ class TestRegistryCapabilities:
         capabilities = tool_registry.get_capabilities("security_auditor")
 
         # Should be in format "server:tool_name"
+        # Servers include external (github, npm, pypi) and internal (skillforge) MCP servers
+        # Sprint 11 added skillforge server for Handle Pattern (#244) and RAG (#245)
+        valid_servers = ["github", "npm", "pypi", "skillforge"]
         for cap in capabilities:
             assert ":" in cap
             server, tool = cap.split(":", 1)
-            assert server in ["github", "npm", "pypi"]
+            assert server in valid_servers, f"Unknown server '{server}' in capability '{cap}'"
             assert len(tool) > 0
 
     def test_security_auditor_capabilities_include_github(self, tool_registry):

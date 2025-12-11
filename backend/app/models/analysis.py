@@ -16,6 +16,10 @@ class Analysis(Base):
 
     Stores information about URLs being analyzed, their content, embeddings,
     and processing status. This is the primary table in the system.
+
+    Context Engineering (Issue #244 - Handle Pattern):
+        content_summary: LLM-generated summary for lightweight state refs
+        content_sections: JSONB with code blocks, headings for partial loading
     """
 
     __tablename__ = "analyses"
@@ -39,3 +43,8 @@ class Analysis(Base):
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
+    # Context Engineering: Handle Pattern (Issue #244)
+    # Summary for lightweight ArtifactRef in state (~500 tokens)
+    content_summary = Column(Text)
+    # Section metadata for partial loading: code_blocks, headings, word_count
+    content_sections = Column(JSONB, default=dict)

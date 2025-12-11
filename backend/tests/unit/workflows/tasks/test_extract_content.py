@@ -4,9 +4,26 @@ Tests verify that title and word_count are correctly included in extraction_meta
 This addresses Issue #170: Title not persisted from content extraction.
 """
 
+import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
+# Valid UUID for testing
+TEST_ANALYSIS_ID = str(uuid.uuid4())
+
+
+@pytest.fixture
+def mock_artifact_store():
+    """Mock the artifact store to prevent database calls."""
+    with patch("app.workflows.tasks.extract_content._create_artifact_ref") as mock:
+        mock.return_value = {
+            "uri": "content://test-ref",
+            "size_bytes": 1024,
+            "summary": "Test summary",
+            "sections": [],
+        }
+        yield mock
 
 
 @pytest.fixture
@@ -35,7 +52,9 @@ def mock_emit_event():
 
 
 @pytest.mark.asyncio
-async def test_extract_content_includes_title_in_metadata(mock_jina_response, mock_emit_event):
+async def test_extract_content_includes_title_in_metadata(
+    mock_jina_response, mock_emit_event, mock_artifact_store
+):
     """Test that title from Jina Reader is included in extraction_metadata."""
     with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         # Setup mock
@@ -50,7 +69,7 @@ async def test_extract_content_includes_title_in_metadata(mock_jina_response, mo
         # Execute
         result = await extract_content(
             url="https://fastapi.tiangolo.com/tutorial/first-steps/",
-            analysis_id="test-analysis-id",
+            analysis_id=TEST_ANALYSIS_ID,
         )
 
         # Verify title is in extraction_metadata
@@ -59,7 +78,9 @@ async def test_extract_content_includes_title_in_metadata(mock_jina_response, mo
 
 
 @pytest.mark.asyncio
-async def test_extract_content_includes_word_count_in_metadata(mock_jina_response, mock_emit_event):
+async def test_extract_content_includes_word_count_in_metadata(
+    mock_jina_response, mock_emit_event, mock_artifact_store
+):
     """Test that word_count from Jina Reader is included in extraction_metadata."""
     with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
@@ -71,7 +92,7 @@ async def test_extract_content_includes_word_count_in_metadata(mock_jina_respons
 
         result = await extract_content(
             url="https://example.com",
-            analysis_id="test-analysis-id",
+            analysis_id=TEST_ANALYSIS_ID,
         )
 
         # Verify word_count is in extraction_metadata
@@ -79,7 +100,9 @@ async def test_extract_content_includes_word_count_in_metadata(mock_jina_respons
 
 
 @pytest.mark.asyncio
-async def test_extract_content_preserves_original_metadata(mock_jina_response, mock_emit_event):
+async def test_extract_content_preserves_original_metadata(
+    mock_jina_response, mock_emit_event, mock_artifact_store
+):
     """Test that original metadata fields from Jina Reader are preserved."""
     with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
@@ -91,7 +114,7 @@ async def test_extract_content_preserves_original_metadata(mock_jina_response, m
 
         result = await extract_content(
             url="https://example.com",
-            analysis_id="test-analysis-id",
+            analysis_id=TEST_ANALYSIS_ID,
         )
 
         # Verify original metadata fields are preserved
@@ -103,7 +126,7 @@ async def test_extract_content_preserves_original_metadata(mock_jina_response, m
 
 
 @pytest.mark.asyncio
-async def test_extract_content_handles_missing_title(mock_emit_event):
+async def test_extract_content_handles_missing_title(mock_emit_event, mock_artifact_store):
     """Test that extraction handles missing title gracefully (returns None)."""
     response_without_title = {
         "content": "Some content without title...",
@@ -124,7 +147,7 @@ async def test_extract_content_handles_missing_title(mock_emit_event):
 
         result = await extract_content(
             url="https://example.com",
-            analysis_id="test-analysis-id",
+            analysis_id=TEST_ANALYSIS_ID,
         )
 
         # Title should be None, not raise an error
@@ -132,7 +155,9 @@ async def test_extract_content_handles_missing_title(mock_emit_event):
 
 
 @pytest.mark.asyncio
-async def test_extract_content_returns_raw_content(mock_jina_response, mock_emit_event):
+async def test_extract_content_returns_raw_content(
+    mock_jina_response, mock_emit_event, mock_artifact_store
+):
     """Test that raw_content is correctly returned."""
     with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
@@ -144,7 +169,7 @@ async def test_extract_content_returns_raw_content(mock_jina_response, mock_emit
 
         result = await extract_content(
             url="https://example.com",
-            analysis_id="test-analysis-id",
+            analysis_id=TEST_ANALYSIS_ID,
         )
 
         # Verify raw_content is returned

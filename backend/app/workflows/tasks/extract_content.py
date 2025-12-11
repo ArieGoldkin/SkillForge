@@ -1,4 +1,9 @@
-"""Content extraction task for workflow."""
+"""Content extraction task for workflow.
+
+Issue #244: Handle Pattern Integration
+- Creates ArtifactRef after extraction for lightweight state passing
+- Returns both raw_content (backward compat) and content_ref (new pattern)
+"""
 
 from langsmith import get_current_run_tree
 
@@ -6,8 +11,11 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
+from app.db.session import get_session_factory
+from app.services.context.artifact_store import ArtifactStore
 from app.services.extraction.jina_reader import JinaReader
 from app.services.sse_helpers import emit_streaming_event
+from app.workflows.state import ContentRef
 
 logger = get_logger(__name__)
 
@@ -86,8 +94,26 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         word_count = extracted.get("word_count")
         metadata["word_count"] = word_count if isinstance(word_count, int) else None
 
+        # Type assertion: extracted["content"] is always str from JinaReader
+        raw_content: str = str(extracted["content"])
+
+        # Issue #244: Create ArtifactRef for Handle Pattern
+        # This stores content summary and section metadata for on-demand loading
+        content_ref = await _create_artifact_ref(
+            analysis_id=str(analysis_id),
+            content=raw_content,
+        )
+
+        logger.info(
+            "artifact_ref_created",
+            analysis_id=analysis_id,
+            uri=content_ref.get("uri"),
+            size_bytes=content_ref.get("size_bytes"),
+        )
+
         return {
-            "raw_content": extracted["content"],
+            "raw_content": raw_content,  # Backward compatibility
+            "content_ref": content_ref,  # Issue #244: Handle Pattern
             "extraction_metadata": metadata,
         }
     except Exception as e:
@@ -109,3 +135,36 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         raise
     finally:
         await jina.close()
+
+
+async def _create_artifact_ref(analysis_id: str, content: str) -> ContentRef:
+    """Create artifact reference for Handle Pattern.
+
+    Stores content summary and section metadata in database,
+    returns lightweight ref for state passing.
+
+    Args:
+        analysis_id: Analysis UUID string
+        content: Raw content to create ref for
+
+    Returns:
+        ContentRef dict with uri, summary, size_bytes, etc.
+
+    """
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        store = ArtifactStore(session)
+        artifact_ref = await store.create_ref(
+            analysis_id=analysis_id,
+            content=content,
+            content_type="text/markdown",  # Jina returns markdown
+        )
+
+        # Convert Pydantic model to ContentRef TypedDict
+        return ContentRef(
+            uri=artifact_ref.uri,
+            summary=artifact_ref.summary,
+            size_bytes=artifact_ref.size_bytes,
+            content_type=artifact_ref.content_type,
+            available_sections=artifact_ref.available_sections,
+        )

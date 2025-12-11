@@ -142,17 +142,19 @@ class TestAgentToolConfigs:
         # Should support package managers
         assert servers & {"npm", "pypi", "github"}
 
-    def test_disabled_agents(self):
-        """Verify agents with no tools are disabled."""
-        disabled_agents = [
-            "implementation_planner",
-            "performance_analyst",
-            "trend_validator",
-            "integration_feasibility",
-        ]
-        for agent in disabled_agents:
-            config = AGENT_TOOL_CONFIGS[agent]
-            assert config.enabled is False or len(config.capabilities) == 0
+    def test_all_agents_have_memory_search(self):
+        """Verify all agents have memory search capability (Issue #245).
+
+        After implementing Agent Memory Access (RAG), all agents should have
+        the search_memory capability for reactive recall.
+        """
+        for agent_type, config in AGENT_TOOL_CONFIGS.items():
+            # All agents should be enabled now with at least memory search
+            assert config.enabled is True, f"{agent_type} should be enabled"
+            capability_names = [cap.tool_name for cap in config.capabilities]
+            assert "search_memory" in capability_names, (
+                f"{agent_type} should have search_memory capability"
+            )
 
 
 class TestToolRegistry:

@@ -104,6 +104,23 @@ class AgentToolConfig:
     tool_timeout: float = 30.0
 
 
+# Common capability for all agents: artifact loading (Handle Pattern)
+# This enables agents to load content sections on-demand instead of inline
+ARTIFACT_LOAD_CAPABILITY = ToolCapability(
+    server="skillforge",
+    tool_name="load_artifact",
+    description="Load content sections from artifact URIs (summary, full, code_blocks, headings)",
+)
+
+# Common capability for all agents: memory search (RAG Pattern)
+# Issue #245: Enables agents to search past analyses and patterns
+MEMORY_SEARCH_CAPABILITY = ToolCapability(
+    server="skillforge",
+    tool_name="search_memory",
+    description="Search past analyses, patterns, and best practices for relevant context (RAG)",
+)
+
+
 # Default agent tool configurations
 # These can be overridden at runtime via ToolRegistry initialization
 AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
@@ -111,6 +128,8 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         agent_type="security_auditor",
         enabled=True,
         capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="github",
                 tool_name="search_code",
@@ -129,6 +148,8 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         agent_type="dependency_mapper",
         enabled=True,
         capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="npm",
                 tool_name="get_package",
@@ -152,6 +173,8 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         agent_type="tech_comparator",
         enabled=True,
         capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="npm",
                 tool_name="get_package",
@@ -170,6 +193,8 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         agent_type="code_quality_critic",
         enabled=True,
         capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="github",
                 tool_name="list_commits",
@@ -184,33 +209,34 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         max_tool_calls=12,
         tool_timeout=25.0,
     ),
+    # Agents below have artifact loading (Handle Pattern) + memory search (RAG)
     "implementation_planner": AgentToolConfig(
         agent_type="implementation_planner",
-        enabled=False,
-        capabilities=[],
-        max_tool_calls=0,
-        tool_timeout=0.0,
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
     ),
     "performance_analyst": AgentToolConfig(
         agent_type="performance_analyst",
-        enabled=False,
-        capabilities=[],
-        max_tool_calls=0,
-        tool_timeout=0.0,
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
     ),
     "trend_validator": AgentToolConfig(
         agent_type="trend_validator",
-        enabled=False,
-        capabilities=[],
-        max_tool_calls=0,
-        tool_timeout=0.0,
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
     ),
     "integration_feasibility": AgentToolConfig(
         agent_type="integration_feasibility",
-        enabled=False,
-        capabilities=[],
-        max_tool_calls=0,
-        tool_timeout=0.0,
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
     ),
 }
 
