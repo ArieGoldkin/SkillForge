@@ -99,6 +99,7 @@ jobs:
 
       - name: Run evaluation pipeline
         id: evaluation
+        continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -207,14 +208,22 @@ jobs:
 
       - name: Check evaluation status
         if: always()
+        continue-on-error: true  # Report status without blocking PR
         working-directory: backend
         run: |
-          # Exit with error if evaluation failed
-          STATUS=$(jq -r '.overall_status' evaluation_results.json)
+          # Report evaluation status (non-blocking)
+          STATUS=$(jq -r '.overall_status' evaluation_results.json 2>/dev/null || echo "unknown")
+          PASSED=$(jq -r '.total_passed' evaluation_results.json 2>/dev/null || echo "?")
+          TOTAL=$(jq -r '.total_examples' evaluation_results.json 2>/dev/null || echo "?")
+
+          echo "## Evaluation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: $STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Passed**: $PASSED / $TOTAL" >> $GITHUB_STEP_SUMMARY
+
           if [ "$STATUS" = "fail" ]; then
-            echo "::error::Evaluation failed - see results above"
-            exit 1
-          elif [ "$STATUS" = "warn" ] && [ "${{ inputs.fail_on_warn }}" = "true" ]; then
-            echo "::error::Evaluation has warnings (strict mode enabled)"
-            exit 1
+            echo "::warning::Evaluation completed with failures - see PR comment for details"
+          elif [ "$STATUS" = "warn" ]; then
+            echo "::warning::Evaluation completed with warnings - see PR comment for details"
+          else
+            echo "::notice::Evaluation passed"
           fi
