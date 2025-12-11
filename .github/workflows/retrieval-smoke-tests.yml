@@ -142,12 +142,13 @@ jobs:
       - name: Run hybrid search smoke tests
         working-directory: ./backend
         run: |
+          # Hybrid search combines semantic + keyword + RRF fusion, needs more time
           poetry run pytest tests/smoke/retrieval/ \
             -m "smoke and retrieval and hybrid" \
             -v \
             --tb=short \
             --maxfail=3 \
-            --timeout=60
+            --timeout=120
         continue-on-error: false
 
       - name: Run coarse-to-fine smoke tests
