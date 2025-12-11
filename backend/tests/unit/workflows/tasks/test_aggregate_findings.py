@@ -780,3 +780,214 @@ class TestAggregationCoverageFeatures:
                 assert "connection" in conn
                 assert "agents_involved" in conn
                 assert len(conn["domains"]) == 2
+
+
+class TestStoreFindings:
+    """Test memory storage for findings (Issue #269)."""
+
+    @pytest.mark.asyncio
+    async def test_store_findings_called_after_aggregation(self, sample_state):
+        """Test that findings are stored as memories after successful aggregation."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch(
+                "app.workflows.tasks.aggregate_findings._store_findings_as_memories"
+            ) as mock_store_memories,
+        ):
+            mock_synthesize.return_value = mock_structured_response
+            mock_store_memories.return_value = 3  # 3 findings stored
+
+            result = await aggregate_findings(sample_state)
+
+            # Verify memory storage was called
+            mock_store_memories.assert_called_once()
+            call_args = mock_store_memories.call_args
+            assert call_args.kwargs["analysis_id"] == "test-analysis-id"
+            assert len(call_args.kwargs["agent_findings"]) == 3
+
+            # Verify metadata includes memories_stored
+            insights = result["aggregated_insights"]
+            assert "memories_stored" in insights["metadata"]
+            assert insights["metadata"]["memories_stored"] == 3
+
+    @pytest.mark.asyncio
+    async def test_store_findings_graceful_on_error(self, sample_state):
+        """Test that memory storage errors don't break aggregation."""
+        mock_structured_response = {
+            "executive_summary": "Summary. Second sentence. Third sentence.",
+            "key_findings": ["F1", "F2", "F3"],
+            "synthesis": {
+                "technical_analysis": "Analysis",
+                "implementation_guidance": "Guidance",
+                "risk_assessment": "Assessment",
+                "recommendations": "Recommendations",
+            },
+            "conflicts_resolved": [],
+        }
+
+        with (
+            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch(
+                "app.workflows.tasks.aggregate_findings._store_findings_as_memories"
+            ) as mock_store_memories,
+        ):
+            mock_synthesize.return_value = mock_structured_response
+            mock_store_memories.return_value = 0  # Simulates failure returning 0
+
+            result = await aggregate_findings(sample_state)
+
+            # Aggregation should still succeed
+            assert "aggregated_insights" in result
+            # Metadata should show 0 memories stored
+            assert result["aggregated_insights"]["metadata"]["memories_stored"] == 0
+
+
+class TestExtractFindingContent:
+    """Test _extract_finding_content helper function."""
+
+    def test_extract_security_auditor_content(self):
+        """Test content extraction for security_auditor findings."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        finding_data = {
+            "security_risks": [
+                {"risk_type": "sql_injection", "description": "Missing parameterized queries"},
+                {"risk_type": "xss", "description": "Unescaped user input"},
+            ],
+            "recommendation": "Fix all security issues before deployment",
+        }
+
+        content = _extract_finding_content("security_auditor", finding_data)
+
+        assert "Recommendation:" in content
+        assert "Security Risks:" in content
+        assert "sql_injection" in content
+        assert "xss" in content
+
+    def test_extract_tech_comparator_content(self):
+        """Test content extraction for tech_comparator findings."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        finding_data = {
+            "primary_tech": "LangGraph",
+            "alternatives": ["LangChain Agents", "AutoGPT"],
+            "recommendation": "Use LangGraph for production",
+        }
+
+        content = _extract_finding_content("tech_comparator", finding_data)
+
+        assert "Primary Technology: LangGraph" in content
+        assert "Alternatives:" in content
+        assert "LangChain Agents" in content
+        assert "Recommendation:" in content
+
+    def test_extract_implementation_planner_content(self):
+        """Test content extraction for implementation_planner findings."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        finding_data = {
+            "prerequisites": ["Python 3.13", "PostgreSQL 15", "Redis"],
+            "recommendation": "Follow step-by-step guide",
+        }
+
+        content = _extract_finding_content("implementation_planner", finding_data)
+
+        assert "Prerequisites:" in content
+        assert "Python 3.13" in content
+        assert "Recommendation:" in content
+
+    def test_extract_fallback_content(self):
+        """Test content extraction falls back to key summary for unknown structures."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        finding_data = {
+            "custom_field": "custom_value",
+            "items_list": [1, 2, 3],
+            "count": 42,
+        }
+
+        content = _extract_finding_content("unknown_agent", finding_data)
+
+        # Should create summary of fields
+        assert "custom_field: custom_value" in content or "items_list: 3 items" in content
+
+    def test_extract_empty_finding(self):
+        """Test content extraction with empty findings."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        content = _extract_finding_content("tech_comparator", {})
+
+        assert content == ""
+
+    def test_extract_truncates_long_content(self):
+        """Test content extraction truncates at 2000 chars."""
+        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+
+        finding_data = {
+            "recommendation": "X" * 3000,  # Very long recommendation
+        }
+
+        content = _extract_finding_content("tech_comparator", finding_data)
+
+        assert len(content) <= 2000
+
+
+class TestAgentMemoryTypeMap:
+    """Test AGENT_MEMORY_TYPE_MAP configuration."""
+
+    def test_all_agents_have_memory_type(self):
+        """Test that all analysis agents have memory type mappings."""
+        from app.models.agent_memory import MemoryType
+        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+
+        expected_agents = [
+            "security_auditor",
+            "tech_comparator",
+            "implementation_planner",
+            "code_quality_critic",
+            "performance_analyst",
+            "dependency_mapper",
+            "trend_validator",
+            "integration_feasibility",
+        ]
+
+        for agent in expected_agents:
+            assert agent in AGENT_MEMORY_TYPE_MAP, f"Agent {agent} missing from memory type map"
+            assert isinstance(AGENT_MEMORY_TYPE_MAP[agent], MemoryType)
+
+    def test_security_auditor_maps_to_vulnerability_pattern(self):
+        """Test security_auditor findings are stored as vulnerability patterns."""
+        from app.models.agent_memory import MemoryType
+        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+
+        assert AGENT_MEMORY_TYPE_MAP["security_auditor"] == MemoryType.VULNERABILITY_PATTERN
+
+    def test_tech_comparator_maps_to_analysis_summary(self):
+        """Test tech_comparator findings are stored as analysis summaries."""
+        from app.models.agent_memory import MemoryType
+        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+
+        assert AGENT_MEMORY_TYPE_MAP["tech_comparator"] == MemoryType.ANALYSIS_SUMMARY
+
+    def test_implementation_planner_maps_to_best_practice(self):
+        """Test implementation_planner findings are stored as best practices."""
+        from app.models.agent_memory import MemoryType
+        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+
+        assert AGENT_MEMORY_TYPE_MAP["implementation_planner"] == MemoryType.BEST_PRACTICE

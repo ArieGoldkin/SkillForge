@@ -8,16 +8,23 @@ Note: GeneratorExit is handled gracefully (returns empty dict) as it
 occurs when timeouts cancel tasks. Other exceptions are allowed to
 propagate naturally. Each agent node handles its own exceptions and
 returns empty findings on error, allowing other agents to continue.
+
+Issue #268: Agent nodes now use ArtifactStore.load() to load content
+from artifact refs with section-based loading. Falls back to raw_content
+for backward compatibility.
 """
 
 import time
 
 from langchain_core.tools import BaseTool
 from langsmith import get_current_run_tree
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.types import AnalysisID
+from app.schemas.context import ArtifactSection
+from app.services.context.artifact_store import ArtifactStore
 from app.workflows.agents import (
     run_code_quality_critic,
     run_dependency_mapper,
@@ -34,6 +41,93 @@ from app.workflows.state import AnalysisState
 # DATABASE_URL validation at import time (required for CI without database)
 
 logger = get_logger(__name__)
+
+# Agent-specific content section mapping (Issue #268)
+# Each agent gets optimized content section to minimize token usage
+AGENT_SECTION_MAPPING: dict[str, ArtifactSection] = {
+    "code_quality_critic": ArtifactSection.FULL,  # Needs full code for antipatterns
+    "security_auditor": ArtifactSection.FULL,  # Requires complete code for scanning
+    "dependency_mapper": ArtifactSection.FULL,  # Needs all imports and package files
+    "performance_analyst": ArtifactSection.CODE_BLOCKS,  # Focuses on code patterns
+    "implementation_planner": ArtifactSection.FIRST_N,  # Overview, not exhaustive
+    "tech_comparator": ArtifactSection.SUMMARY,  # High-level tech identification
+    "trend_validator": ArtifactSection.SUMMARY,  # Only needs tech names/concepts
+    "integration_feasibility": ArtifactSection.FIRST_N,  # Integration point overview
+}
+
+# Max characters for FIRST_N section per agent (Issue #268)
+AGENT_MAX_CHARS: dict[str, int | None] = {
+    "implementation_planner": 10000,  # Overview section
+    "integration_feasibility": 8000,  # Integration points
+}
+
+
+async def _load_content_from_artifact(
+    session: AsyncSession,
+    state: AnalysisState,
+    agent_type: str,
+    fallback_content: str,
+) -> str:
+    """Load content from artifact store with fallback to raw_content.
+
+    Issue #268: Agents use ArtifactStore for section-based loading.
+    Falls back to raw_content for backward compatibility.
+
+    Args:
+        session: Database session
+        state: Analysis state containing content_ref
+        agent_type: Agent type for section mapping
+        fallback_content: Fallback content if artifact loading fails
+
+    Returns:
+        Loaded content from artifact or fallback
+
+    """
+    content_ref = state.get("content_ref")
+    if not content_ref or not isinstance(content_ref, dict):
+        # Backward compatibility: use raw_content
+        logger.debug(
+            "artifact_load_fallback",
+            agent_type=agent_type,
+            reason="no_content_ref",
+        )
+        return fallback_content
+
+    uri = content_ref.get("uri")
+    if not uri:
+        logger.debug(
+            "artifact_load_fallback",
+            agent_type=agent_type,
+            reason="no_uri_in_content_ref",
+        )
+        return fallback_content
+
+    try:
+        store = ArtifactStore(session)
+        section = AGENT_SECTION_MAPPING.get(agent_type, ArtifactSection.FULL)
+        max_chars = AGENT_MAX_CHARS.get(agent_type)
+
+        loaded = await store.load(uri=uri, section=section, max_chars=max_chars)
+
+        logger.info(
+            "artifact_content_loaded",
+            agent_type=agent_type,
+            section=section.value,
+            content_length=len(loaded),
+            analysis_id=state.get("analysis_id"),
+        )
+        return loaded
+
+    except Exception as e:  # noqa: BLE001
+        # Graceful degradation: fall back to raw_content on any error
+        logger.warning(
+            "artifact_load_error",
+            agent_type=agent_type,
+            error=str(e),
+            error_type=type(e).__name__,
+            fallback="using_raw_content",
+        )
+        return fallback_content
 
 
 async def run_tech_comparator_with_session(
@@ -59,7 +153,17 @@ async def run_tech_comparator_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_tech_comparator(content, content_type, analysis_id, session, state)
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="tech_comparator",
+                fallback_content=content,
+            )
+
+            return await run_tech_comparator(
+                loaded_content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         # GeneratorExit occurs when timeout cancels the task - handle gracefully
         duration = time.time() - start_time
@@ -114,8 +218,16 @@ async def run_integration_feasibility_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="integration_feasibility",
+                fallback_content=content,
+            )
+
             return await run_integration_feasibility(
-                content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -170,8 +282,16 @@ async def run_implementation_planner_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="implementation_planner",
+                fallback_content=content,
+            )
+
             return await run_implementation_planner(
-                content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -254,8 +374,16 @@ async def run_security_auditor_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="security_auditor",
+                fallback_content=content,
+            )
+
             return await run_security_auditor(
-                content, content_type, analysis_id, session, state, tools=tools
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -310,7 +438,17 @@ async def run_performance_analyst_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_performance_analyst(content, content_type, analysis_id, session, state)
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="performance_analyst",
+                fallback_content=content,
+            )
+
+            return await run_performance_analyst(
+                loaded_content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -364,7 +502,17 @@ async def run_code_quality_critic_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_code_quality_critic(content, content_type, analysis_id, session, state)
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="code_quality_critic",
+                fallback_content=content,
+            )
+
+            return await run_code_quality_critic(
+                loaded_content, content_type, analysis_id, session, state
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -418,7 +566,17 @@ async def run_trend_validator_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
-            return await run_trend_validator(content, content_type, analysis_id, session, state)
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="trend_validator",
+                fallback_content=content,
+            )
+
+            return await run_trend_validator(
+                loaded_content, content_type, analysis_id, session, state
+            )
     except GeneratorExit as gen_exit:
         # GeneratorExit occurs when async generator is closed prematurely
         # This can happen during LangGraph's internal streaming cleanup or timeout cancellation
@@ -509,8 +667,16 @@ async def run_dependency_mapper_with_session(
 
     try:
         async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="dependency_mapper",
+                fallback_content=content,
+            )
+
             return await run_dependency_mapper(
-                content, content_type, analysis_id, session, state, tools=tools
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
