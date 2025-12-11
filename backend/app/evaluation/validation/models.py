@@ -9,7 +9,7 @@ This module defines the core data structures for the human validation process:
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import IntEnum
 from typing import Literal
 
@@ -53,7 +53,7 @@ class Annotation(BaseModel):
     score: RelevanceScore
     confidence: float = Field(ge=0.0, le=1.0)
     notes: str | None = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ConsensusResult(BaseModel):
