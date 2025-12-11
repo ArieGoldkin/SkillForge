@@ -1,41 +1,65 @@
 import { test, expect } from '@playwright/test';
 import { AnalyzePage } from '../page-objects';
-import { mockAnalyzeAPI, mockSSEStream, mockSSEStreamFailure } from '../utils';
+import { getCompletedAnalysis, createAnalysis, getAnalysis } from '../utils/api-helpers';
 
 test.describe('Analysis Page - Progress Tracking', () => {
-  test.beforeEach(async ({ page }) => {
-    await mockAnalyzeAPI(page);
-    await mockSSEStream(page);
-  });
+  test('should display the analysis page with progress indicator', async ({ page, request }) => {
+    // Get a completed analysis to avoid waiting for real processing
+    const completed = await getCompletedAnalysis(request);
 
-  test('should display the analysis page with progress indicator', async ({ page }) => {
+    // If no completed analysis exists, create one and test immediately
+    const analysisId = completed?.analysis_id || (await createAnalysis(request)).analysis_id;
+
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+    await analyzePage.goto(analysisId);
 
-    // Progress bar should be visible
+    // Progress bar should be visible (either showing progress or completed state)
     await expect(analyzePage.progressBar).toBeVisible();
   });
 
-  test('should display progress stages via SSE', async ({ page }) => {
-    const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+  test('should display progress stages via SSE', async ({ page, request }) => {
+    // Get a completed analysis - SSE stream will show final state immediately
+    const completed = await getCompletedAnalysis(request);
 
-    // Wait for extraction stage to appear
-    await expect(page.getByText(/extraction/i)).toBeVisible({ timeout: 10000 });
+    if (!completed) {
+      test.skip(!completed, 'No completed analysis available - create one first');
+    }
+
+    const analyzePage = new AnalyzePage(page);
+    await analyzePage.goto(completed!.analysis_id);
+
+    // Wait for any stage indicator to appear (completed analyses show final stage)
+    await expect(
+      page.getByText(/extraction|processing|complete|analysis/i)
+    ).toBeVisible({ timeout: 10000 });
   });
 
-  test('should show completion state', async ({ page }) => {
+  test('should show completion state', async ({ page, request }) => {
+    // Get a completed analysis
+    const completed = await getCompletedAnalysis(request);
+
+    if (!completed) {
+      test.skip(!completed, 'No completed analysis available - create one first');
+    }
+
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+    await analyzePage.goto(completed!.analysis_id);
 
     // Wait for complete state - use specific heading to avoid multiple matches
     await analyzePage.waitForComplete();
     await expect(page.getByRole('heading', { name: /analysis complete/i })).toBeVisible();
   });
 
-  test('should navigate to artifact on completion', async ({ page }) => {
+  test('should navigate to artifact on completion', async ({ page, request }) => {
+    // Get a completed analysis with artifact
+    const completed = await getCompletedAnalysis(request);
+
+    if (!completed) {
+      test.skip(!completed, 'No completed analysis available - create one first');
+    }
+
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+    await analyzePage.goto(completed!.analysis_id);
 
     await analyzePage.waitForComplete();
 
@@ -47,24 +71,80 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
   });
 
-  test('should handle SSE disconnection gracefully', async ({ page }) => {
-    // Override SSE mock to simulate failure
-    await mockSSEStreamFailure(page);
+  test('should handle SSE connection lifecycle', async ({ page, request }) => {
+    // Create a new analysis to observe SSE stream behavior
+    const { analysis_id } = await createAnalysis(request);
 
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+    await analyzePage.goto(analysis_id);
 
-    // The app may handle SSE failure gracefully without showing error UI
-    // We verify the page remains functional
-    await page.waitForTimeout(5000);
+    // Wait for initial connection and progress indicator
+    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
+
+    // The app should handle SSE stream gracefully
+    // Wait a bit to ensure connection is established
+    await page.waitForTimeout(2000);
+
+    // Verify the page remains functional during streaming
     await expect(page.locator('body')).toBeVisible();
+
+    // Verify analysis is in progress or complete
+    const analysis = await getAnalysis(request, analysis_id);
+    expect(['pending', 'processing', 'complete']).toContain(analysis.status);
   });
 
-  test('should display analysis metadata', async ({ page }) => {
+  test('should display analysis metadata', async ({ page, request }) => {
+    // Get any analysis (completed or in-progress)
+    const completed = await getCompletedAnalysis(request);
+    const analysisId = completed?.analysis_id || (await createAnalysis(request)).analysis_id;
+
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto('test-analysis-123');
+    await analyzePage.goto(analysisId);
 
     // The page should show the analysis heading
     await expect(page.getByRole('heading', { name: /content analysis/i })).toBeVisible();
+  });
+
+  test('should track real-time progress updates', async ({ page, request }) => {
+    // Create a new analysis to observe real-time updates
+    const { analysis_id } = await createAnalysis(request);
+
+    const analyzePage = new AnalyzePage(page);
+    await analyzePage.goto(analysis_id);
+
+    // Wait for initial progress
+    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
+
+    // Get initial progress value
+    const initialProgress = await analyzePage.getProgress();
+    expect(initialProgress).toBeGreaterThanOrEqual(0);
+    expect(initialProgress).toBeLessThanOrEqual(100);
+
+    // Wait a bit for potential progress updates
+    await page.waitForTimeout(3000);
+
+    // Get updated progress
+    const updatedProgress = await analyzePage.getProgress();
+    expect(updatedProgress).toBeGreaterThanOrEqual(initialProgress);
+  });
+
+  test('should eventually complete analysis', async ({ page, request }) => {
+    // Get a completed analysis or create one
+    const completed = await getCompletedAnalysis(request);
+
+    if (!completed) {
+      test.skip(!completed, 'No completed analysis available - skipping completion test');
+    }
+
+    const analyzePage = new AnalyzePage(page);
+    await analyzePage.goto(completed!.analysis_id);
+
+    // For completed analyses, completion should be immediate or very fast
+    await analyzePage.waitForComplete();
+
+    // Verify artifact link is available
+    await expect(
+      page.getByRole('link', { name: /view.*artifact|view.*result|see.*result/i })
+    ).toBeVisible();
   });
 });

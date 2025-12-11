@@ -1,24 +1,26 @@
-# Docker Compose for E2E Testing
+# Docker Compose for E2E Testing (Real Backend)
 # Usage: docker compose -f docker-compose.e2e.yml up --build
 #
-# This configuration runs the frontend with mocked APIs for E2E testing.
-# Tests use Playwright's route mocking, so no backend is required.
+# PREREQUISITE: Main stack must be running first:
+#   docker compose up -d
+#
+# This configuration runs E2E tests against the REAL backend and database.
 
 name: skillforge
 
 services:
-  # Frontend development server
-  frontend:
+  # Frontend for E2E testing (connects to real backend)
+  frontend-e2e:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
     container_name: skillforge-frontend-e2e
     environment:
-      NODE_ENV: test
-      VITE_API_BASE_URL: http://localhost:8500
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://skillforge-backend-dev:8500
     ports:
-      - "5173:5173"
+      - "5174:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -29,7 +31,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # Playwright E2E test runner
+  # Playwright E2E test runner (tests against real backend)
   e2e:
     build:
       context: ./frontend
@@ -38,18 +40,21 @@ services:
     container_name: skillforge-e2e-runner
     environment:
       CI: "true"
-      PLAYWRIGHT_BASE_URL: http://frontend:5173
+      PLAYWRIGHT_BASE_URL: http://frontend-e2e:5173
+      # Tell tests to use real backend (no mocks)
+      E2E_USE_REAL_BACKEND: "true"
+      API_BASE_URL: http://skillforge-backend-dev:8500
     depends_on:
-      frontend:
+      frontend-e2e:
         condition: service_healthy
     volumes:
       - ./frontend/test-results:/app/test-results
       - ./frontend/playwright-report:/app/playwright-report
-    # Override playwright config to point to frontend container
     command: >
       sh -c "
-        echo 'Waiting for frontend...' &&
+        echo 'Waiting for frontend and backend...' &&
         sleep 5 &&
+        echo 'Running E2E tests against REAL backend...' &&
         npx playwright test --project=chromium --reporter=list,html
       "
 
@@ -57,6 +62,3 @@ networks:
   default:
     name: skillforge_default
     external: true
-
-volumes:
-  node_modules:

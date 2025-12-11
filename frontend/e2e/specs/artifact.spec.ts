@@ -1,14 +1,32 @@
 import { test, expect } from '@playwright/test';
 import { ArtifactPage } from '../page-objects';
-import { mockArtifactAPI } from '../utils';
+import { waitForBackend, getCompletedAnalysis, createAnalysis } from '../utils/api-helpers';
 
 test.describe('Artifact Page - Preview and Download', () => {
   let artifactPage: ArtifactPage;
+  let analysisId: string;
+
+  test.beforeAll(async ({ request }) => {
+    // Ensure backend is healthy
+    await waitForBackend(request);
+
+    // Get or create a completed analysis with artifact
+    const completedAnalysis = await getCompletedAnalysis(request);
+
+    if (!completedAnalysis) {
+      // If no completed analysis exists, create one and wait for completion
+      // In real E2E, you might need to trigger actual analysis completion
+      throw new Error(
+        'No completed analysis found. Please run analysis tests first or seed test data.'
+      );
+    }
+
+    analysisId = completedAnalysis.analysis_id;
+  });
 
   test.beforeEach(async ({ page }) => {
-    await mockArtifactAPI(page);
     artifactPage = new ArtifactPage(page);
-    await artifactPage.goto('test-artifact-456');
+    await artifactPage.goto(analysisId);
   });
 
   test('should display artifact page with title', async () => {
