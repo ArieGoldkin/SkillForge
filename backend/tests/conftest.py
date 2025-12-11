@@ -18,7 +18,10 @@ if "DATABASE_URL" not in os.environ:
         # Only set fallback if .env.test doesn't exist (for CI)
         # Use port 5437 to match Docker setup
         os.environ["DATABASE_URL"] = "postgresql://dev:devpass@localhost:5437/skillforge_test"
-os.environ.setdefault("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
+# Set OPENAI_API_KEY placeholder at module level for unit tests that need it during fixture setup.
+# Integration tests will override this by loading real keys from .env with override=True.
+if "OPENAI_API_KEY" not in os.environ:
+    os.environ["OPENAI_API_KEY"] = "sk-test-placeholder-for-unit-tests"
 
 # CRITICAL: Disable LangSmith tracing for UNIT tests only
 # Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
@@ -181,10 +184,11 @@ def ensure_test_env_vars(monkeypatch, request):
         # Use port 5437 to match Docker setup
         monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
 
-    # Skip OPENAI_API_KEY placeholder for smoke tests - they need real keys
-    # Check for smoke marker to allow live API calls in smoke tests
+    # Skip OPENAI_API_KEY placeholder for smoke and integration tests - they need real keys
+    # Check for smoke or integration marker to allow live API calls
     is_smoke_test = request.node.get_closest_marker("smoke") is not None
-    if not is_smoke_test:
+    is_integration_test = request.node.get_closest_marker("integration") is not None
+    if not is_smoke_test and not is_integration_test:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-for-unit-tests")
 
     # Clear settings cache to force fresh settings instance

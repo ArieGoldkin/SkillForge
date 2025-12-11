@@ -1,10 +1,24 @@
 """Integration test configuration and fixtures.
 
-Integration tests should send traces to LangSmith for observability.
-This conftest enables LangSmith tracing for all integration tests.
+Integration tests use REAL database connections and REAL API keys.
+They send traces to LangSmith for observability.
+
+IMPORTANT: Integration tests require:
+- Running PostgreSQL with pgvector (port 5437)
+- Valid API keys in backend/.env (OPENAI_API_KEY or GOOGLE_API_KEY)
 """
 
 import os
+from pathlib import Path
+
+# CRITICAL: Load .env BEFORE any other imports to get real API keys
+# Integration tests need real keys, not placeholders
+_env_file = Path(__file__).parent.parent.parent / ".env"
+if _env_file.exists():
+    from dotenv import load_dotenv
+
+    # Override=True ensures we get real keys from .env, not placeholders
+    load_dotenv(_env_file, override=True)
 
 # Enable LangSmith tracing for integration tests
 # Integration tests should send traces to LangSmith for real workflow observability

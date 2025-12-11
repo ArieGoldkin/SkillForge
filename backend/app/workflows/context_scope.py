@@ -63,6 +63,7 @@ class ScopedState(dict):
         content_type: Type of content (article, video, repo)
         skill_level: User's experience level
         prior_context: Narrative summary of other agents' findings (optional)
+        prior_memory: Formatted memory context from proactive recall (Issue #266)
 
     """
 

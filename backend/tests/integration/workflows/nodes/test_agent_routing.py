@@ -27,11 +27,12 @@ def sample_state() -> AnalysisState:
     }
 
 
-def test_route_to_agents_creates_send_objects(sample_state: AnalysisState) -> None:
+@pytest.mark.asyncio
+async def test_route_to_agents_creates_send_objects(sample_state: AnalysisState) -> None:
     """Test that route_to_agents creates Send objects for selected agents."""
     from langgraph.types import Send
 
-    sends = route_to_agents(sample_state)
+    sends = await route_to_agents(sample_state)
 
     # Should create 3 Send objects for 3 selected agents
     assert len(sends) == 3
@@ -44,7 +45,8 @@ def test_route_to_agents_creates_send_objects(sample_state: AnalysisState) -> No
     assert "trend_validator" in node_names
 
 
-def test_route_to_agents_routes_to_aggregate_when_no_agents_selected() -> None:
+@pytest.mark.asyncio
+async def test_route_to_agents_routes_to_aggregate_when_no_agents_selected() -> None:
     """Test that route_to_agents routes to aggregate when no agents selected."""
     from langgraph.types import Send
 
@@ -61,7 +63,7 @@ def test_route_to_agents_routes_to_aggregate_when_no_agents_selected() -> None:
         },
     }
 
-    sends = route_to_agents(state)
+    sends = await route_to_agents(state)
 
     # Should route to aggregate when no agents selected
     assert len(sends) == 1
@@ -69,7 +71,8 @@ def test_route_to_agents_routes_to_aggregate_when_no_agents_selected() -> None:
     assert sends[0].node == "aggregate"
 
 
-def test_route_to_agents_handles_unknown_agent_type() -> None:
+@pytest.mark.asyncio
+async def test_route_to_agents_handles_unknown_agent_type() -> None:
     """Test that route_to_agents handles unknown agent types gracefully."""
     state: AnalysisState = {
         "analysis_id": "test-id",
@@ -84,14 +87,15 @@ def test_route_to_agents_handles_unknown_agent_type() -> None:
         },
     }
 
-    sends = route_to_agents(state)
+    sends = await route_to_agents(state)
 
     # Should only create Send for known agent
     assert len(sends) == 1
     assert sends[0].node == "tech_comparator"
 
 
-def test_route_to_agents_all_8_agents() -> None:
+@pytest.mark.asyncio
+async def test_route_to_agents_all_8_agents() -> None:
     """Test route_to_agents with all 8 agents selected."""
     state: AnalysisState = {
         "analysis_id": "test-id",
@@ -115,7 +119,7 @@ def test_route_to_agents_all_8_agents() -> None:
         },
     }
 
-    sends = route_to_agents(state)
+    sends = await route_to_agents(state)
 
     # Should create 8 Send objects
     assert len(sends) == 8

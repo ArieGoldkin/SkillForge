@@ -398,3 +398,14 @@ site/
 !vite.config.ts
 !tailwind.config.js
 !alembic.ini
+
+# ============================================================================
+# Local Session Data (Claude Code, Squad orchestration)
+# ============================================================================
+.squad/
+.claude/
+backend/.claude/
+
+# Test coverage JSON
+coverage.json
+backend/coverage.json
