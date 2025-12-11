@@ -4,6 +4,8 @@
 # This configuration runs the frontend with mocked APIs for E2E testing.
 # Tests use Playwright's route mocking, so no backend is required.
 
+name: skillforge
+
 services:
   # Frontend development server
   frontend:
@@ -53,7 +55,8 @@ services:
 
 networks:
   default:
-    name: skillforge-e2e-network
+    name: skillforge_default
+    external: true
 
 volumes:
   node_modules:
