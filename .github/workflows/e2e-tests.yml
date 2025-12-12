@@ -25,25 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    runs-on: ubuntu-24.04
-    outputs:
-      e2e: ${{ steps.filter.outputs.e2e }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            e2e:
-              - 'frontend/**'
-              - 'backend/**'
-              - 'docker-compose.e2e.yml'
-              - '.github/workflows/e2e-tests.yml'
-
   e2e-tests:
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -121,10 +103,8 @@ jobs:
 
   # Optional: Run tests in Docker container
   e2e-docker:
-    needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
 
     steps:
       - name: Checkout code

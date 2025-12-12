@@ -19,9 +19,17 @@ import math
 class DeterministicEmbeddingService:
     """Deterministic embedding service using a hashing trick over tokens."""
 
+    # Match interface expected by SearchService
+    model: str = "deterministic-hash-v1"
+
     def __init__(self, dims: int = 1536) -> None:
         """Initialize with target embedding dimension."""
         self._dims = dims
+
+    @property
+    def expected_dimensions(self) -> int:
+        """Return the expected embedding dimensions."""
+        return self._dims
 
     async def generate_embedding(self, text: str, normalize: bool = True) -> list[float]:
         """Generate a deterministic embedding vector for the given text."""
