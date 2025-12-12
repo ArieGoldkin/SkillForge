@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -140,14 +141,14 @@ async def run_evaluation(
 
     from app.db.session import AsyncSessionLocal, get_async_database_url
     from app.services.embeddings import EmbeddingService
+    from app.services.embeddings_deterministic import DeterministicEmbeddingService
 
-    # Check for API key
     settings = get_settings()
-    if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.startswith("sk-test"):
-        logger.error("Valid OPENAI_API_KEY required for evaluation")
-        print("Error: Valid OPENAI_API_KEY required", file=sys.stderr)
-        print("Set OPENAI_API_KEY environment variable or add to .env file", file=sys.stderr)
-        sys.exit(2)
+    force_deterministic = (os.environ.get("SKILLFORGE_DETERMINISTIC_EMBEDDINGS") or "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
     # Determine fixtures directory and queries file
     fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
@@ -172,8 +173,11 @@ async def run_evaluation(
 
     try:
         async with AsyncSessionLocal() as session:
-            # Create services
-            embedding_service = EmbeddingService()
+            # Create services (default to deterministic when API key is absent)
+            if force_deterministic or not settings.OPENAI_API_KEY:
+                embedding_service = DeterministicEmbeddingService()
+            else:
+                embedding_service = EmbeddingService()
 
             # Run evaluation
             runner = EvaluationRunner(

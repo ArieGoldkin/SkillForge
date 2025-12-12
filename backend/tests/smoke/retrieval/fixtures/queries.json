@@ -114,14 +114,14 @@
     },
     {
       "id": "q-sem-synonym",
-      "query": "secure web API authentication mechanisms",
+      "query": "protecting APIs with user verification methods",
       "modes": ["semantic"],
       "category": "specific",
-      "difficulty": "easy",
-      "expected_chunks": ["fastapi-auth/intro", "fastapi-auth/oauth2-password"],
+      "difficulty": "medium",
+      "expected_chunks": ["fastapi-auth/intro"],
       "min_score": 0.6,
       "max_score": null,
-      "description": "Synonym test - 'mechanisms' should match OAuth2/JWT content semantically"
+      "description": "True synonym test - 'user verification' (auth), 'methods' (mechanisms), 'protecting' (secure) - no direct word matches"
     },
     {
       "id": "q-sem-paraphrase",

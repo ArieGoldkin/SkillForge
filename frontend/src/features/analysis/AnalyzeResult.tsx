@@ -41,6 +41,26 @@ const useSSELifecycle = ({
   }, [analysisId, shouldConnect, connect, disconnect, reset])
 }
 
+// Check if status indicates completion (both 'complete' from SSE and 'completed' from backend)
+const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
+
+// Check if we're still waiting for SSE events to start
+const checkWaitingForFirstEvent = (params: {
+  isResolvedComplete: boolean
+  isFailed: boolean
+  eventsLength: number
+  error: Error | null
+  isComplete: boolean
+  statusLoading: boolean
+  resolvedStatus?: string
+}) =>
+  !params.isResolvedComplete &&
+  !params.isFailed &&
+  params.eventsLength === 0 &&
+  !params.error &&
+  !params.isComplete &&
+  (params.statusLoading || !params.resolvedStatus)
+
 const useDerivedState = ({
   artifactId,
   urlArtifactId,
@@ -68,25 +88,24 @@ const useDerivedState = ({
   )
 
   const resolvedStatus = useMemo(
-    () => statusState.resolvedStatus || (isComplete ? 'complete' : undefined),
+    () => statusState.resolvedStatus || (isComplete ? 'completed' : undefined),
     [isComplete, statusState.resolvedStatus]
   )
 
   const isResolvedComplete =
-    (completed && Boolean(urlArtifactId)) || resolvedStatus === 'complete' || isComplete
-
+    (completed && Boolean(urlArtifactId)) || isStatusComplete(resolvedStatus) || isComplete
+  const isFailed = resolvedStatus === 'failed' || hasError
   const effectiveError =
     statusState.statusError || errorMessage || error?.message || 'An error occurred during analysis'
-
-  const isFailed = resolvedStatus === 'failed' || hasError
-
-  const waitingForFirstEvent =
-    !isResolvedComplete &&
-    !isFailed &&
-    events.length === 0 &&
-    !error &&
-    !isComplete &&
-    (statusState.loading || !statusState.resolvedStatus)
+  const waitingForFirstEvent = checkWaitingForFirstEvent({
+    isResolvedComplete,
+    isFailed,
+    eventsLength: events.length,
+    error,
+    isComplete,
+    statusLoading: statusState.loading,
+    resolvedStatus: statusState.resolvedStatus,
+  })
 
   return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
 }
@@ -147,8 +166,12 @@ export default function AnalyzeResult() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ProgressColumn overallProgress={overallProgress} steps={steps} />
-        {isComplete ? (
-          <AnalysisCompleteCard artifactId={artifactId} analysisId={id} variant="column" />
+        {isComplete || isResolvedComplete ? (
+          <AnalysisCompleteCard
+            artifactId={resolvedArtifactId || artifactId}
+            analysisId={id}
+            variant="column"
+          />
         ) : (
           <ActivityColumn activities={activities} isLive={isConnected} />
         )}

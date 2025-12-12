@@ -123,6 +123,7 @@ export const SkillCard: React.FC<SkillCardProps> = ({
 
   return (
     <Card
+      data-testid="analysis-card"
       className={cn(
         'group cursor-pointer transition-all hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         className

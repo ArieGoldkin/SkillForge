@@ -285,7 +285,7 @@ Artifacts are automatically generated after aggregation completes in the workflo
 
 ### Download Artifact
 ```bash
-curl -O -J "http://localhost:8000/api/v1/artifacts/{artifact_id}/download"
+curl -O -J "http://localhost:8500/api/v1/artifacts/{artifact_id}/download"
 ```
 
 The endpoint returns:

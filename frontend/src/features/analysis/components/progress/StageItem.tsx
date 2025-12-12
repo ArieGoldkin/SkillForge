@@ -38,7 +38,7 @@ interface StageItemProps {
  * Individual stage item in the progress timeline
  */
 export const StageItem: React.FC<StageItemProps> = ({ stage, isLast }) => (
-  <div className="relative pl-8">
+  <div className="relative pl-8" data-testid="stage-indicator" data-stage-status={stage.status}>
     <div className="absolute left-0 top-1">{getStatusIcon(stage.status)}</div>
     {!isLast && (
       <div
@@ -56,7 +56,11 @@ export const StageItem: React.FC<StageItemProps> = ({ stage, isLast }) => (
     >
       <div className="flex items-start justify-between gap-2 mb-1">
         <h4 className="font-medium text-sm">{stage.label}</h4>
-        <Badge variant={getStatusBadgeVariant(stage.status)} className="text-xs">
+        <Badge
+          variant={getStatusBadgeVariant(stage.status)}
+          className="text-xs"
+          data-testid="status-text"
+        >
           {formatStatus(stage.status)}
         </Badge>
       </div>

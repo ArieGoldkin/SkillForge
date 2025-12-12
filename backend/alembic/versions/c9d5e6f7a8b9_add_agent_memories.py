@@ -15,9 +15,10 @@ This table stores past findings, patterns, and summaries for agent recall:
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c9d5e6f7a8b9"

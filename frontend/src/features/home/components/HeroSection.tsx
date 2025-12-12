@@ -115,7 +115,13 @@ function ContentAnalysisForm({
         </Alert>
       )}
 
-      <Button type="submit" disabled={isSubmitting || !url.trim()} size="lg" className="gap-2">
+      <Button
+        type="submit"
+        disabled={isSubmitting || !url.trim()}
+        size="lg"
+        className="gap-2"
+        aria-busy={isSubmitting}
+      >
         <Sparkles className="w-5 h-5" />
         {isSubmitting ? 'Analyzing...' : 'Analyze Content'}
       </Button>

@@ -222,7 +222,7 @@ async def get_artifact(artifact_id: str):
 
 ```bash
 # Download artifact as markdown file
-curl http://localhost:8000/api/v1/artifacts/{artifact_id}/download \
+curl http://localhost:8500/api/v1/artifacts/{artifact_id}/download \
   --output artifact.md
 
 # The endpoint automatically:

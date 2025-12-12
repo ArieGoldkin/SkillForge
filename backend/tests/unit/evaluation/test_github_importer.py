@@ -420,7 +420,7 @@ class TestGitHubImporterSaveDataset:
 
         assert output_path.exists()
 
-        with open(output_path) as f:
+        with output_path.open() as f:
             dataset = json.load(f)
 
         assert dataset["version"] == "2.0.0"

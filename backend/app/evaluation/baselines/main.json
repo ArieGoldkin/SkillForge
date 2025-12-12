@@ -1,0 +1,79 @@
+{
+  "overall_status": "fail",
+  "total_examples": 203,
+  "total_passed": 189,
+  "execution_time_seconds": 124.92408490180969,
+  "timestamp": "2025-12-11T18:59:04Z",
+  "results": {
+    "trivial": {
+      "difficulty": "trivial",
+      "recall_at_5": 0.9583333333333334,
+      "mrr": 0.8472222222222222,
+      "ndcg_at_5": 0.8759882922619097,
+      "examples_evaluated": 24,
+      "examples_passed": 23,
+      "failed_example_ids": ["q-llm-agents-intro"],
+      "execution_time_seconds": 12.232953071594238,
+      "status": "fail"
+    },
+    "easy": {
+      "difficulty": "easy",
+      "recall_at_5": 0.9041095890410958,
+      "mrr": 0.7785388127853882,
+      "ndcg_at_5": 0.8055011014442851,
+      "examples_evaluated": 73,
+      "examples_passed": 67,
+      "failed_example_ids": [
+        "q-tot-applications",
+        "q-langgraph-supervisor",
+        "q-langsmith-metrics",
+        "q-mlops-best-practices",
+        "q-perplexity-retrieval",
+        "q-terraform-iac"
+      ],
+      "execution_time_seconds": 37.94096636772156,
+      "status": "warn"
+    },
+    "medium": {
+      "difficulty": "medium",
+      "recall_at_5": 0.8766233766233766,
+      "mrr": 0.7645021645021645,
+      "ndcg_at_5": 0.7743310329203529,
+      "examples_evaluated": 77,
+      "examples_passed": 72,
+      "failed_example_ids": [
+        "q-langgraph-production",
+        "q-rag-groundedness",
+        "q-rag-answer-relevance",
+        "q-sem-paraphrase-retrieval",
+        "q-sem-concept-matching"
+      ],
+      "execution_time_seconds": 54.59058499336243,
+      "status": "pass"
+    },
+    "hard": {
+      "difficulty": "hard",
+      "recall_at_5": 0.7058823529411765,
+      "mrr": 0.6470588235294118,
+      "ndcg_at_5": 0.6024359966809247,
+      "examples_evaluated": 17,
+      "examples_passed": 16,
+      "failed_example_ids": ["q-cross-agent-memory-rag"],
+      "execution_time_seconds": 11.376625061035156,
+      "status": "warn"
+    },
+    "adversarial": {
+      "difficulty": "adversarial",
+      "recall_at_5": 0.9166666666666666,
+      "mrr": 0.3333333333333333,
+      "ndcg_at_5": 0.7988513053609703,
+      "examples_evaluated": 12,
+      "examples_passed": 11,
+      "failed_example_ids": ["q-edge-very-long"],
+      "execution_time_seconds": 8.78260087966919,
+      "status": "fail"
+    }
+  }
+}
+
+

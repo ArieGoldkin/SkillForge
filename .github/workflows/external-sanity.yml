@@ -1,0 +1,64 @@
+name: External Sanity
+
+on:
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "backend/app/services/**"
+      - "backend/app/workflows/**"
+      - "backend/app/api/**"
+      - "backend/scripts/**"
+      - ".github/workflows/external-sanity.yml"
+  schedule:
+    - cron: "0 3 * * *" # Daily at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-sanity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openai-embedding-sanity:
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'pull_request' || secrets.OPENAI_API_KEY != ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-py3.13-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Run external sanity test (capped)
+        working-directory: backend
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          poetry run pytest tests/external_sanity/test_openai_embedding.py -m external -q --maxfail=1 --timeout=60
+
+

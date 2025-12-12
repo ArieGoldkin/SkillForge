@@ -45,6 +45,7 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
         'transition-shadow duration-200 hover:shadow-lg',
         className
       )}
+      data-testid="code-block-container"
     >
       <CodeBlockHeader language={language} code={code} />
 
@@ -57,6 +58,7 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
               'font-mono text-sm leading-relaxed',
               'text-(--code-text)'
             )}
+            data-testid="code-block"
           >
             {code}
           </code>

@@ -119,9 +119,6 @@ graph TB
         Root --> Docs
     end
     
-    style Backend fill:#e1f5ff,stroke:#0077cc
-    style Frontend fill:#ffe1f5,stroke:#cc0077
-    style Docs fill:#f0f0f0,stroke:#666
 ```
 
 ---
@@ -138,7 +135,7 @@ graph TB
     
     subgraph "Frontend [Arie]"
         React[React 19 App]
-        Router[React Router]
+        Router[TanStack Router]
         Query[TanStack Query]
         SSE[useSSE Hook]
         Components[UI Components]
@@ -166,7 +163,7 @@ graph TB
     subgraph "Business Logic [Yonatan]"
         Services[Services]
         Workflows[LangGraph Workflows]
-        Agents[LangChain Agents<br/>Async with Timeouts]
+        Agents["LangChain Agents (async, timeouts)"]
         
         Repos --> Services
         Services --> Workflows
@@ -191,10 +188,6 @@ graph TB
         Agents --> OpenAI
     end
     
-    style React fill:#ffe1f5,stroke:#cc0077
-    style FastAPI fill:#e1f5ff,stroke:#0077cc
-    style PostgreSQL fill:#336791,stroke:#fff,color:#fff
-    style Workflows fill:#e1f5ff,stroke:#0077cc
 ```
 
 ---
@@ -222,7 +215,7 @@ graph TB
                 Supervisor[supervisor node]
             end
             
-            Router[route_to_agents<br/>Send API]
+            Router["route_to_agents (Send API)"]
             
             subgraph "Agent Nodes (Native LangGraph Parallel via Send API)"
                 TechComp[tech_comparator node]
@@ -266,7 +259,7 @@ graph TB
     Embed --> Router
     Supervisor --> Router
     
-    Router -->|"Send API<br/>Dynamic Routing"| TechComp
+    Router -->|"Send API: Dynamic Routing"| TechComp
     Router -->|"Send API"| Security
     Router -->|"Send API"| ImplPlan
     Router -->|"Send API"| Perf
@@ -284,7 +277,7 @@ graph TB
     Deps -->|"SSE: dependencies"| SSEProgress
     IntFeas -->|"SSE: integration_feasibility"| SSEProgress
     
-    TechComp -->|"Fan-In<br/>State Reducer"| Aggregate
+    TechComp -->|"Fan-In: State Reducer"| Aggregate
     Security --> Aggregate
     ImplPlan --> Aggregate
     Perf --> Aggregate
@@ -309,21 +302,6 @@ graph TB
     End([Analysis Complete])
     SSEComplete --> End
     
-    style EntryPoint fill:#e1f5ff,stroke:#0077cc
-    style Extract fill:#e1f5ff,stroke:#0077cc
-    style Supervisor fill:#ffd700,stroke:#ff8c00
-    style Router fill:#ffd700,stroke:#ff8c00
-    style TechComp fill:#90ee90,stroke:#228b22
-    style Security fill:#90ee90,stroke:#228b22
-    style ImplPlan fill:#90ee90,stroke:#228b22
-    style Perf fill:#90ee90,stroke:#228b22
-    style CodeQual fill:#90ee90,stroke:#228b22
-    style Trends fill:#90ee90,stroke:#228b22
-    style Deps fill:#90ee90,stroke:#228b22
-    style IntFeas fill:#90ee90,stroke:#228b22
-    style Aggregate fill:#e1f5ff,stroke:#0077cc
-    style SSEProgress fill:#ffe1f5,stroke:#cc0077
-    style SSEComplete fill:#90ee90,stroke:#228b22
 ```
 
 ---
@@ -490,8 +468,6 @@ graph LR
     Y2 --> Test
     A2 --> Test
     
-    style Meeting fill:#ffd700,stroke:#ff8c00
-    style Test fill:#90ee90,stroke:#228b22
 ```
 
 ---
@@ -509,8 +485,8 @@ graph TB
     end
     
     subgraph "Day 2-7: Parallel"
-        YonatanWork[Yonatan:<br/>- LangGraph v1.0<br/>- Supervisor<br/>- SSE Events<br/>- 3 Sub-agents]
-        ArieWork[Arie:<br/>- useSSE Hook<br/>- Progress UI<br/>- Analysis Page<br/>- Loading States]
+        YonatanWork["Yonatan: LangGraph v1.0, Supervisor, SSE Events, 3 Sub-agents"]
+        ArieWork["Arie: useSSE Hook, Progress UI, Analysis Page, Loading States"]
     end
     
     subgraph "Day 8: Integration #3"
@@ -536,8 +512,6 @@ graph TB
     SSETest --> YonatanRefine
     SSETest --> ArieRefine
     
-    style SSE fill:#ff6b6b,stroke:#c92a2a
-    style SSETest fill:#90ee90,stroke:#228b22
 ```
 
 ---
@@ -611,9 +585,6 @@ classDiagram
     EventBroadcaster --> SSEEndpoint : streams to
     SSEEndpoint --> FastAPIEndpoint : returns
     
-    style IAnalysisRepository fill:#e1f5ff,stroke:#0077cc
-    style LangGraphWorkflow fill:#ffd700,stroke:#ff8c00
-    style EventBroadcaster fill:#ffe1f5,stroke:#cc0077
 ```
 
 ---
@@ -709,9 +680,6 @@ flowchart TD
     End([User Downloads Artifact])
     Download --> End
     
-    style SupervisorDecide fill:#ffd700,stroke:#ff8c00
-    style SSEStream fill:#ffe1f5,stroke:#cc0077
-    style Download fill:#90ee90,stroke:#228b22
 ```
 
 ---
@@ -722,10 +690,10 @@ flowchart TD
 graph TB
     subgraph "Development"
         DevUser[Developer]
-        DevFrontend[Frontend Dev Server<br/>localhost:5173]
-        DevBackend[Backend Dev Server<br/>localhost:8000]
-        DevDB[(PostgreSQL Dev<br/>localhost:5432)]
-        DevOpenAI[OpenAI API<br/>GPT-5 Mini]
+        DevFrontend["Frontend Dev Server (localhost:5173)"]
+        DevBackend["Backend Dev Server (localhost:8500)"]
+        DevDB["PostgreSQL Dev (localhost:5437)"]
+        DevOpenAI["OpenAI API (GPT-5 Mini)"]
         
         DevUser --> DevFrontend
         DevFrontend --> DevBackend
@@ -735,10 +703,10 @@ graph TB
     
     subgraph "Production"
         ProdUser[End Users]
-        ProdCDN[Vercel<br/>Frontend (React 19)]
-        ProdAPI[Railway<br/>Backend API (FastAPI)]
-        ProdDB[(Supabase<br/>PostgreSQL + PGVector)]
-        ProdOpenAI[OpenAI API<br/>GPT-5 Mini]
+        ProdCDN["Vercel (Frontend: React)"]
+        ProdAPI["Railway (Backend: FastAPI)"]
+        ProdDB["Supabase (PostgreSQL + PGVector)"]
+        ProdOpenAI["OpenAI API (GPT-5 Mini)"]
         
         ProdUser --> ProdCDN
         ProdCDN -->|SSE + REST| ProdAPI
@@ -762,11 +730,6 @@ graph TB
         Build --> ProdCDN
     end
     
-    style DevFrontend fill:#ffe1f5,stroke:#cc0077
-    style DevBackend fill:#e1f5ff,stroke:#0077cc
-    style ProdCDN fill:#ffe1f5,stroke:#cc0077
-    style ProdAPI fill:#e1f5ff,stroke:#0077cc
-    style GitHubActions fill:#90ee90,stroke:#228b22
 ```
 
 ---
@@ -801,8 +764,8 @@ graph TB
     end
     
     subgraph "Agent Layer"
-        Supervisor[Supervisor Agent<br/>create_agent]
-        SubAgents[Sub-Agents<br/>create_agent]
+        Supervisor["Supervisor Agent (create_agent)"]
+        SubAgents["Sub-Agents (create_agent)"]
         Tools[Agent Tools]
     end
     
@@ -835,10 +798,6 @@ graph TB
     Broadcaster --> SSE
     Broadcaster --> Events
     
-    style Interface fill:#e1f5ff,stroke:#0077cc
-    style LangGraph fill:#ffd700,stroke:#ff8c00
-    style Supervisor fill:#ffd700,stroke:#ff8c00
-    style SSE fill:#ffe1f5,stroke:#cc0077
 ```
 
 ---

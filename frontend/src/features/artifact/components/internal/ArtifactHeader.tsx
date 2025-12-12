@@ -16,7 +16,13 @@ export function ArtifactHeader({ showDownload, onDownload }: ArtifactHeaderProps
       </div>
 
       {showDownload && (
-        <Button variant="outline" size="sm" onClick={onDownload} className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onDownload}
+          className="gap-2"
+          data-testid="download-button"
+        >
           <Download className="h-4 w-4" />
           Download
         </Button>

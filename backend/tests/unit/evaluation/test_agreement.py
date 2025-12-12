@@ -24,28 +24,19 @@ class TestCohensKappa:
 
     def test_perfect_agreement(self):
         """Test perfect agreement returns kappa=1.0."""
-        kappa = cohens_kappa(
-            ratings_a=[0, 1, 2, 3],
-            ratings_b=[0, 1, 2, 3]
-        )
+        kappa = cohens_kappa(ratings_a=[0, 1, 2, 3], ratings_b=[0, 1, 2, 3])
         assert kappa == 1.0
 
     def test_no_agreement(self):
         """Test systematic disagreement returns kappa<=0.0."""
         # When all ratings are completely opposite, kappa approaches 0
         # This isn't "worse than chance" but rather "no agreement beyond chance"
-        kappa = cohens_kappa(
-            ratings_a=[0, 0, 0, 0],
-            ratings_b=[3, 3, 3, 3]
-        )
+        kappa = cohens_kappa(ratings_a=[0, 0, 0, 0], ratings_b=[3, 3, 3, 3])
         assert kappa <= 0.0
 
     def test_moderate_agreement(self):
         """Test moderate agreement returns 0.4 < kappa < 0.6."""
-        kappa = cohens_kappa(
-            ratings_a=[0, 1, 2, 3, 0],
-            ratings_b=[0, 1, 2, 2, 1]
-        )
+        kappa = cohens_kappa(ratings_a=[0, 1, 2, 3, 0], ratings_b=[0, 1, 2, 2, 1])
         assert 0.4 < kappa < 0.6
 
     def test_chance_agreement(self):
@@ -53,8 +44,7 @@ class TestCohensKappa:
         # Create ratings that should have low kappa
         # With diverse ratings, agreement is close to chance
         kappa = cohens_kappa(
-            ratings_a=[0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
-            ratings_b=[1, 2, 3, 0, 2, 3, 0, 1, 3, 2]
+            ratings_a=[0, 1, 2, 3, 0, 1, 2, 3, 0, 1], ratings_b=[1, 2, 3, 0, 2, 3, 0, 1, 3, 2]
         )
         # Should be low (but exact value depends on the distribution)
         assert abs(kappa) < 0.4
@@ -62,10 +52,7 @@ class TestCohensKappa:
     def test_different_lengths_raises_error(self):
         """Test different annotation lengths raises ValueError."""
         with pytest.raises(ValueError, match="same length"):
-            cohens_kappa(
-                ratings_a=[0, 1],
-                ratings_b=[0, 1, 2]
-            )
+            cohens_kappa(ratings_a=[0, 1], ratings_b=[0, 1, 2])
 
     def test_empty_annotations_returns_zero(self):
         """Test empty annotations return 0.0."""
@@ -74,10 +61,7 @@ class TestCohensKappa:
 
     def test_single_category_returns_one(self):
         """Test single category (no variance) returns 1.0."""
-        kappa = cohens_kappa(
-            ratings_a=[0, 0, 0],
-            ratings_b=[0, 0, 0]
-        )
+        kappa = cohens_kappa(ratings_a=[0, 0, 0], ratings_b=[0, 0, 0])
         assert kappa == 1.0
 
 
@@ -88,12 +72,14 @@ class TestFleissKappa:
         """Test 3 annotators with perfect agreement returns kappa=1.0."""
         # Each row: [count_0, count_1, count_2, count_3]
         # Perfect agreement: all 3 annotators chose same category
-        ratings = np.array([
-            [3, 0, 0, 0],  # Item 1: 3 annotators chose category 0
-            [0, 3, 0, 0],  # Item 2: 3 annotators chose category 1
-            [0, 0, 3, 0],  # Item 3: 3 annotators chose category 2
-            [0, 0, 0, 3],  # Item 4: 3 annotators chose category 3
-        ])
+        ratings = np.array(
+            [
+                [3, 0, 0, 0],  # Item 1: 3 annotators chose category 0
+                [0, 3, 0, 0],  # Item 2: 3 annotators chose category 1
+                [0, 0, 3, 0],  # Item 3: 3 annotators chose category 2
+                [0, 0, 0, 3],  # Item 4: 3 annotators chose category 3
+            ]
+        )
         kappa = fleiss_kappa(ratings)
         assert abs(kappa - 1.0) < 0.01  # Should be very close to 1.0
 
@@ -102,12 +88,14 @@ class TestFleissKappa:
         # Maximum disagreement: each annotator picks different category
         # With 3 annotators and 4 categories, perfect disagreement is hard
         # This creates a scenario with low agreement
-        ratings = np.array([
-            [1, 1, 1, 0],  # Each annotator picked different category
-            [1, 1, 1, 0],
-            [1, 1, 1, 0],
-            [1, 1, 1, 0],
-        ])
+        ratings = np.array(
+            [
+                [1, 1, 1, 0],  # Each annotator picked different category
+                [1, 1, 1, 0],
+                [1, 1, 1, 0],
+                [1, 1, 1, 0],
+            ]
+        )
         kappa = fleiss_kappa(ratings)
         # Should be negative or close to 0 (worse than chance)
         assert kappa < 0.2
@@ -115,12 +103,14 @@ class TestFleissKappa:
     def test_partial_agreement(self):
         """Test partial agreement (2/3 agree) returns positive kappa."""
         # 2 out of 3 annotators agree on each item
-        ratings = np.array([
-            [2, 1, 0, 0],  # 2 agree on category 0
-            [1, 2, 0, 0],  # 2 agree on category 1
-            [0, 1, 2, 0],  # 2 agree on category 2
-            [0, 0, 1, 2],  # 2 agree on category 3
-        ])
+        ratings = np.array(
+            [
+                [2, 1, 0, 0],  # 2 agree on category 0
+                [1, 2, 0, 0],  # 2 agree on category 1
+                [0, 1, 2, 0],  # 2 agree on category 2
+                [0, 0, 1, 2],  # 2 agree on category 3
+            ]
+        )
         kappa = fleiss_kappa(ratings)
         # Should be positive, showing better than chance agreement
         assert kappa > 0.0
@@ -128,9 +118,11 @@ class TestFleissKappa:
     def test_invalid_rating_matrix_raises_error(self):
         """Test invalid rating matrix raises ValueError."""
         # Wrong number of categories
-        ratings = np.array([
-            [1, 1, 1],  # Only 3 categories instead of 4
-        ])
+        ratings = np.array(
+            [
+                [1, 1, 1],  # Only 3 categories instead of 4
+            ]
+        )
         with pytest.raises(ValueError, match="Categories mismatch"):
             fleiss_kappa(ratings)
 
@@ -207,10 +199,10 @@ class TestAgreementCalculator:
                 confidence=0.85,
             ),
         ]
-        
+
         calculator = AgreementCalculator()
         report = calculator.calculate(annotations)
-        
+
         assert report.cohens_kappa is not None
         assert report.fleiss_kappa is None  # Not used for 2 annotators
         assert report.cohens_kappa == 1.0  # Perfect agreement
@@ -246,10 +238,10 @@ class TestAgreementCalculator:
                 confidence=0.85,
             ),
         ]
-        
+
         calculator = AgreementCalculator()
         report = calculator.calculate(annotations)
-        
+
         assert report.cohens_kappa is None  # Not used for 3+ annotators
         assert report.fleiss_kappa is not None
         assert report.fleiss_kappa > 0.8  # High agreement
@@ -268,7 +260,7 @@ class TestAgreementCalculator:
                 confidence=0.9,
             ),
         ]
-        
+
         calculator = AgreementCalculator()
         with pytest.raises(ValueError, match="at least 2 annotators"):
             calculator.calculate(annotations)

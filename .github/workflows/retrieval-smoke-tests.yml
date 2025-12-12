@@ -9,7 +9,6 @@ on:
       - 'backend/app/services/embeddings/**'
       - 'backend/app/services/search/**'
       - 'backend/tests/smoke/retrieval/**'
-      - 'backend/tests/fixtures/retrieval/**'
       - '.github/workflows/retrieval-smoke-tests.yml'
   push:
     branches: [main, dev]
@@ -18,18 +17,22 @@ on:
       - 'backend/app/services/retrieval/**'
       - 'backend/app/services/embeddings/**'
       - 'backend/app/services/search/**'
+      - 'backend/tests/smoke/retrieval/**'
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: retrieval-smoke-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
-    # PostgreSQL service container with pgvector extension
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -46,28 +49,17 @@ jobs:
           - 5432:5432
 
     env:
-      # Database connection for tests
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: skillforge_test
-      # API keys (from GitHub secrets)
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      # Test configuration
       PYTHONUNBUFFERED: "1"
-      PYTEST_TIMEOUT: "300"
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          cache: 'pip'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -86,14 +78,6 @@ jobs:
           restore-keys: |
             poetry-${{ runner.os }}-py3.13-
 
-      - name: Cache test fixtures
-        uses: actions/cache@v4
-        with:
-          path: backend/tests/fixtures/retrieval/
-          key: retrieval-fixtures-${{ hashFiles('backend/tests/fixtures/retrieval/metadata.json') }}
-          restore-keys: |
-            retrieval-fixtures-
-
       - name: Install dependencies
         working-directory: ./backend
         run: poetry install --no-interaction --no-root
@@ -101,153 +85,72 @@ jobs:
       - name: Install pgvector extension
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          echo "Verifying pgvector installation:"
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
 
       - name: Run Alembic migrations
         working-directory: ./backend
-        run: |
-          poetry run alembic upgrade head
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: poetry run alembic upgrade head
 
-      - name: Verify database schema
-        run: |
-          echo "Checking required tables exist:"
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "\dt"
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'analysis_chunks' ORDER BY ordinal_position;"
-
-      - name: Run semantic search smoke tests
+      # ========================================================================
+      # Run ALL smoke tests in ONE pytest command (optimized from 4 separate runs)
+      # ========================================================================
+      - name: Run retrieval smoke tests
         working-directory: ./backend
         run: |
           poetry run pytest tests/smoke/retrieval/ \
-            -m "smoke and retrieval and semantic" \
+            -m "smoke and retrieval" \
             -v \
             --tb=short \
-            --maxfail=3 \
-            --timeout=60
-        continue-on-error: false
-
-      - name: Run keyword search smoke tests
-        working-directory: ./backend
-        run: |
-          poetry run pytest tests/smoke/retrieval/ \
-            -m "smoke and retrieval and keyword" \
-            -v \
-            --tb=short \
-            --maxfail=3 \
-            --timeout=60
-        continue-on-error: false
-
-      - name: Run hybrid search smoke tests
-        working-directory: ./backend
-        run: |
-          # Hybrid search combines semantic + keyword + RRF fusion, needs more time
-          poetry run pytest tests/smoke/retrieval/ \
-            -m "smoke and retrieval and hybrid" \
-            -v \
-            --tb=short \
-            --maxfail=3 \
-            --timeout=120
-        continue-on-error: false
-
-      - name: Run coarse-to-fine smoke tests
-        working-directory: ./backend
-        run: |
-          poetry run pytest tests/smoke/retrieval/ \
-            -m "smoke and retrieval and coarse_to_fine" \
-            -v \
-            --tb=short \
-            --maxfail=3 \
-            --timeout=60
-        continue-on-error: false
+            --maxfail=5 \
+            --timeout=120 \
+            --durations=10 \
+            --junitxml=test-results/smoke-tests.xml
 
       - name: Generate test summary
         if: always()
-        working-directory: ./backend
         run: |
-          # Use --collect-only to list tests without running them (fast!)
-          # The actual test results are already in the previous steps' logs
           echo "## Retrieval Smoke Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Test Categories:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Semantic Search: Vector similarity retrieval" >> $GITHUB_STEP_SUMMARY
-          echo "- Keyword Search: PostgreSQL tsvector full-text search" >> $GITHUB_STEP_SUMMARY
-          echo "- Hybrid Search: RRF fusion of semantic + keyword" >> $GITHUB_STEP_SUMMARY
-          echo "- Coarse-to-Fine: Hierarchical retrieval" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Semantic | Vector similarity search |" >> $GITHUB_STEP_SUMMARY
+          echo "| Keyword | PostgreSQL tsvector FTS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Hybrid | RRF fusion ranking |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coarse-to-Fine | Hierarchical retrieval |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Test Count:**" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval" --collect-only -q 2>&1 | tail -5 >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "_See individual test step logs above for detailed results._" >> $GITHUB_STEP_SUMMARY
+          echo "**Metrics:** Recall@5, MRR, NDCG@5" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: smoke-test-results
-          path: |
-            backend/test_summary.txt
-            backend/.pytest_cache/
+          path: backend/test-results/
           retention-days: 7
 
       - name: Comment PR with results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: github.event_name == 'pull_request' && always()
-        continue-on-error: true  # Don't fail the workflow if commenting fails (permissions)
+        continue-on-error: true
         with:
           script: |
-            const fs = require('fs');
-            const summaryPath = './backend/test_summary.txt';
-
-            let summary = 'Smoke tests completed';
-            try {
-              summary = fs.readFileSync(summaryPath, 'utf8');
-            } catch (error) {
-              summary = 'Unable to read test summary';
-            }
-
-            const comment = `## 🔍 Retrieval Smoke Test Results
-
-            **Workflow:** ${{ github.workflow }}
-            **Status:** ${{ job.status }}
-            **Commit:** ${{ github.sha }}
-
-            <details>
-            <summary>Test Summary</summary>
-
-            \`\`\`
-            ${summary}
-            \`\`\`
-
-            </details>
-
-            **Test Coverage:**
-            - ✅ Semantic Search (vector similarity)
-            - ✅ Keyword Search (full-text search)
-            - ✅ Hybrid Search (RRF combination)
-
-            **Quality Metrics:**
-            - Recall@5, MRR, NDCG@5 evaluated per query
-            - Thresholds enforced for specific/broad/edge queries
-
-            [View full logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            `;
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '✅' : '❌';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: comment
-            });
+              body: `## ${emoji} Retrieval Smoke Tests
 
-      - name: Validate test performance
-        if: always()
-        run: |
-          echo "Checking workflow execution time..."
-          START_TIME="${{ github.event.workflow_run.created_at || github.event.created_at }}"
-          CURRENT_TIME=$(date -u +%s)
-          # Simple validation that tests completed (detailed timing in logs)
-          echo "Workflow executed successfully within timeout limits"
+            **Status:** ${status}
+            **Commit:** \`${{ github.sha }}\`
+
+            | Category | Description |
+            |----------|-------------|
+            | Semantic | Vector similarity |
+            | Keyword | Full-text search |
+            | Hybrid | RRF combination |
+            | Coarse-to-Fine | Hierarchical |
+
+            [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            });

@@ -13,9 +13,10 @@ Adds columns to track PII detection metadata:
 IMPORTANT: These columns store detection metadata only, never actual PII values.
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
+
+from alembic import op
 
 revision = "20251210_add_pii_columns"
 down_revision = "20251210_cascade"

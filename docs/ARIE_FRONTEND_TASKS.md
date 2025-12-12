@@ -41,7 +41,7 @@ Create a new React 19 project with Vite, TypeScript, and modern tooling.
 - [ ] React and React-DOM upgraded to v19: `npm install --save-exact react@^19.0.0 react-dom@^19.0.0`
 - [ ] `npm run dev` starts development server on http://localhost:5173
 - [ ] TypeScript strict mode enabled in `tsconfig.json`
-- [ ] Vite proxy configured to forward `/api/*` to `http://localhost:8000`
+- [ ] Vite proxy configured to forward `/api/*` to `http://localhost:8500`
 
 #### Implementation Steps
 ```bash
@@ -66,7 +66,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8500',
         changeOrigin: true,
       },
     },

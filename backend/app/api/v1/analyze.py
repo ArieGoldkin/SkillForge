@@ -1,6 +1,7 @@
 """Analysis endpoints for content analysis pipeline."""
 
 import asyncio
+import os
 import uuid
 from typing import Annotated
 
@@ -166,12 +167,21 @@ async def create_analysis(
         ) from e
 
     # Start workflow asynchronously with proper task lifecycle management
-    # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-    task: asyncio.Task[None] = asyncio.create_task(
-        run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
-    )
-    _background_tasks.add(task)
-    task.add_done_callback(_handle_task_completion)
+    # E2E cost control: allow CI/docker E2E to create analyses without triggering
+    # expensive external workflows. E2E tests can still validate HTTP + SSE plumbing.
+    if os.environ.get("SKILLFORGE_E2E_DISABLE_WORKFLOW") == "true":
+        logger.info(
+            "analysis_workflow_skipped_for_e2e",
+            analysis_id=str(analysis_uuid),
+            url=url_str,
+        )
+    else:
+        # Type ignore: mypy strictness - create_task accepts coroutines from async functions
+        task: asyncio.Task[None] = asyncio.create_task(
+            run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
+        )
+        _background_tasks.add(task)
+        task.add_done_callback(_handle_task_completion)
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"

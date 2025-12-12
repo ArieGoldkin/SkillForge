@@ -35,7 +35,7 @@ const SKILL_LEVELS: { value: SkillLevel; label: string; description: string; ico
 
 export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps) {
   return (
-    <div className="skill-level-selector">
+    <div className="skill-level-selector" data-testid="skill-level-selector">
       <div className="skill-level-label">Your Experience Level</div>
       <div className="skill-level-options">
         {SKILL_LEVELS.map((level) => (

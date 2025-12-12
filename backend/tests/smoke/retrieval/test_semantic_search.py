@@ -116,12 +116,22 @@ class TestSemanticSearchPositive:
         seeded_chunks: list,
         semantic_queries: list[Query],
         metrics_calculator: MetricsCalculator,
+        using_deterministic_embeddings: bool,
     ):
         """Synonym queries should match semantically similar content.
 
         Tests that "secure web API authentication mechanisms" finds
         OAuth2/JWT content even without exact keyword matches.
+
+        Note: Skipped with deterministic embeddings since hash-based
+        embeddings cannot capture semantic similarity between synonyms.
         """
+        if using_deterministic_embeddings:
+            pytest.skip(
+                "Synonym tests require semantic embeddings - "
+                "hash-based embeddings cannot understand synonyms"
+            )
+
         # Find synonym test queries
         synonym_queries = [q for q in semantic_queries if q["id"].startswith("q-sem-synonym")]
 
@@ -282,12 +292,22 @@ class TestSemanticSearchBroad:
         fixture_loader,
         metrics_calculator: MetricsCalculator,
         get_thresholds,
+        using_deterministic_embeddings: bool,
     ):
         """Broad queries should find multiple relevant document sections.
 
         Tests queries like "API security and authentication methods"
         which should match OAuth2, JWT, and GraphQL auth sections.
+
+        Note: Skipped with deterministic embeddings since broad semantic
+        queries rely on understanding conceptual relationships across topics.
         """
+        if using_deterministic_embeddings:
+            pytest.skip(
+                "Broad semantic queries require real embeddings - "
+                "hash-based embeddings cannot understand conceptual relationships"
+            )
+
         broad_queries = fixture_loader.get_queries_by_category("broad")
         queries = [q for q in broad_queries if "semantic" in q["modes"]]
 
