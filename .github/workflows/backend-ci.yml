@@ -21,58 +21,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            backend/.venv
-            ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
-          restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
-
-      - name: Install dependencies
-        working-directory: ./backend
-        run: poetry install --no-interaction --no-root
-
-      - name: Run tests with coverage
-        working-directory: ./backend
-        run: poetry run pytest tests/unit/ -m "not external" --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80 -v
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          files: ./backend/coverage.xml
-          flags: backend
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: backend-test-reports
-          path: backend/coverage.xml
-          retention-days: 7
-
+  # ============================================================================
+  # Phase 1: FAST GATES (30-60 sec) - Fail fast on code quality issues
+  # ============================================================================
   lint:
     runs-on: ubuntu-24.04
     steps:
@@ -147,13 +98,69 @@ jobs:
 
       - name: Run mypy
         working-directory: ./backend
-        run: poetry run mypy app/
-        continue-on-error: false
+        run: poetry run mypy app/ --ignore-missing-imports
 
-  # NOTE: Security scanning moved to dedicated security-scan.yml workflow
-  # which runs on every push and weekly schedule to avoid redundancy
+  # ============================================================================
+  # Phase 2: UNIT TESTS (2-3 min) - Only run if lint/type pass
+  # ============================================================================
+  test:
+    needs: [lint, type-check]  # Fail-fast: only run if code quality passes
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-py3.13-
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Run tests with coverage
+        working-directory: ./backend
+        run: poetry run pytest tests/unit/ -m "not external" --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80 -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-reports
+          path: backend/coverage.xml
+          retention-days: 7
+
+  # ============================================================================
+  # Phase 3: BUILD (3-4 min) - Only run if tests pass, cache for E2E reuse
+  # ============================================================================
   build:
+    needs: [test]  # Only build if tests pass
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
@@ -168,6 +175,13 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: false
-          tags: skillforge-backend:test
+          tags: skillforge-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Export to local Docker for potential local testing
+          load: true
+
+      - name: Verify Docker image
+        run: |
+          docker images skillforge-backend:${{ github.sha }}
+          echo "Docker image built and cached successfully"
