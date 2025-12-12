@@ -3,8 +3,8 @@
 > **Intelligent Learning Integration Platform** - Analyze technical content, generate actionable implementation guides, and learn through Socratic tutoring.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![React](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.121-009688.svg)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19.2-61dafb.svg)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.124-009688.svg)](https://fastapi.tiangolo.com)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1.0-orange.svg)](https://github.com/langchain-ai/langgraph)
 [![Python](https://img.shields.io/badge/Python-3.13-3776ab.svg)](https://python.org)
 
@@ -12,6 +12,8 @@
 
 ## 📚 Documentation
 
+- **[Docs Portal](docs/README.md)** - Start here (users vs contributors)
+- **[Configuration](docs/CONFIGURATION.md)** - Ports, URLs, env vars (source of truth)
 - **[Architecture](docs/ARCHITECTURE.md)** - System architecture diagrams
 - **[Roadmap](docs/ROADMAP.md)** - Project roadmap and phases
 - **[Integration Points](docs/INTEGRATION_POINTS.md)** - API contracts & coordination
@@ -88,18 +90,19 @@ SkillForge is a research-to-implementation pipeline that helps developers:
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Framework:** FastAPI 0.121.2+
+- **Framework:** FastAPI 0.124+
 - **AI Orchestration:** LangGraph 1.0 + LangChain 1.0
-- **Database:** PostgreSQL 17 + PGVector 0.4.1
+- **Database:** PostgreSQL 17 + PGVector 0.4+
 - **LLM:** Multi-provider support (GPT-5 Mini/Claude/Gemini for dev and production)
 - **Language:** Python 3.13
 
 ### Frontend
-- **Framework:** React 19.0.0
-- **Build Tool:** Vite 6.0.3
-- **Styling:** Tailwind CSS 3.4.15
-- **State Management:** TanStack Query 5.62.7 + Zustand 5.0.2
-- **Language:** TypeScript 5.7.2
+- **Framework:** React 19.2+
+- **Build Tool:** Vite 7+
+- **Routing:** TanStack Router 1.x
+- **Styling:** Tailwind CSS 4.1+
+- **State Management:** TanStack Query 5.x + Zustand 5.x
+- **Language:** TypeScript 5.9+
 
 ### Infrastructure
 - **Containerization:** Docker Compose
@@ -189,8 +192,10 @@ JINA_API_KEY=your_key_here  # Get free key at https://jina.ai
 
 **Frontend (`.env.local`):**
 ```env
-VITE_API_BASE_URL=http://localhost:8500
+VITE_API_URL=http://localhost:8500
 ```
+
+**Ports, URLs, and env vars:** see `docs/CONFIGURATION.md` (source of truth).
 
 ---
 
@@ -328,7 +333,7 @@ We welcome contributions! This project follows a **parallel development workflow
 
 - **Current Sprint:** Sprint 8 - Embeddings & Search
 - **Sprint Progression:** 8 → 9 (MCP Consumer) → 10 (Context Engineering) → 11 (Features) → 12 (MCP Server)
-- **Tech Stack:** React 19, FastAPI, LangGraph 0.6.7, PostgreSQL + PGVector
+- **Tech Stack:** React 19, FastAPI, LangGraph 1.0, PostgreSQL + PGVector
 - **Team:** 2 developers (frontend + backend)
 
 ---

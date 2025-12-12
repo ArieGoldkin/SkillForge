@@ -8,16 +8,11 @@ Tests cover:
 """
 
 import json
-import tempfile
 from pathlib import Path
-
-import pytest
 
 from app.evaluation.metrics.regression import (
     RegressionReport,
     check_regression,
-    MetricChange,
-    StatusChange,
 )
 
 

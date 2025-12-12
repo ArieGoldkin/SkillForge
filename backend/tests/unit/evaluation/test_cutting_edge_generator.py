@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -184,7 +183,12 @@ class TestCuttingEdgeTemplates:
 
     @pytest.mark.parametrize(
         "topic",
-        [Topic.A2A_PROTOCOL, Topic.MCP_NOV_2025, Topic.CONTEXT_ENGINEERING, Topic.LANGGRAPH_MULTIAGENT],
+        [
+            Topic.A2A_PROTOCOL,
+            Topic.MCP_NOV_2025,
+            Topic.CONTEXT_ENGINEERING,
+            Topic.LANGGRAPH_MULTIAGENT,
+        ],
     )
     def test_each_topic_has_templates(self, topic: Topic):
         """Test each topic has defined templates for cutting-edge content."""
@@ -193,7 +197,7 @@ class TestCuttingEdgeTemplates:
 
     def test_templates_include_required_fields(self):
         """Test templates have all required fields."""
-        for topic_name, templates in ALL_TEMPLATES.items():
+        for _topic_name, templates in ALL_TEMPLATES.items():
             for template in templates:
                 assert "query_patterns" in template
                 assert "expected_topics" in template

@@ -306,8 +306,8 @@ settings = Settings()
 
 #### Testing
 ```bash
-uvicorn app.main:app --reload --port 8000
-curl http://localhost:8000/health
+uvicorn app.main:app --reload --port 8500
+curl http://localhost:8500/health
 ```
 
 ---
@@ -1168,7 +1168,7 @@ echo ""
 echo "🎯 Next steps:"
 echo "  1. cd backend && source venv/bin/activate"
 echo "  2. uvicorn app.main:app --reload"
-echo "  3. Visit http://localhost:8000/docs"
+echo "  3. Visit http://localhost:8500/docs"
 ```
 
 ```bash
@@ -1948,7 +1948,7 @@ poetry run mypy app
 ### Key Commands
 ```bash
 # Development
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8500
 alembic upgrade head
 alembic revision --autogenerate -m "description"
 

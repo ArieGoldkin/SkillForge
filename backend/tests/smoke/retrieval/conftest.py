@@ -11,24 +11,27 @@ CI: GitHub Actions workflow runs on every PR to dev/main.
 
 from __future__ import annotations
 
-from pathlib import Path
+import os
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-import pytest  # noqa: E402
-import pytest_asyncio  # noqa: E402
-from sqlalchemy import text  # noqa: E402
-from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+import pytest
+import pytest_asyncio
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.embeddings_deterministic import DeterministicEmbeddingService  # noqa: E402
-from tests.smoke.retrieval.fixtures import FixtureLoader  # noqa: E402
-from tests.smoke.retrieval.metrics import MetricsCalculator  # noqa: E402
+from app.services.embeddings_deterministic import DeterministicEmbeddingService
+from tests.smoke.retrieval.fixtures import FixtureLoader
+from tests.smoke.retrieval.metrics import MetricsCalculator
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from app.models.analysis import Analysis
     from app.models.analysis_chunk import AnalysisChunk
+    from app.services.embeddings_deterministic import (
+        DeterministicEmbeddingService as EmbeddingService,
+    )
     from app.services.search.search_service import SearchService
 
 
@@ -113,9 +116,33 @@ def coarse_to_fine_queries(fixture_loader: FixtureLoader):
 
 
 @pytest_asyncio.fixture
-async def embedding_service() -> DeterministicEmbeddingService:
-    """Create deterministic embedding service for smoke tests (offline)."""
+async def embedding_service():
+    """Create embedding service for smoke tests.
+
+    By default, uses deterministic (hash-based) embeddings for offline CI.
+    Set USE_REAL_EMBEDDINGS=true to use OpenAI embeddings for full validation.
+    """
+    use_real = os.environ.get("USE_REAL_EMBEDDINGS", "").lower() == "true"
+
+    if use_real:
+        try:
+            from app.services.embeddings import EmbeddingService
+
+            return EmbeddingService()
+        except ValueError as e:
+            pytest.skip(f"Real embeddings requested but not available: {e}")
+
     return DeterministicEmbeddingService()
+
+
+@pytest.fixture
+def using_deterministic_embeddings(embedding_service) -> bool:
+    """Detect if we're using deterministic (hash-based) embeddings.
+
+    This is used to skip tests that require true semantic understanding
+    (synonyms, paraphrases) which hash-based embeddings cannot provide.
+    """
+    return embedding_service.model == "deterministic-hash-v1"
 
 
 @pytest_asyncio.fixture

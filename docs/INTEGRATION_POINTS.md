@@ -5,6 +5,8 @@
 **Team:** Arie (Frontend) + Yonatan (Backend)
 **Current Sprint:** Sprint 8 - Embeddings & Search
 
+**Ports, URLs, and env vars:** See `docs/CONFIGURATION.md` (source of truth).
+
 ---
 
 ## 📋 Table of Contents
@@ -531,7 +533,7 @@ interface GitHubAnalysis extends Analysis {
 1. **Yonatan:** Setup Supabase project and enable PGVector
 2. **Yonatan:** Deploy backend to Railway
 3. **Yonatan:** Run database migrations on Supabase
-4. **Arie:** Update frontend env vars (VITE_API_BASE_URL → Railway URL)
+4. **Arie:** Update frontend env vars (`VITE_API_URL` → Railway URL)
 5. **Arie:** Deploy frontend to Vercel
 6. **Both:** Smoke test all features end-to-end
 7. **Both:** Monitor error tracking (Sentry) and health checks
@@ -771,7 +773,7 @@ pytest tests/e2e/
    ```
 2. **Arie:** Verify API URL in `.env.local`:
    ```
-   VITE_API_BASE_URL=http://localhost:8000
+   VITE_API_URL=http://localhost:8500
    ```
 
 ---

@@ -839,7 +839,7 @@ OPENAI_API_KEY=sk-...
 JINA_API_KEY=your_jina_key
 
 # Frontend
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8500
 ```
 
 **Process:**

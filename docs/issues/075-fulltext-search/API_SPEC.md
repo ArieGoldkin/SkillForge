@@ -8,7 +8,7 @@ This document provides the complete API specification for the library search end
 
 ```
 Production: https://api.skillforge.com/api/v1
-Development: http://localhost:8000/api/v1
+Development: http://localhost:8500/api/v1
 ```
 
 ## Endpoint
@@ -201,7 +201,7 @@ Returned when request parameters are invalid.
 
 **Example**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?search_mode=invalid"
+curl -X GET "http://localhost:8500/api/v1/library?search_mode=invalid"
 
 # Response: 400 Bad Request
 {
@@ -236,7 +236,7 @@ Search for "React hooks" using hybrid mode (combines full-text and semantic sear
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React%20hooks&limit=10"
+curl -X GET "http://localhost:8500/api/v1/library?query=React%20hooks&limit=10"
 ```
 
 **Response**:
@@ -266,7 +266,7 @@ Search using only PostgreSQL full-text search for exact keyword matching.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React%20hooks&search_mode=fulltext&limit=5"
+curl -X GET "http://localhost:8500/api/v1/library?query=React%20hooks&search_mode=fulltext&limit=5"
 ```
 
 **Response**:
@@ -307,7 +307,7 @@ Search using vector similarity for conceptually similar content.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React%20hooks&search_mode=semantic&limit=5"
+curl -X GET "http://localhost:8500/api/v1/library?query=React%20hooks&search_mode=semantic&limit=5"
 ```
 
 **Response**:
@@ -348,7 +348,7 @@ Get a paginated list of all analyses without searching.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?limit=20&offset=0"
+curl -X GET "http://localhost:8500/api/v1/library?limit=20&offset=0"
 ```
 
 **Response**:
@@ -389,7 +389,7 @@ Search for articles only.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React&content_type=article&limit=10"
+curl -X GET "http://localhost:8500/api/v1/library?query=React&content_type=article&limit=10"
 ```
 
 **Response**:
@@ -421,7 +421,7 @@ Search for completed analyses only.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React&status=complete&limit=10"
+curl -X GET "http://localhost:8500/api/v1/library?query=React&status=complete&limit=10"
 ```
 
 **Response**:
@@ -453,7 +453,7 @@ Get the second page of results (offset 20, limit 20).
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React&limit=20&offset=20"
+curl -X GET "http://localhost:8500/api/v1/library?query=React&limit=20&offset=20"
 ```
 
 **Response**:
@@ -485,7 +485,7 @@ Search for completed articles about React.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=React&content_type=article&status=complete&search_mode=fulltext&limit=10"
+curl -X GET "http://localhost:8500/api/v1/library?query=React&content_type=article&status=complete&search_mode=fulltext&limit=10"
 ```
 
 **Response**:
@@ -515,7 +515,7 @@ Search with no matching results.
 
 **Request**:
 ```bash
-curl -X GET "http://localhost:8000/api/v1/library?query=nonexistentquery12345&search_mode=fulltext"
+curl -X GET "http://localhost:8500/api/v1/library?query=nonexistentquery12345&search_mode=fulltext"
 ```
 
 **Response**:
@@ -828,8 +828,8 @@ components:
 Once deployed, interactive API documentation is available at:
 
 ```
-Swagger UI: http://localhost:8000/docs
-ReDoc: http://localhost:8000/redoc
+Swagger UI: http://localhost:8500/docs
+ReDoc: http://localhost:8500/redoc
 ```
 
 These interfaces allow you to:
@@ -856,7 +856,7 @@ async def search_library(
     """Search the library using the API."""
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            "http://localhost:8000/api/v1/library",
+            "http://localhost:8500/api/v1/library",
             params={
                 "query": query,
                 "search_mode": search_mode,
@@ -917,7 +917,7 @@ async function searchLibrary(
   if (params.offset) queryParams.append('offset', params.offset.toString());
 
   const response = await fetch(
-    `http://localhost:8000/api/v1/library?${queryParams}`
+    `http://localhost:8500/api/v1/library?${queryParams}`
   );
 
   if (!response.ok) {

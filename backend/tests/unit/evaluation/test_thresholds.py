@@ -9,10 +9,10 @@ Tests cover:
 import pytest
 
 from app.evaluation.pipeline.thresholds import (
+    THRESHOLDS,
     Difficulty,
     ThresholdConfig,
     ThresholdStatus,
-    THRESHOLDS,
     get_threshold,
 )
 
@@ -115,9 +115,7 @@ class TestThresholdConfig:
 
     def test_custom_warning_margin(self):
         """Test custom warning margin configuration."""
-        config = ThresholdConfig(
-            recall_at_5=0.85, mrr=0.80, ndcg_at_5=0.82, warning_margin=0.10
-        )
+        config = ThresholdConfig(recall_at_5=0.85, mrr=0.80, ndcg_at_5=0.82, warning_margin=0.10)
         # 0.77 would be WARN with 10% margin (0.85 - 0.10 = 0.75 <= 0.77 < 0.85)
         status = config.check_recall(0.77)
         assert status == ThresholdStatus.WARN

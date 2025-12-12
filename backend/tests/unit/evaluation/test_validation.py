@@ -120,7 +120,7 @@ class TestValidateDataset:
             ],
         }
         filepath = tmp_path / "valid_dataset.json"
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(dataset, f)
         return filepath
 
@@ -178,7 +178,7 @@ class TestValidateDataset:
             ],
         }
         filepath = tmp_path / "invalid_weights.json"
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(dataset, f)
         return filepath
 
@@ -235,7 +235,7 @@ class TestValidateDataset:
             ],
         }
         filepath = tmp_path / "insufficient_approvals.json"
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             json.dump(dataset, f)
         return filepath
 
@@ -269,7 +269,7 @@ class TestValidateDataset:
     def test_validate_invalid_json(self, tmp_path):
         """Test validation handles invalid JSON."""
         filepath = tmp_path / "invalid.json"
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             f.write("not valid json {{{")
 
         result = validate_dataset(str(filepath))
@@ -299,16 +299,16 @@ class TestValidateDirectory:
             },
             "examples": [],
         }
-        with open(tmp_path / "valid.json", "w") as f:
+        with (tmp_path / "valid.json").open("w") as f:
             json.dump(valid, f)
 
         # Invalid dataset
         invalid = {"version": "1.0.0"}  # Missing required fields
-        with open(tmp_path / "invalid.json", "w") as f:
+        with (tmp_path / "invalid.json").open("w") as f:
             json.dump(invalid, f)
 
         # Non-JSON file (should be skipped)
-        with open(tmp_path / "readme.txt", "w") as f:
+        with (tmp_path / "readme.txt").open("w") as f:
             f.write("Not a dataset")
 
         return tmp_path
@@ -326,7 +326,7 @@ class TestValidateDirectory:
         subdir = dataset_directory / "subdir"
         subdir.mkdir()
         nested = {"version": "2.0.0", "metadata": {}, "examples": []}
-        with open(subdir / "nested.json", "w") as f:
+        with (subdir / "nested.json").open("w") as f:
             json.dump(nested, f)
 
         results = validate_directory(str(dataset_directory), recursive=True)

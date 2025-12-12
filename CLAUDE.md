@@ -29,7 +29,7 @@ version: 4.0.0
 
 **Intelligent Learning Integration Platform** - Multi-agent system that analyzes technical content (URLs, videos, repos) via LangGraph pipeline and generates AI-ready implementation guides with Socratic tutoring.
 
-**Stack**: React 19 + FastAPI + LangGraph 0.6.7 + PostgreSQL/PGVector
+**Stack**: React 19 + FastAPI + LangGraph 1.0 + PostgreSQL/PGVector
 
 **Architecture**:
 - System design: `docs/ARCHITECTURE.md` (workflows, deployment, diagrams)

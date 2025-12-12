@@ -1220,7 +1220,7 @@ logger.info(
 #### **6.3 Production Deployment (4 days)**
 - [ ] **6.3.1** Frontend deployment (Vercel)
   - Create Vercel project from GitHub repo
-  - Configure environment variables (VITE_API_BASE_URL)
+  - Configure environment variables (`VITE_API_URL`)
   - Setup custom domain (optional)
   - Enable preview deployments for PRs
 - [ ] **6.3.2** Backend deployment (Railway)

@@ -33,5 +33,3 @@ async def test_openai_embedding_service_returns_expected_dimensions() -> None:
 
     assert isinstance(embedding, list)
     assert len(embedding) == 1536
-
-
