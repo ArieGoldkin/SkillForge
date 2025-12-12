@@ -77,47 +77,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/skillforge_test
-    command: >
-      sh -c "
-        python -c \"
-import asyncio, uuid, os
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
-
-SEED_URL = 'https://example.com/e2e-seed'
-SEED_MD = '# E2E Seed Artifact\\n\\nThis is a deterministic artifact seeded for Playwright E2E tests.'
-
-async def main() -> None:
-    engine = create_async_engine(os.environ['DATABASE_URL'])
-    async with engine.begin() as conn:
-        res = await conn.execute(text(\\\"SELECT COUNT(*) FROM analyses WHERE status='completed'\\\"))
-        count = int(res.scalar() or 0)
-        if count > 0:
-            return
-        analysis_id = str(uuid.uuid4())
-        artifact_id = str(uuid.uuid4())
-        await conn.execute(
-            text(\\\"\\\nINSERT INTO analyses (id, url, content_type, title, status, created_at, updated_at)\\\nVALUES (:id, :url, :content_type, :title, 'completed', NOW(), NOW())\\\n\\\"),
-            {
-                'id': analysis_id,
-                'url': SEED_URL,
-                'content_type': 'article',
-                'title': 'E2E Seed Analysis',
-            },
-        )
-        await conn.execute(
-            text(\\\"\\\nINSERT INTO artifacts (id, analysis_id, markdown_content, version, download_count, created_at)\\\nVALUES (:id, :analysis_id, :markdown_content, 1, 0, NOW())\\\n\\\"),
-            {
-                'id': artifact_id,
-                'analysis_id': analysis_id,
-                'markdown_content': SEED_MD,
-            },
-        )
-    await engine.dispose()
-
-asyncio.run(main())
-\""
-      "
+    command: ["python", "-m", "scripts.seed_e2e_fixture"]
     restart: "no"
 
   # Frontend for E2E testing (connects to real backend)
