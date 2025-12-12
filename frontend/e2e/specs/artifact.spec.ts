@@ -66,8 +66,15 @@ test.describe('Artifact Page - Preview and Download', () => {
     expect(download.suggestedFilename()).toContain('.md');
   });
 
-  test('should copy code block to clipboard', async ({ page, context }) => {
-    // Grant clipboard permissions
+  test('should copy code block to clipboard', async ({ page, context, browserName }) => {
+    // Skip on Firefox and WebKit - they don't support clipboard permissions via grantPermissions
+    // See: https://playwright.dev/docs/api/class-browsercontext#browser-context-grant-permissions
+    test.skip(
+      browserName === 'firefox' || browserName === 'webkit',
+      'Clipboard permissions not supported on Firefox/WebKit'
+    );
+
+    // Grant clipboard permissions (only works on Chromium-based browsers)
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
     // Use the page object method to copy the first code block

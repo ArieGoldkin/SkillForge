@@ -16,10 +16,23 @@ export abstract class BasePage {
   }
 
   /**
-   * Wait for the page to fully load (network idle).
+   * Wait for the page to be ready for interaction.
+   * Uses 'domcontentloaded' instead of 'networkidle' because:
+   * - SSE streams keep connections open indefinitely, blocking networkidle
+   * - domcontentloaded is sufficient for React hydration
+   * - Specific UI states should use element-based waits instead
    */
   async waitForPageLoad() {
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
+  }
+
+  /**
+   * Wait for the page to be fully loaded including all resources.
+   * Use this only when you specifically need all resources loaded
+   * and no SSE/streaming connections are expected.
+   */
+  async waitForFullLoad() {
+    await this.page.waitForLoadState('load');
   }
 
   /**

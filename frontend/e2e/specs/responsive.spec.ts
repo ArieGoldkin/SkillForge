@@ -62,11 +62,14 @@ test.describe('Responsive Design Tests', () => {
     // Start with mobile
     await setMobileViewport(page);
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Resize to desktop
+    // Resize to desktop - wait for React to re-render after resize
     await setDesktopViewport(page);
-    await page.waitForTimeout(300); // Wait for resize to complete
+    // Use element-based wait instead of arbitrary timeout
+    await expect(page.locator('body')).toBeVisible();
+    // Verify body is interactive after resize
+    await page.locator('body').waitFor({ state: 'visible' });
 
     // Page should still be functional
     await expect(page.locator('body')).toBeVisible();

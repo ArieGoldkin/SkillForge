@@ -10,6 +10,8 @@ export {
   createTutorSession,
   getTutorSession,
   sendTutorMessage,
+  waitForAssistantResponse,
+  sendMessageAndWaitForResponse,
 } from './api-helpers';
 
 // Test utilities

@@ -82,15 +82,27 @@ test.describe('Analysis Page - Progress Tracking', () => {
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
 
     // The app should handle SSE stream gracefully
-    // Wait a bit to ensure connection is established
-    await page.waitForTimeout(2000);
+    // Wait for progress to update (element-based wait instead of arbitrary timeout)
+    // Either progress changes or status text appears
+    await Promise.race([
+      page.getByText(/processing|analyzing|extraction|complete/i).waitFor({ state: 'visible', timeout: 5000 }),
+      page.waitForFunction(
+        () => {
+          const progress = document.querySelector('[role="progressbar"]');
+          return progress && parseInt(progress.getAttribute('aria-valuenow') || '0', 10) > 0;
+        },
+        { timeout: 5000 }
+      ),
+    ]).catch(() => {
+      // Either scenario is acceptable - SSE connection is established
+    });
 
     // Verify the page remains functional during streaming
     await expect(page.locator('body')).toBeVisible();
 
     // Verify analysis is in progress or complete
     const analysis = await getAnalysis(request, analysis_id);
-    expect(['pending', 'processing', 'complete']).toContain(analysis.status);
+    expect(['pending', 'processing', 'complete', 'completed']).toContain(analysis.status);
   });
 
   test('should display analysis metadata', async ({ page, request }) => {
@@ -120,11 +132,23 @@ test.describe('Analysis Page - Progress Tracking', () => {
     expect(initialProgress).toBeGreaterThanOrEqual(0);
     expect(initialProgress).toBeLessThanOrEqual(100);
 
-    // Wait a bit for potential progress updates
-    await page.waitForTimeout(3000);
+    // Wait for progress to update using element-based polling
+    // Poll for progress change instead of arbitrary timeout
+    await page.waitForFunction(
+      (initial) => {
+        const progress = document.querySelector('[role="progressbar"]');
+        const current = progress ? parseInt(progress.getAttribute('aria-valuenow') || '0', 10) : 0;
+        return current > initial || current === 100;
+      },
+      initialProgress,
+      { timeout: 10000 }
+    ).catch(() => {
+      // Progress may not change if analysis is very fast or already complete
+    });
 
     // Get updated progress
     const updatedProgress = await analyzePage.getProgress();
+    // Progress should be at least initial (may not change if analysis completes quickly)
     expect(updatedProgress).toBeGreaterThanOrEqual(initialProgress);
   });
 

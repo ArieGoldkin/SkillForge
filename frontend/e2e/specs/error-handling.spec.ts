@@ -83,17 +83,31 @@ test.describe('Error Handling Tests', () => {
   test('should show empty state when searching for non-existent content', async ({ page }) => {
     await page.goto('/library');
 
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    // Wait for page to load - use domcontentloaded to avoid SSE blocking
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for initial library API response
+    await page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+      { timeout: 10000 }
+    ).catch(() => {
+      // Initial load might already be complete
+    });
 
     // Search for something that definitely doesn't exist
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      // Set up response promise BEFORE triggering search
+      const searchResponsePromise = page.waitForResponse(
+        (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+        { timeout: 10000 }
+      );
+
       await searchInput.fill('xyznonexistentquery12345');
       await searchInput.press('Enter');
 
-      // Wait for search to complete
-      await page.waitForLoadState('networkidle');
+      // Wait for search API response instead of networkidle
+      await searchResponsePromise;
 
       // Should show empty state or no results
       await expect(
@@ -187,8 +201,13 @@ test.describe('Error Handling Tests', () => {
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
     await submitButton.click();
 
-    // Wait for error to appear
-    await page.waitForTimeout(2000);
+    // Wait for error to appear using element-based wait
+    await page.getByText(/error|invalid|valid url/i)
+      .or(page.getByRole('alert'))
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .catch(() => {
+        // Error might appear differently or be handled client-side
+      });
 
     // Now try a valid URL - UI should still work
     await urlInput.clear();
@@ -212,12 +231,24 @@ test.describe('Error Handling Tests', () => {
     // Click submit
     await submitButton.click();
 
-    // Wait a short time for state to update
-    await page.waitForTimeout(500);
+    // Wait for either navigation or button state change using Promise.race
+    const result = await Promise.race([
+      // Check if page navigates
+      page.waitForURL(/\/analyze\/.+/, { timeout: 5000 })
+        .then(() => ({ type: 'navigated', value: true })),
+      // Check if button becomes disabled
+      page.waitForFunction(
+        () => {
+          const btn = document.querySelector('button[type="submit"], button:has-text("analyze")');
+          return btn && (btn as HTMLButtonElement).disabled;
+        },
+        { timeout: 3000 }
+      ).then(() => ({ type: 'disabled', value: true })),
+    ]).catch(() => ({ type: 'timeout', value: false }));
 
-    // Check multiple valid outcomes
+    // Check current state
     const currentUrl = page.url();
-    const didNavigate = currentUrl !== initialUrl;
+    const didNavigate = currentUrl !== initialUrl || result.type === 'navigated';
 
     // Try to check button state (might not exist if navigated)
     let buttonState = { exists: false, disabled: false };
@@ -250,12 +281,25 @@ test.describe('Error Handling Tests', () => {
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
     await submitButton.click();
 
-    // Wait for error
-    await page.waitForTimeout(2000);
+    // Wait for error using element-based wait
+    await page.getByText(/error|invalid|valid url/i)
+      .or(page.getByRole('alert'))
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .catch(() => {
+        // Error might appear differently
+      });
 
     // Now navigate to library - should work normally
     await page.goto('/library');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for library API response instead of networkidle
+    await page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+      { timeout: 10000 }
+    ).catch(() => {
+      // API might already be complete
+    });
 
     // Library should load successfully
     await expect(

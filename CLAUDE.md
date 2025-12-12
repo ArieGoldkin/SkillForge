@@ -356,6 +356,44 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 - Use `mcp-find` to discover additional development tools
 - Record MCP usage in `shared-context.json` for workflow optimization
 
+## 💾 Golden Dataset & Data Protection
+
+**The golden dataset contains 96 curated technical documents** with embeddings for semantic search testing.
+
+### Quick Stats
+- **96 Analyses** (completed) | **96 Artifacts** | **408 Chunks**
+- Content: 76 articles, 19 tutorials, 1 research paper
+- Topics: RAG, LangGraph, Prompt Engineering, API Design, Testing, etc.
+
+### Backup Commands
+```bash
+cd backend
+
+# Create JSON backup (recommended, version controlled)
+poetry run python scripts/backup_golden_dataset.py backup
+
+# Verify backup integrity
+poetry run python scripts/backup_golden_dataset.py verify
+
+# Restore from backup (regenerates embeddings)
+poetry run python scripts/backup_golden_dataset.py restore --replace
+```
+
+### Data Protection Files
+| File | Location | Purpose |
+|------|----------|---------|
+| JSON Backup | `backend/data/golden_dataset_backup.json` | Portable, git-tracked |
+| Metadata | `backend/data/golden_dataset_metadata.json` | Quick stats |
+| SQL Dump | `backend/data/golden_dataset_dump.sql` | Local only (gitignored) |
+
+### Recovery
+```bash
+# New dev environment
+docker compose up -d postgres
+poetry run alembic upgrade head
+poetry run python scripts/backup_golden_dataset.py restore
+```
+
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
 

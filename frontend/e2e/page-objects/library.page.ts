@@ -34,12 +34,37 @@ export class LibraryPage extends BasePage {
     await this.navigate('/library');
   }
 
+  /**
+   * Search the library with proper API response waiting.
+   * Waits for the library API response instead of using arbitrary timeouts.
+   */
   async search(query: string) {
+    // Set up response promise BEFORE triggering the action
+    const responsePromise = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/library') && response.status() === 200,
+      { timeout: 10000 }
+    );
+
     await this.searchInput.fill(query);
     // Trigger immediate search with Enter key (no search button exists)
     await this.searchInput.press('Enter');
-    // Wait for debounce and API call
-    await this.page.waitForTimeout(500);
+
+    // Wait for API response to complete
+    await responsePromise;
+
+    // Wait for loading state to clear (if it exists)
+    await expect(this.loadingState).not.toBeVisible({ timeout: 5000 }).catch(() => {
+      // Loading state might not be implemented or might be very brief
+    });
+  }
+
+  /**
+   * Search without waiting for response (for testing immediate UI behavior).
+   */
+  async searchNoWait(query: string) {
+    await this.searchInput.fill(query);
+    await this.searchInput.press('Enter');
   }
 
   async filterByContentType(type: 'all' | 'article' | 'video' | 'repository') {
@@ -54,6 +79,21 @@ export class LibraryPage extends BasePage {
 
   async selectCard(index: number) {
     await this.analysisCards.nth(index).click();
+  }
+
+  /**
+   * Wait for cards to be visible in the library grid.
+   * Useful after navigation or search operations.
+   */
+  async waitForCards(timeout = 10000) {
+    // Wait for the list container to be visible first
+    await this.page.locator('[role="list"]').waitFor({ state: 'visible', timeout });
+
+    // Then wait for at least one card (if data exists)
+    // Using a shorter timeout since grid is already visible
+    await this.analysisCards.first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+      // No cards might be valid (empty state)
+    });
   }
 
   async expectCardCount(count: number) {

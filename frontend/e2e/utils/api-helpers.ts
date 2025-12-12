@@ -236,3 +236,81 @@ export async function sendTutorMessage(
 
   return response.json();
 }
+
+/**
+ * Wait for an assistant response in a tutor session.
+ * Polls the session endpoint until an assistant message appears.
+ *
+ * @param request - Playwright API request context
+ * @param sessionId - The tutor session ID
+ * @param initialMessageCount - Number of messages before sending (to detect new ones)
+ * @param maxWaitMs - Maximum time to wait for response (default: 60 seconds)
+ * @param pollIntervalMs - Time between polls (default: 2 seconds)
+ * @returns true if response received, false if timeout
+ */
+export async function waitForAssistantResponse(
+  request: APIRequestContext,
+  sessionId: string,
+  initialMessageCount: number = 0,
+  maxWaitMs: number = 60000,
+  pollIntervalMs: number = 2000
+): Promise<boolean> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const session = await getTutorSession(request, sessionId);
+      const assistantMessages = session.messages.filter((m) => m.role === 'assistant');
+
+      // Check if we have more assistant messages than before
+      if (assistantMessages.length > initialMessageCount) {
+        return true;
+      }
+    } catch {
+      // Session might be temporarily unavailable, continue polling
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+
+  return false;
+}
+
+/**
+ * Send a message and wait for the LLM response.
+ * Combines sendTutorMessage with waitForAssistantResponse for convenience.
+ *
+ * @param request - Playwright API request context
+ * @param sessionId - The tutor session ID
+ * @param content - Message content to send
+ * @param maxWaitMs - Maximum time to wait for response (default: 60 seconds)
+ * @returns The updated session with the assistant response, or null if timeout
+ */
+export async function sendMessageAndWaitForResponse(
+  request: APIRequestContext,
+  sessionId: string,
+  content: string,
+  maxWaitMs: number = 60000
+): Promise<Awaited<ReturnType<typeof getTutorSession>> | null> {
+  // Get initial message count
+  const initialSession = await getTutorSession(request, sessionId);
+  const initialAssistantCount = initialSession.messages.filter((m) => m.role === 'assistant').length;
+
+  // Send the message
+  await sendTutorMessage(request, sessionId, content);
+
+  // Wait for response
+  const gotResponse = await waitForAssistantResponse(
+    request,
+    sessionId,
+    initialAssistantCount,
+    maxWaitMs
+  );
+
+  if (!gotResponse) {
+    return null;
+  }
+
+  // Return the updated session
+  return getTutorSession(request, sessionId);
+}

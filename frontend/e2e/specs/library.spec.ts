@@ -27,12 +27,8 @@ test.describe('Library Page - Search and Filter', () => {
     // Get real data from backend
     const library = await getLibrary(request, { limit: 10 });
 
-    // Wait for page to load - use domcontentloaded instead of networkidle
-    // because infinite scroll keeps network active
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for the grid to be visible
-    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for cards using the page object helper (proper wait patterns)
+    await libraryPage.waitForCards();
 
     // Check that the library page has loaded with content
     const cardCount = await libraryPage.analysisCards.count();
@@ -57,18 +53,14 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Ensure page is loaded - use domcontentloaded instead of networkidle
-    // because infinite scroll keeps network active
-    await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(500);
+    // Wait for initial cards to load
+    await libraryPage.waitForCards();
 
     // Get a real search term from existing data if possible
     const searchTerm = library.items[0]?.title || library.items[0]?.url || 'React';
 
+    // search() now properly waits for API response
     await libraryPage.search(searchTerm);
-
-    // Wait for search to complete and verify search was triggered
-    await page.waitForTimeout(1000);
 
     // Verify search input has the value
     await expect(libraryPage.searchInput).toHaveValue(searchTerm);
@@ -84,9 +76,18 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
+    // Wait for initial cards to load
+    await libraryPage.waitForCards();
+
     // Check if filter button exists
     const filterButton = libraryPage.contentTypeFilter;
     if (await filterButton.isVisible()) {
+      // Set up response promise before clicking filter
+      const responsePromise = page.waitForResponse(
+        (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+        { timeout: 10000 }
+      );
+
       await filterButton.click();
 
       // Select video type
@@ -94,8 +95,8 @@ test.describe('Library Page - Search and Filter', () => {
       if (await videoOption.isVisible()) {
         await videoOption.click();
 
-        // Results should be filtered
-        await page.waitForTimeout(500);
+        // Wait for filtered results
+        await responsePromise;
         console.log('Applied video filter');
       }
     } else {
@@ -128,11 +129,8 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Wait for page to load - use domcontentloaded instead of networkidle
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for the grid to be visible
-    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for cards to load using the proper helper
+    await libraryPage.waitForCards();
 
     // Check if there are any cards to click
     const cardCount = await libraryPage.analysisCards.count();
@@ -140,26 +138,26 @@ test.describe('Library Page - Search and Filter', () => {
       // Click the first card
       await libraryPage.selectCard(0);
 
-      // Wait for potential navigation
-      await page.waitForTimeout(1000);
+      // Wait for potential navigation - use URL change as the signal
+      // This is better than arbitrary timeout as it waits for actual navigation
+      await page.waitForURL(/\/(analyze|artifact|library)/, { timeout: 5000 }).catch(() => {
+        // Navigation might not happen (some cards show details inline)
+      });
 
       // The click may have done something - page should still be functional
-      // Note: Not all card implementations navigate on click (some may show details inline)
       await expect(page.locator('body')).toBeVisible();
       console.log('Clicked first analysis card');
     }
   });
 
   test('should show empty state or no results for non-existent search', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    // Wait for initial page load using proper wait pattern
+    await libraryPage.waitForCards();
 
     // Search for something that definitely won't exist
+    // search() now properly waits for API response
     const nonExistentQuery = `nonexistent-test-query-${Date.now()}`;
     await libraryPage.search(nonExistentQuery);
-
-    // Wait for search to complete
-    await page.waitForTimeout(1000);
 
     // Either shows empty state or page is functional with no results
     await expect(page.locator('body')).toBeVisible();
@@ -174,12 +172,14 @@ test.describe('Library Page - Search and Filter', () => {
     // Navigate with a filter parameter that returns no results
     await page.goto('/library?status=nonexistent-status-filter');
 
-    // Wait for page to load - use domcontentloaded instead of networkidle
-    // because infinite scroll keeps network active
+    // Wait for page to load properly
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for the grid to render (either with content or empty state)
-    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for API response to complete
+    await page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+      { timeout: 10000 }
+    );
 
     // Either shows empty state or page is functional with no data
     await expect(page.locator('body')).toBeVisible();
@@ -195,11 +195,8 @@ test.describe('Library Page - Search and Filter', () => {
       return;
     }
 
-    // Wait for page to load - use domcontentloaded instead of networkidle
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for the grid to be visible
-    await page.locator('[role="list"]').waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for cards to load using proper helper
+    await libraryPage.waitForCards();
 
     // Check if there are cards
     const cardCount = await libraryPage.analysisCards.count();
@@ -211,17 +208,26 @@ test.describe('Library Page - Search and Filter', () => {
   });
 
   test('should support keyboard navigation', async ({ page }) => {
+    // Wait for initial page load
+    await libraryPage.waitForCards();
+
     // Focus on search input
     await libraryPage.searchInput.focus();
 
     // Type a query
     await page.keyboard.type('React');
 
+    // Set up response promise before pressing Enter
+    const responsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
+      { timeout: 10000 }
+    );
+
     // Press Enter to search
     await page.keyboard.press('Enter');
 
-    // Search should be triggered
-    await page.waitForTimeout(500);
+    // Wait for search API response
+    await responsePromise;
     console.log('Keyboard navigation working');
   });
 });
