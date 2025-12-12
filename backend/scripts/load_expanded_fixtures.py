@@ -25,6 +25,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -56,7 +57,9 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
     from app.models.analysis import Analysis
     from app.models.analysis_chunk import AnalysisChunk
     from app.models.artifact import Artifact
+    from app.core.config import get_settings
     from app.services.embeddings import EmbeddingService
+    from app.services.embeddings_deterministic import DeterministicEmbeddingService
 
     logger = get_logger(__name__)
 
@@ -79,8 +82,19 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
 
     logger.info(f"Found {len(documents)} documents with {total_sections} sections")
 
-    # Initialize services
-    embedding_service = EmbeddingService()
+    # Initialize embedding service (default to deterministic when API key is absent)
+    settings = get_settings()
+    force_deterministic = (os.environ.get("SKILLFORGE_DETERMINISTIC_EMBEDDINGS") or "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+    if force_deterministic or not settings.OPENAI_API_KEY:
+        logger.info("using_deterministic_embeddings_for_fixtures")
+        embedding_service = DeterministicEmbeddingService()
+    else:
+        embedding_service = EmbeddingService()
 
     async with AsyncSessionLocal() as session:
         # Create or get analysis record for fixtures

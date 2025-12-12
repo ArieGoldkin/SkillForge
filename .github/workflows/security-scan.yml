@@ -3,23 +3,23 @@ name: Security Scan
 on:
   schedule:
     - cron: "0 0 * * 0" # Weekly on Sunday at 00:00 UTC
-  push:
-    branches: [main, dev]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/security-scan.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # Detect which paths changed (only for push events)
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -30,7 +30,7 @@ jobs:
               - 'frontend/**'
 
   backend-security:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changes
     # Run on schedule/manual, or if backend files changed on push
     if: |
@@ -39,10 +39,10 @@ jobs:
       needs.changes.outputs.backend == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
@@ -70,7 +70,7 @@ jobs:
           pip-audit --requirement requirements.txt --desc --format=json --output=backend-security-report.json || true
 
       - name: Upload security report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: backend-security-report
@@ -89,7 +89,7 @@ jobs:
           fi
 
   frontend-security:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changes
     # Run on schedule/manual, or if frontend files changed on push
     if: |
@@ -98,10 +98,10 @@ jobs:
       needs.changes.outputs.frontend == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -117,7 +117,7 @@ jobs:
           npm audit --json > frontend-security-report.json || true
 
       - name: Upload security report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: frontend-security-report
@@ -136,7 +136,7 @@ jobs:
           fi
 
   dependabot-alerts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changes
     # Run on schedule/manual only (Dependabot alerts are repo-wide, not path-specific)
     if: |
@@ -144,7 +144,7 @@ jobs:
       github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Check for Dependabot alerts
         uses: actions/github-script@v8
@@ -183,13 +183,13 @@ jobs:
             }
 
   security-report:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [changes, backend-security, frontend-security, dependabot-alerts]
     # Always run to generate report (handles skipped jobs gracefully)
     if: always()
     steps:
       - name: Download security reports
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v4
         with:
           path: security-reports
 
@@ -213,7 +213,7 @@ jobs:
           fi
 
       - name: Upload security summary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: security-summary
           path: security-summary.md

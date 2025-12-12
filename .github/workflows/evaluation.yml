@@ -23,10 +23,39 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+concurrency:
+  group: evaluation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      evaluation: ${{ steps.filter.outputs.evaluation }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            evaluation:
+              - "backend/app/agents/**"
+              - "backend/app/workflows/**"
+              - "backend/app/services/**"
+              - "backend/app/evaluation/**"
+              - "backend/tests/smoke/retrieval/**"
+              - ".github/workflows/evaluation.yml"
+
   evaluate:
     name: Run Evaluation Pipeline
-    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.evaluation == 'true'
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     # Service container for PostgreSQL with pgvector
@@ -58,66 +87,63 @@ jobs:
           cache: "pip"
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
         run: |
           poetry install --no-interaction --no-root
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
       - name: Setup database
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
         run: |
+          # Ensure pgvector is available
+          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
           # Run migrations to set up schema
           poetry run alembic upgrade head
 
       - name: Load evaluation fixtures
         working-directory: backend
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
         run: |
           # Load fixture data with embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
-
-      - name: Download baseline results (if exists)
-        id: baseline
-        continue-on-error: true
-        run: |
-          # Try to download baseline from main branch
-          gh run download \
-            --repo ${{ github.repository }} \
-            --branch main \
-            --name evaluation-results \
-            --dir baseline/ || echo "No baseline found"
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Run evaluation pipeline
         id: evaluation
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
         run: |
-          # Run evaluation with baseline if available
-          if [ -f baseline/evaluation_results.json ]; then
-            poetry run python scripts/run_evaluation.py \
-              --expanded \
-              --output evaluation_results.json \
-              --baseline baseline/evaluation_results.json \
-              ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
-          else
-            poetry run python scripts/run_evaluation.py \
-              --expanded \
-              --output evaluation_results.json \
-              ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
-          fi
+          # In deterministic mode we run without regression gating (baseline is intended for
+          # external-embedding runs). Results are still uploaded + commented for visibility.
+          poetry run python scripts/run_evaluation.py \
+            --expanded \
+            --output evaluation_results.json \
+            ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
 
       - name: Generate markdown report
         if: always()
@@ -150,7 +176,7 @@ jobs:
       - name: Comment PR with results
         if: github.event_name == 'pull_request'
         continue-on-error: true  # Don't fail if permissions prevent commenting
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -198,14 +224,6 @@ jobs:
             backend/evaluation_report.md
             backend/evaluation_results_regression.md
           retention-days: 30
-
-      - name: Upload to baseline (main branch only)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: evaluation-baseline
-          path: backend/evaluation_results.json
-          retention-days: 90  # Keep baseline longer
 
       - name: Check evaluation status
         if: always()

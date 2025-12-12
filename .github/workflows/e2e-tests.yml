@@ -5,25 +5,53 @@ on:
     branches: [main, dev, 'feature/125-*']
     paths:
       - 'frontend/**'
+      - 'backend/**'
       - '.github/workflows/e2e-tests.yml'
       - 'docker-compose.e2e.yml'
   pull_request:
     branches: [main, dev]
     paths:
       - 'frontend/**'
+      - 'backend/**'
       - '.github/workflows/e2e-tests.yml'
+      - 'docker-compose.e2e.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            e2e:
+              - 'frontend/**'
+              - 'backend/**'
+              - 'docker-compose.e2e.yml'
+              - '.github/workflows/e2e-tests.yml'
+
   e2e-tests:
-    runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -34,15 +62,42 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ms-playwright-${{ runner.os }}-
+
       - name: Install Playwright browsers
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Start E2E stack (backend + db + frontend)
+        run: |
+          docker compose -f docker-compose.e2e.yml up -d --build postgres backend-migrate backend backend-seed frontend-e2e
+
+      - name: Wait for E2E stack to be ready
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8500/api/v1/health >/dev/null; then
+              echo "Backend is healthy"
+              break
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 2
+          done
+          curl -fsS http://localhost:8500/api/v1/health
+          curl -fsS http://localhost:5174 >/dev/null
+
+      - name: Run Playwright E2E (against docker-compose stack)
         working-directory: ./frontend
-        run: npm run test:e2e -- --project=chromium
         env:
-          CI: true
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost:5174
+          API_BASE_URL: http://localhost:8500
+        run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -60,11 +115,16 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+      - name: Cleanup E2E stack
+        if: always()
+        run: docker compose -f docker-compose.e2e.yml down -v
+
   # Optional: Run tests in Docker container
   e2e-docker:
-    runs-on: ubuntu-latest
+    needs: changes
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
 
     steps:
       - name: Checkout code

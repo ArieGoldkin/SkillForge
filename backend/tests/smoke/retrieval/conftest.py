@@ -6,37 +6,21 @@ Provides fixtures for:
 - Test documents and chunks
 - Fixture data loading
 
-NOTE: Smoke tests require real API keys (not test placeholders).
-      Ensure .env has valid OPENAI_API_KEY before running.
-
 CI: GitHub Actions workflow runs on every PR to dev/main.
 """
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
-
-# CRITICAL: Load .env BEFORE any other imports to get real API keys
-# The main conftest.py sets placeholder keys, but smoke tests need real ones
-# Path: tests/smoke/retrieval/conftest.py -> parent.parent.parent = tests/ -> parent = backend/
-_env_file = Path(__file__).parent.parent.parent.parent / ".env"
-if not _env_file.exists():
-    # Try relative to backend/ (when running from backend dir)
-    _env_file = Path(__file__).parent.parent.parent / ".." / ".env"
-if _env_file.exists():
-    from dotenv import load_dotenv
-
-    # Override=True ensures we get real keys from .env, not placeholders
-    load_dotenv(_env_file, override=True)
 
 import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
+from app.services.embeddings_deterministic import DeterministicEmbeddingService  # noqa: E402
 from tests.smoke.retrieval.fixtures import FixtureLoader  # noqa: E402
 from tests.smoke.retrieval.metrics import MetricsCalculator  # noqa: E402
 
@@ -45,7 +29,6 @@ if TYPE_CHECKING:
 
     from app.models.analysis import Analysis
     from app.models.analysis_chunk import AnalysisChunk
-    from app.services.embeddings import EmbeddingService
     from app.services.search.search_service import SearchService
 
 
@@ -54,25 +37,6 @@ pytestmark = [
     pytest.mark.smoke,
     pytest.mark.retrieval,
 ]
-
-
-@pytest.fixture(autouse=True)
-def ensure_real_api_keys():
-    """Verify real API keys are available for smoke tests.
-
-    Smoke tests are marked with pytest.mark.smoke, which causes the main
-    conftest.py to skip setting placeholder OPENAI_API_KEY. This fixture
-    verifies that real keys from .env are available for live API calls.
-    """
-    from app.core.config import get_settings
-
-    # Clear settings cache to ensure fresh load from environment
-    get_settings.cache_clear()
-
-    # Refresh the module-level settings object
-    import app.core.config
-
-    app.core.config.settings = get_settings()
 
 
 @pytest.fixture(scope="module")
@@ -148,67 +112,10 @@ def coarse_to_fine_queries(fixture_loader: FixtureLoader):
     return fixture_loader.get_coarse_to_fine_queries()
 
 
-def requires_embedding_service():
-    """Check if embedding service is available.
-
-    Requires OpenAI API key for text-embedding-3-small.
-    """
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key or api_key.startswith("sk-test"):
-        return pytest.mark.skip(reason="OPENAI_API_KEY required for embedding service")
-    return pytest.mark.usefixtures()
-
-
 @pytest_asyncio.fixture
-async def embedding_service(ensure_real_api_keys) -> EmbeddingService:
-    """Create embedding service for tests.
-
-    Requires valid OpenAI API key from environment variable or .env file.
-    Directly reads the key and patches the settings module to bypass
-    any cached references to placeholder keys from test fixtures.
-    """
-    # First check environment variable (set by CI from GitHub Secrets)
-    api_key = os.environ.get("OPENAI_API_KEY")
-
-    # If not found or is placeholder, try .env file
-    if not api_key or api_key.startswith("sk-test"):
-        env_file = Path(__file__).parent.parent.parent.parent / ".env"
-        if not env_file.exists():
-            env_file = Path(__file__).parent.parent.parent / ".." / ".env"
-        if not env_file.exists():
-            env_file = Path(".env")
-
-        if env_file.exists():
-            from dotenv import dotenv_values
-
-            env_vars = dotenv_values(env_file)
-            api_key = env_vars.get("OPENAI_API_KEY")
-
-    if not api_key or api_key.startswith("sk-test"):
-        pytest.skip("Valid OPENAI_API_KEY required (env var or .env) for embedding service")
-
-    # CRITICAL: Must set OS env var AND patch app.core.config.settings
-    # because EmbeddingService imports settings at module level
-    os.environ["OPENAI_API_KEY"] = api_key
-
-    from app.core.config import get_settings
-
-    get_settings.cache_clear()
-
-    import app.core.config
-
-    app.core.config.settings = get_settings()
-
-    # Also reload the embeddings module to pick up new settings reference
-    import importlib
-
-    import app.services.embeddings
-
-    importlib.reload(app.services.embeddings)
-
-    from app.services.embeddings import EmbeddingService
-
-    return EmbeddingService()
+async def embedding_service() -> DeterministicEmbeddingService:
+    """Create deterministic embedding service for smoke tests (offline)."""
+    return DeterministicEmbeddingService()
 
 
 @pytest_asyncio.fixture

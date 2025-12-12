@@ -9,7 +9,7 @@ on:
       - 'backend/app/services/embeddings/**'
       - 'backend/app/services/search/**'
       - 'backend/tests/smoke/retrieval/**'
-      - 'backend/tests/fixtures/retrieval/**'
+      - 'backend/tests/smoke/retrieval/fixtures/**'
       - '.github/workflows/retrieval-smoke-tests.yml'
   push:
     branches: [main, dev]
@@ -18,15 +18,20 @@ on:
       - 'backend/app/services/retrieval/**'
       - 'backend/app/services/embeddings/**'
       - 'backend/app/services/search/**'
+      - 'backend/tests/smoke/retrieval/**'
   workflow_dispatch:
 
 permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: retrieval-smoke-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     # PostgreSQL service container with pgvector extension
@@ -53,18 +58,16 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: skillforge_test
-      # API keys (from GitHub secrets)
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       # Test configuration
       PYTHONUNBUFFERED: "1"
       PYTEST_TIMEOUT: "300"
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
           cache: 'pip'
@@ -89,8 +92,8 @@ jobs:
       - name: Cache test fixtures
         uses: actions/cache@v4
         with:
-          path: backend/tests/fixtures/retrieval/
-          key: retrieval-fixtures-${{ hashFiles('backend/tests/fixtures/retrieval/metadata.json') }}
+          path: backend/tests/smoke/retrieval/fixtures/
+          key: retrieval-fixtures-${{ hashFiles('backend/tests/smoke/retrieval/fixtures/documents.json', 'backend/tests/smoke/retrieval/fixtures/queries.json', 'backend/tests/smoke/retrieval/fixtures/documents_expanded.json', 'backend/tests/smoke/retrieval/fixtures/queries_expanded.json') }}
           restore-keys: |
             retrieval-fixtures-
 
@@ -168,6 +171,14 @@ jobs:
         run: |
           # Use --collect-only to list tests without running them (fast!)
           # The actual test results are already in the previous steps' logs
+          echo "Retrieval smoke tests completed at $(date -u +%Y-%m-%dT%H:%M:%SZ)" > test_summary.txt
+          echo "" >> test_summary.txt
+          echo "Categories: semantic, keyword, hybrid, coarse_to_fine" >> test_summary.txt
+          echo "" >> test_summary.txt
+          echo "Collected tests:" >> test_summary.txt
+          poetry run pytest tests/smoke/retrieval/ -m "smoke and retrieval" --collect-only -q 2>&1 | tail -30 >> test_summary.txt
+          echo "" >> test_summary.txt
+
           echo "## Retrieval Smoke Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Test Categories:**" >> $GITHUB_STEP_SUMMARY
@@ -184,7 +195,7 @@ jobs:
           echo "_See individual test step logs above for detailed results._" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: smoke-test-results
@@ -194,7 +205,7 @@ jobs:
           retention-days: 7
 
       - name: Comment PR with results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: github.event_name == 'pull_request' && always()
         continue-on-error: true  # Don't fail the workflow if commenting fails (permissions)
         with:

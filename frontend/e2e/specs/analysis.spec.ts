@@ -119,6 +119,9 @@ test.describe('Analysis Page - Progress Tracking', () => {
   });
 
   test('should track real-time progress updates', async ({ page, request }) => {
+    // Skip in CI - this test requires real-time LLM processing which takes longer than test timeout
+    test.skip(!!process.env.CI, 'Requires LLM for real-time progress tracking');
+
     // Create a new analysis to observe real-time updates
     const { analysis_id } = await createAnalysis(request);
 

@@ -8,15 +8,22 @@ on:
       - '.github/workflows/migrations-check.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: migrations-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-reversible:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
@@ -54,7 +61,7 @@ jobs:
           echo "All migrations appear to have downgrade functions"
 
   test-migrations:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -72,10 +79,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 

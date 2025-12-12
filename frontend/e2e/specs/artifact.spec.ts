@@ -44,6 +44,9 @@ test.describe('Artifact Page - Preview and Download', () => {
   });
 
   test('should display code blocks from markdown', async () => {
+    // Wait for markdown content to be visible first (artifact takes time to load)
+    await expect(artifactPage.markdownContent).toBeVisible({ timeout: 15000 });
+
     // Should have code blocks in the artifact
     const codeBlocks = artifactPage.codeBlocks;
     const count = await codeBlocks.count();

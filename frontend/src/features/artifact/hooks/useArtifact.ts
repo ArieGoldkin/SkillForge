@@ -34,6 +34,8 @@ export function useArtifact(artifactId: string | undefined): UseArtifactReturn {
     queryFn: () => fetchArtifact(artifactId!),
     enabled: !!artifactId,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 3, // Retry failed requests up to 3 times
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000), // Exponential backoff
   })
 
   const download = useCallback(() => {
