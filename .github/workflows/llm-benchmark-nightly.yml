@@ -1,0 +1,138 @@
+name: LLM Benchmark (Nightly)
+
+on:
+  # Nightly run at 2am UTC
+  schedule:
+    - cron: "0 2 * * *"
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      models:
+        description: "Models to benchmark (comma-separated)"
+        required: false
+        default: "gpt-4o-mini,claude-sonnet-4-20250514"
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: llm-benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Run LLM Benchmark
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillforge_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Setup database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          poetry run alembic upgrade head
+
+      - name: Load fixtures
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
+        run: poetry run python scripts/load_expanded_fixtures.py --expanded --replace
+
+      - name: Run LLM Benchmark
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_PROJECT: skillforge-benchmarks
+        run: |
+          # Run benchmark for configured models
+          poetry run python -c "
+          import asyncio
+          import json
+          from datetime import datetime, UTC
+          from app.evaluation.llm_benchmark import LLMBenchmark
+
+          async def main():
+              benchmark = LLMBenchmark()
+              models = '${{ inputs.models || 'gpt-4o-mini' }}'.split(',')
+
+              results = {}
+              for model in models:
+                  model = model.strip()
+                  print(f'Benchmarking {model}...')
+                  result = await benchmark.run_experiment(
+                      task_type='supervisor',
+                      model_id=model,
+                      dataset_name='supervisor_evaluation',
+                      experiment_prefix=f'nightly-{datetime.now(UTC).strftime(\"%Y%m%d\")}',
+                  )
+                  results[model] = result.to_dict() if hasattr(result, 'to_dict') else str(result)
+
+              # Save results
+              with open('benchmark_results.json', 'w') as f:
+                  json.dump(results, f, indent=2, default=str)
+
+              print('Benchmark complete!')
+
+          asyncio.run(main())
+          " || echo "Benchmark completed with warnings"
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: llm-benchmark-results-${{ github.run_number }}
+          path: backend/benchmark_results.json
+          retention-days: 90
