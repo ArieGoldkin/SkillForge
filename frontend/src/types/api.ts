@@ -9,6 +9,7 @@ export type AnalysisStatus =
   | 'running'
   | 'in-progress'
   | 'complete'
+  | 'completed' // Backend returns 'completed', normalized to 'complete' in api.service.ts
   | 'failed'
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
 

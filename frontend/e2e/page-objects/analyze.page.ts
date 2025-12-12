@@ -18,7 +18,7 @@ export class AnalyzePage extends BasePage {
     this.progressBar = page.getByRole('progressbar');
     this.stageIndicator = page.getByTestId('stage-indicator');
     this.statusText = page.getByTestId('status-text');
-    this.viewArtifactButton = page.getByRole('link', { name: /view.*artifact|view.*result/i });
+    this.viewArtifactButton = page.getByRole('link', { name: /view.*guide|view.*artifact|view.*result/i });
     this.errorMessage = page.getByRole('alert');
   }
 

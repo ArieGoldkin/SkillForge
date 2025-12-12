@@ -91,7 +91,11 @@ export function useAnalysisStatus({
   )
 
   const shouldConnect = Boolean(
-    analysisId && !completedParam && resolvedStatus !== 'complete' && resolvedStatus !== 'failed'
+    analysisId &&
+      !completedParam &&
+      resolvedStatus !== 'completed' &&
+      resolvedStatus !== 'complete' &&
+      resolvedStatus !== 'failed'
   )
 
   return {

@@ -29,8 +29,9 @@ test.describe('Analysis Page - Progress Tracking', () => {
     await analyzePage.goto(completed!.analysis_id);
 
     // Wait for any stage indicator to appear (completed analyses show final stage)
+    // Use .first() since multiple elements match the pattern
     await expect(
-      page.getByText(/extraction|processing|complete|analysis/i)
+      page.getByText(/extraction|processing|complete|analysis/i).first()
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -64,7 +65,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     await analyzePage.waitForComplete();
 
     // Find and click the view artifact button/link
-    const viewButton = page.getByRole('link', { name: /view.*artifact|view.*result|see.*result/i });
+    const viewButton = page.getByRole('link', { name: /view.*guide|view.*artifact|view.*result/i });
     if (await viewButton.isVisible()) {
       await viewButton.click();
       await expect(page).toHaveURL(/\/artifact\/.+/);
@@ -168,7 +169,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
 
     // Verify artifact link is available
     await expect(
-      page.getByRole('link', { name: /view.*artifact|view.*result|see.*result/i })
+      page.getByRole('link', { name: /view.*guide|view.*artifact|view.*result/i })
     ).toBeVisible();
   });
 });
