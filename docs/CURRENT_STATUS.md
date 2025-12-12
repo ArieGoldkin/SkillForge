@@ -1,17 +1,47 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 10, 2025
+**Date:** December 12, 2025
 **Branch:** `dev`
-**Sprint:** Sprint 8 - Embeddings & Search ✅ **COMPLETE**
-**Next Sprint:** Sprint 9 - MCP Consumer
+**Current Focus:** Sprint 13 - E2E Test Infrastructure 🔴 **BLOCKING**
+**Path to Launch:** E2E Tests → Evaluation → Tutoring → Deploy
 
 ---
 
-## 🗺️ Sprint Roadmap
+## 🗺️ Milestone Roadmap (Updated December 12, 2025)
 
 ```
-Sprint 8 (Current) → Sprint 9 (MCP Consumer) → Sprint 10 (Context Engineering) → Sprint 11 (Features) → Sprint 12 (MCP Server) → Testing
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        PATH TO PRODUCTION                                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  🔴 E2E Test Infrastructure  →  🟠 Evaluation Pipeline  →  🟡 Tutoring System   │
+│      Fix tests, seed data        Quality gates, CI/CD       Socratic workflow   │
+│      4 issues                    5 issues                   8 issues            │
+│                                                                                 │
+│                              →  🔵 Production Deployment  →  ⚪ MCP Server       │
+│                                  Railway + Supabase + Vercel  Post-launch       │
+│                                  20 issues                    5 issues          │
+│                                                                                 │
+│  📦 Content Expansion (Backlog) - YouTube & GitHub support                      │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Active Milestones
+
+| Milestone | Issues | Focus |
+|-----------|--------|-------|
+| 🔴 E2E Test Infrastructure | 4 | Seed data, SSE timeouts, race conditions |
+| 🟠 Evaluation Pipeline | 5 | CI/CD regression detection, quality gates |
+| 🟡 Tutoring System | 8 | Socratic workflow, SSE streaming |
+| 🔵 Production Deployment | 20 | Railway + Supabase + Vercel |
+| ⚪ MCP Server | 5 | Claude Code integration (post-launch) |
+| 📦 Content Expansion | 5 | YouTube & GitHub support (backlog) |
+
+### Completed
+- ✅ Sprints 1-8: Foundation → Embeddings & Search
+- ✅ MCP Consumer (PR #262)
+- ✅ Context Engineering (PR #265, #277)
 
 ---
 

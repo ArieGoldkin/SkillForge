@@ -425,140 +425,137 @@ logger.info(
 
 ---
 
-## 📅 Sprint Roadmap
+## 📅 Milestone Roadmap (Updated December 12, 2025)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        SKILLFORGE SPRINT PROGRESSION                             │
+│                        PATH TO PRODUCTION                                        │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
-│   Sprint 8 (Current)         Sprint 9              Sprint 10                    │
-│   ═══════════════════       ═════════════         ════════════════              │
-│   Embeddings & Search  →    MCP Consumer    →    Context Engineering           │
-│   • Hierarchical chunking   • MCP client         • Memory persistence          │
-│   • Semantic search         • Tool discovery     • Context injection           │
-│   • Re-ranker               • External MCPs      • Conversation threading      │
-│   • Smoke tests             • Context mgmt                                     │
+│  🔴 E2E Test Infrastructure  →  🟠 Evaluation Pipeline  →  🟡 Tutoring System   │
+│      Fix tests, seed data        Quality gates, CI/CD       Socratic workflow   │
+│      4 issues                    5 issues                   8 issues            │
 │                                                                                 │
-│             │                      │                      │                     │
-│             ▼                      ▼                      ▼                     │
+│                              →  🔵 Production Deployment  →  ⚪ MCP Server       │
+│                                  Railway + Supabase + Vercel  Post-launch       │
+│                                  20 issues                    5 issues          │
 │                                                                                 │
-│   Sprint 11                  Sprint 12               Testing                    │
-│   ════════════════          ════════════════         ════════════              │
-│   Features                   MCP Server        →    Deployment                 │
-│   • Tutoring refinement      • SkillForge as MCP    • E2E tests               │
-│   • Library enhancements     • Tool exposure        • Performance             │
-│   • Search optimization      • AI assistant APIs    • Production              │
+│  📦 Content Expansion (Backlog) - YouTube & GitHub support                      │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### **Sprint 8: Embeddings & Search** ✅ (CURRENT)
-**Goal:** Production-ready embedding pipeline and search infrastructure
+### 🔴 **E2E Test Infrastructure** (CURRENT - BLOCKING)
+**Goal:** Fix test infrastructure to enable deployment confidence
+
+**Issues:** #125, #278, #279, #280
 
 **Deliverables:**
-- ✅ Embedding pipeline hardening (batch processing, normalization)
-- ✅ Hierarchical chunking (coarse-to-fine retrieval)
-- ✅ Semantic + keyword + hybrid search APIs
-- ✅ Re-ranker implementation
-- ✅ PII/Safety guardrails for vectors
-- ✅ Retrieval smoke tests with IR metrics (Recall@k, MRR, NDCG)
+- Seed E2E test data with completed analysis & artifact
+- Fix SSE test timeouts
+- Resolve Library search race conditions
+- Playwright E2E test suite
 
-**Key Issues:**
-| # | Title | Status |
-|---|-------|--------|
-| 215 | Embedding Pipeline Hardening | ✅ Complete |
-| 216 | Retrieval & Search API | ✅ Complete |
-| 217 | Re-ranker | ✅ Complete |
-| 220 | PII/Safety Guardrails | ✅ Complete |
-| 221 | Hierarchical Chunking | ✅ Complete |
-| 223 | Retrieval Smoke Tests | ✅ Complete |
+**Definition of Done:**
+- All E2E tests pass reliably
+- CI can run tests without flakiness
 
 ---
 
-### **Sprint 9: MCP Consumer** 📥 (NEXT)
-**Goal:** Integrate SkillForge as MCP client to consume external tools
+### 🟠 **Evaluation Pipeline**
+**Goal:** Quality gates and regression detection for production
+
+**Issues:** #251, #256, #257, #258, #259
 
 **Deliverables:**
-- MCP client implementation for Claude Code integration
-- Tool discovery and registration system
-- External MCP server consumption (context7, memory, etc.)
-- Context window management and optimization
-- MCP transport layer (stdio, SSE)
+- CI/CD evaluation pipeline with regression detection
+- Human validation workflow for critical examples
+- Domain expansion (DevOps, Mobile, Cloud, AI/ML)
+- Cutting-edge topics (A2A, MCP, Context Engineering)
 
 **Definition of Done:**
-- SkillForge can connect to external MCP servers
-- Tools from external MCPs are discoverable and callable
-- Context is efficiently managed across MCP connections
+- Automated quality gates block regressions
+- Golden datasets cover all domains
+- Human review process documented
 
 ---
 
-### **Sprint 10: Context Engineering** 🧠
-**Goal:** Advanced context management for intelligent conversations
+### 🟡 **Tutoring System**
+**Goal:** Complete Socratic tutoring experience
+
+**Issues:** #74, #79, #113-116, #213, #214
 
 **Deliverables:**
-- Advanced context management system
-- Memory persistence across sessions
-- Dynamic context injection based on conversation state
-- Conversation threading and branching
-- Context summarization for long conversations
+- Tutor LangGraph workflow with SSE streaming
+- Tutoring API endpoints
+- TutorChat component with topic selection
+- Session persistence and resume
 
 **Definition of Done:**
-- Conversations maintain context across browser sessions
-- System can intelligently inject relevant context from history
-- Long conversations are summarized to fit context windows
+- Users can start tutoring from any analysis
+- Socratic dialogue adapts to understanding level
+- Sessions persist across browser sessions
 
 ---
 
-### **Sprint 11: Features - Tutoring & Library** 📚
-**Goal:** Refine core user-facing features
+### 🔵 **Production Deployment**
+**Goal:** Ship SkillForge to production
+
+**Issues:** #125-127, #134-142
 
 **Deliverables:**
-- Socratic tutoring system refinement
-- Knowledge library enhancements
-- Full-text + semantic search optimization
-- Topic extraction and filtering improvements
-- User progress tracking
+- Supabase project with PGVector
+- Railway backend deployment
+- Vercel frontend deployment
+- Environment configuration & secrets
+- Automated database migrations
+- Monitoring & alerting
 
 **Definition of Done:**
-- Tutoring adapts based on user understanding level
-- Library search returns relevant results in <500ms
-- Topics are accurately extracted and filterable
+- SkillForge accessible at production URL
+- All E2E tests pass in production
+- P95 latency <3 seconds
 
 ---
 
-### **Sprint 12: MCP Server** 📤
-**Goal:** Expose SkillForge as MCP server for external AI assistants
+### ⚪ **MCP Server** (Post-Launch)
+**Goal:** Expose SkillForge as MCP provider for AI assistants
+
+**Issues:** #237-241
 
 **Deliverables:**
-- SkillForge as MCP server provider
-- Tool exposure for external consumers
-- API integration for AI assistants (Claude Code, etc.)
-- Production-ready MCP endpoints
-- Documentation for MCP consumers
+- MCP server scaffold
+- Expose analysis tools via MCP
+- Expose resources and agent prompts
+- MCP integration documentation
 
 **Definition of Done:**
-- External AI assistants can call SkillForge tools via MCP
-- Analysis, tutoring, and library search available as MCP tools
-- Comprehensive documentation for integrators
+- Claude Code can call SkillForge tools
+- Documentation for integrators complete
 
 ---
 
-### **Testing & Deployment** 🚀
-**Goal:** Production-ready deployment with comprehensive testing
+### 📦 **Content Expansion** (Backlog)
+**Goal:** Support additional content types
+
+**Issues:** #77, #78, #121-123
 
 **Deliverables:**
-- E2E testing suite (Playwright)
-- Performance optimization
-- Production deployment (Vercel + Railway)
-- Monitoring & alerting (Sentry, Prometheus)
+- YouTube transcript extraction
+- GitHub repository analysis
+- Content type indicators in UI
 
-**Definition of Done:**
-- All E2E tests pass
-- P95 latency <3 seconds for analysis
-- <5% error rate in production
+---
+
+## ✅ Completed Milestones
+
+| Milestone | Status | Key PRs |
+|-----------|--------|---------|
+| Sprints 1-8 | ✅ Complete | Foundation → Embeddings & Search |
+| MCP Consumer | ✅ Complete | PR #262 (27 pts) |
+| Context Engineering | ✅ Complete | PR #265, #277 |
 
 ---
 
