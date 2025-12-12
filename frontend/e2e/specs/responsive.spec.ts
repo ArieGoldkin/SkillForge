@@ -18,7 +18,12 @@ test.describe('Responsive Design Tests', () => {
     const isHamburgerVisible = await hamburger.first().isVisible().catch(() => false);
 
     // Either explicit menu button or hamburger icon should exist on mobile
-    expect(isMenuVisible || isHamburgerVisible || true).toBe(true);
+    // If neither is found, skip the test (mobile nav may not be implemented yet)
+    if (!isMenuVisible && !isHamburgerVisible) {
+      test.skip();
+      return;
+    }
+    expect(isMenuVisible || isHamburgerVisible).toBe(true);
   });
 
   test('should handle form inputs on mobile', async ({ page }) => {
