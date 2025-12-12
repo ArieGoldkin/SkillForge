@@ -413,8 +413,12 @@ class Settings(BaseSettings):
     @field_validator("ENVIRONMENT")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        """Validate environment is one of allowed values."""
-        allowed = {"development", "staging", "production"}
+        """Validate environment is one of allowed values.
+
+        Note: 'e2e' is a special environment for end-to-end testing that
+        behaves like development but with E2E-specific configurations.
+        """
+        allowed = {"development", "staging", "production", "e2e"}
         if v not in allowed:
             msg = f"ENVIRONMENT must be one of {allowed}"
             raise ValueError(msg)
@@ -490,8 +494,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_llm_configuration(self) -> "Settings":
         """Ensure LLM provider/API key configuration is valid."""
-        # Skip validation in development if API key is not set (allows local dev without API keys)
-        if self.is_development():
+        # Skip validation in development/e2e if API key is not set (allows local dev without API keys)
+        if self.is_development() or self.is_e2e():
             return self
 
         provider = self.resolved_llm_provider()
@@ -515,6 +519,14 @@ class Settings(BaseSettings):
     def is_staging(self) -> bool:
         """Check if running in staging environment."""
         return self.ENVIRONMENT == "staging"
+
+    def is_e2e(self) -> bool:
+        """Check if running in E2E testing environment."""
+        return self.ENVIRONMENT == "e2e"
+
+    def is_non_production(self) -> bool:
+        """Check if running in any non-production environment (dev, e2e, staging)."""
+        return not self.is_production()
 
     def resolved_llm_provider(self) -> str:
         """Return canonical provider name for the configured LLM."""

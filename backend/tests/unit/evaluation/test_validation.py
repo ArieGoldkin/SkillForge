@@ -615,8 +615,9 @@ class TestRealQueryFixtureValidation:
         assert distribution_warning is not None, "Should include distribution summary"
 
         # Verify all difficulty levels are represented
+        # Distribution updated after q-sem-synonym changed from easy→medium (PR #288)
         assert "trivial: 3" in distribution_warning
-        assert "easy: 5" in distribution_warning
-        assert "medium: 6" in distribution_warning
+        assert "easy: 4" in distribution_warning
+        assert "medium: 7" in distribution_warning
         assert "hard: 3" in distribution_warning
         assert "adversarial: 4" in distribution_warning
