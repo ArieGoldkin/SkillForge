@@ -58,7 +58,7 @@ version: 4.0.0
 cd backend
 poetry run ruff format --check app/  # ⚠️ CI runs BOTH format AND lint!
 poetry run ruff check app/           # Lint check
-poetry run mypy app/ --ignore-missing-imports  # Type check
+poetry run mypy app/                          # Type check (config in pyproject.toml)
 
 # Frontend (TypeScript) - from frontend/ directory:
 cd frontend
