@@ -167,7 +167,52 @@ No errors - SSE events processed correctly.
 
 The agents receive empty `raw_content` because the workflow's context scoping intentionally reduces state size by 99% to save tokens, excluding `raw_content` from the scoped fields. This is expected behavior - agents should use `content_ref` to load content from artifacts. The fix ensures graceful degradation when content is unavailable.
 
+## E2E Test Gap Analysis
+
+### Why E2E Tests Didn't Catch These Bugs
+
+The E2E tests **intentionally disable** the real workflow execution:
+
+```yaml
+# docker-compose.e2e.yml line 58
+SKILLFORGE_E2E_DISABLE_WORKFLOW: "true"
+```
+
+This is checked in `backend/app/api/v1/analyze.py:172`:
+
+```python
+if os.environ.get("SKILLFORGE_E2E_DISABLE_WORKFLOW") == "true":
+    logger.info("analysis_workflow_skipped_for_e2e", ...)
+```
+
+### Impact on Bug Detection
+
+| Bug | Why Not Caught |
+|-----|----------------|
+| **#292 (Backend KeyError)** | Agent nodes never execute because workflow is disabled |
+| **#293 (Frontend SSE format)** | SSE error events never sent because no errors occur |
+
+### How E2E Tests Actually Work
+
+1. **Seeded Data**: `seed_e2e_fixture.py` creates a pre-completed analysis with artifact
+2. **No Real Workflow**: When `createAnalysis()` is called, it creates database record but skips LangGraph
+3. **Tests Use Seeded Data**: Most tests call `getCompletedAnalysis()` to get pre-seeded completed analysis
+4. **Real-time Test Skipped**: The `should track real-time progress updates` test has `test.skip(!!process.env.CI)`
+
+### Design Tradeoff
+
+The workflow is disabled for **cost control** - documented in docker-compose.e2e.yml:
+> "Allow the CI E2E suite to create analyses without triggering expensive workflows."
+
+### Recommendations for Future
+
+1. **Backend Integration Tests**: Add tests that run actual LangGraph workflow with test data
+2. **Smoke Test Mode**: Create fast workflow mode that executes all nodes with minimal LLM calls
+3. **Error Injection Tests**: Add tests that simulate empty `raw_content` to verify defensive handling
+4. **SSE Error Format Tests**: Add unit tests for `sseStoreHelpers.ts` covering both error formats
+
 ## Related Issues
 
-- Issue #292: https://github.com/owner/repo/issues/292
-- Issue #293: https://github.com/owner/repo/issues/293
+- Issue #292: https://github.com/ArieGoldkin/SkillForge/issues/292
+- Issue #293: https://github.com/ArieGoldkin/SkillForge/issues/293
+- PR #294: https://github.com/ArieGoldkin/SkillForge/pull/294
