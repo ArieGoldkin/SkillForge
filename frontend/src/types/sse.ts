@@ -72,8 +72,10 @@ export interface SSEErrorEvent {
   stage: string
   status: 'failed'
   timestamp: string
-  details: {
-    error: string
+  error?: string // Backend sends error at top level
+  details?: {
+    // Optional for backward compatibility
+    error?: string
     error_code?: string
     [key: string]: unknown
   }
