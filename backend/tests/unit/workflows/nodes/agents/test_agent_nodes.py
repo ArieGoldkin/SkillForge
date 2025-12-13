@@ -7,8 +7,16 @@ import pytest
 
 from app.workflows.nodes.agents.code_quality_critic_node import code_quality_critic_node
 from app.workflows.nodes.agents.dependency_mapper_node import dependency_mapper_node
-from app.workflows.nodes.agents.integration_feasibility_node import integration_feasibility_node
+from app.workflows.nodes.agents.implementation_planner_node import (
+    implementation_planner_node,
+)
+from app.workflows.nodes.agents.integration_feasibility_node import (
+    integration_feasibility_node,
+)
 from app.workflows.nodes.agents.performance_analyst_node import performance_analyst_node
+from app.workflows.nodes.agents.security_auditor_node import security_auditor_node
+from app.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
+from app.workflows.nodes.agents.trend_validator_node import trend_validator_node
 
 
 @pytest.fixture
@@ -222,3 +230,158 @@ class TestPerformanceAnalystNode:
 
         assert "analysis_id" in mock_run_tree.metadata
         assert "parallel-execution" in mock_run_tree.tags
+
+
+class TestSecurityAuditorNode:
+    """Tests for security_auditor_node."""
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    async def test_successful_execution(
+        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
+    ):
+        """Test successful agent execution."""
+        mock_get_tree.return_value = mock_run_tree
+        mock_runner.return_value = mock_agent_result
+
+        result = await security_auditor_node(mock_state)
+
+        assert "agent_findings" in result
+        assert result["agent_findings"] == [mock_agent_result]
+        mock_runner.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of exceptions."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = RuntimeError("Security audit failed")
+
+        result = await security_auditor_node(mock_state)
+
+        assert result == {"agent_findings": []}
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of cancellation."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = GeneratorExit()
+
+        result = await security_auditor_node(mock_state)
+
+        assert result == {"agent_findings": []}
+
+
+class TestTechComparatorNode:
+    """Tests for tech_comparator_node."""
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
+    @patch("app.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
+    async def test_successful_execution(
+        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
+    ):
+        """Test successful agent execution."""
+        mock_get_tree.return_value = mock_run_tree
+        mock_runner.return_value = mock_agent_result
+
+        result = await tech_comparator_node(mock_state)
+
+        assert "agent_findings" in result
+        assert result["agent_findings"] == [mock_agent_result]
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
+    @patch("app.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
+    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of exceptions."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = RuntimeError("Tech comparison failed")
+
+        result = await tech_comparator_node(mock_state)
+
+        assert result == {"agent_findings": []}
+
+
+class TestTrendValidatorNode:
+    """Tests for trend_validator_node."""
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
+    @patch("app.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
+    async def test_successful_execution(
+        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
+    ):
+        """Test successful agent execution."""
+        mock_get_tree.return_value = mock_run_tree
+        mock_runner.return_value = mock_agent_result
+
+        result = await trend_validator_node(mock_state)
+
+        assert "agent_findings" in result
+        assert result["agent_findings"] == [mock_agent_result]
+
+    @pytest.mark.asyncio
+    @patch("app.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
+    @patch("app.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
+    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of exceptions."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = RuntimeError("Trend validation failed")
+
+        result = await trend_validator_node(mock_state)
+
+        assert result == {"agent_findings": []}
+
+
+class TestImplementationPlannerNode:
+    """Tests for implementation_planner_node."""
+
+    @pytest.mark.asyncio
+    @patch(
+        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    )
+    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    async def test_successful_execution(
+        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
+    ):
+        """Test successful agent execution."""
+        mock_get_tree.return_value = mock_run_tree
+        mock_runner.return_value = mock_agent_result
+
+        result = await implementation_planner_node(mock_state)
+
+        assert "agent_findings" in result
+        assert result["agent_findings"] == [mock_agent_result]
+
+    @pytest.mark.asyncio
+    @patch(
+        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    )
+    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of exceptions."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = RuntimeError("Planning failed")
+
+        result = await implementation_planner_node(mock_state)
+
+        assert result == {"agent_findings": []}
+
+    @pytest.mark.asyncio
+    @patch(
+        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    )
+    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+        """Test graceful handling of cancellation."""
+        mock_get_tree.return_value = None
+        mock_runner.side_effect = GeneratorExit()
+
+        result = await implementation_planner_node(mock_state)
+
+        assert result == {"agent_findings": []}
