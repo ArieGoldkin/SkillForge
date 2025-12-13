@@ -35,8 +35,16 @@ async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
 
     """
     analysis_id = state["analysis_id"]
-    content = state["raw_content"]
+    content = state.get("raw_content", "")
     content_type = state["content_type"]
+
+    if not content:
+        logger.warning(
+            "agent_node_skipped_no_content",
+            agent_type="tech_comparator",
+            analysis_id=analysis_id,
+        )
+        return {"agent_findings": []}
 
     start_time = time.time()
 

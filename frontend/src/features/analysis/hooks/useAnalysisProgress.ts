@@ -93,7 +93,7 @@ function processEvents(events: SSEEvent[]): ProcessedEvents {
     processEvent(event, stageStatuses, state)
     if (isErrorEvent(event)) {
       hasError = true
-      errorMessage = event.details.error
+      errorMessage = event.error ?? event.details?.error
     }
   }
   markSkippedAgents(stageStatuses)
