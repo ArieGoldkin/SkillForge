@@ -353,8 +353,8 @@ describe('SSE Event Normalizer', () => {
 
       expect(normalized).not.toBeNull()
       if (normalized?.type === 'error') {
-        expect(normalized.details.error).toBe('Connection timeout')
-        expect(normalized.details.error_code).toBe('EXTRACTION_FAILED')
+        expect(normalized.details?.error).toBe('Connection timeout')
+        expect(normalized.details?.error_code).toBe('EXTRACTION_FAILED')
       }
     })
 
