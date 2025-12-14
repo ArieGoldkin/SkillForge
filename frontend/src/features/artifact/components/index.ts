@@ -9,3 +9,4 @@ export {
   ArtifactPreviewModal,
   type ArtifactPreviewModalProps,
 } from './ArtifactPreviewModal'
+export { TableOfContents, type TableOfContentsProps } from './TableOfContents'

@@ -1,29 +1,16 @@
 {
-  "version": "1.1.0",
-  "timestamp": "2025-12-14T00:00:00.000Z",
-  "session_id": "triple-consumer-docs-update-20251214",
+  "version": "1.0.6",
+  "timestamp": "2025-12-14T13:10:51.606603Z",
+  "session_id": "sprint-8-completion-20251210",
   "mode": "single_agent",
-  "current_milestone": {
-    "name": "Triple-Consumer Artifacts",
-    "github_milestone": 15,
-    "issues": "#299-304",
-    "status": "in_progress",
-    "started": "2025-12-14"
+  "current_sprint": {
+    "number": 8,
+    "name": "Embeddings & Search",
+    "total_points": 9,
+    "completed_points": 9,
+    "status": "complete",
+    "milestone_closed": "2025-12-10T17:38:33Z"
   },
-  "milestone_progression": [
-    { "name": "Triple-Consumer", "status": "current", "issues": "#299-304" },
-    { "name": "Tutoring", "status": "planned" },
-    { "name": "Evaluation", "status": "planned", "issues": "#257" },
-    { "name": "Content Expansion", "status": "planned" },
-    { "name": "Staging/Production", "status": "planned" },
-    { "name": "Voice Tutor", "status": "planned" },
-    { "name": "Multimodal", "status": "planned", "issues": "#309-339" },
-    { "name": "MCP Server", "status": "planned", "last": true }
-  ],
-  "completed_milestones": [
-    { "name": "E2E Test Infrastructure", "completed": "2025-12-13" },
-    { "name": "Sprint 8: Embeddings & Search", "completed": "2025-12-10" }
-  ],
   "agent_decisions": {
     "ai-ml-engineer": {
       "decision": "RESEARCH_COMPLETE",
@@ -39,16 +26,16 @@
       }
     },
     "code-quality-reviewer": {
-      "decision": "APPROVED",
-      "timestamp": "2025-12-04T09:56:57.739455Z",
-      "rationale": "Full-text search implementation is production-ready. Excellent security practices with parameterized SQL queries, comprehensive async/await patterns, and clean repository architecture. Only 4 auto-fixable documentation formatting issues in migration file.",
-      "quality_score": 8.7,
-      "blocking_issues": 0,
+      "decision": "BLOCKED",
+      "timestamp": "2025-12-14T13:09:30Z",
+      "rationale": "Artifact Quality Initiative has excellent TypeScript architecture, comprehensive tests (31/31 pass), and good performance. However, 3 accessibility violations (missing button types, SVG aria-hidden) BLOCK approval until fixed. Quick fixes (< 5 minutes) but critical for WCAG 2.1 compliance.",
+      "quality_score": 8.3,
+      "blocking_issues": 3,
       "issues_found": {
         "critical": 0,
         "high": 0,
-        "medium": 0,
-        "low": 4
+        "medium": 3,
+        "low": 2
       }
     },
     "ux-researcher": {
@@ -86,26 +73,27 @@
       "error": "TypeScript error: Property 'inline' does not exist on type 'ClassAttributes<HTMLElement> & HTMLAttributes<HTMLElement> & ExtraProps'"
     },
     "tests": {
-      "command": "npm test",
+      "command": "npm test TableOfContents && npm test MarkdownPreview",
       "exit_code": 0,
-      "tests_passed": 122,
+      "tests_passed": 31,
       "tests_failed": 0,
-      "timestamp": "2024-11-30T09:53:52Z",
+      "timestamp": "2025-12-14T13:09:08Z",
       "result": "PASS",
-      "note": "No component-specific tests for MarkdownPreview"
+      "note": "15 TableOfContents tests + 16 MarkdownPreview tests"
     },
     "linter": {
-      "command": "ruff check app/api/v1/library.py app/db/repositories/library_repository.py app/schemas/library.py alembic/versions/20251204091348_add_fulltext_search.py",
+      "command": "npm run quality:check",
       "exit_code": 1,
-      "lint_errors": 4,
-      "format_errors": 0,
-      "auto_fixable": 4,
-      "timestamp": "2025-12-04T09:56:57.739461Z",
-      "result": "PASS (4 auto-fixable formatting issues)",
-      "details": "Migration file has 4 docstring formatting violations (D400, D415, D202) - all auto-fixable"
+      "lint_errors": 5,
+      "accessibility_errors": 3,
+      "format_errors": 2,
+      "auto_fixable": 2,
+      "timestamp": "2025-12-14T13:08:49Z",
+      "result": "FAIL - 3 accessibility violations BLOCK approval",
+      "details": "TableOfContents.tsx has 3 a11y violations (button type, SVG aria-hidden)"
     },
     "security_scan": {
-      "command": "Manual SQL injection analysis + OWASP Top 10 review",
+      "command": "npm audit --audit-level=moderate",
       "exit_code": 0,
       "vulnerabilities": {
         "critical": 0,
@@ -113,17 +101,17 @@
         "moderate": 0,
         "low": 0
       },
-      "timestamp": "2025-12-04T09:56:57.739464Z",
+      "timestamp": "2025-12-14T13:08:49Z",
       "result": "PASS",
-      "details": "All FTS queries use parameterized SQLAlchemy functions (plainto_tsquery). No SQL injection vulnerabilities detected. All OWASP Top 10 categories passed."
+      "details": "No vulnerabilities found. Reviewed innerHTML usage in MermaidRenderer - acceptable with Mermaid.js sanitization."
     },
     "type_checker": {
-      "command": "mypy app/api/v1/library.py app/db/repositories/library_repository.py app/schemas/library.py alembic/versions/20251204091348_add_fulltext_search.py",
+      "command": "tsc --noEmit",
       "exit_code": 0,
       "type_errors": 0,
-      "timestamp": "2025-12-04T09:56:57.739462Z",
+      "timestamp": "2025-12-14T13:08:49Z",
       "result": "PASS",
-      "details": "All reviewed files pass mypy type checking"
+      "details": "All files pass TypeScript strict mode"
     }
   },
   "tasks_completed": [
@@ -220,6 +208,17 @@
         "with_embeddings": 0,
         "note": "Semantic search returns 0 results as expected - no embeddings populated"
       }
+    },
+    {
+      "task": "Code Quality Review - Artifact Quality Initiative",
+      "agent": "code-quality-reviewer",
+      "timestamp": "2025-12-14T13:09:30Z",
+      "status": "review_complete",
+      "approval": "BLOCKED",
+      "report_file": ".squad/sessions/role-comm-review.md",
+      "issues_found": 5,
+      "blocking_issues": 3,
+      "evidence_collected": true
     }
   ],
   "tasks_pending": [
@@ -403,7 +402,7 @@
         "rate_limiter": "Token bucket (10k TPM default, configurable per OpenAI tier)",
         "error_tracking": "Sliding window (60s) with 5% threshold",
         "batch_sizing": "Adaptive (20 initial, 1-100 range, 50% decrease on 429, 10% increase when healthy)",
-        "backoff_strategy": "Exponential with ±20% jitter (prevent thundering herd)",
+        "backoff_strategy": "Exponential with \u00b120% jitter (prevent thundering herd)",
         "guardrails": "Vector dimension validation + orphan chunk detection"
       },
       "metrics_tracked": [
@@ -425,7 +424,7 @@
         "rate_limit_enabled": true,
         "batch_size_initial": 20,
         "error_rate_threshold": 0.05,
-        "retry_jitter": "0.8-1.2 (±20%)",
+        "retry_jitter": "0.8-1.2 (\u00b120%)",
         "vector_dimension_check": true,
         "orphan_chunk_detection": true
       },
@@ -465,7 +464,7 @@
         "Phase 1 (Week 1): Regex detector only (WARN mode)",
         "Phase 2 (Week 2): Add Presidio detector (dev testing)",
         "Phase 3 (Week 3): Hybrid integration (staging deployment)",
-        "Phase 4 (Week 4): Production rollout (gradual: 10% → 50% → 100%)"
+        "Phase 4 (Week 4): Production rollout (gradual: 10% \u2192 50% \u2192 100%)"
       ],
       "configuration_knobs": {
         "PII_DETECTION_ENABLED": "Master on/off switch",

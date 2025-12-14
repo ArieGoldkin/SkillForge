@@ -1,6 +1,7 @@
 import type * as React from 'react'
 
 import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
 import { cn } from '@lib/utils'
@@ -57,7 +58,11 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
       {/* Content area with proper padding */}
       <div className="markdown-content-area">
         <div className="markdown-preview" data-testid="markdown-preview">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownRenderers}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={markdownRenderers}
+          >
             {content}
           </ReactMarkdown>
         </div>

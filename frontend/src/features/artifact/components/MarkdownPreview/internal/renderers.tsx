@@ -4,7 +4,10 @@ import type { Components } from 'react-markdown'
 
 import { cn } from '@lib/utils'
 
+import { slugify } from '../../TableOfContents/utils'
+
 import { CodeBlock } from './CodeBlock'
+import { MermaidRenderer } from './MermaidRenderer'
 import { ParagraphRenderer } from './ParagraphRenderer'
 
 type CodeRendererProps = React.HTMLAttributes<HTMLElement> & {
@@ -17,6 +20,7 @@ type CodeRendererProps = React.HTMLAttributes<HTMLElement> & {
 /**
  * Custom code renderer for ReactMarkdown
  * Renders code blocks with syntax highlighting, inline code as simple styled spans
+ * Special handling for Mermaid diagrams
  *
  * Detection logic for react-markdown v9+:
  * - Code blocks have className with "language-" prefix (from ```lang blocks)
@@ -51,6 +55,11 @@ export const CodeRenderer = ((rawProps: CodeRendererProps) => {
         {children}
       </code>
     )
+  }
+
+  // Handle Mermaid diagrams
+  if (language === 'mermaid') {
+    return <MermaidRenderer code={codeContent} />
   }
 
   return <CodeBlock code={codeContent} language={language} />
@@ -126,6 +135,61 @@ export const UnorderedListRenderer = ((rawProps: UnorderedListRendererProps) => 
     </ul>
   )
 }) satisfies NonNullable<Components['ul']>
+
+/**
+ * Extract text content from React children
+ */
+function getTextContent(children: React.ReactNode): string {
+  if (typeof children === 'string') {
+    return children
+  }
+  if (Array.isArray(children)) {
+    return children.map(getTextContent).join('')
+  }
+  if (
+    children &&
+    typeof children === 'object' &&
+    'props' in children &&
+    children.props &&
+    typeof children.props === 'object' &&
+    'children' in children.props
+  ) {
+    return getTextContent(children.props.children as React.ReactNode)
+  }
+  return ''
+}
+
+/**
+ * Heading renderer with auto-generated IDs for TOC linking
+ */
+type HeadingRendererProps = React.HTMLAttributes<HTMLHeadingElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+const createHeadingRenderer = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
+  const Component = ((rawProps: HeadingRendererProps) => {
+    const { children, node: _node, ...rest } = rawProps
+    const text = getTextContent(children)
+    const id = slugify(text)
+    const HeadingTag = `h${level}` as const
+
+    return (
+      <HeadingTag id={id} {...rest}>
+        {children}
+      </HeadingTag>
+    )
+  }) satisfies NonNullable<Components[`h${typeof level}`]>
+
+  return Component
+}
+
+export const H1Renderer = createHeadingRenderer(1)
+export const H2Renderer = createHeadingRenderer(2)
+export const H3Renderer = createHeadingRenderer(3)
+export const H4Renderer = createHeadingRenderer(4)
+export const H5Renderer = createHeadingRenderer(5)
+export const H6Renderer = createHeadingRenderer(6)
 
 // Re-export paragraph renderer
 export { ParagraphRenderer }

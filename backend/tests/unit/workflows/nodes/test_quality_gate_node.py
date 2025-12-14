@@ -358,28 +358,36 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
 
 @pytest.mark.asyncio
 async def test_should_retry_synthesis_max_retries():
-    """Test should_retry_synthesis returns continue after max retries."""
+    """Test should_retry_synthesis returns FAIL (fail-closed) after max retries.
+    
+    UPDATED: Previously expected 'continue' (fail-open).
+    Now expects 'fail' (fail-closed) to prevent shipping garbage artifacts.
+    """
     state: AnalysisState = {
         "analysis_id": "test-analysis-123",
         "quality_gate_passed": False,  # Gate failed
         "quality_gate_retry_count": MAX_RETRY_ATTEMPTS,  # At max retries
         "quality_gate_avg_score": 0.5,  # Low score
+        "quality_scores": {
+            "relevance": {"score": 0.4, "comment": "Low"},
+        },
     }
 
     with patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger:
         result = should_retry_synthesis(state)
 
-        # Should continue despite failed gate (fail open)
-        assert result == "continue"
+        # UPDATED: Should return "fail" (fail-closed), not "continue"
+        assert result == "fail"
 
-        # Verify warning was logged
-        mock_logger.warning.assert_called_once()
-        call_args = mock_logger.warning.call_args
-        assert call_args[0][0] == "quality_gate_max_retries_reached"
+        # Verify ERROR was logged (not warning)
+        mock_logger.error.assert_called_once()
+        call_args = mock_logger.error.call_args
+        assert call_args[0][0] == "quality_gate_max_retries_exhausted"
         kwargs = call_args[1]
         assert kwargs["retry_count"] == MAX_RETRY_ATTEMPTS
         assert kwargs["max_retries"] == MAX_RETRY_ATTEMPTS
         assert kwargs["avg_score"] == 0.5
+        assert "FAILING analysis" in kwargs["message"]
 
 
 @pytest.mark.asyncio

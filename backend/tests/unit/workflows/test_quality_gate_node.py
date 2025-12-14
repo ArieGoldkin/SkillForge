@@ -113,18 +113,29 @@ class TestShouldRetrySynthesis:
 
         assert result == "retry_synthesis"
 
-    def test_continue_when_max_retries_reached(self):
-        """Test that we continue when max retries reached."""
+    def test_fail_when_max_retries_reached(self):
+        """Test that we FAIL (fail-closed) when max retries reached.
+        
+        UPDATED: Previously expected 'continue' (fail-open).
+        Now expects 'fail' (fail-closed) to prevent shipping garbage artifacts.
+        """
+        from unittest.mock import patch
+        
         state: AnalysisState = {
             "analysis_id": "test-id",
             "quality_gate_passed": False,
             "quality_gate_retry_count": 2,  # MAX_RETRY_ATTEMPTS = 2
             "quality_gate_avg_score": 0.5,
+            "quality_scores": {
+                "relevance": {"score": 0.4, "comment": "Low"},
+            },
         }  # type: ignore
 
-        result = should_retry_synthesis(state)
+        with patch("app.workflows.nodes.quality_gate_node.logger"):
+            result = should_retry_synthesis(state)
 
-        assert result == "continue"
+            # UPDATED: Should return "fail" (fail-closed), not "continue"
+            assert result == "fail"
 
     def test_continue_when_no_gate_result(self):
         """Test that we continue when no gate result (defaults to passed)."""
