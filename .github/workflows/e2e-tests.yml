@@ -26,18 +26,8 @@ name: E2E Tests
 on:
   push:
     branches: [main, dev]
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - '.github/workflows/e2e-tests.yml'
-      - 'docker-compose.e2e.yml'
   pull_request:
     branches: [main, dev]
-    paths:
-      - 'frontend/**'
-      - 'backend/**'
-      - '.github/workflows/e2e-tests.yml'
-      - 'docker-compose.e2e.yml'
   workflow_dispatch:
     inputs:
       enable_llm_tests:
@@ -70,6 +60,37 @@ env:
   ENVIRONMENT: e2e
 
 jobs:
+  # ===========================================================================
+  # CHANGE DETECTION: Skip E2E for docs-only changes
+  # ===========================================================================
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      source_code: ${{ steps.filter.outputs.source_code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            source_code:
+              - 'frontend/src/**'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/vite.config.ts'
+              - 'frontend/playwright.config.ts'
+              - 'frontend/e2e/**'
+              - 'backend/app/**'
+              - 'backend/pyproject.toml'
+              - 'backend/poetry.lock'
+              - 'backend/alembic/**'
+              - '.github/workflows/e2e-tests.yml'
+              - 'docker-compose.e2e.yml'
+              - 'Dockerfile*'
+              # Explicitly exclude docs
+              - '!**/*.md'
+              - '!**/README*'
+
   # ===========================================================================
   # SECURITY GATE: Determine if secrets should be used
   # ===========================================================================
@@ -133,7 +154,11 @@ jobs:
   # ===========================================================================
   e2e-lightweight:
     runs-on: ubuntu-24.04
-    needs: security-check
+    needs: [changes, security-check]
+    # Skip E2E for docs-only changes (README, markdown files)
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.source_code == 'true'
     timeout-minutes: 20
 
     steps:
