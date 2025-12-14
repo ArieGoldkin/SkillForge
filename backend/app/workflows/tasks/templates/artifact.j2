@@ -1,22 +1,44 @@
+{# Issue #304: Triple-Purpose Artifact Template #}
+{# Serves: AI Coding Assistants, Tutor System, Human Readers #}
+
 # {{ analysis_metadata.title | default("Technical Analysis Artifact") }}
 
 **Source:** {{ analysis_metadata.url | default("N/A") }}
 **Generated:** {{ analysis_metadata.generated_date | default("N/A") }}
-**Analysis ID:** {{ analysis_metadata.analysis_id | default("N/A") }}
+**Analysis ID:** `{{ analysis_metadata.analysis_id | default("N/A") }}`
 
 ---
 
-{% if quick_reference %}
-## 📋 Quick Reference
+{# ================================================================ #}
+{# SECTION 1: TL;DR - Human scanning in 10-30 seconds              #}
+{# ================================================================ #}
 
-### At a Glance
+{% if aggregated_insights.tldr %}
+## TL;DR
+
+{{ aggregated_insights.tldr.summary }}
+
+**Key Takeaways:**
+{% for takeaway in aggregated_insights.tldr.key_takeaways %}
+- {{ takeaway }}
+{% endfor %}
+
+**Time to Implement:** {{ aggregated_insights.tldr.time_to_implement }}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 2: Quick Reference - Fast scanning for developers        #}
+{# ================================================================ #}
+
+{% if quick_reference %}
+## Quick Reference
+
 | Property | Value |
 |----------|-------|
 | **Technology** | `{{ quick_reference.primary_technology }}` |
 | **Complexity** | {{ quick_reference.complexity }} |
-{% if quick_reference.estimated_time %}
-| **Estimated Time** | {{ quick_reference.estimated_time }} |
-{% endif %}
 {% for prereq in quick_reference.prerequisites %}
 | **Prerequisite** | {{ prereq }} |
 {% endfor %}
@@ -28,18 +50,15 @@
 {% endfor %}
 ```
 
-### Files to Create/Modify
-{% for file in quick_reference.files_to_create %}
-- `{{ file }}`
-{% endfor %}
 {% if quick_reference.files_to_modify %}
+### Files to Create/Modify
 {% for file in quick_reference.files_to_modify %}
 - `{{ file }}`
 {% endfor %}
 {% endif %}
 
 {% if quick_reference.gotchas %}
-### ⚠️ Gotchas & Quick Fixes
+### Gotchas & Quick Fixes
 | Issue | Symptom | Quick Fix |
 |-------|---------|-----------|
 {% for gotcha in quick_reference.gotchas %}
@@ -50,13 +69,15 @@
 ---
 {% endif %}
 
+{# ================================================================ #}
+{# SECTION 3: Executive Summary & Key Findings                      #}
+{# ================================================================ #}
+
 ## Executive Summary
 
 {{ aggregated_insights.executive_summary | default("Analysis summary not available.") }}
 
----
-
-## Key Findings
+### Key Findings
 
 {% if aggregated_insights.key_findings %}
 {% for finding in aggregated_insights.key_findings %}
@@ -67,6 +88,81 @@
 {% endif %}
 
 ---
+
+{# ================================================================ #}
+{# SECTION 4: AI ASSISTANT PROMPT - For Claude Code, Cursor, etc.  #}
+{# ================================================================ #}
+
+{% if aggregated_insights.ai_assistant_prompt %}
+## AI Assistant Implementation Guide
+
+> **Copy this section** to use with Claude Code, Cursor, Copilot, or Windsurf for accurate code generation.
+
+### Context
+
+{{ aggregated_insights.ai_assistant_prompt.context }}
+
+### Implementation Steps
+
+{% for step in aggregated_insights.ai_assistant_prompt.implementation_steps %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+
+{% if aggregated_insights.ai_assistant_prompt.code_snippets %}
+### Code Snippets
+
+{% for name, code in aggregated_insights.ai_assistant_prompt.code_snippets.items() %}
+#### {{ name | replace('_', ' ') | title }}
+
+```python
+{{ code }}
+```
+
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.ai_assistant_prompt.file_structure %}
+### Expected File Structure
+
+| File | Responsibility |
+|------|---------------|
+{% for path, purpose in aggregated_insights.ai_assistant_prompt.file_structure.items() %}
+| `{{ path }}` | {{ purpose }} |
+{% endfor %}
+{% endif %}
+
+### Success Criteria
+
+{% for criterion in aggregated_insights.ai_assistant_prompt.success_criteria %}
+- [ ] {{ criterion }}
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 5: VISUAL DIAGRAMS - Mermaid for architecture/flow      #}
+{# ================================================================ #}
+
+{% if aggregated_insights.diagrams %}
+## Architecture & Flow Diagrams
+
+{% for diagram in aggregated_insights.diagrams %}
+### {{ diagram.title }}
+
+{{ diagram.description }}
+
+```mermaid
+{{ diagram.mermaid_code }}
+```
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 6: TECHNICAL ANALYSIS - Deep dive content               #}
+{# ================================================================ #}
 
 ## Technical Analysis
 
@@ -80,27 +176,143 @@
 
 ---
 
-## Recommendations
-
-{{ aggregated_insights.synthesis.recommendations | default("Recommendations not available.") }}
-
----
-
 ## Risk Assessment
 
 {{ aggregated_insights.synthesis.risk_assessment | default("Risk assessment not available.") }}
 
 ---
 
-## Claude Code Prompt
+## Recommendations
 
-```markdown
-{{ claude_code_prompt | default("# Implementation Guide\n\nUse the following analysis to guide your implementation:\n\n" + (aggregated_insights.executive_summary | default("Analysis not available."))) }}
-```
+{{ aggregated_insights.synthesis.recommendations | default("Recommendations not available.") }}
 
 ---
 
-## Agent Findings Summary
+{# ================================================================ #}
+{# SECTION 7: CORE CONCEPTS - For Tutor System curriculum          #}
+{# ================================================================ #}
+
+{% if aggregated_insights.core_concepts %}
+## Core Concepts
+
+{% for concept in aggregated_insights.core_concepts %}
+### {{ concept.name }}
+
+**Complexity:** {{ concept.complexity_level }}
+
+{{ concept.definition }}
+
+**Why It Matters:** {{ concept.why_it_matters }}
+
+{% if concept.related_concepts %}
+**Related:** {% for related in concept.related_concepts %}`{{ related }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 8: EXERCISES - Hands-on practice for learners           #}
+{# ================================================================ #}
+
+{% if aggregated_insights.exercises %}
+## Practice Exercises
+
+{% for exercise in aggregated_insights.exercises %}
+### {{ exercise.title }}
+
+**Difficulty:** {{ exercise.difficulty }}
+
+{{ exercise.description }}
+
+{% if exercise.hints %}
+<details>
+<summary>Hints (click to expand)</summary>
+
+{% for hint in exercise.hints %}
+{{ loop.index }}. {{ hint }}
+{% endfor %}
+
+</details>
+{% endif %}
+
+{% if exercise.solution %}
+<details>
+<summary>Solution (click to expand)</summary>
+
+```python
+{{ exercise.solution }}
+```
+
+</details>
+{% endif %}
+
+**Learning Objectives:** {% for obj in exercise.learning_objectives %}`{{ obj }}`{% if not loop.last %}, {% endif %}{% endfor %}
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 9: SELF-ASSESSMENT - Quiz for Tutor System              #}
+{# ================================================================ #}
+
+{% if aggregated_insights.self_assessment %}
+## Self-Assessment
+
+### Knowledge Check
+
+{% for q in aggregated_insights.self_assessment.quiz_questions %}
+**Q{{ loop.index }}:** {{ q.question }}
+
+{% for option in q.options %}
+- [ ] {{ option }}
+{% endfor %}
+
+<details>
+<summary>Answer</summary>
+
+**{{ q.correct_answer }}**
+
+{{ q.explanation }}
+
+</details>
+
+{% endfor %}
+
+### Mastery Checklist
+
+After completing this content, you should be able to:
+
+{% for skill in aggregated_insights.self_assessment.mastery_checklist %}
+- [ ] {{ skill }}
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 10: GLOSSARY - Quick term definitions                   #}
+{# ================================================================ #}
+
+{% if aggregated_insights.glossary %}
+## Glossary
+
+| Term | Definition |
+|------|------------|
+{% for term in aggregated_insights.glossary %}
+| **{{ term.term }}** | {{ term.definition }}{% if term.see_also %} _See also: {% for s in term.see_also %}{{ s }}{% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 11: AGENT FINDINGS - Detailed per-agent analysis        #}
+{# ================================================================ #}
+
+## Detailed Agent Findings
 
 {% if agent_findings %}
 {% for finding in agent_findings %}
@@ -117,17 +329,6 @@
 
 {% if finding.findings.alternatives %}
 **Alternatives:** {% for alt in finding.findings.alternatives %}`{{ alt }}`{% if not loop.last %}, {% endif %}{% endfor %}
-
-{% endif %}
-
-{% if finding.findings.comparison %}
-#### Technology Comparison
-
-| Technology | Pros | Cons | Use Cases |
-|------------|------|------|-----------|
-{% for tech_name, tech_data in finding.findings.comparison.items() %}
-| `{{ tech_name }}` | {{ tech_data.pros | join("; ") if tech_data.pros else "N/A" }} | {{ tech_data.cons | join("; ") if tech_data.cons else "N/A" }} | {{ tech_data.use_cases | join("; ") if tech_data.use_cases else "N/A" }} |
-{% endfor %}
 {% endif %}
 
 {% if finding.findings.security_risks %}
@@ -141,51 +342,16 @@
 {% endif %}
 
 {% if finding.findings.prerequisites %}
-**Prerequisites:**
-{% for prereq in finding.findings.prerequisites %}
-- `{{ prereq }}`
-{% endfor %}
-{% endif %}
-
-{% if finding.findings.steps %}
-**Implementation Steps:**
-{% for step in finding.findings.steps %}
-- [ ] **Step {{ step.step | default(loop.index) }}:** {{ step.action | default(step) }}{% if step.files %} _(Files: {% for f in step.files %}`{{ f }}`{% if not loop.last %}, {% endif %}{% endfor %})_{% endif %}
-
-{% endfor %}
+**Prerequisites:** {% for prereq in finding.findings.prerequisites %}`{{ prereq }}`{% if not loop.last %}, {% endif %}{% endfor %}
 {% endif %}
 
 {% if finding.findings.required_dependencies %}
 #### Required Dependencies
 
-| Package | Version | Purpose | Compatibility |
-|---------|---------|---------|---------------|
+| Package | Version | Purpose |
+|---------|---------|---------|
 {% for dep in finding.findings.required_dependencies %}
-| `{{ dep.name }}` | `{{ dep.version }}` | {{ dep.purpose }} | {{ dep.compatibility }} |
-{% endfor %}
-{% endif %}
-
-{% if finding.findings.optional_dependencies %}
-#### Optional Dependencies
-
-| Package | Version | Purpose | Compatibility |
-|---------|---------|---------|---------------|
-{% for dep in finding.findings.optional_dependencies %}
-| `{{ dep.name }}` | `{{ dep.version }}` | {{ dep.purpose }} | {{ dep.compatibility }} |
-{% endfor %}
-{% endif %}
-
-{% if finding.findings.version_conflicts %}
-**Version Conflicts:**
-{% for conflict in finding.findings.version_conflicts %}
-- ⚠️ {{ conflict }}
-{% endfor %}
-{% endif %}
-
-{% if finding.findings.peer_dependencies %}
-**Peer Dependencies:**
-{% for peer in finding.findings.peer_dependencies %}
-- `{{ peer }}`
+| `{{ dep.name }}` | `{{ dep.version }}` | {{ dep.purpose }} |
 {% endfor %}
 {% endif %}
 
@@ -201,43 +367,52 @@ No agent findings available.
 
 ---
 
-## Conflicts Resolved
+{# ================================================================ #}
+{# SECTION 12: CONFLICTS & CROSS-DOMAIN CONNECTIONS                #}
+{# ================================================================ #}
 
 {% if aggregated_insights.conflicts_resolved %}
+## Conflicts Resolved
+
 {% for conflict in aggregated_insights.conflicts_resolved %}
-### Conflict: {{ conflict.conflict | default("Unknown conflict") }}
-
-**Resolution:** {{ conflict.resolution | default("Not resolved") }}  
-**Priority Agent:** {{ conflict.priority_agent | default("N/A") }}  
-**Reasoning:** {{ conflict.reasoning | default("No reasoning provided") }}
-
+- **{{ conflict.conflict }}**
+  - Resolution: {{ conflict.resolution }}
+  - Priority Agent: {{ conflict.priority_agent }}
+  - Reasoning: {{ conflict.reasoning }}
 {% endfor %}
-{% else %}
-No conflicts detected or resolved.
+
+---
 {% endif %}
 
+{% if aggregated_insights.cross_domain_connections %}
+## Cross-Domain Insights
+
+{% for connection in aggregated_insights.cross_domain_connections %}
+- **{{ connection.domains | join(' + ') }}**: {{ connection.connection }}
+  _(Agents: {% for agent in connection.agents_involved %}{{ agent }}{% if not loop.last %}, {% endif %}{% endfor %})_
+{% endfor %}
+
 ---
+{% endif %}
 
-## Considerations & Risks
+{# ================================================================ #}
+{# SECTION 13: METADATA & REFERENCES                               #}
+{# ================================================================ #}
 
-{{ aggregated_insights.synthesis.risk_assessment | default("No specific risks identified.") }}
+## Analysis Metadata
 
----
-
-## References
-
-- **Source URL:** {{ analysis_metadata.url | default("N/A") }}
-- **Analysis Date:** {{ analysis_metadata.generated_date | default("N/A") }}
-- **Total Agents Executed:** {{ aggregated_insights.metadata.total_agents | default(0) }}
-- **Average Confidence:** {{ "%.2f" | format(aggregated_insights.metadata.confidence_avg | default(0.0)) }}
+| Property | Value |
+|----------|-------|
+| **Source URL** | {{ analysis_metadata.url | default("N/A") }} |
+| **Analysis Date** | {{ analysis_metadata.generated_date | default("N/A") }} |
+| **Coverage Score** | {{ "%.0f" | format((aggregated_insights.coverage_score | default(0)) * 100) }}% |
+| **Total Agents** | {{ aggregated_insights.metadata.total_agents | default(0) }} |
+| **Average Confidence** | {{ "%.2f" | format(aggregated_insights.metadata.confidence_avg | default(0.0)) }} |
 
 {% if aggregated_insights.metadata.agents_executed %}
-**Agents Involved:**
-{% for agent in aggregated_insights.metadata.agents_executed %}
-- `{{ agent }}`
-{% endfor %}
+**Agents Involved:** {% for agent in aggregated_insights.metadata.agents_executed %}`{{ agent }}`{% if not loop.last %}, {% endif %}{% endfor %}
 {% endif %}
 
 ---
 
-*This artifact was generated by SkillForge - an AI-powered research-to-implementation pipeline.*
+*This triple-purpose artifact was generated by SkillForge - serving AI assistants, tutoring systems, and human readers from a single source of truth.*
