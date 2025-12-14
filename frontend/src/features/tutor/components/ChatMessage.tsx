@@ -120,12 +120,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             {isUser ? (
               <span className="whitespace-pre-wrap">{content}</span>
             ) : (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none"
-              >
-                {content}
-              </ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              </div>
             )}
             {isStreaming && <StreamingCursor />}
           </div>
