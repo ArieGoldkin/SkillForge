@@ -13,9 +13,11 @@ export function MessagesArea({ messages, isPending }: MessagesAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when messages change or typing indicator appears
+  const messageCount = messages.length
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger on messageCount/isPending changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isPending])
+  }, [messageCount, isPending])
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-4" data-testid="message-list">
