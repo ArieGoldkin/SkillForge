@@ -172,4 +172,13 @@ export const mockTutoringAPI = {
       created_at: new Date().toISOString(),
     }
   },
+  endSession: async (sessionId: string): Promise<TutoringSession> => {
+    await delay(300)
+    return {
+      ...mockTutoringSession,
+      id: sessionId,
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    }
+  },
 }

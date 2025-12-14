@@ -1,6 +1,8 @@
 import type * as React from 'react'
 
 import { Bot, User } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { cn } from '@lib/utils'
 
@@ -113,9 +115,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               : 'bg-muted text-foreground rounded-tl-sm'
           )}
         >
-          {/* Content with proper whitespace handling */}
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {content}
+          {/* Content with markdown support for assistant messages */}
+          <div className="text-sm leading-relaxed">
+            {isUser ? (
+              <span className="whitespace-pre-wrap">{content}</span>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              </div>
+            )}
             {isStreaming && <StreamingCursor />}
           </div>
         </div>
