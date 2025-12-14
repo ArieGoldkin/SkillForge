@@ -130,9 +130,11 @@ class TestCreateSynthesisAgent:
         call_kwargs = mock_create_structured_agent.call_args.kwargs
 
         # Verify system_prompt was passed
+        # Issue #304: Prompt redesigned for triple-purpose artifacts
         assert "system_prompt" in call_kwargs
-        assert "synthesis" in call_kwargs["system_prompt"].lower()
-        assert "executive summary" in call_kwargs["system_prompt"].lower()
+        system_prompt_lower = call_kwargs["system_prompt"].lower()
+        assert "triple-purpose" in system_prompt_lower
+        assert "executive_summary" in system_prompt_lower  # Required section
 
         # Verify response_schema is AggregatedInsights
         assert "response_schema" in call_kwargs

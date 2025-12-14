@@ -417,16 +417,22 @@ class TestGFMTemplateRendering:
             "claude_code_prompt": "# Test prompt",
         }
 
-    def test_renders_tech_comparison_table(self, gfm_template_context):
-        """Test that tech comparison renders as markdown table."""
+    def test_renders_tech_comparator_findings(self, gfm_template_context):
+        """Test that tech comparator findings render with primary tech and alternatives.
+
+        Note: Issue #304 redesigned the template - tech comparison is now in
+        agent_findings section with primary_tech and alternatives list format.
+        """
         result = render_jinja_template("artifact.j2", gfm_template_context)
 
-        # Check table structure
-        assert "| Technology | Pros | Cons | Use Cases |" in result
-        assert "|------------|------|------|-----------|" in result
-        # Check inline code in table cells
-        assert "| `LangGraph` |" in result
-        assert "| `LangChain Agents` |" in result
+        # Check agent findings section renders tech comparator
+        assert "Tech Comparator" in result
+        # Check primary technology is rendered with inline code
+        assert "**Primary Technology:** `LangGraph`" in result
+        # Check alternatives are rendered with inline code
+        assert "`LangChain Agents`" in result
+        assert "`Temporal`" in result
+        assert "`Ray`" in result
 
     def test_renders_inline_code_for_tech_names(self, gfm_template_context):
         """Test that tech names use inline code formatting."""
@@ -439,17 +445,23 @@ class TestGFMTemplateRendering:
         assert "`Temporal`" in result
         assert "`Ray`" in result
 
-    def test_renders_task_list_for_implementation_steps(self, gfm_template_context):
-        """Test that implementation steps render as task list."""
+    def test_renders_implementation_planner_findings(self, gfm_template_context):
+        """Test that implementation planner findings render prerequisites.
+
+        Note: Issue #304 redesigned the template - implementation steps are now
+        in AI Assistant Prompt section as numbered list, not task checkboxes.
+        Prerequisites render as inline code in agent_findings section.
+        """
         result = render_jinja_template("artifact.j2", gfm_template_context)
 
-        # Check task list syntax
-        assert "- [ ] **Step 1:**" in result
-        assert "- [ ] **Step 2:**" in result
-        assert "- [ ] **Step 3:**" in result
-        # Check inline code for files
-        assert "`requirements.txt`" in result
-        assert "`config.py`" in result
+        # Check implementation planner section renders
+        assert "Implementation Planner" in result
+        # Check prerequisites are rendered with inline code
+        assert "`Python 3.11+`" in result
+        assert "`PostgreSQL 15+`" in result
+        assert "`Redis`" in result
+        # Check recommendation renders
+        assert "Follow steps in order" in result
 
     def test_renders_security_risks_table(self, gfm_template_context):
         """Test that security risks render as markdown table."""
@@ -466,18 +478,21 @@ class TestGFMTemplateRendering:
         assert "parameterized queries" in result
 
     def test_renders_dependency_tables(self, gfm_template_context):
-        """Test that dependencies render as markdown tables."""
+        """Test that dependencies render as markdown tables.
+
+        Note: Issue #304 redesigned the template - dependencies table has
+        3 columns (Package, Version, Purpose), not 4 (no Compatibility column).
+        """
         result = render_jinja_template("artifact.j2", gfm_template_context)
 
-        # Check required dependencies table
-        assert "| Package | Version | Purpose | Compatibility |" in result
+        # Check required dependencies table structure (3 columns)
+        assert "| Package | Version | Purpose |" in result
         assert "`langgraph`" in result
         assert "`fastapi`" in result
         assert "`^0.2.0`" in result
 
-        # Check optional dependencies table
-        assert "#### Optional Dependencies" in result
-        assert "`redis`" in result
+        # Note: Optional dependencies and version_conflicts sections
+        # were removed in Issue #304 template redesign
 
     def test_renders_inline_code_for_prerequisites(self, gfm_template_context):
         """Test that prerequisites use inline code formatting."""
@@ -487,19 +502,31 @@ class TestGFMTemplateRendering:
         assert "`PostgreSQL 15+`" in result
         assert "`Redis`" in result
 
-    def test_renders_version_conflicts_with_warning(self, gfm_template_context):
-        """Test that version conflicts are rendered with warning emoji."""
+    def test_renders_dependency_mapper_recommendation(self, gfm_template_context):
+        """Test that dependency mapper recommendation renders.
+
+        Note: Issue #304 redesigned the template - version conflicts and peer
+        dependencies sections were removed. Testing recommendation instead.
+        """
         result = render_jinja_template("artifact.j2", gfm_template_context)
 
-        assert "⚠️" in result
-        assert "numpy 1.x conflicts with pandas 2.x" in result
+        # Check dependency mapper section renders
+        assert "Dependency Mapper" in result
+        # Check recommendation renders
+        assert "Use exact versions in production" in result
 
-    def test_renders_peer_dependencies_with_inline_code(self, gfm_template_context):
-        """Test that peer dependencies use inline code formatting."""
+    def test_renders_confidence_scores(self, gfm_template_context):
+        """Test that confidence scores render for each agent.
+
+        Note: Added in Issue #304 - confidence scores with 2 decimal places.
+        """
         result = render_jinja_template("artifact.j2", gfm_template_context)
 
-        assert "`Node.js 18+`" in result
-        assert "`Python 3.11+`" in result
+        # Check confidence scores are rendered (format: "%.2f")
+        assert "**Confidence Score:** 0.92" in result  # tech_comparator
+        assert "**Confidence Score:** 0.88" in result  # security_auditor
+        assert "**Confidence Score:** 0.85" in result  # implementation_planner
+        assert "**Confidence Score:** 0.90" in result  # dependency_mapper
 
     def test_renders_agents_involved_with_inline_code(self, gfm_template_context):
         """Test that agents involved list uses inline code formatting."""
@@ -530,3 +557,595 @@ class TestGFMTemplateRendering:
         # Should still render without errors
         assert "Dependency Mapper" in result
         assert "`langgraph`" in result
+
+
+class TestTemplateSectionNullSafety:
+    """Test null safety guards for each template section."""
+
+    def test_tldr_section_null_safety(self):
+        """Test TLDR section with missing summary/key_takeaways."""
+        # Test 1: Empty TLDR should not render section
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "tldr": {},  # Empty TLDR
+                "executive_summary": "Summary",
+                "key_findings": ["Finding 1"],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Empty TLDR should not render section at all
+        assert "Test" in result
+        assert "## TL;DR" not in result
+
+        # Test 2: TLDR with only summary should render
+        context["aggregated_insights"]["tldr"] = {"summary": "Quick summary"}
+        result = render_jinja_template("artifact.j2", context)
+        assert "## TL;DR" in result
+        assert "Quick summary" in result
+
+    def test_quick_reference_null_safety(self):
+        """Test Quick Reference with missing fields."""
+        # Test 1: Empty quick reference should not render section
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "quick_reference": {},  # Empty quick reference
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Empty quick reference should not render section
+        assert "## Quick Reference" not in result
+
+        # Test 2: Quick reference with fields should render with N/A defaults
+        context["quick_reference"] = {"primary_technology": "Python"}
+        result = render_jinja_template("artifact.j2", context)
+        assert "## Quick Reference" in result
+        assert "Python" in result
+        assert "N/A" in result  # For missing complexity field
+
+    def test_ai_assistant_prompt_null_safety(self):
+        """Test AI Assistant Prompt with missing sections."""
+        # Test 1: Empty ai_assistant_prompt should not render section
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "ai_assistant_prompt": {
+                    # Missing context, implementation_steps, code_snippets, etc.
+                },
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Empty ai_assistant_prompt should not render section
+        assert "Test" in result
+        assert "## AI Assistant Implementation Guide" not in result
+
+        # Test 2: ai_assistant_prompt with context should render
+        context["aggregated_insights"]["ai_assistant_prompt"] = {"context": "Context for AI"}
+        result = render_jinja_template("artifact.j2", context)
+        assert "## AI Assistant Implementation Guide" in result
+        assert "Context for AI" in result
+
+    def test_diagrams_section_null_safety(self):
+        """Test Diagrams section with missing mermaid_code."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "diagrams": [
+                    {"title": "Architecture", "description": "System architecture"},
+                    # Missing mermaid_code
+                ],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render without errors
+        assert "## Architecture & Flow Diagrams" in result
+        assert "Architecture" in result
+
+    def test_core_concepts_null_safety(self):
+        """Test Core Concepts with missing fields."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "core_concepts": [
+                    {
+                        # Missing name, definition, complexity_level, etc.
+                    },
+                ],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with "Concept" default
+        assert "## Core Concepts" in result
+        assert "Concept" in result
+
+    def test_exercises_section_null_safety(self):
+        """Test Exercises with missing hints/solution."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "exercises": [
+                    {
+                        "title": "Practice Problem",
+                        # Missing hints, solution, learning_objectives
+                    },
+                ],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render without errors
+        assert "## Practice Exercises" in result
+        assert "Practice Problem" in result
+
+    def test_self_assessment_null_safety(self):
+        """Test Self Assessment with missing options/answers."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "self_assessment": {
+                    "quiz_questions": [
+                        {
+                            # Missing question, options, correct_answer
+                        },
+                    ],
+                },
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with "Question" default
+        assert "## Self-Assessment" in result
+        assert "Question" in result
+
+    def test_glossary_null_safety(self):
+        """Test Glossary with missing see_also."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "glossary": [
+                    {
+                        # Missing term, definition, see_also
+                    },
+                ],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with N/A defaults
+        assert "## Glossary" in result
+        assert "N/A" in result
+
+    def test_agent_findings_null_safety(self):
+        """Test Agent Findings with missing nested fields."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [
+                {
+                    # Missing agent_type, findings, confidence_score
+                },
+            ],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with "Unknown Agent" default
+        assert "## Detailed Agent Findings" in result
+        assert "Unknown Agent" in result
+
+    def test_conflicts_resolved_null_safety(self):
+        """Test Conflicts Resolved with missing resolution."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "conflicts_resolved": [
+                    {
+                        # Missing conflict, resolution, priority_agent, reasoning
+                    },
+                ],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with defaults
+        assert "## Conflicts Resolved" in result
+        assert "N/A" in result
+
+    def test_empty_aggregated_insights(self):
+        """Test completely empty insights dict."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {},
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render minimal artifact with defaults
+        assert "Test" in result
+        assert "## Executive Summary" in result
+        assert "Analysis summary not available." in result
+        assert "No key findings available." in result
+
+    def test_partial_synthesis_section(self):
+        """Test only some synthesis fields present."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+                "synthesis": {
+                    "technical_analysis": "Technical details here",
+                    # Missing implementation_guidance, risk_assessment, recommendations
+                },
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render available sections with "not available" for missing ones
+        assert "Technical details here" in result
+        assert "Implementation guidance not available." in result
+        assert "Risk assessment not available." in result
+        assert "Recommendations not available." in result
+
+    def test_security_risks_table_null_safety(self):
+        """Test Security Risks table with missing fields."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [
+                {
+                    "agent_type": "security_auditor",
+                    "findings": {
+                        "security_risks": [
+                            {
+                                # Missing risk_type, severity, description, mitigation
+                            },
+                        ],
+                    },
+                    "confidence_score": 0.8,
+                },
+            ],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render table with defaults
+        assert "## Detailed Agent Findings" in result
+        assert "Security Auditor" in result
+        assert "| Risk Type | Severity | Description | Mitigation |" in result
+        assert "Unknown" in result
+        assert "N/A" in result
+
+    def test_dependencies_table_null_safety(self):
+        """Test Dependencies table with missing fields."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [
+                {
+                    "agent_type": "dependency_mapper",
+                    "findings": {
+                        "required_dependencies": [
+                            {
+                                # Missing name, version, purpose
+                            },
+                        ],
+                    },
+                    "confidence_score": 0.8,
+                },
+            ],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render table with N/A defaults
+        assert "Dependency Mapper" in result
+        assert "| Package | Version | Purpose |" in result
+        assert "N/A" in result
+
+    def test_metadata_section_null_safety(self):
+        """Test Metadata section with missing fields."""
+        context = {
+            "analysis_metadata": {},  # Empty metadata
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render with N/A defaults
+        assert "## Analysis Metadata" in result
+        assert "N/A" in result
+
+    def test_full_artifact_generation(self):
+        """Test complete data renders all 13 sections."""
+        context = {
+            "analysis_metadata": {
+                "title": "Complete Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "tldr": {
+                    "summary": "Quick summary",
+                    "key_takeaways": ["Takeaway 1"],
+                    "time_to_implement": "2 hours",
+                },
+                "executive_summary": "Executive summary",
+                "key_findings": ["Finding 1"],
+                "synthesis": {
+                    "technical_analysis": "Technical details",
+                    "implementation_guidance": "Implementation guide",
+                    "risk_assessment": "Risk analysis",
+                    "recommendations": "Recommendations",
+                },
+                "ai_assistant_prompt": {
+                    "context": "Context for AI",
+                    "implementation_steps": ["Step 1"],
+                    "code_snippets": {"example": "print('hello')"},
+                    "success_criteria": ["Criterion 1"],
+                },
+                "diagrams": [{"title": "Diagram 1", "mermaid_code": "graph TD\nA-->B"}],
+                "core_concepts": [{"name": "Concept 1", "definition": "Definition"}],
+                "exercises": [{"title": "Exercise 1", "description": "Description"}],
+                "self_assessment": {
+                    "quiz_questions": [
+                        {"question": "Q1", "options": ["A", "B"], "correct_answer": "A"}
+                    ],
+                    "mastery_checklist": ["Skill 1"],
+                },
+                "glossary": [{"term": "Term 1", "definition": "Definition 1"}],
+                "conflicts_resolved": [{"conflict": "Conflict 1", "resolution": "Resolution 1"}],
+                "cross_domain_connections": [{"domains": ["A", "B"], "connection": "Connection"}],
+                "metadata": {
+                    "total_agents": 2,
+                    "agents_executed": ["agent1", "agent2"],
+                    "confidence_avg": 0.85,
+                },
+                "coverage_score": 0.95,
+            },
+            "quick_reference": {
+                "primary_technology": "Python",
+                "complexity": "Intermediate",
+                "prerequisites": ["Prereq 1"],
+            },
+            "agent_findings": [
+                {
+                    "agent_type": "tech_comparator",
+                    "findings": {"recommendation": "Recommendation"},
+                    "confidence_score": 0.9,
+                },
+            ],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Verify all major sections are present
+        assert "## TL;DR" in result
+        assert "## Quick Reference" in result
+        assert "## Executive Summary" in result
+        assert "## AI Assistant Implementation Guide" in result
+        assert "## Architecture & Flow Diagrams" in result
+        assert "## Technical Analysis" in result
+        assert "## Implementation Plan" in result
+        assert "## Risk Assessment" in result
+        assert "## Recommendations" in result
+        assert "## Core Concepts" in result
+        assert "## Practice Exercises" in result
+        assert "## Self-Assessment" in result
+        assert "## Glossary" in result
+        assert "## Detailed Agent Findings" in result
+        assert "## Conflicts Resolved" in result
+        assert "## Cross-Domain Insights" in result
+        assert "## Analysis Metadata" in result
+
+    def test_minimal_artifact_generation(self):
+        """Test minimal data renders gracefully."""
+        context = {
+            "analysis_metadata": {
+                "title": "Minimal",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render without errors
+        assert "Minimal" in result
+        assert "## Executive Summary" in result
+        assert "No key findings available." in result
+        assert "No agent findings available." in result
+
+    def test_artifact_metadata_always_present(self):
+        """Test header always renders."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Header should always be present
+        assert "# Test" in result
+        assert "**Source:** https://test.com" in result
+        assert "**Generated:** 2025-01-01" in result
+        assert "**Analysis ID:** `123`" in result
+
+    def test_artifact_footer_always_present(self):
+        """Test footer always renders."""
+        context = {
+            "analysis_metadata": {
+                "title": "Test",
+                "url": "https://test.com",
+                "generated_date": "2025-01-01",
+                "analysis_id": "123",
+            },
+            "aggregated_insights": {
+                "executive_summary": "Summary",
+                "key_findings": [],
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Footer should always be present
+        assert "This triple-purpose artifact was generated by SkillForge" in result
+
+    def test_artifact_no_jinja_errors(self):
+        """Test no Jinja2 UndefinedError is thrown."""
+        # Intentionally minimal context - everything optional should be missing
+        context = {
+            "analysis_metadata": {},
+            "aggregated_insights": {},
+            "agent_findings": [],
+        }
+
+        # This should not raise any exceptions
+        result = render_jinja_template("artifact.j2", context)
+
+        # Should render successfully
+        assert isinstance(result, str)
+        assert len(result) > 0
