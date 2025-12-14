@@ -110,7 +110,7 @@ const useDerivedState = ({
   return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
 }
 
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function, complexity -- Fatal error handling adds necessary complexity
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
@@ -156,6 +156,10 @@ export default function AnalyzeResult() {
     return <LoadingState />
   }
 
+  // Determine if this is a fatal error (no events received and connection failed)
+  const isFatalError =
+    (error || statusState.statusError || isFailed) && events.length === 0 && !isConnected
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <AnalysisHeader title="Content Analysis" url={id ? `Analysis ID: ${id}` : ''} />
@@ -164,18 +168,21 @@ export default function AnalyzeResult() {
         <ErrorAlert message={effectiveError} />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProgressColumn overallProgress={overallProgress} steps={steps} />
-        {isComplete || isResolvedComplete ? (
-          <AnalysisCompleteCard
-            artifactId={resolvedArtifactId || artifactId}
-            analysisId={id}
-            variant="column"
-          />
-        ) : (
-          <ActivityColumn activities={activities} isLive={isConnected} />
-        )}
-      </div>
+      {/* Only show progress UI if not a fatal error (i.e., we have some data or connection) */}
+      {!isFatalError && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ProgressColumn overallProgress={overallProgress} steps={steps} />
+          {isComplete || isResolvedComplete ? (
+            <AnalysisCompleteCard
+              artifactId={resolvedArtifactId || artifactId}
+              analysisId={id}
+              variant="column"
+            />
+          ) : (
+            <ActivityColumn activities={activities} isLive={isConnected} />
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -24,6 +24,7 @@ export function useLibrarySearch(params: LibrarySearchParams) {
     queryFn: () => analyzeAPI.searchLibrary(params),
     staleTime: 30 * 1000, // 30 seconds
     placeholderData: (previousData) => previousData, // Keep previous data while loading
+    retry: false, // Don't retry on failure - let user manually retry
   })
 }
 
@@ -56,5 +57,6 @@ export function useLibrarySearchInfinite(params: LibrarySearchParams) {
     },
     staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
+    retry: false, // Don't retry on failure - show error immediately with retry button
   })
 }

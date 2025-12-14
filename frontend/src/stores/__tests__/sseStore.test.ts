@@ -56,7 +56,7 @@ describe('SSE Store', () => {
   beforeEach(() => {
     mockInstance = null
     vi.stubGlobal('EventSource', MockEventSource)
-    vi.stubEnv('VITE_API_URL', 'http://localhost:8000')
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8000')
     useSSEStore.getState().reset()
   })
 
