@@ -1,4 +1,12 @@
-"""Aggregated insights schema for synthesis output."""
+"""Aggregated insights schema for synthesis output.
+
+Enhanced for triple-purpose consumption:
+1. AI Coding Assistants (Claude Code, Cursor, Windsurf, Copilot)
+2. Tutor System (syllabus generation, lessons, exercises)
+3. Human Readers (documentation, learning, reference)
+
+Related: Issue #302 - Triple-Purpose Schema Enhancement
+"""
 
 from pydantic import BaseModel, Field
 
@@ -122,6 +130,347 @@ class CrossDomainConnection(BaseModel):
     )
 
 
+class TLDRSection(BaseModel):
+    """Executive summary optimized for human scanning (10-30 seconds).
+
+    Provides immediate value for busy developers and learners who need
+    to quickly assess whether the content is relevant to their needs.
+    """
+
+    summary: str = Field(
+        description=(
+            "2-3 sentence overview of what this content teaches. "
+            "Focus on the 'what' and 'why', not the 'how'. "
+            "Example: 'This guide teaches vector database optimization for RAG systems. "
+            "You will learn how to reduce latency by 60% through proper indexing and chunking strategies.'"
+        ),
+        min_length=50,
+        max_length=500,
+    )
+    key_takeaways: list[str] = Field(
+        description=(
+            "3-5 concrete outcomes or skills the reader will gain. "
+            "Each should be specific and measurable. "
+            "Example: 'Build a production-ready RAG pipeline with <200ms query latency'"
+        ),
+        min_length=3,
+        max_length=5,
+    )
+    time_to_implement: str = Field(
+        description=(
+            "Realistic time estimate with breakdown. "
+            "Format: 'Total time (breakdown)'. "
+            "Example: '4-6 hours (2h setup, 2h implementation, 1-2h testing)'"
+        ),
+        min_length=10,
+        max_length=100,
+    )
+
+
+class CoreConcept(BaseModel):
+    """Fundamental concept with learning-oriented context.
+
+    Designed for both human understanding and AI assistant context building.
+    Each concept includes pedagogical metadata for tutorial generation.
+    """
+
+    name: str = Field(
+        description="Concept name, clear and searchable (e.g., 'Semantic Chunking')",
+        min_length=2,
+        max_length=100,
+    )
+    definition: str = Field(
+        description=(
+            "Clear, jargon-free explanation of the concept. "
+            "Assume intelligent reader but no prior knowledge of this specific topic. "
+            "2-3 sentences maximum."
+        ),
+        min_length=50,
+        max_length=500,
+    )
+    why_it_matters: str = Field(
+        description=(
+            "Practical importance and real-world impact. "
+            "Answers: 'Why should I learn this?' "
+            "Example: 'Improves retrieval accuracy by 40% compared to fixed-size chunks'"
+        ),
+        min_length=30,
+        max_length=300,
+    )
+    related_concepts: list[str] = Field(
+        description=(
+            "Connected concepts for knowledge graph building. "
+            "Max 5 related topics that learners should explore. "
+            "Example: 'Vector Embeddings', 'Cosine Similarity', 'Context Windows'"
+        ),
+        max_length=5,
+        default_factory=list,
+    )
+    complexity_level: str = Field(
+        description=(
+            "Learning difficulty level. "
+            "Options: 'Beginner', 'Intermediate', 'Advanced', 'Expert'. "
+            "Helps tutor system sequence concepts appropriately."
+        ),
+        pattern="^(Beginner|Intermediate|Advanced|Expert)$",
+    )
+
+
+class AIAssistantPrompt(BaseModel):
+    """Pre-formatted prompt for AI coding assistants (Claude, Cursor, Copilot).
+
+    Provides context and scaffolding that AI assistants need to generate
+    correct, production-ready code on first attempt.
+    """
+
+    context: str = Field(
+        description=(
+            "Background information and architectural context. "
+            "Explains 'where this fits' in the larger system. "
+            "Example: 'This RAG pipeline runs in a FastAPI async endpoint, "
+            "querying PostgreSQL with pgvector extension for semantic search.'"
+        ),
+        min_length=50,
+        max_length=1000,
+    )
+    implementation_steps: list[str] = Field(
+        description=(
+            "Ordered implementation checklist, each step actionable. "
+            "Format: Imperative commands (e.g., 'Create', 'Install', 'Configure'). "
+            "5-10 steps maximum for manageable scope."
+        ),
+        min_length=5,
+        max_length=10,
+    )
+    code_snippets: dict[str, str] = Field(
+        description=(
+            "Key code examples by purpose, not by file. "
+            "Keys: descriptive names (e.g., 'vector_search_query', 'embedding_function'). "
+            "Values: Complete, runnable code snippets with comments. "
+            "Max 5 snippets to avoid overwhelming the context window."
+        ),
+        default_factory=dict,
+    )
+    file_structure: dict[str, str] = Field(
+        description=(
+            "Expected file tree with purpose annotations. "
+            "Keys: file paths (e.g., 'app/services/rag.py'). "
+            "Values: one-line description of file's responsibility. "
+            "Helps AI assistants understand module boundaries."
+        ),
+        default_factory=dict,
+    )
+    success_criteria: list[str] = Field(
+        description=(
+            "Testable outcomes to verify correct implementation. "
+            "Each criterion should be specific and verifiable. "
+            "Example: 'Query latency <200ms for 1000 document corpus', "
+            "'Recall@10 >0.85 on golden dataset'"
+        ),
+        min_length=3,
+        max_length=7,
+    )
+
+
+class QuizQuestion(BaseModel):
+    """Multiple-choice or true/false question for self-assessment.
+
+    Used by tutor system to generate quizzes and validate understanding.
+    """
+
+    question: str = Field(
+        description="Clear, unambiguous question testing a specific concept",
+        min_length=10,
+        max_length=300,
+    )
+    options: list[str] = Field(
+        description=(
+            "Answer choices (2-5 options). "
+            "For true/false, use ['True', 'False']. "
+            "For multiple choice, include plausible distractors."
+        ),
+        min_length=2,
+        max_length=5,
+    )
+    correct_answer: str = Field(
+        description=(
+            "The correct option (must exactly match one of the options). "
+            "Example: 'True' or 'Semantic chunking improves retrieval accuracy'"
+        ),
+        min_length=1,
+        max_length=300,
+    )
+    explanation: str = Field(
+        description=(
+            "Why this answer is correct and others are wrong. "
+            "Provides learning moment even for correct answers. "
+            "2-3 sentences maximum."
+        ),
+        min_length=30,
+        max_length=500,
+    )
+
+
+class Exercise(BaseModel):
+    """Hands-on coding exercise with scaffolding and solution.
+
+    Bridges theory to practice with guided implementation tasks.
+    Includes difficulty rating for progressive skill building.
+    """
+
+    title: str = Field(
+        description="Clear, action-oriented title (e.g., 'Build a Semantic Search API')",
+        min_length=5,
+        max_length=100,
+    )
+    difficulty: str = Field(
+        description="Exercise difficulty level (same scale as CoreConcept.complexity_level)",
+        pattern="^(Beginner|Intermediate|Advanced|Expert)$",
+    )
+    description: str = Field(
+        description=(
+            "What the learner will build and why. "
+            "Include specific technologies and expected outcome. "
+            "Example: 'Build a FastAPI endpoint that performs semantic search "
+            "over 1000 documents using pgvector, returning top 10 results in <200ms.'"
+        ),
+        min_length=50,
+        max_length=1000,
+    )
+    hints: list[str] = Field(
+        description=(
+            "Progressive hints that guide without spoiling. "
+            "Order from high-level strategy to implementation details. "
+            "3-5 hints maximum."
+        ),
+        min_length=3,
+        max_length=5,
+        default_factory=list,
+    )
+    solution: str = Field(
+        description=(
+            "Complete, working solution with explanatory comments. "
+            "Should be copy-paste runnable. "
+            "Optional field - exercises can omit solution for discovery learning."
+        ),
+        default="",
+    )
+    learning_objectives: list[str] = Field(
+        description=(
+            "Specific skills or concepts this exercise reinforces. "
+            "Maps to CoreConcept entries for curriculum tracking. "
+            "Example: 'Async database queries', 'Vector similarity search', 'API pagination'"
+        ),
+        min_length=2,
+        max_length=5,
+    )
+
+
+class MermaidDiagram(BaseModel):
+    """Mermaid.js diagram for visual explanation of architecture or flow.
+
+    Supports multiple diagram types for different learning needs.
+    Rendered by frontend and included in documentation.
+    """
+
+    title: str = Field(
+        description="Descriptive title for the diagram (e.g., 'RAG Pipeline Data Flow')",
+        min_length=5,
+        max_length=100,
+    )
+    type: str = Field(
+        description=(
+            "Mermaid diagram type. "
+            "Options: 'flowchart', 'sequence', 'class', 'state', 'er' (entity-relationship), 'gantt'. "
+            "Choose based on what you're explaining (flow=process, sequence=interactions, class=structure)."
+        ),
+        pattern="^(flowchart|sequence|class|state|er|gantt)$",
+    )
+    mermaid_code: str = Field(
+        description=(
+            "Valid Mermaid.js syntax for the diagram. "
+            "Must be syntactically correct - will be rendered directly. "
+            "Example:\n"
+            "flowchart TD\n"
+            "    A[User Query] --> B[Embedding Model]\n"
+            "    B --> C[Vector Search]\n"
+            "    C --> D[Results]"
+        ),
+        min_length=20,
+    )
+    description: str = Field(
+        description=(
+            "Text explanation of what the diagram shows. "
+            "Provides accessibility and context. "
+            "2-3 sentences."
+        ),
+        min_length=30,
+        max_length=500,
+    )
+
+
+class SelfAssessment(BaseModel):
+    """Self-assessment tools for learner progress tracking.
+
+    Combines quiz questions with skill checklists for comprehensive evaluation.
+    Used by tutor system to adapt lesson difficulty and recommend next steps.
+    """
+
+    quiz_questions: list[QuizQuestion] = Field(
+        description=(
+            "Multiple-choice or true/false questions testing key concepts. "
+            "5-10 questions covering the full content scope. "
+            "Mix difficulty levels for comprehensive assessment."
+        ),
+        min_length=5,
+        max_length=10,
+    )
+    mastery_checklist: list[str] = Field(
+        description=(
+            "Skills the learner should be able to demonstrate after completing this content. "
+            "Each item should be specific and testable. "
+            "Example: 'Explain the trade-offs between semantic and keyword search', "
+            "'Implement vector similarity search with <200ms latency', "
+            "'Debug common pgvector configuration issues'"
+        ),
+        min_length=5,
+        max_length=10,
+    )
+
+
+class GlossaryTerm(BaseModel):
+    """Technical term definition for quick reference and search.
+
+    Builds a searchable knowledge base and supports AI assistant context.
+    Cross-references enable knowledge graph navigation.
+    """
+
+    term: str = Field(
+        description="The technical term or acronym (e.g., 'RAG', 'pgvector', 'Embedding')",
+        min_length=1,
+        max_length=100,
+    )
+    definition: str = Field(
+        description=(
+            "Clear, concise definition (1-2 sentences). "
+            "Avoid circular definitions - explain in simpler terms. "
+            "Example: 'RAG (Retrieval Augmented Generation): A technique that enhances LLM "
+            "responses by retrieving relevant context from a knowledge base before generating output.'"
+        ),
+        min_length=20,
+        max_length=500,
+    )
+    see_also: list[str] = Field(
+        description=(
+            "Related terms for knowledge graph connections. "
+            "Max 5 related terms that provide additional context. "
+            "Example: 'Vector Embeddings', 'Semantic Search', 'LangChain'"
+        ),
+        max_length=5,
+        default_factory=list,
+    )
+
+
 class Synthesis(BaseModel):
     """Synthesized insights from all agents."""
 
@@ -157,8 +506,14 @@ class AggregatedInsights(BaseModel):
     This schema defines the output structure for the aggregator node,
     which synthesizes findings from all 8 specialized agents into a
     cohesive, actionable narrative.
+
+    Enhanced in v2.0 (Issue #302) to serve three audiences:
+    1. AI Coding Assistants - Pre-formatted prompts, code snippets, file structure
+    2. Tutor System - Core concepts, exercises, quizzes, learning objectives
+    3. Human Readers - TLDR sections, glossary, visual diagrams
     """
 
+    # Original fields (backward compatible)
     quick_reference: QuickReference | None = Field(
         description=(
             "Quick Reference section with critical information for fast scanning. "
@@ -201,4 +556,69 @@ class AggregatedInsights(BaseModel):
         ge=0.0,
         le=1.0,
         default=0.0,
+    )
+
+    # NEW: Human Reader Enhancement (Issue #302)
+    tldr: TLDRSection | None = Field(
+        description=(
+            "Executive summary optimized for human scanning (10-30 seconds). "
+            "Provides immediate value assessment with key takeaways and time estimates. "
+            "Optional - populated by aggregator when generating learning-oriented artifacts."
+        ),
+        default=None,
+    )
+
+    # NEW: Tutor System Support (Issue #302)
+    core_concepts: list[CoreConcept] = Field(
+        description=(
+            "Fundamental concepts with pedagogical metadata. "
+            "Used by tutor system for curriculum sequencing and knowledge graph building. "
+            "Each concept includes complexity level, related topics, and learning context."
+        ),
+        default_factory=list,
+    )
+    exercises: list[Exercise] = Field(
+        description=(
+            "Hands-on coding exercises with progressive difficulty. "
+            "Bridges theory to practice with hints, solutions, and learning objectives. "
+            "Tutor system uses these to generate practice sessions."
+        ),
+        default_factory=list,
+    )
+    self_assessment: SelfAssessment | None = Field(
+        description=(
+            "Quiz questions and mastery checklist for progress tracking. "
+            "Enables tutor system to validate understanding and adapt lesson difficulty. "
+            "Optional - included when aggregator generates comprehensive learning artifacts."
+        ),
+        default=None,
+    )
+
+    # NEW: AI Assistant Optimization (Issue #302)
+    ai_assistant_prompt: AIAssistantPrompt | None = Field(
+        description=(
+            "Pre-formatted context for AI coding assistants (Claude, Cursor, Copilot). "
+            "Includes architectural context, implementation steps, code snippets, file structure. "
+            "Optimized for one-shot code generation with high accuracy. "
+            "Optional - populated when artifact contains actionable implementation guidance."
+        ),
+        default=None,
+    )
+
+    # NEW: Visual & Reference Materials (Issue #302)
+    diagrams: list[MermaidDiagram] = Field(
+        description=(
+            "Mermaid.js diagrams for visual explanation (flowcharts, sequences, architecture). "
+            "Supports multiple diagram types for different learning needs. "
+            "Rendered by frontend and included in documentation exports."
+        ),
+        default_factory=list,
+    )
+    glossary: list[GlossaryTerm] = Field(
+        description=(
+            "Technical term definitions with cross-references. "
+            "Builds searchable knowledge base and supports AI assistant context. "
+            "Enables knowledge graph navigation through see_also links."
+        ),
+        default_factory=list,
     )

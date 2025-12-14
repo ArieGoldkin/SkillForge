@@ -111,6 +111,9 @@ async def run_integration_feasibility(
     skill_level = state.get("skill_level", "intermediate")
     skill_instructions = get_skill_level_instructions(skill_level)
 
+    # Issue #300: Get proactive context from state
+    proactive_context = state.get("proactive_context", "")
+
     # Build prompt with skill level instructions
     full_prompt = f"{INTEGRATION_FEASIBILITY_PROMPT}\n\n{skill_instructions}"
 
@@ -121,6 +124,7 @@ async def run_integration_feasibility(
     )
 
     # Run agent with tracking and persistence
+    # Issue #300: Pass proactive context for memory-enhanced analysis
     return await run_agent_with_tracking(
         agent=agent,
         content=content,
@@ -128,4 +132,5 @@ async def run_integration_feasibility(
         analysis_id=analysis_id,
         agent_type="integration_feasibility",
         session=session,
+        proactive_context=proactive_context,
     )

@@ -101,6 +101,9 @@ async def run_code_quality_critic(
     skill_level = state.get("skill_level", "intermediate")
     skill_instructions = get_skill_level_instructions(skill_level)
 
+    # Issue #300: Get proactive context from state
+    proactive_context = state.get("proactive_context", "")
+
     # Build prompt with skill level instructions
     full_prompt = f"{CODE_QUALITY_CRITIC_PROMPT}\n\n{skill_instructions}"
 
@@ -111,6 +114,7 @@ async def run_code_quality_critic(
     )
 
     # Run agent with tracking and persistence
+    # Issue #300: Pass proactive context for memory-enhanced analysis
     return await run_agent_with_tracking(
         agent=agent,
         content=content,
@@ -118,4 +122,5 @@ async def run_code_quality_critic(
         analysis_id=analysis_id,
         agent_type="code_quality_critic",
         session=session,
+        proactive_context=proactive_context,
     )
