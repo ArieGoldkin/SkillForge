@@ -265,6 +265,51 @@ OPENAI_API_KEY=sk-...
 
 See `.env.example` for complete configuration options and verified November 2025 pricing.
 
+### API Key Requirements by Environment
+
+The application validates API key configuration at startup and logs which providers are available.
+
+| Environment | Required Keys | Optional Keys | Validation |
+|-------------|---------------|---------------|------------|
+| **Development** | None (for testing) | All provider keys | Warning if LLM_MODEL requires missing key |
+| **E2E Testing** | None (workflow disabled) | All provider keys | Workflow skipped if keys missing |
+| **Staging** | Based on LLM_MODEL | All others | Error if LLM_MODEL requires missing key |
+| **Production** | Based on LLM_MODEL | All others | Startup fails if required key missing |
+
+**Minimum Keys for Full Functionality:**
+
+```bash
+# Required for embeddings (always needed for semantic search):
+OPENAI_API_KEY=sk-...
+
+# Required based on LLM_MODEL selection:
+# If using OpenAI models (gpt-4o, gpt-5-mini, etc.):
+OPENAI_API_KEY=sk-...
+
+# If using Anthropic models (claude-sonnet-4, etc.):
+ANTHROPIC_API_KEY=sk-ant-...
+
+# If using Google models (gemini-2.5-flash, etc.):
+GOOGLE_API_KEY=AIza...
+
+# Optional but recommended:
+JINA_API_KEY=jina_...  # Better URL content extraction
+```
+
+**Startup Validation Output:**
+
+At startup, you'll see logs like:
+```
+api_key_configuration | environment=development llm_model=gemini-2.5-flash configured_providers=2 total_providers=5
+llm_model_api_key_valid | llm_model=gemini-2.5-flash message="LLM model has required API key configured"
+```
+
+Or warnings if keys are missing:
+```
+llm_model_api_key_missing | llm_model=gpt-4o error="OPENAI_API_KEY is required but not configured"
+embedding_api_key_missing | required_key=OPENAI_API_KEY hint="OPENAI_API_KEY is required for embedding generation"
+```
+
 ### CORS Configuration
 
 CORS is configured for the frontend dev server by default (`http://localhost:5173`). Update `CORS_ORIGINS` in `.env` for production.
