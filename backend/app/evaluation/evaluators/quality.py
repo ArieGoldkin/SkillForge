@@ -9,6 +9,7 @@ This module provides evaluators that use an LLM to judge output quality:
 All evaluators are compatible with LangSmith's evaluate() method.
 """
 
+from collections.abc import Callable, Coroutine
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -20,7 +21,7 @@ from app.core.model_factory import get_chat_model
 def create_quality_evaluator(
     aspect: str = "overall",
     judge_model: str = "gpt-4o-mini",
-) -> callable:
+) -> Callable[[Run, Example], Coroutine[Any, Any, dict[str, Any]]]:
     """Create an LLM-as-judge quality evaluator.
 
     This factory function creates evaluators that use an LLM to judge
@@ -151,12 +152,16 @@ Respond with ONLY a number from 0-10.""",
             # Restore original model
             settings.LLM_MODEL = original_model
 
-            # Parse score
+            # Parse score - handle both string and list responses
             try:
-                raw_score = float(response.content.strip())
+                content = response.content
+                # Handle case where content is a list (multi-part response)
+                if isinstance(content, list):
+                    content = str(content[0]) if content else ""
+                raw_score = float(str(content).strip())
                 # Normalize to 0-1
                 normalized_score = raw_score / 10.0
-            except ValueError:
+            except (ValueError, IndexError):
                 # Failed to parse score
                 return {
                     "key": f"quality_{aspect}",

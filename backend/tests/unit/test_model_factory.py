@@ -142,7 +142,7 @@ def test_get_chat_model_with_anthropic(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.init_chat_model")
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_xai(mock_settings, mock_init_chat_model):
-    """Test get_chat_model with xAI provider (custom provider, no prefix stripping)."""
+    """Test get_chat_model with xAI provider (uses OpenAI-compatible API with custom base_url)."""
     # Setup mock settings
     mock_settings.LLM_MODEL = "xai:grok-3-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="xai")
@@ -161,11 +161,13 @@ def test_get_chat_model_with_xai(mock_settings, mock_init_chat_model):
     result = get_chat_model()
 
     # Verify init_chat_model was called correctly
+    # xAI uses OpenAI-compatible API with custom base_url
     mock_init_chat_model.assert_called_once()
     call_kwargs = mock_init_chat_model.call_args[1]
-    assert call_kwargs["model_provider"] == "xai"
+    assert call_kwargs["model_provider"] == "openai"  # Uses OpenAI provider for compatibility
     assert call_kwargs["api_key"] == "xai-test-key"
-    # xAI uses full identifier (not stripped)
+    assert call_kwargs["base_url"] == "https://api.x.ai/v1"  # Custom xAI endpoint
+    # xAI uses full identifier (not stripped since provider != openai/anthropic/google_genai)
     assert mock_init_chat_model.call_args[0][0] == "xai:grok-3-mini"
     assert result == mock_model
 

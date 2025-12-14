@@ -2,6 +2,9 @@
 
 This module provides fire-and-forget persistence of SSE events to the
 analysis_progress table, following the background task pattern from analyze.py.
+
+Note: Persistence is skipped during benchmark mode to avoid FK constraint
+violations from synthetic analysis_ids that don't exist in the analyses table.
 """
 
 import asyncio
@@ -19,6 +22,22 @@ if TYPE_CHECKING:
     pass
 
 logger = get_logger(__name__)
+
+
+def _is_benchmark_mode() -> bool:
+    """Check if currently running in benchmark mode.
+
+    Imports lazily to avoid circular imports. Returns False if the
+    benchmark module is not loaded or benchmark mode is not active.
+    """
+    try:
+        from app.evaluation.llm_benchmark import is_benchmark_mode
+
+        return is_benchmark_mode()
+    except ImportError:
+        # Benchmark module not available (e.g., in minimal deployments)
+        return False
+
 
 # Track background tasks to prevent garbage collection
 _progress_tasks: set[asyncio.Task[None]] = set()
@@ -97,10 +116,22 @@ def persist_progress_event_async(event_data: EventData) -> None:
     Tasks are tracked to prevent garbage collection and have completion
     callbacks for error handling.
 
+    Note: Skips persistence during benchmark mode to avoid FK constraint
+    violations from synthetic analysis_ids.
+
     Args:
         event_data: SSE event data dictionary
 
     """
+    # Skip persistence during benchmarks - synthetic UUIDs don't exist in analyses table
+    if _is_benchmark_mode():
+        logger.debug(
+            "progress_persistence_skipped_benchmark_mode",
+            analysis_id=event_data.get("analysis_id"),
+            stage=event_data.get("stage"),
+        )
+        return
+
     task: asyncio.Task[None] = asyncio.create_task(persist_progress_event(event_data))
     _progress_tasks.add(task)
     task.add_done_callback(_handle_progress_task_completion)

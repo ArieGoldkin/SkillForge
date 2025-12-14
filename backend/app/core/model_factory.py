@@ -115,7 +115,12 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     elif provider == "google_genai" and settings.GOOGLE_API_KEY:
         init_kwargs["api_key"] = settings.GOOGLE_API_KEY
     elif provider == "xai" and settings.XAI_API_KEY:
+        # xAI uses OpenAI-compatible API, so we need to:
+        # 1. Override provider to "openai" for LangChain routing
+        # 2. Set base_url to xAI's endpoint
+        init_kwargs["model_provider"] = "openai"
         init_kwargs["api_key"] = settings.XAI_API_KEY
+        init_kwargs["base_url"] = "https://api.x.ai/v1"
     elif provider == "deepseek" and settings.DEEPSEEK_API_KEY:
         init_kwargs["api_key"] = settings.DEEPSEEK_API_KEY
 

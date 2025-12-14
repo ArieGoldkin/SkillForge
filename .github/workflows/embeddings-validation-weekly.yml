@@ -1,0 +1,161 @@
+name: Embeddings Validation (Weekly)
+
+on:
+  # Weekly run on Sunday at 3am UTC
+  schedule:
+    - cron: "0 3 * * 0"
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      use_real_embeddings:
+        description: "Use real OpenAI embeddings (vs deterministic)"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: embeddings-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Real Embeddings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillforge_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Setup database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          poetry run alembic upgrade head
+
+      - name: Load fixtures with real embeddings
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
+        run: |
+          echo "Using real embeddings: ${{ inputs.use_real_embeddings != false }}"
+          poetry run python scripts/load_expanded_fixtures.py --expanded --replace
+
+      - name: Run evaluation with real embeddings
+        id: evaluation
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
+        run: |
+          # Run full evaluation pipeline
+          poetry run python scripts/run_evaluation.py \
+            --expanded \
+            --output evaluation_results_real.json \
+            --baseline app/evaluation/baselines/main.json \
+            --regression-threshold 0.05
+
+      - name: Compare against baseline
+        if: always()
+        working-directory: backend
+        run: |
+          # Generate comparison report
+          poetry run python -c "
+          import json
+          from pathlib import Path
+          from app.evaluation.metrics.regression import check_regression
+
+          current = Path('evaluation_results_real.json')
+          baseline = Path('app/evaluation/baselines/main.json')
+
+          if current.exists() and baseline.exists():
+              report = check_regression(current, baseline, threshold=0.05)
+              print(report.to_markdown())
+
+              # Save report
+              with open('embeddings_validation_report.md', 'w') as f:
+                  f.write(report.to_markdown())
+          else:
+              print('Missing files for comparison')
+          "
+
+      - name: Upload validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: embeddings-validation-${{ github.run_number }}
+          path: |
+            backend/evaluation_results_real.json
+            backend/embeddings_validation_report.md
+          retention-days: 90
+
+      - name: Check for regressions
+        if: always()
+        working-directory: backend
+        run: |
+          # Report but don't fail - this is monitoring
+          if [ -f evaluation_results_real.json ]; then
+            STATUS=$(jq -r '.overall_status' evaluation_results_real.json 2>/dev/null || echo "unknown")
+            PASSED=$(jq -r '.total_passed' evaluation_results_real.json 2>/dev/null || echo "?")
+            TOTAL=$(jq -r '.total_examples' evaluation_results_real.json 2>/dev/null || echo "?")
+
+            echo "## Weekly Embeddings Validation" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: $STATUS" >> $GITHUB_STEP_SUMMARY
+            echo "- **Passed**: $PASSED / $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **Mode**: ${{ inputs.use_real_embeddings != false && 'Real OpenAI Embeddings' || 'Deterministic' }}" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$STATUS" = "fail" ]; then
+              echo "::warning::Weekly embeddings validation detected failures"
+            fi
+          fi

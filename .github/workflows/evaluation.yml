@@ -14,6 +14,10 @@ on:
       # Run on changes to this workflow
       - ".github/workflows/evaluation.yml"
 
+  # Weekly scheduled run on main (Monday 6am UTC)
+  schedule:
+    - cron: "0 6 * * 1"
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
