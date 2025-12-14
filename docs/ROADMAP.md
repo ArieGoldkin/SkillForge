@@ -1,9 +1,9 @@
 # 🗺️ SkillForge Development Roadmap
 
-**Version:** 2.0
-**Last Updated:** December 10, 2025
+**Version:** 2.1
+**Last Updated:** December 14, 2025
 **Project Type:** Research-to-Implementation Pipeline with AI Tutoring
-**Current Sprint:** Sprint 8 - Embeddings & Search
+**Current Milestone:** 🟤 Triple-Consumer Artifacts (#299-304)
 
 ---
 
@@ -425,42 +425,69 @@ logger.info(
 
 ---
 
-## 📅 Milestone Roadmap (Updated December 12, 2025)
+## 📅 Milestone Roadmap (Updated December 14, 2025)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        PATH TO PRODUCTION                                        │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  🔴 E2E Test Infrastructure  →  🟠 Evaluation Pipeline  →  🟡 Tutoring System   │
-│      Fix tests, seed data        Quality gates, CI/CD       Socratic workflow   │
-│      4 issues                    5 issues                   8 issues            │
-│                                                                                 │
-│                              →  🔵 Production Deployment  →  ⚪ MCP Server       │
-│                                  Railway + Supabase + Vercel  Post-launch       │
-│                                  20 issues                    5 issues          │
-│                                                                                 │
-│  📦 Content Expansion (Backlog) - YouTube & GitHub support                      │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                             PATH TO PRODUCTION                                        │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│  🟤 Triple-Consumer Artifacts  →  🟡 Tutoring System  →  🟠 Evaluation Pipeline      │
+│      Schema for 3 consumers        Socratic workflow      Quality gates, CI/CD       │
+│      #299-304 (6 issues) ★         9 open, 2 closed       4 open, 7 closed (64%)     │
+│                                                                                       │
+│  →  📦 Content Expansion  →  🔵 Staging/Production  →  🟣 Voice Tutor (v2)           │
+│      YouTube & GitHub           Railway + Supabase        Voice-based tutoring       │
+│      5 issues                   20 issues                 6 issues                   │
+│                                                                                       │
+│  →  🌈 Multimodal Intelligence  →  ⚪ MCP Server (LAST)                              │
+│      Vision analysis, images        Expose tools via MCP                             │
+│      #309-339 (31 issues)           5 issues                                         │
+│                                                                                       │
+│  ✅ COMPLETED: 🔴 E2E Test Infrastructure (0 open, 4 closed)                         │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 🔴 **E2E Test Infrastructure** (CURRENT - BLOCKING)
-**Goal:** Fix test infrastructure to enable deployment confidence
+### 🟤 **Triple-Consumer Artifacts** (CURRENT)
+**Goal:** Redesign artifact schema for three consumers: AI Assistants, Tutor, and Humans
 
-**Issues:** #125, #278, #279, #280
+**Issues:** #299, #300, #301, #302, #303, #304
 
 **Deliverables:**
-- Seed E2E test data with completed analysis & artifact
-- Fix SSE test timeouts
-- Resolve Library search race conditions
-- Playwright E2E test suite
+- Remove fake artifacts from golden dataset loader (#299)
+- Enable proactive memory recall in analysis workflow (#300)
+- Add quality validation gate to analysis workflow (#301)
+- Triple-purpose schema enhancement for artifacts (#302) ⭐ CRITICAL
+- Rewrite synthesis prompt for triple-consumer output (#303)
+- Redesign artifact template for triple-consumer rendering (#304)
 
 **Definition of Done:**
-- All E2E tests pass reliably
-- CI can run tests without flakiness
+- Artifacts serve AI assistants (context-ready), Tutor (educational), and Humans (readable)
+- Quality gate validates all outputs before delivery
+- Memory recall provides relevant context from past analyses
+
+**Dependencies:** None (current milestone)
+
+---
+
+### 🟡 **Tutoring System**
+**Goal:** Complete Socratic tutoring experience
+
+**Issues:** #74, #79, #113-116, #213, #214, #306, #307
+
+**Deliverables:**
+- Tutor LangGraph workflow with SSE streaming
+- Tutoring API endpoints
+- TutorChat component with topic selection
+- Session persistence and resume
+
+**Definition of Done:**
+- Users can start tutoring from any analysis
+- Socratic dialogue adapts to understanding level
+- Sessions persist across browser sessions
 
 ---
 
@@ -500,8 +527,20 @@ logger.info(
 
 ---
 
-### 🔵 **Production Deployment**
-**Goal:** Ship SkillForge to production
+### 📦 **Content Expansion**
+**Goal:** Support additional content types
+
+**Issues:** #77, #78, #121-123
+
+**Deliverables:**
+- YouTube transcript extraction
+- GitHub repository analysis
+- Content type indicators in UI
+
+---
+
+### 🔵 **Staging/Production**
+**Goal:** Ship SkillForge to staging and production environments
 
 **Issues:** #125-127, #134-142
 
@@ -509,18 +548,59 @@ logger.info(
 - Supabase project with PGVector
 - Railway backend deployment
 - Vercel frontend deployment
+- Staging environment for testing
 - Environment configuration & secrets
 - Automated database migrations
 - Monitoring & alerting
 
 **Definition of Done:**
-- SkillForge accessible at production URL
-- All E2E tests pass in production
+- SkillForge accessible at staging and production URLs
+- All E2E tests pass in both environments
 - P95 latency <3 seconds
 
 ---
 
-### ⚪ **MCP Server** (Post-Launch)
+### 🟣 **Voice Tutor (v2)** (Post-Launch)
+**Goal:** Voice-based tutoring interface
+
+**Issues:** 6 issues (to be created)
+
+**Deliverables:**
+- Voice input/output for tutoring sessions
+- Speech-to-text integration
+- Text-to-speech for tutor responses
+- Hands-free learning mode
+
+**Definition of Done:**
+- Users can have voice conversations with tutor
+- Low latency voice responses (<2s)
+- Accessibility improvements complete
+
+---
+
+### 🌈 **Multimodal Intelligence** (Post-Launch)
+**Goal:** Vision-enhanced content analysis
+
+**Issues:** #309-339 (31 issues)
+
+**Deliverables:**
+- Image extraction from analyzed content
+- Vision model integration (SigLIP 2, Claude Opus 4.5, GPT-5.2, Gemini 3)
+- Diagram analysis and Mermaid recreation
+- Visual search via PGVector embeddings
+- Tutor can reference and explain diagrams
+
+**Definition of Done:**
+- Images analyzed and categorized automatically
+- Visual search MRR ≥0.80
+- Diagrams converted to Mermaid code
+- 80%+ test coverage for visual module
+
+**Details:** See `docs/architecture/MULTIMODAL_INTELLIGENCE_SYSTEM.md`
+
+---
+
+### ⚪ **MCP Server** (LAST)
 **Goal:** Expose SkillForge as MCP provider for AI assistants
 
 **Issues:** #237-241
@@ -537,25 +617,15 @@ logger.info(
 
 ---
 
-### 📦 **Content Expansion** (Backlog)
-**Goal:** Support additional content types
-
-**Issues:** #77, #78, #121-123
-
-**Deliverables:**
-- YouTube transcript extraction
-- GitHub repository analysis
-- Content type indicators in UI
-
----
-
 ## ✅ Completed Milestones
 
 | Milestone | Status | Key PRs |
 |-----------|--------|---------|
+| 🔴 E2E Test Infrastructure | ✅ Complete (Dec 2025) | #278, #279, #280 (4 issues closed) |
 | Sprints 1-8 | ✅ Complete | Foundation → Embeddings & Search |
 | MCP Consumer | ✅ Complete | PR #262 (27 pts) |
 | Context Engineering | ✅ Complete | PR #265, #277 |
+| Evaluation Pipeline Perfection | ✅ Complete | PR #290, Issue #257 |
 
 ---
 

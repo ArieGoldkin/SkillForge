@@ -1,47 +1,55 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 12, 2025
+**Date:** December 14, 2025
 **Branch:** `dev`
-**Current Focus:** Sprint 13 - E2E Test Infrastructure 🔴 **BLOCKING**
-**Path to Launch:** E2E Tests → Evaluation → Tutoring → Deploy
+**Current Focus:** 🟤 Triple-Consumer Artifacts (#299-304)
+**Path to Launch:** Triple-Consumer → Tutoring → Evaluation → Content Expansion → Staging/Production → Voice Tutor → Multimodal → MCP Server
 
 ---
 
-## 🗺️ Milestone Roadmap (Updated December 12, 2025)
+## 🗺️ Milestone Roadmap (Updated December 14, 2025)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        PATH TO PRODUCTION                                        │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  🔴 E2E Test Infrastructure  →  🟠 Evaluation Pipeline  →  🟡 Tutoring System   │
-│      Fix tests, seed data        Quality gates, CI/CD       Socratic workflow   │
-│      4 issues                    5 issues                   8 issues            │
-│                                                                                 │
-│                              →  🔵 Production Deployment  →  ⚪ MCP Server       │
-│                                  Railway + Supabase + Vercel  Post-launch       │
-│                                  20 issues                    5 issues          │
-│                                                                                 │
-│  📦 Content Expansion (Backlog) - YouTube & GitHub support                      │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│                             PATH TO PRODUCTION                                        │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                       │
+│  🟤 Triple-Consumer Artifacts  →  🟡 Tutoring System  →  🟠 Evaluation Pipeline      │
+│      Schema for 3 consumers        Socratic workflow      Quality gates, CI/CD       │
+│      #299-304 (6 issues) ★         9 open, 2 closed       4 open, 7 closed (64%)     │
+│                                                                                       │
+│  →  📦 Content Expansion  →  🔵 Staging/Production  →  🟣 Voice Tutor (v2)           │
+│      YouTube & GitHub           Railway + Supabase        Voice-based tutoring       │
+│      5 issues                   20 issues                 6 issues                   │
+│                                                                                       │
+│  →  🌈 Multimodal Intelligence  →  ⚪ MCP Server (LAST)                              │
+│      Vision analysis, images        Expose tools via MCP                             │
+│      #309-339 (31 issues)           5 issues                                         │
+│                                                                                       │
+│  ✅ COMPLETED: 🔴 E2E Test Infrastructure (0 open, 4 closed)                         │
+│                                                                                       │
+└──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Active Milestones
 
-| Milestone | Issues | Focus |
-|-----------|--------|-------|
-| 🔴 E2E Test Infrastructure | 4 | Seed data, SSE timeouts, race conditions |
-| 🟠 Evaluation Pipeline | 5 | CI/CD regression detection, quality gates |
-| 🟡 Tutoring System | 8 | Socratic workflow, SSE streaming |
-| 🔵 Production Deployment | 20 | Railway + Supabase + Vercel |
-| ⚪ MCP Server | 5 | Claude Code integration (post-launch) |
-| 📦 Content Expansion | 5 | YouTube & GitHub support (backlog) |
+| Milestone | Issues | Status | Focus |
+|-----------|--------|--------|-------|
+| 🟤 Triple-Consumer Artifacts | #299-304 (6 open) | ★ CURRENT | Schema for AI/Tutor/Human consumers |
+| 🟡 Tutoring System | 9 open, 2 closed | Next | Socratic workflow, SSE streaming |
+| 🟠 Evaluation Pipeline | 4 open, 7 closed | 64% done | CI/CD regression detection, quality gates |
+| 📦 Content Expansion | 5 open | Backlog | YouTube & GitHub support |
+| 🔵 Staging/Production | 20 open | After Tutoring | Railway + Supabase + Vercel |
+| 🟣 Voice Tutor (v2) | 6 open | Post-launch | Voice-based tutoring interface |
+| 🌈 Multimodal Intelligence | #309-339 (31 open) | Post-launch | Vision analysis, image extraction |
+| ⚪ MCP Server | 5 open | LAST | Claude Code integration |
 
 ### Completed
+- ✅ 🔴 E2E Test Infrastructure (0 open, 4 closed) - December 2025
 - ✅ Sprints 1-8: Foundation → Embeddings & Search
 - ✅ MCP Consumer (PR #262)
 - ✅ Context Engineering (PR #265, #277)
+- ✅ Evaluation Pipeline Perfection (PR #290, Issue #257)
 
 ---
 
@@ -602,36 +610,36 @@
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         SKILLFORGE PROJECT STATUS                            ║
-║                         December 10, 2025                                    ║
+║                         December 14, 2025                                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                              ║
-║   SPRINT PROGRESSION                                                         ║
-║   ══════════════════                                                         ║
-║   Sprint 8 (Current) → 9 (MCP Consumer) → 10 (Context Engineering)          ║
-║       → 11 (Features) → 12 (MCP Server) → Testing                           ║
+║   MILESTONE PROGRESSION                                                      ║
+║   ═════════════════════                                                      ║
+║   🟤 Triple-Consumer → 🟡 Tutoring → 🟠 Evaluation → 📦 Content Expansion   ║
+║       → 🔵 Staging/Production → 🟣 Voice Tutor → 🌈 Multimodal → ⚪ MCP     ║
 ║                                                                              ║
-║   COMPLETED SPRINTS                      CURRENT SPRINT                      ║
-║   ═════════════════                      ══════════════                      ║
-║   ✅ Sprint 1-7: Foundation-Polish       ✅ Sprint 8: Embeddings & Search   ║
-║   ✅ Sprint 8: Embeddings & Search           └─ 9/9 issues ✅ CLOSED        ║
+║   COMPLETED                              CURRENT                             ║
+║   ═════════                              ═══════                             ║
+║   ✅ 🔴 E2E Test Infrastructure          🟤 Triple-Consumer Artifacts       ║
+║   ✅ Sprints 1-8: Foundation-Search          └─ #299-304 (6 issues)         ║
+║   ✅ MCP Consumer PR #262                    └─ Schema for 3 consumers      ║
+║   ✅ Context Engineering PR #265, #277                                       ║
+║   ✅ Evaluation Pipeline PR #290                                             ║
 ║                                                                              ║
-║   SPRINT 8 COMPLETE ✅                   NEXT SPRINT                        ║
-║   ═══════════════════                    ═══════════                         ║
-║   ✅ #215 Embedding Pipeline             Sprint 9: MCP Consumer              ║
-║   ✅ #216 Retrieval API                                                      ║
-║   ✅ #217 Re-ranker                                                          ║
-║   ✅ #218 Telemetry                                                          ║
-║   ✅ #219 Eval Harness                                                       ║
-║   ✅ #220 PII/Safety                                                         ║
-║   ✅ #221 Hierarchical Chunking                                              ║
-║   ✅ #222 Pluggable Parsers                                                  ║
-║   ✅ #223 Smoke Tests                                                        ║
+║   TRIPLE-CONSUMER ISSUES (#299-304)      POST-LAUNCH MILESTONES             ║
+║   ═════════════════════════════════      ═══════════════════════            ║
+║   #299: Remove fake artifacts            🟣 Voice Tutor (6 issues)          ║
+║   #300: Proactive memory recall          🌈 Multimodal Intelligence         ║
+║   #301: Quality validation gate              └─ #309-339 (31 issues)        ║
+║   #302: Triple-purpose schema ⭐         ⚪ MCP Server (5 issues) - LAST    ║
+║   #303: Rewrite synthesis prompt                                             ║
+║   #304: Redesign artifact template                                           ║
 ║                                                                              ║
-║   KEY ACHIEVEMENTS (Sprint 8)                                                ║
-║   ═══════════════════════════                                                ║
-║   ✅ Full RAG pipeline                   ✅ 37+ smoke tests                 ║
-║   ✅ Hybrid search (semantic+keyword)    ✅ Pluggable parsers               ║
-║   ✅ PII detection & safety              ✅ Telemetry & metrics             ║
+║   KEY ACHIEVEMENTS                                                           ║
+║   ════════════════                                                           ║
+║   ✅ Full RAG pipeline                   ✅ 80%+ test coverage              ║
+║   ✅ Hybrid search (semantic+keyword)    ✅ Multi-provider LLM support      ║
+║   ✅ LangSmith evaluation framework      ✅ Golden dataset (96 analyses)    ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -717,7 +725,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** December 10, 2025 (Sprint 8 COMPLETE - Milestone CLOSED)
+**Last Updated:** December 14, 2025 (Milestone reorganization - Triple-Consumer CURRENT)
 **Maintained By:** Yonatan & Arie
 
 ---
