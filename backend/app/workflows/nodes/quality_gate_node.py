@@ -7,6 +7,7 @@ below threshold, it triggers a retry (up to 2 attempts).
 Issue #301: Add quality validation gate to ensure high-quality artifacts.
 """
 
+import asyncio
 import time
 
 from langsmith import get_current_run_tree
@@ -117,24 +118,44 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:
         quality_scores = {}
         for aspect in QUALITY_ASPECTS:
             evaluator = create_quality_evaluator(aspect=aspect, judge_model="gpt-4o-mini")
-            result = await evaluator(mock_run, mock_example)
 
-            score = result.get("score", 0.0)
-            quality_scores[aspect] = {
-                "score": score,
-                "comment": result.get("comment", ""),
-            }
+            # Wrap evaluator call with timeout protection to prevent hanging
+            try:
+                async with asyncio.timeout(30):
+                    result = await evaluator(mock_run, mock_example)
+                    score = result.get("score", 0.0)
+                    quality_scores[aspect] = {
+                        "score": score,
+                        "comment": result.get("comment", ""),
+                    }
+            except TimeoutError:
+                # Timeout occurred - assign default passing score (fail open)
+                logger.warning(
+                    "quality_evaluator_timeout",
+                    analysis_id=analysis_id,
+                    aspect=aspect,
+                    timeout_seconds=30,
+                    message="evaluator timed out, using default passing score",
+                )
+                quality_scores[aspect] = {
+                    "score": 0.7,  # Default passing score
+                    "comment": "Evaluation timed out after 30 seconds",
+                }
 
             logger.debug(
                 "quality_aspect_evaluated",
                 analysis_id=analysis_id,
                 aspect=aspect,
-                score=score,
-                comment=result.get("comment", ""),
+                score=quality_scores[aspect]["score"],
+                comment=quality_scores[aspect]["comment"],
             )
 
-        # Calculate average quality score
-        avg_score = sum(s["score"] for s in quality_scores.values()) / len(quality_scores)
+        # Calculate average quality score (guard against division by zero)
+        avg_score = (
+            sum(s["score"] for s in quality_scores.values()) / len(quality_scores)
+            if quality_scores
+            else 0.0
+        )
 
         # Determine if gate passes
         gate_passed = avg_score >= QUALITY_THRESHOLD

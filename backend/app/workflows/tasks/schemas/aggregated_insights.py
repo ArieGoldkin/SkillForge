@@ -8,7 +8,7 @@ Enhanced for triple-purpose consumption:
 Related: Issue #302 - Triple-Purpose Schema Enhancement
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class GotchaItem(BaseModel):
@@ -309,6 +309,14 @@ class QuizQuestion(BaseModel):
         min_length=30,
         max_length=500,
     )
+
+    @model_validator(mode="after")
+    def validate_correct_answer(self) -> "QuizQuestion":
+        """Validate that correct_answer is one of the options."""
+        if self.correct_answer not in self.options:
+            msg = f"correct_answer '{self.correct_answer}' must be one of {self.options}"
+            raise ValueError(msg)
+        return self
 
 
 class Exercise(BaseModel):
