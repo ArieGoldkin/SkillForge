@@ -36,6 +36,7 @@ if env_file.exists():
 
 from app.api.v1 import analyze, artifacts, health, library, search  # noqa: E402
 from app.api.v1.tutor import router as tutor_router  # noqa: E402
+from app.core.api_key_validation import log_api_key_configuration  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
 from app.core.langsmith_config import configure_langsmith_client  # noqa: E402
@@ -211,6 +212,12 @@ async def lifespan(app: FastAPI):
         langsmith_api_key_set=bool(langsmith_api_key),
         api_key_fallback_used=api_key_fallback_used if langsmith_enabled else None,
     )
+
+    # Log API key configuration status (Issue #295)
+    # This helps developers quickly identify which providers are configured
+    # and whether the selected LLM_MODEL has its required API key
+    log_api_key_configuration()
+
     yield
     # Shutdown
     logger.info("application_shutdown")

@@ -28,8 +28,20 @@ import asyncio
 import json
 import sys
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
+
+
+def parse_datetime(value: str | datetime | None) -> datetime | None:
+    """Parse ISO datetime string to datetime object."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    # Handle ISO format with timezone
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+from pathlib import Path
 from uuid import UUID
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -213,7 +225,11 @@ async def restore_dataset(replace: bool = False) -> int:
                     VALUES (:id, :url, :content_type, :title, :status, :created_at, :updated_at)
                     ON CONFLICT (id) DO NOTHING
                 """),
-                analysis,
+                {
+                    **analysis,
+                    "created_at": parse_datetime(analysis.get("created_at")),
+                    "updated_at": parse_datetime(analysis.get("updated_at")),
+                },
             )
         await session.flush()
 
@@ -223,12 +239,13 @@ async def restore_dataset(replace: bool = False) -> int:
             await session.execute(
                 text("""
                     INSERT INTO artifacts (id, analysis_id, markdown_content, version, artifact_metadata, created_at)
-                    VALUES (:id, :analysis_id, :markdown_content, :version, :artifact_metadata::jsonb, :created_at)
+                    VALUES (:id, :analysis_id, :markdown_content, :version, CAST(:artifact_metadata AS jsonb), :created_at)
                     ON CONFLICT (id) DO NOTHING
                 """),
                 {
                     **artifact,
                     "artifact_metadata": json.dumps(artifact.get("artifact_metadata", {})),
+                    "created_at": parse_datetime(artifact.get("created_at")),
                 },
             )
         await session.flush()
@@ -246,24 +263,31 @@ async def restore_dataset(replace: bool = False) -> int:
                 logger.warning(f"Failed to generate embedding for chunk {i}: {e}")
                 continue
 
+            # Convert embedding list to pgvector string format: '[1,2,3,...]'
+            vector_str = "[" + ",".join(str(x) for x in embedding) + "]"
+
+            chunk_created = parse_datetime(chunk.get("created_at")) or datetime.now(UTC)
+
             await session.execute(
                 text("""
                     INSERT INTO analysis_chunks (
                         id, analysis_id, snippet, vector, granularity, section_title,
                         chunk_idx, chunk_total, path, hash, content_type, language,
-                        model, model_version, created_at
+                        model, model_version, created_at, updated_at
                     )
                     VALUES (
                         :id, :analysis_id, :snippet, :vector, :granularity, :section_title,
-                        :chunk_idx, :chunk_total, :path::jsonb, :hash, :content_type, :language,
-                        :model, :model_version, :created_at
+                        :chunk_idx, :chunk_total, CAST(:path AS jsonb), :hash, :content_type, :language,
+                        :model, :model_version, :created_at, :updated_at
                     )
                     ON CONFLICT (id) DO NOTHING
                 """),
                 {
                     **chunk,
-                    "vector": embedding,
+                    "vector": vector_str,
                     "path": json.dumps(chunk.get("path", [])),
+                    "created_at": chunk_created,
+                    "updated_at": chunk_created,  # Set updated_at same as created_at
                 },
             )
 

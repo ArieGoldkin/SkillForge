@@ -54,10 +54,21 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/skillforge_test
       ENVIRONMENT: e2e
-      # Allow the CI E2E suite to create analyses without triggering expensive workflows.
-      SKILLFORGE_E2E_DISABLE_WORKFLOW: "true"
+      # Allow the CI E2E suite to create analyses without triggering expensive workflows
+      # Set to "false" when API keys are provided to enable full workflow testing
+      SKILLFORGE_E2E_DISABLE_WORKFLOW: ${SKILLFORGE_E2E_DISABLE_WORKFLOW:-true}
       # CORS for both local dev server (5173) and CI-exposed port (5174)
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:5174"]'
+      # === API Keys (optional - passed via .env file or environment) ===
+      # When set, enables full LLM workflow testing
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JINA_API_KEY: ${JINA_API_KEY:-}
+      # LangSmith tracing (optional)
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-}
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+      LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT:-skillforge-e2e}
+      # Model configuration (use cost-efficient model for E2E)
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
     ports:
       - "8500:8500"
     healthcheck:

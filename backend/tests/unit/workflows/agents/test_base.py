@@ -6,7 +6,11 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel
 
-from app.workflows.agents.base import create_structured_agent, save_agent_finding
+from app.workflows.agents.base import (
+    create_structured_agent,
+    emit_agent_progress,
+    save_agent_finding,
+)
 
 
 class MockAgentSchema(BaseModel):
@@ -60,7 +64,7 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
 async def test_save_agent_finding(mock_session):
     """Test saving agent finding to database."""
     analysis_id = uuid4()
-    findings = {"key": "value"}
+    findings: dict[str, object] = {"key": "value"}
 
     await save_agent_finding(
         session=mock_session,
@@ -74,3 +78,63 @@ async def test_save_agent_finding(mock_session):
     mock_session.add.assert_called_once()
     mock_session.commit.assert_awaited_once()
     mock_session.refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.base.emit_streaming_event")
+@patch("app.workflows.agents.base.get_stage_name")
+async def test_emit_agent_progress_success(mock_get_stage_name, mock_emit_event):
+    """Test emitting agent progress SSE event."""
+    # Setup mocks
+    analysis_id = str(uuid4())
+    mock_get_stage_name.return_value = "tech_comparison"
+    mock_emit_event.return_value = AsyncMock()
+
+    # Call function
+    await emit_agent_progress(
+        analysis_id=analysis_id,
+        agent_type="tech_comparator",
+        status="running",
+        detail="Analyzing technologies",
+    )
+
+    # Verify stage name was retrieved
+    mock_get_stage_name.assert_called_once_with("tech_comparator")
+
+    # Verify event was emitted with correct parameters
+    mock_emit_event.assert_awaited_once()
+    call_args = mock_emit_event.call_args
+    assert call_args.args[0] == "progress"
+    assert call_args.kwargs["analysis_id"] == analysis_id
+    assert call_args.kwargs["stage"] == "tech_comparison"
+    assert call_args.kwargs["status"] == "running"
+    assert call_args.kwargs["agent_type"] == "tech_comparator"
+    assert call_args.kwargs["detail"] == "Analyzing technologies"
+
+
+@pytest.mark.asyncio
+@patch("app.workflows.agents.base.emit_streaming_event")
+@patch("app.workflows.agents.base.get_stage_name")
+async def test_emit_agent_progress_with_kwargs(mock_get_stage_name, mock_emit_event):
+    """Test emitting agent progress with additional kwargs."""
+    # Setup mocks
+    analysis_id = str(uuid4())
+    mock_get_stage_name.return_value = "security_audit"
+    mock_emit_event.return_value = AsyncMock()
+
+    # Call with multiple kwargs
+    await emit_agent_progress(
+        analysis_id=analysis_id,
+        agent_type="security_auditor",
+        status="complete",
+        findings_count=5,
+        vulnerabilities_found=2,
+        processing_time_ms=1500,
+    )
+
+    # Verify all kwargs were passed through
+    mock_emit_event.assert_awaited_once()
+    call_kwargs = mock_emit_event.call_args.kwargs
+    assert call_kwargs["findings_count"] == 5
+    assert call_kwargs["vulnerabilities_found"] == 2
+    assert call_kwargs["processing_time_ms"] == 1500
