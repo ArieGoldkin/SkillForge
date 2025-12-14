@@ -32,7 +32,7 @@ export default function TutorSession() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <SessionHeader />
+      <SessionHeader sessionId={sessionId} analysisId={session.analysis_id} />
       <div className="bg-card border rounded-xl flex flex-col h-[600px]">
         <MessagesArea messages={messages} isPending={sendMessageMutation.isPending} />
         <InputArea
