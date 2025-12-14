@@ -41,9 +41,15 @@ Agents:
 {agent_list}
 
 AGENT SELECTION GUIDELINES:
-1. SHORT content (<1000 words): 1-2 agents focused on primary topic
-2. MEDIUM content (1000-3000 words): 2-4 agents covering main themes
-3. COMPREHENSIVE content (>3000 words): 4-6 agents for thorough analysis
+1. MINIMUM 3 AGENTS REQUIRED for all content (ensures diverse perspectives)
+2. SHORT content (<1000 words): 3-4 agents covering primary topics
+3. MEDIUM content (1000-3000 words): 4-6 agents covering main themes
+4. COMPREHENSIVE content (>3000 words): 6-8 agents for thorough analysis
+
+IMPORTANT: Never select fewer than 3 agents. Even simple content benefits from:
+- implementation_planner (how to use)
+- At least one perspective agent (security_auditor, performance_analyst, or tech_comparator)
+- At least one context agent (dependency_mapper, trend_validator, or integration_feasibility)
 
 TUTORIAL ANALYSIS (important):
 - Tutorials are COMPREHENSIVE by nature - analyze from multiple angles
@@ -68,9 +74,9 @@ CODE PATTERN TRIGGERS (REQUIRED):
 Select based on: content type, keywords, complexity, analysis needs.
 
 Examples:
-- Quick tip/snippet → {{"agents": ["implementation_planner"],
-  "reasoning": "Simple how-to needs only implementation guidance",
-  "confidence": 0.9}}
+- Quick tip/snippet → {{"agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
+  "reasoning": "Even simple content needs implementation guidance, dependency context, and security basics",
+  "confidence": 0.85}}
 - Framework tutorial → {{
     "agents": [
         "implementation_planner", "security_auditor", "performance_analyst", "dependency_mapper"

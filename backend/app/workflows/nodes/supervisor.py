@@ -316,6 +316,36 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             )
             filtered_agents.append("tech_comparator")
 
+        # MINIMUM AGENT ENFORCEMENT (Issue #299-304)
+        # Ensure at least 3 agents are selected for diverse analysis
+        min_agents_required = 3
+        default_agents_for_minimum = [
+            "implementation_planner",
+            "dependency_mapper",
+            "trend_validator",
+        ]
+
+        if len(filtered_agents) < min_agents_required:
+            logger.info(
+                "supervisor_enforcing_minimum_agents",
+                analysis_id=analysis_id,
+                current_count=len(filtered_agents),
+                minimum_required=min_agents_required,
+                original_agents=filtered_agents.copy(),
+            )
+            # Add default agents to meet minimum
+            for default_agent in default_agents_for_minimum:
+                if default_agent not in filtered_agents:
+                    filtered_agents.append(default_agent)
+                    logger.debug(
+                        "supervisor_added_default_agent",
+                        analysis_id=analysis_id,
+                        agent=default_agent,
+                        current_count=len(filtered_agents),
+                    )
+                    if len(filtered_agents) >= min_agents_required:
+                        break
+
         if skipped_agents:
             logger.info(
                 "supervisor_agents_filtered",
