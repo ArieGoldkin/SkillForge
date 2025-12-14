@@ -15,6 +15,9 @@ Usage:
 
     # Dry run (validate setup without API calls)
     python -m app.evaluation.run_experiments --dry-run
+
+    # Pre-flight check (validate API keys before running)
+    python -m app.evaluation.run_experiments --preflight
 """
 
 from __future__ import annotations
@@ -22,6 +25,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -33,18 +37,23 @@ from app.evaluation.datasets import list_datasets, load_dataset
 
 logger = get_logger(__name__)
 
-# Default models to test for each task
+# Default models to test for each task (December 2025 - Latest Models)
 # Multi-provider support: supervisor_route now accepts model_id parameter
 # for runtime model switching across OpenAI, Anthropic, Google, and xAI
 DEFAULT_MODELS = {
-    "supervisor": ["gpt-4o-mini", "gpt-4o", "gemini-2.5-flash", "claude-haiku-3-5-20241022"],
+    "supervisor": [
+        "gpt-5-mini",  # OpenAI - Latest balanced model
+        "claude-haiku-3-5-20241022",  # Anthropic - Fast throughput
+        "gemini-2.5-flash",  # Google - Cost-effective, 1M context
+        "grok-3-mini",  # xAI - Affordable alternative
+    ],
     "agent": [
-        "gpt-4o-mini",
-        "gpt-4o",
+        "gpt-5-mini",  # OpenAI - Latest
+        "claude-sonnet-4-20250514",  # Anthropic - SWE-bench leader (72.5%)
     ],  # Agent analysis still uses env var (TODO: add model_id support)
     "synthesis": [
-        "gpt-4o-mini",
-        "gpt-4o",
+        "gpt-5-mini",  # OpenAI - Latest
+        "claude-sonnet-4-20250514",  # Anthropic - Best synthesis
     ],  # Synthesis still uses env var (TODO: add model_id support)
 }
 
@@ -54,6 +63,128 @@ TASK_DATASETS = {
     "agent": "agent_analysis_golden_v1",
     "synthesis": "synthesis_golden_v1",
 }
+
+
+def run_preflight_checks(verbose: bool = True) -> tuple[bool, dict[str, Any]]:
+    """Run pre-flight checks to validate environment and API keys.
+
+    This function validates that:
+    1. All required API keys are present in the environment
+    2. All golden datasets exist and are loadable
+    3. The LLMBenchmark can be initialized
+
+    Args:
+        verbose: If True, print detailed status messages
+
+    Returns:
+        Tuple of (all_checks_passed, results_dict)
+
+    """
+    results: dict[str, Any] = {
+        "api_keys": {},
+        "datasets": {},
+        "models_available": {},
+        "overall_status": "pending",
+    }
+
+    all_passed = True
+
+    if verbose:
+        print("\n" + "=" * 60)
+        print("PRE-FLIGHT CHECKS")
+        print("=" * 60)
+
+    # Initialize benchmark to access validation methods
+    benchmark = LLMBenchmark(project_name="skillforge-preflight", local_mode=True)
+
+    # Check API keys for all models in DEFAULT_MODELS
+    if verbose:
+        print("\n🔑 API Key Validation:")
+
+    all_models = set()
+    for models in DEFAULT_MODELS.values():
+        all_models.update(models)
+
+    for model_id in sorted(all_models):
+        is_valid, error = benchmark.validate_api_key(model_id)
+        results["api_keys"][model_id] = {"valid": is_valid, "error": error}
+
+        if verbose:
+            if is_valid:
+                info = MODEL_REGISTRY.get(model_id)
+                provider = info.provider if info else "unknown"
+                print(f"  ✅ {model_id} ({provider})")
+            else:
+                print(f"  ❌ {model_id}: {error}")
+
+        if not is_valid:
+            all_passed = False
+
+    # Check available models per task
+    if verbose:
+        print("\n📊 Models Available Per Task:")
+
+    for task_type, models in DEFAULT_MODELS.items():
+        available, errors = benchmark.get_available_models(models)
+        results["models_available"][task_type] = {
+            "available": available,
+            "unavailable": list(errors.keys()),
+        }
+
+        if verbose:
+            available_count = len(available)
+            total_count = len(models)
+            status = (
+                "✅" if available_count == total_count else "⚠️" if available_count > 0 else "❌"
+            )
+            print(f"  {status} {task_type}: {available_count}/{total_count} models ready")
+            if errors:
+                for model_id, error in errors.items():
+                    print(f"      - {model_id}: {error}")
+
+    # Check datasets
+    if verbose:
+        print("\n📁 Dataset Validation:")
+
+    for _task_type, dataset_name in TASK_DATASETS.items():
+        try:
+            dataset = load_dataset(dataset_name)
+            results["datasets"][dataset_name] = {
+                "exists": True,
+                "example_count": len(dataset),
+            }
+            if verbose:
+                print(f"  ✅ {dataset_name}: {len(dataset)} examples")
+        except FileNotFoundError:
+            results["datasets"][dataset_name] = {
+                "exists": False,
+                "error": "Dataset file not found",
+            }
+            if verbose:
+                print(f"  ❌ {dataset_name}: Not found")
+            all_passed = False
+        except Exception as e:
+            results["datasets"][dataset_name] = {
+                "exists": False,
+                "error": str(e),
+            }
+            if verbose:
+                print(f"  ❌ {dataset_name}: {e}")
+            all_passed = False
+
+    # Overall status
+    results["overall_status"] = "passed" if all_passed else "failed"
+
+    if verbose:
+        print("\n" + "=" * 60)
+        if all_passed:
+            print("✅ All pre-flight checks PASSED")
+        else:
+            print("❌ Some pre-flight checks FAILED")
+            print("   Fix the issues above before running experiments.")
+        print("=" * 60)
+
+    return all_passed, results
 
 
 async def run_task_experiments(
@@ -309,6 +440,11 @@ Examples:
         action="store_true",
         help="List available datasets and exit",
     )
+    parser.add_argument(
+        "--preflight",
+        action="store_true",
+        help="Run pre-flight checks to validate API keys and datasets",
+    )
 
     args = parser.parse_args()
 
@@ -327,6 +463,11 @@ Examples:
             dataset = load_dataset(dataset_name)
             print(f"  {dataset_name}: {len(dataset)} examples")
         return
+
+    if args.preflight:
+        passed, _ = run_preflight_checks(verbose=True)
+        # Exit with appropriate code for CI/CD pipelines
+        sys.exit(0 if passed else 1)
 
     # Determine local mode
     local_mode = not args.langsmith

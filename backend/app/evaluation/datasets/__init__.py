@@ -45,10 +45,12 @@ def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, An
     if isinstance(data, dict) and "version" in data and "examples" in data:
         if include_metadata:
             return data  # type: ignore[return-value]
-        return data["examples"]
+        examples: list[dict[str, Any]] = data["examples"]
+        return examples
 
     # v1.0 format - flat list of examples
-    return data
+    examples_v1: list[dict[str, Any]] = data
+    return examples_v1
 
 
 def load_dataset_with_metadata(name: str) -> dict[str, Any]:

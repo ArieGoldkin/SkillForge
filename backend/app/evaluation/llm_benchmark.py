@@ -600,14 +600,14 @@ class LLMBenchmark:
         experiments: list[ExperimentResults] = []
         for model_id in available_models:
             try:
-                result = await self.run_experiment(
+                exp_result = await self.run_experiment(
                     task_type=task_type,
                     model_id=model_id,
                     dataset_name=dataset_name,
                     evaluators=evaluators,
                     experiment_prefix=f"compare_{task_type}",
                 )
-                experiments.append(result)
+                experiments.append(exp_result)
             except Exception as e:
                 logger.error(
                     "model_experiment_failed",
@@ -633,7 +633,7 @@ class LLMBenchmark:
             experiments, winner_by_metric, task_type, cost_savings
         )
 
-        result = ComparisonResults(
+        comparison = ComparisonResults(
             experiments=experiments,
             winner_by_metric=winner_by_metric,
             recommendation=recommendation,
@@ -649,7 +649,7 @@ class LLMBenchmark:
             cost_savings=cost_savings,
         )
 
-        return result
+        return comparison
 
     def _get_target_function(self, task_type: TaskType, model_id: str) -> Callable:
         """Get target function for specific task type.
@@ -702,18 +702,25 @@ class LLMBenchmark:
             # Generate valid UUID for benchmark runs to satisfy progress persistence
             analysis_id = inputs.get("analysis_id") or str(uuid.uuid4())
 
-            # Invoke supervisor with runtime model selection
-            result = await supervisor_route(content, content_type, analysis_id, model_id=model_id)
+            # Use thread-safe context variable to enable benchmark mode
+            # This prevents FK constraint violations in progress_persistence
+            with benchmark_model_context(model_id):
+                # Invoke supervisor with runtime model selection
+                supervisor_result: dict[str, Any] = await supervisor_route(
+                    content, content_type, analysis_id, model_id=model_id
+                )
 
-            # Extract agent selection
-            supervisor_decision = result.get("supervisor_decision", {})
-            selected_agents = supervisor_decision.get("agents", [])
+                # Extract agent selection
+                supervisor_decision: dict[str, Any] = supervisor_result.get(
+                    "supervisor_decision", {}
+                )
+                selected_agents = supervisor_decision.get("agents", [])
 
-            return {
-                "selected_agents": selected_agents,
-                "confidence": supervisor_decision.get("confidence", 0.0),
-                "reasoning": supervisor_decision.get("reasoning", ""),
-            }
+                return {
+                    "selected_agents": selected_agents,
+                    "confidence": supervisor_decision.get("confidence", 0.0),
+                    "reasoning": supervisor_decision.get("reasoning", ""),
+                }
 
         return supervisor_target
 
@@ -758,11 +765,11 @@ class LLMBenchmark:
             with benchmark_model_context(model_id):
                 # Invoke agent (use tech_comparator as example)
                 # In real implementation, would route to correct agent based on agent_type
-                result = await tech_comparator_node(state)
+                agent_result: dict[str, Any] = await tech_comparator_node(state)
 
                 # Extract findings
-                agent_findings = result.get("agent_findings", [])
-                finding = agent_findings[0] if agent_findings else {}
+                agent_findings: list[dict[str, Any]] = agent_result.get("agent_findings", [])
+                finding: dict[str, Any] = agent_findings[0] if agent_findings else {}
 
                 return {
                     "findings": finding.get("findings", []),
@@ -809,10 +816,10 @@ class LLMBenchmark:
             # This prevents race conditions when running concurrent benchmarks
             with benchmark_model_context(model_id):
                 # Invoke aggregation
-                result = await aggregate_findings(state)
+                synthesis_result: dict[str, Any] = await aggregate_findings(state)
 
                 # Extract insights
-                aggregated = result.get("aggregated_insights", {})
+                aggregated: dict[str, Any] = synthesis_result.get("aggregated_insights", {})
 
                 # Return all fields expected by synthesis_correctness_evaluator
                 # Field names must match AggregatedInsights schema exactly
@@ -1098,7 +1105,7 @@ class LLMBenchmark:
         winners: dict[str, str] = {}
 
         # Get all metric names
-        all_metrics = set()
+        all_metrics: set[str] = set()
         for exp in experiments:
             all_metrics.update(exp.metrics.keys())
 
