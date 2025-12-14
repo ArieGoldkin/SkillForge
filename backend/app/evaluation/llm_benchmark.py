@@ -47,11 +47,13 @@ Example:
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import subprocess
 import sys
 import time
 import uuid
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
@@ -69,6 +71,61 @@ from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregate_findings import aggregate_findings
 
 logger = get_logger(__name__)
+
+# Thread-safe context variables for runtime benchmark configuration
+# This allows async tasks to have isolated configurations without
+# mutating global settings (which would cause race conditions)
+_benchmark_model_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "benchmark_model_id", default=None
+)
+
+# Flag to indicate benchmark mode - used to skip progress persistence
+# which would fail due to FK constraint (synthetic UUIDs don't exist in analyses table)
+_benchmark_mode: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "benchmark_mode", default=False
+)
+
+
+@contextmanager
+def benchmark_model_context(model_id: str):
+    """Context manager for thread-safe model selection during benchmarks.
+
+    Use this to set the model_id for a specific async task without
+    affecting other concurrent tasks. Also sets benchmark_mode=True
+    to skip progress persistence (which would fail due to FK constraints
+    on synthetic analysis_ids).
+
+    Example:
+        with benchmark_model_context("gpt-4o-mini"):
+            result = await some_llm_function()
+
+    """
+    model_token = _benchmark_model_id.set(model_id)
+    mode_token = _benchmark_mode.set(True)
+    try:
+        yield
+    finally:
+        _benchmark_model_id.reset(model_token)
+        _benchmark_mode.reset(mode_token)
+
+
+def get_benchmark_model_id() -> str | None:
+    """Get the current benchmark model ID if set.
+
+    Returns None if not in a benchmark context, allowing callers
+    to fall back to settings.LLM_MODEL.
+    """
+    return _benchmark_model_id.get()
+
+
+def is_benchmark_mode() -> bool:
+    """Check if currently running in benchmark mode.
+
+    Returns True if inside a benchmark_model_context, indicating that
+    progress persistence should be skipped to avoid FK constraint errors.
+    """
+    return _benchmark_mode.get()
+
 
 # Type aliases for task types
 TaskType = Literal["supervisor", "agent", "synthesis"]
@@ -181,10 +238,72 @@ class LLMBenchmark:
             local_mode: If True, run evaluations locally without LangSmith dataset sync
 
         """
-        self.client = Client()
-        self.project_name = project_name
         self.local_mode = local_mode
-        logger.info("benchmark_initialized", project=project_name, local_mode=local_mode)
+        self.project_name = project_name
+
+        # Initialize LangSmith client with graceful fallback
+        if not local_mode:
+            try:
+                self.client = Client()
+            except Exception as e:
+                logger.warning(
+                    "langsmith_client_init_failed",
+                    error=str(e),
+                    message="Falling back to local mode",
+                )
+                self.client = None  # type: ignore[assignment]
+                self.local_mode = True
+        else:
+            self.client = None  # type: ignore[assignment]
+
+        logger.info("benchmark_initialized", project=project_name, local_mode=self.local_mode)
+
+    def validate_api_key(self, model_id: str) -> tuple[bool, str | None]:
+        """Validate that the API key exists for a model's provider.
+
+        Args:
+            model_id: Model identifier to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+
+        """
+        model_info = get_model_info(model_id)
+        if not model_info:
+            return False, f"Model '{model_id}' not found in registry"
+
+        api_key = getattr(settings, model_info.api_key_field, None)
+
+        if not api_key:
+            return False, f"Missing {model_info.api_key_field} for {model_info.provider}"
+
+        # Check for placeholder keys
+        if api_key.endswith("...") or api_key.startswith("sk-test"):
+            return False, f"{model_info.api_key_field} appears to be a placeholder"
+
+        return True, None
+
+    def get_available_models(self, model_ids: list[str]) -> tuple[list[str], dict[str, str]]:
+        """Filter models to only those with valid API keys configured.
+
+        Args:
+            model_ids: List of model identifiers to check
+
+        Returns:
+            Tuple of (available_models, errors_dict)
+
+        """
+        available: list[str] = []
+        errors: dict[str, str] = {}
+
+        for model_id in model_ids:
+            is_valid, error = self.validate_api_key(model_id)
+            if is_valid:
+                available.append(model_id)
+            else:
+                errors[model_id] = error or "Unknown error"
+
+        return available, errors
 
     def _get_experiment_metadata(self, model_id: str) -> dict[str, Any]:
         """Collect experiment metadata for reproducibility.
@@ -460,12 +579,26 @@ class LLMBenchmark:
             dataset_name=dataset_name,
         )
 
+        # Pre-flight: Validate API keys for all requested models
+        available_models, unavailable = self.get_available_models(model_ids)
+
+        if unavailable:
+            logger.warning(
+                "models_skipped_missing_api_keys",
+                unavailable=unavailable,
+                available=available_models,
+            )
+
+        if not available_models:
+            msg = f"No models available for comparison. Missing API keys: {unavailable}"
+            raise ValueError(msg)
+
         # Get default evaluators for task type
         evaluators = self._get_default_evaluators(task_type)
 
-        # Run experiments for each model
+        # Run experiments for each available model
         experiments: list[ExperimentResults] = []
-        for model_id in model_ids:
+        for model_id in available_models:
             try:
                 result = await self.run_experiment(
                     task_type=task_type,
@@ -620,11 +753,9 @@ class LLMBenchmark:
                 "supervisor_decision": {"agents": [agent_type]},
             }
 
-            # Configure model
-            original_model = settings.LLM_MODEL
-            try:
-                settings.LLM_MODEL = model_id
-
+            # Use thread-safe context variable instead of mutating global settings
+            # This prevents race conditions when running concurrent benchmarks
+            with benchmark_model_context(model_id):
                 # Invoke agent (use tech_comparator as example)
                 # In real implementation, would route to correct agent based on agent_type
                 result = await tech_comparator_node(state)
@@ -637,8 +768,6 @@ class LLMBenchmark:
                     "findings": finding.get("findings", []),
                     "confidence": finding.get("confidence", 0.0),
                 }
-            finally:
-                settings.LLM_MODEL = original_model
 
         return agent_target
 
@@ -676,24 +805,26 @@ class LLMBenchmark:
                 "agent_findings": agent_findings,
             }
 
-            # Configure model
-            original_model = settings.LLM_MODEL
-            try:
-                settings.LLM_MODEL = model_id
-
+            # Use thread-safe context variable instead of mutating global settings
+            # This prevents race conditions when running concurrent benchmarks
+            with benchmark_model_context(model_id):
                 # Invoke aggregation
                 result = await aggregate_findings(state)
 
                 # Extract insights
                 aggregated = result.get("aggregated_insights", {})
 
+                # Return all fields expected by synthesis_correctness_evaluator
+                # Field names must match AggregatedInsights schema exactly
                 return {
-                    "summary": aggregated.get("summary", ""),
-                    "key_points": aggregated.get("key_points", []),
+                    "executive_summary": aggregated.get("executive_summary", ""),
+                    "key_findings": aggregated.get("key_findings", []),
+                    "synthesis": aggregated.get("synthesis", {}),
+                    "conflicts_resolved": aggregated.get("conflicts_resolved", []),
+                    "coverage_gaps": aggregated.get("coverage_gaps", []),
+                    "cross_domain_connections": aggregated.get("cross_domain_connections", []),
                     "coverage_score": aggregated.get("coverage_score", 0.0),
                 }
-            finally:
-                settings.LLM_MODEL = original_model
 
         return synthesis_target
 
@@ -1026,7 +1157,11 @@ class LLMBenchmark:
         # Calculate savings vs each model
         for model_id, cost in costs.items():
             if model_id != min_cost_model:
-                savings_pct = ((cost - min_cost) / cost) * 100
+                # Prevent division by zero when cost is 0 (free tier, cached, etc.)
+                if cost > 0:
+                    savings_pct = ((cost - min_cost) / cost) * 100
+                else:
+                    savings_pct = 0.0  # Cannot calculate savings for zero-cost model
                 cost_savings[f"{model_id}_vs_{min_cost_model}"] = savings_pct
 
         return cost_savings

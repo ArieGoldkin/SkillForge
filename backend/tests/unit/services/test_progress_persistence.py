@@ -144,3 +144,103 @@ async def test_persist_progress_event_async_handles_task_errors(
 
     # Verify task was removed from tracking set
     assert len(_progress_tasks) == 0
+
+
+@pytest.mark.asyncio
+@patch("app.services.progress_persistence.persist_progress_event")
+@patch("app.services.progress_persistence.logger")
+async def test_persist_progress_event_async_skips_in_benchmark_mode(
+    mock_logger, mock_persist, sample_event_data
+):
+    """Test that persistence is skipped when in benchmark mode."""
+    from app.evaluation.llm_benchmark import benchmark_model_context
+    from app.services.progress_persistence import _progress_tasks
+
+    _progress_tasks.clear()
+
+    # Call persist within benchmark context - should be skipped
+    with benchmark_model_context("gpt-4o-mini"):
+        persist_progress_event_async(sample_event_data)
+
+    # Verify no task was created (persistence was skipped)
+    assert len(_progress_tasks) == 0
+
+    # Verify persist_progress_event was NOT called
+    assert not mock_persist.called
+
+    # Verify skip was logged at debug level
+    mock_logger.debug.assert_called()
+    debug_call = mock_logger.debug.call_args
+    assert "progress_persistence_skipped_benchmark_mode" in str(debug_call)
+
+
+@pytest.mark.asyncio
+@patch("app.services.progress_persistence.persist_progress_event")
+async def test_persist_progress_event_async_works_outside_benchmark_mode(
+    mock_persist, sample_event_data
+):
+    """Test that persistence works normally outside benchmark mode."""
+    from app.services.progress_persistence import _progress_tasks
+
+    _progress_tasks.clear()
+
+    # Call persist outside benchmark context - should work normally
+    persist_progress_event_async(sample_event_data)
+
+    # Verify task was created
+    assert len(_progress_tasks) == 1
+
+    # Wait for task to complete
+    task = next(iter(_progress_tasks))
+    await task
+
+    # Verify persist_progress_event WAS called
+    assert mock_persist.called
+    assert mock_persist.call_args[0][0] == sample_event_data
+
+
+def test_benchmark_mode_context_variable_isolation():
+    """Test that benchmark_mode context variable is properly isolated."""
+    from app.evaluation.llm_benchmark import benchmark_model_context, is_benchmark_mode
+
+    # Outside context - should be False
+    assert is_benchmark_mode() is False
+
+    # Inside context - should be True
+    with benchmark_model_context("test-model"):
+        assert is_benchmark_mode() is True
+
+        # Nested context maintains True
+        with benchmark_model_context("another-model"):
+            assert is_benchmark_mode() is True
+
+        # Still True after nested context exits
+        assert is_benchmark_mode() is True
+
+    # After context exits - should be False again
+    assert is_benchmark_mode() is False
+
+
+def test_benchmark_model_id_context_variable():
+    """Test that benchmark model_id context variable works correctly."""
+    from app.evaluation.llm_benchmark import (
+        benchmark_model_context,
+        get_benchmark_model_id,
+    )
+
+    # Outside context - should be None
+    assert get_benchmark_model_id() is None
+
+    # Inside context - should have model_id
+    with benchmark_model_context("gpt-4o-mini"):
+        assert get_benchmark_model_id() == "gpt-4o-mini"
+
+        # Nested context updates model_id
+        with benchmark_model_context("claude-sonnet-4"):
+            assert get_benchmark_model_id() == "claude-sonnet-4"
+
+        # After nested exits, returns to outer model_id
+        assert get_benchmark_model_id() == "gpt-4o-mini"
+
+    # After context exits - should be None again
+    assert get_benchmark_model_id() is None
