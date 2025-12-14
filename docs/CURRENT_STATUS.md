@@ -2,7 +2,7 @@
 
 **Date:** December 14, 2025
 **Branch:** `dev`
-**Current Focus:** 🟤 Triple-Consumer Artifacts (#299-304)
+**Current Focus:** 🟡 Tutoring System UI (Issues #113, #114, #116)
 **Path to Launch:** Triple-Consumer → Tutoring → Evaluation → Content Expansion → Staging/Production → Voice Tutor → Multimodal → MCP Server
 
 ---
@@ -35,8 +35,8 @@
 
 | Milestone | Issues | Status | Focus |
 |-----------|--------|--------|-------|
-| 🟤 Triple-Consumer Artifacts | #299-304 (6 open) | ★ CURRENT | Schema for AI/Tutor/Human consumers |
-| 🟡 Tutoring System | 9 open, 2 closed | Next | Socratic workflow, SSE streaming |
+| 🟤 Triple-Consumer Artifacts | #299-304 (6 open) | Backlog | Schema for AI/Tutor/Human consumers |
+| 🟡 Tutoring System | 6 open, 5 closed | ★ CURRENT | Socratic workflow, SSE streaming |
 | 🟠 Evaluation Pipeline | 4 open, 7 closed | 64% done | CI/CD regression detection, quality gates |
 | 📦 Content Expansion | 5 open | Backlog | YouTube & GitHub support |
 | 🔵 Staging/Production | 20 open | After Tutoring | Railway + Supabase + Vercel |
@@ -50,6 +50,119 @@
 - ✅ MCP Consumer (PR #262)
 - ✅ Context Engineering (PR #265, #277)
 - ✅ Evaluation Pipeline Perfection (PR #290, Issue #257)
+
+---
+
+## 🟡 Tutoring System UI Sprint (December 14, 2025)
+
+### Sprint Overview
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TUTOR UI SPRINT - DECEMBER 14, 2025                        ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║   USER FLOW (E2E Tested via Playwright)                                      ║
+║   ═════════════════════════════════════                                      ║
+║                                                                              ║
+║   Library → Analysis → "Teach Me" → Topic Modal → Tutor Session → Exit      ║
+║       │                    │              │              │           │       ║
+║       ▼                    ▼              ▼              ▼           ▼       ║
+║   ✅ Working         ✅ Working    ✅ Working    ✅ Working    ✅ Working    ║
+║                                                                              ║
+║   ISSUES COMPLETED                        PRs CREATED                        ║
+║   ════════════════                        ═══════════                        ║
+║   ✅ #114 Topic Selection Modal           PR #346: Auto-scroll + Markdown    ║
+║   ✅ #113 TutorChat Component (UI)        PR #347: Exit Tutoring             ║
+║   ✅ #116 Exit Tutoring Functionality                                        ║
+║                                                                              ║
+║   BACKEND VERIFIED                        REMAINING (Real API)               ║
+║   ════════════════                        ════════════════════               ║
+║   ✅ POST /tutor/sessions                 #307: Connect UI to Real API       ║
+║   ✅ GET /tutor/sessions/{id}             #306: Topics Endpoint (backend)    ║
+║   ✅ POST /tutor/sessions/{id}/messages   #115: Session Resume Logic         ║
+║   ✅ Syllabus generation working                                             ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+### Issues Status
+
+| Issue | Title | Status | PR |
+|-------|-------|--------|-----|
+| **#114** | Topic Selection Modal | ✅ Complete | Merged previously |
+| **#113** | TutorChat Component | ✅ UI Complete | PR #346 |
+| **#116** | Exit Tutoring Functionality | ✅ Complete | PR #347 |
+| **#306** | Topics Endpoint (Backend) | 🔵 Open | - |
+| **#307** | Connect UI to Real API | 🔵 Open | - |
+| **#115** | Session Resume Logic | 🔵 Open | - |
+
+### PR #346: TutorChat Improvements (Issue #113)
+
+**Changes:**
+- `MessagesArea.tsx`: Auto-scroll to bottom when messages change or typing indicator appears
+- `ChatMessage.tsx`: ReactMarkdown with remark-gfm for assistant message rendering
+- User messages remain plain text, assistant messages get markdown formatting
+
+**Tests:** All 201 tests pass
+
+### PR #347: Exit Tutoring Functionality (Issue #116)
+
+**Changes:**
+- `SessionHeader.tsx`: Exit button with LogOut icon
+- `ExitSessionDialog.tsx`: Confirmation dialog component
+- `TutorSession.tsx`: Pass sessionId and analysisId to header
+- `mock.service.ts`: Added `endSession` API method
+
+**Acceptance Criteria:**
+- [x] "Exit Tutoring" button in chat header
+- [x] Confirmation dialog: "Are you sure?"
+- [x] Marks session as completed on backend (mock)
+- [x] Redirects to artifact view
+- [x] Clears localStorage
+
+**Tests:** 211 tests pass (10 new tests)
+
+### Playwright E2E Testing Results
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Library page | ✅ Pass | Shows completed analyses |
+| "Teach Me" button (Analysis) | ✅ Pass | Opens topic modal |
+| "Teach Me" button (Artifact) | ✅ Pass | Opens topic modal |
+| Topic Selection Modal | ✅ Pass | 4 topics, radio selection |
+| Start Learning flow | ✅ Pass | Creates session, navigates |
+| Tutor Session page | ✅ Pass | Messages, avatars, timestamps |
+| Message sending | ✅ Pass | Input works, messages appear |
+| Exit button | ✅ Pass | Opens confirmation dialog |
+| Exit confirmation | ✅ Pass | Ends session, navigates |
+
+### Backend Tutor API Verification
+
+The backend tutor API was tested and confirmed working:
+
+```bash
+# Session creation
+POST /api/v1/tutor/sessions → 200 OK
+
+# Session retrieval
+GET /api/v1/tutor/sessions/{id} → 200 OK (with full syllabus!)
+
+# Message sending
+POST /api/v1/tutor/sessions/{id}/messages → 200 OK
+```
+
+**Syllabus Generated:**
+- Title: "LangGraph: Multi-Agent Workflows"
+- 3 sections, 6 lessons
+- Curriculum with explanations, examples, exercises
+
+### Next Steps
+
+1. **PR #346 & #347** - Merge after review
+2. **Issue #306** - Backend: Add topics endpoint
+3. **Issue #307** - Frontend: Connect to real API with SSE streaming
+4. **Issue #115** - Frontend: Session resume logic
 
 ---
 
@@ -725,7 +838,7 @@ Issue #40 (SSE Endpoint) ✅
 
 ---
 
-**Last Updated:** December 14, 2025 (Milestone reorganization - Triple-Consumer CURRENT)
+**Last Updated:** December 14, 2025 (Tutor UI Sprint - Issues #113, #114, #116 complete with E2E testing)
 **Maintained By:** Yonatan & Arie
 
 ---
