@@ -26,3 +26,6 @@ export {
   UnorderedListRenderer,
   ParagraphRenderer,
 } from './renderers'
+
+// Heading ID tracking utilities
+export { resetHeadingIds } from './headingIdTracker'

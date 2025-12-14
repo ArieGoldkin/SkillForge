@@ -7,6 +7,7 @@ import { cn } from '@lib/utils'
 import { slugify } from '../../TableOfContents/utils'
 
 import { CodeBlock } from './CodeBlock'
+import { makeUniqueHeadingId } from './headingIdTracker'
 import { MermaidRenderer } from './MermaidRenderer'
 import { ParagraphRenderer } from './ParagraphRenderer'
 
@@ -171,7 +172,9 @@ const createHeadingRenderer = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
   const Component = ((rawProps: HeadingRendererProps) => {
     const { children, node: _node, ...rest } = rawProps
     const text = getTextContent(children)
-    const id = slugify(text)
+    const baseId = slugify(text)
+    // Use unique ID to match TOC and prevent DOM ID collisions
+    const id = makeUniqueHeadingId(baseId)
     const HeadingTag = `h${level}` as const
 
     return (

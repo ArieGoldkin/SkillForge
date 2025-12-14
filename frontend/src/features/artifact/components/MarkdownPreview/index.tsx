@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm'
 
 import { cn } from '@lib/utils'
 
-import { MetadataHeader } from './internal'
+import { MetadataHeader, resetHeadingIds } from './internal'
 import { markdownRenderers } from './markdown-config'
 import type { MarkdownPreviewProps } from './types'
 
@@ -39,6 +39,10 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   className,
   showMetadata = true,
 }) => {
+  // Reset heading ID counters before each render to ensure unique IDs
+  // This must be called synchronously before ReactMarkdown renders
+  resetHeadingIds()
+
   if (!content || content.trim().length === 0) {
     return <EmptyState className={className} />
   }

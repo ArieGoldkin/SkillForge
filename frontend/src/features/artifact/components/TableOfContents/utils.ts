@@ -17,17 +17,32 @@ export function slugify(text: string): string {
 }
 
 /**
+ * Generate a unique ID by adding a suffix if the base ID already exists
+ * This prevents React key collisions when multiple headings have the same text
+ */
+function makeUniqueId(baseId: string, seenIds: Map<string, number>): string {
+  const count = seenIds.get(baseId) ?? 0
+  seenIds.set(baseId, count + 1)
+
+  // First occurrence uses base ID, subsequent ones get -2, -3, etc.
+  return count === 0 ? baseId : `${baseId}-${count + 1}`
+}
+
+/**
  * Extract headings from markdown content
  * Returns hierarchical structure with h3s nested under h2s
  *
  * IMPORTANT: Skips headings inside code blocks to prevent
  * extracting example headings from markdown code samples
+ *
+ * IDs are guaranteed unique to prevent React key collisions
  */
 export function extractHeadings(markdown: string): TocHeading[] {
   const lines = markdown.split('\n')
   const headings: TocHeading[] = []
   let currentH2: TocHeading | null = null
   let inCodeBlock = false
+  const seenIds = new Map<string, number>() // Track seen IDs for uniqueness
 
   for (const line of lines) {
     // Track code block state (``` or ~~~)
@@ -43,8 +58,9 @@ export function extractHeadings(markdown: string): TocHeading[] {
     const h2Match = line.match(/^##\s+(.+)$/)
     if (h2Match) {
       const text = h2Match[1].trim()
+      const baseId = slugify(text)
       const heading: TocHeading = {
-        id: slugify(text),
+        id: makeUniqueId(baseId, seenIds),
         text,
         level: 2,
         children: [],
@@ -58,8 +74,9 @@ export function extractHeadings(markdown: string): TocHeading[] {
     const h3Match = line.match(/^###\s+(.+)$/)
     if (h3Match && currentH2) {
       const text = h3Match[1].trim()
+      const baseId = slugify(text)
       const heading: TocHeading = {
-        id: slugify(text),
+        id: makeUniqueId(baseId, seenIds),
         text,
         level: 3,
       }

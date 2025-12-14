@@ -6,6 +6,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from app.core.config import settings
+from app.core.constants import DEFAULT_TITLE
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
@@ -118,10 +119,12 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
                 if title:
                     analysis.title = title  # type: ignore[assignment]
                 else:
+                    # Always persist a title - use default if extraction failed
+                    analysis.title = DEFAULT_TITLE  # type: ignore[assignment]
                     logger.warning(
-                        "persist_missing_title",
+                        "persist_default_title",
                         analysis_id=str(analysis_id),
-                        message="Workflow result missing title in extraction_metadata",
+                        message=f"Title missing, using default: {DEFAULT_TITLE}",
                     )
             else:
                 logger.warning(
