@@ -1,3 +1,26 @@
+# =============================================================================
+# E2E Tests Workflow - SkillForge
+# =============================================================================
+# This workflow runs End-to-End tests with two modes:
+#
+# 1. LIGHTWEIGHT E2E (default): Runs on all PRs
+#    - Tests UI rendering, navigation, API connectivity
+#    - NO real LLM/embedding calls (mocked or disabled)
+#    - Fast, cost-free, safe for fork PRs
+#
+# 2. FULL E2E WITH LLM (on-demand): Runs only when:
+#    - Triggered manually with enable_llm_tests=true
+#    - OR on push to main/dev branches (post-merge validation)
+#    - Uses real API keys for OpenAI, LangSmith, Jina
+#    - Tests actual AI workflow integration
+#
+# SECURITY:
+# - Fork PRs NEVER receive secrets (GitHub security model)
+# - Explicit fork protection condition added as defense-in-depth
+# - Secrets are only passed to Docker when explicitly enabled
+# - All API keys are masked in logs by GitHub Actions
+# =============================================================================
+
 name: E2E Tests
 
 on:
@@ -17,26 +40,101 @@ on:
       - 'docker-compose.e2e.yml'
   workflow_dispatch:
     inputs:
+      enable_llm_tests:
+        description: 'Enable full LLM integration tests (uses API credits)'
+        required: false
+        default: false
+        type: boolean
       run_docker_mode:
         description: 'Run full Docker E2E (slower, for debugging container issues)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
+# Minimal permissions - only read access to repository contents
 permissions:
   contents: read
 
+# Prevent concurrent E2E runs on the same branch to avoid resource conflicts
 concurrency:
   group: e2e-tests-${{ github.ref }}
   cancel-in-progress: true
 
+# =============================================================================
+# Environment Variables (non-sensitive, shared across jobs)
+# =============================================================================
+env:
+  # Use cost-efficient model for E2E testing
+  LLM_MODEL: gpt-4o-mini
+  # E2E environment identifier
+  ENVIRONMENT: e2e
+
 jobs:
-  # ============================================================================
-  # E2E Tests - Primary job using Docker Compose with BuildKit caching
-  # ============================================================================
-  e2e-tests:
+  # ===========================================================================
+  # SECURITY GATE: Determine if secrets should be used
+  # ===========================================================================
+  security-check:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    outputs:
+      is_fork_pr: ${{ steps.check.outputs.is_fork_pr }}
+      secrets_available: ${{ steps.check.outputs.secrets_available }}
+      enable_llm: ${{ steps.check.outputs.enable_llm }}
+    steps:
+      - name: Check security context
+        id: check
+        run: |
+          # Check if this is a fork PR (defense-in-depth, GitHub already protects secrets)
+          IS_FORK_PR="false"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]]; then
+              IS_FORK_PR="true"
+              echo "⚠️  Fork PR detected - secrets will NOT be available"
+            fi
+          fi
+          echo "is_fork_pr=${IS_FORK_PR}" >> $GITHUB_OUTPUT
+
+          # Check if secrets are configured (without exposing values)
+          SECRETS_AVAILABLE="false"
+          if [[ -n "${{ secrets.OPENAI_API_KEY }}" ]]; then
+            SECRETS_AVAILABLE="true"
+          fi
+          echo "secrets_available=${SECRETS_AVAILABLE}" >> $GITHUB_OUTPUT
+
+          # Determine if LLM tests should run:
+          # - Manual trigger with enable_llm_tests=true
+          # - OR push to main/dev (post-merge validation)
+          # - AND NOT a fork PR
+          # - AND secrets are available
+          ENABLE_LLM="false"
+          if [[ "${IS_FORK_PR}" == "false" && "${SECRETS_AVAILABLE}" == "true" ]]; then
+            if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.enable_llm_tests }}" == "true" ]]; then
+              ENABLE_LLM="true"
+              echo "✓ LLM tests enabled via manual trigger"
+            elif [[ "${{ github.event_name }}" == "push" ]]; then
+              ENABLE_LLM="true"
+              echo "✓ LLM tests enabled for push to protected branch"
+            fi
+          fi
+          echo "enable_llm=${ENABLE_LLM}" >> $GITHUB_OUTPUT
+
+          # Summary with full audit trail
+          echo "## Security Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered By | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Event | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fork PR | ${IS_FORK_PR} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets Available | ${SECRETS_AVAILABLE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| LLM Tests Enabled | ${ENABLE_LLM} |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # LIGHTWEIGHT E2E: UI and API connectivity tests (no LLM calls)
+  # ===========================================================================
+  e2e-lightweight:
+    runs-on: ubuntu-24.04
+    needs: security-check
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -68,14 +166,14 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Build and start E2E stack
+      - name: Build and start E2E stack (lightweight mode)
         run: |
-          # Use BuildKit for better layer caching
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
 
-          # Build and start services
-          docker compose -f docker-compose.e2e.yml up -d --build postgres backend-migrate backend backend-seed frontend-e2e
+          # Start services WITHOUT API keys - workflow disabled
+          docker compose -f docker-compose.e2e.yml up -d --build \
+            postgres backend-migrate backend backend-seed frontend-e2e
 
       - name: Wait for E2E stack to be ready
         run: |
@@ -107,19 +205,21 @@ jobs:
             sleep 2
           done
 
-      - name: Run Playwright E2E tests
+      - name: Run Playwright E2E tests (lightweight)
         working-directory: ./frontend
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:5174
           API_BASE_URL: http://localhost:8500
+          # Signal to tests that LLM is disabled
+          E2E_LLM_DISABLED: "true"
         run: npm run test:e2e -- --project=chromium
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-lightweight
           path: frontend/playwright-report/
           retention-days: 14
 
@@ -127,14 +227,14 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-results
+          name: playwright-results-lightweight
           path: frontend/test-results/
           retention-days: 7
 
       - name: Collect Docker logs on failure
         if: failure()
         run: |
-          echo "## Docker Compose Logs" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Compose Logs (Lightweight E2E)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           docker compose -f docker-compose.e2e.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -143,12 +243,182 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans
 
-  # ============================================================================
-  # Full Docker E2E - Only runs on manual dispatch for debugging
-  # ============================================================================
+  # ===========================================================================
+  # FULL E2E WITH LLM: Tests actual AI workflow integration
+  # ===========================================================================
+  e2e-with-llm:
+    runs-on: ubuntu-24.04
+    needs: [security-check, e2e-lightweight]
+    # Only run if:
+    # - Lightweight tests passed
+    # - LLM tests are enabled (push to main/dev OR manual trigger)
+    # - NOT a fork PR
+    if: |
+      needs.security-check.outputs.enable_llm == 'true' &&
+      needs.security-check.outputs.is_fork_pr == 'false'
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build and start E2E stack (with LLM)
+        env:
+          # Pass secrets to Docker Compose via environment
+          # These are ONLY available when security-check passes
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+
+          # Create .env file with restricted permissions (600 = owner read/write only)
+          # This prevents other processes on shared runners from reading secrets
+          touch .env.e2e
+          chmod 600 .env.e2e
+          cat > .env.e2e << EOF
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+          LANGCHAIN_TRACING_V2=true
+          LANGCHAIN_PROJECT=skillforge-e2e-ci
+          JINA_API_KEY=${JINA_API_KEY}
+          LLM_MODEL=gpt-4o-mini
+          ENVIRONMENT=e2e
+          # Enable workflow execution with real API keys
+          SKILLFORGE_E2E_DISABLE_WORKFLOW=false
+          EOF
+
+          # Start with real API keys - workflow ENABLED
+          docker compose -f docker-compose.e2e.yml --env-file .env.e2e up -d --build \
+            postgres backend-migrate backend backend-seed frontend-e2e
+
+          # Secure cleanup - overwrite before deletion (defense in depth)
+          shred -u .env.e2e 2>/dev/null || rm -f .env.e2e
+
+      - name: Wait for E2E stack to be ready
+        run: |
+          echo "Waiting for backend health check..."
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8500/api/v1/health >/dev/null 2>&1; then
+              echo "✓ Backend healthy after $i attempts"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "✗ Backend health check timed out"
+              docker compose -f docker-compose.e2e.yml logs backend
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "Waiting for frontend..."
+          for i in {1..30}; do
+            if curl -fsS http://localhost:5174 >/dev/null 2>&1; then
+              echo "✓ Frontend ready after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Frontend health check timed out"
+              docker compose -f docker-compose.e2e.yml logs frontend-e2e
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # Verify API key configuration in logs (without exposing values)
+          echo "Checking API key configuration..."
+          docker compose -f docker-compose.e2e.yml logs backend 2>&1 | grep -q "api_key_configuration" && \
+            echo "✓ API key validation logged" || \
+            echo "⚠️  API key validation not found in logs"
+
+      - name: Run Playwright E2E tests (with LLM)
+        working-directory: ./frontend
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: http://localhost:5174
+          API_BASE_URL: http://localhost:8500
+          # Signal to tests that LLM is enabled
+          E2E_LLM_ENABLED: "true"
+        run: |
+          # Run full test suite including LLM integration tests
+          npm run test:e2e -- --project=chromium
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-with-llm
+          path: frontend/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results-with-llm
+          path: frontend/test-results/
+          retention-days: 7
+
+      - name: Collect Docker logs on failure
+        if: failure()
+        run: |
+          echo "## Docker Compose Logs (Full E2E with LLM)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Comprehensive API key filtering for all supported LLM providers
+          # Patterns: OpenAI, Anthropic, LangChain, Jina, Google, xAI, DeepSeek, generic
+          docker compose -f docker-compose.e2e.yml logs --tail=100 2>&1 | \
+            sed 's/sk-proj-[a-zA-Z0-9_-]*/sk-proj-***REDACTED***/g' | \
+            sed 's/sk-ant-[a-zA-Z0-9_-]*/sk-ant-***REDACTED***/g' | \
+            sed 's/sk-[a-zA-Z0-9_-]*/sk-***REDACTED***/g' | \
+            sed 's/lsv2_[a-zA-Z0-9_]*/lsv2_***REDACTED***/g' | \
+            sed 's/jina_[a-zA-Z0-9_]*/jina_***REDACTED***/g' | \
+            sed -E 's/AIza[a-zA-Z0-9_-]{35}/AIza***REDACTED***/g' | \
+            sed 's/xai-[a-zA-Z0-9_-]*/xai-***REDACTED***/g' | \
+            sed 's/Bearer [a-zA-Z0-9_.-]*/Bearer ***REDACTED***/g' | \
+            sed -E 's/(password|secret|token|api_key)=[^ ]*/\1=***REDACTED***/gi' >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup E2E stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.e2e.yml down -v --remove-orphans
+          # Ensure no env files remain
+          rm -f .env.e2e .env
+
+  # ===========================================================================
+  # DOCKER MODE: Full containerized E2E (debugging only)
+  # ===========================================================================
   e2e-docker:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_docker_mode == true }}
     runs-on: ubuntu-24.04
+    needs: security-check
     timeout-minutes: 45
 
     steps:
