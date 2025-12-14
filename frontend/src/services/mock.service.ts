@@ -5,11 +5,11 @@ import type {
   Artifact,
   TutoringMessage,
   TutoringSession,
+  TutoringTopic,
 } from '@app-types/api'
 
-// Mock data for development (until backend is ready)
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Multiple analyses for Library page
 export const mockAnalyses: Analysis[] = [
   {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -17,7 +17,7 @@ export const mockAnalyses: Analysis[] = [
     content_type: 'article',
     title: 'Introduction to React Server Components',
     status: 'complete',
-    created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+    created_at: new Date(Date.now() - 86400000).toISOString(),
     artifact_id: 'artifact-123',
   },
   {
@@ -26,7 +26,7 @@ export const mockAnalyses: Analysis[] = [
     content_type: 'video',
     title: 'Advanced TypeScript Patterns',
     status: 'complete',
-    created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+    created_at: new Date(Date.now() - 172800000).toISOString(),
     artifact_id: 'artifact-124',
   },
   {
@@ -35,7 +35,7 @@ export const mockAnalyses: Analysis[] = [
     content_type: 'repo',
     title: 'Next.js Repository Analysis',
     status: 'complete',
-    created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+    created_at: new Date(Date.now() - 259200000).toISOString(),
     artifact_id: 'artifact-125',
   },
   {
@@ -44,7 +44,7 @@ export const mockAnalyses: Analysis[] = [
     content_type: 'article',
     title: 'Python Documentation Deep Dive',
     status: 'analyzing',
-    created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+    created_at: new Date(Date.now() - 3600000).toISOString(),
     artifact_id: null,
   },
 ]
@@ -57,20 +57,12 @@ export const mockArtifact: Artifact = {
   markdown_content: `# Implementation Guide: React Server Components
 
 ## Overview
-React Server Components allow you to write components that render on the server...
+React Server Components allow you to write components that render on the server.
 
 ## Key Concepts
 - Server Components run only on the server
 - Client Components run in the browser
 - Data fetching happens on the server
-
-## Example Code
-\`\`\`typescript
-async function ServerComponent() {
-  const data = await fetch('https://api.example.com/data')
-  return <div>{data.title}</div>
-}
-\`\`\`
 `,
   version: 1,
   metadata: {
@@ -82,9 +74,25 @@ async function ServerComponent() {
   created_at: new Date().toISOString(),
 }
 
+export const mockTutoringTopics: TutoringTopic[] = [
+  { id: 'topic-1', name: 'React Server Components', description: 'Learn how RSC works' },
+  {
+    id: 'topic-2',
+    name: 'Data Fetching Patterns',
+    description: 'Async/await in server components',
+  },
+  {
+    id: 'topic-3',
+    name: 'Performance Optimization',
+    description: 'Optimize rendering and loading',
+  },
+  { id: 'topic-all', name: 'All Topics', description: 'Overview of all concepts' },
+]
+
 export const mockTutoringSession: TutoringSession = {
   id: 'session-456',
   analysis_id: '550e8400-e29b-41d4-a716-446655440000',
+  topic_id: 'topic-1',
   status: 'active',
   started_at: new Date().toISOString(),
   completed_at: null,
@@ -95,8 +103,7 @@ export const mockTutoringMessages: TutoringMessage[] = [
     id: 'msg-1',
     session_id: 'session-456',
     role: 'assistant',
-    content:
-      'Hello! I can help you implement React Server Components. What would you like to learn?',
+    content: 'Hello! I can help you with React Server Components. What would you like to learn?',
     created_at: new Date(Date.now() - 300000).toISOString(),
   },
   {
@@ -106,23 +113,11 @@ export const mockTutoringMessages: TutoringMessage[] = [
     content: 'How do I fetch data in a Server Component?',
     created_at: new Date(Date.now() - 240000).toISOString(),
   },
-  {
-    id: 'msg-3',
-    session_id: 'session-456',
-    role: 'assistant',
-    content:
-      "Great question! In Server Components, you can fetch data directly using async/await. Here's an example:\n\n```typescript\nasync function UserProfile({ userId }: { userId: string }) {\n  const user = await fetch(`https://api.example.com/users/${userId}`)\n  const data = await user.json()\n  return <div>{data.name}</div>\n}\n```\n\nWhat makes this powerful is that it runs on the server, so you never expose API keys to the client.",
-    created_at: new Date(Date.now() - 180000).toISOString(),
-  },
 ]
-
-// Mock API functions (to be replaced with real API calls)
 
 export const mockAnalyzeAPI = {
   createAnalysis: async (_request: AnalyzeRequest): Promise<AnalyzeResponse> => {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
+    await delay(500)
     const analysisId = `analysis-${Date.now()}`
     return {
       analysis_id: analysisId,
@@ -130,42 +125,45 @@ export const mockAnalyzeAPI = {
       status: 'pending',
     }
   },
-
   getAnalysis: async (id: string): Promise<Analysis> => {
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    const found = mockAnalyses.find((a) => a.id === id)
-    return found || mockAnalysis
+    await delay(300)
+    return mockAnalyses.find((a) => a.id === id) || mockAnalysis
   },
-
   getArtifact: async (_id: string): Promise<Artifact> => {
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await delay(300)
     return mockArtifact
   },
-
   listAnalyses: async (): Promise<Analysis[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await delay(400)
     return mockAnalyses
   },
 }
 
 export const mockTutoringAPI = {
-  createSession: async (_analysisId: string): Promise<TutoringSession> => {
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    return mockTutoringSession
+  getTopics: async (_analysisId: string): Promise<TutoringTopic[]> => {
+    await delay(300)
+    return mockTutoringTopics
   },
-
+  createSession: async (analysisId: string, topicId?: string): Promise<TutoringSession> => {
+    await delay(400)
+    return {
+      ...mockTutoringSession,
+      id: `session-${Date.now()}`,
+      analysis_id: analysisId,
+      topic_id: topicId,
+      started_at: new Date().toISOString(),
+    }
+  },
   getSession: async (_sessionId: string): Promise<TutoringSession> => {
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    await delay(200)
     return mockTutoringSession
   },
-
   getMessages: async (_sessionId: string): Promise<TutoringMessage[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 200))
+    await delay(200)
     return mockTutoringMessages
   },
-
   sendMessage: async (sessionId: string, content: string): Promise<TutoringMessage> => {
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    await delay(600)
     return {
       id: `msg-${Date.now()}`,
       session_id: sessionId,

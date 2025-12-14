@@ -44,9 +44,16 @@ export interface Artifact {
   created_at: string
 }
 
+export interface TutoringTopic {
+  id: string
+  name: string
+  description?: string
+}
+
 export interface TutoringSession {
   id: string
   analysis_id: string
+  topic_id?: string
   status: 'active' | 'completed' | 'abandoned'
   started_at: string
   completed_at: string | null

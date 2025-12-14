@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillForge - Tutor Entry Point Prototype</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* SkillForge Theme - OKLCH Colors */
+    :root {
+      --background: oklch(0.9911 0 0);
+      --foreground: oklch(0.2046 0 0);
+      --card: oklch(0.9911 0 0);
+      --card-foreground: oklch(0.2046 0 0);
+      --primary: oklch(0.8348 0.1302 160.9080);
+      --primary-foreground: oklch(0.2626 0.0147 166.4589);
+      --secondary: oklch(0.9461 0 0);
+      --secondary-foreground: oklch(0.2046 0 0);
+      --muted: oklch(0.9461 0 0);
+      --muted-foreground: oklch(0.5 0 0);
+      --accent: oklch(0.9461 0 0);
+      --border: oklch(0.9037 0 0);
+      --ring: oklch(0.8348 0.1302 160.9080);
+      --radius: 0.5rem;
+      --success: oklch(0.7 0.15 145);
+      --success-bg: oklch(0.95 0.03 145);
+    }
+
+    .dark {
+      --background: oklch(0.1822 0 0);
+      --foreground: oklch(0.9288 0.0126 255.5078);
+      --card: oklch(0.2046 0 0);
+      --card-foreground: oklch(0.9288 0.0126 255.5078);
+      --primary: oklch(0.6 0.12 160);
+      --primary-foreground: oklch(0.95 0.02 160);
+      --secondary: oklch(0.2603 0 0);
+      --secondary-foreground: oklch(0.9851 0 0);
+      --muted: oklch(0.2393 0 0);
+      --muted-foreground: oklch(0.7122 0 0);
+      --border: oklch(0.2809 0 0);
+      --success: oklch(0.6 0.12 145);
+      --success-bg: oklch(0.25 0.03 145);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--background);
+      color: var(--foreground);
+      line-height: 1.6;
+      letter-spacing: 0.025em;
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius);
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-lg {
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary);
+      color: var(--secondary-foreground);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--muted);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--foreground);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      background-color: var(--secondary);
+    }
+
+    .btn-teach {
+      background-color: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .btn-teach:hover {
+      background-color: var(--success);
+      color: white;
+    }
+
+    /* Card Styles */
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 50;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background-color: var(--card);
+      border-radius: calc(var(--radius) * 1.5);
+      padding: 2rem;
+      max-width: 28rem;
+      width: 90%;
+      transform: scale(0.95);
+      transition: transform 0.15s ease;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    /* Radio Button Styles */
+    .topic-item {
+      display: flex;
+      align-items: center;
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+
+    .topic-item:hover {
+      background-color: var(--muted);
+    }
+
+    .topic-item.selected {
+      background-color: var(--success-bg);
+    }
+
+    .radio-circle {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      margin-right: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .topic-item.selected .radio-circle {
+      border-color: var(--success);
+    }
+
+    .radio-circle::after {
+      content: '';
+      width: 0.625rem;
+      height: 0.625rem;
+      border-radius: 50%;
+      background-color: var(--success);
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.15s ease;
+    }
+
+    .topic-item.selected .radio-circle::after {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Success Icon Animation */
+    .success-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background-color: var(--success-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+
+    .success-icon svg {
+      color: var(--success);
+    }
+
+    /* Info Box */
+    .info-box {
+      background-color: var(--muted);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+    }
+
+    .info-box svg {
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 100;
+    }
+
+    /* Section Divider */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 3rem 0;
+    }
+
+    /* Header Component */
+    .artifact-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 1.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme Toggle -->
+  <div class="theme-toggle">
+    <button onclick="toggleTheme()" class="btn btn-outline btn-sm">
+      <i data-lucide="sun" class="w-4 h-4 dark-hidden"></i>
+      <i data-lucide="moon" class="w-4 h-4 light-hidden" style="display:none;"></i>
+      Toggle Theme
+    </button>
+  </div>
+
+  <div style="max-width: 900px; margin: 0 auto; padding: 4rem 1.5rem;">
+
+    <!-- Page Title -->
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Tutor Entry Point - Prototype</h1>
+      <p style="color: var(--muted-foreground);">Interactive prototype for "Teach Me" button integration</p>
+    </div>
+
+    <!-- Section 1: Analysis Complete Card -->
+    <section>
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--muted-foreground);">
+        1. Analysis Complete Card (with Teach Me button)
+      </h2>
+
+      <div class="card" style="text-align: center; max-width: 500px; margin: 0 auto;">
+        <!-- Success Icon -->
+        <div class="success-icon">
+          <i data-lucide="check" style="width: 2rem; height: 2rem;"></i>
+        </div>
+
+        <!-- Content -->
+        <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Analysis Complete</h3>
+        <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">
+          Your implementation guide is ready. View the detailed analysis with code examples.
+        </p>
+
+        <!-- Action Buttons - 3 buttons now -->
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-outline btn-lg">
+            <i data-lucide="eye" style="width: 1.25rem; height: 1.25rem;"></i>
+            Preview
+          </button>
+          <button class="btn btn-teach btn-lg" onclick="openModal()">
+            <i data-lucide="graduation-cap" style="width: 1.25rem; height: 1.25rem;"></i>
+            Teach Me
+          </button>
+          <button class="btn btn-primary btn-lg">
+            <i data-lucide="file-text" style="width: 1.25rem; height: 1.25rem;"></i>
+            View Guide
+            <i data-lucide="arrow-right" style="width: 1rem; height: 1rem;"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Section 2: Artifact Page Header -->
+    <section>
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--muted-foreground);">
+        2. Artifact Page Header (with Teach Me button)
+      </h2>
+
+      <div class="artifact-header">
+        <div>
+          <h3 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem;">Implementation Guide</h3>
+          <p style="color: var(--muted-foreground); font-size: 0.9375rem;">Generated artifact from content analysis</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-teach btn-sm" onclick="openModal()">
+            <i data-lucide="graduation-cap" style="width: 1rem; height: 1rem;"></i>
+            Teach Me
+          </button>
+          <button class="btn btn-outline btn-sm">
+            <i data-lucide="download" style="width: 1rem; height: 1rem;"></i>
+            Download
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Section 3: Compact Column Layout -->
+    <section>
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--muted-foreground);">
+        3. Compact Layout (Mobile / Column View)
+      </h2>
+
+      <div class="card" style="text-align: center; max-width: 320px; margin: 0 auto;">
+        <!-- Success Icon (smaller) -->
+        <div class="success-icon" style="width: 3rem; height: 3rem; margin-bottom: 1rem;">
+          <i data-lucide="check" style="width: 1.5rem; height: 1.5rem;"></i>
+        </div>
+
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.375rem;">Analysis Complete</h3>
+        <p style="color: var(--muted-foreground); font-size: 0.875rem; margin-bottom: 1.25rem;">
+          Your guide is ready.
+        </p>
+
+        <!-- Stacked buttons -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button class="btn btn-outline" style="width: 100%;">
+            <i data-lucide="eye" style="width: 1rem; height: 1rem;"></i>
+            Preview
+          </button>
+          <button class="btn btn-teach" style="width: 100%;" onclick="openModal()">
+            <i data-lucide="graduation-cap" style="width: 1rem; height: 1rem;"></i>
+            Teach Me
+          </button>
+          <button class="btn btn-primary" style="width: 100%;">
+            <i data-lucide="file-text" style="width: 1rem; height: 1rem;"></i>
+            View Guide
+            <i data-lucide="arrow-right" style="width: 1rem; height: 1rem;"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Section 4: Button to Open Modal Demo -->
+    <section style="text-align: center;">
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--muted-foreground);">
+        4. Topic Selection Modal
+      </h2>
+      <p style="color: var(--muted-foreground); margin-bottom: 1.5rem;">
+        Click any "Teach Me" button above, or click below to see the modal:
+      </p>
+      <button class="btn btn-teach btn-lg" onclick="openModal()">
+        <i data-lucide="graduation-cap" style="width: 1.25rem; height: 1.25rem;"></i>
+        Open Topic Selection Modal
+      </button>
+    </section>
+
+  </div>
+
+  <!-- Topic Selection Modal -->
+  <div id="modal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <!-- Close Button -->
+      <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; color: var(--muted-foreground); padding: 0.5rem;">
+        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem;"></i>
+      </button>
+
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--success-bg); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+          <i data-lucide="graduation-cap" style="width: 1.75rem; height: 1.75rem; color: var(--success);"></i>
+        </div>
+        <h3 style="font-size: 1.375rem; font-weight: 700; margin-bottom: 0.25rem;">Start Tutoring Session</h3>
+        <p style="color: var(--muted-foreground); font-size: 0.9375rem;">Learn through interactive Socratic dialogue</p>
+      </div>
+
+      <!-- Topic List -->
+      <div style="margin-bottom: 1.25rem;">
+        <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: 0.75rem;">Select a topic to learn:</p>
+        <div style="border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;">
+          <div class="topic-item" onclick="selectTopic(this)">
+            <div class="radio-circle"></div>
+            <span>React Server Components</span>
+          </div>
+          <div class="topic-item selected" onclick="selectTopic(this)">
+            <div class="radio-circle"></div>
+            <span>Data Fetching Patterns</span>
+          </div>
+          <div class="topic-item" onclick="selectTopic(this)">
+            <div class="radio-circle"></div>
+            <span>Performance Optimization</span>
+          </div>
+          <div class="topic-item" onclick="selectTopic(this)">
+            <div class="radio-circle"></div>
+            <span>Security Best Practices</span>
+          </div>
+          <div style="border-top: 1px solid var(--border);"></div>
+          <div class="topic-item" onclick="selectTopic(this)">
+            <div class="radio-circle"></div>
+            <span style="color: var(--muted-foreground);">All Topics (AI chooses)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="info-box" style="margin-bottom: 1.5rem;">
+        <i data-lucide="info" style="width: 1rem; height: 1rem; color: var(--success);"></i>
+        <p style="margin: 0;">The AI tutor will ask guiding questions rather than giving direct answers, helping you discover concepts through dialogue.</p>
+      </div>
+
+      <!-- Actions -->
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary">
+          Start Learning
+          <i data-lucide="arrow-right" style="width: 1rem; height: 1rem;"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Modal functions
+    function openModal() {
+      document.getElementById('modal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function closeModalOnOverlay(event) {
+      if (event.target === event.currentTarget) {
+        closeModal();
+      }
+    }
+
+    // Topic selection
+    function selectTopic(element) {
+      document.querySelectorAll('.topic-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      element.classList.add('selected');
+    }
+
+    // Theme toggle
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      document.querySelector('.dark-hidden').style.display = isDark ? 'none' : 'block';
+      document.querySelector('.light-hidden').style.display = isDark ? 'block' : 'none';
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>

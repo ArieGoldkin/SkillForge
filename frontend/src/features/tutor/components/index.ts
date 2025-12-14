@@ -15,3 +15,9 @@ export {
   SocraticPrompt,
   type SocraticPromptProps,
 } from './SocraticPrompt'
+
+export {
+  TopicSelectModal,
+  type TopicSelectModalProps,
+  type TutoringTopic,
+} from './TopicSelectModal'
