@@ -24,8 +24,59 @@ const initializeMermaid = () => {
     securityLevel: 'loose',
     fontFamily: 'inherit',
     fontSize: 14,
+    // Flowchart configuration for proper text rendering (Issue #299-304)
+    flowchart: {
+      htmlLabels: true, // Enable HTML labels for better text handling
+      nodeSpacing: 50, // Space between nodes
+      rankSpacing: 50, // Space between ranks
+      curve: 'basis', // Smooth curves
+      padding: 15, // Padding inside nodes
+      useMaxWidth: false, // Don't constrain to container width
+    },
+    // Ensure proper wrapping for long text
+    themeVariables: {
+      fontSize: '14px',
+      fontFamily: 'inherit',
+    },
   })
   isMermaidInitialized = true
+}
+
+/**
+ * Inject custom CSS styles for proper text rendering (Issue #299-304)
+ * Only adds styles once globally
+ */
+const injectCustomStyles = () => {
+  if (document.getElementById('mermaid-custom-styles')) return
+
+  const styleEl = document.createElement('style')
+  styleEl.id = 'mermaid-custom-styles'
+  styleEl.textContent = `
+    .mermaid-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .mermaid-container .node rect {
+      rx: 5;
+      ry: 5;
+    }
+    .mermaid-container .nodeLabel,
+    .mermaid-container .node .label {
+      white-space: normal;
+      overflow: visible !important;
+    }
+    .mermaid-container text {
+      overflow: visible !important;
+    }
+    .mermaid-container .node rect,
+    .mermaid-container .node polygon,
+    .mermaid-container .node circle,
+    .mermaid-container .node ellipse {
+      fill: #f9fafb;
+      stroke: #e5e7eb;
+    }
+  `
+  document.head.appendChild(styleEl)
 }
 
 /**
@@ -71,6 +122,7 @@ const renderMermaidDiagram = async (element: HTMLDivElement, code: string) => {
  * - Re-renders on code changes
  * - Supports interactive diagrams via bindFunctions
  * - Error handling with fallback to code display
+ * - Custom CSS for proper text rendering (Issue #299-304)
  */
 export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code, className }) => {
   const elementRef = useRef<HTMLDivElement>(null)
@@ -78,6 +130,8 @@ export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code, classNam
   useEffect(() => {
     // Initialize mermaid globally (idempotent - only runs once)
     initializeMermaid()
+    // Add custom styles for proper text rendering (Issue #299-304)
+    injectCustomStyles()
   }, [])
 
   useEffect(() => {
