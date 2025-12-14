@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """Load golden dataset with individual analyses, artifacts, and chunks.
 
+IMPORTANT: This script creates PLACEHOLDER artifacts that should be regenerated
+through the real LangGraph workflow. For production-quality artifacts:
+1. Use `backup_golden_dataset.py restore` if backup exists
+2. Or run real analyses through the workflow API
+
 This script creates a proper library of completed analyses from the golden dataset,
 where each document becomes its own analysis with:
 - Analysis record (completed status)
-- Artifact (generated markdown implementation guide)
+- Artifact (PLACEHOLDER - needs real workflow regeneration)
 - Chunks (sections with embeddings)
 
 Usage:
     poetry run python scripts/load_golden_dataset.py [--replace]
+
+    # Preferred: Restore from backup with real artifacts
+    poetry run python scripts/backup_golden_dataset.py restore [--replace]
 
 Options:
     --replace   Clear existing data before loading
@@ -31,16 +39,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def generate_artifact_markdown(doc: dict) -> str:
-    """Generate a realistic implementation guide markdown from document data."""
+def generate_placeholder_artifact(doc: dict) -> str:
+    """Generate a placeholder artifact that indicates real workflow is needed.
+
+    NOTE: This creates a minimal placeholder. For real artifacts with:
+    - AI Assistant prompts
+    - Core concepts
+    - Exercises
+    - Diagrams
+    - Quality validation
+
+    Use `backup_golden_dataset.py restore` or run through the real workflow.
+    """
     title = doc["title"]
     content_type = doc.get("content_type", "article")
     tags = doc.get("tags", [])
     sections = doc.get("sections", [])
 
-    # Build markdown content
+    # Build minimal placeholder markdown
     md_parts = [
         f"# {title}",
+        "",
+        "> **⚠️ PLACEHOLDER ARTIFACT**",
+        "> This artifact was created from fixture data and needs regeneration",
+        "> through the real LangGraph workflow for full quality.",
         "",
         "## Overview",
         "",
@@ -52,147 +74,45 @@ def generate_artifact_markdown(doc: dict) -> str:
         md_parts.append(intro)
         md_parts.append("")
 
-    # Add table of contents
-    md_parts.append("## Table of Contents")
-    md_parts.append("")
-    for i, section in enumerate(sections, 1):
-        section_title = section.get("title", f"Section {i}")
-        anchor = section_title.lower().replace(" ", "-").replace("'", "")
-        md_parts.append(f"{i}. [{section_title}](#{anchor})")
-    md_parts.append("")
-
-    # Add each section as a chapter
+    # Add section content (the real content from fixtures)
     for section in sections:
         section_title = section.get("title", "Section")
         content = section.get("content", "")
-
         md_parts.append(f"## {section_title}")
         md_parts.append("")
         md_parts.append(content)
         md_parts.append("")
 
-    # Add code examples section based on content type
-    md_parts.append("## Code Examples")
-    md_parts.append("")
-
-    if content_type == "tutorial":
-        md_parts.append("### Python Implementation")
-        md_parts.append("")
-        md_parts.append("```python")
-        md_parts.append("# Example implementation for this tutorial")
-        md_parts.append(f"def {title.lower().replace(' ', '_').replace('-', '_')[:30]}():")
-        md_parts.append('    """Implement the core functionality."""')
-        md_parts.append("    # Step 1: Initialize")
-        md_parts.append("    config = {'enabled': True}")
-        md_parts.append("    ")
-        md_parts.append("    # Step 2: Process")
-        md_parts.append("    result = process_data(config)")
-        md_parts.append("    ")
-        md_parts.append("    return result")
-        md_parts.append("```")
-        md_parts.append("")
-        md_parts.append("### TypeScript Alternative")
-        md_parts.append("")
-        md_parts.append("```typescript")
-        md_parts.append("// TypeScript version of the implementation")
-        md_parts.append("interface Config {")
-        md_parts.append("  enabled: boolean;")
-        md_parts.append("  options?: Record<string, unknown>;")
-        md_parts.append("}")
-        md_parts.append("")
-        md_parts.append("export function processData(config: Config): Result {")
-        md_parts.append("  return { success: true, data: config };")
-        md_parts.append("}")
-        md_parts.append("```")
-        md_parts.append("")
-    elif content_type == "research_paper":
-        md_parts.append("### Benchmark Code")
-        md_parts.append("")
-        md_parts.append("```python")
-        md_parts.append("import time")
-        md_parts.append("from typing import List")
-        md_parts.append("")
-        md_parts.append("def benchmark(func, iterations: int = 1000) -> float:")
-        md_parts.append('    """Measure average execution time."""')
-        md_parts.append("    start = time.perf_counter()")
-        md_parts.append("    for _ in range(iterations):")
-        md_parts.append("        func()")
-        md_parts.append("    return (time.perf_counter() - start) / iterations")
-        md_parts.append("```")
-        md_parts.append("")
-        md_parts.append("### Analysis Script")
-        md_parts.append("")
-        md_parts.append("```bash")
-        md_parts.append("#!/bin/bash")
-        md_parts.append("# Run the benchmark suite")
-        md_parts.append("python -m pytest benchmarks/ --benchmark-json=results.json")
-        md_parts.append("python scripts/analyze_results.py results.json")
-        md_parts.append("```")
-        md_parts.append("")
-    else:
-        # article or documentation
-        md_parts.append("### Configuration Example")
-        md_parts.append("")
-        md_parts.append("```yaml")
-        md_parts.append("# Configuration for this feature")
-        md_parts.append("feature:")
-        md_parts.append("  enabled: true")
-        md_parts.append("  settings:")
-        md_parts.append("    timeout: 30")
-        md_parts.append("    retries: 3")
-        md_parts.append("    cache: true")
-        md_parts.append("```")
-        md_parts.append("")
-        md_parts.append("### Usage Example")
-        md_parts.append("")
-        md_parts.append("```python")
-        md_parts.append("from skillforge import Feature")
-        md_parts.append("")
-        md_parts.append("# Initialize with configuration")
-        md_parts.append("feature = Feature.from_config('config.yaml')")
-        md_parts.append("result = feature.execute()")
-        md_parts.append("print(f'Result: {result}')")
-        md_parts.append("```")
-        md_parts.append("")
-
-    # Add implementation notes based on content type
-    md_parts.append("## Implementation Notes")
-    md_parts.append("")
-
-    if content_type == "tutorial":
-        md_parts.append("### Getting Started")
-        md_parts.append("")
-        md_parts.append("1. Review the concepts above before implementation")
-        md_parts.append("2. Start with a minimal working example")
-        md_parts.append("3. Iterate and add complexity gradually")
-        md_parts.append("4. Test each component independently")
-    elif content_type == "research_paper":
-        md_parts.append("### Key Takeaways")
-        md_parts.append("")
-        md_parts.append("- Understand the theoretical foundations first")
-        md_parts.append("- Consider tradeoffs between approaches")
-        md_parts.append("- Benchmark against your specific use case")
-        md_parts.append("- Monitor performance in production")
-    else:
-        md_parts.append("### Best Practices")
-        md_parts.append("")
-        md_parts.append("- Apply concepts incrementally to existing code")
-        md_parts.append("- Document decisions and rationale")
-        md_parts.append("- Review and refactor as understanding deepens")
-
-    md_parts.append("")
-
-    # Add tags as topics
+    # Add tags
     if tags:
-        md_parts.append("## Related Topics")
+        md_parts.append("## Topics")
         md_parts.append("")
         md_parts.append(", ".join(f"`{tag}`" for tag in tags))
         md_parts.append("")
 
-    # Footer
-    md_parts.append("---")
-    md_parts.append("")
-    md_parts.append(f"*Generated from SkillForge Golden Dataset - {content_type.title()}*")
+    # Placeholder sections (to be filled by real workflow)
+    md_parts.extend(
+        [
+            "---",
+            "",
+            "## 🤖 AI Assistant Prompt",
+            "",
+            "*Pending: Run through LangGraph workflow for AI-ready implementation guide*",
+            "",
+            "## Core Concepts",
+            "",
+            "*Pending: Run through LangGraph workflow for structured concepts*",
+            "",
+            "## Practice Exercises",
+            "",
+            "*Pending: Run through LangGraph workflow for exercises and quizzes*",
+            "",
+            "---",
+            "",
+            f"*Placeholder from SkillForge Golden Dataset - {content_type.title()}*",
+            "*Regenerate via workflow for full triple-purpose artifact*",
+        ]
+    )
 
     return "\n".join(md_parts)
 
@@ -271,8 +191,8 @@ async def main(replace: bool = False) -> int:
             )
             session.add(analysis)
 
-            # Generate and create artifact
-            markdown_content = generate_artifact_markdown(doc)
+            # Generate placeholder artifact (needs real workflow for full quality)
+            markdown_content = generate_placeholder_artifact(doc)
 
             artifact = Artifact(
                 id=artifact_id,
@@ -283,8 +203,10 @@ async def main(replace: bool = False) -> int:
                     "topics": tags,
                     "complexity": "intermediate",
                     "section_count": len(sections),
-                    "source": "golden-dataset",
+                    "source": "golden-dataset-placeholder",
                     "document_id": doc_id,
+                    "needs_regeneration": True,
+                    "placeholder_reason": "Created from fixtures, needs real workflow",
                 },
             )
             session.add(artifact)

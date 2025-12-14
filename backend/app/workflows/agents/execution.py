@@ -64,6 +64,7 @@ class AgentExecutionParams:
     content_type: str
     analysis_id: AnalysisID
     agent_type: str
+    proactive_context: str = ""  # Issue #300: Proactive memory context
 
 
 @dataclass
@@ -113,10 +114,12 @@ async def _run_agent_with_tracking_impl(
 
     try:
         # Build user prompt using prompt builder
+        # Issue #300: Include proactive context from memory recall
         user_prompt = build_agent_user_prompt(
             content=params.content,
             content_type=params.content_type,
             max_length=config.max_content_length,
+            proactive_context=params.proactive_context,
         )
 
         # Invoke agent with structured output (async with timeout)
@@ -235,6 +238,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     agent_type: str,
     session: AsyncSession,
     max_content_length: int = 12000,
+    proactive_context: str = "",
 ) -> dict[str, object]:
     """Run an agent with progress tracking, error handling, and database persistence.
 
@@ -242,7 +246,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     node (e.g., tech_comparator_node) is already traced. Adding tracing here would
     create duplicate traces in LangSmith.
 
-    Note: This function accepts 7 parameters for backward compatibility with existing callers.
+    Note: This function accepts 8 parameters for backward compatibility with existing callers.
     Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig
     dataclasses to reduce complexity. Future refactoring could change the signature to accept
     dataclasses directly.
@@ -255,6 +259,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
         agent_type: Type of agent for logging and storage
         session: Database session for persistence
         max_content_length: Maximum content length to send to agent
+        proactive_context: Formatted memory context from past analyses (Issue #300)
 
     Returns:
         Dictionary with agent_type, findings, confidence_score, processing_time_ms
@@ -270,6 +275,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
         content_type=content_type,
         analysis_id=analysis_id,
         agent_type=agent_type,
+        proactive_context=proactive_context,
     )
     config = AgentExecutionConfig(
         session=session,

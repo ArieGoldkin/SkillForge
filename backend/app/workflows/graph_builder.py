@@ -25,6 +25,8 @@ from app.workflows.nodes.agents import (
     tech_comparator_node,
     trend_validator_node,
 )
+from app.workflows.nodes.inject_context_node import inject_context_node
+from app.workflows.nodes.quality_gate_node import quality_gate_node, should_retry_synthesis
 from app.workflows.nodes.supervisor import supervisor_route
 from app.workflows.state import AnalysisState
 from app.workflows.tasks import (
@@ -198,16 +200,48 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     return {}
 
 
+async def _increment_retry_node(state: AnalysisState) -> dict[str, object]:
+    """Increment quality gate retry counter.
+
+    This node is executed when quality gate fails and retry is needed.
+    It increments the retry counter before routing back to aggregation.
+
+    Returns only the fields being updated to avoid LangGraph concurrent update errors.
+    """
+    retry_count = state.get("quality_gate_retry_count", 0)
+    new_retry_count = retry_count + 1
+
+    logger.info(
+        "quality_gate_retry_incremented",
+        analysis_id=state.get("analysis_id"),
+        old_retry_count=retry_count,
+        new_retry_count=new_retry_count,
+    )
+
+    return {
+        "quality_gate_retry_count": new_retry_count,
+    }
+
+
 def build_analysis_graph():
     """Build StateGraph workflow with native parallel execution using Send API.
 
     Workflow structure:
     1. Extract content (sequential)
-    2. Fan-out: Embedding + Supervisor (parallel)
+    2. Fan-out: Embedding + Supervisor + Inject Context (parallel)
     3. Fan-out: Selected agents (native LangGraph parallel via Send API)
     4. Fan-in: Aggregate findings (waits for all agent nodes)
-    5. Generate artifact
-    6. End
+    5. Quality gate validation (with retry loop)
+       - If quality < threshold and retries available: increment_retry -> aggregate
+       - If quality passes or max retries: continue -> generate_artifact
+    6. Generate artifact
+    7. End
+
+    Issue #300: inject_context node runs in parallel with embedding and supervisor
+    to fetch relevant memories from past analyses and make them available to agents.
+
+    Issue #301: quality_gate node validates synthesis quality using LLM-as-judge
+    evaluators and triggers retry if quality falls below threshold (up to 2 retries).
 
     Returns:
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
@@ -220,8 +254,11 @@ def build_analysis_graph():
     graph.add_node("extract", _extract_content_node)
     graph.add_node("embedding", _generate_embedding_node)
     graph.add_node("chunk_and_embed", _chunk_and_embed_node)
+    graph.add_node("inject_context", inject_context_node)
     graph.add_node("supervisor", _supervisor_node)
     graph.add_node("aggregate", aggregate_findings)
+    graph.add_node("quality_gate", quality_gate_node)
+    graph.add_node("increment_retry", _increment_retry_node)
     graph.add_node("generate_artifact", generate_artifact)
 
     # Add all agent nodes (each executes independently in parallel)
@@ -238,9 +275,10 @@ def build_analysis_graph():
     # Sequential: extract must complete first
     graph.set_entry_point("extract")
 
-    # Fan-out: embedding and supervisor run in parallel after extract
+    # Fan-out: embedding, chunk_and_embed, inject_context, and supervisor run in parallel after extract
     graph.add_edge("extract", "embedding")
     graph.add_edge("extract", "chunk_and_embed")
+    graph.add_edge("extract", "inject_context")
     graph.add_edge("extract", "supervisor")
 
     # Fan-out: Supervisor routes to selected agents dynamically using Send API
@@ -280,8 +318,25 @@ def build_analysis_graph():
     # When no agents selected, route_to_agents returns Send("aggregate", state)
     # to explicitly route to aggregate (prevents hanging on empty list)
 
-    # Sequential: aggregate -> generate_artifact -> end
-    graph.add_edge("aggregate", "generate_artifact")
+    # Quality gate: aggregate -> quality_gate (validation)
+    graph.add_edge("aggregate", "quality_gate")
+
+    # Conditional: quality_gate decides to retry or continue
+    # - "retry_synthesis": increment retry counter and loop back to aggregate
+    # - "continue": proceed to artifact generation
+    graph.add_conditional_edges(
+        "quality_gate",
+        should_retry_synthesis,
+        {
+            "retry_synthesis": "increment_retry",
+            "continue": "generate_artifact",
+        },
+    )
+
+    # Retry loop: increment_retry -> aggregate
+    graph.add_edge("increment_retry", "aggregate")
+
+    # Sequential: generate_artifact -> end
     graph.add_edge("generate_artifact", END)
 
     # Compile with checkpointer

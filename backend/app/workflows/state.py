@@ -87,3 +87,11 @@ class AnalysisState(TypedDict, total=False):
     # Issue #221: Hierarchical chunking results
     chunk_counts: dict[str, int]  # {"coarse": N, "fine": M, "summaries": K}
     dedup_stats: dict[str, int]  # {"kept": N, "dropped": M}
+    # Issue #300: Proactive memory recall context
+    proactive_context: str  # Formatted memory context from past analyses
+    # Issue #301: Quality gate validation
+    quality_scores: dict[str, object]  # LLM-as-judge quality scores (relevance, depth, coherence)
+    quality_gate_avg_score: float  # Average quality score (0.0-1.0)
+    quality_gate_passed: bool  # Whether quality gate passed
+    quality_gate_retry_count: int  # Number of synthesis retries
+    quality_gate_error: str  # Error message if gate evaluation failed
