@@ -49,6 +49,36 @@ version: 4.0.0
 **Codebase Structure**: `backend/` (FastAPI + LangGraph) | `frontend/` (React 19) | `docs/` (specs & tasks)
 
 
+## 🐛 Known Bugs & Fixes (Historical Reference)
+
+### SSE Race Condition (Fixed Dec 2024)
+- **Problem**: Frontend shows 0% progress, "Waiting for agent activity..." while backend runs
+- **Root Cause**: EventBroadcaster had no buffering - events published before SSE subscriber connects were lost
+- **Fix**: Added event buffering with `deque(maxlen=100)` per channel, events replayed to new subscribers
+- **Location**: `backend/app/services/event_broadcaster.py`
+- **Tests**: `backend/tests/unit/test_event_broadcaster.py` (5 buffer tests)
+
+### Quality Gate ValidationError (Fixed Dec 2024)
+- **Problem**: `pydantic.v1.error_wrappers.ValidationError: 3 validation errors for Run`
+- **Root Cause**: LangSmith `Run` schema requires `start_time` and `trace_id` fields
+- **Fix**: Added `start_time=datetime.now(UTC)` and `trace_id=uuid4()` to mock Run object
+- **Location**: `backend/app/workflows/nodes/quality_gate_node.py` lines 102-129
+
+### Workflow Timeout (Configured Dec 2024)
+- **Problem**: Workflow times out during multi-agent execution
+- **Fix**: Increased `STEP_TIMEOUT` from 90s to 300s (5 minutes)
+- **Location**: `backend/app/core/timeout_config.py`
+
+
+## 📋 Development Standards (MUST FOLLOW)
+
+1. **ALWAYS add/update tests** before running real analysis
+2. **ALWAYS use Claude subagents and skills** for specialized tasks (Explore, Plan, code-quality-reviewer, etc.)
+3. **Run lint checks** (`ruff format --check`, `ruff check`, `mypy`) before committing
+4. **Use TodoWrite** to track multi-step tasks
+5. **Never commit directly** to dev/main - always use feature branches + PRs
+
+
 ## 🚨 CRITICAL: Pre-Commit Validation (NEVER SKIP)
 
 **BEFORE every commit or PR, you MUST run ALL CI checks locally:**

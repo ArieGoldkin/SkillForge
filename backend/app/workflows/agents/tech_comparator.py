@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
+from app.workflows.agents.grounding import apply_grounding
 from app.workflows.agents.schemas.tech_comparator import TechComparison
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
@@ -18,23 +19,18 @@ TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist.
 
 CRITICAL: You MUST provide ALL required fields. Missing fields will cause validation errors.
 
-Required Output Structure:
+Required Output Structure (EXAMPLE FORMAT - extract actual values from content):
 {
-  "primary_tech": "LangGraph",
-  "alternatives": ["LangChain Agents", "Temporal", "Ray"],
+  "primary_tech": "<PRIMARY TECH FROM CONTENT>",
+  "alternatives": ["<ALT 1 FROM CONTENT>", "<ALT 2>", "<ALT 3>"],
   "comparison": {
-    "LangGraph": {
-      "pros": ["Pros list"],
-      "cons": ["Cons list"],
-      "use_cases": ["Use cases list"]
-    },
-    "LangChain Agents": {
-      "pros": ["Pros list"],
-      "cons": ["Cons list"],
-      "use_cases": ["Use cases list"]
+    "<PRIMARY TECH>": {
+      "pros": ["<ACTUAL PROS FROM CONTENT>"],
+      "cons": ["<ACTUAL CONS FROM CONTENT>"],
+      "use_cases": ["<ACTUAL USE CASES FROM CONTENT>"]
     }
   },
-  "recommendation": "Clear recommendation text"
+  "recommendation": "<RECOMMENDATION BASED ON CONTENT>"
 }
 
 Field Requirements:
@@ -126,8 +122,8 @@ async def run_tech_comparator(
     # Issue #300: Get proactive context from state
     proactive_context = state.get("proactive_context", "")
 
-    # Build prompt with skill level instructions
-    full_prompt = f"{TECH_COMPARATOR_PROMPT}\n\n{skill_instructions}"
+    # Build prompt with skill level instructions and grounding
+    full_prompt = apply_grounding(f"{TECH_COMPARATOR_PROMPT}\n\n{skill_instructions}")
 
     # Create agent with structured output
     agent = create_structured_agent(

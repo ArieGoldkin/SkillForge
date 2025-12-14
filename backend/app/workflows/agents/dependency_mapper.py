@@ -17,6 +17,7 @@ from app.workflows.agents.base import (
     create_tool_enabled_agent,
 )
 from app.workflows.agents.execution import run_agent_with_tracking
+from app.workflows.agents.grounding import apply_grounding
 from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
@@ -198,7 +199,7 @@ async def run_dependency_mapper(  # noqa: PLR0913 - All parameters required for 
     proactive_context = state.get("proactive_context", "")
 
     # Build prompt with skill level instructions
-    full_prompt = f"{DEPENDENCY_MAPPER_PROMPT}\n\n{skill_instructions}"
+    full_prompt = apply_grounding(f"{DEPENDENCY_MAPPER_PROMPT}\n\n{skill_instructions}")
 
     # Create agent - use tool-enabled factory if tools provided
     if tools:

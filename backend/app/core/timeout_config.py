@@ -70,7 +70,9 @@ STREAMING_TIMEOUT: float = 120.0  # 120 seconds (2 minutes) - streaming should b
 
 # Graph step timeout (in seconds) - set on compiled graph
 # This is the single source of truth for timeout handling
-STEP_TIMEOUT: float = 90.0  # 90 seconds (1.5 minutes per step) - reasonable for LLM agent execution
+# Note: Set to 300s (5 min) for regeneration to allow complex agent analysis
+# Production API might use a lower value via environment variable override
+STEP_TIMEOUT: float = 300.0  # 300 seconds (5 minutes per step) - allows complex agent analysis
 
 # Workflow-level timeout (in seconds) - for entire workflow
 WORKFLOW_TIMEOUT: float = 900.0  # 900 seconds (15 minutes) - entire workflow should complete faster

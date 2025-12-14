@@ -42,6 +42,56 @@ from app.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 
+
+def has_content_available(state: AnalysisState) -> bool:
+    """Check if content is available via Handle Pattern or fallback.
+
+    Issue #244: Handle Pattern implementation. Agents should use this
+    to check content availability before processing.
+
+    Content is available if:
+    1. content_ref exists with a valid URI (Handle Pattern - preferred)
+    2. OR raw_content is non-empty (fallback for backward compatibility)
+
+    Args:
+        state: Current workflow state
+
+    Returns:
+        True if content can be loaded via artifact or fallback
+
+    Example:
+        >>> if not has_content_available(state):
+        ...     return {"agent_findings": []}  # Skip processing
+
+    """
+    # Check Handle Pattern first (preferred)
+    content_ref = state.get("content_ref")
+    if content_ref and isinstance(content_ref, dict):
+        uri = content_ref.get("uri")
+        if uri:
+            return True
+
+    # Fallback: check raw_content
+    raw_content = state.get("raw_content", "")
+    return bool(raw_content)
+
+
+def get_fallback_content(state: AnalysisState) -> str:
+    """Get fallback content for artifact loading.
+
+    Issue #244: Used by agent runners when artifact loading fails.
+    Returns raw_content if available, empty string otherwise.
+
+    Args:
+        state: Current workflow state
+
+    Returns:
+        raw_content string or empty string
+
+    """
+    return state.get("raw_content", "")
+
+
 # Agent-specific content section mapping (Issue #268)
 # Each agent gets optimized content section to minimize token usage
 AGENT_SECTION_MAPPING: dict[str, ArtifactSection] = {

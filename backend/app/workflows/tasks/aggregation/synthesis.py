@@ -97,6 +97,15 @@ If coverage_score < 0.5, acknowledge partial analysis in executive_summary.
 3. **Complete**: Code snippets must be runnable, diagrams must render
 4. **Consistent**: Same information shouldn't contradict across sections
 5. **Scannable**: TL;DR readable in 10 seconds, full artifact in 5 minutes
+
+=== CRITICAL: SINGLE RESPONSE REQUIREMENT ===
+
+**YOU MUST RETURN EXACTLY ONE STRUCTURED RESPONSE** containing ALL fields.
+Do NOT split your response into multiple tool calls.
+ALL sections (executive_summary, ai_assistant_prompt, core_concepts, tldr, diagrams, etc.)
+must be included in a SINGLE AggregatedInsights response.
+
+If you return multiple responses, the system will fail. Return ONE complete response.
 """
 
 

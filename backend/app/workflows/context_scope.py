@@ -72,60 +72,66 @@ class ScopedState(dict):
 
 # Agent scope configurations
 # Each agent specifies exactly which state fields it needs
+#
+# Issue #244: Handle Pattern Implementation
+# - content_ref: Lightweight URI reference to content stored in ArtifactStore
+# - raw_content: Included as fallback for regeneration scripts and edge cases
+# - Agents use has_content_available() to check either source
+# - Runners load optimized sections via ArtifactStore when content_ref is present
 AGENT_SCOPES: dict[str, ContextScope] = {
     "security_auditor": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=False,
     ),
     "tech_comparator": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=False,
     ),
     "implementation_planner": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,  # Planner benefits from other findings
     ),
     "code_quality_critic": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "dependency_mapper": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "practical_applicator": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),
     "learning_path_designer": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),
     "reporter": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     # Legacy agent names (map to same scopes for backward compatibility)
     "performance_analyst": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "trend_validator": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "integration_feasibility": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),

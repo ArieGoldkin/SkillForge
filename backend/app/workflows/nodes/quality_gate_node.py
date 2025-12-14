@@ -21,14 +21,22 @@ from app.workflows.state import AnalysisState
 logger = get_logger(__name__)
 
 # Quality gate configuration
-QUALITY_THRESHOLD = 0.7  # Minimum score (0-1) to pass gate
+QUALITY_THRESHOLD = 0.7  # Minimum AVERAGE score (0-1) to pass gate
 MAX_RETRY_ATTEMPTS = 2  # Maximum retry attempts (0-indexed, so 0, 1, 2 = 3 total attempts)
+
+# CRITICAL: Minimum thresholds for individual aspects
+# If ANY aspect falls below its minimum, gate FAILS regardless of average
+ASPECT_MINIMUMS = {
+    "relevance": 0.5,  # MUST be at least 0.5 - content must be relevant!
+    "depth": 0.4,  # Some depth required
+    "coherence": 0.4,  # Basic coherence required
+}
 
 # Aspects to evaluate
 QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 
 
-async def quality_gate_node(state: AnalysisState) -> dict[str, object]:
+async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915
     """Quality gate validation node.
 
     Evaluates synthesized insights using LLM-as-judge evaluators for:
@@ -92,24 +100,45 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:
     try:
         # Create mock Run and Example for evaluators
         # The evaluators expect LangSmith Run/Example objects
+        from datetime import UTC, datetime
+        from uuid import UUID, uuid4
+
         from langsmith.schemas import Example, Run
 
         # Prepare input (original content) and output (synthesized insights)
         input_content = state.get("raw_content", "")
         output_content = _format_insights_for_evaluation(aggregated_insights)
 
-        # Create mock Run object with outputs
+        # Convert analysis_id to UUID if it's a string
+        try:
+            run_uuid = UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
+        except (ValueError, TypeError):
+            # If analysis_id is not a valid UUID, generate a new one for the mock run
+            run_uuid = uuid4()
+            logger.warning(
+                "quality_gate_invalid_analysis_id",
+                analysis_id=analysis_id,
+                using_generated_uuid=str(run_uuid),
+            )
+
+        # Generate trace_id if not available
+        trace_uuid = UUID(trace_id) if trace_id else uuid4()
+
+        # Create mock Run object with all required fields
+        # LangSmith Run requires: id, name, start_time, run_type, trace_id
         mock_run = Run(
-            id=str(analysis_id),
+            id=run_uuid,
             name="synthesis",
             run_type="chain",
+            start_time=datetime.now(UTC),
+            trace_id=trace_uuid,
             inputs={"content": input_content},
             outputs={"insights": output_content},
         )
 
         # Create mock Example object with inputs
         mock_example = Example(
-            id=str(analysis_id),
+            id=run_uuid,
             inputs={"content": input_content},
             outputs={},  # No reference outputs for online evaluation
         )
@@ -157,8 +186,23 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:
             else 0.0
         )
 
-        # Determine if gate passes
-        gate_passed = avg_score >= QUALITY_THRESHOLD
+        # Check individual aspect minimums (relevance MUST be above threshold!)
+        failed_aspects: list[str] = []
+        for aspect, minimum in ASPECT_MINIMUMS.items():
+            if aspect in quality_scores:
+                aspect_score = quality_scores[aspect]["score"]
+                if aspect_score < minimum:
+                    failed_aspects.append(f"{aspect}={aspect_score:.2f}<{minimum}")
+                    logger.warning(
+                        "quality_aspect_below_minimum",
+                        analysis_id=analysis_id,
+                        aspect=aspect,
+                        score=aspect_score,
+                        minimum=minimum,
+                    )
+
+        # Determine if gate passes: BOTH average AND individual minimums must pass
+        gate_passed = avg_score >= QUALITY_THRESHOLD and len(failed_aspects) == 0
 
         duration = time.time() - start_time
 
@@ -169,7 +213,9 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:
             avg_quality_score=avg_score,
             threshold=QUALITY_THRESHOLD,
             gate_passed=gate_passed,
+            failed_aspects=failed_aspects if failed_aspects else None,
             individual_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
+            aspect_minimums=ASPECT_MINIMUMS,
             duration_seconds=duration,
             trace_id=trace_id,
         )
@@ -287,17 +333,25 @@ def should_retry_synthesis(state: AnalysisState) -> str:
     if gate_passed:
         return "continue"
 
-    # If max retries reached, continue anyway (fail open)
+    # If max retries reached, FAIL (fail-closed, not fail-open)
+    # This prevents shipping garbage artifacts
     if retry_count >= MAX_RETRY_ATTEMPTS:
-        logger.warning(
-            "quality_gate_max_retries_reached",
-            analysis_id=state.get("analysis_id"),
+        analysis_id = state.get("analysis_id")
+        avg_score = state.get("quality_gate_avg_score", 0.0)
+        quality_scores = state.get("quality_scores", {})
+
+        logger.error(
+            "quality_gate_max_retries_exhausted",
+            analysis_id=analysis_id,
             retry_count=retry_count,
             max_retries=MAX_RETRY_ATTEMPTS,
-            avg_score=state.get("quality_gate_avg_score", 0.0),
-            message="continuing to artifact generation despite low quality score",
+            avg_score=avg_score,
+            quality_scores={k: v.get("score") for k, v in quality_scores.items()},  # type: ignore[attr-defined]
+            message="FAILING analysis - quality too low after max retries",
         )
-        return "continue"
+
+        # Return "fail" to trigger workflow failure instead of shipping garbage
+        return "fail"
 
     # Otherwise, retry synthesis
     logger.info(

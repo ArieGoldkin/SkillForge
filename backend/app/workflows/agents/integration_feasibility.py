@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.types import AnalysisID
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.execution import run_agent_with_tracking
+from app.workflows.agents.grounding import apply_grounding
 from app.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
@@ -115,7 +116,7 @@ async def run_integration_feasibility(
     proactive_context = state.get("proactive_context", "")
 
     # Build prompt with skill level instructions
-    full_prompt = f"{INTEGRATION_FEASIBILITY_PROMPT}\n\n{skill_instructions}"
+    full_prompt = apply_grounding(f"{INTEGRATION_FEASIBILITY_PROMPT}\n\n{skill_instructions}")
 
     # Create agent with structured output
     agent = create_structured_agent(

@@ -78,13 +78,35 @@ def _get_checkpointer():
 
 
 async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
-    """Extract content from URL.
+    """Extract content from URL or passthrough if already provided.
+
+    This node supports two modes:
+    1. URL extraction: Fetch content via JinaReader (normal workflow)
+    2. Content passthrough: Skip extraction if raw_content is already in state
+       (used for golden dataset regeneration with fixture content)
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
+    analysis_id = state.get("analysis_id")
+
+    # Passthrough mode: Skip extraction if raw_content is already provided
+    # This enables regeneration scripts to inject fixture content directly
+    if state.get("raw_content"):
+        logger.info(
+            "extract_skipped_content_provided",
+            analysis_id=analysis_id,
+            content_length=len(state["raw_content"]),
+            has_metadata=bool(state.get("extraction_metadata")),
+        )
+        return {
+            "raw_content": state["raw_content"],
+            "extraction_metadata": state.get("extraction_metadata", {}),
+            "content_type": state.get("content_type", "article"),
+        }
+
+    # Normal mode: Extract content from URL via JinaReader
     url = state["url"]
-    analysis_id = state["analysis_id"]
-    result = await extract_content(url, analysis_id)
+    result = await extract_content(url, str(analysis_id or ""))
     # Return only updated fields, not entire state
     return {
         "raw_content": result["raw_content"],
@@ -223,6 +245,50 @@ async def _increment_retry_node(state: AnalysisState) -> dict[str, object]:
     }
 
 
+async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
+    """Handle quality gate failure after max retries (fail-closed).
+
+    This node runs when quality gate has exhausted retries and quality is still
+    too low. It sets the analysis status to 'failed' and emits an SSE error event.
+
+    This implements FAIL-CLOSED behavior - we don't ship garbage artifacts.
+    """
+    from app.services.sse_helpers import emit_streaming_event
+
+    analysis_id = str(state.get("analysis_id", ""))
+    avg_score = float(state.get("quality_gate_avg_score", 0.0) or 0.0)
+    quality_scores: dict[str, dict[str, object]] = state.get("quality_scores", {}) or {}  # type: ignore[assignment]
+    retry_count = int(state.get("quality_gate_retry_count", 0) or 0)
+
+    logger.error(
+        "quality_gate_failed_permanently",
+        analysis_id=analysis_id,
+        avg_score=avg_score,
+        retry_count=retry_count,
+        quality_scores={k: v.get("score") for k, v in quality_scores.items()},
+        message="Analysis failed due to quality gate - content quality too low",
+    )
+
+    # Emit SSE error event
+    await emit_streaming_event(
+        "error",
+        analysis_id=analysis_id,
+        stage="quality_gate",
+        status="failed",
+        error_message=(
+            f"Quality gate failed after {retry_count} retries. "
+            f"Average score: {avg_score:.2f}, threshold: 0.7. "
+            "Content did not meet quality standards."
+        ),
+        quality_scores={k: v.get("score") for k, v in quality_scores.items()},
+    )
+
+    return {
+        "status": "failed",
+        "error": f"Quality gate failed: avg_score={avg_score:.2f} after {retry_count} retries",
+    }
+
+
 def build_analysis_graph():
     """Build StateGraph workflow with native parallel execution using Send API.
 
@@ -259,6 +325,7 @@ def build_analysis_graph():
     graph.add_node("aggregate", aggregate_findings)
     graph.add_node("quality_gate", quality_gate_node)
     graph.add_node("increment_retry", _increment_retry_node)
+    graph.add_node("quality_gate_fail", _quality_gate_fail_node)
     graph.add_node("generate_artifact", generate_artifact)
 
     # Add all agent nodes (each executes independently in parallel)
@@ -321,20 +388,25 @@ def build_analysis_graph():
     # Quality gate: aggregate -> quality_gate (validation)
     graph.add_edge("aggregate", "quality_gate")
 
-    # Conditional: quality_gate decides to retry or continue
+    # Conditional: quality_gate decides to retry, continue, or fail
     # - "retry_synthesis": increment retry counter and loop back to aggregate
     # - "continue": proceed to artifact generation
+    # - "fail": quality too low after max retries, fail the analysis (fail-closed)
     graph.add_conditional_edges(
         "quality_gate",
         should_retry_synthesis,
         {
             "retry_synthesis": "increment_retry",
             "continue": "generate_artifact",
+            "fail": "quality_gate_fail",
         },
     )
 
     # Retry loop: increment_retry -> aggregate
     graph.add_edge("increment_retry", "aggregate")
+
+    # Quality gate fail: quality_gate_fail -> end (with failed status)
+    graph.add_edge("quality_gate_fail", END)
 
     # Sequential: generate_artifact -> end
     graph.add_edge("generate_artifact", END)
