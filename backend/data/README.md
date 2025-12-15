@@ -46,14 +46,14 @@ docker exec skillforge-postgres-dev pg_dump -U dev -d skillforge \
 
 ## Current Dataset Stats
 
-- **97 Analyses** (completed status)
-- **97 Artifacts** (markdown implementation guides)
-- **411 Chunks** (sections with embeddings)
+- **98 Analyses** (completed status)
+- **98 Artifacts** (markdown implementation guides)
+- **415 Chunks** (sections with embeddings)
 
 ### Content Types
 - Articles: 76
 - Tutorials: 19
-- Research Papers: 2
+- Research Papers: 3
 
 ## URL Policy (Golden Dataset)
 

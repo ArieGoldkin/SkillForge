@@ -393,11 +393,11 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 
 ## 💾 Golden Dataset & Data Protection
 
-**The golden dataset contains 97 curated technical documents** with embeddings for semantic search testing.
+**The golden dataset contains 98 curated technical documents** with embeddings for semantic search testing.
 
 ### Quick Stats
-- **97 Analyses** (completed) | **97 Artifacts** | **411 Chunks**
-- Content: 76 articles, 19 tutorials, 2 research papers
+- **98 Analyses** (completed) | **98 Artifacts** | **415 Chunks**
+- Content: 76 articles, 19 tutorials, 3 research papers
 - Topics: RAG, LangGraph, Prompt Engineering, API Design, Testing, etc.
 
 ### URL Contract (Important)

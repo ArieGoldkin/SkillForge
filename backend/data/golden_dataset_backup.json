@@ -1,11 +1,11 @@
 {
   "version": "1.0",
-  "created_at": "2025-12-15T08:23:33.918379+00:00",
+  "created_at": "2025-12-15T08:53:58.891385+00:00",
   "source": "SkillForge Golden Dataset Backup",
   "counts": {
-    "analyses": 97,
-    "artifacts": 97,
-    "chunks": 411
+    "analyses": 98,
+    "artifacts": 98,
+    "chunks": 415
   },
   "data": {
     "analyses": [
@@ -881,6 +881,15 @@
         "status": "completed",
         "created_at": "2025-12-15T08:23:28.434895+00:00",
         "updated_at": "2025-12-15T08:23:28.434898+00:00"
+      },
+      {
+        "id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "url": "https://arxiv.org/abs/2512.07921",
+        "content_type": "research_paper",
+        "title": "DeepCode: Open Agentic Coding",
+        "status": "completed",
+        "created_at": "2025-12-15T08:53:55.600655+00:00",
+        "updated_at": "2025-12-15T08:53:55.600657+00:00"
       }
     ],
     "artifacts": [
@@ -2865,6 +2874,32 @@
           "placeholder_reason": "Inserted by reconcile script (fixture \u2192 DB)"
         },
         "created_at": "2025-12-15T08:23:28.457768+00:00"
+      },
+      {
+        "id": "2b0dee95-90a3-45fa-a167-b0a584fe2a84",
+        "analysis_id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "markdown_content": "# DeepCode: Open Agentic Coding\n\n> **\u26a0\ufe0f PLACEHOLDER ARTIFACT**\n> This artifact was created from fixture data and needs regeneration\n> through the real LangGraph workflow for full quality.\n\n## Overview\n\nDeepCode is a fully autonomous agentic coding framework focused on high-fidelity document-to-codebase synthesis (e.g., scientific papers \u2192 production repositories) under strict LLM context limits. It frames repository synthesis as a channel optimization problem and proposes four information-flow operations to maximize task-relevant signal: (1) source compression via blueprint distillation, (2) structured indexing via stateful code memory, (3) conditional knowledge injection via retrieval-augmented generation (RAG), and (4) closed-loop error correction. The paper reports strong results on PaperBench, claiming state-of-the-art performance that outperforms leading commercial coding agents and surpasses PhD-level human baselines on key reproduction metrics.\n\n## Abstract (key claims)\n\nDeepCode is a fully autonomous agentic coding framework focused on high-fidelity document-to-codebase synthesis (e.g., scientific papers \u2192 production repositories) under strict LLM context limits. It frames repository synthesis as a channel optimization problem and proposes four information-flow operations to maximize task-relevant signal: (1) source compression via blueprint distillation, (2) structured indexing via stateful code memory, (3) conditional knowledge injection via retrieval-augmented generation (RAG), and (4) closed-loop error correction. The paper reports strong results on PaperBench, claiming state-of-the-art performance that outperforms leading commercial coding agents and surpasses PhD-level human baselines on key reproduction metrics.\n\n## Four information operations (architecture)\n\nDeepCode\u2019s architecture is organized around four reusable operations: blueprint distillation (reduce the source spec into an implementation-oriented plan), stateful code memory (persist structured repository knowledge and enable targeted lookup), conditional knowledge injection (retrieve and inject only the most relevant knowledge for the current step), and error correction (iterate using feedback from compilation/tests/linters to converge). Together these operations aim to avoid information overload while preserving critical details needed for end-to-end repository synthesis.\n\n## Evaluation framing (PaperBench)\n\nThe evaluation targets scientific reproduction and paper-to-code implementation. The core claim is that managing information flow explicitly\u2014rather than maximizing raw context\u2014improves end-to-end fidelity. The paper positions PaperBench as the benchmark environment and emphasizes reproduction-oriented metrics (implementation correctness, completeness, and robustness under iteration).\n\n## Code / reference implementation\n\nThe arXiv record links to the project repository: https://github.com/HKUDS/DeepCode\n\n## Topics\n\n`agents`, `coding`, `repository-synthesis`, `rag`, `retrieval`, `context-budgets`, `evaluation`, `paperbench`\n\n---\n\n## \ud83e\udd16 AI Assistant Prompt\n\n*Pending: Run through LangGraph workflow for AI-ready implementation guide*\n\n## Core Concepts\n\n*Pending: Run through LangGraph workflow for structured concepts*\n\n## Practice Exercises\n\n*Pending: Run through LangGraph workflow for exercises and quizzes*\n\n---\n\n*Placeholder from SkillForge Golden Dataset - Research_Paper*\n*Regenerate via workflow for full triple-purpose artifact*",
+        "version": 1,
+        "artifact_metadata": {
+          "source": "golden-dataset-placeholder",
+          "topics": [
+            "agents",
+            "coding",
+            "repository-synthesis",
+            "rag",
+            "retrieval",
+            "context-budgets",
+            "evaluation",
+            "paperbench"
+          ],
+          "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2512.07921",
+          "document_id": "deepcode-open-agentic-coding",
+          "section_count": 4,
+          "needs_regeneration": true,
+          "placeholder_reason": "Inserted by reconcile script (fixture \u2192 DB)"
+        },
+        "created_at": "2025-12-15T08:53:55.639769+00:00"
       }
     ],
     "chunks": [
@@ -7579,6 +7614,82 @@
         "model": "text-embedding-3-small",
         "model_version": "v1",
         "created_at": "2025-12-12T09:04:37.552574+00:00"
+      },
+      {
+        "id": "85bacea0-7daf-4e65-accf-3e7484c22eb6",
+        "analysis_id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "snippet": "DeepCode is a fully autonomous agentic coding framework focused on high-fidelity document-to-codebase synthesis (e.g., scientific papers \u2192 production repositories) under strict LLM context limits. It frames repository synthesis as a channel optimization problem and proposes four information-flow operations to maximize task-relevant signal: (1) source compression via blueprint distillation, (2) structured indexing via stateful code memory, (3) conditional knowledge injection via retrieval-augmented generation (RAG), and (4) closed-loop error correction. The paper reports strong results on PaperBench, claiming state-of-the-art performance that outperforms leading commercial coding agents and surpasses PhD-level human baselines on key reproduction metrics.",
+        "granularity": "coarse",
+        "section_title": "Abstract (key claims)",
+        "chunk_idx": 0,
+        "chunk_total": 4,
+        "path": [
+          "deepcode-open-agentic-coding",
+          "deepcode-open-agentic-coding/abstract"
+        ],
+        "hash": "bfb0414b00e7a4b41ff7c0c2575e26df1678780ef0ef2d2d5ab86423dee12609",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:53:55.616296+00:00"
+      },
+      {
+        "id": "3138160b-30ab-4eef-8796-ef412ebe5c21",
+        "analysis_id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "snippet": "DeepCode\u2019s architecture is organized around four reusable operations: blueprint distillation (reduce the source spec into an implementation-oriented plan), stateful code memory (persist structured repository knowledge and enable targeted lookup), conditional knowledge injection (retrieve and inject only the most relevant knowledge for the current step), and error correction (iterate using feedback from compilation/tests/linters to converge). Together these operations aim to avoid information overload while preserving critical details needed for end-to-end repository synthesis.",
+        "granularity": "coarse",
+        "section_title": "Four information operations (architecture)",
+        "chunk_idx": 1,
+        "chunk_total": 4,
+        "path": [
+          "deepcode-open-agentic-coding",
+          "deepcode-open-agentic-coding/core-operations"
+        ],
+        "hash": "edcb0b9c2a2611ddb89e6957f92587c6894c214fe1fdd40a7482373c2609a6a0",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:53:55.616302+00:00"
+      },
+      {
+        "id": "85d55396-1260-4cdf-92e0-5598b8ceeee8",
+        "analysis_id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "snippet": "The evaluation targets scientific reproduction and paper-to-code implementation. The core claim is that managing information flow explicitly\u2014rather than maximizing raw context\u2014improves end-to-end fidelity. The paper positions PaperBench as the benchmark environment and emphasizes reproduction-oriented metrics (implementation correctness, completeness, and robustness under iteration).",
+        "granularity": "coarse",
+        "section_title": "Evaluation framing (PaperBench)",
+        "chunk_idx": 2,
+        "chunk_total": 4,
+        "path": [
+          "deepcode-open-agentic-coding",
+          "deepcode-open-agentic-coding/evaluation"
+        ],
+        "hash": "1ee73d2dfa1f267f446a05ef9e31024a335e529086340e7c3c14a4bd587a4e60",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:53:55.616304+00:00"
+      },
+      {
+        "id": "874aa904-3539-412d-ada7-7a8d6419972e",
+        "analysis_id": "a11b17e8-76ce-415f-9d0b-6d6a7bcffdc8",
+        "snippet": "The arXiv record links to the project repository: https://github.com/HKUDS/DeepCode",
+        "granularity": "coarse",
+        "section_title": "Code / reference implementation",
+        "chunk_idx": 3,
+        "chunk_total": 4,
+        "path": [
+          "deepcode-open-agentic-coding",
+          "deepcode-open-agentic-coding/code"
+        ],
+        "hash": "e463379f5051cff20efd691f0d3d24ac0a959963fb3ebfdd3634f6ef02acfd5e",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:53:55.616305+00:00"
       },
       {
         "id": "e10dffb7-e112-4b8e-aef3-ee55edd8da99",

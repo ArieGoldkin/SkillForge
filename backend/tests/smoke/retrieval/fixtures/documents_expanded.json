@@ -3351,6 +3351,50 @@
       ]
     },
     {
+      "id": "deepcode-open-agentic-coding",
+      "title": "DeepCode: Open Agentic Coding",
+      "source_url": "https://arxiv.org/abs/2512.07921",
+      "content_type": "research_paper",
+      "bucket": "long",
+      "language": "en",
+      "tags": [
+        "agents",
+        "coding",
+        "repository-synthesis",
+        "rag",
+        "retrieval",
+        "context-budgets",
+        "evaluation",
+        "paperbench"
+      ],
+      "sections": [
+        {
+          "id": "deepcode-open-agentic-coding/abstract",
+          "title": "Abstract (key claims)",
+          "content": "DeepCode is a fully autonomous agentic coding framework focused on high-fidelity document-to-codebase synthesis (e.g., scientific papers → production repositories) under strict LLM context limits. It frames repository synthesis as a channel optimization problem and proposes four information-flow operations to maximize task-relevant signal: (1) source compression via blueprint distillation, (2) structured indexing via stateful code memory, (3) conditional knowledge injection via retrieval-augmented generation (RAG), and (4) closed-loop error correction. The paper reports strong results on PaperBench, claiming state-of-the-art performance that outperforms leading commercial coding agents and surpasses PhD-level human baselines on key reproduction metrics.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "deepcode-open-agentic-coding/core-operations",
+          "title": "Four information operations (architecture)",
+          "content": "DeepCode’s architecture is organized around four reusable operations: blueprint distillation (reduce the source spec into an implementation-oriented plan), stateful code memory (persist structured repository knowledge and enable targeted lookup), conditional knowledge injection (retrieve and inject only the most relevant knowledge for the current step), and error correction (iterate using feedback from compilation/tests/linters to converge). Together these operations aim to avoid information overload while preserving critical details needed for end-to-end repository synthesis.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "deepcode-open-agentic-coding/evaluation",
+          "title": "Evaluation framing (PaperBench)",
+          "content": "The evaluation targets scientific reproduction and paper-to-code implementation. The core claim is that managing information flow explicitly—rather than maximizing raw context—improves end-to-end fidelity. The paper positions PaperBench as the benchmark environment and emphasizes reproduction-oriented metrics (implementation correctness, completeness, and robustness under iteration).",
+          "granularity": "coarse"
+        },
+        {
+          "id": "deepcode-open-agentic-coding/code",
+          "title": "Code / reference implementation",
+          "content": "The arXiv record links to the project repository: https://github.com/HKUDS/DeepCode",
+          "granularity": "coarse"
+        }
+      ]
+    },
+    {
       "id": "semantic-kernel",
       "title": "Semantic Kernel Framework",
       "source_url": "https://learn.microsoft.com/en-us/semantic-kernel/overview/",
