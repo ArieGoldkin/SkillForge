@@ -14,6 +14,7 @@ from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.db.repositories.chunk_repository import ChunkRepository
 from app.db.session import get_session_factory
+from app.services.context.artifact_store import ArtifactStore
 from app.workflows.nodes.agent_router import route_to_agents
 from app.workflows.nodes.agents import (
     code_quality_critic_node,
@@ -85,6 +86,10 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     2. Content passthrough: Skip extraction if raw_content is already in state
        (used for golden dataset regeneration with fixture content)
 
+    Issue #299-304: Handle Pattern Implementation
+    After extraction, creates content_ref for lightweight agent state passing.
+    Agents load content on-demand via ArtifactStore instead of receiving full content.
+
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
     analysis_id = state.get("analysis_id")
@@ -92,27 +97,92 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     # Passthrough mode: Skip extraction if raw_content is already provided
     # This enables regeneration scripts to inject fixture content directly
     if state.get("raw_content"):
+        raw_content = state["raw_content"]
+        content_type = state.get("content_type", "article")
         logger.info(
             "extract_skipped_content_provided",
             analysis_id=analysis_id,
-            content_length=len(state["raw_content"]),
+            content_length=len(raw_content),
             has_metadata=bool(state.get("extraction_metadata")),
         )
+
+        # Create content_ref for Handle Pattern (Issue #299-304)
+        content_ref = await _create_content_ref(
+            analysis_id=str(analysis_id),
+            content=raw_content,
+            content_type=content_type,
+        )
+
         return {
-            "raw_content": state["raw_content"],
+            "raw_content": raw_content,
             "extraction_metadata": state.get("extraction_metadata", {}),
-            "content_type": state.get("content_type", "article"),
+            "content_type": content_type,
+            "content_ref": content_ref,
         }
 
     # Normal mode: Extract content from URL via JinaReader
     url = state["url"]
     result = await extract_content(url, str(analysis_id or ""))
+    raw_content = result["raw_content"]
+    content_type = result["extraction_metadata"].get("content_type", "article")
+
+    # Create content_ref for Handle Pattern (Issue #299-304)
+    content_ref = await _create_content_ref(
+        analysis_id=str(analysis_id),
+        content=raw_content,
+        content_type=content_type,
+    )
+
     # Return only updated fields, not entire state
     return {
-        "raw_content": result["raw_content"],
+        "raw_content": raw_content,
         "extraction_metadata": result["extraction_metadata"],
-        "content_type": result["extraction_metadata"].get("content_type", "article"),
+        "content_type": content_type,
+        "content_ref": content_ref,
     }
+
+
+async def _create_content_ref(
+    analysis_id: str,
+    content: str,
+    content_type: str,
+) -> dict | None:
+    """Create content_ref using ArtifactStore for Handle Pattern.
+
+    Args:
+        analysis_id: Analysis UUID string
+        content: Raw content to store
+        content_type: Content type (article, video, repo)
+
+    Returns:
+        ArtifactRef dict or None if creation fails
+
+    """
+    try:
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            store = ArtifactStore(session)
+            artifact_ref = await store.create_ref(
+                analysis_id=analysis_id,
+                content=content,
+                content_type=f"text/{content_type}",
+            )
+            logger.info(
+                "content_ref_created",
+                analysis_id=analysis_id,
+                uri=artifact_ref.uri,
+                size_bytes=artifact_ref.size_bytes,
+                sections=artifact_ref.available_sections,
+            )
+            return artifact_ref.model_dump()
+    except Exception as e:  # noqa: BLE001 - Graceful fallback, must not break workflow
+        logger.warning(
+            "content_ref_creation_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            fallback="agents_will_use_raw_content",
+        )
+        return None
 
 
 async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:

@@ -140,19 +140,15 @@ Respond with ONLY a number from 0-10.""",
 
         # Get judge model
         try:
-            judge = get_chat_model()
-            # Override with judge model - use settings default if not specified
+            # Get effective judge model from settings
             settings = get_settings()
             effective_judge_model = judge_model or settings.QUALITY_JUDGE_MODEL
 
-            original_model = settings.LLM_MODEL
-            settings.LLM_MODEL = effective_judge_model
+            # Pass model through config so get_chat_model uses the correct provider
+            judge = get_chat_model({"configurable": {"model": effective_judge_model}})
 
             # Invoke judge
             response = await judge.ainvoke(prompt.format(**prompt_vars))
-
-            # Restore original model
-            settings.LLM_MODEL = original_model
 
             # Parse score - handle both string and list responses
             try:

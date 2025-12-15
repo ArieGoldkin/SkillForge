@@ -86,9 +86,11 @@ class ArtifactStore:
         # Determine available sections based on content
         available_sections = self._get_available_sections(sections)
 
-        # Update analysis with summary and sections
+        # Update analysis with content, summary and sections
+        # Issue #299-304: Must persist raw_content for load() to retrieve
         await self._update_analysis(
             analysis_id=analysis_id,
+            content=content,
             content_summary=summary,
             content_sections=sections.model_dump(),
         )
@@ -190,14 +192,19 @@ class ArtifactStore:
     async def _update_analysis(
         self,
         analysis_id: str,
+        content: str,
         content_summary: str,
         content_sections: dict,
     ) -> None:
-        """Update analysis with summary and sections."""
+        """Update analysis with raw_content, summary and sections.
+
+        Issue #299-304: Must persist raw_content so load() can retrieve it.
+        """
         await self.session.execute(
             update(Analysis)
             .where(Analysis.id == uuid.UUID(analysis_id))
             .values(
+                raw_content=content,
                 content_summary=content_summary,
                 content_sections=content_sections,
             )

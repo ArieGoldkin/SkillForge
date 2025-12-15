@@ -27,20 +27,37 @@ const initializeMermaid = () => {
     // Flowchart configuration for proper text rendering (Issue #299-304)
     flowchart: {
       htmlLabels: true, // Enable HTML labels for better text handling
-      nodeSpacing: 50, // Space between nodes
-      rankSpacing: 50, // Space between ranks
+      nodeSpacing: 80, // Increased space between nodes
+      rankSpacing: 80, // Increased space between ranks
       curve: 'basis', // Smooth curves
-      padding: 15, // Padding inside nodes
+      padding: 25, // Increased padding inside nodes to prevent text truncation
       useMaxWidth: false, // Don't constrain to container width
+      wrappingWidth: 300, // Wider wrapping to prevent truncation in diamonds
+      defaultRenderer: 'dagre-wrapper', // Use dagre-wrapper for better text handling
     },
     // Ensure proper wrapping for long text
     themeVariables: {
       fontSize: '14px',
       fontFamily: 'inherit',
+      // Ensure nodes have enough width for text
+      nodePadding: '20px',
     },
   })
   isMermaidInitialized = true
 }
+
+/**
+ * Custom CSS for Mermaid diagrams (Issue #299-304: prevent text truncation)
+ * Extracted as constant to keep injectCustomStyles function concise
+ */
+const MERMAID_CUSTOM_CSS = `.mermaid-container svg { max-width: 100%; height: auto; white-space: normal; }
+.mermaid-container .node rect, .mermaid-container .node polygon { rx: 5; ry: 5; min-width: 120px !important; }
+.mermaid-container .nodeLabel, .mermaid-container .node .label, .mermaid-container .label { white-space: normal !important; overflow: visible !important; word-break: break-word; text-overflow: clip !important; }
+.mermaid-container text, .mermaid-container tspan, .mermaid-container .edgeLabel { overflow: visible !important; font-size: 13px !important; }
+.mermaid-container foreignObject { overflow: visible !important; }
+.mermaid-container foreignObject div { overflow: visible !important; white-space: nowrap !important; }
+.mermaid-container .label-container { overflow: visible !important; }
+.mermaid-container .node rect, .mermaid-container .node polygon, .mermaid-container .node circle, .mermaid-container .node ellipse { fill: #f9fafb; stroke: #e5e7eb; }`
 
 /**
  * Inject custom CSS styles for proper text rendering (Issue #299-304)
@@ -48,38 +65,9 @@ const initializeMermaid = () => {
  */
 const injectCustomStyles = () => {
   if (document.getElementById('mermaid-custom-styles')) return
-
   const styleEl = document.createElement('style')
   styleEl.id = 'mermaid-custom-styles'
-  styleEl.textContent = `
-    .mermaid-container svg {
-      max-width: 100%;
-      height: auto;
-      white-space: normal;
-    }
-    .mermaid-container .node rect {
-      rx: 5;
-      ry: 5;
-      min-width: 150px !important;
-    }
-    .mermaid-container .nodeLabel,
-    .mermaid-container .node .label {
-      white-space: normal !important;
-      overflow: visible !important;
-      word-break: break-word;
-    }
-    .mermaid-container text {
-      overflow: visible !important;
-      font-size: 13px !important;
-    }
-    .mermaid-container .node rect,
-    .mermaid-container .node polygon,
-    .mermaid-container .node circle,
-    .mermaid-container .node ellipse {
-      fill: #f9fafb;
-      stroke: #e5e7eb;
-    }
-  `
+  styleEl.textContent = MERMAID_CUSTOM_CSS
   document.head.appendChild(styleEl)
 }
 

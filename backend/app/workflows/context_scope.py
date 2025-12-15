@@ -77,7 +77,7 @@ class ScopedState(dict):
 # - content_ref: Lightweight URI reference to content stored in ArtifactStore
 # - Agents use has_content_available() to check content_ref availability
 # - Runners load optimized sections via ArtifactStore when content_ref is present
-# - raw_content removed: use content_ref exclusively (Issue #299-304)
+# - raw_content NOT included: use content_ref exclusively (Issue #299-304)
 AGENT_SCOPES: dict[str, ContextScope] = {
     "security_auditor": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],

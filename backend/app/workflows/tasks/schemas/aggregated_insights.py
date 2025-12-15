@@ -409,11 +409,20 @@ class MermaidDiagram(BaseModel):
         description=(
             "Valid Mermaid.js syntax for the diagram. "
             "Must be syntactically correct - will be rendered directly. "
+            "\n\n"
+            "CRITICAL NODE LABEL CONSTRAINTS (prevents text truncation):\n"
+            "- Diamond/decision nodes {label}: MAX 5 chars (e.g., {OK?}, {Yes}, {No})\n"
+            "- Rectangle nodes [label]: MAX 15 chars per word, split long text\n"
+            "- Use multi-word labels for clarity: [User Request] not [UserRequest]\n"
+            "- For validation decisions: use {OK?} not {Valid?} or {Validation}\n"
+            "- Keep terminal nodes concise: [Done], [Error], [End]\n"
+            "\n"
             "Example:\n"
             "flowchart TD\n"
-            "    A[User Query] --> B[Embedding Model]\n"
-            "    B --> C[Vector Search]\n"
-            "    C --> D[Results]"
+            "    A[User Query] --> B[Embed]\n"
+            "    B --> C{OK?}\n"
+            "    C -->|Yes| D[Search]\n"
+            "    C -->|No| E[Error]"
         ),
         min_length=20,
     )

@@ -34,8 +34,10 @@ export function useLibrarySearch(params: LibrarySearchParams) {
  * Pages are accumulated; getNextPageParam is derived from offset+limit < total.
  */
 export function useLibrarySearchInfinite(params: LibrarySearchParams) {
+  // Issue #299-304: Stabilize query key to prevent cache thrashing
+  // Object comparison is reference-based, so stringify for stable key
   return useInfiniteQuery({
-    queryKey: ['library', 'infinite', params],
+    queryKey: ['library', 'infinite', JSON.stringify(params)],
     queryFn: ({ pageParam }) => {
       const nextOffset = typeof pageParam === 'number' ? pageParam : (params.offset ?? 0)
       return analyzeAPI.searchLibrary({ ...params, offset: nextOffset })

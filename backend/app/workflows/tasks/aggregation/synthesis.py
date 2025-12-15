@@ -73,6 +73,11 @@ Generate learning materials:
 Generate scannable content:
 - tldr: Summary (50-500 chars), 3-5 key_takeaways, time_to_implement estimate
 - diagrams: 1-3 Mermaid diagrams (flowchart/sequence/class) with valid syntax
+  CRITICAL DIAGRAM CONSTRAINTS (prevents rendering issues):
+  * Diamond nodes {label}: MAX 5 chars (use {OK?}, {Yes}, {No} - NOT {Valid?})
+  * Rectangle nodes [label]: Split long text into words, max 15 chars/word
+  * Terminal nodes: Keep concise ([Done], [End], [Error])
+  * Always test: labels must fit inside their shapes without truncation
 - glossary: 5-10 technical terms with definitions and see_also links
 
 **CROSS-DOMAIN SYNTHESIS:**
