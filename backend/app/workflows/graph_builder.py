@@ -316,12 +316,15 @@ async def _increment_retry_node(state: AnalysisState) -> dict[str, object]:
 
 
 async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
-    """Handle quality gate failure after max retries (fail-closed).
+    """Handle quality gate failure after max retries (fail-open: still generate artifact).
 
     This node runs when quality gate has exhausted retries and quality is still
-    too low. It sets the analysis status to 'failed' and emits an SSE error event.
+    too low. It logs the failure and emits a warning SSE event, but CONTINUES
+    to artifact generation so users always get something.
 
-    This implements FAIL-CLOSED behavior - we don't ship garbage artifacts.
+    Issue #299-304: Changed from FAIL-CLOSED to FAIL-OPEN behavior.
+    Users prefer getting a low-quality artifact over nothing at all.
+    The quality warning is logged and can be shown in the UI.
     """
     from app.services.sse_helpers import emit_streaming_event
 
@@ -330,32 +333,32 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     quality_scores: dict[str, dict[str, object]] = state.get("quality_scores", {}) or {}  # type: ignore[assignment]
     retry_count = int(state.get("quality_gate_retry_count", 0) or 0)
 
-    logger.error(
-        "quality_gate_failed_permanently",
+    logger.warning(
+        "quality_gate_failed_continuing_to_artifact",
         analysis_id=analysis_id,
         avg_score=avg_score,
         retry_count=retry_count,
         quality_scores={k: v.get("score") for k, v in quality_scores.items()},
-        message="Analysis failed due to quality gate - content quality too low",
+        message="Quality gate failed but continuing to artifact generation (fail-open)",
     )
 
-    # Emit SSE error event
+    # Emit SSE warning event (not error - we're continuing)
     await emit_streaming_event(
-        "error",
+        "progress",
         analysis_id=analysis_id,
         stage="quality_gate",
-        status="failed",
-        error_message=(
-            f"Quality gate failed after {retry_count} retries. "
-            f"Average score: {avg_score:.2f}, threshold: 0.7. "
-            "Content did not meet quality standards."
+        status="low_quality",
+        message=(
+            f"Quality below threshold after {retry_count} retries "
+            f"(score: {avg_score:.2f}). Generating artifact anyway."
         ),
         quality_scores={k: v.get("score") for k, v in quality_scores.items()},
     )
 
+    # Return quality metadata but don't mark as failed - let artifact generation continue
     return {
-        "status": "failed",
-        "error": f"Quality gate failed: avg_score={avg_score:.2f} after {retry_count} retries",
+        "quality_gate_passed": False,
+        "quality_gate_warning": f"Low quality (avg_score={avg_score:.2f}) after {retry_count} retries",
     }
 
 
@@ -475,8 +478,10 @@ def build_analysis_graph():
     # Retry loop: increment_retry -> aggregate
     graph.add_edge("increment_retry", "aggregate")
 
-    # Quality gate fail: quality_gate_fail -> end (with failed status)
-    graph.add_edge("quality_gate_fail", END)
+    # Quality gate fail: quality_gate_fail -> generate_artifact (fail-open behavior)
+    # Issue #299-304: Always generate artifact even with low quality
+    # Users prefer getting something over nothing
+    graph.add_edge("quality_gate_fail", "generate_artifact")
 
     # Sequential: generate_artifact -> end
     graph.add_edge("generate_artifact", END)

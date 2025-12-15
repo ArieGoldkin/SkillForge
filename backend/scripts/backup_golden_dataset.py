@@ -6,6 +6,8 @@ This script creates portable backups of the golden dataset that can be:
 - Restored on any PostgreSQL instance
 - Used for CI/CD database seeding
 
+Version 2.0 includes fixture content, making it the true single source of truth.
+
 Usage:
     # Backup current database to JSON
     poetry run python scripts/backup_golden_dataset.py backup
@@ -17,7 +19,7 @@ Usage:
     poetry run python scripts/backup_golden_dataset.py verify
 
 Output:
-    - data/golden_dataset_backup.json (full backup)
+    - data/golden_dataset_backup.json (full backup with fixtures v2.0)
     - data/golden_dataset_metadata.json (stats only)
 """
 
@@ -60,6 +62,64 @@ class UUIDEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+
+
+def load_fixture_documents() -> list[dict[str, Any]]:
+    """Load fixture documents from expanded file."""
+    fixture_path = (
+        Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures/documents_expanded.json"
+    )
+    if fixture_path.exists():
+        with fixture_path.open() as f:
+            data = json.load(f)
+            # Return just the documents array from the fixture file
+            documents: list[dict[str, Any]] = data.get("documents", [])
+            return documents
+    return []
+
+
+def load_source_url_map() -> dict[str, Any]:
+    """Load source URL mappings."""
+    map_path = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures/source_url_map.json"
+    if map_path.exists():
+        with map_path.open() as f:
+            url_map: dict[str, Any] = json.load(f)
+            return url_map
+    return {}
+
+
+def load_queries() -> list[dict[str, Any]]:
+    """Load test queries from fixtures."""
+    queries_path = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures/queries.json"
+    if queries_path.exists():
+        with queries_path.open() as f:
+            data = json.load(f)
+            # Return just the queries array from the fixture file
+            queries: list[dict[str, Any]] = data.get("queries", [])
+            return queries
+    return []
+
+
+def migrate_backup_schema(backup_data: dict[str, Any]) -> dict[str, Any]:
+    """Migrate older backup schemas to v2.0."""
+    version = backup_data.get("version", "1.0")
+
+    if version == "1.0":
+        # Add missing v2.0 fields
+        backup_data["version"] = "2.0"
+        backup_data["fixtures"] = {
+            "documents": [],
+            "source_url_map": {},
+            "queries": [],
+        }
+        backup_data["metadata"] = {
+            "backup_type": "full",
+            "includes_fixtures": False,
+            "schema_version": "2.0",
+            "migrated_from": "1.0",
+        }
+
+    return backup_data
 
 
 async def backup_dataset() -> int:
@@ -139,20 +199,42 @@ async def backup_dataset() -> int:
             f"Exporting {len(chunks)} chunks (vectors excluded - will regenerate on restore)"
         )
 
-        # Create backup
+        # Load fixture content
+        fixture_documents = load_fixture_documents()
+        source_url_map = load_source_url_map()
+        queries = load_queries()
+
+        logger.info(f"Loading {len(fixture_documents)} fixture documents")
+        logger.info(f"Loading {len(source_url_map)} URL mappings")
+        logger.info(f"Loading {len(queries)} test queries")
+
+        # Create backup with v2.0 schema
         backup_data = {
-            "version": "1.0",
+            "version": "2.0",
             "created_at": datetime.now(UTC).isoformat(),
             "source": "SkillForge Golden Dataset Backup",
             "counts": {
                 "analyses": len(analyses),
                 "artifacts": len(artifacts),
                 "chunks": len(chunks),
+                "fixtures": len(fixture_documents),
             },
             "data": {
                 "analyses": analyses,
                 "artifacts": artifacts,
                 "chunks": chunks,
+            },
+            # NEW: Embedded fixture content
+            "fixtures": {
+                "documents": fixture_documents,
+                "source_url_map": source_url_map,
+                "queries": queries,
+            },
+            # NEW: Metadata for data lineage
+            "metadata": {
+                "backup_type": "full",
+                "includes_fixtures": True,
+                "schema_version": "2.0",
             },
         }
 
@@ -162,18 +244,19 @@ async def backup_dataset() -> int:
         logger.info(f"Backup written to: {backup_path}")
 
         # Write metadata (for quick verification without loading full backup)
-        metadata = {
-            "version": "1.0",
-            "created_at": datetime.now(UTC).isoformat(),
-            "counts": backup_data["counts"],
-            "content_types": {},
-            "sample_titles": [],
-        }
-
-        # Content type distribution
+        content_types: dict[str, int] = {}
         for analysis in analyses:
             ct = analysis.get("content_type", "unknown")
-            metadata["content_types"][ct] = metadata["content_types"].get(ct, 0) + 1
+            content_types[ct] = content_types.get(ct, 0) + 1
+
+        metadata = {
+            "version": "2.0",
+            "created_at": datetime.now(UTC).isoformat(),
+            "counts": backup_data["counts"],
+            "content_types": content_types,
+            "sample_titles": [],
+            "includes_fixtures": True,
+        }
 
         # Sample titles
         metadata["sample_titles"] = [a["title"] for a in analyses[:10]]
@@ -184,15 +267,55 @@ async def backup_dataset() -> int:
 
         # Print summary
         print("\n" + "=" * 60)
-        print("BACKUP COMPLETE")
+        print("BACKUP COMPLETE (v2.0)")
         print("=" * 60)
         print(f"   Analyses:  {len(analyses)}")
         print(f"   Artifacts: {len(artifacts)}")
         print(f"   Chunks:    {len(chunks)}")
+        print(f"   Fixtures:  {len(fixture_documents)} documents")
+        print(f"   URL Maps:  {len(source_url_map)} mappings")
+        print(f"   Queries:   {len(queries)} test queries")
         print(f"   Location:  {backup_path}")
         print("=" * 60)
 
         return 0
+
+
+async def restore_fixtures_from_backup(fixtures: dict[str, Any], logger: Any) -> None:
+    """Restore fixture files from backup."""
+    fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+
+    if documents := fixtures.get("documents"):
+        # Restore documents_expanded.json with full structure
+        fixture_path = fixtures_dir / "documents_expanded.json"
+        document_data = {
+            "version": "2.0",
+            "generated": datetime.now(UTC).strftime("%Y-%m-%d"),
+            "source": "Restored from backup",
+            "documents": documents,
+        }
+        with fixture_path.open("w") as f:
+            json.dump(document_data, f, indent=2)
+        logger.info(f"Restored {len(documents)} fixture documents to {fixture_path}")
+
+    if url_map := fixtures.get("source_url_map"):
+        map_path = fixtures_dir / "source_url_map.json"
+        with map_path.open("w") as f:
+            json.dump(url_map, f, indent=2)
+        logger.info(f"Restored URL map with {len(url_map)} entries to {map_path}")
+
+    if queries := fixtures.get("queries"):
+        # Restore queries.json with full structure
+        queries_path = fixtures_dir / "queries.json"
+        queries_data = {
+            "version": "1.1",
+            "generated": datetime.now(UTC).strftime("%Y-%m-%d"),
+            "queries": queries,
+        }
+        with queries_path.open("w") as f:
+            json.dump(queries_data, f, indent=2)
+        logger.info(f"Restored {len(queries)} test queries to {queries_path}")
 
 
 async def restore_dataset(replace: bool = False) -> int:
@@ -216,6 +339,9 @@ async def restore_dataset(replace: bool = False) -> int:
     with backup_path.open() as f:
         backup_data = json.load(f)
 
+    # Migrate schema if needed
+    backup_data = migrate_backup_schema(backup_data)
+
     logger.info(f"Loaded backup from: {backup_path}")
     logger.info(f"Backup version: {backup_data['version']}")
     logger.info(f"Backup created: {backup_data['created_at']}")
@@ -223,6 +349,13 @@ async def restore_dataset(replace: bool = False) -> int:
     analyses = backup_data["data"]["analyses"]
     artifacts = backup_data["data"]["artifacts"]
     chunks = backup_data["data"]["chunks"]
+
+    # Restore fixtures if present
+    fixtures = backup_data.get("fixtures", {})
+    if fixtures:
+        await restore_fixtures_from_backup(fixtures, logger)
+    else:
+        logger.info("No fixtures in backup (v1.0 schema)")
 
     # Initialize embedding service for regenerating vectors
     embedding_service = EmbeddingService()
@@ -338,7 +471,7 @@ async def restore_dataset(replace: bool = False) -> int:
         return 0
 
 
-async def verify_backup() -> int:
+async def verify_backup() -> int:  # noqa: PLR0912
     """Verify backup file integrity."""
     backup_path = Path(__file__).parent.parent / "data" / "golden_dataset_backup.json"
 
@@ -350,9 +483,13 @@ async def verify_backup() -> int:
     with backup_path.open() as f:
         backup_data = json.load(f)
 
+    # Migrate schema if needed for verification
+    backup_data = migrate_backup_schema(backup_data)
+
     analyses = backup_data["data"]["analyses"]
     artifacts = backup_data["data"]["artifacts"]
     chunks = backup_data["data"]["chunks"]
+    fixtures = backup_data.get("fixtures", {})
 
     # Verify URLs are not placeholder skillforge.dev hosts
     placeholder_prefixes = (
@@ -387,6 +524,32 @@ async def verify_backup() -> int:
     print(f"     Artifacts: {actual['artifacts']} (expected: {expected['artifacts']})")
     print(f"     Chunks:    {actual['chunks']} (expected: {expected['chunks']})")
     print()
+
+    # Verify fixtures (v2.0)
+    if fixtures:
+        fixture_docs = fixtures.get("documents", [])
+        fixture_urls = fixtures.get("source_url_map", {})
+        fixture_queries = fixtures.get("queries", [])
+
+        print("   Fixtures:")
+        if fixture_docs:
+            print(f"     Documents: {len(fixture_docs)}")
+        else:
+            print("     ⚠ No fixture documents in backup")
+
+        if fixture_urls:
+            print(f"     URL Maps:  {len(fixture_urls)}")
+        else:
+            print("     ⚠ No URL mappings in backup")
+
+        if fixture_queries:
+            print(f"     Queries:   {len(fixture_queries)}")
+        else:
+            print("     ⚠ No test queries in backup")
+        print()
+    else:
+        print("   ⚠ No fixtures in backup (v1.0 schema)")
+        print()
 
     # Verify referential integrity
     analysis_ids = {a["id"] for a in analyses}

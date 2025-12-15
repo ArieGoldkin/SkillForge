@@ -127,6 +127,10 @@ ignore = [
 "app/workflows/tasks/aggregate_findings.py" = [
     "PLR0915",  # Too many statements - complex aggregation logic with multiple steps
 ]
+# Schema files use numeric constraints for validation - magic numbers are intentional
+"app/workflows/tasks/schemas/*.py" = [
+    "PLR2004",  # Magic values - field validators use numeric constraints (3-7 items, etc.)
+]
 # Evaluation framework - experimental benchmarking code with complex logic
 "app/evaluation/**/*.py" = [
     "PLR0912",  # Too many branches - evaluator logic requires multiple checks

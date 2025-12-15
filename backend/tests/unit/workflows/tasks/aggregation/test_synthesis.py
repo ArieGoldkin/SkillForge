@@ -7,7 +7,9 @@ import pytest
 
 from app.core.types import AnalysisID
 from app.workflows.tasks.aggregation.synthesis import (
+    create_fallback_synthesis_model,
     create_synthesis_agent,
+    create_synthesis_agent_with_fallback,
     synthesize_with_llm,
 )
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
@@ -156,45 +158,128 @@ class TestCreateSynthesisAgent:
         assert result == mock_agent
 
 
+class TestCreateFallbackSynthesisModel:
+    """Test fallback synthesis model creation (Issue #299-304)."""
+
+    @patch("app.workflows.tasks.aggregation.synthesis.get_chat_model")
+    def test_create_fallback_synthesis_model_uses_fallback_setting(
+        self, mock_get_chat_model: MagicMock
+    ):
+        """Test that fallback model uses LLM_FALLBACK_MODEL setting."""
+        mock_model = MagicMock()
+        mock_model.with_structured_output.return_value = MagicMock()
+        mock_get_chat_model.return_value = mock_model
+
+        result = create_fallback_synthesis_model()
+
+        # Verify get_chat_model was called with fallback model config
+        mock_get_chat_model.assert_called_once()
+        call_kwargs = mock_get_chat_model.call_args.kwargs
+        assert "config" in call_kwargs
+        assert "configurable" in call_kwargs["config"]
+        assert "model" in call_kwargs["config"]["configurable"]
+
+        # Verify structured output is bound
+        mock_model.with_structured_output.assert_called_once_with(AggregatedInsights)
+
+        assert result is not None
+
+    @patch("app.workflows.tasks.aggregation.synthesis.get_chat_model")
+    def test_create_fallback_synthesis_model_returns_runnable(self, mock_get_chat_model: MagicMock):
+        """Test that fallback model returns a runnable with structured output."""
+        mock_model = MagicMock()
+        mock_structured_model = MagicMock()
+        mock_model.with_structured_output.return_value = mock_structured_model
+        mock_get_chat_model.return_value = mock_model
+
+        result = create_fallback_synthesis_model()
+
+        assert result == mock_structured_model
+
+
+class TestCreateSynthesisAgentWithFallback:
+    """Test synthesis agent with fallback chain creation (Issue #299-304)."""
+
+    @patch("app.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
+    @patch("app.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    def test_create_synthesis_agent_with_fallback_attaches_fallback(
+        self,
+        mock_create_fallback: MagicMock,
+        mock_create_primary: MagicMock,
+    ):
+        """Test that fallback chain is properly attached to primary agent."""
+        mock_primary_agent = MagicMock()
+        mock_fallback_model = MagicMock()
+        mock_agent_with_fallback = MagicMock()
+
+        mock_create_primary.return_value = mock_primary_agent
+        mock_create_fallback.return_value = mock_fallback_model
+        mock_primary_agent.with_fallbacks.return_value = mock_agent_with_fallback
+
+        result = create_synthesis_agent_with_fallback()
+
+        # Verify primary agent was created
+        mock_create_primary.assert_called_once()
+
+        # Verify fallback model was created
+        mock_create_fallback.assert_called_once()
+
+        # Verify with_fallbacks was called with correct arguments
+        mock_primary_agent.with_fallbacks.assert_called_once()
+        call_kwargs = mock_primary_agent.with_fallbacks.call_args.kwargs
+        assert "fallbacks" in call_kwargs
+        assert mock_fallback_model in call_kwargs["fallbacks"]
+        assert "exceptions_to_handle" in call_kwargs
+        # Should handle Exception, TimeoutError, and GeneratorExit
+        exceptions = call_kwargs["exceptions_to_handle"]
+        assert Exception in exceptions
+        assert TimeoutError in exceptions
+        assert GeneratorExit in exceptions
+
+        # Verify result is the agent with fallback
+        assert result == mock_agent_with_fallback
+
+    @patch("app.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
+    @patch("app.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    def test_create_synthesis_agent_with_fallback_logs_models(
+        self,
+        mock_create_fallback: MagicMock,
+        mock_create_primary: MagicMock,
+    ):
+        """Test that agent creation logs primary and fallback models."""
+        mock_primary_agent = MagicMock()
+        mock_primary_agent.with_fallbacks.return_value = MagicMock()
+        mock_create_primary.return_value = mock_primary_agent
+        mock_create_fallback.return_value = MagicMock()
+
+        # This test mainly verifies no exceptions are raised during creation
+        result = create_synthesis_agent_with_fallback()
+
+        assert result is not None
+
+
 class TestSynthesizeWithLLM:
     """Test LLM synthesis function."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    @patch("app.workflows.tasks.aggregation.synthesis.extract_structured_response")
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
     async def test_synthesize_with_llm_success(
         self,
-        mock_extract_structured_response: MagicMock,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_validated_findings: list[dict[str, object]],
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
         sample_llm_response: dict[str, object],
     ):
-        """Test successful LLM synthesis flow."""
-        # Setup mocks
-        formatted_findings = "Formatted findings text"
-        mock_format_findings.return_value = formatted_findings
+        """Test successful LLM synthesis flow with tiered fallback chain (Issue #299-304)."""
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
 
-        mock_agent = MagicMock()
-        mock_create_agent.return_value = mock_agent
+        # Setup mock to return result and tier
+        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
 
-        user_prompt = "User prompt text"
-        mock_build_prompt.return_value = user_prompt
-
-        mock_invoke_result = {"result": "agent_output"}
-        mock_invoke_agent.return_value = mock_invoke_result
-
-        mock_extract_structured_response.return_value = sample_llm_response
-
-        # Execute the actual synthesize_with_llm function (not mocked)
+        # Execute the actual synthesize_with_llm function
         result = await synthesize_with_llm(
             validated_findings=sample_validated_findings,
             conflicts=sample_conflicts,
@@ -202,129 +287,119 @@ class TestSynthesizeWithLLM:
             analysis_id=sample_analysis_id,
         )
 
-        # Verify format_findings_for_llm was called with correct args
-        mock_format_findings.assert_called_once_with(
-            sample_validated_findings, sample_conflicts, sample_confidence_scores
-        )
-
-        # Verify create_synthesis_agent was called
-        mock_create_agent.assert_called_once()
-
-        # Verify build_synthesis_user_prompt was called with formatted findings
-        mock_build_prompt.assert_called_once_with(formatted_findings=formatted_findings)
-
-        # Verify invoke_agent was called with correct structure
-        mock_invoke_agent.assert_called_once()
-        invoke_call_kwargs = mock_invoke_agent.call_args.kwargs
-
-        assert invoke_call_kwargs["agent"] == mock_agent
-        assert "input_messages" in invoke_call_kwargs
-        assert invoke_call_kwargs["input_messages"]["messages"][0]["role"] == "user"
-        assert invoke_call_kwargs["input_messages"]["messages"][0]["content"] == user_prompt
-        assert invoke_call_kwargs["analysis_id"] == sample_analysis_id
-        assert invoke_call_kwargs["agent_type"] == "aggregation"
-        assert "timeout" in invoke_call_kwargs
-
-        # Verify extract_structured_response was called
-        mock_extract_structured_response.assert_called_once_with(mock_invoke_result, "aggregation")
+        # Verify synthesize_with_fallback_chain was called with correct args
+        mock_synthesize_with_fallback_chain.assert_called_once()
+        call_kwargs = mock_synthesize_with_fallback_chain.call_args.kwargs
+        assert call_kwargs["validated_findings"] == sample_validated_findings
+        assert call_kwargs["conflicts"] == sample_conflicts
+        assert call_kwargs["confidence_scores"] == sample_confidence_scores
+        assert call_kwargs["analysis_id"] == sample_analysis_id
+        assert "full_schema" in call_kwargs
 
         # Verify result matches expected response
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    async def test_synthesize_with_llm_timeout_error(
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    async def test_synthesize_with_llm_fallback_to_static(
         self,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_validated_findings: list[dict[str, object]],
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
     ):
-        """Test synthesize_with_llm raises TimeoutError on agent timeout."""
-        # Setup mocks
-        mock_format_findings.return_value = "Formatted findings"
-        mock_create_agent.return_value = MagicMock()
-        mock_build_prompt.return_value = "User prompt"
+        """Test synthesize_with_llm falls back to static tier when all LLM tiers fail (Issue #299-304)."""
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
 
-        # Mock invoke_agent to raise TimeoutError
-        mock_invoke_agent.side_effect = TimeoutError("Agent invocation timed out")
+        # Setup mock to return static fallback result
+        static_result = {
+            "executive_summary": "Analysis completed with 2 specialized agents. Full synthesis unavailable.",
+            "key_findings": ["Analysis findings available in agent reports"],
+            "synthesis": {
+                "technical_analysis": "See individual agent findings for technical details.",
+                "implementation_guidance": "Review agent findings for implementation guidance.",
+                "risk_assessment": "Risk assessment requires manual review of agent findings.",
+                "recommendations": "Recommendations available in agent findings.",
+            },
+            "coverage_score": 0.3,
+            "generation_notes": "Static fallback - full synthesis unavailable.",
+        }
+        mock_synthesize_with_fallback_chain.return_value = (static_result, FallbackTier.STATIC)
 
-        # Execute and verify TimeoutError is raised
-        with pytest.raises(TimeoutError, match="Agent invocation timed out"):
-            await synthesize_with_llm(
-                validated_findings=sample_validated_findings,
-                conflicts=sample_conflicts,
-                confidence_scores=sample_confidence_scores,
-                analysis_id=sample_analysis_id,
-            )
+        # Execute
+        result = await synthesize_with_llm(
+            validated_findings=sample_validated_findings,
+            conflicts=sample_conflicts,
+            confidence_scores=sample_confidence_scores,
+            analysis_id=sample_analysis_id,
+        )
 
-        # Verify invoke_agent was called before timeout
-        assert mock_invoke_agent.called
+        # Verify result is the static fallback
+        assert result == static_result
+        assert "generation_notes" in result
+        assert "static fallback" in result["generation_notes"].lower()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    async def test_synthesize_with_llm_agent_failure(
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    async def test_synthesize_with_llm_fallback_to_minimal_schema(
         self,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_validated_findings: list[dict[str, object]],
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
     ):
-        """Test synthesize_with_llm raises Exception on agent failure."""
-        # Setup mocks
-        mock_format_findings.return_value = "Formatted findings"
-        mock_create_agent.return_value = MagicMock()
-        mock_build_prompt.return_value = "User prompt"
+        """Test synthesize_with_llm can use minimal schema tier (Issue #299-304)."""
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
 
-        # Mock invoke_agent to raise generic Exception
-        mock_invoke_agent.side_effect = Exception("LLM API failure")
+        # Setup mock to return minimal schema result
+        minimal_result = {
+            "executive_summary": "Quick summary from minimal schema tier.",
+            "key_findings": [
+                "Finding 1",
+                "Finding 2",
+                "Finding 3",
+            ],
+            "synthesis": {
+                "technical_analysis": "Brief analysis",
+                "implementation_guidance": "Basic steps",
+                "risk_assessment": "Key risks",
+                "recommendations": "Top recommendations",
+            },
+            "coverage_score": 0.5,
+            "generation_notes": "Degraded mode - partial content generated",
+        }
+        mock_synthesize_with_fallback_chain.return_value = (minimal_result, FallbackTier.MINIMAL)
 
-        # Execute and verify Exception is raised
-        with pytest.raises(Exception, match="LLM API failure"):
-            await synthesize_with_llm(
-                validated_findings=sample_validated_findings,
-                conflicts=sample_conflicts,
-                confidence_scores=sample_confidence_scores,
-                analysis_id=sample_analysis_id,
-            )
+        # Execute
+        result = await synthesize_with_llm(
+            validated_findings=sample_validated_findings,
+            conflicts=sample_conflicts,
+            confidence_scores=sample_confidence_scores,
+            analysis_id=sample_analysis_id,
+        )
+
+        # Verify result uses minimal schema
+        assert result == minimal_result
+        assert "generation_notes" in result
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    @patch("app.workflows.tasks.aggregation.synthesis.extract_structured_response")
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
     async def test_synthesize_with_llm_empty_findings(
         self,
-        mock_extract_structured_response: MagicMock,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_llm_response: dict[str, object],
     ):
         """Test synthesize_with_llm with empty findings."""
-        # Setup mocks
-        mock_format_findings.return_value = "No findings available"
-        mock_create_agent.return_value = MagicMock()
-        mock_build_prompt.return_value = "User prompt"
-        mock_invoke_agent.return_value = {"result": "agent_output"}
-        mock_extract_structured_response.return_value = sample_llm_response
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
+
+        # Setup mock
+        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
 
         # Execute with empty findings
         result = await synthesize_with_llm(
@@ -334,35 +409,26 @@ class TestSynthesizeWithLLM:
             analysis_id=sample_analysis_id,
         )
 
-        # Verify all steps were executed
-        mock_format_findings.assert_called_once_with([], [], {})
-        mock_create_agent.assert_called_once()
-        mock_build_prompt.assert_called_once()
-        mock_invoke_agent.assert_called_once()
-        mock_extract_structured_response.assert_called_once()
+        # Verify synthesize_with_fallback_chain was called
+        mock_synthesize_with_fallback_chain.assert_called_once()
 
         # Verify result is returned
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    @patch("app.workflows.tasks.aggregation.synthesis.extract_structured_response")
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
     async def test_synthesize_with_llm_many_conflicts(
         self,
-        mock_extract_structured_response: MagicMock,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_validated_findings: list[dict[str, object]],
         sample_confidence_scores: dict[str, float],
         sample_llm_response: dict[str, object],
     ):
         """Test synthesize_with_llm with multiple conflicts."""
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
+
         # Setup many conflicts
         conflicts = [
             {"agent_1": "tech_comparator", "agent_2": "security_auditor", "conflict": "Conflict 1"},
@@ -378,12 +444,8 @@ class TestSynthesizeWithLLM:
             },
         ]
 
-        # Setup mocks
-        mock_format_findings.return_value = "Formatted findings with conflicts"
-        mock_create_agent.return_value = MagicMock()
-        mock_build_prompt.return_value = "User prompt"
-        mock_invoke_agent.return_value = {"result": "agent_output"}
-        mock_extract_structured_response.return_value = sample_llm_response
+        # Setup mock
+        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
 
         # Execute
         result = await synthesize_with_llm(
@@ -393,53 +455,38 @@ class TestSynthesizeWithLLM:
             analysis_id=sample_analysis_id,
         )
 
-        # Verify conflicts were passed to format_findings_for_llm
-        format_call_args = mock_format_findings.call_args
-        assert len(format_call_args.args[1]) == 3  # 3 conflicts
+        # Verify conflicts were passed to synthesize_with_fallback_chain
+        call_kwargs = mock_synthesize_with_fallback_chain.call_args.kwargs
+        assert len(call_kwargs["conflicts"]) == 3  # 3 conflicts
 
         # Verify result is returned
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation.synthesis.format_findings_for_llm")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.build_synthesis_user_prompt")
-    @patch("app.workflows.tasks.aggregation.synthesis.invoke_agent", new_callable=AsyncMock)
-    @patch("app.workflows.tasks.aggregation.synthesis.extract_structured_response")
-    async def test_synthesize_with_llm_uses_synthesis_timeout(
+    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    async def test_synthesize_with_llm_reduced_tier_success(
         self,
-        mock_extract_structured_response: MagicMock,
-        mock_invoke_agent: AsyncMock,
-        mock_build_prompt: MagicMock,
-        mock_create_agent: MagicMock,
-        mock_format_findings: MagicMock,
+        mock_synthesize_with_fallback_chain: AsyncMock,
         sample_analysis_id: AnalysisID,
         sample_validated_findings: list[dict[str, object]],
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
         sample_llm_response: dict[str, object],
     ):
-        """Test that synthesize_with_llm uses SYNTHESIS_TIMEOUT from centralized config."""
-        # Setup mocks
-        mock_format_findings.return_value = "Formatted findings"
-        mock_create_agent.return_value = MagicMock()
-        mock_build_prompt.return_value = "User prompt"
-        mock_invoke_agent.return_value = {"result": "agent_output"}
-        mock_extract_structured_response.return_value = sample_llm_response
+        """Test synthesize_with_llm succeeds with REDUCED tier (faster model)."""
+        # Import FallbackTier enum
+        from app.workflows.tasks.aggregation_fallback import FallbackTier
+
+        # Setup mock to return reduced tier result
+        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.REDUCED)
 
         # Execute
-        await synthesize_with_llm(
+        result = await synthesize_with_llm(
             validated_findings=sample_validated_findings,
             conflicts=sample_conflicts,
             confidence_scores=sample_confidence_scores,
             analysis_id=sample_analysis_id,
         )
 
-        # Verify invoke_agent was called with timeout parameter
-        invoke_call_kwargs = mock_invoke_agent.call_args.kwargs
-        assert "timeout" in invoke_call_kwargs
-
-        # Import SYNTHESIS_TIMEOUT to verify it's the correct value
-        from app.core.timeout_config import SYNTHESIS_TIMEOUT
-
-        assert invoke_call_kwargs["timeout"] == SYNTHESIS_TIMEOUT
+        # Verify result is returned
+        assert result == sample_llm_response

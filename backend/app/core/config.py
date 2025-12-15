@@ -205,6 +205,16 @@ class Settings(BaseSettings):
             "from LLM_MODEL."
         ),
     )
+    LLM_FALLBACK_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description=(
+            "Fallback LLM model used when primary model fails or times out. "
+            "Should be a lighter/faster model for resilience. "
+            "Used with LangChain's with_fallbacks() pattern for graceful degradation. "
+            "Default: gemini-2.5-flash (fast, cheap, reliable). "
+            "Alternatives: gpt-4o-mini, claude-haiku-3-5-20241022."
+        ),
+    )
     OPENAI_API_KEY: str | None = Field(
         default=None,
         description="OpenAI API key (required when using OpenAI models).",

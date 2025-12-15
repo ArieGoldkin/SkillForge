@@ -11,11 +11,16 @@ errors even though the workflow completed successfully.
 
 See: https://github.com/langchain-ai/langchain/issues/24914
 
-Timeout handling is managed by LangGraph's step_timeout on the compiled graph.
-This is the recommended approach per LangGraph best practices, avoiding
-PEP 789 violations and nested timeout conflicts.
+Issue #299-304: Added asyncio.timeout() wrapper for LLM calls.
+The LangGraph step_timeout only applies at graph node boundaries, but LLM API
+calls can hang indefinitely waiting for a response. The asyncio.timeout wrapper
+raises TimeoutError after the specified duration, which:
+1. Triggers the with_fallbacks() chain to use fallback model
+2. Ensures the workflow doesn't hang forever at "synthesizing"
+3. Provides explicit timeout control independent of LangGraph
 """
 
+import asyncio
 import time
 from typing import cast
 
@@ -78,16 +83,22 @@ async def invoke_agent(
     # Use ainvoke (preferred) - avoids GeneratorExit issues with astream
     # astream creates async generators that trigger false error logs in LangSmith
     if hasattr(agent, "ainvoke"):
-        # Async invoke - no timeout wrapper (step_timeout handles it)
+        # Issue #299-304: Wrap with asyncio.timeout to prevent indefinite hanging
+        # The timeout parameter is now actively used (not just for logging)
+        # This raises TimeoutError which triggers with_fallbacks() chain
         try:
             logger.debug(
                 "agent_invocation_started",
                 agent_type=agent_type,
                 analysis_id=analysis_id,
                 invocation_method="ainvoke",
+                timeout_seconds=timeout,
                 trace_id=trace_id,
             )
-            result = await agent.ainvoke(input_messages, config=config)
+            # asyncio.timeout raises TimeoutError if the call exceeds timeout
+            # This is essential for triggering with_fallbacks() on hanging LLM calls
+            async with asyncio.timeout(timeout):
+                result = await agent.ainvoke(input_messages, config=config)
             duration = time.time() - start_time
             logger.info(
                 "agent_invocation_success",
@@ -98,6 +109,22 @@ async def invoke_agent(
                 trace_id=trace_id,
             )
             return cast(dict[str, object], result)
+        except TimeoutError:
+            # Issue #299-304: Explicit timeout - convert to TimeoutError for with_fallbacks()
+            duration = time.time() - start_time
+            timeout_msg = f"Agent {agent_type} timed out after {timeout}s"
+            logger.warning(
+                "agent_invocation_timeout",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="ainvoke",
+                timeout_seconds=timeout,
+                duration_seconds=duration,
+                trace_id=trace_id,
+                message=f"{timeout_msg}, triggering fallback",
+            )
+            # Raise TimeoutError to trigger with_fallbacks() chain
+            raise TimeoutError(timeout_msg) from None
         except Exception as e:
             duration = time.time() - start_time
             logger.error(
@@ -115,11 +142,10 @@ async def invoke_agent(
             )
             raise
     else:
-        # Sync invoke in thread pool - no timeout wrapper (step_timeout handles it)
-        import asyncio
-
+        # Sync invoke in thread pool with timeout
         try:
-            result = await asyncio.to_thread(agent.invoke, input_messages)
+            async with asyncio.timeout(timeout):
+                result = await asyncio.to_thread(agent.invoke, input_messages)
             return cast(dict[str, object], result)
         except Exception as e:
             duration = time.time() - start_time

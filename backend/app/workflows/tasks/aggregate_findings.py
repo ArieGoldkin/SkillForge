@@ -11,7 +11,6 @@ import time
 from uuid import UUID
 
 from app.core.logging import get_logger
-from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.tracing import robust_traceable
 from app.db.session import get_session_factory
 from app.models.agent_memory import MemoryType
@@ -32,7 +31,6 @@ from app.workflows.tasks.aggregation import (
 )
 from app.workflows.tasks.aggregation_fallback import (
     create_empty_aggregated_insights,
-    create_fallback_aggregated_insights,
 )
 from app.workflows.tasks.aggregation_helpers import (
     calculate_coverage_score,
@@ -40,7 +38,6 @@ from app.workflows.tasks.aggregation_helpers import (
     detect_coverage_gaps,
 )
 from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
-from app.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
 
@@ -370,85 +367,37 @@ async def _aggregate_findings_impl(
             conflicts_detected=len(conflicts),
         )
 
-        try:
-            # Step 5: LLM Synthesis using extracted function
-            aggregated_insights_dict = await synthesize_with_llm(
-                validated_findings=validated_findings,
-                conflicts=conflicts,
-                confidence_scores=confidence_scores,
-                analysis_id=analysis_id,
-            )
+        # Step 5: LLM Synthesis with tiered fallback chain (Issue #299-304)
+        # The new synthesize_with_llm NEVER raises exceptions - it falls back
+        # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
+        # Static fallback extracts content from findings, so it always completes.
+        aggregated_insights_dict = await synthesize_with_llm(
+            validated_findings=validated_findings,
+            conflicts=conflicts,
+            confidence_scores=confidence_scores,
+            analysis_id=analysis_id,
+        )
 
-            # Step 6: Post-processing and validation
-            aggregated_insights_dict = validate_and_format_aggregated_insights(
-                aggregated_insights_dict
-            )
+        # Step 6: Post-processing and validation
+        aggregated_insights_dict = validate_and_format_aggregated_insights(aggregated_insights_dict)
 
-            # Step 7: Add quick_reference to aggregated insights
-            if quick_reference:
-                aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
+        # Step 7: Add quick_reference to aggregated insights
+        if quick_reference:
+            aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
 
-            # Step 7.5: Add coverage gaps and coverage score
-            aggregated_insights_dict["coverage_gaps"] = coverage_gaps
-            aggregated_insights_dict["coverage_score"] = coverage_score
+        # Step 7.5: Add coverage gaps and coverage score
+        aggregated_insights_dict["coverage_gaps"] = coverage_gaps
+        aggregated_insights_dict["coverage_score"] = coverage_score
 
-            # Step 8: Calculate metadata using extracted function
-            aggregated_insights_dict = calculate_aggregation_metadata(
-                validated_findings=validated_findings,
-                agent_types=agent_types,
-                confidence_scores=confidence_scores,
-                conflicts=conflicts,
-                aggregated_insights_dict=aggregated_insights_dict,
-                start_time=start_time,
-            )
-
-        except (TimeoutError, GeneratorExit) as timeout_error:
-            # Timeout or cancellation during LLM synthesis
-            # Use timeout utility for consistent error handling
-            try:
-                raise handle_timeout_error(
-                    exc=timeout_error,
-                    context="LLM synthesis",
-                    timeout=SYNTHESIS_TIMEOUT,
-                    logger=logger,
-                    analysis_id=analysis_id,
-                )
-            except TimeoutError:
-                # Logged by utility, fallback to basic aggregation without LLM synthesis
-                aggregated_insights_dict = create_fallback_aggregated_insights(
-                    validated_findings=validated_findings,
-                    agent_types=agent_types,
-                    confidence_scores=confidence_scores,
-                    conflicts=conflicts,
-                    start_time=start_time,
-                )
-                # Add quick_reference to fallback as well
-                if quick_reference:
-                    aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
-                # Add coverage gaps and coverage score to fallback
-                aggregated_insights_dict["coverage_gaps"] = coverage_gaps
-                aggregated_insights_dict["coverage_score"] = coverage_score
-        except Exception as llm_error:
-            logger.error(
-                "workflow_aggregation_llm_failed",
-                analysis_id=analysis_id,
-                error=str(llm_error),
-                exc_info=True,
-            )
-            # Graceful fallback: return basic aggregation without LLM synthesis
-            aggregated_insights_dict = create_fallback_aggregated_insights(
-                validated_findings=validated_findings,
-                agent_types=agent_types,
-                confidence_scores=confidence_scores,
-                conflicts=conflicts,
-                start_time=start_time,
-            )
-            # Add quick_reference to fallback as well
-            if quick_reference:
-                aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
-            # Add coverage gaps and coverage score to fallback
-            aggregated_insights_dict["coverage_gaps"] = coverage_gaps
-            aggregated_insights_dict["coverage_score"] = coverage_score
+        # Step 8: Calculate metadata using extracted function
+        aggregated_insights_dict = calculate_aggregation_metadata(
+            validated_findings=validated_findings,
+            agent_types=agent_types,
+            confidence_scores=confidence_scores,
+            conflicts=conflicts,
+            aggregated_insights_dict=aggregated_insights_dict,
+            start_time=start_time,
+        )
 
         # Emit SSE event: aggregation complete
         conflicts_resolved_count, key_findings_count = extract_sse_metadata(
@@ -474,26 +423,49 @@ async def _aggregate_findings_impl(
             agent_findings=validated_findings,
         )
 
-        # Add memory storage metadata to insights
+        # Add memory storage and synthesis status metadata to insights
         metadata = aggregated_insights_dict.get("metadata", {})
         if isinstance(metadata, dict):
             metadata["memories_stored"] = stored_memories
+            # Issue #299-304: Track synthesis status for debugging
+            if "synthesis_status" not in metadata:
+                metadata["synthesis_status"] = "success"
             aggregated_insights_dict["metadata"] = metadata
 
         # Return only updated fields, not entire state
         return {"aggregated_insights": aggregated_insights_dict}
 
     except Exception as e:
-        # Emit SSE event: aggregation failed
+        # Issue #299-304: Error State Pattern - capture errors in state, don't propagate
+        # This ensures the workflow ALWAYS reaches a terminal state
         await emit_aggregation_failed(analysis_id, str(e))
 
         logger.error(
-            "workflow_aggregation_failed",
+            "workflow_aggregation_failed_with_fallback",
             analysis_id=analysis_id,
             error=str(e),
+            error_type=type(e).__name__,
             exc_info=True,
+            fallback="returning_empty_insights_to_prevent_hang",
         )
-        raise
+
+        # Return empty insights with error metadata instead of raising
+        # This allows the workflow to continue to artifact generation (which will handle empty insights)
+        return {
+            "aggregated_insights": {
+                "executive_summary": f"Analysis could not be completed due to error: {type(e).__name__}",
+                "key_findings": ["Analysis encountered an error during synthesis"],
+                "synthesis": "Unable to synthesize findings due to processing error.",
+                "metadata": {
+                    "synthesis_status": "failed",
+                    "synthesis_error": str(e),
+                    "error_type": type(e).__name__,
+                    "processing_time_ms": int((time.time() - start_time) * 1000),
+                },
+                "coverage_gaps": [],
+                "coverage_score": 0.0,
+            }
+        }
 
 
 @robust_traceable(
