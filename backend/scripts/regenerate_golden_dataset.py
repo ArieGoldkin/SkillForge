@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate golden dataset artifacts with the NEW workflow system.
 
-This script regenerates all 96 golden dataset artifacts using the updated
+This script regenerates all 97 golden dataset artifacts using the updated
 LangGraph workflow with:
 - Claude Sonnet 4 (instead of old gpt-4o-mini)
 - Quality gates with ASPECT_MINIMUMS enforcement
@@ -17,7 +17,7 @@ Usage:
     # Dry run (no DB writes)
     poetry run python scripts/regenerate_golden_dataset.py --dry-run
 
-    # Regenerate all 96 artifacts (sequential, safe)
+    # Regenerate all 97 artifacts (sequential, safe)
     poetry run python scripts/regenerate_golden_dataset.py
 
     # Regenerate with parallel batches (faster, uses more API credits)
@@ -37,30 +37,28 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sys
 import time
-from datetime import datetime, timezone
+import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-import uuid
 from uuid import uuid4
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
+# Import status update helper from workflow runner
+from app.api.v1.workflow_runner import _update_analysis_status
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
-from app.models.artifact import Artifact
 from app.workflows.analysis import analysis_workflow
 
-# Import status update helper from workflow runner
-from app.api.v1.workflow_runner import _update_analysis_status
-
 logger = get_logger(__name__)
+
+
+class FixtureSourceUrlMissingError(RuntimeError):
+    """Fixture document is missing required `source_url`."""
+
 
 # Constants
 FIXTURE_PATH = Path("tests/smoke/retrieval/fixtures/documents_expanded.json")
@@ -75,7 +73,7 @@ PARALLEL_BATCH_SIZE = 3
 def load_fixture_documents() -> list[dict]:
     """Load golden dataset fixture documents."""
     if not FIXTURE_PATH.exists():
-        raise FileNotFoundError(f"Fixture file not found: {FIXTURE_PATH}")
+        raise FileNotFoundError(FIXTURE_PATH)
 
     with FIXTURE_PATH.open() as f:
         data = json.load(f)
@@ -116,12 +114,9 @@ def build_extraction_metadata(doc: dict) -> dict[str, Any]:
         "content_type": doc.get("content_type", "article"),
         "tags": doc.get("tags", []),
         "language": doc.get("language", "en"),
-        "word_count": sum(
-            len(s.get("content", "").split())
-            for s in doc.get("sections", [])
-        ),
+        "word_count": sum(len(s.get("content", "").split()) for s in doc.get("sections", [])),
         "source": "golden-dataset-regenerated",
-        "regenerated_at": datetime.now(timezone.utc).isoformat(),
+        "regenerated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -130,14 +125,20 @@ async def create_analysis_record(doc: dict) -> Analysis:
     doc_id = doc.get("id", str(uuid4()))
     title = doc.get("title", "Untitled")
     content_type = doc.get("content_type", "article")
+    source_url = doc.get("source_url")
 
-    # Generate a fake URL for the fixture (required by schema)
-    url = f"https://docs.skillforge.dev/{doc_id}"
+    if not source_url:
+        logger.error(
+            "fixture_document_missing_source_url",
+            doc_id=doc_id,
+            title=title,
+        )
+        raise FixtureSourceUrlMissingError
 
     async with AsyncSessionLocal() as session:
         analysis = Analysis(
             id=uuid4(),
-            url=url,
+            url=source_url,
             title=title,
             content_type=content_type,
             status="processing",
@@ -185,9 +186,18 @@ async def run_workflow_for_document(
     # Build initial state with raw_content (passthrough mode)
     raw_content = build_raw_content(doc)
     extraction_metadata = build_extraction_metadata(doc)
+    source_url = doc.get("source_url")
+
+    if not source_url:
+        logger.error(
+            "fixture_document_missing_source_url",
+            doc_id=doc_id,
+            title=title,
+        )
+        raise FixtureSourceUrlMissingError
 
     initial_state = {
-        "url": f"https://docs.skillforge.dev/{doc_id}",
+        "url": source_url,
         "analysis_id": analysis_id,
         "raw_content": raw_content,  # <-- Triggers passthrough mode
         "extraction_metadata": extraction_metadata,
@@ -240,7 +250,7 @@ async def run_workflow_for_document(
 
     except Exception as e:
         duration = time.time() - start_time
-        logger.error(
+        logger.exception(
             "workflow_failed",
             doc_id=doc_id,
             analysis_id=analysis_id,
@@ -287,7 +297,7 @@ async def regenerate_document(
         return result
 
     except Exception as e:
-        logger.error(
+        logger.exception(
             "document_regeneration_failed",
             doc_id=doc_id,
             error=str(e),
@@ -310,7 +320,7 @@ async def regenerate_all_sequential(
     total = len(documents)
 
     for i, doc in enumerate(documents):
-        print(f"\n[{i+1}/{total}] ", end="")
+        print(f"\n[{i + 1}/{total}] ", end="")
         result = await regenerate_document(doc, dry_run, delay_seconds)
         results.append(result)
 
@@ -336,7 +346,9 @@ async def regenerate_all_parallel(
         batch_end = min(batch_start + batch_size, total)
         batch = documents[batch_start:batch_end]
 
-        print(f"\n[Batch {batch_start//batch_size + 1}] Processing {len(batch)} documents ({batch_start+1}-{batch_end}/{total})...")
+        print(
+            f"\n[Batch {batch_start // batch_size + 1}] Processing {len(batch)} documents ({batch_start + 1}-{batch_end}/{total})..."
+        )
 
         # Run batch in parallel
         tasks = [
@@ -362,7 +374,7 @@ async def regenerate_all_parallel(
 def save_report(results: list[dict[str, Any]], output_path: Path) -> None:
     """Save regeneration report to JSON file."""
     report = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "total": len(results),
         "success": sum(1 for r in results if r.get("status") == "success"),
         "failed": sum(1 for r in results if r.get("status") == "failed"),
@@ -406,11 +418,13 @@ def print_summary(results: list[dict[str, Any]]) -> None:
         avg_duration = sum(durations) / len(durations)
         total_duration = sum(durations)
         print(f"\nAverage duration: {avg_duration:.2f}s")
-        print(f"Total duration:   {total_duration:.2f}s ({total_duration/60:.1f}m)")
+        print(f"Total duration:   {total_duration:.2f}s ({total_duration / 60:.1f}m)")
 
 
 async def main() -> None:
     """Main entry point for golden dataset regeneration."""
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Regenerate golden dataset with NEW workflow system"
     )

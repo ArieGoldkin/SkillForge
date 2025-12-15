@@ -1,26 +1,17 @@
 {
   "version": "1.0",
-  "created_at": "2025-12-12T09:05:23.056491+00:00",
+  "created_at": "2025-12-15T08:23:33.918379+00:00",
   "source": "SkillForge Golden Dataset Backup",
   "counts": {
-    "analyses": 96,
-    "artifacts": 96,
-    "chunks": 408
+    "analyses": 97,
+    "artifacts": 97,
+    "chunks": 411
   },
   "data": {
     "analyses": [
       {
-        "id": "06dc993a-678f-4cae-bc37-39874eb2f73c",
-        "url": "https://docs.skillforge.dev/context-engineering",
-        "content_type": "article",
-        "title": "Anthropic Context Engineering Guide",
-        "status": "completed",
-        "created_at": "2025-12-12T09:02:17.197768+00:00",
-        "updated_at": "2025-12-12T09:02:17.197773+00:00"
-      },
-      {
         "id": "67303c7b-fb2b-4c7d-b9ce-d1d483652e31",
-        "url": "https://papers.skillforge.dev/rag-survey",
+        "url": "https://arxiv.org/abs/2312.10997",
         "content_type": "research_paper",
         "title": "RAG Survey - Naive, Advanced, and Modular Paradigms",
         "status": "completed",
@@ -29,7 +20,7 @@
       },
       {
         "id": "f71ca36e-49f5-4102-bbab-d2040e039efe",
-        "url": "https://docs.skillforge.dev/chain-of-thought",
+        "url": "https://arxiv.org/abs/2201.11903",
         "content_type": "article",
         "title": "Chain-of-Thought Prompting",
         "status": "completed",
@@ -38,7 +29,7 @@
       },
       {
         "id": "5e25e2b9-184c-4c28-9858-49183c2e9c35",
-        "url": "https://docs.skillforge.dev/tree-of-thoughts",
+        "url": "https://arxiv.org/abs/2305.10601",
         "content_type": "article",
         "title": "Tree-of-Thoughts Reasoning",
         "status": "completed",
@@ -47,7 +38,7 @@
       },
       {
         "id": "0430d238-707a-48fd-af9a-76665b69ae74",
-        "url": "https://learn.skillforge.dev/langgraph-multiagent",
+        "url": "https://reference.langchain.com/python/langgraph/supervisor/",
         "content_type": "tutorial",
         "title": "LangGraph Multi-Agent Patterns",
         "status": "completed",
@@ -56,7 +47,7 @@
       },
       {
         "id": "1f7818f5-a2b3-46f7-a294-effe955ca7e8",
-        "url": "https://learn.skillforge.dev/langsmith-evaluation",
+        "url": "https://docs.langchain.com/langsmith/evaluation",
         "content_type": "tutorial",
         "title": "LangSmith Evaluation Framework",
         "status": "completed",
@@ -65,7 +56,7 @@
       },
       {
         "id": "a630f6b2-dd3f-4325-a795-09f25b47ca7b",
-        "url": "https://docs.skillforge.dev/rag-triad",
+        "url": "https://deepeval.com/guides/guides-rag-triad",
         "content_type": "article",
         "title": "RAG Triad Metrics",
         "status": "completed",
@@ -74,7 +65,7 @@
       },
       {
         "id": "eb06c76c-8f0f-4a5c-bbde-0cccbdc9e030",
-        "url": "https://docs.skillforge.dev/microservices-patterns",
+        "url": "https://microservices.io/patterns/",
         "content_type": "article",
         "title": "Microservices Patterns",
         "status": "completed",
@@ -83,7 +74,7 @@
       },
       {
         "id": "9178eea5-c0aa-494e-8b0c-6f810f957f69",
-        "url": "https://docs.skillforge.dev/rest-api-principles",
+        "url": "https://restfulapi.net/rest-architectural-constraints/",
         "content_type": "article",
         "title": "REST API Design Principles",
         "status": "completed",
@@ -92,7 +83,7 @@
       },
       {
         "id": "295d10d1-1b9d-4cfe-a4a1-14a977d5328a",
-        "url": "https://learn.skillforge.dev/grpc-guide",
+        "url": "https://grpc.io/docs/what-is-grpc/introduction/",
         "content_type": "tutorial",
         "title": "gRPC Introduction",
         "status": "completed",
@@ -101,7 +92,7 @@
       },
       {
         "id": "ff5ecbd5-fefe-43f3-8ea3-cf858b6cdb2a",
-        "url": "https://learn.skillforge.dev/graphql-basics",
+        "url": "https://graphql.org/learn/",
         "content_type": "tutorial",
         "title": "GraphQL Basics",
         "status": "completed",
@@ -110,7 +101,7 @@
       },
       {
         "id": "64b9a10b-6292-496f-8b3d-68bf6ef521ec",
-        "url": "https://docs.skillforge.dev/vector-embeddings",
+        "url": "https://platform.openai.com/docs/guides/embeddings",
         "content_type": "article",
         "title": "Vector Embeddings Guide",
         "status": "completed",
@@ -119,7 +110,7 @@
       },
       {
         "id": "1bc6d70d-016a-4173-9646-c616e54d4ada",
-        "url": "https://learn.skillforge.dev/pgvector-guide",
+        "url": "https://github.com/pgvector/pgvector",
         "content_type": "tutorial",
         "title": "pgvector PostgreSQL Extension",
         "status": "completed",
@@ -128,7 +119,7 @@
       },
       {
         "id": "8b0ad249-f75d-4542-bbaa-24ca7b90ecbf",
-        "url": "https://docs.skillforge.dev/hnsw-algorithm",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/30602420/",
         "content_type": "article",
         "title": "HNSW Approximate Nearest Neighbor",
         "status": "completed",
@@ -137,7 +128,7 @@
       },
       {
         "id": "dd80cb6a-7bf6-46d8-86bb-a6b7f5f7cad7",
-        "url": "https://docs.skillforge.dev/rlhf-guide",
+        "url": "https://arxiv.org/abs/2312.14925",
         "content_type": "article",
         "title": "RLHF - Reinforcement Learning from Human Feedback",
         "status": "completed",
@@ -146,7 +137,7 @@
       },
       {
         "id": "a2f094c6-8370-4e04-b7d1-4a8472ea9a4e",
-        "url": "https://learn.skillforge.dev/lora-finetuning",
+        "url": "https://arxiv.org/abs/2106.09685",
         "content_type": "tutorial",
         "title": "LoRA Fine-Tuning for LLMs",
         "status": "completed",
@@ -155,7 +146,7 @@
       },
       {
         "id": "bb9eaf19-d805-47d9-9bef-62a97cb83f77",
-        "url": "https://docs.skillforge.dev/mlops-guide",
+        "url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
         "content_type": "article",
         "title": "MLOps - Machine Learning Operations",
         "status": "completed",
@@ -164,7 +155,7 @@
       },
       {
         "id": "87ee4987-051b-447e-8ac2-773c9a23ffb7",
-        "url": "https://docs.skillforge.dev/llm-agents-guide",
+        "url": "https://arxiv.org/abs/2308.11432",
         "content_type": "article",
         "title": "LLM Agents - Comprehensive Guide",
         "status": "completed",
@@ -173,7 +164,7 @@
       },
       {
         "id": "52174b7c-fb3b-4927-86ec-605100758cb6",
-        "url": "https://docs.skillforge.dev/service-mesh",
+        "url": "https://istio.io/latest/about/service-mesh",
         "content_type": "article",
         "title": "Service Mesh Architecture",
         "status": "completed",
@@ -182,7 +173,7 @@
       },
       {
         "id": "ac503bdb-edc2-498c-b093-9e0602d4bac4",
-        "url": "https://docs.skillforge.dev/write-ahead-log",
+        "url": "https://www.postgresql.org/docs/current/wal-intro.html",
         "content_type": "article",
         "title": "Write-Ahead Log Pattern",
         "status": "completed",
@@ -191,7 +182,7 @@
       },
       {
         "id": "aa4d3e90-72be-4ec9-b9b2-772856f1c3b0",
-        "url": "https://learn.skillforge.dev/prompt-engineering",
+        "url": "https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-the-openai-api",
         "content_type": "tutorial",
         "title": "Advanced Prompt Engineering Techniques",
         "status": "completed",
@@ -200,7 +191,7 @@
       },
       {
         "id": "f1671a55-053c-4007-82db-ddf4724d11d7",
-        "url": "https://learn.skillforge.dev/semantic-kernel",
+        "url": "https://learn.microsoft.com/en-us/semantic-kernel/overview/",
         "content_type": "tutorial",
         "title": "Semantic Kernel Framework",
         "status": "completed",
@@ -209,7 +200,7 @@
       },
       {
         "id": "236a227c-7f31-4363-9575-bc9bf760e28a",
-        "url": "https://docs.skillforge.dev/disney-hotstar-scale",
+        "url": "https://hasgeek.com/rootconf/2019-pune/sub/scaling-hotstar-com-for-25-million-concurrent-view-MjkchhLMLRkf2E64gJgUGT",
         "content_type": "article",
         "title": "Disney Hotstar: Scaling to 25 Million Concurrent Users",
         "status": "completed",
@@ -218,7 +209,7 @@
       },
       {
         "id": "f0334bd8-3ef2-40ed-aa79-e638e4516e93",
-        "url": "https://docs.skillforge.dev/doordash-logistics",
+        "url": "https://careersatdoordash.com/blog/using-ml-and-optimization-to-solve-doordashs-dispatch-problem/",
         "content_type": "article",
         "title": "DoorDash: Real-Time Logistics Optimization",
         "status": "completed",
@@ -227,7 +218,7 @@
       },
       {
         "id": "01e468bf-8d36-4568-9794-15861086f73a",
-        "url": "https://docs.skillforge.dev/netflix-microservices",
+        "url": "https://www.f5.com/company/blog/nginx/microservices-at-netflix-architectural-best-practices",
         "content_type": "article",
         "title": "Netflix: Microservices Architecture at Scale",
         "status": "completed",
@@ -236,7 +227,7 @@
       },
       {
         "id": "9a29e1fa-cbb0-4ff5-9cdb-d1e87a2f916d",
-        "url": "https://docs.skillforge.dev/spotify-backend",
+        "url": "https://engineering.atspotify.com/2016/3/spotifys-event-delivery-the-road-to-the-cloud-part-iii/",
         "content_type": "article",
         "title": "Spotify: Event-Driven Architecture for Music Streaming",
         "status": "completed",
@@ -245,7 +236,7 @@
       },
       {
         "id": "a9d9ead2-c467-4138-a793-ea361fd54553",
-        "url": "https://docs.skillforge.dev/uber-dispatch",
+        "url": "https://www.uber.com/blog/gatewayuberapi/",
         "content_type": "article",
         "title": "Uber: Real-Time Dispatch System",
         "status": "completed",
@@ -254,7 +245,7 @@
       },
       {
         "id": "df383593-843d-445c-91b6-7dd4ce4d969d",
-        "url": "https://docs.skillforge.dev/reddit-sharding",
+        "url": "https://highscalability.com/reddit-lessons-learned-from-mistakes-made-scaling-to-1-billi/",
         "content_type": "article",
         "title": "Reddit: Database Sharding Strategy",
         "status": "completed",
@@ -263,7 +254,7 @@
       },
       {
         "id": "0bf5118a-2718-46d5-a050-21cf81db83e2",
-        "url": "https://docs.skillforge.dev/datadog-monitoring",
+        "url": "https://www.datadoghq.com/product/metrics/",
         "content_type": "article",
         "title": "Datadog: Time-Series Monitoring at Scale",
         "status": "completed",
@@ -272,7 +263,7 @@
       },
       {
         "id": "c59e02bc-6057-4d99-bb23-3a19085d5d7d",
-        "url": "https://docs.skillforge.dev/pinterest-search",
+        "url": "https://medium.com/pinterest-engineering/hybrid-search-building-a-textual-and-visual-discovery-experience-at-pinterest-8527ba9728a9",
         "content_type": "article",
         "title": "Pinterest: Visual Search Engine",
         "status": "completed",
@@ -281,7 +272,7 @@
       },
       {
         "id": "80e97a98-efcf-4aaf-b4f3-b51c421afbbe",
-        "url": "https://docs.skillforge.dev/flipkart-flash-sales",
+        "url": "https://cloud.google.com/blog/products/data-analytics/flipkarts-dx-journey-to-futureproof-its-platform",
         "content_type": "article",
         "title": "Flipkart: Flash Sale Architecture",
         "status": "completed",
@@ -290,7 +281,7 @@
       },
       {
         "id": "5b065fd2-43f3-4cff-b851-292aa8a209fa",
-        "url": "https://docs.skillforge.dev/facebook-foqs",
+        "url": "https://engineering.fb.com/2021/02/22/production-engineering/foqs-scaling-a-distributed-priority-queue/",
         "content_type": "article",
         "title": "Facebook: FOQS Queueing System",
         "status": "completed",
@@ -299,7 +290,7 @@
       },
       {
         "id": "898d98dd-64ae-457a-8853-692b4c72e009",
-        "url": "https://docs.skillforge.dev/linkedin-real-time-analytics",
+        "url": "https://engineering.linkedin.com/analytics/real-time-analytics-massive-scale-pinot",
         "content_type": "article",
         "title": "LinkedIn: Real-Time Analytics Platform",
         "status": "completed",
@@ -308,7 +299,7 @@
       },
       {
         "id": "1ace4277-cda9-478f-8bde-e590d90e971f",
-        "url": "https://docs.skillforge.dev/grab-geospatial",
+        "url": "https://engineering.grab.com/building-hyperlocal-grabmaps",
         "content_type": "article",
         "title": "Grab: Geospatial Data Infrastructure",
         "status": "completed",
@@ -317,7 +308,7 @@
       },
       {
         "id": "e8315049-ee9b-492d-9b03-8ff075c395e5",
-        "url": "https://docs.skillforge.dev/perplexity-llm-infra",
+        "url": "https://developer.nvidia.com/blog/spotlight-perplexity-ai-serves-400-million-search-queries-a-month-using-nvidia-inference-stack/",
         "content_type": "article",
         "title": "Perplexity: LLM Inference Infrastructure",
         "status": "completed",
@@ -326,7 +317,7 @@
       },
       {
         "id": "f8c25c40-f5be-499b-b805-59155c39252b",
-        "url": "https://docs.skillforge.dev/nubank-serverless",
+        "url": "https://aws.amazon.com/blogs/mt/leveraging-immutable-infrastructure-nubank/",
         "content_type": "article",
         "title": "Nubank: Serverless Banking Architecture",
         "status": "completed",
@@ -335,7 +326,7 @@
       },
       {
         "id": "ed5199c1-64bc-40cd-8427-4b2235d4016d",
-        "url": "https://docs.skillforge.dev/zalando-microservices",
+        "url": "https://engineering.zalando.com/posts/2017/05/platform-engineering-and-third-generation-microservices-in-dublin.html",
         "content_type": "article",
         "title": "Zalando: Microservices at European Scale",
         "status": "completed",
@@ -344,7 +335,7 @@
       },
       {
         "id": "e065d398-c77f-486a-a072-3a9fc5759f1d",
-        "url": "https://docs.skillforge.dev/tinder-matching",
+        "url": "https://medium.com/tinder/geosharded-recommendations-part-2-architecture-3396a8a7efb",
         "content_type": "article",
         "title": "Tinder: Matching Algorithm and Infrastructure",
         "status": "completed",
@@ -353,7 +344,7 @@
       },
       {
         "id": "f6b1cf45-4e2f-4806-baf0-221555b4d66b",
-        "url": "https://docs.skillforge.dev/openai-inference",
+        "url": "https://openai.com/careers/software-engineer-model-inference/",
         "content_type": "article",
         "title": "OpenAI: GPT Inference at Scale",
         "status": "completed",
@@ -362,7 +353,7 @@
       },
       {
         "id": "5997e5d1-2d08-4457-ba04-68982c57bc9d",
-        "url": "https://docs.skillforge.dev/meta-ai-agents",
+        "url": "https://engineering.fb.com/2025/08/13/data-infrastructure/agentic-solution-for-warehouse-data-access/",
         "content_type": "article",
         "title": "Meta: AI Agent Infrastructure",
         "status": "completed",
@@ -371,7 +362,7 @@
       },
       {
         "id": "b9d8acf1-8cd8-467b-b002-d08f127abac8",
-        "url": "https://docs.skillforge.dev/databricks-lakehouse",
+        "url": "https://www.databricks.com/product/data-lakehouse",
         "content_type": "article",
         "title": "Databricks: Lakehouse Architecture",
         "status": "completed",
@@ -380,7 +371,7 @@
       },
       {
         "id": "40556866-032b-4cdf-b182-f0f88904149a",
-        "url": "https://docs.skillforge.dev/dropbox-sync-engine",
+        "url": "https://dropbox.tech/infrastructure/rewriting-the-heart-of-our-sync-engine",
         "content_type": "article",
         "title": "Dropbox: File Synchronization Engine",
         "status": "completed",
@@ -389,7 +380,7 @@
       },
       {
         "id": "58022210-1256-4a7a-8f1f-58ec9a379968",
-        "url": "https://docs.skillforge.dev/rag-architecture-patterns",
+        "url": "https://arxiv.org/abs/2005.11401",
         "content_type": "article",
         "title": "RAG Architecture Patterns and Best Practices",
         "status": "completed",
@@ -398,7 +389,7 @@
       },
       {
         "id": "b17f2b51-e525-4bd0-a2fe-53e4f57b2f77",
-        "url": "https://docs.skillforge.dev/chunking-strategies",
+        "url": "https://docs.langchain.com/oss/python/integrations/splitters/index",
         "content_type": "article",
         "title": "Document Chunking Strategies for RAG",
         "status": "completed",
@@ -407,7 +398,7 @@
       },
       {
         "id": "627347a2-2d65-467e-bcf1-8c733cf13eb8",
-        "url": "https://docs.skillforge.dev/embedding-models",
+        "url": "https://arxiv.org/abs/2210.07316",
         "content_type": "article",
         "title": "Text Embedding Models Comparison",
         "status": "completed",
@@ -416,7 +407,7 @@
       },
       {
         "id": "38ca00a9-4b13-47bc-8001-17ac6d3694fa",
-        "url": "https://docs.skillforge.dev/reranking-models",
+        "url": "https://www.sbert.net/docs/cross_encoder/usage/usage.html",
         "content_type": "article",
         "title": "Reranking Models for Retrieval Quality",
         "status": "completed",
@@ -425,7 +416,7 @@
       },
       {
         "id": "16ce4dd1-d95d-4abb-96ab-ec8b397d92cd",
-        "url": "https://docs.skillforge.dev/pgvector-postgres",
+        "url": "https://github.com/pgvector/pgvector",
         "content_type": "article",
         "title": "pgvector: Vector Search in PostgreSQL",
         "status": "completed",
@@ -434,7 +425,7 @@
       },
       {
         "id": "0d1dfef6-149d-43fd-a338-a958d43bc32f",
-        "url": "https://docs.skillforge.dev/rlhf-training",
+        "url": "https://arxiv.org/abs/2203.02155",
         "content_type": "article",
         "title": "RLHF: Reinforcement Learning from Human Feedback",
         "status": "completed",
@@ -443,7 +434,7 @@
       },
       {
         "id": "415d9afa-c678-4459-81bb-8202a34b8fd7",
-        "url": "https://docs.skillforge.dev/lora-qlora",
+        "url": "https://arxiv.org/abs/2305.14314",
         "content_type": "article",
         "title": "LoRA and QLoRA: Efficient Fine-Tuning",
         "status": "completed",
@@ -452,7 +443,7 @@
       },
       {
         "id": "f6117abf-61af-47f0-97d8-c1529979883e",
-        "url": "https://docs.skillforge.dev/agent-architectures",
+        "url": "https://arxiv.org/abs/2308.11432",
         "content_type": "article",
         "title": "LLM Agent Architectures and Patterns",
         "status": "completed",
@@ -461,7 +452,7 @@
       },
       {
         "id": "0583ffd4-a7d6-4996-98fb-1bb956b39358",
-        "url": "https://docs.skillforge.dev/langgraph-framework",
+        "url": "https://docs.langchain.com/oss/python/langgraph",
         "content_type": "article",
         "title": "LangGraph: Stateful Multi-Agent Workflows",
         "status": "completed",
@@ -470,7 +461,7 @@
       },
       {
         "id": "f1906d71-fe7f-4f05-9f80-8b85853bf947",
-        "url": "https://docs.skillforge.dev/rag-evaluation-metrics",
+        "url": "https://docs.ragas.io/",
         "content_type": "article",
         "title": "RAG Evaluation Metrics and Benchmarks",
         "status": "completed",
@@ -479,7 +470,7 @@
       },
       {
         "id": "ca4d70db-984a-479e-a479-330e10446de5",
-        "url": "https://docs.skillforge.dev/hybrid-search",
+        "url": "https://weaviate.io/blog/hybrid-search-explained",
         "content_type": "article",
         "title": "Hybrid Search: Combining Dense and Sparse Retrieval",
         "status": "completed",
@@ -488,7 +479,7 @@
       },
       {
         "id": "a8957489-b770-43c1-89c6-af8871f4868a",
-        "url": "https://docs.skillforge.dev/constitutional-ai",
+        "url": "https://arxiv.org/abs/2212.08073",
         "content_type": "article",
         "title": "Constitutional AI: AI-Feedback Alignment",
         "status": "completed",
@@ -497,7 +488,7 @@
       },
       {
         "id": "90eb3d14-4f6e-4794-bb19-e674c1c89672",
-        "url": "https://docs.skillforge.dev/dpo-alignment",
+        "url": "https://arxiv.org/abs/2305.18290",
         "content_type": "article",
         "title": "DPO: Direct Preference Optimization",
         "status": "completed",
@@ -506,7 +497,7 @@
       },
       {
         "id": "0e4c4d22-7e71-4418-be43-cc3d1381fe3b",
-        "url": "https://docs.skillforge.dev/agent-memory",
+        "url": "https://arxiv.org/abs/2310.08560",
         "content_type": "article",
         "title": "Agent Memory Systems and Architectures",
         "status": "completed",
@@ -515,7 +506,7 @@
       },
       {
         "id": "d6ec3827-5c12-417d-856b-379f6105357c",
-        "url": "https://learn.skillforge.dev/query-optimization",
+        "url": "https://developers.llamaindex.ai/python/framework/optimizing/advanced_retrieval/query_transformations/",
         "content_type": "tutorial",
         "title": "RAG Query Optimization Techniques",
         "status": "completed",
@@ -524,7 +515,7 @@
       },
       {
         "id": "6029a741-a042-4e0f-83d2-c74accfea4cf",
-        "url": "https://learn.skillforge.dev/output-formatting",
+        "url": "https://platform.openai.com/docs/guides/structured-output/json-schema",
         "content_type": "tutorial",
         "title": "LLM Output Formatting and Structured Generation",
         "status": "completed",
@@ -533,7 +524,7 @@
       },
       {
         "id": "6da77f20-e71b-4982-9e1c-22a5353db422",
-        "url": "https://docs.skillforge.dev/rest-api-design",
+        "url": "https://restfulapi.net/rest-api-best-practices/",
         "content_type": "article",
         "title": "REST API Design Best Practices",
         "status": "completed",
@@ -542,7 +533,7 @@
       },
       {
         "id": "187a7378-9d9a-45ff-aa70-35a2a540716b",
-        "url": "https://docs.skillforge.dev/graphql-api",
+        "url": "https://graphql.org/learn/best-practices/",
         "content_type": "article",
         "title": "GraphQL API Design and Implementation",
         "status": "completed",
@@ -551,7 +542,7 @@
       },
       {
         "id": "c4b08419-78fd-423a-bbf3-fc78a5f8b178",
-        "url": "https://docs.skillforge.dev/grpc-services",
+        "url": "https://grpc.io/docs/guides/performance/",
         "content_type": "article",
         "title": "gRPC: High-Performance RPC Framework",
         "status": "completed",
@@ -560,7 +551,7 @@
       },
       {
         "id": "025e69cb-8ea7-46be-8f56-df26b8a6a91a",
-        "url": "https://docs.skillforge.dev/mlops-pipeline-fundamentals",
+        "url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
         "content_type": "article",
         "title": "MLOps Pipeline Fundamentals: From Training to Production",
         "status": "completed",
@@ -569,7 +560,7 @@
       },
       {
         "id": "1949c2bb-e23c-4af3-bfa8-c4f86126b2bb",
-        "url": "https://learn.skillforge.dev/ml-model-monitoring-drift",
+        "url": "https://docs.cloud.google.com/vertex-ai/docs/model-monitoring/overview",
         "content_type": "tutorial",
         "title": "ML Model Monitoring and Drift Detection in Production",
         "status": "completed",
@@ -578,7 +569,7 @@
       },
       {
         "id": "c75e64b6-43eb-41ac-86d9-c529e840b8ac",
-        "url": "https://learn.skillforge.dev/langsmith-observability-guide",
+        "url": "https://docs.langchain.com/oss/python/langchain/observability",
         "content_type": "tutorial",
         "title": "LangSmith Observability for LLM Applications",
         "status": "completed",
@@ -587,7 +578,7 @@
       },
       {
         "id": "dd65f569-ed5e-43a4-bd84-1e8453de3593",
-        "url": "https://docs.skillforge.dev/prometheus-grafana-monitoring",
+        "url": "https://prometheus.io/docs/introduction/overview/",
         "content_type": "article",
         "title": "Prometheus and Grafana: Modern Monitoring Stack",
         "status": "completed",
@@ -596,7 +587,7 @@
       },
       {
         "id": "0bf2757c-8e10-471f-9021-f37597939ee3",
-        "url": "https://docs.skillforge.dev/feature-stores-mlops",
+        "url": "https://docs.feast.dev/",
         "content_type": "article",
         "title": "Feature Stores: The Backbone of Production ML",
         "status": "completed",
@@ -605,7 +596,7 @@
       },
       {
         "id": "3fa42967-ee39-4665-97f6-c275a85b900c",
-        "url": "https://learn.skillforge.dev/postgresql-indexing-strategies",
+        "url": "https://www.postgresql.org/docs/current/indexes.html",
         "content_type": "tutorial",
         "title": "PostgreSQL Indexing Strategies for Performance",
         "status": "completed",
@@ -614,7 +605,7 @@
       },
       {
         "id": "e0f45479-bd9c-4784-842e-60c0d95efce2",
-        "url": "https://docs.skillforge.dev/time-series-databases",
+        "url": "https://www.timescale.com/time-series-a",
         "content_type": "article",
         "title": "Time-Series Databases: Architecture and Use Cases",
         "status": "completed",
@@ -623,7 +614,7 @@
       },
       {
         "id": "734cb3a6-167b-44a0-a373-93b28d0b9b68",
-        "url": "https://learn.skillforge.dev/neo4j-graph-databases",
+        "url": "https://neo4j.com/docs/getting-started/data-modeling/",
         "content_type": "tutorial",
         "title": "Graph Databases with Neo4j: Modeling Connected Data",
         "status": "completed",
@@ -632,7 +623,7 @@
       },
       {
         "id": "69eeddd1-85d4-49f5-85bc-37a42899ad40",
-        "url": "https://docs.skillforge.dev/mongodb-document-design",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/",
         "content_type": "article",
         "title": "MongoDB Document Design Patterns",
         "status": "completed",
@@ -641,7 +632,7 @@
       },
       {
         "id": "e22090a5-f7e3-4462-9078-751d45ef5796",
-        "url": "https://docs.skillforge.dev/database-connection-pooling",
+        "url": "https://www.pgbouncer.org/",
         "content_type": "article",
         "title": "Database Connection Pooling: Performance and Reliability",
         "status": "completed",
@@ -650,7 +641,7 @@
       },
       {
         "id": "24706df1-33e7-4ac5-ac12-dfda3d5cbfbf",
-        "url": "https://learn.skillforge.dev/oauth2-oidc-fundamentals",
+        "url": "https://openid.net/specs/openid-connect-core-1_0-18.html",
         "content_type": "tutorial",
         "title": "OAuth2 and OpenID Connect: Modern Authentication",
         "status": "completed",
@@ -659,7 +650,7 @@
       },
       {
         "id": "a615cb69-03b6-422c-a356-205b28f9e7f9",
-        "url": "https://docs.skillforge.dev/api-security-best-practices",
+        "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
         "content_type": "article",
         "title": "API Security Best Practices: Defense in Depth",
         "status": "completed",
@@ -668,7 +659,7 @@
       },
       {
         "id": "470bd938-e4b1-4252-8931-ca87bfa95999",
-        "url": "https://docs.skillforge.dev/zero-trust-architecture",
+        "url": "https://csrc.nist.gov/pubs/sp/800/207/final",
         "content_type": "article",
         "title": "Zero Trust Architecture: Security for Modern Infrastructure",
         "status": "completed",
@@ -677,7 +668,7 @@
       },
       {
         "id": "4996f8dc-5fd7-4f93-bd46-6642d340f261",
-        "url": "https://learn.skillforge.dev/kubernetes-fundamentals",
+        "url": "https://kubernetes.io/docs/concepts/overview/",
         "content_type": "tutorial",
         "title": "Kubernetes Fundamentals: Container Orchestration at Scale",
         "status": "completed",
@@ -686,7 +677,7 @@
       },
       {
         "id": "fbfdaaeb-4ef9-456f-8bd1-b777ae789df3",
-        "url": "https://docs.skillforge.dev/container-orchestration-patterns",
+        "url": "https://k8spatterns.io/",
         "content_type": "article",
         "title": "Container Orchestration Patterns: Beyond Basic Kubernetes",
         "status": "completed",
@@ -695,7 +686,7 @@
       },
       {
         "id": "12fce4ee-5122-46be-8312-b380ff3af37e",
-        "url": "https://learn.skillforge.dev/terraform-infrastructure-as-code",
+        "url": "https://developer.hashicorp.com/terraform/intro",
         "content_type": "tutorial",
         "title": "Terraform Infrastructure as Code: Declarative Cloud Management",
         "status": "completed",
@@ -704,7 +695,7 @@
       },
       {
         "id": "2d79e8a9-07fa-4585-9f96-6a565f3af057",
-        "url": "https://learn.skillforge.dev/github-actions-cicd",
+        "url": "https://docs.github.com/en/actions/get-started",
         "content_type": "tutorial",
         "title": "CI/CD with GitHub Actions: Automated Software Delivery",
         "status": "completed",
@@ -713,7 +704,7 @@
       },
       {
         "id": "a7869cab-7ecb-4567-aea8-bf62633b7016",
-        "url": "https://docs.skillforge.dev/http2-vs-http3",
+        "url": "https://www.cloudflare.com/learning/performance/what-is-http3/",
         "content_type": "article",
         "title": "HTTP/2 vs HTTP/3: Evolution of Web Protocols",
         "status": "completed",
@@ -722,7 +713,7 @@
       },
       {
         "id": "d56fc75a-6ea7-4f46-9c1b-6510af01b7ea",
-        "url": "https://docs.skillforge.dev/dns-architecture-deep-dive",
+        "url": "https://www.cloudflare.com/learning/ddos/glossary/domain-name-system-dns/",
         "content_type": "article",
         "title": "DNS Architecture: The Internet's Phone Book",
         "status": "completed",
@@ -731,7 +722,7 @@
       },
       {
         "id": "8bf1b06a-5fb8-42d8-9742-ada4bb08cba9",
-        "url": "https://learn.skillforge.dev/tls-mtls-security",
+        "url": "https://www.cloudflare.com/learning/access-management/what-is-mutual-tls/",
         "content_type": "tutorial",
         "title": "TLS and mTLS: Securing Network Communications",
         "status": "completed",
@@ -740,7 +731,7 @@
       },
       {
         "id": "41a4037a-f1f8-42f8-9a61-654b8b5fb805",
-        "url": "https://docs.skillforge.dev/doc-abtesting-1",
+        "url": "https://www.optimizely.com/optimization-glossary/split-testing/",
         "content_type": "article",
         "title": "A/B Testing Fundamentals for ML Models",
         "status": "completed",
@@ -749,7 +740,7 @@
       },
       {
         "id": "e0213bb1-e525-4b53-8da4-b932154f5bc6",
-        "url": "https://docs.skillforge.dev/doc-abtesting-2",
+        "url": "https://www.optimizely.com/optimization-glossary/statistical-significance/",
         "content_type": "article",
         "title": "Statistical Significance in ML Experiments",
         "status": "completed",
@@ -758,7 +749,7 @@
       },
       {
         "id": "06756889-8f20-411e-ad33-64917eac075b",
-        "url": "https://docs.skillforge.dev/doc-abtesting-3",
+        "url": "https://www.optimizely.com/optimization-glossary/multi-armed-bandit/",
         "content_type": "article",
         "title": "Multi-Armed Bandits vs A/B Testing",
         "status": "completed",
@@ -767,7 +758,7 @@
       },
       {
         "id": "9ab36cf8-91f0-4e88-9e5f-d50e5b742cad",
-        "url": "https://docs.skillforge.dev/doc-abtesting-4",
+        "url": "https://learn.launchdarkly.com/experimentation/",
         "content_type": "article",
         "title": "Feature Flag Systems for ML Experimentation",
         "status": "completed",
@@ -776,7 +767,7 @@
       },
       {
         "id": "7ef5492c-d0e9-4663-a4dc-69216353b787",
-        "url": "https://docs.skillforge.dev/doc-abtesting-5",
+        "url": "https://www.evanmiller.org/bayesian-ab-testing.html",
         "content_type": "article",
         "title": "Bayesian A/B Testing for Data Science",
         "status": "completed",
@@ -785,7 +776,7 @@
       },
       {
         "id": "715e2375-046b-41fe-9083-663280f3ce8d",
-        "url": "https://docs.skillforge.dev/doc-agenticrag-1",
+        "url": "https://arxiv.org/abs/2501.09136",
         "content_type": "article",
         "title": "Agentic RAG Architecture Patterns",
         "status": "completed",
@@ -794,7 +785,7 @@
       },
       {
         "id": "89f85f1d-6101-47fd-a286-0735c909bd1a",
-        "url": "https://docs.skillforge.dev/doc-agenticrag-2",
+        "url": "https://aclanthology.org/2025.naacl-long.449/",
         "content_type": "article",
         "title": "Knowledge Graphs for Agentic RAG",
         "status": "completed",
@@ -803,7 +794,7 @@
       },
       {
         "id": "8d605e7e-3fbf-4ca6-a27c-1adb829537b9",
-        "url": "https://docs.skillforge.dev/doc-agenticrag-3",
+        "url": "https://arxiv.org/abs/2310.11511",
         "content_type": "article",
         "title": "Self-Reflective RAG Agents",
         "status": "completed",
@@ -812,7 +803,7 @@
       },
       {
         "id": "c5492308-2a5e-4508-9dd8-5d00be069cb8",
-        "url": "https://docs.skillforge.dev/doc-agenticrag-4",
+        "url": "https://arxiv.org/abs/2508.04604",
         "content_type": "article",
         "title": "Tool-Augmented RAG Systems",
         "status": "completed",
@@ -821,7 +812,7 @@
       },
       {
         "id": "d9a62504-07eb-45ff-98cd-acaecabe691a",
-        "url": "https://docs.skillforge.dev/doc-agenticrag-5",
+        "url": "https://arxiv.org/abs/2505.20096",
         "content_type": "article",
         "title": "Multi-Agent RAG Orchestration",
         "status": "completed",
@@ -830,7 +821,7 @@
       },
       {
         "id": "0e493754-8e1d-41f0-b7c8-187c571b76c4",
-        "url": "https://docs.skillforge.dev/doc-context-001",
+        "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
         "content_type": "article",
         "title": "Context Engineering for AI Agents",
         "status": "completed",
@@ -839,7 +830,7 @@
       },
       {
         "id": "adbc8c4e-1f2f-40d5-86f8-ec3696217269",
-        "url": "https://docs.skillforge.dev/doc-context-002",
+        "url": "https://arxiv.org/abs/2307.03172",
         "content_type": "article",
         "title": "Context Window Optimization Strategies",
         "status": "completed",
@@ -848,7 +839,7 @@
       },
       {
         "id": "89f28890-33b0-4920-8fbb-a5c9758ecff2",
-        "url": "https://docs.skillforge.dev/doc-context-003",
+        "url": "https://arxiv.org/abs/2310.08560",
         "content_type": "article",
         "title": "Memory Systems for LLM Applications",
         "status": "completed",
@@ -857,7 +848,7 @@
       },
       {
         "id": "02d2fa01-27a4-4494-8b91-6214af0fb373",
-        "url": "https://docs.skillforge.dev/doc-context-004",
+        "url": "https://arxiv.org/abs/2310.05736",
         "content_type": "article",
         "title": "Context Compression Techniques",
         "status": "completed",
@@ -866,35 +857,33 @@
       },
       {
         "id": "d9eace6b-6c90-46a2-9a3e-7491ac8eb539",
-        "url": "https://docs.skillforge.dev/doc-context-005",
+        "url": "https://arxiv.org/abs/2310.11511",
         "content_type": "article",
         "title": "Dynamic Context Management",
         "status": "completed",
         "created_at": "2025-12-12T09:05:09.001931+00:00",
         "updated_at": "2025-12-12T09:05:09.001933+00:00"
+      },
+      {
+        "id": "2f462b6c-a582-489a-b02d-57f707fc2293",
+        "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+        "content_type": "article",
+        "title": "Anthropic Context Engineering Guide",
+        "status": "completed",
+        "created_at": "2025-12-15T08:19:14.993525+00:00",
+        "updated_at": "2025-12-15T08:19:14.993529+00:00"
+      },
+      {
+        "id": "28133d2b-ff32-419a-94c8-3dde6939ec2d",
+        "url": "https://arxiv.org/abs/2512.08296",
+        "content_type": "research_paper",
+        "title": "Towards a Science of Scaling Agent Systems",
+        "status": "completed",
+        "created_at": "2025-12-15T08:23:28.434895+00:00",
+        "updated_at": "2025-12-15T08:23:28.434898+00:00"
       }
     ],
     "artifacts": [
-      {
-        "id": "91cd9ddf-7c11-4712-aca2-94c03dcd2842",
-        "analysis_id": "06dc993a-678f-4cae-bc37-39874eb2f73c",
-        "markdown_content": "# Anthropic Context Engineering Guide\n\n## Overview\n\nContext engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.\n\n## Table of Contents\n\n1. [Introduction to Context Engineering](#introduction-to-context-engineering)\n2. [Core Principles](#core-principles)\n3. [Context for AI Agents](#context-for-ai-agents)\n\n## Introduction to Context Engineering\n\nContext engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.\n\n## Core Principles\n\nEffective context engineering follows three principles: clarity, relevance, and structure. Clarity means using precise language and avoiding ambiguity. Relevance requires including only information necessary for the task. Structure organizes context hierarchically with clear separations between different types of information. Use XML tags, markdown headers, or JSON to create distinct sections. Place critical instructions at the beginning and end for emphasis.\n\n## Context for AI Agents\n\nAI agents require specialized context engineering. Define the agent's role, capabilities, and constraints clearly. Provide tool schemas with detailed descriptions of when and how to use each tool. Include examples of successful task completion. Maintain conversation history with semantic compression for long interactions. Use structured formats like JSON for agent memory to enable precise retrieval. Consider token budgets when designing context windows.\n\n## Code Examples\n\n### Configuration Example\n\n```yaml\n# Configuration for this feature\nfeature:\n  enabled: true\n  settings:\n    timeout: 30\n    retries: 3\n    cache: true\n```\n\n### Usage Example\n\n```python\nfrom skillforge import Feature\n\n# Initialize with configuration\nfeature = Feature.from_config('config.yaml')\nresult = feature.execute()\nprint(f'Result: {result}')\n```\n\n## Implementation Notes\n\n### Best Practices\n\n- Apply concepts incrementally to existing code\n- Document decisions and rationale\n- Review and refactor as understanding deepens\n\n## Related Topics\n\n`anthropic`, `ai`, `prompts`, `context`, `llm`\n\n---\n\n*Generated from SkillForge Golden Dataset - Article*",
-        "version": 1,
-        "artifact_metadata": {
-          "source": "golden-dataset",
-          "topics": [
-            "anthropic",
-            "ai",
-            "prompts",
-            "context",
-            "llm"
-          ],
-          "complexity": "intermediate",
-          "document_id": "context-engineering",
-          "section_count": 3
-        },
-        "created_at": "2025-12-12T09:02:17.218445+00:00"
-      },
       {
         "id": "b0c9e90c-0772-4348-8013-18d2720e48c2",
         "analysis_id": "67303c7b-fb2b-4c7d-b9ce-d1d483652e31",
@@ -910,7 +899,9 @@
             "information-retrieval"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2312.10997",
           "document_id": "rag-survey",
+          "fixture_url": "https://papers.skillforge.dev/rag-survey",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:18.874928+00:00"
@@ -929,7 +920,9 @@
             "ai"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2201.11903",
           "document_id": "chain-of-thought",
+          "fixture_url": "https://docs.skillforge.dev/chain-of-thought",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:20.246999+00:00"
@@ -948,7 +941,9 @@
             "ai"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2305.10601",
           "document_id": "tree-of-thoughts",
+          "fixture_url": "https://docs.skillforge.dev/tree-of-thoughts",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:21.332843+00:00"
@@ -968,7 +963,9 @@
             "python"
           ],
           "complexity": "intermediate",
+          "source_url": "https://reference.langchain.com/python/langgraph/supervisor/",
           "document_id": "langgraph-multiagent",
+          "fixture_url": "https://learn.skillforge.dev/langgraph-multiagent",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:23.314308+00:00"
@@ -988,7 +985,9 @@
             "observability"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.langchain.com/langsmith/evaluation",
           "document_id": "langsmith-evaluation",
+          "fixture_url": "https://learn.skillforge.dev/langsmith-evaluation",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:24.896801+00:00"
@@ -1007,7 +1006,9 @@
             "ai"
           ],
           "complexity": "intermediate",
+          "source_url": "https://deepeval.com/guides/guides-rag-triad",
           "document_id": "rag-triad",
+          "fixture_url": "https://docs.skillforge.dev/rag-triad",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:27.002329+00:00"
@@ -1026,7 +1027,9 @@
             "patterns"
           ],
           "complexity": "intermediate",
+          "source_url": "https://microservices.io/patterns/",
           "document_id": "microservices-patterns",
+          "fixture_url": "https://docs.skillforge.dev/microservices-patterns",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:28.784702+00:00"
@@ -1045,7 +1048,9 @@
             "web-services"
           ],
           "complexity": "intermediate",
+          "source_url": "https://restfulapi.net/rest-architectural-constraints/",
           "document_id": "rest-api-principles",
+          "fixture_url": "https://docs.skillforge.dev/rest-api-principles",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:29.767538+00:00"
@@ -1064,7 +1069,9 @@
             "api"
           ],
           "complexity": "intermediate",
+          "source_url": "https://grpc.io/docs/what-is-grpc/introduction/",
           "document_id": "grpc-guide",
+          "fixture_url": "https://learn.skillforge.dev/grpc-guide",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:30.861758+00:00"
@@ -1083,7 +1090,9 @@
             "schema"
           ],
           "complexity": "intermediate",
+          "source_url": "https://graphql.org/learn/",
           "document_id": "graphql-basics",
+          "fixture_url": "https://learn.skillforge.dev/graphql-basics",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:31.898110+00:00"
@@ -1102,7 +1111,9 @@
             "semantic-search"
           ],
           "complexity": "intermediate",
+          "source_url": "https://platform.openai.com/docs/guides/embeddings",
           "document_id": "vector-embeddings",
+          "fixture_url": "https://docs.skillforge.dev/vector-embeddings",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:33.105016+00:00"
@@ -1121,7 +1132,9 @@
             "vector-search"
           ],
           "complexity": "intermediate",
+          "source_url": "https://github.com/pgvector/pgvector",
           "document_id": "pgvector-guide",
+          "fixture_url": "https://learn.skillforge.dev/pgvector-guide",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:34.177738+00:00"
@@ -1140,7 +1153,9 @@
             "vector-search"
           ],
           "complexity": "intermediate",
+          "source_url": "https://pubmed.ncbi.nlm.nih.gov/30602420/",
           "document_id": "hnsw-algorithm",
+          "fixture_url": "https://docs.skillforge.dev/hnsw-algorithm",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:35.127010+00:00"
@@ -1160,7 +1175,9 @@
             "alignment"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2312.14925",
           "document_id": "rlhf-guide",
+          "fixture_url": "https://docs.skillforge.dev/rlhf-guide",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:36.146396+00:00"
@@ -1180,7 +1197,9 @@
             "efficient-training"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2106.09685",
           "document_id": "lora-finetuning",
+          "fixture_url": "https://learn.skillforge.dev/lora-finetuning",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:38.946853+00:00"
@@ -1200,7 +1219,9 @@
             "monitoring"
           ],
           "complexity": "intermediate",
+          "source_url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
           "document_id": "mlops-guide",
+          "fixture_url": "https://docs.skillforge.dev/mlops-guide",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:40.327611+00:00"
@@ -1220,7 +1241,9 @@
             "reasoning"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2308.11432",
           "document_id": "llm-agents-guide",
+          "fixture_url": "https://docs.skillforge.dev/llm-agents-guide",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:41.832506+00:00"
@@ -1239,7 +1262,9 @@
             "infrastructure"
           ],
           "complexity": "intermediate",
+          "source_url": "https://istio.io/latest/about/service-mesh",
           "document_id": "service-mesh",
+          "fixture_url": "https://docs.skillforge.dev/service-mesh",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:43.189373+00:00"
@@ -1258,7 +1283,9 @@
             "durability"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.postgresql.org/docs/current/wal-intro.html",
           "document_id": "write-ahead-log",
+          "fixture_url": "https://docs.skillforge.dev/write-ahead-log",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:44.249699+00:00"
@@ -1277,7 +1304,9 @@
             "techniques"
           ],
           "complexity": "intermediate",
+          "source_url": "https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-the-openai-api",
           "document_id": "prompt-engineering",
+          "fixture_url": "https://learn.skillforge.dev/prompt-engineering",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:45.349608+00:00"
@@ -1296,7 +1325,9 @@
             "microsoft"
           ],
           "complexity": "intermediate",
+          "source_url": "https://learn.microsoft.com/en-us/semantic-kernel/overview/",
           "document_id": "semantic-kernel",
+          "fixture_url": "https://learn.skillforge.dev/semantic-kernel",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:02:46.844943+00:00"
@@ -1315,7 +1346,9 @@
             "case-study"
           ],
           "complexity": "intermediate",
+          "source_url": "https://hasgeek.com/rootconf/2019-pune/sub/scaling-hotstar-com-for-25-million-concurrent-view-MjkchhLMLRkf2E64gJgUGT",
           "document_id": "disney-hotstar-scale",
+          "fixture_url": "https://docs.skillforge.dev/disney-hotstar-scale",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:48.592647+00:00"
@@ -1334,7 +1367,9 @@
             "microservices"
           ],
           "complexity": "intermediate",
+          "source_url": "https://careersatdoordash.com/blog/using-ml-and-optimization-to-solve-doordashs-dispatch-problem/",
           "document_id": "doordash-logistics",
+          "fixture_url": "https://docs.skillforge.dev/doordash-logistics",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:50.112787+00:00"
@@ -1353,7 +1388,9 @@
             "architecture"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.f5.com/company/blog/nginx/microservices-at-netflix-architectural-best-practices",
           "document_id": "netflix-microservices",
+          "fixture_url": "https://docs.skillforge.dev/netflix-microservices",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:51.584596+00:00"
@@ -1372,7 +1409,9 @@
             "architecture"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.atspotify.com/2016/3/spotifys-event-delivery-the-road-to-the-cloud-part-iii/",
           "document_id": "spotify-backend",
+          "fixture_url": "https://docs.skillforge.dev/spotify-backend",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:52.861422+00:00"
@@ -1391,7 +1430,9 @@
             "dispatch"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.uber.com/blog/gatewayuberapi/",
           "document_id": "uber-dispatch",
+          "fixture_url": "https://docs.skillforge.dev/uber-dispatch",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:54.224146+00:00"
@@ -1410,7 +1451,9 @@
             "scalability"
           ],
           "complexity": "intermediate",
+          "source_url": "https://highscalability.com/reddit-lessons-learned-from-mistakes-made-scaling-to-1-billi/",
           "document_id": "reddit-sharding",
+          "fixture_url": "https://docs.skillforge.dev/reddit-sharding",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:55.831194+00:00"
@@ -1429,7 +1472,9 @@
             "observability"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.datadoghq.com/product/metrics/",
           "document_id": "datadog-monitoring",
+          "fixture_url": "https://docs.skillforge.dev/datadog-monitoring",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:02:58.869923+00:00"
@@ -1448,7 +1493,9 @@
             "recommendation"
           ],
           "complexity": "intermediate",
+          "source_url": "https://medium.com/pinterest-engineering/hybrid-search-building-a-textual-and-visual-discovery-experience-at-pinterest-8527ba9728a9",
           "document_id": "pinterest-search",
+          "fixture_url": "https://docs.skillforge.dev/pinterest-search",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:00.306751+00:00"
@@ -1467,7 +1514,9 @@
             "queueing"
           ],
           "complexity": "intermediate",
+          "source_url": "https://cloud.google.com/blog/products/data-analytics/flipkarts-dx-journey-to-futureproof-its-platform",
           "document_id": "flipkart-flash-sales",
+          "fixture_url": "https://docs.skillforge.dev/flipkart-flash-sales",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:01.638742+00:00"
@@ -1486,7 +1535,9 @@
             "scalability"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.fb.com/2021/02/22/production-engineering/foqs-scaling-a-distributed-priority-queue/",
           "document_id": "facebook-foqs",
+          "fixture_url": "https://docs.skillforge.dev/facebook-foqs",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:07.684437+00:00"
@@ -1505,7 +1556,9 @@
             "real-time"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.linkedin.com/analytics/real-time-analytics-massive-scale-pinot",
           "document_id": "linkedin-real-time-analytics",
+          "fixture_url": "https://docs.skillforge.dev/linkedin-real-time-analytics",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:09.266279+00:00"
@@ -1524,7 +1577,9 @@
             "optimization"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.grab.com/building-hyperlocal-grabmaps",
           "document_id": "grab-geospatial",
+          "fixture_url": "https://docs.skillforge.dev/grab-geospatial",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:10.782582+00:00"
@@ -1543,7 +1598,9 @@
             "ai-infrastructure"
           ],
           "complexity": "intermediate",
+          "source_url": "https://developer.nvidia.com/blog/spotlight-perplexity-ai-serves-400-million-search-queries-a-month-using-nvidia-inference-stack/",
           "document_id": "perplexity-llm-infra",
+          "fixture_url": "https://docs.skillforge.dev/perplexity-llm-infra",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:12.119586+00:00"
@@ -1562,7 +1619,9 @@
             "aws-lambda"
           ],
           "complexity": "intermediate",
+          "source_url": "https://aws.amazon.com/blogs/mt/leveraging-immutable-infrastructure-nubank/",
           "document_id": "nubank-serverless",
+          "fixture_url": "https://docs.skillforge.dev/nubank-serverless",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:13.519460+00:00"
@@ -1581,7 +1640,9 @@
             "api-gateway"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.zalando.com/posts/2017/05/platform-engineering-and-third-generation-microservices-in-dublin.html",
           "document_id": "zalando-microservices",
+          "fixture_url": "https://docs.skillforge.dev/zalando-microservices",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:14.993239+00:00"
@@ -1600,7 +1661,9 @@
             "mobile-backend"
           ],
           "complexity": "intermediate",
+          "source_url": "https://medium.com/tinder/geosharded-recommendations-part-2-architecture-3396a8a7efb",
           "document_id": "tinder-matching",
+          "fixture_url": "https://docs.skillforge.dev/tinder-matching",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:16.441077+00:00"
@@ -1619,7 +1682,9 @@
             "distributed-systems"
           ],
           "complexity": "intermediate",
+          "source_url": "https://openai.com/careers/software-engineer-model-inference/",
           "document_id": "openai-inference",
+          "fixture_url": "https://docs.skillforge.dev/openai-inference",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:18.057066+00:00"
@@ -1638,7 +1703,9 @@
             "llm"
           ],
           "complexity": "intermediate",
+          "source_url": "https://engineering.fb.com/2025/08/13/data-infrastructure/agentic-solution-for-warehouse-data-access/",
           "document_id": "meta-ai-agents",
+          "fixture_url": "https://docs.skillforge.dev/meta-ai-agents",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:19.520065+00:00"
@@ -1657,7 +1724,9 @@
             "delta-lake"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.databricks.com/product/data-lakehouse",
           "document_id": "databricks-lakehouse",
+          "fixture_url": "https://docs.skillforge.dev/databricks-lakehouse",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:20.751370+00:00"
@@ -1676,7 +1745,9 @@
             "consistency"
           ],
           "complexity": "intermediate",
+          "source_url": "https://dropbox.tech/infrastructure/rewriting-the-heart-of-our-sync-engine",
           "document_id": "dropbox-sync-engine",
+          "fixture_url": "https://docs.skillforge.dev/dropbox-sync-engine",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:23.060247+00:00"
@@ -1695,7 +1766,9 @@
             "retrieval"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2005.11401",
           "document_id": "rag-architecture-patterns",
+          "fixture_url": "https://docs.skillforge.dev/rag-architecture-patterns",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:24.767847+00:00"
@@ -1714,7 +1787,9 @@
             "embeddings"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.langchain.com/oss/python/integrations/splitters/index",
           "document_id": "chunking-strategies",
+          "fixture_url": "https://docs.skillforge.dev/chunking-strategies",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:26.276373+00:00"
@@ -1733,7 +1808,9 @@
             "semantic-search"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2210.07316",
           "document_id": "embedding-models",
+          "fixture_url": "https://docs.skillforge.dev/embedding-models",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:27.551218+00:00"
@@ -1752,7 +1829,9 @@
             "quality"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.sbert.net/docs/cross_encoder/usage/usage.html",
           "document_id": "reranking-models",
+          "fixture_url": "https://docs.skillforge.dev/reranking-models",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:29.009407+00:00"
@@ -1771,7 +1850,9 @@
             "embeddings"
           ],
           "complexity": "intermediate",
+          "source_url": "https://github.com/pgvector/pgvector",
           "document_id": "pgvector-postgres",
+          "fixture_url": "https://docs.skillforge.dev/pgvector-postgres",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:30.583051+00:00"
@@ -1790,7 +1871,9 @@
             "alignment"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2203.02155",
           "document_id": "rlhf-training",
+          "fixture_url": "https://docs.skillforge.dev/rlhf-training",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:31.986237+00:00"
@@ -1809,7 +1892,9 @@
             "parameter-efficient"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2305.14314",
           "document_id": "lora-qlora",
+          "fixture_url": "https://docs.skillforge.dev/lora-qlora",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:33.378176+00:00"
@@ -1828,7 +1913,9 @@
             "tool-use"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2308.11432",
           "document_id": "agent-architectures",
+          "fixture_url": "https://docs.skillforge.dev/agent-architectures",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:34.882818+00:00"
@@ -1847,7 +1934,9 @@
             "state-management"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.langchain.com/oss/python/langgraph",
           "document_id": "langgraph-framework",
+          "fixture_url": "https://docs.skillforge.dev/langgraph-framework",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:36.396109+00:00"
@@ -1866,7 +1955,9 @@
             "benchmarks"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.ragas.io/",
           "document_id": "rag-evaluation-metrics",
+          "fixture_url": "https://docs.skillforge.dev/rag-evaluation-metrics",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:37.714225+00:00"
@@ -1885,7 +1976,9 @@
             "semantic-search"
           ],
           "complexity": "intermediate",
+          "source_url": "https://weaviate.io/blog/hybrid-search-explained",
           "document_id": "hybrid-search",
+          "fixture_url": "https://docs.skillforge.dev/hybrid-search",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:39.134688+00:00"
@@ -1904,7 +1997,9 @@
             "safety"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2212.08073",
           "document_id": "constitutional-ai",
+          "fixture_url": "https://docs.skillforge.dev/constitutional-ai",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:40.375707+00:00"
@@ -1923,7 +2018,9 @@
             "rlhf"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2305.18290",
           "document_id": "dpo-alignment",
+          "fixture_url": "https://docs.skillforge.dev/dpo-alignment",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:41.811357+00:00"
@@ -1942,7 +2039,9 @@
             "retrieval"
           ],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2310.08560",
           "document_id": "agent-memory",
+          "fixture_url": "https://docs.skillforge.dev/agent-memory",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:43.201199+00:00"
@@ -1961,7 +2060,9 @@
             "retrieval"
           ],
           "complexity": "intermediate",
+          "source_url": "https://developers.llamaindex.ai/python/framework/optimizing/advanced_retrieval/query_transformations/",
           "document_id": "query-optimization",
+          "fixture_url": "https://learn.skillforge.dev/query-optimization",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:44.550648+00:00"
@@ -1980,7 +2081,9 @@
             "parsing"
           ],
           "complexity": "intermediate",
+          "source_url": "https://platform.openai.com/docs/guides/structured-output/json-schema",
           "document_id": "output-formatting",
+          "fixture_url": "https://learn.skillforge.dev/output-formatting",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:45.874003+00:00"
@@ -1999,7 +2102,9 @@
             "best-practices"
           ],
           "complexity": "intermediate",
+          "source_url": "https://restfulapi.net/rest-api-best-practices/",
           "document_id": "rest-api-design",
+          "fixture_url": "https://docs.skillforge.dev/rest-api-design",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:47.363986+00:00"
@@ -2018,7 +2123,9 @@
             "resolvers"
           ],
           "complexity": "intermediate",
+          "source_url": "https://graphql.org/learn/best-practices/",
           "document_id": "graphql-api",
+          "fixture_url": "https://docs.skillforge.dev/graphql-api",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:48.553248+00:00"
@@ -2037,7 +2144,9 @@
             "microservices"
           ],
           "complexity": "intermediate",
+          "source_url": "https://grpc.io/docs/guides/performance/",
           "document_id": "grpc-services",
+          "fixture_url": "https://docs.skillforge.dev/grpc-services",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:50.034074+00:00"
@@ -2056,7 +2165,9 @@
             "automation"
           ],
           "complexity": "intermediate",
+          "source_url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
           "document_id": "mlops-pipeline-fundamentals",
+          "fixture_url": "https://docs.skillforge.dev/mlops-pipeline-fundamentals",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:51.591356+00:00"
@@ -2075,7 +2186,9 @@
             "model-performance"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.cloud.google.com/vertex-ai/docs/model-monitoring/overview",
           "document_id": "ml-model-monitoring-drift",
+          "fixture_url": "https://learn.skillforge.dev/ml-model-monitoring-drift",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:53.051534+00:00"
@@ -2094,7 +2207,9 @@
             "langchain"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.langchain.com/oss/python/langchain/observability",
           "document_id": "langsmith-observability-guide",
+          "fixture_url": "https://learn.skillforge.dev/langsmith-observability-guide",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:55.573874+00:00"
@@ -2114,7 +2229,9 @@
             "metrics"
           ],
           "complexity": "intermediate",
+          "source_url": "https://prometheus.io/docs/introduction/overview/",
           "document_id": "prometheus-grafana-monitoring",
+          "fixture_url": "https://docs.skillforge.dev/prometheus-grafana-monitoring",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:56.868411+00:00"
@@ -2133,7 +2250,9 @@
             "machine-learning"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.feast.dev/",
           "document_id": "feature-stores-mlops",
+          "fixture_url": "https://docs.skillforge.dev/feature-stores-mlops",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:58.246998+00:00"
@@ -2153,7 +2272,9 @@
             "sql"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.postgresql.org/docs/current/indexes.html",
           "document_id": "postgresql-indexing-strategies",
+          "fixture_url": "https://learn.skillforge.dev/postgresql-indexing-strategies",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:03:59.579422+00:00"
@@ -2173,7 +2294,9 @@
             "monitoring"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.timescale.com/time-series-a",
           "document_id": "time-series-databases",
+          "fixture_url": "https://docs.skillforge.dev/time-series-databases",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:02.278294+00:00"
@@ -2192,7 +2315,9 @@
             "nosql"
           ],
           "complexity": "intermediate",
+          "source_url": "https://neo4j.com/docs/getting-started/data-modeling/",
           "document_id": "neo4j-graph-databases",
+          "fixture_url": "https://learn.skillforge.dev/neo4j-graph-databases",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:03.775238+00:00"
@@ -2211,7 +2336,9 @@
             "schema-design"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/",
           "document_id": "mongodb-document-design",
+          "fixture_url": "https://docs.skillforge.dev/mongodb-document-design",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:06.055461+00:00"
@@ -2230,7 +2357,9 @@
             "architecture"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.pgbouncer.org/",
           "document_id": "database-connection-pooling",
+          "fixture_url": "https://docs.skillforge.dev/database-connection-pooling",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:04:07.267262+00:00"
@@ -2250,7 +2379,9 @@
             "identity"
           ],
           "complexity": "intermediate",
+          "source_url": "https://openid.net/specs/openid-connect-core-1_0-18.html",
           "document_id": "oauth2-oidc-fundamentals",
+          "fixture_url": "https://learn.skillforge.dev/oauth2-oidc-fundamentals",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:09.248690+00:00"
@@ -2269,7 +2400,9 @@
             "authorization"
           ],
           "complexity": "intermediate",
+          "source_url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
           "document_id": "api-security-best-practices",
+          "fixture_url": "https://docs.skillforge.dev/api-security-best-practices",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:10.959844+00:00"
@@ -2288,7 +2421,9 @@
             "identity"
           ],
           "complexity": "intermediate",
+          "source_url": "https://csrc.nist.gov/pubs/sp/800/207/final",
           "document_id": "zero-trust-architecture",
+          "fixture_url": "https://docs.skillforge.dev/zero-trust-architecture",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:13.169344+00:00"
@@ -2308,7 +2443,9 @@
             "devops"
           ],
           "complexity": "intermediate",
+          "source_url": "https://kubernetes.io/docs/concepts/overview/",
           "document_id": "kubernetes-fundamentals",
+          "fixture_url": "https://learn.skillforge.dev/kubernetes-fundamentals",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:15.393906+00:00"
@@ -2327,7 +2464,9 @@
             "microservices"
           ],
           "complexity": "intermediate",
+          "source_url": "https://k8spatterns.io/",
           "document_id": "container-orchestration-patterns",
+          "fixture_url": "https://docs.skillforge.dev/container-orchestration-patterns",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:18.902201+00:00"
@@ -2347,7 +2486,9 @@
             "cloud"
           ],
           "complexity": "intermediate",
+          "source_url": "https://developer.hashicorp.com/terraform/intro",
           "document_id": "terraform-infrastructure-as-code",
+          "fixture_url": "https://learn.skillforge.dev/terraform-infrastructure-as-code",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:20.710916+00:00"
@@ -2366,7 +2507,9 @@
             "devops"
           ],
           "complexity": "intermediate",
+          "source_url": "https://docs.github.com/en/actions/get-started",
           "document_id": "github-actions-cicd",
+          "fixture_url": "https://learn.skillforge.dev/github-actions-cicd",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:22.231395+00:00"
@@ -2385,7 +2528,9 @@
             "performance"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.cloudflare.com/learning/performance/what-is-http3/",
           "document_id": "http2-vs-http3",
+          "fixture_url": "https://docs.skillforge.dev/http2-vs-http3",
           "section_count": 3
         },
         "created_at": "2025-12-12T09:04:23.304033+00:00"
@@ -2404,7 +2549,9 @@
             "performance"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.cloudflare.com/learning/ddos/glossary/domain-name-system-dns/",
           "document_id": "dns-architecture-deep-dive",
+          "fixture_url": "https://docs.skillforge.dev/dns-architecture-deep-dive",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:24.551597+00:00"
@@ -2424,7 +2571,9 @@
             "certificates"
           ],
           "complexity": "intermediate",
+          "source_url": "https://www.cloudflare.com/learning/access-management/what-is-mutual-tls/",
           "document_id": "tls-mtls-security",
+          "fixture_url": "https://learn.skillforge.dev/tls-mtls-security",
           "section_count": 4
         },
         "created_at": "2025-12-12T09:04:25.957666+00:00"
@@ -2438,7 +2587,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://www.optimizely.com/optimization-glossary/split-testing/",
           "document_id": "doc-abtesting-1",
+          "fixture_url": "https://docs.skillforge.dev/doc-abtesting-1",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:28.809515+00:00"
@@ -2452,7 +2603,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://www.optimizely.com/optimization-glossary/statistical-significance/",
           "document_id": "doc-abtesting-2",
+          "fixture_url": "https://docs.skillforge.dev/doc-abtesting-2",
           "section_count": 6
         },
         "created_at": "2025-12-12T09:04:31.136834+00:00"
@@ -2466,7 +2619,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://www.optimizely.com/optimization-glossary/multi-armed-bandit/",
           "document_id": "doc-abtesting-3",
+          "fixture_url": "https://docs.skillforge.dev/doc-abtesting-3",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:33.856720+00:00"
@@ -2480,7 +2635,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://learn.launchdarkly.com/experimentation/",
           "document_id": "doc-abtesting-4",
+          "fixture_url": "https://docs.skillforge.dev/doc-abtesting-4",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:37.579796+00:00"
@@ -2494,7 +2651,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://www.evanmiller.org/bayesian-ab-testing.html",
           "document_id": "doc-abtesting-5",
+          "fixture_url": "https://docs.skillforge.dev/doc-abtesting-5",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:40.127664+00:00"
@@ -2508,7 +2667,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2501.09136",
           "document_id": "doc-agenticrag-1",
+          "fixture_url": "https://docs.skillforge.dev/doc-agenticrag-1",
           "section_count": 6
         },
         "created_at": "2025-12-12T09:04:42.174774+00:00"
@@ -2522,7 +2683,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://aclanthology.org/2025.naacl-long.449/",
           "document_id": "doc-agenticrag-2",
+          "fixture_url": "https://docs.skillforge.dev/doc-agenticrag-2",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:44.910001+00:00"
@@ -2536,7 +2699,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2310.11511",
           "document_id": "doc-agenticrag-3",
+          "fixture_url": "https://docs.skillforge.dev/doc-agenticrag-3",
           "section_count": 6
         },
         "created_at": "2025-12-12T09:04:48.932317+00:00"
@@ -2550,7 +2715,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2508.04604",
           "document_id": "doc-agenticrag-4",
+          "fixture_url": "https://docs.skillforge.dev/doc-agenticrag-4",
           "section_count": 6
         },
         "created_at": "2025-12-12T09:04:51.134120+00:00"
@@ -2564,7 +2731,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2505.20096",
           "document_id": "doc-agenticrag-5",
+          "fixture_url": "https://docs.skillforge.dev/doc-agenticrag-5",
           "section_count": 6
         },
         "created_at": "2025-12-12T09:04:54.536530+00:00"
@@ -2578,7 +2747,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
           "document_id": "doc-context-001",
+          "fixture_url": "https://docs.skillforge.dev/doc-context-001",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:57.486381+00:00"
@@ -2592,7 +2763,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2307.03172",
           "document_id": "doc-context-002",
+          "fixture_url": "https://docs.skillforge.dev/doc-context-002",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:04:59.891272+00:00"
@@ -2606,7 +2779,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2310.08560",
           "document_id": "doc-context-003",
+          "fixture_url": "https://docs.skillforge.dev/doc-context-003",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:05:03.250543+00:00"
@@ -2620,7 +2795,9 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2310.05736",
           "document_id": "doc-context-004",
+          "fixture_url": "https://docs.skillforge.dev/doc-context-004",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:05:06.111013+00:00"
@@ -2634,10 +2811,60 @@
           "source": "golden-dataset",
           "topics": [],
           "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2310.11511",
           "document_id": "doc-context-005",
+          "fixture_url": "https://docs.skillforge.dev/doc-context-005",
           "section_count": 7
         },
         "created_at": "2025-12-12T09:05:09.042661+00:00"
+      },
+      {
+        "id": "5eeabf7b-ad12-4248-8a22-f9f46992d5cf",
+        "analysis_id": "2f462b6c-a582-489a-b02d-57f707fc2293",
+        "markdown_content": "# Anthropic Context Engineering Guide\n\n> **\u26a0\ufe0f PLACEHOLDER ARTIFACT**\n> This artifact was created from fixture data and needs regeneration\n> through the real LangGraph workflow for full quality.\n\n## Overview\n\nContext engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.\n\n## Introduction to Context Engineering\n\nContext engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.\n\n## Core Principles\n\nEffective context engineering follows three principles: clarity, relevance, and structure. Clarity means using precise language and avoiding ambiguity. Relevance requires including only information necessary for the task. Structure organizes context hierarchically with clear separations between different types of information. Use XML tags, markdown headers, or JSON to create distinct sections. Place critical instructions at the beginning and end for emphasis.\n\n## Context for AI Agents\n\nAI agents require specialized context engineering. Define the agent's role, capabilities, and constraints clearly. Provide tool schemas with detailed descriptions of when and how to use each tool. Include examples of successful task completion. Maintain conversation history with semantic compression for long interactions. Use structured formats like JSON for agent memory to enable precise retrieval. Consider token budgets when designing context windows.\n\n## Topics\n\n`anthropic`, `ai`, `prompts`, `context`, `llm`\n\n---\n\n## \ud83e\udd16 AI Assistant Prompt\n\n*Pending: Run through LangGraph workflow for AI-ready implementation guide*\n\n## Core Concepts\n\n*Pending: Run through LangGraph workflow for structured concepts*\n\n## Practice Exercises\n\n*Pending: Run through LangGraph workflow for exercises and quizzes*\n\n---\n\n*Placeholder from SkillForge Golden Dataset - Article*\n*Regenerate via workflow for full triple-purpose artifact*",
+        "version": 1,
+        "artifact_metadata": {
+          "source": "golden-dataset-placeholder",
+          "topics": [
+            "anthropic",
+            "ai",
+            "prompts",
+            "context",
+            "llm"
+          ],
+          "complexity": "intermediate",
+          "source_url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+          "document_id": "context-engineering",
+          "section_count": 3,
+          "needs_regeneration": true,
+          "placeholder_reason": "Inserted by reconcile script (fixture \u2192 DB)"
+        },
+        "created_at": "2025-12-15T08:19:15.031630+00:00"
+      },
+      {
+        "id": "fa40d388-9446-4dd2-a04b-e221429c2635",
+        "analysis_id": "28133d2b-ff32-419a-94c8-3dde6939ec2d",
+        "markdown_content": "# Towards a Science of Scaling Agent Systems\n\n> **\u26a0\ufe0f PLACEHOLDER ARTIFACT**\n> This artifact was created from fixture data and needs regeneration\n> through the real LangGraph workflow for full quality.\n\n## Overview\n\nAgents are language model (LM)-based systems capable of reasoning, planning, and acting, but their scaling principles are underexplored. This work derives quantitative scaling principles for agent systems using controlled experiments across four benchmarks (Finance-Agent, BrowseComp-Plus, PlanCraft, Workbench), five architectures (Single, Independent, Centralized, Decentralized, Hybrid), and three LLM families. It reports a predictive model based on coordination metrics (efficiency, overhead, error amplification, redundancy) with cross-validated R^2\u22480.513 and highlights three dominant effects: tool-coordination trade-offs under fixed budgets, capability saturation around ~45% single-agent baseline, and topology-dependent error amplification.\n\n## Abstract (key claims)\n\nAgents are language model (LM)-based systems capable of reasoning, planning, and acting, but their scaling principles are underexplored. This work derives quantitative scaling principles for agent systems using controlled experiments across four benchmarks (Finance-Agent, BrowseComp-Plus, PlanCraft, Workbench), five architectures (Single, Independent, Centralized, Decentralized, Hybrid), and three LLM families. It reports a predictive model based on coordination metrics (efficiency, overhead, error amplification, redundancy) with cross-validated R^2\u22480.513 and highlights three dominant effects: tool-coordination trade-offs under fixed budgets, capability saturation around ~45% single-agent baseline, and topology-dependent error amplification.\n\n## Key findings and implications\n\nKey findings: (1) Tool-heavy tasks can suffer from multi-agent overhead under fixed token/tool budgets; (2) coordination shows diminishing or negative returns once single-agent baselines exceed ~45%; (3) independent agents can amplify errors substantially, while centralized coordination contains propagation. Practical implication: choose coordination topology based on task properties (parallelizable vs sequential reasoning, tool intensity, and baseline capability), and explicitly measure coordination overhead rather than assuming more agents always helps.\n\n## Evaluation setup (what was controlled)\n\nThe study evaluates 180 configurations by instantiating canonical coordination topologies across multiple LLM families, with standardized tools and fixed token budgets. It compares centralized vs decentralized coordination on different benchmark classes (e.g., parallelizable financial reasoning vs dynamic web navigation) and reports when multi-agent variants degrade performance for sequential reasoning tasks.\n\n## Topics\n\n`agents`, `multi-agent`, `scaling`, `coordination`, `tool-use`, `evaluation`, `benchmarks`\n\n---\n\n## \ud83e\udd16 AI Assistant Prompt\n\n*Pending: Run through LangGraph workflow for AI-ready implementation guide*\n\n## Core Concepts\n\n*Pending: Run through LangGraph workflow for structured concepts*\n\n## Practice Exercises\n\n*Pending: Run through LangGraph workflow for exercises and quizzes*\n\n---\n\n*Placeholder from SkillForge Golden Dataset - Research_Paper*\n*Regenerate via workflow for full triple-purpose artifact*",
+        "version": 1,
+        "artifact_metadata": {
+          "source": "golden-dataset-placeholder",
+          "topics": [
+            "agents",
+            "multi-agent",
+            "scaling",
+            "coordination",
+            "tool-use",
+            "evaluation",
+            "benchmarks"
+          ],
+          "complexity": "intermediate",
+          "source_url": "https://arxiv.org/abs/2512.08296",
+          "document_id": "scaling-agent-systems",
+          "section_count": 3,
+          "needs_regeneration": true,
+          "placeholder_reason": "Inserted by reconcile script (fixture \u2192 DB)"
+        },
+        "created_at": "2025-12-15T08:23:28.457768+00:00"
       }
     ],
     "chunks": [
@@ -3210,63 +3437,6 @@
         "model": "text-embedding-3-small",
         "model_version": "v1",
         "created_at": "2025-12-12T09:04:33.822588+00:00"
-      },
-      {
-        "id": "f4445641-3365-4254-96be-094930ff7382",
-        "analysis_id": "06dc993a-678f-4cae-bc37-39874eb2f73c",
-        "snippet": "Context engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.",
-        "granularity": "coarse",
-        "section_title": "Introduction to Context Engineering",
-        "chunk_idx": 0,
-        "chunk_total": 3,
-        "path": [
-          "context-engineering",
-          "context-engineering/intro"
-        ],
-        "hash": "ba08739b94ff4fe7956cefbf8cb67ba2094a6a979be470d0ae87c432ddf0f746",
-        "content_type": "article",
-        "language": "en",
-        "model": "text-embedding-3-small",
-        "model_version": "v1",
-        "created_at": "2025-12-12T09:02:17.207079+00:00"
-      },
-      {
-        "id": "ec7226c5-cad6-44ce-a2b0-3ea08f62e09f",
-        "analysis_id": "06dc993a-678f-4cae-bc37-39874eb2f73c",
-        "snippet": "Effective context engineering follows three principles: clarity, relevance, and structure. Clarity means using precise language and avoiding ambiguity. Relevance requires including only information necessary for the task. Structure organizes context hierarchically with clear separations between different types of information. Use XML tags, markdown headers, or JSON to create distinct sections. Place critical instructions at the beginning and end for emphasis.",
-        "granularity": "coarse",
-        "section_title": "Core Principles",
-        "chunk_idx": 1,
-        "chunk_total": 3,
-        "path": [
-          "context-engineering",
-          "context-engineering/principles"
-        ],
-        "hash": "73aaec88f92091176446a4447adea40aa4ae4fe60dbb7acb4473e90cd2fe1768",
-        "content_type": "article",
-        "language": "en",
-        "model": "text-embedding-3-small",
-        "model_version": "v1",
-        "created_at": "2025-12-12T09:02:17.207084+00:00"
-      },
-      {
-        "id": "6d06a07f-42a3-44ce-93bf-cdda9c3e42c9",
-        "analysis_id": "06dc993a-678f-4cae-bc37-39874eb2f73c",
-        "snippet": "AI agents require specialized context engineering. Define the agent's role, capabilities, and constraints clearly. Provide tool schemas with detailed descriptions of when and how to use each tool. Include examples of successful task completion. Maintain conversation history with semantic compression for long interactions. Use structured formats like JSON for agent memory to enable precise retrieval. Consider token budgets when designing context windows.",
-        "granularity": "coarse",
-        "section_title": "Context for AI Agents",
-        "chunk_idx": 2,
-        "chunk_total": 3,
-        "path": [
-          "context-engineering",
-          "context-engineering/agents"
-        ],
-        "hash": "59d0c596ffa05e45268077dbeca4506909775b9be68e00bda66a5d44b8747ea9",
-        "content_type": "article",
-        "language": "en",
-        "model": "text-embedding-3-small",
-        "model_version": "v1",
-        "created_at": "2025-12-12T09:02:17.207086+00:00"
       },
       {
         "id": "f5c94b0b-aa14-4146-b72c-cf43a5ab1938",
@@ -4371,6 +4541,63 @@
         "created_at": "2025-12-12T09:04:09.228552+00:00"
       },
       {
+        "id": "a4cc06e1-7b3d-4972-b06c-d29149eaf295",
+        "analysis_id": "28133d2b-ff32-419a-94c8-3dde6939ec2d",
+        "snippet": "Agents are language model (LM)-based systems capable of reasoning, planning, and acting, but their scaling principles are underexplored. This work derives quantitative scaling principles for agent systems using controlled experiments across four benchmarks (Finance-Agent, BrowseComp-Plus, PlanCraft, Workbench), five architectures (Single, Independent, Centralized, Decentralized, Hybrid), and three LLM families. It reports a predictive model based on coordination metrics (efficiency, overhead, error amplification, redundancy) with cross-validated R^2\u22480.513 and highlights three dominant effects: tool-coordination trade-offs under fixed budgets, capability saturation around ~45% single-agent baseline, and topology-dependent error amplification.",
+        "granularity": "coarse",
+        "section_title": "Abstract (key claims)",
+        "chunk_idx": 0,
+        "chunk_total": 3,
+        "path": [
+          "scaling-agent-systems",
+          "scaling-agent-systems/abstract"
+        ],
+        "hash": "429b9dbc5c4aab2b137d47a5eb7c7fc1926818793a054ac49ef71a63ea4ad6fb",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:23:28.443424+00:00"
+      },
+      {
+        "id": "1d04f960-3212-4b97-8975-50fe7811d3e7",
+        "analysis_id": "28133d2b-ff32-419a-94c8-3dde6939ec2d",
+        "snippet": "Key findings: (1) Tool-heavy tasks can suffer from multi-agent overhead under fixed token/tool budgets; (2) coordination shows diminishing or negative returns once single-agent baselines exceed ~45%; (3) independent agents can amplify errors substantially, while centralized coordination contains propagation. Practical implication: choose coordination topology based on task properties (parallelizable vs sequential reasoning, tool intensity, and baseline capability), and explicitly measure coordination overhead rather than assuming more agents always helps.",
+        "granularity": "coarse",
+        "section_title": "Key findings and implications",
+        "chunk_idx": 1,
+        "chunk_total": 3,
+        "path": [
+          "scaling-agent-systems",
+          "scaling-agent-systems/findings"
+        ],
+        "hash": "ad51898b8c2206c56155222904a352166804289bcf333381b9219058f08b6ab0",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:23:28.443430+00:00"
+      },
+      {
+        "id": "11c671db-8321-4d95-8dba-f2860e6921bb",
+        "analysis_id": "28133d2b-ff32-419a-94c8-3dde6939ec2d",
+        "snippet": "The study evaluates 180 configurations by instantiating canonical coordination topologies across multiple LLM families, with standardized tools and fixed token budgets. It compares centralized vs decentralized coordination on different benchmark classes (e.g., parallelizable financial reasoning vs dynamic web navigation) and reports when multi-agent variants degrade performance for sequential reasoning tasks.",
+        "granularity": "coarse",
+        "section_title": "Evaluation setup (what was controlled)",
+        "chunk_idx": 2,
+        "chunk_total": 3,
+        "path": [
+          "scaling-agent-systems",
+          "scaling-agent-systems/evaluation-setup"
+        ],
+        "hash": "e6b17c6ab4b4c78430577ef7754a20a52a4058c39f4c1815aae77eeac4dafcce",
+        "content_type": "research_paper",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:23:28.443431+00:00"
+      },
+      {
         "id": "f751ef05-879d-48b4-95a0-d5327f05ac61",
         "analysis_id": "295d10d1-1b9d-4cfe-a4a1-14a977d5328a",
         "snippet": "gRPC is a high-performance RPC framework using HTTP/2 and Protocol Buffers. Unlike REST which is resource-oriented, gRPC is action-oriented with strongly-typed service definitions. Benefits include faster serialization, bidirectional streaming, built-in code generation, and better performance than JSON/HTTP. Use gRPC for internal microservices communication where you control both client and server. REST is better for public APIs and browser clients.",
@@ -4502,6 +4729,63 @@
         "model": "text-embedding-3-small",
         "model_version": "v1",
         "created_at": "2025-12-12T09:04:22.209789+00:00"
+      },
+      {
+        "id": "7cff9799-97f1-40f8-a6fb-43528ca16b2c",
+        "analysis_id": "2f462b6c-a582-489a-b02d-57f707fc2293",
+        "snippet": "Context engineering is the practice of structuring information provided to AI systems to maximize their effectiveness. Unlike prompt engineering which focuses on individual queries, context engineering designs the entire information environment. For AI agents, this includes system instructions, knowledge bases, tool descriptions, and conversation history. Well-engineered context reduces hallucinations, improves task completion, and enables more reliable autonomous behavior.",
+        "granularity": "coarse",
+        "section_title": "Introduction to Context Engineering",
+        "chunk_idx": 0,
+        "chunk_total": 3,
+        "path": [
+          "context-engineering",
+          "context-engineering/intro"
+        ],
+        "hash": "ba08739b94ff4fe7956cefbf8cb67ba2094a6a979be470d0ae87c432ddf0f746",
+        "content_type": "article",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:19:15.012025+00:00"
+      },
+      {
+        "id": "eab877c2-95d7-4fbe-a6f2-73600876a5ef",
+        "analysis_id": "2f462b6c-a582-489a-b02d-57f707fc2293",
+        "snippet": "Effective context engineering follows three principles: clarity, relevance, and structure. Clarity means using precise language and avoiding ambiguity. Relevance requires including only information necessary for the task. Structure organizes context hierarchically with clear separations between different types of information. Use XML tags, markdown headers, or JSON to create distinct sections. Place critical instructions at the beginning and end for emphasis.",
+        "granularity": "coarse",
+        "section_title": "Core Principles",
+        "chunk_idx": 1,
+        "chunk_total": 3,
+        "path": [
+          "context-engineering",
+          "context-engineering/principles"
+        ],
+        "hash": "73aaec88f92091176446a4447adea40aa4ae4fe60dbb7acb4473e90cd2fe1768",
+        "content_type": "article",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:19:15.012032+00:00"
+      },
+      {
+        "id": "b04b05d7-2c5c-4704-aed4-e9bcc7336f87",
+        "analysis_id": "2f462b6c-a582-489a-b02d-57f707fc2293",
+        "snippet": "AI agents require specialized context engineering. Define the agent's role, capabilities, and constraints clearly. Provide tool schemas with detailed descriptions of when and how to use each tool. Include examples of successful task completion. Maintain conversation history with semantic compression for long interactions. Use structured formats like JSON for agent memory to enable precise retrieval. Consider token budgets when designing context windows.",
+        "granularity": "coarse",
+        "section_title": "Context for AI Agents",
+        "chunk_idx": 2,
+        "chunk_total": 3,
+        "path": [
+          "context-engineering",
+          "context-engineering/agents"
+        ],
+        "hash": "59d0c596ffa05e45268077dbeca4506909775b9be68e00bda66a5d44b8747ea9",
+        "content_type": "article",
+        "language": "en",
+        "model": "text-embedding-3-small",
+        "model_version": "v1",
+        "created_at": "2025-12-15T08:19:15.012034+00:00"
       },
       {
         "id": "31867f8d-6344-4b8e-876d-0bc75b1075ec",

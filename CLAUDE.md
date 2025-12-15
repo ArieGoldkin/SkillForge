@@ -31,6 +31,11 @@ version: 4.0.0
 
 **Stack**: React 19 + FastAPI + LangGraph 1.0 + PostgreSQL/PGVector
 
+**Development Ports** (docker-compose.yml):
+- Frontend: `localhost:5173` (Vite dev server)
+- Backend API: `localhost:8500` (FastAPI/Uvicorn)
+- PostgreSQL: `localhost:5437` (mapped from container's 5432)
+
 **Architecture**:
 - System design: `docs/ARCHITECTURE.md` (workflows, deployment, diagrams)
 - Agent coordination: `.claude/instructions/architecture-decisions.md` (file-based, supervisor-worker)
@@ -388,12 +393,17 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 
 ## 💾 Golden Dataset & Data Protection
 
-**The golden dataset contains 96 curated technical documents** with embeddings for semantic search testing.
+**The golden dataset contains 97 curated technical documents** with embeddings for semantic search testing.
 
 ### Quick Stats
-- **96 Analyses** (completed) | **96 Artifacts** | **408 Chunks**
-- Content: 76 articles, 19 tutorials, 1 research paper
+- **97 Analyses** (completed) | **97 Artifacts** | **411 Chunks**
+- Content: 76 articles, 19 tutorials, 2 research papers
 - Topics: RAG, LangGraph, Prompt Engineering, API Design, Testing, etc.
+
+### URL Contract (Important)
+- Golden fixture documents must include **`source_url`**.
+- Golden dataset analyses must store the **real canonical URL** in `analyses.url` (not placeholder `*.skillforge.dev/*` URLs).
+- `backup_golden_dataset.py verify` will fail if placeholder golden URLs are present.
 
 ### Backup Commands
 ```bash

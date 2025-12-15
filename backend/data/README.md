@@ -46,14 +46,24 @@ docker exec skillforge-postgres-dev pg_dump -U dev -d skillforge \
 
 ## Current Dataset Stats
 
-- **96 Analyses** (completed status)
-- **96 Artifacts** (markdown implementation guides)
-- **408 Chunks** (sections with embeddings)
+- **97 Analyses** (completed status)
+- **97 Artifacts** (markdown implementation guides)
+- **411 Chunks** (sections with embeddings)
 
 ### Content Types
 - Articles: 76
 - Tutorials: 19
-- Research Papers: 1
+- Research Papers: 2
+
+## URL Policy (Golden Dataset)
+
+- Each fixture document must include `source_url` (canonical external URL).
+- Golden dataset analyses must store this canonical URL in `analyses.url` (not placeholder `*.skillforge.dev/*` URLs).
+- `poetry run python scripts/backup_golden_dataset.py verify` will fail if placeholder golden URLs are present.
+
+## What Gets Backed Up
+
+`scripts/backup_golden_dataset.py backup` exports only the **golden dataset subset**, identified by artifacts that have `artifact_metadata.document_id`.
 
 ## Recovery Procedures
 
@@ -86,4 +96,7 @@ poetry run python scripts/backup_golden_dataset.py restore --replace
 
 - `scripts/backup_golden_dataset.py` - Backup/restore script
 - `scripts/load_golden_dataset.py` - Initial data loader from fixtures
+- `scripts/backfill_golden_dataset_urls.py` - Backfill placeholder URLs to `source_url`
+- `scripts/reconcile_golden_dataset_docs.py` - Ensure fixture documents exist in DB
 - `tests/smoke/retrieval/fixtures/documents_expanded.json` - Source documents
+- `tests/smoke/retrieval/fixtures/source_url_map.json` - Document id → `source_url` mapping

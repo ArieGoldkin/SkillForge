@@ -15,11 +15,11 @@ Fix the 2 remaining E2E test failures to achieve 100% pass rate (excluding skipp
 **File to modify:** `backend/scripts/load_golden_dataset.py`
 
 **Changes:**
-1. Update `generate_artifact_markdown()` to include code examples based on content type
+1. Update `generate_placeholder_artifact()` (the golden dataset loader’s placeholder artifact generator) to include code examples based on content type
 2. Add Python/TypeScript/bash code snippets for tutorials
 3. Add configuration/YAML examples for articles
 
-**Example addition to `generate_artifact_markdown()`:**
+**Example addition to `generate_placeholder_artifact()`:**
 ```python
 # Add code examples section based on content type
 if content_type == "tutorial":
@@ -46,6 +46,8 @@ elif content_type == "article":
 1. Re-run `poetry run python scripts/load_golden_dataset.py --replace`
 2. Re-run `poetry run python scripts/backup_golden_dataset.py backup`
 3. Verify test passes
+
+**Note:** The golden dataset fixtures now require `source_url` per document. If seeding fails, verify `backend/tests/smoke/retrieval/fixtures/documents_expanded.json` contains `source_url` for every document (and see `source_url_map.json`).
 
 ---
 

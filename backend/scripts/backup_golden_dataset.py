@@ -28,7 +28,11 @@ import asyncio
 import json
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
+from uuid import UUID
+
+from dotenv import load_dotenv
 
 
 def parse_datetime(value: str | datetime | None) -> datetime | None:
@@ -41,12 +45,7 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-from pathlib import Path
-from uuid import UUID
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -81,12 +80,22 @@ async def backup_dataset() -> int:
 
     async with AsyncSessionLocal() as session:
         # Export analyses
+        #
+        # IMPORTANT: Only back up the *golden dataset* subset, not all completed analyses.
+        # We identify golden dataset analyses by the presence of artifact_metadata.document_id,
+        # which is set by our fixture-based loader.
         result = await session.execute(
             text("""
-                SELECT id, url, content_type, title, status, created_at, updated_at
-                FROM analyses
-                WHERE status = 'completed'
-                ORDER BY created_at
+                WITH golden AS (
+                    SELECT DISTINCT analysis_id
+                    FROM artifacts
+                    WHERE artifact_metadata ? 'document_id'
+                )
+                SELECT a.id, a.url, a.content_type, a.title, a.status, a.created_at, a.updated_at
+                FROM analyses a
+                INNER JOIN golden g ON a.id = g.analysis_id
+                WHERE a.status = 'completed'
+                ORDER BY a.created_at
             """)
         )
         analyses = [dict(row._mapping) for row in result]
@@ -95,9 +104,15 @@ async def backup_dataset() -> int:
         # Export artifacts
         result = await session.execute(
             text("""
-                SELECT id, analysis_id, markdown_content, version, artifact_metadata, created_at
-                FROM artifacts
-                ORDER BY created_at
+                WITH golden AS (
+                    SELECT DISTINCT analysis_id
+                    FROM artifacts
+                    WHERE artifact_metadata ? 'document_id'
+                )
+                SELECT art.id, art.analysis_id, art.markdown_content, art.version, art.artifact_metadata, art.created_at
+                FROM artifacts art
+                INNER JOIN golden g ON art.analysis_id = g.analysis_id
+                ORDER BY art.created_at
             """)
         )
         artifacts = [dict(row._mapping) for row in result]
@@ -111,6 +126,11 @@ async def backup_dataset() -> int:
                     chunk_idx, chunk_total, path, hash, content_type, language,
                     model, model_version, created_at
                 FROM analysis_chunks
+                WHERE analysis_id IN (
+                    SELECT DISTINCT analysis_id
+                    FROM artifacts
+                    WHERE artifact_metadata ? 'document_id'
+                )
                 ORDER BY analysis_id, chunk_idx
             """)
         )
@@ -334,6 +354,19 @@ async def verify_backup() -> int:
     artifacts = backup_data["data"]["artifacts"]
     chunks = backup_data["data"]["chunks"]
 
+    # Verify URLs are not placeholder skillforge.dev hosts
+    placeholder_prefixes = (
+        "https://docs.skillforge.dev/",
+        "https://learn.skillforge.dev/",
+        "https://papers.skillforge.dev/",
+        "https://content.skillforge.dev/",
+    )
+    placeholder_analyses = [
+        a
+        for a in analyses
+        if isinstance(a.get("url"), str) and a["url"].startswith(placeholder_prefixes)
+    ]
+
     # Verify counts
     expected = backup_data["counts"]
     actual = {
@@ -367,6 +400,12 @@ async def verify_backup() -> int:
     else:
         print("   Referential Integrity: OK")
 
+    if placeholder_analyses:
+        print(
+            f"   WARNING: {len(placeholder_analyses)} analyses still use placeholder URLs "
+            f"(example: {placeholder_analyses[0].get('url')})"
+        )
+
     # Verify all analyses have artifacts
     artifact_analysis_ids = {a["analysis_id"] for a in artifacts}
     missing_artifacts = [a for a in analyses if a["id"] not in artifact_analysis_ids]
@@ -378,12 +417,16 @@ async def verify_backup() -> int:
     print("=" * 60)
     print(
         "BACKUP IS VALID"
-        if not (orphan_artifacts or orphan_chunks or missing_artifacts)
+        if not (orphan_artifacts or orphan_chunks or missing_artifacts or placeholder_analyses)
         else "BACKUP HAS ISSUES"
     )
     print("=" * 60)
 
-    return 0 if not (orphan_artifacts or orphan_chunks or missing_artifacts) else 1
+    return (
+        0
+        if not (orphan_artifacts or orphan_chunks or missing_artifacts or placeholder_analyses)
+        else 1
+    )
 
 
 if __name__ == "__main__":

@@ -165,6 +165,7 @@ async def main(replace: bool = False) -> int:
             doc_id = doc["id"]
             doc_title = doc["title"]
             content_type = doc.get("content_type", "article")
+            source_url = doc.get("source_url")
             tags = doc.get("tags", [])
             sections = doc.get("sections", [])
 
@@ -174,17 +175,17 @@ async def main(replace: bool = False) -> int:
             analysis_id = uuid4()
             artifact_id = uuid4()
 
-            # Create a realistic URL based on content type
-            url_base = {
-                "article": "https://docs.skillforge.dev",
-                "tutorial": "https://learn.skillforge.dev",
-                "research_paper": "https://papers.skillforge.dev",
-                "documentation": "https://docs.skillforge.dev",
-            }.get(content_type, "https://content.skillforge.dev")
+            if not source_url:
+                logger.error(
+                    "golden_dataset_missing_source_url",
+                    document_id=doc_id,
+                    title=doc_title,
+                )
+                return 1
 
             analysis = Analysis(
                 id=analysis_id,
-                url=f"{url_base}/{doc_id}",
+                url=source_url,
                 content_type=content_type,
                 status="completed",
                 title=doc_title,
@@ -205,6 +206,7 @@ async def main(replace: bool = False) -> int:
                     "section_count": len(sections),
                     "source": "golden-dataset-placeholder",
                     "document_id": doc_id,
+                    "source_url": source_url,
                     "needs_regeneration": True,
                     "placeholder_reason": "Created from fixtures, needs real workflow",
                 },
