@@ -17,8 +17,9 @@
 │  │  FIXTURE LOADER   │─────▶│  TEST DATABASE    │◀─────│  TEST RUNNER │   │
 │  │                   │      │                   │      │              │   │
 │  │  - Corpus JSON    │      │  PostgreSQL       │      │  pytest      │   │
-│  │  - Embeddings NPY │      │  + pgvector       │      │  32 tests    │   │
-│  │  - Expected YAML  │      │  + tsvector       │      │              │   │
+│  │  - Embeddings via │      │  + pgvector       │      │  32 tests    │   │
+│  │    EmbedSvc       │      │  + tsvector       │      │              │   │
+│  │  - Expected JSON  │      │                   │      │              │   │
 │  └───────────────────┘      └───────────────────┘      └──────────────┘   │
 │           │                           │                        │           │
 │           │                           │                        │           │

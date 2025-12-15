@@ -21,7 +21,7 @@ Quality Gate Results:
 └── AVERAGE:   0.7  (70% - PASSED!)
 
 Artifact Content:
-├── "LangGraph 0.6.7" - COPIED from prompt example
+├── "LangGraph v0.6.7" - COPIED from prompt example
 ├── "pip install transformers" - IRRELEVANT to source article
 ├── "CVE-2023-12345" - FABRICATED vulnerability
 ├── /my-project/src/api.js - INVENTED file paths

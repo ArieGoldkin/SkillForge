@@ -20,6 +20,9 @@ TARGETS=(
   "backend/README.md"
 )
 
+echo "Verifying Mermaid + ASCII rendering (GitHub)..."
+python3 "scripts/verify_markdown_diagrams.py" --paths "${TARGETS[@]}"
+
 rg_in_targets() {
   local pattern="$1"
   if command -v rg >/dev/null 2>&1; then
@@ -48,7 +51,7 @@ fi
 
 if rg_in_targets "LangGraph 0.6.7" | grep -q .; then
   rg_in_targets "LangGraph 0.6.7"
-  fail "Found LangGraph 0.6.7 references in docs surface area. Current backend uses LangGraph 1.0 (see backend/pyproject.toml)."
+  fail "Found LangGraph 0.6.7 references in docs surface area. Current backend uses LangGraph 1.0.4 (see backend/pyproject.toml)."
 fi
 
 echo "Docs consistency checks passed."

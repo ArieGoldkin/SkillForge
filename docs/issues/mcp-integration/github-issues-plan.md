@@ -665,7 +665,7 @@ After (with MCP):
 
 ### Issue 6: MCP Error Handling & Resilience
 
-```markdown
+````markdown
 # [🔵 Backend][🔌 MCP] MCP Error Handling & Graceful Degradation [3 pts]
 
 ## Summary
@@ -748,7 +748,7 @@ class MCPCircuitBreaker:
 ## Dependencies
 
 - Issue #XXX (MCP Client Pool)
-```
+````
 
 **Labels**: `🔵 backend`, `🔌 mcp`, `✨ feature`, `🔄 medium`, `sprint-9`
 **Milestone**: Sprint 9: MCP Integration
@@ -758,7 +758,7 @@ class MCPCircuitBreaker:
 
 ### Issue 7: MCP Integration Tests
 
-```markdown
+````markdown
 # [🔵 Backend][🔌 MCP] MCP Integration Tests with Mock Servers [3 pts]
 
 ## Summary
@@ -836,7 +836,7 @@ tests/
 ## Dependencies
 
 - All Phase 1 implementation issues
-```
+````
 
 **Labels**: `🔵 backend`, `🔌 mcp`, `testing`, `🔄 medium`, `sprint-9`
 **Milestone**: Sprint 9: MCP Integration
@@ -1140,7 +1140,7 @@ SKILLFORGE_PROMPTS = [
 
 ### Issue 12: MCP Integration Documentation
 
-```markdown
+````markdown
 # [📝 Docs][🔌 MCP] MCP Integration Documentation [2 pts]
 
 ## Summary
@@ -1183,7 +1183,7 @@ docs/
 ## Dependencies
 
 - All implementation issues complete
-```
+````
 
 **Labels**: `📝 documentation`, `🔌 mcp`, `🔄 medium`, `sprint-10`
 **Milestone**: Sprint 10: MCP Server

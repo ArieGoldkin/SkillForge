@@ -4,23 +4,23 @@
 Implement real tutoring endpoints (REST + SSE) to replace the current frontend mock. Provide session/message CRUD, streaming tutor replies, and structured error handling.
 
 ## Scope
-- REST: create session, get session, list messages, post user message.
-- SSE: stream tutor reply events (typing, chunks, final, error) per session.
+- REST: create session, get session (includes message history), post user message, update session status.
+- SSE: stream tutor workflow events (progress, chunk, done, error) per session.
 - Validation, logging with `request_id`, DI-wired repositories, and repo-pattern compliance.
 - Align with LangGraph tutor workflow (#213) and persistence (#79).
 
 ## Proposed Endpoints
 - `POST /api/v1/tutor/sessions` → create session, return `session_id`.
 - `GET /api/v1/tutor/sessions/{session_id}` → session metadata.
-- `GET /api/v1/tutor/sessions/{session_id}/messages` → history (paged or limited).
-- `POST /api/v1/tutor/sessions/{session_id}/messages` → submit user message; triggers workflow.
-- `GET /api/v1/tutor/sessions/{session_id}/stream` → SSE for typing/chunks/final/error.
+- `POST /api/v1/tutor/sessions/{session_id}/messages` → submit user message; triggers workflow continuation.
+- `PATCH /api/v1/tutor/sessions/{session_id}` → update session status (completed/abandoned).
+- `GET /api/v1/tutor/sessions/{session_id}/stream` → SSE for progress/chunks/done/error.
 
 ## SSE Event Shapes
-- `typing_start`: `{type, session_id, request_id, agent="tutor"}`
-- `chunk`: `{type, session_id, request_id, content, index}`
-- `final`: `{type, session_id, request_id, content, metadata?}`
-- `error`: `{type, session_id, request_id, message, code?}`
+- `progress`: `{type="progress", session_id, stage, status, timestamp, ...}`
+- `chunk`: `{type="chunk", session_id, stage, status, timestamp, content, index?}`
+- `done`: `{type="done", session_id, stage, status, timestamp, ...}`
+- `error`: `{type="error", session_id, stage, status, timestamp, error, ...}`
 
 ## Dependencies
 - #79 Tutoring Session Persistence (models/repos/migrations)

@@ -1115,7 +1115,7 @@ logger.info(
   - Combine full-text search with PGVector semantic search
   - Ranking: 70% keyword relevance, 30% semantic similarity
 - [ ] **4.1.3** Create search endpoint
-  - `GET /api/v1/library?search=...&content_type=...&sort=...&limit=...&offset=...`
+  - `GET /api/v1/library?query=...&search_mode=hybrid&content_type=...&status=...&limit=...&offset=...`
   - Returns paginated results with total count
 - [ ] **4.1.4** Test search accuracy
   - Test queries: "React hooks", "LangGraph supervisor", "streaming SSR"
