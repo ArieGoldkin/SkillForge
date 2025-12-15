@@ -17,7 +17,7 @@ structlog = "^25.5.0"
 httpx = "^0.28.1"
 sse-starlette = "^3.0.3"
 tenacity = "^9.0.0"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.45"}
 psycopg2-binary = "^2.9.10"
 pgvector = "^0.4.2"
 asyncpg = "^0.31.0"
