@@ -57,6 +57,8 @@ LangChain handles retry logic internally with proper async behavior (no blocking
 - PEP 789: https://peps.python.org/pep-0789/ (avoiding yield in cancellation scopes)
 """
 
+import os
+
 from langchain_core.runnables import RunnableConfig
 
 # Agent execution timeout (in seconds)
@@ -70,9 +72,9 @@ STREAMING_TIMEOUT: float = 120.0  # 120 seconds (2 minutes) - streaming should b
 
 # Graph step timeout (in seconds) - set on compiled graph
 # This is the single source of truth for timeout handling
-# Note: Set to 300s (5 min) for regeneration to allow complex agent analysis
-# Production API might use a lower value via environment variable override
-STEP_TIMEOUT: float = 300.0  # 300 seconds (5 minutes per step) - allows complex agent analysis
+# Override via SKILLFORGE_STEP_TIMEOUT env var for complex regeneration tasks
+_step_timeout_env = os.environ.get("SKILLFORGE_STEP_TIMEOUT")
+STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 300.0  # Default 5 min
 
 # Workflow-level timeout (in seconds) - for entire workflow
 WORKFLOW_TIMEOUT: float = 900.0  # 900 seconds (15 minutes) - entire workflow should complete faster

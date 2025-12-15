@@ -3,7 +3,13 @@
 This module defines the output schemas for all specialized analysis agents.
 These schemas are used with ToolStrategy to ensure type-safe, validated
 structured output from agents.
+
+Issue #299-304: All agent schemas inherit DataAvailabilityMixin to support
+honest reporting of data coverage (sufficient/limited/insufficient).
 """
+
+# Base schema with DataAvailabilityMixin
+from app.workflows.agents.schemas.base import DataAvailabilityLevel, DataAvailabilityMixin
 
 # Tech comparator schemas
 # Code quality critic schemas
@@ -38,6 +44,8 @@ __all__ = [
     "CodeIssue",
     "CodeQualityReview",
     "CompatibilityScore",
+    "DataAvailabilityLevel",
+    "DataAvailabilityMixin",
     "Dependency",
     "DependencyMapping",
     "ImplementationPlan",

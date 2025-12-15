@@ -23,9 +23,17 @@ export {
   InputRenderer,
   ListItemRenderer,
   TableRenderer,
+  TbodyRenderer,
+  TdRenderer,
+  ThRenderer,
+  TheadRenderer,
+  TrRenderer,
   UnorderedListRenderer,
   ParagraphRenderer,
 } from './renderers'
 
-// Heading ID tracking utilities
-export { resetHeadingIds } from './headingIdTracker'
+// Collapsible section renderers
+export { DetailsRenderer, SummaryRenderer } from './CollapsibleSection'
+
+// Heading ID context for consistent ID generation
+export { HeadingIdProvider } from './HeadingIdContext'

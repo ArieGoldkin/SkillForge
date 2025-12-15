@@ -55,18 +55,22 @@ const injectCustomStyles = () => {
     .mermaid-container svg {
       max-width: 100%;
       height: auto;
+      white-space: normal;
     }
     .mermaid-container .node rect {
       rx: 5;
       ry: 5;
+      min-width: 150px !important;
     }
     .mermaid-container .nodeLabel,
     .mermaid-container .node .label {
-      white-space: normal;
+      white-space: normal !important;
       overflow: visible !important;
+      word-break: break-word;
     }
     .mermaid-container text {
       overflow: visible !important;
+      font-size: 13px !important;
     }
     .mermaid-container .node rect,
     .mermaid-container .node polygon,

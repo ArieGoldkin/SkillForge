@@ -145,17 +145,26 @@ async def test_run_trend_validator_error_handling(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.trend_validator.create_structured_agent")
+@patch("app.workflows.agents.trend_validator.run_agent_with_tracking")
 async def test_run_trend_validator_schema_validation(
-    mock_create_agent, mock_agent, mock_session, mock_state
+    mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):
-    """Test trend validator schema validation."""
+    """Test trend validator schema validation.
+
+    Issue #299-304: Properly mock run_agent_with_tracking to avoid hitting real API.
+    """
     analysis_id = str(uuid4())
     content = "Trend content"
     content_type = "article"
 
     mock_create_agent.return_value = mock_agent
+    mock_run_tracking.return_value = {
+        "agent_type": "trend_validator",
+        "findings": {"trends": [], "validation_status": "validated"},
+    }
 
     result = await run_trend_validator(content, content_type, analysis_id, mock_session, mock_state)
 
     assert result is not None
     assert "agent_type" in result
+    mock_run_tracking.assert_called_once()

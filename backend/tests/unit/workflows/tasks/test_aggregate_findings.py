@@ -113,7 +113,7 @@ class TestValidateAndParseFindings:
         assert len(agent_types) == 0
 
     def test_validate_empty_findings_data(self):
-        """Test validation handles empty findings data."""
+        """Test validation skips findings with empty data."""
         findings = [
             {
                 "agent_type": "tech_comparator",
@@ -124,13 +124,14 @@ class TestValidateAndParseFindings:
 
         validated, agent_types, confidence_scores = validate_and_parse_findings(findings)
 
-        assert len(validated) == 1  # Still included, but marked as empty
-        assert agent_types == ["tech_comparator"]
-        assert confidence_scores["tech_comparator"] == 0.75
+        # Changed behavior: empty findings are now skipped to prevent "Unknown Agent"
+        assert len(validated) == 0  # Empty findings skipped
+        assert agent_types == []
+        assert "tech_comparator" not in confidence_scores
 
     def test_validate_invalid_finding_type(self):
         """Test validation skips invalid finding types."""
-        findings = ["not a dict", {"agent_type": "valid", "findings": {}}]
+        findings = ["not a dict", {"agent_type": "valid", "findings": {"test": "data"}}]
 
         validated, agent_types, _confidence_scores = validate_and_parse_findings(findings)
 

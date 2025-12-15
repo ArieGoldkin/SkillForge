@@ -43,7 +43,7 @@ TASK_MODELS: dict[str, TaskModelConfig] = {
     # ✓ VALIDATED: Benchmark showed gemini-2.5-flash wins on correctness + cost
     "supervisor": TaskModelConfig(
         primary="gemini-2.5-flash",
-        fallback="gpt-4o-mini",  # Best latency alternative
+        fallback="gemini-2.0-flash",  # Best latency alternative (updated Dec 2025)
         status="validated",
         correctness=0.487,  # 48.7% Jaccard similarity
         cost_per_call=0.00011,  # $0.11 per 1000 calls

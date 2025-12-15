@@ -16,8 +16,10 @@ from app.core.template_utils import render_jinja_template
 from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
+from app.services.markdown_sanitizer import sanitize_markdown
 from app.services.sse_helpers import emit_streaming_event
 from app.workflows.state import AnalysisState
+from app.workflows.tasks.aggregation.validation import validate_and_parse_findings
 from app.workflows.tasks.artifact_helpers import build_claude_code_prompt, extract_artifact_metadata
 
 logger = get_logger(__name__)
@@ -107,6 +109,9 @@ async def generate_artifact(
         # Build Claude Code prompt
         claude_code_prompt = build_claude_code_prompt(aggregated_insights, analysis_metadata)
 
+        # Filter out empty/invalid findings before template rendering
+        validated_findings, _, _ = validate_and_parse_findings(agent_findings)
+
         # Render markdown template
         # Extract quick_reference from aggregated_insights for template access
         quick_reference = (
@@ -115,13 +120,17 @@ async def generate_artifact(
 
         template_context = {
             "aggregated_insights": aggregated_insights,
-            "agent_findings": agent_findings,
+            "agent_findings": validated_findings,
             "analysis_metadata": analysis_metadata,
             "claude_code_prompt": claude_code_prompt,
             "quick_reference": quick_reference,  # Pass at top level for template
         }
 
         markdown_content = render_jinja_template("artifact.j2", template_context)
+
+        # Sanitize markdown to fix LLM-generated formatting issues
+        # This fixes tables with blank lines and unicode bullets
+        markdown_content = sanitize_markdown(markdown_content)
 
         # Extract metadata (topics, complexity)
         artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)

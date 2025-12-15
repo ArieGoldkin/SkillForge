@@ -25,6 +25,10 @@ from app.services.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.workflows.nodes.supervisor_schema import AgentSelection
+from app.workflows.utils.content_signals import (
+    detect_content_signals,
+    should_skip_agent,
+)
 from app.workflows.utils.content_type_detection import (
     detect_content_type,
     filter_agents_by_content_type,
@@ -235,6 +239,22 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             has_frameworks=code_patterns["has_frameworks"],
         )
 
+        # ISSUE #299-304: Detect content signals for intelligent routing
+        # This tells us WHAT'S IN the content, not just how long it is
+        content_signals = detect_content_signals(content)
+        logger.info(
+            "content_signals_detected",
+            analysis_id=analysis_id,
+            richness_score=content_signals.content_richness_score,
+            genre=content_signals.detected_genre.value,
+            word_count=content_signals.word_count,
+            has_code=content_signals.has_code_patterns,
+            has_benchmarks=content_signals.has_benchmarks,
+            has_security=content_signals.has_security_patterns,
+            has_architecture=content_signals.has_architecture,
+            coverage_summary=content_signals.get_coverage_summary(),
+        )
+
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
@@ -316,13 +336,31 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             )
             filtered_agents.append("tech_comparator")
 
+        # ISSUE #299-304: Filter agents that should be skipped based on content signals
+        # Skip agents when there's NO relevant data (different from OPPORTUNISTIC)
+        agents_to_skip: list[str] = []
+        for agent in filtered_agents.copy():
+            skip, reason = should_skip_agent(agent, content_signals)
+            if skip:
+                agents_to_skip.append(agent)
+                filtered_agents.remove(agent)
+                logger.info(
+                    "supervisor_agent_skipped_by_signals",
+                    analysis_id=analysis_id,
+                    agent=agent,
+                    reason=reason,
+                    content_richness=content_signals.content_richness_score,
+                )
+
         # MINIMUM AGENT ENFORCEMENT (Issue #299-304)
-        # Ensure at least 3 agents are selected for diverse analysis
+        # Use content signals to pick appropriate default agents
         min_agents_required = 3
-        default_agents_for_minimum = [
-            "implementation_planner",
-            "dependency_mapper",
-            "trend_validator",
+        # Combine signal-appropriate with static defaults to ensure enough agents
+        signal_appropriate_agents = content_signals.get_appropriate_agents()
+        static_defaults = ["implementation_planner", "dependency_mapper", "trend_validator"]
+        # Use signal-appropriate first, then fill with static defaults
+        default_agents_for_minimum = signal_appropriate_agents + [
+            a for a in static_defaults if a not in signal_appropriate_agents
         ]
 
         if len(filtered_agents) < min_agents_required:
@@ -332,8 +370,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                 current_count=len(filtered_agents),
                 minimum_required=min_agents_required,
                 original_agents=filtered_agents.copy(),
+                signal_recommended=signal_appropriate_agents,
             )
-            # Add default agents to meet minimum
+            # Add signal-appropriate agents to meet minimum
             for default_agent in default_agents_for_minimum:
                 if default_agent not in filtered_agents:
                     filtered_agents.append(default_agent)
@@ -342,6 +381,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                         analysis_id=analysis_id,
                         agent=default_agent,
                         current_count=len(filtered_agents),
+                        source="content_signals",
                     )
                     if len(filtered_agents) >= min_agents_required:
                         break
@@ -394,12 +434,34 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         if activation_reasons:
             reasoning_parts.append(f"(Auto-activated: {'; '.join(activation_reasons)})")
 
-        # Create supervisor decision with filtered agents
+        # Create supervisor decision with filtered agents and content signals
+        # ISSUE #299-304: Include agent expectations so agents know what depth is expected
         supervisor_decision = {
             "agents": filtered_agents,  # Use filtered list
             "priority": [selection.confidence] * len(filtered_agents),
             "reasoning": " ".join(reasoning_parts),
             "confidence": selection.confidence,
+            # Content signals for downstream agents and synthesis
+            "content_signals": {
+                "richness_score": content_signals.content_richness_score,
+                "genre": content_signals.detected_genre.value,
+                "word_count": content_signals.word_count,
+                "coverage_summary": content_signals.get_coverage_summary(),
+                "has_code": content_signals.has_code_patterns,
+                "has_benchmarks": content_signals.has_benchmarks,
+                "has_security": content_signals.has_security_patterns,
+                "has_architecture": content_signals.has_architecture,
+                "has_dependencies": content_signals.has_dependencies,
+                "has_comparisons": content_signals.has_comparisons,
+                "has_tutorials": content_signals.has_tutorials,
+                "has_conceptual_only": content_signals.has_conceptual_only,
+            },
+            # Agent expectations map (FULL_ANALYSIS, PARTIAL, OPPORTUNISTIC)
+            "agent_expectations": {
+                agent: exp.value for agent, exp in content_signals.agent_expectations.items()
+            },
+            # Agents skipped due to no relevant data
+            "agents_skipped_by_signals": agents_to_skip,
         }
 
         # Emit SSE event: supervisor complete

@@ -70,6 +70,7 @@ class QuickReference(BaseModel):
             "Example: 'Python 3.11+', 'PostgreSQL 14+', 'Docker installed'"
         ),
         max_length=4,
+        default_factory=list,
     )
     critical_commands: list[str] = Field(
         description=(
@@ -78,6 +79,7 @@ class QuickReference(BaseModel):
             "Example: 'pip install langgraph==0.6.7', 'docker-compose up -d'"
         ),
         max_length=6,
+        default_factory=list,
     )
     files_to_modify: list[str] = Field(
         description=(
@@ -87,6 +89,15 @@ class QuickReference(BaseModel):
         ),
         max_length=10,
         default_factory=list,
+    )
+    files_disclaimer: str = Field(
+        default="⚠️ AI-suggested structure based on content patterns. Adapt to your project.",
+        description=(
+            "Disclaimer that files are suggestions, not from source. "
+            "Issue #299-304: Prevents hallucination confusion by clarifying that "
+            "files_to_modify are AI-generated suggestions based on content patterns, "
+            "not actual file paths from the source document."
+        ),
     )
     gotchas: list[GotchaItem] = Field(
         description=(

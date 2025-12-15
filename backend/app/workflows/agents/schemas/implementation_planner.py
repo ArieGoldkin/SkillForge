@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class ImplementationStep(BaseModel):
     """Single implementation step schema."""
@@ -19,8 +21,11 @@ class ImplementationStep(BaseModel):
     )
 
 
-class ImplementationPlan(BaseModel):
-    """Step-by-step implementation guide output schema."""
+class ImplementationPlan(DataAvailabilityMixin):
+    """Step-by-step implementation guide output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     prerequisites: list[str] = Field(
         description=(

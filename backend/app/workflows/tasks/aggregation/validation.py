@@ -37,7 +37,23 @@ def validate_and_parse_findings(
 
         agent_type = finding.get("agent_type")
         if not agent_type:
-            logger.warning("aggregation_missing_agent_type", finding=finding)
+            logger.warning(
+                "aggregation_missing_agent_type",
+                finding=finding,
+                action="skipping_finding",
+            )
+            # Skip this finding entirely - don't include it in validated_findings
+            # This prevents "Unknown Agent" from appearing in artifacts
+            continue
+
+        # Ensure agent_type is a non-empty string
+        if not isinstance(agent_type, str) or not agent_type.strip():
+            logger.warning(
+                "aggregation_invalid_agent_type",
+                agent_type=agent_type,
+                agent_type_type=type(agent_type).__name__,
+                action="skipping_finding",
+            )
             continue
 
         findings_data = finding.get("findings", {})
@@ -45,11 +61,10 @@ def validate_and_parse_findings(
             logger.warning(
                 "aggregation_empty_findings",
                 agent_type=agent_type,
+                action="skipping_finding",
             )
-            # Still include it, but mark as empty
-            validated_findings.append(finding)
-            agent_types.append(agent_type)
-            confidence_scores[agent_type] = finding.get("confidence_score", 0.0) or 0.0
+            # Skip findings with no data - don't include them in validated_findings
+            # This prevents "No findings available for this agent" from appearing
             continue
 
         validated_findings.append(finding)

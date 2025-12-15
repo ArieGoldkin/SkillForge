@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 
 // Prism.js syntax highlighting theme
 import 'prismjs/themes/prism-tomorrow.css'
+import './design-system/prism-custom.css'
 
 import './index.css'
 import { router } from './router'

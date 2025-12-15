@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class CompatibilityScore(BaseModel):
     """Compatibility assessment for a technology stack."""
@@ -16,8 +18,11 @@ class CompatibilityScore(BaseModel):
     notes: str = Field(description="Single sentence explaining the compatibility assessment.")
 
 
-class IntegrationFeasibility(BaseModel):
-    """Integration feasibility analysis output schema."""
+class IntegrationFeasibility(DataAvailabilityMixin):
+    """Integration feasibility analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     compatibility: dict[str, CompatibilityScore] = Field(
         default_factory=dict,

@@ -41,7 +41,7 @@ def base_state() -> AnalysisState:
 @pytest.mark.asyncio
 async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
     """Test that quality gate fails when any aspect is below minimum threshold.
-    
+
     Even if average score is high, if relevance < 0.5, gate should FAIL.
     """
     with (
@@ -250,15 +250,18 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
         assert result["quality_gate_passed"] is False
 
         # Verify multiple warnings were logged
-        warning_calls = [call for call in mock_logger.warning.call_args_list 
-                        if call[0][0] == "quality_aspect_below_minimum"]
+        warning_calls = [
+            call
+            for call in mock_logger.warning.call_args_list
+            if call[0][0] == "quality_aspect_below_minimum"
+        ]
         # Should have at least 2 warnings for failed aspects
         assert len(warning_calls) >= 2
 
 
 def test_should_retry_synthesis_fail_closed_max_retries():
     """Test that should_retry_synthesis returns 'fail' (not 'continue') at max retries.
-    
+
     This is CRITICAL: fail-closed behavior prevents shipping garbage artifacts.
     """
     state: AnalysisState = {
@@ -364,10 +367,13 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
         assert result["quality_gate_passed"] is False
 
         # Verify info log contains failed_aspects field
-        info_calls = [call for call in mock_logger.info.call_args_list
-                     if call[0][0] == "quality_gate_evaluated"]
+        info_calls = [
+            call
+            for call in mock_logger.info.call_args_list
+            if call[0][0] == "quality_gate_evaluated"
+        ]
         assert len(info_calls) == 1
-        
+
         kwargs = info_calls[0][1]
         assert "failed_aspects" in kwargs
         failed_aspects = kwargs["failed_aspects"]

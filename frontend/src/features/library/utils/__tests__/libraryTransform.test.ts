@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { dedupeByAnalysisId } from './libraryTransform'
+import { dedupeByAnalysisId } from '../libraryTransform'
 
 describe('dedupeByAnalysisId', () => {
   it('removes duplicate analysis_ids while preserving first occurrence order', () => {

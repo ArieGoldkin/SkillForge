@@ -13,6 +13,7 @@ from app.workflows.agents.grounding import apply_grounding
 from app.workflows.agents.schemas.code_quality_critic import CodeQualityReview
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
+from app.workflows.utils.content_signals import get_threshold_for_expectation
 
 # System prompt for code quality critic agent
 CODE_QUALITY_CRITIC_PROMPT = """You are a Code Quality Review Specialist. Your task is to:
@@ -105,6 +106,17 @@ async def run_code_quality_critic(
     # Issue #300: Get proactive context from state
     proactive_context = state.get("proactive_context", "")
 
+    # Issue #299-304: Get content-aware specificity threshold
+    # Note: code_quality_critic is not in standard agent_expectations since it's skipped
+    # when there's no code. Use opportunistic threshold as default.
+    supervisor_decision = state.get("supervisor_decision", {})
+    expectation = None
+    if isinstance(supervisor_decision, dict):
+        agent_expectations = supervisor_decision.get("agent_expectations", {})
+        if isinstance(agent_expectations, dict):
+            expectation = agent_expectations.get("code_quality_critic")
+    specificity_threshold = get_threshold_for_expectation(expectation)
+
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{CODE_QUALITY_CRITIC_PROMPT}\n\n{skill_instructions}")
 
@@ -116,6 +128,7 @@ async def run_code_quality_critic(
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis
+    # Issue #299-304: Pass content-aware specificity threshold
     return await run_agent_with_tracking(
         agent=agent,
         content=content,
@@ -124,4 +137,5 @@ async def run_code_quality_critic(
         agent_type="code_quality_critic",
         session=session,
         proactive_context=proactive_context,
+        specificity_threshold=specificity_threshold,
     )

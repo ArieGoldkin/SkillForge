@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class TrendAssessment(BaseModel):
     """Trend assessment for a technology or pattern."""
@@ -25,8 +27,11 @@ class TrendAssessment(BaseModel):
     )
 
 
-class TrendValidation(BaseModel):
-    """Trend validation analysis output schema."""
+class TrendValidation(DataAvailabilityMixin):
+    """Trend validation analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     trend_assessments: list[TrendAssessment] = Field(
         description="Trend assessments for different aspects of the technology",

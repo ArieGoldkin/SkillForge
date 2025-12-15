@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class Dependency(BaseModel):
     """Dependency information."""
@@ -18,8 +20,11 @@ class Dependency(BaseModel):
     )
 
 
-class DependencyMapping(BaseModel):
-    """Dependency mapping analysis output schema."""
+class DependencyMapping(DataAvailabilityMixin):
+    """Dependency mapping analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     required_dependencies: list[Dependency] = Field(
         description="Required dependencies for the implementation",

@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class SecurityRisk(BaseModel):
     """Security risk identified in content analysis."""
@@ -28,8 +30,11 @@ class SecurityRisk(BaseModel):
     )
 
 
-class SecurityAudit(BaseModel):
-    """Security audit analysis output schema."""
+class SecurityAudit(DataAvailabilityMixin):
+    """Security audit analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     security_risks: list[SecurityRisk] = Field(
         description="List of identified security risks and vulnerabilities",

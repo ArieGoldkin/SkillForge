@@ -59,7 +59,9 @@
 {% endif %}
 
 {% if quick_reference.files_to_modify %}
-### Files to Create/Modify
+### 📁 Suggested File Structure
+<sub>{{ quick_reference.files_disclaimer }}</sub>
+
 {% for file in quick_reference.files_to_modify | default([]) %}
 - `{{ file }}`
 {% endfor %}
@@ -185,7 +187,7 @@
 ## Technical Analysis
 
 {% if aggregated_insights.synthesis and aggregated_insights.synthesis.technical_analysis %}
-{{ aggregated_insights.synthesis.technical_analysis }}
+{{ aggregated_insights.synthesis.technical_analysis | normalize_paragraphs }}
 {% else %}
 Technical analysis not available.
 {% endif %}
@@ -215,7 +217,7 @@ Risk assessment not available.
 ## Recommendations
 
 {% if aggregated_insights.synthesis and aggregated_insights.synthesis.recommendations %}
-{{ aggregated_insights.synthesis.recommendations }}
+{{ aggregated_insights.synthesis.recommendations | fix_bullets | normalize_paragraphs }}
 {% else %}
 Recommendations not available.
 {% endif %}
@@ -245,7 +247,7 @@ Recommendations not available.
 {% endif %}
 
 {% if concept.related_concepts %}
-**Related:** {% for related in concept.related_concepts | default([]) %}`{{ related }}`{% if not loop.last %}, {% endif %}{% endfor %}
+**Related:** {% for related in concept.related_concepts | default([]) %}[`{{ related }}`](#{{ related | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}
 {% endif %}
 
 {% endfor %}
@@ -356,7 +358,7 @@ After completing this content, you should be able to:
 | Term | Definition |
 |------|------------|
 {% for term in aggregated_insights.glossary | default([]) %}
-| **{{ term.term | default("N/A") }}** | {{ term.definition | default("N/A") }}{% if term.see_also %} _See also: {% for s in term.see_also | default([]) %}{{ s }}{% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
+| **{{ term.term | default("N/A") }}** | {{ term.definition | default("N/A") }}{% if term.see_also %} _See also: {% for s in term.see_also | default([]) %}[{{ s }}](#{{ s | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
 {% endfor %}
 
 ---

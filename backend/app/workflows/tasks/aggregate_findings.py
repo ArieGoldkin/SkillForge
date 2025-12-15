@@ -334,7 +334,8 @@ async def _aggregate_findings_impl(
             return {"aggregated_insights": create_empty_aggregated_insights(start_time)}
 
         # Step 1.5: Detect coverage gaps and calculate coverage score
-        coverage_gaps = detect_coverage_gaps(agent_types)
+        # Issue #299-304: Pass validated_findings to detect data availability gaps
+        coverage_gaps = detect_coverage_gaps(agent_types, validated_findings)
         coverage_score = calculate_coverage_score(agent_types)
 
         logger.debug(

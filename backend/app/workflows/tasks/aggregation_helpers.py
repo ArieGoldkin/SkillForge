@@ -111,17 +111,38 @@ def format_findings_for_llm(
     return render_jinja_template("aggregation_findings.j2", context)
 
 
-def detect_coverage_gaps(contributing_agents: list[str]) -> list[dict[str, str]]:
+def detect_coverage_gaps(
+    contributing_agents: list[str],
+    agent_findings: list[dict[str, Any]] | None = None,
+) -> list[dict[str, str]]:
     """Identify missing analysis perspectives.
+
+    Issue #299-304: Now also considers data_availability from agent findings.
+    Agents that contributed but with "limited" or "insufficient" data are
+    treated as partial coverage gaps.
 
     Args:
         contributing_agents: List of agent types that contributed findings
+        agent_findings: Optional list of agent findings with data_availability
 
     Returns:
         List of coverage gap dictionaries with missing_agent, missing_perspective, impact
 
     """
     gaps = []
+
+    # Build a map of data availability from findings
+    data_availability_map: dict[str, tuple[str, str]] = {}
+    if agent_findings:
+        for finding in agent_findings:
+            agent_type = finding.get("agent_type", "")
+            findings_data = finding.get("findings", {})
+            if isinstance(findings_data, dict):
+                da = findings_data.get("data_availability", "sufficient")
+                da_note = findings_data.get("data_availability_note", "")
+                data_availability_map[agent_type] = (da, da_note)
+
+    # Check for missing agents
     for agent_type, description in ALL_ANALYSIS_AGENTS.items():
         if agent_type not in contributing_agents:
             gaps.append(
@@ -133,6 +154,21 @@ def detect_coverage_gaps(contributing_agents: list[str]) -> list[dict[str, str]]
                     ),
                 }
             )
+        elif agent_type in data_availability_map:
+            # Issue #299-304: Check if agent had limited/insufficient data
+            da, da_note = data_availability_map[agent_type]
+            if da in ("limited", "insufficient"):
+                gaps.append(
+                    {
+                        "missing_agent": agent_type,
+                        "missing_perspective": da_note or f"Limited data for {agent_type}",
+                        "impact": (
+                            f"Partial analysis from {agent_type.replace('_', ' ')} "
+                            f"due to {da} data availability"
+                        ),
+                    }
+                )
+
     return gaps
 
 

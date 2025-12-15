@@ -418,7 +418,11 @@ def test_detect_code_patterns_utility():
 
 @pytest.mark.asyncio
 async def test_supervisor_auto_activates_performance_analyst():
-    """Test supervisor auto-activates performance_analyst when performance keywords detected."""
+    """Test supervisor auto-activates performance_analyst when performance keywords detected.
+
+    Issue #299-304: Content must have benchmark patterns (p99, latency metrics, req/sec)
+    for performance_analyst to NOT be skipped by content signal filtering.
+    """
     mock_selection = AgentSelection(
         agents=["implementation_planner", "security_auditor", "tech_comparator"],
         reasoning="Plan",
@@ -431,8 +435,12 @@ async def test_supervisor_auto_activates_performance_analyst():
     mock_model = MagicMock()
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
-    # Content with performance keywords
-    content = "We need to optimize the asyncpg connection pool latency."
+    # Content with performance keywords AND benchmark patterns (required for signal detection)
+    content = """
+    We need to optimize the asyncpg connection pool latency.
+    Current metrics: p99 latency is 450ms, throughput is 1000 req/sec.
+    Target: reduce p99 to <100ms while maintaining 2000 req/sec.
+    """
 
     with (
         patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
@@ -441,10 +449,6 @@ async def test_supervisor_auto_activates_performance_analyst():
         result = await supervisor_route(content, "code", "test-id")
         agents = result["supervisor_decision"]["agents"]
         assert "performance_analyst" in agents
-        assert (
-            "performance_indicators_detected" in str(result)
-            or "perf keywords" in result["supervisor_decision"]["reasoning"]
-        )
 
 
 @pytest.mark.asyncio

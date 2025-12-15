@@ -306,51 +306,71 @@ graph TB
 
 ---
 
-## Agent Coverage by Content Type
+## Agent Coverage by Content Type (Issue #299-304)
 
-The system uses intelligent agent selection based on content type capabilities.
-Agents are filtered by their ability to process specific content types, resulting
-in varying agent counts per analysis. This is **intentional design** to avoid
-running agents that cannot meaningfully analyze the content type.
+The system uses **content-aware smart routing** with **minimum 3 agents** enforcement.
+This ensures diverse perspectives on every analysis while intelligently skipping agents
+when content lacks relevant data for them to analyze.
 
-### Agent Capabilities Matrix
+### Content Signal Detection
 
-| Agent | Article | Documentation | Code | Changelog |
-|-------|---------|---------------|------|-----------|
-| tech_comparator | ✅ | ✅ | ✅ | ✅ |
-| security_auditor | ❌ | ✅ | ✅ | ❌ |
-| implementation_planner | ✅ | ✅ | ✅ | ❌ |
-| performance_analyst | ❌ | ✅ | ✅ | ❌ |
-| code_quality_critic | ❌ | ❌ | ✅ | ❌ |
-| trend_validator | ✅ | ✅ | ✅ | ✅ |
-| dependency_mapper | ❌ | ❌ | ✅ | ❌ |
-| integration_feasibility | ✅ | ✅ | ✅ | ❌ |
+The supervisor detects content signals to determine agent relevance:
+
+| Signal Type | Detection | Affects Agents |
+|-------------|-----------|----------------|
+| **Code Patterns** | imports, function defs, class defs | code_quality_critic, dependency_mapper |
+| **Benchmarks** | p99, latency, req/sec metrics | performance_analyst |
+| **Security** | auth, encryption, vulnerability keywords | security_auditor |
+| **Architecture** | system design, API, microservices | integration_feasibility |
+| **Comparisons** | vs, compare, alternative keywords | tech_comparator |
+
+### Agent Expectations
+
+Each agent receives an expectation level based on content signals:
+
+- **FULL_ANALYSIS** (threshold: 0.70) - Rich relevant data, comprehensive analysis expected
+- **PARTIAL** (threshold: 0.55) - Some relevant data, focused analysis on available content
+- **OPPORTUNISTIC** (threshold: 0.45) - Limited data, extract insights where possible
+
+### Minimum 3 Agents Enforcement
+
+**CRITICAL:** Every analysis runs at least 3 agents regardless of content type.
+
+```
+Content Signals → Supervisor Selection → MIN(3, selected) → Filtered Agents
+                                              ↓
+                         If < 3: Add defaults (implementation_planner,
+                                              dependency_mapper, trend_validator)
+```
 
 ### Expected Agent Counts
 
-- **Article Content:** 4-6 agents
-  - Available: tech_comparator, implementation_planner, trend_validator, integration_feasibility
-  - Excluded: code_quality_critic (code only), dependency_mapper (code only), security_auditor (code/documentation), performance_analyst (code/documentation)
-  
-- **Documentation Content:** 5-7 agents
-  - Available: tech_comparator, security_auditor, implementation_planner, performance_analyst, trend_validator, integration_feasibility
-  - Excluded: code_quality_critic (code only), dependency_mapper (code only)
-  
-- **Code Content:** 6-8 agents
-  - Available: All agents can process code
-  - Count varies based on supervisor's selection (may not always select all 8)
+- **Article Content:** 3-5 agents (minimum 3 enforced)
+  - Core: implementation_planner, trend_validator, integration_feasibility
+  - Signal-based: tech_comparator (if comparisons), security_auditor (if security patterns)
+
+- **Documentation Content:** 3-6 agents (minimum 3 enforced)
+  - Core: implementation_planner, trend_validator, integration_feasibility
+  - Signal-based: security_auditor, performance_analyst (if benchmarks)
+
+- **Code Content:** 4-8 agents (minimum 3, typically more due to rich signals)
+  - Core: All code-capable agents available
+  - Auto-activated: dependency_mapper (imports), code_quality_critic (code patterns)
 
 ### Selection Process
 
-1. **Supervisor LLM Selection:** The supervisor analyzes content and selects relevant agents using structured output (`AgentSelection`)
-2. **Content Type Filtering:** Selected agents are filtered by `filter_agents_by_content_type()` based on their capabilities
-3. **Result:** Only compatible agents execute, ensuring efficient resource usage
+1. **Content Signal Detection:** Regex-based pattern matching for code, benchmarks, security, architecture
+2. **Supervisor LLM Selection:** Selects agents using structured output with minimum 3 constraint
+3. **Signal-Based Filtering:** Agents skipped when NO relevant signals detected
+4. **Minimum Enforcement:** If < 3 agents after filtering, defaults are added
+5. **Expectation Assignment:** Each agent receives FULL/PARTIAL/OPPORTUNISTIC expectation
 
 ### Implementation Details
 
-- **Location:** `backend/app/workflows/nodes/supervisor.py` + `backend/app/workflows/utils/content_type_detection.py`
-- **Filtering Logic:** `filter_agents_by_content_type()` checks `AGENT_CAPABILITIES` mapping
-- **Content Type Detection:** Heuristic-based detection with content type hints from extraction metadata
+- **Content Signals:** `backend/app/workflows/utils/content_signals.py`
+- **Supervisor Logic:** `backend/app/workflows/nodes/supervisor.py` (lines 355-388)
+- **Schema Enforcement:** `AgentSelection` Pydantic model with `min_length=3`
+- **Agent Expectations:** Propagated via `supervisor_decision.agent_expectations` in state
 
 ---
 

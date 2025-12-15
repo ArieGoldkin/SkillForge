@@ -483,17 +483,25 @@ async def cleanup_event_broadcaster():
     """Clean up event broadcaster after each test.
 
     Leverages pytest 9.0.1's improved async fixture lifecycle management.
-    Clears all channels and subscriptions to prevent hanging tests
-    from lingering event broadcaster queues.
+    Clears all channels, subscriptions, and event buffers to prevent:
+    - Hanging tests from lingering event broadcaster queues
+    - Flaky tests from previous test's buffered events being replayed
 
     pytest 9.0.1 provides automatic cleanup for async fixtures,
     ensuring resources are properly released even if tests fail.
     No need for try/finally - automatic cleanup handles it.
+
+    Note: Event buffers were added in commit 9430387 (SSE race condition fix).
+    This cleanup must clear buffers to prevent test pollution.
     """
     yield
     # Clear all channels and subscriptions
     # pytest 9.0.1 automatically ensures this cleanup runs even if test fails
     broadcaster._channels.clear()
+    # CRITICAL: Also clear buffers to prevent test pollution
+    # Without this, buffered events from previous tests are replayed to new subscribers
+    # This caused flakiness in test_emit_streaming_event_with_kwargs
+    broadcaster._buffers.clear()
 
 
 @pytest_asyncio.fixture

@@ -1,5 +1,6 @@
 import {
   CodeRenderer,
+  DetailsRenderer,
   H1Renderer,
   H2Renderer,
   H3Renderer,
@@ -9,7 +10,13 @@ import {
   InputRenderer,
   ListItemRenderer,
   ParagraphRenderer,
+  SummaryRenderer,
   TableRenderer,
+  TbodyRenderer,
+  TdRenderer,
+  ThRenderer,
+  TheadRenderer,
+  TrRenderer,
   UnorderedListRenderer,
 } from './internal'
 
@@ -19,6 +26,11 @@ import {
 export const markdownRenderers = {
   code: CodeRenderer,
   table: TableRenderer,
+  thead: TheadRenderer,
+  tbody: TbodyRenderer,
+  tr: TrRenderer,
+  th: ThRenderer,
+  td: TdRenderer,
   input: InputRenderer,
   li: ListItemRenderer,
   ul: UnorderedListRenderer,
@@ -29,4 +41,6 @@ export const markdownRenderers = {
   h4: H4Renderer,
   h5: H5Renderer,
   h6: H6Renderer,
+  details: DetailsRenderer,
+  summary: SummaryRenderer,
 }

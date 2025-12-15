@@ -75,63 +75,62 @@ class ScopedState(dict):
 #
 # Issue #244: Handle Pattern Implementation
 # - content_ref: Lightweight URI reference to content stored in ArtifactStore
-# - raw_content: Included as fallback for regeneration scripts and edge cases
-# - Agents use has_content_available() to check either source
+# - Agents use has_content_available() to check content_ref availability
 # - Runners load optimized sections via ArtifactStore when content_ref is present
+# - raw_content removed: use content_ref exclusively (Issue #299-304)
 AGENT_SCOPES: dict[str, ContextScope] = {
     "security_auditor": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=False,
     ),
     "tech_comparator": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=False,
     ),
     "implementation_planner": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,  # Planner benefits from other findings
     ),
     "code_quality_critic": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "dependency_mapper": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "practical_applicator": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),
     "learning_path_designer": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),
     "reporter": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
-    # Legacy agent names (map to same scopes for backward compatibility)
     "performance_analyst": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "trend_validator": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
     ),
     "integration_feasibility": ContextScope(
-        include=["analysis_id", "content_ref", "raw_content", "content_type", "skill_level"],
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
     ),
@@ -204,6 +203,25 @@ def build_scoped_context(
         )
         if prior_context:
             scoped_state["prior_context"] = prior_context
+
+    # ISSUE #299-304: Inject agent expectation from content signals
+    # This tells the agent what analysis depth to expect (FULL_ANALYSIS, PARTIAL, OPPORTUNISTIC)
+    supervisor_decision = full_state.get("supervisor_decision", {})
+    if isinstance(supervisor_decision, dict):
+        agent_expectations = supervisor_decision.get("agent_expectations", {})
+        if isinstance(agent_expectations, dict) and agent_type in agent_expectations:
+            scoped_state["agent_expectation"] = agent_expectations[agent_type]
+            logger.debug(
+                "agent_expectation_injected",
+                agent_type=agent_type,
+                expectation=agent_expectations[agent_type],
+            )
+        # Also inject coverage summary so agents can reference it
+        content_signals = supervisor_decision.get("content_signals", {})
+        if isinstance(content_signals, dict):
+            coverage = content_signals.get("coverage_summary")
+            if coverage:
+                scoped_state["content_coverage"] = coverage
 
     # Calculate size reduction
     # Cast to dict for size estimation (AnalysisState is TypedDict)

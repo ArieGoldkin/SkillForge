@@ -15,12 +15,13 @@ from typing import Any
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith.schemas import Example, Run
 
+from app.core.config import get_settings
 from app.core.model_factory import get_chat_model
 
 
 def create_quality_evaluator(
     aspect: str = "overall",
-    judge_model: str = "gpt-4o-mini",
+    judge_model: str | None = None,
 ) -> Callable[[Run, Example], Coroutine[Any, Any, dict[str, Any]]]:
     """Create an LLM-as-judge quality evaluator.
 
@@ -29,7 +30,7 @@ def create_quality_evaluator(
 
     Args:
         aspect: Quality aspect to evaluate (relevance, depth, accuracy, coherence, overall)
-        judge_model: Model to use as judge (default: gpt-4o-mini for cost-effectiveness)
+        judge_model: Model to use as judge (default: settings.QUALITY_JUDGE_MODEL)
 
     Returns:
         Evaluator function compatible with LangSmith
@@ -140,11 +141,12 @@ Respond with ONLY a number from 0-10.""",
         # Get judge model
         try:
             judge = get_chat_model()
-            # Override with judge model
-            from app.core.config import settings
+            # Override with judge model - use settings default if not specified
+            settings = get_settings()
+            effective_judge_model = judge_model or settings.QUALITY_JUDGE_MODEL
 
             original_model = settings.LLM_MODEL
-            settings.LLM_MODEL = judge_model
+            settings.LLM_MODEL = effective_judge_model
 
             # Invoke judge
             response = await judge.ainvoke(prompt.format(**prompt_vars))

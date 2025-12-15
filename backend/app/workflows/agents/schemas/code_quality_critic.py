@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class CodeIssue(BaseModel):
     """Code quality issue identified in analysis."""
@@ -30,8 +32,11 @@ class CodeIssue(BaseModel):
     )
 
 
-class CodeQualityReview(BaseModel):
-    """Code quality review output schema."""
+class CodeQualityReview(DataAvailabilityMixin):
+    """Code quality review output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     code_issues: list[CodeIssue] = Field(
         description="Identified code quality issues and violations",

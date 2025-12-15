@@ -42,7 +42,9 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
       className={cn(
         'relative bg-(--code-bg) border border-(--code-border)',
         'rounded-lg my-6 overflow-hidden',
-        'transition-shadow duration-200 hover:shadow-lg',
+        'shadow-md hover:shadow-xl',
+        'transition-all duration-300 hover:scale-[1.01]',
+        'ring-1 ring-inset ring-(--border)',
         className
       )}
       data-testid="code-block-container"
@@ -50,7 +52,7 @@ export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, c
       <CodeBlockHeader language={language} code={code} />
 
       <div className="overflow-x-auto">
-        <pre className="m-0 p-4 bg-transparent">
+        <pre className="m-0 p-5 bg-transparent">
           <code
             ref={codeRef}
             className={cn(

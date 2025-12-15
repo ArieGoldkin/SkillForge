@@ -3,6 +3,7 @@
 import pytest
 
 from app.workflows.tasks.aggregation.quick_reference import (
+    FILES_DISCLAIMER,
     _extract_complexity,
     _extract_critical_commands,
     _extract_files_to_modify,
@@ -11,6 +12,7 @@ from app.workflows.tasks.aggregation.quick_reference import (
     _extract_primary_technology,
     extract_quick_reference,
 )
+from app.workflows.tasks.schemas.aggregated_insights import QuickReference
 
 
 @pytest.fixture
@@ -507,3 +509,114 @@ class TestExtractQuickReference:
         ]
         result = extract_quick_reference(findings)
         assert result is None
+
+
+class TestFilesToModifyAntiHallucination:
+    """Tests for files_to_modify extraction with anti-hallucination (Issue #299-304)."""
+
+    def test_files_disclaimer_constant_exists(self):
+        """Verify disclaimer constant exists and contains expected text."""
+        assert FILES_DISCLAIMER is not None
+        assert isinstance(FILES_DISCLAIMER, str)
+        assert "AI-suggested" in FILES_DISCLAIMER or "suggested" in FILES_DISCLAIMER.lower()
+        assert len(FILES_DISCLAIMER) > 0
+
+    def test_empty_files_when_no_steps(self):
+        """Verify empty files list when no implementation steps."""
+        findings_by_type = {"implementation_planner": {"steps": []}}
+        files = _extract_files_to_modify(findings_by_type)
+        assert files == []
+
+    def test_empty_files_when_no_implementation_planner(self):
+        """Verify empty files list when implementation_planner is missing."""
+        findings_by_type = {"tech_comparator": {"primary_tech": "React"}}
+        files = _extract_files_to_modify(findings_by_type)
+        assert files == []
+
+    def test_empty_files_when_steps_have_no_files(self):
+        """Verify empty files list when steps don't contain files field."""
+        findings_by_type = {
+            "implementation_planner": {
+                "steps": [
+                    {"step": 1, "action": "Install dependencies"},
+                    {"step": 2, "action": "Configure environment"},
+                ]
+            }
+        }
+        files = _extract_files_to_modify(findings_by_type)
+        assert files == []
+
+    def test_extracted_files_limited_to_max(self):
+        """Verify max 10 files extracted even when more are available."""
+        # Create findings with 15 files
+        steps = [{"step": i, "action": f"Step {i}", "files": [f"file{i}.py"]} for i in range(15)]
+        findings_by_type = {"implementation_planner": {"steps": steps}}
+
+        files = _extract_files_to_modify(findings_by_type)
+        assert len(files) <= 10
+
+    def test_duplicate_files_removed(self):
+        """Verify duplicate files are filtered out."""
+        findings_by_type = {
+            "implementation_planner": {
+                "steps": [
+                    {"step": 1, "files": ["backend/app/main.py", "backend/app/config.py"]},
+                    {"step": 2, "files": ["backend/app/main.py", "backend/app/utils.py"]},
+                ]
+            }
+        }
+        files = _extract_files_to_modify(findings_by_type)
+        assert len(files) == 3  # main.py, config.py, utils.py
+        assert "backend/app/main.py" in files
+        assert "backend/app/config.py" in files
+        assert "backend/app/utils.py" in files
+
+    def test_quick_reference_has_files_disclaimer_field(self):
+        """Verify QuickReference schema includes files_disclaimer field."""
+        qr = QuickReference(
+            primary_technology="Test Framework 1.0",
+            complexity="Intermediate (Est. 3-4 hours)",
+        )
+        assert hasattr(qr, "files_disclaimer")
+        assert isinstance(qr.files_disclaimer, str)
+        assert len(qr.files_disclaimer) > 0
+
+    def test_quick_reference_files_disclaimer_default_value(self):
+        """Verify files_disclaimer has appropriate default value."""
+        qr = QuickReference(
+            primary_technology="Test Framework 1.0",
+            complexity="Intermediate (Est. 3-4 hours)",
+        )
+        # Check that default disclaimer is set and contains key phrases
+        assert "suggested" in qr.files_disclaimer.lower() or "AI" in qr.files_disclaimer
+        assert "project" in qr.files_disclaimer.lower() or "adapt" in qr.files_disclaimer.lower()
+
+    def test_files_extraction_with_valid_files(self):
+        """Verify files are correctly extracted when present."""
+        findings_by_type = {
+            "implementation_planner": {
+                "steps": [
+                    {"step": 1, "files": ["src/index.ts", "src/config.ts"]},
+                    {"step": 2, "files": ["src/utils.ts"]},
+                ]
+            }
+        }
+        files = _extract_files_to_modify(findings_by_type)
+        assert len(files) == 3
+        assert "src/index.ts" in files
+        assert "src/config.ts" in files
+        assert "src/utils.ts" in files
+
+    def test_files_extraction_ignores_invalid_types(self):
+        """Verify extraction handles invalid file types gracefully."""
+        findings_by_type = {
+            "implementation_planner": {
+                "steps": [
+                    {"step": 1, "files": ["valid.py", None, 123, {}, []]},
+                    {"step": 2, "files": "not_a_list"},
+                ]
+            }
+        }
+        files = _extract_files_to_modify(findings_by_type)
+        assert len(files) == 1
+        assert "valid.py" in files

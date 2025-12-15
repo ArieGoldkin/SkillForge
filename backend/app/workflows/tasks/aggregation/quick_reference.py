@@ -20,6 +20,9 @@ from app.workflows.tasks.schemas.aggregated_insights import GotchaItem, QuickRef
 
 logger = get_logger(__name__)
 
+# Disclaimer for suggested files (Issue #299-304)
+FILES_DISCLAIMER = "⚠️ AI-suggested structure based on content patterns. Adapt to your project."
+
 # Limit constants for QuickReference fields
 MAX_PREREQUISITES = 4
 MAX_CRITICAL_COMMANDS = 6
@@ -334,12 +337,20 @@ def _extract_files_to_modify(findings_by_type: dict[str, dict[str, Any]]) -> lis
     """Extract files to create/modify from implementation_planner.steps.
 
     Max 10 files with full paths.
+
+    Note (Issue #299-304): These are AI-suggested file structures based on
+    content patterns, not actual files from the source document. They should
+    be treated as suggestions and adapted to the user's project structure.
     """
     files: list[str] = []
     seen_files: set[str] = set()
 
     impl_planner = findings_by_type.get("implementation_planner", {})
     steps = impl_planner.get("steps", [])
+
+    if not steps:
+        logger.info("files_extraction_skipped", reason="No implementation steps found")
+        return []
 
     if isinstance(steps, list):
         for step in steps:
@@ -354,6 +365,11 @@ def _extract_files_to_modify(findings_by_type: dict[str, dict[str, Any]]) -> lis
                         if isinstance(file_path, str) and file_path not in seen_files:
                             files.append(file_path)
                             seen_files.add(file_path)
+
+    if files:
+        logger.info("files_extracted", count=len(files), source="implementation_planner.steps")
+    else:
+        logger.info("files_extraction_empty", reason="No files found in implementation steps")
 
     return files[:MAX_FILES_TO_MODIFY]
 

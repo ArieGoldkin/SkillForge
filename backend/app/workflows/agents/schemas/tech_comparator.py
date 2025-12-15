@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class TechComparisonEntry(BaseModel):
     """Comparison details for a single technology."""
@@ -29,8 +31,11 @@ class TechComparisonEntry(BaseModel):
     )
 
 
-class TechComparison(BaseModel):
-    """Technology comparison analysis output schema."""
+class TechComparison(DataAvailabilityMixin):
+    """Technology comparison analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     primary_tech: str = Field(description="Primary technology/framework identified in the content")
     alternatives: list[str] = Field(

@@ -29,7 +29,7 @@ function scrollToHeading(headingId: string) {
   const element = document.getElementById(headingId)
   if (element) {
     const yOffset = -80 // Offset for sticky header
-    const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset
+    const y = element.getBoundingClientRect().top + window.scrollY + yOffset
     window.scrollTo({ top: y, behavior: 'smooth' })
   }
 }
@@ -59,6 +59,7 @@ const TocLink: React.FC<TocLinkProps> = ({ heading, isActive, onClick }) => {
           : 'text-muted-foreground border-l-2 border-transparent'
       )}
       aria-current={isActive ? 'location' : undefined}
+      aria-label={`Navigate to ${heading.text}`}
     >
       <span className="line-clamp-2">{heading.text}</span>
     </button>
@@ -79,6 +80,7 @@ const TocToggle: React.FC<TocToggleProps> = ({ isCollapsed, onToggle }) => (
     onClick={onToggle}
     className="lg:hidden w-full flex items-center justify-between px-4 py-3 mb-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
     aria-expanded={!isCollapsed}
+    aria-label={isCollapsed ? 'Show table of contents' : 'Hide table of contents'}
   >
     <span className="font-semibold text-sm">Table of Contents</span>
     <svg
@@ -138,11 +140,32 @@ const TocContent: React.FC<TocContentProps> = ({
 
 /**
  * Main TableOfContents component
+ *
+ * CRITICAL: This component predicts heading IDs that MarkdownPreview will generate.
+ * Both use the same slugify function and duplicate-handling logic. extractHeadings()
+ * uses a local counter, and MarkdownPreview's HeadingIdProvider creates a fresh
+ * counter per content. They stay in sync because they process the same markdown
+ * in the same order with the same ID generation rules.
  */
 export const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className }) => {
   const headings = useMemo(() => extractHeadings(content), [content])
+
   const activeId = useActiveHeading(headings)
   const { isCollapsed, toggleCollapse } = useTocCollapse()
+
+  // Get the active heading text for screen reader announcement
+  const activeHeading = useMemo(() => {
+    if (!activeId) return null
+    // Search in top-level headings and their children
+    for (const heading of headings) {
+      if (heading.id === activeId) return heading.text
+      if (heading.children) {
+        const child = heading.children.find((c) => c.id === activeId)
+        if (child) return child.text
+      }
+    }
+    return null
+  }, [activeId, headings])
 
   // Don't render if no headings
   if (headings.length === 0) {
@@ -159,6 +182,10 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content, class
       aria-label="Table of contents"
       data-testid="table-of-contents"
     >
+      {/* Screen reader announcement for active heading changes */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {activeHeading && `Now viewing: ${activeHeading}`}
+      </div>
       <TocToggle isCollapsed={isCollapsed} onToggle={toggleCollapse} />
       <TocContent
         headings={headings}

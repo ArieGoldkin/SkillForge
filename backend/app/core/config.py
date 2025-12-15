@@ -255,6 +255,17 @@ class Settings(BaseSettings):
         ),
     )
 
+    # Quality Evaluation Configuration
+    QUALITY_JUDGE_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description=(
+            "LLM model for quality evaluation (LLM-as-judge). "
+            "Used by quality gate to score relevance, depth, coherence. "
+            "Defaults to gemini-2.5-flash ($0.15/$0.60 per 1M tokens) for cost efficiency. "
+            "Alternatives: gpt-4o-mini, claude-haiku-3-5-20241022, grok-3-mini."
+        ),
+    )
+
     # Embedding Configuration
     EMBEDDING_DIMENSIONS: int = Field(
         default=1536,

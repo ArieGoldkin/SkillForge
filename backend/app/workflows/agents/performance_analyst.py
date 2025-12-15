@@ -13,6 +13,7 @@ from app.workflows.agents.grounding import apply_grounding
 from app.workflows.agents.schemas.performance_analyst import PerformanceAnalysis
 from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.workflows.state import AnalysisState
+from app.workflows.utils.content_signals import get_threshold_for_expectation
 
 # System prompt for performance analyst agent
 PERFORMANCE_ANALYST_PROMPT = """You are a Performance Analysis Specialist. Your task is to:
@@ -106,6 +107,15 @@ async def run_performance_analyst(
     # Issue #300: Get proactive context from state
     proactive_context = state.get("proactive_context", "")
 
+    # Issue #299-304: Get content-aware specificity threshold
+    supervisor_decision = state.get("supervisor_decision", {})
+    expectation = None
+    if isinstance(supervisor_decision, dict):
+        agent_expectations = supervisor_decision.get("agent_expectations", {})
+        if isinstance(agent_expectations, dict):
+            expectation = agent_expectations.get("performance_analyst")
+    specificity_threshold = get_threshold_for_expectation(expectation)
+
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{PERFORMANCE_ANALYST_PROMPT}\n\n{skill_instructions}")
 
@@ -117,6 +127,7 @@ async def run_performance_analyst(
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis
+    # Issue #299-304: Pass content-aware specificity threshold
     return await run_agent_with_tracking(
         agent=agent,
         content=content,
@@ -125,4 +136,5 @@ async def run_performance_analyst(
         agent_type="performance_analyst",
         session=session,
         proactive_context=proactive_context,
+        specificity_threshold=specificity_threshold,
     )

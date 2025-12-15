@@ -1149,3 +1149,83 @@ class TestTemplateSectionNullSafety:
         # Should render successfully
         assert isinstance(result, str)
         assert len(result) > 0
+
+    def test_artifact_files_disclaimer_rendering(self):
+        """Test that files disclaimer is rendered correctly (Issue #299-304)."""
+        from app.workflows.tasks.schemas.aggregated_insights import QuickReference
+
+        quick_ref = QuickReference(
+            primary_technology="Test Framework 1.0",
+            complexity="Intermediate (Est. 3-4 hours)",
+            files_to_modify=["src/index.ts", "src/config.ts"],
+        )
+
+        context = {
+            "analysis_metadata": {
+                "title": "Test Analysis",
+                "url": "https://example.com",
+                "generated_date": "2024-12-14",
+                "analysis_id": "test-123",
+            },
+            "quick_reference": quick_ref,
+            "aggregated_insights": {
+                "executive_summary": "Test summary",
+                "key_findings": ["Finding 1"],
+                "synthesis": {
+                    "technical_analysis": "Analysis",
+                    "implementation_guidance": "Guidance",
+                    "risk_assessment": "Risks",
+                    "recommendations": "Recommendations",
+                },
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Verify section title is renamed
+        assert "📁 Suggested File Structure" in result
+
+        # Verify disclaimer is present
+        assert "AI-suggested" in result or "suggested" in result.lower()
+
+        # Verify files are listed
+        assert "src/index.ts" in result
+        assert "src/config.ts" in result
+
+    def test_artifact_files_section_hidden_when_empty(self):
+        """Test that files section is not shown when files list is empty."""
+        from app.workflows.tasks.schemas.aggregated_insights import QuickReference
+
+        quick_ref = QuickReference(
+            primary_technology="Test Framework 1.0",
+            complexity="Intermediate (Est. 3-4 hours)",
+            files_to_modify=[],  # Empty list
+        )
+
+        context = {
+            "analysis_metadata": {
+                "title": "Test Analysis",
+                "url": "https://example.com",
+                "generated_date": "2024-12-14",
+                "analysis_id": "test-123",
+            },
+            "quick_reference": quick_ref,
+            "aggregated_insights": {
+                "executive_summary": "Test summary",
+                "key_findings": ["Finding 1"],
+                "synthesis": {
+                    "technical_analysis": "Analysis",
+                    "implementation_guidance": "Guidance",
+                    "risk_assessment": "Risks",
+                    "recommendations": "Recommendations",
+                },
+            },
+            "agent_findings": [],
+        }
+
+        result = render_jinja_template("artifact.j2", context)
+
+        # Verify section title is NOT present when files list is empty
+        assert "📁 Suggested File Structure" not in result
+        assert "Files to Create/Modify" not in result

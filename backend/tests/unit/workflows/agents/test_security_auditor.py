@@ -147,15 +147,23 @@ async def test_run_security_auditor_error_handling(
 
 @pytest.mark.asyncio
 @patch("app.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_schema_validation(
-    mock_create_agent, mock_agent, mock_session, mock_state
+    mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):
-    """Test security auditor schema validation."""
+    """Test security auditor schema validation.
+
+    Issue #299-304: Properly mock run_agent_with_tracking to avoid hitting real API.
+    """
     analysis_id = str(uuid4())
     content = "Security content"
     content_type = "article"
 
     mock_create_agent.return_value = mock_agent
+    mock_run_tracking.return_value = {
+        "agent_type": "security_auditor",
+        "findings": {"vulnerabilities": [], "security_status": "secure"},
+    }
 
     result = await run_security_auditor(
         content, content_type, analysis_id, mock_session, mock_state
@@ -164,3 +172,4 @@ async def test_run_security_auditor_schema_validation(
     # Verify schema validation passed (no exception raised)
     assert result is not None
     assert "agent_type" in result
+    mock_run_tracking.assert_called_once()

@@ -359,7 +359,7 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
 @pytest.mark.asyncio
 async def test_should_retry_synthesis_max_retries():
     """Test should_retry_synthesis returns FAIL (fail-closed) after max retries.
-    
+
     UPDATED: Previously expected 'continue' (fail-open).
     Now expects 'fail' (fail-closed) to prevent shipping garbage artifacts.
     """
@@ -509,3 +509,283 @@ def test_should_retry_synthesis_trigger_retry():
     with patch("app.workflows.nodes.quality_gate_node.logger"):
         result = should_retry_synthesis(state)
         assert result == "retry_synthesis"
+
+
+# =============================================================================
+# ISSUE #299-304: Coverage-Adjusted Threshold Tests
+# =============================================================================
+
+
+@pytest.fixture
+def low_coverage_state() -> AnalysisState:
+    """State with low coverage_score (triggers adjusted thresholds)."""
+    return {
+        "analysis_id": "test-low-coverage",
+        "raw_content": "Short content about AI concepts",
+        "aggregated_insights": {
+            "executive_summary": "Brief analysis of AI",
+            "key_findings": ["AI is evolving rapidly"],
+            "coverage_score": 0.3,  # Below 0.5 threshold
+        },
+        "quality_gate_retry_count": 0,
+    }
+
+
+@pytest.fixture
+def high_coverage_state() -> AnalysisState:
+    """State with high coverage_score (uses normal thresholds)."""
+    return {
+        "analysis_id": "test-high-coverage",
+        "raw_content": "Comprehensive content with code examples and benchmarks",
+        "aggregated_insights": {
+            "executive_summary": "Full technical analysis",
+            "key_findings": ["Performance improved 4x"],
+            "coverage_score": 0.8,  # Above 0.5 threshold
+        },
+        "quality_gate_retry_count": 0,
+    }
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_coverage_adjusted_threshold_passes(low_coverage_state: AnalysisState):
+    """Test that low coverage content passes with adjusted threshold (0.55).
+
+    Issue #299-304: When coverage_score < 0.5, adjusted thresholds are used.
+    This allows honest partial analysis to pass the gate.
+    """
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+    ):
+        mock_run_tree.return_value = None
+
+        # Score 0.6 - below normal threshold (0.7) but above adjusted (0.55)
+        async def low_score_evaluator(run, example):
+            return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
+
+        mock_create.return_value = low_score_evaluator
+
+        result = await quality_gate_node(low_coverage_state)
+
+        # Should PASS with adjusted threshold (0.6 > 0.55)
+        assert result["quality_gate_passed"] is True
+        assert result["quality_gate_avg_score"] == 0.6
+
+        # Verify adjusted thresholds were logged
+        info_calls = list(mock_logger.info.call_args_list)
+        adjusted_threshold_logs = [
+            call for call in info_calls if call[0][0] == "quality_gate_using_adjusted_thresholds"
+        ]
+        assert len(adjusted_threshold_logs) == 1
+
+        # Verify the logged parameters
+        kwargs = adjusted_threshold_logs[0][1]
+        assert kwargs["coverage_score"] == 0.3
+        assert kwargs["effective_threshold"] == 0.55
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state: AnalysisState):
+    """Test that high coverage content fails with normal threshold if score too low.
+
+    Issue #299-304: When coverage_score >= 0.5, normal thresholds (0.7) are used.
+    """
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger"),
+    ):
+        mock_run_tree.return_value = None
+
+        # Score 0.6 - above adjusted (0.55) but below normal (0.7)
+        async def borderline_evaluator(run, example):
+            return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
+
+        mock_create.return_value = borderline_evaluator
+
+        result = await quality_gate_node(high_coverage_state)
+
+        # Should FAIL with normal threshold (0.6 < 0.7)
+        assert result["quality_gate_passed"] is False
+        assert result["quality_gate_avg_score"] == 0.6
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_adjusted_aspect_minimums(low_coverage_state: AnalysisState):
+    """Test that adjusted aspect minimums are used for low coverage.
+
+    Issue #299-304: Adjusted minimums are lower to accommodate limited data:
+    - relevance: 0.4 (vs 0.5)
+    - depth: 0.3 (vs 0.4)
+    - coherence: 0.4 (vs 0.4)
+    """
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger"),
+    ):
+        mock_run_tree.return_value = None
+
+        call_count = 0
+
+        def create_evaluator(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+
+            async def evaluator(run, example):
+                # Scores that pass adjusted minimums but fail normal:
+                # relevance=0.45 (passes 0.4, fails 0.5)
+                # depth=0.35 (passes 0.3, fails 0.4)
+                # coherence=0.65 (passes both)
+                scores = [0.45, 0.35, 0.65]  # avg = 0.48, fails even adjusted avg
+                return {"key": "quality_test", "score": scores[call_count - 1], "comment": "test"}
+
+            return evaluator
+
+        mock_create.side_effect = create_evaluator
+
+        result = await quality_gate_node(low_coverage_state)
+
+        # With adjusted minimums, individual aspects should pass
+        # But average (0.48) is below adjusted threshold (0.55)
+        scores = result["quality_scores"]
+        assert scores["relevance"]["score"] == 0.45  # > 0.4 adjusted minimum
+        assert scores["depth"]["score"] == 0.35  # > 0.3 adjusted minimum
+        assert scores["coherence"]["score"] == 0.65  # > 0.4 adjusted minimum
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_aspect_minimum_failure_with_adjusted():
+    """Test that aspect below adjusted minimum still fails gate.
+
+    Even with adjusted thresholds, aspects below adjusted minimums fail.
+    """
+    state: AnalysisState = {
+        "analysis_id": "test-aspect-fail",
+        "raw_content": "Short conceptual content",
+        "aggregated_insights": {
+            "executive_summary": "Very brief analysis",
+            "key_findings": [],
+            "coverage_score": 0.2,  # Low coverage
+        },
+        "quality_gate_retry_count": 0,
+    }
+
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+    ):
+        mock_run_tree.return_value = None
+
+        call_count = 0
+
+        def create_evaluator(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+
+            async def evaluator(run, example):
+                # Relevance=0.3 (below adjusted minimum 0.4)
+                # depth=0.6, coherence=0.6 (both pass)
+                # Average = 0.5, but relevance fails adjusted minimum
+                scores = [0.3, 0.6, 0.6]
+                return {"key": "quality_test", "score": scores[call_count - 1], "comment": "test"}
+
+            return evaluator
+
+        mock_create.side_effect = create_evaluator
+
+        result = await quality_gate_node(state)
+
+        # Gate should FAIL due to relevance below adjusted minimum (0.3 < 0.4)
+        assert result["quality_gate_passed"] is False
+
+        # Verify aspect minimum warning was logged
+        warning_calls = list(mock_logger.warning.call_args_list)
+        aspect_below_min = [
+            call for call in warning_calls if call[0][0] == "quality_aspect_below_minimum"
+        ]
+        assert len(aspect_below_min) == 1
+        assert aspect_below_min[0][1]["aspect"] == "relevance"
+        assert aspect_below_min[0][1]["using_adjusted"] is True
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_logs_coverage_context(low_coverage_state: AnalysisState):
+    """Test that quality gate logs coverage-aware context.
+
+    Issue #299-304: Logs should include coverage_score and adjusted threshold info.
+    """
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+    ):
+        mock_run_tree.return_value = None
+
+        async def evaluator(run, example):
+            return {"key": "quality_test", "score": 0.8, "comment": "8/10"}
+
+        mock_create.return_value = evaluator
+
+        await quality_gate_node(low_coverage_state)
+
+        # Find the quality_gate_evaluated log
+        info_calls = list(mock_logger.info.call_args_list)
+        evaluated_logs = [call for call in info_calls if call[0][0] == "quality_gate_evaluated"]
+        assert len(evaluated_logs) == 1
+
+        kwargs = evaluated_logs[0][1]
+        # Verify coverage-aware context is logged
+        assert "coverage_score" in kwargs
+        assert kwargs["coverage_score"] == 0.3
+        assert "using_adjusted_thresholds" in kwargs
+        assert kwargs["using_adjusted_thresholds"] is True
+
+
+@pytest.mark.asyncio
+async def test_quality_gate_default_coverage_score():
+    """Test that missing coverage_score defaults to 1.0 (normal thresholds)."""
+    state: AnalysisState = {
+        "analysis_id": "test-no-coverage",
+        "raw_content": "Content without coverage score",
+        "aggregated_insights": {
+            "executive_summary": "Analysis without coverage tracking",
+            "key_findings": ["Finding 1"],
+            # No coverage_score field
+        },
+        "quality_gate_retry_count": 0,
+    }
+
+    with (
+        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+    ):
+        mock_run_tree.return_value = None
+
+        # Score 0.6 - would pass adjusted (0.55) but fail normal (0.7)
+        async def evaluator(run, example):
+            return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
+
+        mock_create.return_value = evaluator
+
+        result = await quality_gate_node(state)
+
+        # Without coverage_score, defaults to 1.0 -> use normal threshold
+        # Should FAIL (0.6 < 0.7)
+        assert result["quality_gate_passed"] is False
+
+        # Verify adjusted thresholds were NOT used
+        info_calls = list(mock_logger.info.call_args_list)
+        adjusted_logs = [
+            call for call in info_calls if call[0][0] == "quality_gate_using_adjusted_thresholds"
+        ]
+        assert len(adjusted_logs) == 0

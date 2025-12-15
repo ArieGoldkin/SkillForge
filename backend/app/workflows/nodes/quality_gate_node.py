@@ -32,11 +32,22 @@ ASPECT_MINIMUMS = {
     "coherence": 0.4,  # Basic coherence required
 }
 
+# Issue #299-304: Coverage-adjusted thresholds
+# When content has limited data (low coverage_score), we adjust thresholds
+# to reward honest partial analysis over hallucinated full analysis
+COVERAGE_TRIGGER_BELOW: float = 0.5  # coverage_score < this -> use adjusted thresholds
+COVERAGE_ADJUSTED_THRESHOLD: float = 0.55  # Lower average requirement
+COVERAGE_ADJUSTED_MINIMUMS: dict[str, float] = {
+    "relevance": 0.4,  # Still need some relevance
+    "depth": 0.3,  # Expect less depth with limited data
+    "coherence": 0.4,  # Coherence should still be maintained
+}
+
 # Aspects to evaluate
 QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 
 
-async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915
+async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0912, PLR0915
     """Quality gate validation node.
 
     Evaluates synthesized insights using LLM-as-judge evaluators for:
@@ -146,7 +157,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         # Run evaluators for each aspect
         quality_scores = {}
         for aspect in QUALITY_ASPECTS:
-            evaluator = create_quality_evaluator(aspect=aspect, judge_model="gpt-4o-mini")
+            evaluator = create_quality_evaluator(aspect=aspect)
 
             # Wrap evaluator call with timeout protection to prevent hanging
             try:
@@ -186,9 +197,32 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             else 0.0
         )
 
+        # Issue #299-304: Determine effective thresholds based on coverage score
+        # For content with limited data, use adjusted thresholds
+        coverage_score_raw = aggregated_insights.get("coverage_score", 1.0)
+        coverage_score = (
+            float(coverage_score_raw) if isinstance(coverage_score_raw, (int, float)) else 1.0
+        )
+        use_adjusted_thresholds = coverage_score < COVERAGE_TRIGGER_BELOW
+
+        if use_adjusted_thresholds:
+            effective_threshold = COVERAGE_ADJUSTED_THRESHOLD
+            effective_minimums: dict[str, float] = dict(COVERAGE_ADJUSTED_MINIMUMS)
+            logger.info(
+                "quality_gate_using_adjusted_thresholds",
+                analysis_id=analysis_id,
+                coverage_score=coverage_score,
+                trigger_below=COVERAGE_TRIGGER_BELOW,
+                effective_threshold=effective_threshold,
+                effective_minimums=effective_minimums,
+            )
+        else:
+            effective_threshold = QUALITY_THRESHOLD
+            effective_minimums = dict(ASPECT_MINIMUMS)
+
         # Check individual aspect minimums (relevance MUST be above threshold!)
         failed_aspects: list[str] = []
-        for aspect, minimum in ASPECT_MINIMUMS.items():
+        for aspect, minimum in effective_minimums.items():
             if aspect in quality_scores:
                 aspect_score = quality_scores[aspect]["score"]
                 if aspect_score < minimum:
@@ -199,10 +233,11 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                         aspect=aspect,
                         score=aspect_score,
                         minimum=minimum,
+                        using_adjusted=use_adjusted_thresholds,
                     )
 
         # Determine if gate passes: BOTH average AND individual minimums must pass
-        gate_passed = avg_score >= QUALITY_THRESHOLD and len(failed_aspects) == 0
+        gate_passed = avg_score >= effective_threshold and len(failed_aspects) == 0
 
         duration = time.time() - start_time
 
@@ -211,11 +246,14 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             analysis_id=analysis_id,
             retry_count=retry_count,
             avg_quality_score=avg_score,
-            threshold=QUALITY_THRESHOLD,
+            threshold=effective_threshold,
             gate_passed=gate_passed,
             failed_aspects=failed_aspects if failed_aspects else None,
             individual_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
-            aspect_minimums=ASPECT_MINIMUMS,
+            aspect_minimums=effective_minimums,
+            # Issue #299-304: Include coverage-aware context
+            coverage_score=coverage_score,
+            using_adjusted_thresholds=use_adjusted_thresholds,
             duration_seconds=duration,
             trace_id=trace_id,
         )

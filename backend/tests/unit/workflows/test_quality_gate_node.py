@@ -115,12 +115,12 @@ class TestShouldRetrySynthesis:
 
     def test_fail_when_max_retries_reached(self):
         """Test that we FAIL (fail-closed) when max retries reached.
-        
+
         UPDATED: Previously expected 'continue' (fail-open).
         Now expects 'fail' (fail-closed) to prevent shipping garbage artifacts.
         """
         from unittest.mock import patch
-        
+
         state: AnalysisState = {
             "analysis_id": "test-id",
             "quality_gate_passed": False,

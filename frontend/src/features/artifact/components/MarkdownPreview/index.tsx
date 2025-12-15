@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm'
 
 import { cn } from '@lib/utils'
 
-import { MetadataHeader, resetHeadingIds } from './internal'
+import { HeadingIdProvider, MetadataHeader } from './internal'
 import { markdownRenderers } from './markdown-config'
 import type { MarkdownPreviewProps } from './types'
 
@@ -32,6 +32,11 @@ const EmptyState: React.FC<{ className?: string }> = ({ className }) => (
  * - Syntax-highlighted code blocks via Prism.js
  * - Optional metadata header
  * - Responsive design with light/dark theme support
+ *
+ * Heading ID Coordination:
+ * - TableOfContents uses LOCAL counters to predict IDs from markdown
+ * - HeadingIdProvider wraps ReactMarkdown with a fresh ID tracker per content
+ * - Both use the same slugify() and duplicate-handling logic, ensuring IDs match
  */
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   content,
@@ -39,10 +44,6 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   className,
   showMetadata = true,
 }) => {
-  // Reset heading ID counters before each render to ensure unique IDs
-  // This must be called synchronously before ReactMarkdown renders
-  resetHeadingIds()
-
   if (!content || content.trim().length === 0) {
     return <EmptyState className={className} />
   }
@@ -62,13 +63,16 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
       {/* Content area with proper padding */}
       <div className="markdown-content-area">
         <div className="markdown-preview" data-testid="markdown-preview">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-            components={markdownRenderers}
-          >
-            {content}
-          </ReactMarkdown>
+          {/* HeadingIdProvider pre-computes IDs from content */}
+          <HeadingIdProvider content={content}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={markdownRenderers}
+            >
+              {content}
+            </ReactMarkdown>
+          </HeadingIdProvider>
         </div>
       </div>
     </div>

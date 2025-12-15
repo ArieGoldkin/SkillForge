@@ -61,7 +61,7 @@ class TestGetModelForTask:
     def test_get_fallback_model(self):
         """Test getting fallback model for a task."""
         model = get_model_for_task("supervisor", use_fallback=True)
-        assert model == "gpt-4o-mini"
+        assert model == "gemini-2.0-flash"  # Updated Dec 2025
 
     def test_unknown_task_returns_none(self):
         """Test that unknown task returns None."""

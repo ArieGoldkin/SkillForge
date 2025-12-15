@@ -4,10 +4,8 @@ import type { Components } from 'react-markdown'
 
 import { cn } from '@lib/utils'
 
-import { slugify } from '../../TableOfContents/utils'
-
 import { CodeBlock } from './CodeBlock'
-import { makeUniqueHeadingId } from './headingIdTracker'
+import { useHeadingId } from './HeadingIdContext'
 import { MermaidRenderer } from './MermaidRenderer'
 import { ParagraphRenderer } from './ParagraphRenderer'
 
@@ -84,16 +82,83 @@ export const TableRenderer = ((rawProps: TableRendererProps) => {
 }) satisfies NonNullable<Components['table']>
 
 /**
+ * Custom thead renderer - ensures proper table structure
+ */
+type TheadRendererProps = React.HTMLAttributes<HTMLTableSectionElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const TheadRenderer = ((rawProps: TheadRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
+  return <thead {...rest}>{children}</thead>
+}) satisfies NonNullable<Components['thead']>
+
+/**
+ * Custom tbody renderer - ensures proper table structure
+ */
+type TbodyRendererProps = React.HTMLAttributes<HTMLTableSectionElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const TbodyRenderer = ((rawProps: TbodyRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
+  return <tbody {...rest}>{children}</tbody>
+}) satisfies NonNullable<Components['tbody']>
+
+/**
+ * Custom tr renderer - ensures proper table row structure
+ */
+type TrRendererProps = React.HTMLAttributes<HTMLTableRowElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const TrRenderer = ((rawProps: TrRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
+  return <tr {...rest}>{children}</tr>
+}) satisfies NonNullable<Components['tr']>
+
+/**
+ * Custom th renderer - ensures proper table header cells
+ */
+type ThRendererProps = React.ThHTMLAttributes<HTMLTableCellElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const ThRenderer = ((rawProps: ThRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
+  return <th {...rest}>{children}</th>
+}) satisfies NonNullable<Components['th']>
+
+/**
+ * Custom td renderer - ensures proper table data cells
+ */
+type TdRendererProps = React.TdHTMLAttributes<HTMLTableCellElement> & {
+  children?: React.ReactNode
+  node?: unknown
+}
+
+export const TdRenderer = ((rawProps: TdRendererProps) => {
+  const { children, node: _node, ...rest } = rawProps
+  return <td {...rest}>{children}</td>
+}) satisfies NonNullable<Components['td']>
+
+/**
  * Custom input renderer - styles task list checkboxes
  */
 type InputRendererProps = React.InputHTMLAttributes<HTMLInputElement> & {
   type?: string
   node?: unknown
+  disabled?: boolean
 }
 
 export const InputRenderer = ((rawProps: InputRendererProps) => {
-  const { type, node: _node, ...rest } = rawProps
+  const { type, node: _node, disabled: _disabled, ...rest } = rawProps
   if (type === 'checkbox') {
+    // Remove disabled prop - allow quiz checkboxes to be interactive
     return <input type="checkbox" className="task-checkbox" {...rest} />
   }
   return <input type={type} {...rest} />
@@ -162,6 +227,10 @@ function getTextContent(children: React.ReactNode): string {
 
 /**
  * Heading renderer with auto-generated IDs for TOC linking
+ *
+ * Uses HeadingIdContext to look up pre-computed IDs that match what TOC predicts.
+ * IDs are pre-computed from markdown content, so there's no stateful counter
+ * that could be affected by React 18's StrictMode double-render.
  */
 type HeadingRendererProps = React.HTMLAttributes<HTMLHeadingElement> & {
   children?: React.ReactNode
@@ -172,9 +241,8 @@ const createHeadingRenderer = (level: 1 | 2 | 3 | 4 | 5 | 6) => {
   const Component = ((rawProps: HeadingRendererProps) => {
     const { children, node: _node, ...rest } = rawProps
     const text = getTextContent(children)
-    const baseId = slugify(text)
-    // Use unique ID to match TOC and prevent DOM ID collisions
-    const id = makeUniqueHeadingId(baseId)
+    // Look up pre-computed ID from context
+    const id = useHeadingId(text)
     const HeadingTag = `h${level}` as const
 
     return (

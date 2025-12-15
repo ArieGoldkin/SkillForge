@@ -1,0 +1,144 @@
+/**
+ * Custom Prism.js Theme - SkillForge Teal Accent
+ *
+ * Extends prism-tomorrow with teal accent colors
+ */
+
+/* Override token colors with teal accent */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: oklch(0.6301 0 0);
+}
+
+.token.punctuation {
+  color: oklch(0.8551 0 0);
+}
+
+.token.namespace {
+  opacity: 0.7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: oklch(0.7686 0.1647 70.0804); /* Yellow accent */
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: oklch(0.8003 0.1821 151.7110); /* Teal accent */
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: oklch(0.8348 0.1302 160.9080); /* Primary teal */
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: oklch(0.7137 0.1434 254.6240); /* Purple accent */
+}
+
+.token.function,
+.token.class-name {
+  color: oklch(0.7090 0.1592 293.5412); /* Magenta accent */
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: oklch(0.8369 0.1644 84.4286); /* Yellow-green */
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+/* Line highlighting */
+pre[data-line] {
+  position: relative;
+  padding-left: 3em;
+}
+
+.line-highlight {
+  background: var(--accent);
+  border-left: 3px solid var(--primary);
+}
+
+/* Inline code color fix */
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+  background: var(--code-bg);
+}
+
+/* Code block enhancements */
+code[class*="language-"],
+pre[class*="language-"] {
+  text-shadow: none;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+/* Line numbers (if using plugin) */
+.line-numbers .line-numbers-rows {
+  border-right: 1px solid var(--border);
+  background: var(--code-header-bg);
+}
+
+.line-numbers-rows > span:before {
+  color: var(--muted-foreground);
+}
+
+/* Selection color */
+pre[class*="language-"]::-moz-selection,
+pre[class*="language-"] ::-moz-selection,
+code[class*="language-"]::-moz-selection,
+code[class*="language-"] ::-moz-selection {
+  background: var(--accent);
+}
+
+pre[class*="language-"]::selection,
+pre[class*="language-"] ::selection,
+code[class*="language-"]::selection,
+code[class*="language-"] ::selection {
+  background: var(--accent);
+}
+
+/* Scrollbar styling for code blocks */
+pre[class*="language-"]::-webkit-scrollbar {
+  height: 8px;
+}
+
+pre[class*="language-"]::-webkit-scrollbar-track {
+  background: var(--code-header-bg);
+  border-radius: 4px;
+}
+
+pre[class*="language-"]::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+pre[class*="language-"]::-webkit-scrollbar-thumb:hover {
+  background: var(--ring);
+}

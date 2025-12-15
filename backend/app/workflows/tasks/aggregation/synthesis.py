@@ -87,8 +87,28 @@ Each agent provides confidence_score (0.0-1.0). When agents disagree:
 - Prioritize higher confidence scores
 - Document conflicts in conflicts_resolved with reasoning
 
-**COVERAGE ACKNOWLEDGMENT:**
-If coverage_score < 0.5, acknowledge partial analysis in executive_summary.
+**COVERAGE ACKNOWLEDGMENT (Issue #299-304):**
+Each agent now reports `data_availability` (sufficient/limited/insufficient) and `data_availability_note`.
+
+When processing findings:
+1. Check each agent's `data_availability` field:
+   - "sufficient": Agent had full data for thorough analysis - trust findings completely
+   - "limited": Agent had partial data - acknowledge gaps in coverage_gaps
+   - "insufficient": Agent found minimal relevant data - mark as coverage gap
+
+2. Populate `coverage_gaps` for agents with "limited" or "insufficient" data:
+   - missing_agent: The agent name
+   - missing_perspective: What analysis couldn't be done (use data_availability_note)
+   - impact: How this affects the overall analysis
+
+3. Acknowledge gaps in `executive_summary` when:
+   - Multiple agents report "limited" or "insufficient"
+   - Coverage_score < 0.5
+   - Example: "Note: This analysis is based on conceptual content without code examples,
+     so implementation guidance is inferred rather than extracted."
+
+4. This enables HONEST synthesis - don't hallucinate details that weren't in the content.
+   It's better to say "No security patterns detected" than to fabricate risks.
 
 === OUTPUT QUALITY REQUIREMENTS ===
 
@@ -106,6 +126,28 @@ ALL sections (executive_summary, ai_assistant_prompt, core_concepts, tldr, diagr
 must be included in a SINGLE AggregatedInsights response.
 
 If you return multiple responses, the system will fail. Return ONE complete response.
+
+=== CRITICAL MARKDOWN FORMATTING RULES ===
+
+You MUST follow these formatting rules exactly:
+
+1. **Paragraph Separation**: Use TWO newlines (blank line) between paragraphs. Never run paragraphs together.
+
+2. **Section Headers**: When using bold headers like **Title:**, ALWAYS put the content on a new line:
+   CORRECT:
+   **Immediate Actions:**
+   Start with implementation...
+
+   WRONG:
+   **Immediate Actions:** Start with implementation...
+
+3. **List Items**: Use proper markdown bullets with a space after the dash:
+   - Item one
+   - Item two
+
+4. **Code Blocks**: Always specify the language after triple backticks.
+
+These rules ensure the artifact renders correctly in the UI.
 """
 
 

@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.workflows.agents.schemas.base import DataAvailabilityMixin
+
 
 class PerformanceMetric(BaseModel):
     """Performance metric assessment."""
@@ -16,8 +18,11 @@ class PerformanceMetric(BaseModel):
     )
 
 
-class PerformanceAnalysis(BaseModel):
-    """Performance analysis output schema."""
+class PerformanceAnalysis(DataAvailabilityMixin):
+    """Performance analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
 
     performance_metrics: list[PerformanceMetric] = Field(
         description="Key performance metrics and their assessments",

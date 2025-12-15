@@ -72,11 +72,14 @@ class AgentExecutionConfig:
     """Configuration for agent execution.
 
     Groups agent execution configuration to reduce function complexity.
+
+    Issue #299-304: Added specificity_threshold to allow content-aware threshold adjustment.
     """
 
     session: AsyncSession
     max_content_length: int = 12000
     timeout: float = AGENT_TIMEOUT
+    specificity_threshold: float | None = None  # None = use default from env
 
 
 async def _run_agent_with_tracking_impl(
@@ -136,7 +139,12 @@ async def _run_agent_with_tracking_impl(
         findings = None
         specificity_score = None
         max_retries = get_specificity_max_retries()
-        min_score = get_specificity_min_score()
+        # Issue #299-304: Use content-aware threshold if provided, otherwise default
+        min_score = (
+            config.specificity_threshold
+            if config.specificity_threshold is not None
+            else get_specificity_min_score()
+        )
 
         while attempts <= max_retries:
             try:
@@ -239,6 +247,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     session: AsyncSession,
     max_content_length: int = 12000,
     proactive_context: str = "",
+    specificity_threshold: float | None = None,
 ) -> dict[str, object]:
     """Run an agent with progress tracking, error handling, and database persistence.
 
@@ -246,7 +255,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     node (e.g., tech_comparator_node) is already traced. Adding tracing here would
     create duplicate traces in LangSmith.
 
-    Note: This function accepts 8 parameters for backward compatibility with existing callers.
+    Note: This function accepts 9 parameters for backward compatibility with existing callers.
     Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig
     dataclasses to reduce complexity. Future refactoring could change the signature to accept
     dataclasses directly.
@@ -260,6 +269,9 @@ async def run_agent_with_tracking(  # noqa: PLR0913
         session: Database session for persistence
         max_content_length: Maximum content length to send to agent
         proactive_context: Formatted memory context from past analyses (Issue #300)
+        specificity_threshold: Optional threshold override (Issue #299-304).
+            If None, uses default from SPECIFICITY_MIN_SCORE env var (0.70).
+            Lower thresholds (e.g., 0.55) for conceptual-only content.
 
     Returns:
         Dictionary with agent_type, findings, confidence_score, processing_time_ms
@@ -280,6 +292,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
     config = AgentExecutionConfig(
         session=session,
         max_content_length=max_content_length,
+        specificity_threshold=specificity_threshold,
     )
 
     # Call implementation directly - no tracing here since the node wrapper already traces
