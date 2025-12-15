@@ -42,8 +42,8 @@ pytest-asyncio = "^1.3.0"
 pytest-cov = "^7.0.0"
 pytest-timeout = "^2.3.1"
 pytest-xdist = "^3.6.1"
-ruff = "^0.14.8"
-mypy = "^1.13.0"
+ruff = "^0.14.9"
+mypy = "^1.19.1"
 isort = "^7.0.0"
 # langgraph-cli is installed separately via pip due to dependency conflict:
 # langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
