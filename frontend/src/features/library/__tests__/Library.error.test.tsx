@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -99,19 +100,38 @@ describe('Library Component - Error Handling', () => {
 
   it('shows LibraryErrorAlert when isError is true', () => {
     const mockError = new Error('Failed to fetch library data')
-    const mockRefetch = vi.fn()
+    const mockRefetch = vi.fn().mockResolvedValue({} as any)
 
     mockedUseLibrarySearchInfinite.mockReturnValue({
       data: undefined,
       isLoading: false,
       isFetching: false,
+      isPending: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: mockError,
       isError: true,
       refetch: mockRefetch,
-    })
+      status: 'error',
+      fetchStatus: 'idle',
+      isPlaceholderData: false,
+      isRefetching: false,
+      isStale: false,
+      isPaused: false,
+      failureCount: 1,
+      failureReason: mockError,
+      errorUpdateCount: 1,
+      errorUpdatedAt: Date.now(),
+    } as any)
 
     renderWithProviders()
 
@@ -121,16 +141,35 @@ describe('Library Component - Error Handling', () => {
 
   it('hides error alert when isError is false', () => {
     mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: { pages: [{ items: [], total: 0, limit: 20, offset: 0 }] },
+      data: { pages: [{ items: [], total: 0, limit: 20, offset: 0 }], pageParams: [0] },
       isLoading: false,
       isFetching: false,
+      isPending: false,
+      isSuccess: true,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: null,
       isError: false,
-      refetch: vi.fn(),
-    })
+      refetch: vi.fn().mockResolvedValue({} as any),
+      status: 'success',
+      fetchStatus: 'idle',
+      isPlaceholderData: false,
+      isRefetching: false,
+      isStale: false,
+      isPaused: false,
+      failureCount: 0,
+      failureReason: null,
+      errorUpdateCount: 0,
+      errorUpdatedAt: 0,
+    } as any)
 
     renderWithProviders()
 
@@ -140,19 +179,38 @@ describe('Library Component - Error Handling', () => {
   it('passes refetch function to LibraryErrorAlert', async () => {
     const user = userEvent.setup()
     const mockError = new Error('API error')
-    const mockRefetch = vi.fn()
+    const mockRefetch = vi.fn().mockResolvedValue({} as any)
 
     mockedUseLibrarySearchInfinite.mockReturnValue({
       data: undefined,
       isLoading: false,
       isFetching: false,
+      isPending: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: mockError,
       isError: true,
       refetch: mockRefetch,
-    })
+      status: 'error',
+      fetchStatus: 'idle',
+      isPlaceholderData: false,
+      isRefetching: false,
+      isStale: false,
+      isPaused: false,
+      failureCount: 1,
+      failureReason: mockError,
+      errorUpdateCount: 1,
+      errorUpdatedAt: Date.now(),
+    } as any)
 
     renderWithProviders()
 
@@ -164,19 +222,38 @@ describe('Library Component - Error Handling', () => {
 
   it('shows retrying state when isFetching is true after error', () => {
     const mockError = new Error('API error')
-    const mockRefetch = vi.fn()
+    const mockRefetch = vi.fn().mockResolvedValue({} as any)
 
     mockedUseLibrarySearchInfinite.mockReturnValue({
       data: undefined,
       isLoading: false,
       isFetching: true,
+      isPending: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: mockError,
       isError: true,
       refetch: mockRefetch,
-    })
+      status: 'error',
+      fetchStatus: 'fetching',
+      isPlaceholderData: false,
+      isRefetching: true,
+      isStale: false,
+      isPaused: false,
+      failureCount: 1,
+      failureReason: mockError,
+      errorUpdateCount: 1,
+      errorUpdatedAt: Date.now(),
+    } as any)
 
     renderWithProviders()
 
@@ -190,19 +267,38 @@ describe('Library Component - Error Handling', () => {
 
   it('handles error with custom error message', () => {
     const mockError = new Error('Server returned 500 Internal Server Error')
-    const mockRefetch = vi.fn()
+    const mockRefetch = vi.fn().mockResolvedValue({} as any)
 
     mockedUseLibrarySearchInfinite.mockReturnValue({
       data: undefined,
       isLoading: false,
       isFetching: false,
+      isPending: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: mockError,
       isError: true,
       refetch: mockRefetch,
-    })
+      status: 'error',
+      fetchStatus: 'idle',
+      isPlaceholderData: false,
+      isRefetching: false,
+      isStale: false,
+      isPaused: false,
+      failureCount: 1,
+      failureReason: mockError,
+      errorUpdateCount: 1,
+      errorUpdatedAt: Date.now(),
+    } as any)
 
     renderWithProviders()
 
@@ -212,7 +308,7 @@ describe('Library Component - Error Handling', () => {
 
   it('shows error alert even when there is partial data', () => {
     const mockError = new Error('Failed to load more results')
-    const mockRefetch = vi.fn()
+    const _mockRefetch = vi.fn().mockResolvedValue({} as any)
 
     mockedUseLibrarySearchInfinite.mockReturnValue({
       data: {
@@ -225,6 +321,10 @@ describe('Library Component - Error Handling', () => {
                 content_type: 'article',
                 status: 'complete',
                 created_at: '2025-01-01T00:00:00Z',
+                url: 'https://example.com',
+                tags: [],
+                snippet: 'test snippet',
+                rank: 1,
               },
             ],
             total: 1,
@@ -232,16 +332,36 @@ describe('Library Component - Error Handling', () => {
             offset: 0,
           },
         ],
+        pageParams: [0],
       },
       isLoading: false,
       isFetching: false,
+      isPending: false,
+      isSuccess: false,
+      isLoadingError: false,
+      isRefetchError: false,
+      isFetchNextPageError: false,
+      isFetchPreviousPageError: false,
       hasNextPage: false,
+      hasPreviousPage: false,
       fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
       isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
       error: mockError,
       isError: true,
-      refetch: mockRefetch,
-    })
+      refetch: vi.fn().mockResolvedValue({} as any),
+      status: 'error',
+      fetchStatus: 'idle',
+      isPlaceholderData: false,
+      isRefetching: false,
+      isStale: false,
+      isPaused: false,
+      failureCount: 1,
+      failureReason: mockError,
+      errorUpdateCount: 1,
+      errorUpdatedAt: Date.now(),
+    } as any)
 
     renderWithProviders()
 

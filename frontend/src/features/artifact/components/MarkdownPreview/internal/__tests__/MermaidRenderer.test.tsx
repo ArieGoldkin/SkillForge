@@ -94,6 +94,7 @@ describe('MermaidRenderer', () => {
       vi.mocked(mermaid.render).mockResolvedValueOnce({
         svg: longTextSvg,
         bindFunctions: vi.fn(),
+        diagramType: 'flowchart',
       })
 
       const code = `
@@ -215,6 +216,7 @@ describe('MermaidRenderer', () => {
       vi.mocked(mermaid.render).mockResolvedValueOnce({
         svg: '<svg>Interactive</svg>',
         bindFunctions: mockBindFunctions,
+        diagramType: 'flowchart',
       })
 
       render(<MermaidRenderer code="graph TD; A-->B;" />)
@@ -228,6 +230,7 @@ describe('MermaidRenderer', () => {
       vi.mocked(mermaid.render).mockResolvedValueOnce({
         svg: '<svg>No bind</svg>',
         bindFunctions: undefined,
+        diagramType: 'flowchart',
       })
 
       // Should not throw
@@ -256,6 +259,7 @@ describe('MermaidRenderer', () => {
       vi.mocked(mermaid.render).mockResolvedValueOnce({
         svg: '<svg>Special chars</svg>',
         bindFunctions: vi.fn(),
+        diagramType: 'flowchart',
       })
 
       const specialCode = 'graph TD; A["Node with <special> & chars"] --> B'

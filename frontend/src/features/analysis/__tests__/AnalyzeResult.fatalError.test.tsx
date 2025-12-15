@@ -327,7 +327,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       mockAnalysisStatus({
         shouldConnect: true,
         loading: false,
-        resolvedStatus: 'processing',
+        resolvedStatus: 'processing' as const,
       })
 
       const router = createTestRouter('/analyze/test-123')
@@ -405,7 +405,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
 
       mockAnalysisStatus({
         shouldConnect: false,
-        resolvedStatus: 'processing', // Not yet "completed" to avoid redirect
+        resolvedStatus: 'processing' as const, // Not yet "completed" to avoid redirect
         resolvedArtifactId: undefined, // No artifact ID yet
       })
 

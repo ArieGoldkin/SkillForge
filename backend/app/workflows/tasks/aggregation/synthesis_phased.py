@@ -17,6 +17,8 @@ import asyncio
 import time
 from typing import Any
 
+from pydantic import ValidationError
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
@@ -107,14 +109,9 @@ async def synthesize_with_llm_phased(
     try:
         # Import compression and phase functions
         from app.workflows.tasks.aggregation.compress_findings import compress_all_findings
-        from app.workflows.tasks.schemas.core_synthesis import CoreSynthesisSchema
-        from app.workflows.tasks.schemas.docs_synthesis import DocsSynthesisSchema
-        from app.workflows.tasks.schemas.learning_synthesis import LearningSynthesisSchema
 
         # Phase 0: Compress findings (fast LLM, parallel for all agents)
-        await _emit_synthesis_heartbeat(
-            analysis_id, start_time, "Phase 0: Compressing findings..."
-        )
+        await _emit_synthesis_heartbeat(analysis_id, start_time, "Phase 0: Compressing findings...")
 
         compressed_findings = await compress_all_findings(
             agent_findings=agent_findings_dict,
@@ -406,9 +403,7 @@ async def _synthesize_learning(
         )
 
         # Extract structured response
-        structured_response = extract_structured_response(
-            final_result, "synthesis_phase2_learning"
-        )
+        structured_response = extract_structured_response(final_result, "synthesis_phase2_learning")
 
         phase_elapsed = time.time() - phase_start
         logger.info(
@@ -419,7 +414,7 @@ async def _synthesize_learning(
 
         return structured_response
 
-    except Exception as e:
+    except (ValidationError, TimeoutError, ValueError, KeyError, TypeError) as e:
         phase_elapsed = time.time() - phase_start
         logger.warning(
             "synthesis_phase2_learning_failed_graceful_degradation",
@@ -514,7 +509,7 @@ async def _synthesize_docs(
 
         return structured_response
 
-    except Exception as e:
+    except (ValidationError, TimeoutError, ValueError, KeyError, TypeError) as e:
         phase_elapsed = time.time() - phase_start
         logger.warning(
             "synthesis_phase3_docs_failed_graceful_degradation",
