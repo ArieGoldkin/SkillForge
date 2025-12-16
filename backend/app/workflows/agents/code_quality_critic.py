@@ -7,10 +7,10 @@ and provides recommendations for maintainability, best practices, and refactorin
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
+from app.domains.analysis.schemas.agents.code_quality_critic import CodeQualityReview
 from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
-from app.domains.analysis.schemas.agents.code_quality_critic import CodeQualityReview
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
@@ -111,7 +111,9 @@ async def run_code_quality_critic(
     # Note: code_quality_critic is not in standard agent_expectations since it's skipped
     # when there's no code. Use opportunistic threshold as default.
     expectation = state.get("agent_expectation")
-    specificity_threshold = get_threshold_for_expectation(expectation)
+    specificity_threshold = get_threshold_for_expectation(
+        str(expectation) if expectation is not None else None
+    )
 
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{CODE_QUALITY_CRITIC_PROMPT}\n\n{skill_instructions}")

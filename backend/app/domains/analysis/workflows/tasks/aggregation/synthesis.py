@@ -16,9 +16,9 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
-from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
+from app.domains.analysis.workflows.agents.base import create_structured_agent
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 if TYPE_CHECKING:
     from langchain_core.runnables import Runnable

@@ -1,8 +1,9 @@
 """Unit tests for quality gate fail node.
 
-Tests the new _quality_gate_fail_node that handles permanent quality failures.
+Tests the _quality_gate_fail_node that handles quality failures with fail-open behavior.
 
-Issue #ARTIFACT-QUALITY: Quality gate now fails closed to prevent garbage artifacts.
+Issue #299-304: Quality gate now uses FAIL-OPEN behavior - always generate artifact
+even with low quality scores. Users prefer getting something over nothing.
 """
 
 from unittest.mock import AsyncMock, patch
@@ -12,12 +13,11 @@ import pytest
 from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
 from app.domains.analysis.workflows.state import AnalysisState
 
+
 @pytest.mark.unit
-
-
 @pytest.mark.asyncio
-async def test_quality_gate_fail_node_sets_failed_status():
-    """Test that fail node sets status to 'failed'."""
+async def test_quality_gate_fail_node_sets_warning_status():
+    """Test that fail node sets quality_gate_warning (fail-open behavior)."""
     state: AnalysisState = {
         "analysis_id": "test-analysis-123",
         "quality_gate_passed": False,
@@ -32,23 +32,23 @@ async def test_quality_gate_fail_node_sets_failed_status():
 
     with (
         patch(
-            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event",
+            new_callable=AsyncMock,
         ) as mock_emit,
         patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         result = await _quality_gate_fail_node(state)
 
-        # Verify status is set to failed
-        assert result["status"] == "failed"
-        assert "error" in result
-        assert "Quality gate failed" in result["error"]
-        assert "avg_score=0.5" in result["error"]
-        assert "after 2 retries" in result["error"]
+        # Verify fail-open behavior: quality_gate_passed=False but no status="failed"
+        assert result["quality_gate_passed"] is False
+        assert "quality_gate_warning" in result
+        assert "avg_score=0.5" in result["quality_gate_warning"]
+        assert "after 2 retries" in result["quality_gate_warning"]
 
 
 @pytest.mark.asyncio
-async def test_quality_gate_fail_node_emits_sse_error():
-    """Test that fail node emits SSE error event."""
+async def test_quality_gate_fail_node_emits_progress_event():
+    """Test that fail node emits SSE progress event (not error - fail-open)."""
     state: AnalysisState = {
         "analysis_id": "test-analysis-456",
         "quality_gate_passed": False,
@@ -63,25 +63,24 @@ async def test_quality_gate_fail_node_emits_sse_error():
 
     with (
         patch(
-            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event",
+            new_callable=AsyncMock,
         ) as mock_emit,
         patch("app.domains.analysis.workflows.graph_builder.logger"),
     ):
         await _quality_gate_fail_node(state)
 
-        # Verify SSE error event was emitted
+        # Verify SSE progress event (not error) was emitted - fail-open behavior
         mock_emit.assert_called_once()
         call_args = mock_emit.call_args
 
-        # Check event type and fields
-        assert call_args[0][0] == "error"
+        # Check event type is "progress" not "error" (fail-open)
+        assert call_args[0][0] == "progress"
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == "test-analysis-456"
         assert kwargs["stage"] == "quality_gate"
-        assert kwargs["status"] == "failed"
-        assert "Quality gate failed after 2 retries" in kwargs["error_message"]
-        assert "Average score: 0.45" in kwargs["error_message"]
-        assert "threshold: 0.7" in kwargs["error_message"]
+        assert kwargs["status"] == "low_quality"  # Not "failed"
+        assert "score: 0.45" in kwargs["message"]
 
         # Verify quality scores are included
         assert "quality_scores" in kwargs
@@ -92,8 +91,8 @@ async def test_quality_gate_fail_node_emits_sse_error():
 
 
 @pytest.mark.asyncio
-async def test_quality_gate_fail_node_logs_error():
-    """Test that fail node logs error with proper fields."""
+async def test_quality_gate_fail_node_logs_warning():
+    """Test that fail node logs warning (not error) with proper fields."""
     state: AnalysisState = {
         "analysis_id": "test-analysis-789",
         "quality_gate_passed": False,
@@ -107,24 +106,27 @@ async def test_quality_gate_fail_node_logs_error():
     }
 
     with (
-        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch(
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event",
+            new_callable=AsyncMock,
+        ),
         patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         await _quality_gate_fail_node(state)
 
-        # Verify error was logged
-        mock_logger.error.assert_called_once()
-        call_args = mock_logger.error.call_args
+        # Verify warning was logged (not error - fail-open behavior)
+        mock_logger.warning.assert_called_once()
+        call_args = mock_logger.warning.call_args
 
         # Check log event name and fields
-        assert call_args[0][0] == "quality_gate_failed_permanently"
+        assert call_args[0][0] == "quality_gate_failed_continuing_to_artifact"
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == "test-analysis-789"
         assert kwargs["avg_score"] == 0.6
         assert kwargs["retry_count"] == 2
         assert "quality_scores" in kwargs
         assert kwargs["quality_scores"]["relevance"] == 0.45
-        assert "Analysis failed due to quality gate" in kwargs["message"]
+        assert "fail-open" in kwargs["message"]
 
 
 @pytest.mark.asyncio
@@ -137,22 +139,23 @@ async def test_quality_gate_fail_node_handles_none_values():
 
     with (
         patch(
-            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event",
+            new_callable=AsyncMock,
         ) as mock_emit,
         patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         # Should not raise exception
         result = await _quality_gate_fail_node(state)
 
-        # Verify defaults are used
-        assert result["status"] == "failed"
-        assert "error" in result
+        # Verify defaults are used (fail-open behavior)
+        assert result["quality_gate_passed"] is False
+        assert "quality_gate_warning" in result
 
         # Verify SSE and logging still work with defaults
         mock_emit.assert_called_once()
-        mock_logger.error.assert_called_once()
+        mock_logger.warning.assert_called_once()
 
         # Check that 0 defaults are used
         emit_kwargs = mock_emit.call_args[1]
-        assert "after 0 retries" in emit_kwargs["error_message"]
-        assert "Average score: 0.0" in emit_kwargs["error_message"]
+        assert "0 retries" in emit_kwargs["message"]
+        assert "score: 0.00" in emit_kwargs["message"]

@@ -11,11 +11,11 @@ import time
 
 from app.core.logging import get_logger
 from app.db.session import get_session_factory
+from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.services.memory.proactive_recall import (
     fetch_proactive_context,
     format_memory_context,
 )
-from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 

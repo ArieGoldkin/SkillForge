@@ -3,6 +3,7 @@
 This node provides real-world application suggestions and marks session as completed.
 """
 
+from app.workflows.context_compiler import create_workflow_compiler
 from langsmith import get_current_run_tree
 
 from app.core.config import settings
@@ -11,7 +12,6 @@ from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
 from app.db.repositories.tutor_message_repository import TutorMessageRepository
 from app.db.repositories.tutor_session_repository import TutorSessionRepository
-from app.workflows.context_compiler import create_workflow_compiler
 from app.workflows.tutor.config import TUTOR_COMPACTION_CONFIG
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event

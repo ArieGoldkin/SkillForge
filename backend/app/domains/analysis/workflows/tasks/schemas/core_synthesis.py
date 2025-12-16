@@ -19,6 +19,10 @@ from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import (
     Synthesis,
 )
 
+# Validation constants for schema field counts
+MIN_KEY_CONCEPTS = 3
+MAX_KEY_CONCEPTS = 7
+
 
 class CoreSynthesisSchema(BaseModel):
     """Phase 1: Core synthesis output - ALWAYS generated.
@@ -108,7 +112,7 @@ class CoreSynthesisSchema(BaseModel):
     @classmethod
     def validate_key_findings_count(cls, v: list[str]) -> list[str]:
         """Ensure key_findings has 3-7 items."""
-        if not 3 <= len(v) <= 7:
+        if not MIN_KEY_CONCEPTS <= len(v) <= MAX_KEY_CONCEPTS:
             msg = f"key_findings must have 3-7 items, got {len(v)}"
             raise ValueError(msg)
         return v

@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.logging import get_logger
 from app.db.repositories.tutor_repository import ITutorRepository, get_tutor_repository
+from app.domains.tutor.schemas.api import SendMessageRequest
 from app.domains.tutor.services.state_service import load_state_from_session
 from app.domains.tutor.services.workflow_service import continue_workflow_after_message
-from app.domains.tutor.schemas.api import SendMessageRequest
 from app.domains.tutor.workflows.state import TutorState
 
 router = APIRouter()

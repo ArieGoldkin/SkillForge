@@ -6,13 +6,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.core.types import AnalysisID
+from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
 from app.domains.analysis.workflows.tasks.aggregation.synthesis import (
     create_fallback_synthesis_model,
     create_synthesis_agent,
     create_synthesis_agent_with_fallback,
     synthesize_with_llm,
 )
-from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
 
 @pytest.fixture

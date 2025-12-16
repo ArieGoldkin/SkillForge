@@ -7,12 +7,12 @@ Issue #246: Uses context scoping to pass minimal state to each agent.
 Issue #266: Injects proactive memory context for agents with inject_memory=True.
 """
 
+from app.services.memory.proactive_recall import fetch_proactive_context, format_memory_context
+from app.workflows.context_scope import AGENT_SCOPES, build_scoped_context
 from langgraph.types import Send
 
 from app.core.logging import get_logger
 from app.db.session import get_session_factory
-from app.services.memory.proactive_recall import fetch_proactive_context, format_memory_context
-from app.workflows.context_scope import AGENT_SCOPES, build_scoped_context
 from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)

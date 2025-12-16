@@ -35,6 +35,7 @@ def _serialize_event_data(event_data: dict) -> dict:
 
     Returns:
         Dictionary with all UUID objects converted to strings
+
     """
     serialized: dict = {}
     for key, value in event_data.items():

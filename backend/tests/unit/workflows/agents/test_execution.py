@@ -13,8 +13,8 @@ from app.domains.analysis.workflows.agents.execution import run_agent_with_track
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_success(
     mock_save_finding,
@@ -47,8 +47,8 @@ async def test_run_agent_with_tracking_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_no_structured_response(
     mock_emit_progress,
     mock_get_stage_name,
@@ -72,8 +72,8 @@ async def test_run_agent_with_tracking_no_structured_response(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_non_uuid_analysis_id(
     mock_save_finding,
@@ -112,8 +112,8 @@ async def test_run_agent_with_tracking_non_uuid_analysis_id(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_valid_uuid_string(
     mock_save_finding,
@@ -148,8 +148,8 @@ async def test_run_agent_with_tracking_valid_uuid_string(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_content_truncation(
     mock_save_finding,
@@ -197,8 +197,8 @@ async def test_run_agent_with_tracking_content_truncation(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_uuid_object(
     mock_save_finding,
@@ -233,8 +233,8 @@ async def test_run_agent_with_tracking_uuid_object(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
 async def test_agent_execution_converts_generatorexit_to_timeouterror(
     mock_persist,
@@ -269,8 +269,8 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
 @patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
 async def test_agent_execution_handles_timeouterror(
     mock_persist,

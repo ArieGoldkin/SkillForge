@@ -7,8 +7,11 @@ from __future__ import annotations
 
 from typing import TypedDict
 
+from app.services.pii import PIIDetector, PIIResult
+
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.domains.analysis.workflows.tasks.metrics import emit_metric
 from app.shared.services.chunking.chunker import (
     DEFAULT_LONG_WINDOW,
     DEFAULT_OVERLAP_PCT,
@@ -18,8 +21,6 @@ from app.shared.services.chunking.chunker import (
 )
 from app.shared.services.chunking.dedup import DedupStats, deduplicate
 from app.shared.services.chunking.summaries import SummaryChunk, summarize_sections
-from app.services.pii import PIIDetector, PIIResult
-from app.domains.analysis.workflows.tasks.metrics import emit_metric
 
 logger = get_logger(__name__)
 

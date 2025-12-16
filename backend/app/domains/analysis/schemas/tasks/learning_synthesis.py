@@ -19,6 +19,12 @@ from app.domains.analysis.schemas.tasks.aggregated_insights import (
     SelfAssessment,
 )
 
+# Validation constants for schema field counts
+MIN_LEARNING_OBJECTIVES = 3
+MAX_LEARNING_OBJECTIVES = 7
+MIN_EXERCISES = 2
+MAX_EXERCISES = 4
+
 
 class LearningSynthesisSchema(BaseModel):
     """Phase 2: Learning-oriented content - generated in parallel.
@@ -79,7 +85,7 @@ class LearningSynthesisSchema(BaseModel):
     @classmethod
     def validate_core_concepts_count(cls, v: list[CoreConcept]) -> list[CoreConcept]:
         """Ensure core_concepts has 3-7 items."""
-        if not 3 <= len(v) <= 7:
+        if not MIN_LEARNING_OBJECTIVES <= len(v) <= MAX_LEARNING_OBJECTIVES:
             msg = f"core_concepts must have 3-7 items, got {len(v)}"
             raise ValueError(msg)
         return v
@@ -88,8 +94,8 @@ class LearningSynthesisSchema(BaseModel):
     @classmethod
     def validate_exercises_count(cls, v: list[Exercise]) -> list[Exercise]:
         """Ensure exercises has 2-4 items."""
-        if not 2 <= len(v) <= 4:
-            msg = f"exercises must have 2-4 items, got {len(v)}"
+        if not MIN_EXERCISES <= len(v) <= MAX_EXERCISES:
+            msg = f"exercises must have {MIN_EXERCISES}-{MAX_EXERCISES} items, got {len(v)}"
             raise ValueError(msg)
         return v
 

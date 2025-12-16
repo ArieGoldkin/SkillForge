@@ -21,6 +21,23 @@ from app.domains.analysis.schemas.tasks.aggregated_insights import (
     TLDRSection,
 )
 
+# Validation constants for schema field counts
+MIN_DIAGRAMS = 1
+MAX_DIAGRAMS = 3
+MIN_GLOSSARY = 5
+MAX_GLOSSARY = 10
+MAX_PREREQUISITES = 4
+MAX_CRITICAL_COMMANDS = 6
+MAX_FILES_TO_MODIFY = 10
+MAX_GOTCHAS = 5
+MIN_TLDR_TAKEAWAYS = 3
+MAX_TLDR_TAKEAWAYS = 5
+MIN_IMPLEMENTATION_STEPS = 5
+MAX_IMPLEMENTATION_STEPS = 10
+MAX_CODE_SNIPPETS = 5
+MIN_SUCCESS_CRITERIA = 3
+MAX_SUCCESS_CRITERIA = 7
+
 
 class DocsSynthesisSchema(BaseModel):
     """Phase 3: Documentation and reference materials - generated in parallel.
@@ -107,8 +124,8 @@ class DocsSynthesisSchema(BaseModel):
     @classmethod
     def validate_diagrams_count(cls, v: list[MermaidDiagram]) -> list[MermaidDiagram]:
         """Ensure diagrams has 1-3 items."""
-        if not 1 <= len(v) <= 3:
-            msg = f"diagrams must have 1-3 items, got {len(v)}"
+        if not MIN_DIAGRAMS <= len(v) <= MAX_DIAGRAMS:
+            msg = f"diagrams must have {MIN_DIAGRAMS}-{MAX_DIAGRAMS} items, got {len(v)}"
             raise ValueError(msg)
         return v
 
@@ -116,8 +133,8 @@ class DocsSynthesisSchema(BaseModel):
     @classmethod
     def validate_glossary_count(cls, v: list[GlossaryTerm]) -> list[GlossaryTerm]:
         """Ensure glossary has 5-10 items."""
-        if not 5 <= len(v) <= 10:
-            msg = f"glossary must have 5-10 items, got {len(v)}"
+        if not MIN_GLOSSARY <= len(v) <= MAX_GLOSSARY:
+            msg = f"glossary must have {MIN_GLOSSARY}-{MAX_GLOSSARY} items, got {len(v)}"
             raise ValueError(msg)
         return v
 
@@ -139,17 +156,19 @@ class DocsSynthesisSchema(BaseModel):
     @classmethod
     def validate_quick_reference_lengths(cls, v: QuickReference) -> QuickReference:
         """Validate that quick_reference list fields don't exceed max lengths."""
-        if len(v.prerequisites) > 4:
-            msg = f"prerequisites must have max 4 items, got {len(v.prerequisites)}"
+        if len(v.prerequisites) > MAX_PREREQUISITES:
+            msg = (
+                f"prerequisites must have max {MAX_PREREQUISITES} items, got {len(v.prerequisites)}"
+            )
             raise ValueError(msg)
-        if len(v.critical_commands) > 6:
-            msg = f"critical_commands must have max 6 items, got {len(v.critical_commands)}"
+        if len(v.critical_commands) > MAX_CRITICAL_COMMANDS:
+            msg = f"critical_commands must have max {MAX_CRITICAL_COMMANDS} items, got {len(v.critical_commands)}"
             raise ValueError(msg)
-        if len(v.files_to_modify) > 10:
-            msg = f"files_to_modify must have max 10 items, got {len(v.files_to_modify)}"
+        if len(v.files_to_modify) > MAX_FILES_TO_MODIFY:
+            msg = f"files_to_modify must have max {MAX_FILES_TO_MODIFY} items, got {len(v.files_to_modify)}"
             raise ValueError(msg)
-        if len(v.gotchas) > 5:
-            msg = f"gotchas must have max 5 items, got {len(v.gotchas)}"
+        if len(v.gotchas) > MAX_GOTCHAS:
+            msg = f"gotchas must have max {MAX_GOTCHAS} items, got {len(v.gotchas)}"
             raise ValueError(msg)
         return v
 
@@ -157,8 +176,8 @@ class DocsSynthesisSchema(BaseModel):
     @classmethod
     def validate_tldr_key_takeaways(cls, v: TLDRSection) -> TLDRSection:
         """Validate that TLDR key_takeaways has 3-5 items."""
-        if not 3 <= len(v.key_takeaways) <= 5:
-            msg = f"tldr.key_takeaways must have 3-5 items, got {len(v.key_takeaways)}"
+        if not MIN_TLDR_TAKEAWAYS <= len(v.key_takeaways) <= MAX_TLDR_TAKEAWAYS:
+            msg = f"tldr.key_takeaways must have {MIN_TLDR_TAKEAWAYS}-{MAX_TLDR_TAKEAWAYS} items, got {len(v.key_takeaways)}"
             raise ValueError(msg)
         return v
 
@@ -166,21 +185,21 @@ class DocsSynthesisSchema(BaseModel):
     @classmethod
     def validate_ai_assistant_prompt_lengths(cls, v: AIAssistantPrompt) -> AIAssistantPrompt:
         """Validate that ai_assistant_prompt list fields have correct lengths."""
-        if not 5 <= len(v.implementation_steps) <= 10:
+        if not MIN_IMPLEMENTATION_STEPS <= len(v.implementation_steps) <= MAX_IMPLEMENTATION_STEPS:
             msg = (
-                f"ai_assistant_prompt.implementation_steps must have 5-10 items, "
+                f"ai_assistant_prompt.implementation_steps must have {MIN_IMPLEMENTATION_STEPS}-{MAX_IMPLEMENTATION_STEPS} items, "
                 f"got {len(v.implementation_steps)}"
             )
             raise ValueError(msg)
-        if len(v.code_snippets) > 5:
+        if len(v.code_snippets) > MAX_CODE_SNIPPETS:
             msg = (
-                f"ai_assistant_prompt.code_snippets must have max 5 items, "
+                f"ai_assistant_prompt.code_snippets must have max {MAX_CODE_SNIPPETS} items, "
                 f"got {len(v.code_snippets)}"
             )
             raise ValueError(msg)
-        if not 3 <= len(v.success_criteria) <= 7:
+        if not MIN_SUCCESS_CRITERIA <= len(v.success_criteria) <= MAX_SUCCESS_CRITERIA:
             msg = (
-                f"ai_assistant_prompt.success_criteria must have 3-7 items, "
+                f"ai_assistant_prompt.success_criteria must have {MIN_SUCCESS_CRITERIA}-{MAX_SUCCESS_CRITERIA} items, "
                 f"got {len(v.success_criteria)}"
             )
             raise ValueError(msg)

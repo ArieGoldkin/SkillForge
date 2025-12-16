@@ -18,16 +18,14 @@ from app.domains.analysis.schemas.tasks.docs_synthesis import DocsSynthesisSchem
 from app.domains.analysis.schemas.tasks.learning_synthesis import LearningSynthesisSchema
 
 __all__ = [
-    # Aggregated Insights
     "AggregatedInsights",
-    "Synthesis",
     "ConflictResolution",
+    "CoreSynthesisSchema",
     "CoverageGap",
     "CrossDomainConnection",
-    "QuickReference",
-    "GotchaItem",
-    # Synthesis Schemas
-    "CoreSynthesisSchema",
     "DocsSynthesisSchema",
+    "GotchaItem",
     "LearningSynthesisSchema",
+    "QuickReference",
+    "Synthesis",
 ]

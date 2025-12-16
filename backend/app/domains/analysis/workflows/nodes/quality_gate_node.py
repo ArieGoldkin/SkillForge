@@ -13,10 +13,10 @@ import time
 from langsmith import get_current_run_tree
 
 from app.core.logging import get_logger
+from app.domains.analysis.workflows.state import AnalysisState
 from app.evaluation.evaluators.quality import (
     create_quality_evaluator,
 )
-from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 

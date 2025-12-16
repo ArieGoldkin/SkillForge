@@ -64,11 +64,11 @@ from langsmith import Client
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
-from app.evaluation.datasets import load_dataset
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
 from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
+from app.evaluation.datasets import load_dataset
 
 logger = get_logger(__name__)
 

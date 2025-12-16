@@ -10,11 +10,11 @@ the Context Engineering feedback loop.
 import time
 from uuid import UUID
 
+from app.services.memory.agent_memory_service import AgentMemoryService
+
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.db.session import get_session_factory
-from app.models.agent_memory import MemoryType
-from app.services.memory.agent_memory_service import AgentMemoryService
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
@@ -37,7 +37,10 @@ from app.domains.analysis.workflows.tasks.aggregation_helpers import (
     detect_conflicts,
     detect_coverage_gaps,
 )
-from app.domains.analysis.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
+from app.domains.analysis.workflows.tasks.aggregation_postprocessing import (
+    validate_and_format_aggregated_insights,
+)
+from app.models.agent_memory import MemoryType
 
 logger = get_logger(__name__)
 

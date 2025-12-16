@@ -10,12 +10,14 @@ import inspect
 import pytest
 
 from app.domains.analysis.workflows.graph_builder import build_analysis_graph
-from app.domains.analysis.workflows.nodes.quality_gate_node import MAX_RETRY_ATTEMPTS, should_retry_synthesis
+from app.domains.analysis.workflows.nodes.quality_gate_node import (
+    MAX_RETRY_ATTEMPTS,
+    should_retry_synthesis,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 
+
 @pytest.mark.unit
-
-
 def test_graph_has_quality_gate_fail_node():
     """Test that graph includes quality_gate_fail node."""
     graph = build_analysis_graph()
@@ -79,9 +81,10 @@ def test_quality_gate_fail_route_exists_in_code():
         "Graph builder should add quality_gate_fail node"
     )
 
-    # Verify fail node routes to END
-    assert 'add_edge("quality_gate_fail", END)' in source, (
-        "quality_gate_fail node should route to END"
+    # Verify fail node routes to generate_artifact (fail-open behavior)
+    # Issue #299-304: Always generate artifact even with low quality
+    assert 'add_edge("quality_gate_fail", "generate_artifact")' in source, (
+        "quality_gate_fail node should route to generate_artifact (fail-open)"
     )
 
 
@@ -94,7 +97,7 @@ def test_quality_gate_fail_node_function_exists():
 
 @pytest.mark.asyncio
 async def test_quality_gate_fail_node_basic():
-    """Test basic functionality of _quality_gate_fail_node."""
+    """Test basic functionality of _quality_gate_fail_node (fail-open behavior)."""
     from unittest.mock import AsyncMock, patch
 
     from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
@@ -110,12 +113,15 @@ async def test_quality_gate_fail_node_basic():
     }
 
     with (
-        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch(
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+        ),
         patch("app.domains.analysis.workflows.graph_builder.logger"),
     ):
         result = await _quality_gate_fail_node(state)
 
-        # Verify status and error are set
-        assert result["status"] == "failed"
-        assert "error" in result
-        assert "Quality gate failed" in result["error"]
+        # Verify fail-open behavior: quality_gate_passed=False with warning (not status="failed")
+        # Issue #299-304: Continue to artifact generation even with low quality
+        assert result["quality_gate_passed"] is False
+        assert "quality_gate_warning" in result
+        assert "Low quality" in result["quality_gate_warning"]

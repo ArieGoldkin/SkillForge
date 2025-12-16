@@ -10,8 +10,8 @@ from app.core.constants import DEFAULT_TITLE
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
 from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 if TYPE_CHECKING:
     pass

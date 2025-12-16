@@ -20,19 +20,15 @@ from app.domains.tutor.schemas.state import Message, TutorPhase
 from app.domains.tutor.schemas.syllabus import Lesson, Section, Syllabus
 
 __all__ = [
-    # API
     "CreateSessionRequest",
     "CreateSessionResponse",
     "GetSessionResponse",
-    "SendMessageRequest",
-    "UpdateSessionRequest",
-    # State
-    "TutorPhase",
-    "Message",
-    # Assessment
-    "ReadinessAssessment",
-    # Syllabus
-    "Syllabus",
-    "Section",
     "Lesson",
+    "Message",
+    "ReadinessAssessment",
+    "Section",
+    "SendMessageRequest",
+    "Syllabus",
+    "TutorPhase",
+    "UpdateSessionRequest",
 ]

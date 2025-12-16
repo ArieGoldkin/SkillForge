@@ -15,6 +15,6 @@ from app.domains.tutor.services.workflow_service import continue_workflow_after_
 
 __all__ = [
     "build_tutor_state",
-    "load_state_from_session",
     "continue_workflow_after_message",
+    "load_state_from_session",
 ]

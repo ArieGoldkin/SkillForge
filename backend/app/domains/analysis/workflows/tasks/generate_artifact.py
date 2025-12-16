@@ -16,14 +16,14 @@ from app.core.template_utils import render_jinja_template
 from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
-from app.shared.services.utils.markdown import sanitize_markdown
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregation.validation import validate_and_parse_findings
 from app.domains.analysis.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
     extract_artifact_metadata,
 )
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.utils.markdown import sanitize_markdown
 
 logger = get_logger(__name__)
 

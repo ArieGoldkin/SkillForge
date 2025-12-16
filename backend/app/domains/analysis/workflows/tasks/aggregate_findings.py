@@ -13,8 +13,6 @@ from uuid import UUID
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.db.session import get_session_factory
-from app.models.agent_memory import MemoryType
-from app.shared.services.memory.agent_memory_service import AgentMemoryService
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
@@ -40,6 +38,8 @@ from app.domains.analysis.workflows.tasks.aggregation_helpers import (
 from app.domains.analysis.workflows.tasks.aggregation_postprocessing import (
     validate_and_format_aggregated_insights,
 )
+from app.models.agent_memory import MemoryType
+from app.shared.services.memory.agent_memory_service import AgentMemoryService
 
 logger = get_logger(__name__)
 
@@ -290,7 +290,7 @@ def _extract_fallback_summary(finding_data: dict) -> list[str]:
     return ["; ".join(summary_parts)] if summary_parts else []
 
 
-async def _aggregate_findings_impl(
+async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic requires many statements
     state: AnalysisState,
 ) -> dict[str, object]:
     """Aggregate agent findings implementation.
@@ -476,11 +476,23 @@ async def _aggregate_findings_impl(
             fallback="returning_empty_insights_to_prevent_hang",
         )
 
+        # Build a meaningful executive summary with agent count if available
+        # This provides better context for the fallback response
+        try:
+            agent_count = len(agent_types) if agent_types else 0
+        except (NameError, UnboundLocalError):
+            agent_count = 0
+
+        if agent_count > 0:
+            exec_summary = f"Synthesized findings from {agent_count} agents. LLM synthesis failed but basic findings are available."
+        else:
+            exec_summary = f"Analysis could not be completed due to error: {type(e).__name__}"
+
         # Return empty insights with error metadata instead of raising
         # This allows the workflow to continue to artifact generation (which will handle empty insights)
         return {
             "aggregated_insights": {
-                "executive_summary": f"Analysis could not be completed due to error: {type(e).__name__}",
+                "executive_summary": exec_summary,
                 "key_findings": ["Analysis encountered an error during synthesis"],
                 "synthesis": "Unable to synthesize findings due to processing error.",
                 "metadata": {
@@ -488,6 +500,9 @@ async def _aggregate_findings_impl(
                     "synthesis_error": str(e),
                     "error_type": type(e).__name__,
                     "processing_time_ms": int((time.time() - start_time) * 1000),
+                    "fallback_used": True,
+                    "llm_synthesis_failed": True,
+                    "total_agents": agent_count,
                 },
                 "coverage_gaps": [],
                 "coverage_score": 0.0,

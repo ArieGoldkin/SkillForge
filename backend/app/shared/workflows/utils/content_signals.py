@@ -381,7 +381,9 @@ def _detect_genre(  # noqa: PLR0911
     return ContentGenre.UNKNOWN
 
 
-def _compute_agent_expectations(signals: ContentSignals) -> dict[str, AgentExpectation]:  # noqa: PLR0912
+def _compute_agent_expectations(  # noqa: PLR0912 - Multiple branches needed for agent routing
+    signals: ContentSignals,
+) -> dict[str, AgentExpectation]:
     """Compute expectations for each agent based on signals.
 
     This tells agents what to expect so they can report honestly

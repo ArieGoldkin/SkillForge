@@ -7,9 +7,9 @@ import uuid
 
 from app.core.logging import get_logger
 from app.db.repositories.tutor_repository import ITutorRepository
-from app.models.tutoring import TutoringSession
 from app.domains.tutor.workflows.graph_builder import tutor_workflow
 from app.domains.tutor.workflows.state import TutorState
+from app.models.tutoring import TutoringSession
 
 logger = get_logger(__name__)
 

@@ -24,10 +24,10 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.types import AnalysisID
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
 from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.domains.analysis.workflows.agents.invocation import invoke_agent
 from app.domains.analysis.workflows.agents.response_processing import extract_structured_response
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
 
@@ -273,10 +273,10 @@ async def _synthesize_core(
 
     try:
         # Import phase schema and prompts
+        from app.domains.analysis.schemas.tasks.core_synthesis import CoreSynthesisSchema
         from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import (
             build_core_prompt,
         )
-        from app.domains.analysis.schemas.tasks.core_synthesis import CoreSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
@@ -368,10 +368,10 @@ async def _synthesize_learning(
 
     try:
         # Import phase schema and prompts
+        from app.domains.analysis.schemas.tasks.learning_synthesis import LearningSynthesisSchema
         from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import (
             build_learning_prompt,
         )
-        from app.domains.analysis.schemas.tasks.learning_synthesis import LearningSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
@@ -465,10 +465,10 @@ async def _synthesize_docs(
 
     try:
         # Import phase schema and prompts
+        from app.domains.analysis.schemas.tasks.docs_synthesis import DocsSynthesisSchema
         from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import (
             build_docs_prompt,
         )
-        from app.domains.analysis.schemas.tasks.docs_synthesis import DocsSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]

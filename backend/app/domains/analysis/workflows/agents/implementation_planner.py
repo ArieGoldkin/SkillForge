@@ -7,10 +7,10 @@ steps, file structure recommendations, and testing strategies.
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
+from app.domains.analysis.schemas.agents.implementation_planner import ImplementationPlan
 from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
-from app.domains.analysis.schemas.agents.implementation_planner import ImplementationPlan
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
@@ -99,7 +99,9 @@ async def run_implementation_planner(
     # Issue #299-304: Get content-aware specificity threshold
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
-    specificity_threshold = get_threshold_for_expectation(expectation)
+    specificity_threshold = get_threshold_for_expectation(
+        str(expectation) if expectation is not None else None
+    )
 
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{IMPLEMENTATION_PLANNER_PROMPT}\n\n{skill_instructions}")

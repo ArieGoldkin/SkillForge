@@ -11,11 +11,11 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
-from app.shared.workflows.context_compiler import create_workflow_compiler
 from app.domains.tutor.workflows.config import LESSON_DELIVERY_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
+from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
 

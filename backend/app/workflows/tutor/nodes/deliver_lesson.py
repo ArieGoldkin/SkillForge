@@ -5,13 +5,13 @@ This node teaches a concept with explanation, analogy, example, and exercise.
 
 import json
 
+from app.workflows.context_compiler import create_workflow_compiler
 from langsmith import get_current_run_tree
 
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
-from app.workflows.context_compiler import create_workflow_compiler
 from app.workflows.tutor.config import LESSON_DELIVERY_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event

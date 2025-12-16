@@ -14,13 +14,11 @@ from tests.unit.workflows.agents.conftest import MockAgentSchema
 
 @pytest.mark.asyncio
 @patch("app.core.agent_config.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming(
     mock_save_finding,
-    mock_emit_progress_result,
-    mock_emit_progress_streaming,
+    mock_emit_progress,
     mock_get_stage_name,
     mock_streaming_agent,
     mock_session,
@@ -55,8 +53,8 @@ async def test_run_agent_with_tracking_streaming(
 
 @pytest.mark.asyncio
 @patch("app.core.agent_config.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_throttling(
     mock_save_finding,
     mock_emit_progress,
@@ -99,8 +97,8 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
 @pytest.mark.asyncio
 @patch("app.core.agent_config.get_stage_name", return_value="test_stage")
-@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_early_response(
     mock_save_finding,
     mock_emit_progress,

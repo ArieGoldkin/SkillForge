@@ -9,12 +9,13 @@ proactive recall pattern from Google ADK's Context Engineering.
 import asyncio
 import time
 
-from app.core.logging import get_logger
-from app.db.session import get_session_factory
 from app.services.memory.proactive_recall import (
     fetch_proactive_context,
     format_memory_context,
 )
+
+from app.core.logging import get_logger
+from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)

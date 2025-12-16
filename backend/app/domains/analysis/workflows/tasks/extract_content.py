@@ -17,11 +17,11 @@ from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.db.session import get_session_factory
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
+from app.domains.analysis.workflows.state import ContentRef
 from app.shared.services.extraction.arxiv_pdf_extractor import ArxivPDFExtractor, is_arxiv_url
 from app.shared.services.extraction.content_type import detect_content_type
 from app.shared.services.extraction.jina_reader import JinaReader
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
-from app.domains.analysis.workflows.state import ContentRef
 
 logger = get_logger(__name__)
 

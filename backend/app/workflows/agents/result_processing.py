@@ -13,12 +13,20 @@ from app.core.types import AnalysisID
 from app.core.utils import normalize_analysis_id_to_uuid
 from app.domains.analysis.workflows.agents.base import emit_agent_progress, save_agent_finding
 from app.domains.analysis.workflows.agents.validation import score_agent_output
-from app.domains.analysis.workflows.agents.validation.specificity_scorer import LOW_SPECIFICITY_WARNING_THRESHOLD
+from app.domains.analysis.workflows.agents.validation.specificity_scorer import (
+    LOW_SPECIFICITY_WARNING_THRESHOLD,
+)
 
 logger = get_logger(__name__)
 
+# Quality assessment thresholds
+MIN_INSIGHTS_COMPREHENSIVE = 5
+MIN_SPECIFICITY_COMPREHENSIVE = 0.7
+MIN_INSIGHTS_PARTIAL = 2
+MAX_KEY_INSIGHTS = 3
 
-def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:
+
+def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:  # noqa: PLR0911, PLR0912 - Multiple returns/branches needed for agent-specific extraction logic
     """Extract human-readable summary from findings.
 
     Args:
@@ -92,7 +100,7 @@ def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> s
     return "Analysis complete"
 
 
-def _count_insights(findings: dict[str, object], agent_type: str) -> int:
+def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noqa: PLR0911 - Multiple returns needed for agent-specific insight counting
     """Count number of insights in findings.
 
     Args:
@@ -152,7 +160,7 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:
     return count if count > 0 else 1  # At least 1 if findings exist
 
 
-async def process_agent_result(
+async def process_agent_result(  # noqa: PLR0912 - Multiple branches needed for comprehensive result processing
     findings: dict[str, object],
     analysis_id: AnalysisID,
     agent_type: str,
@@ -241,9 +249,12 @@ async def process_agent_result(
     )
 
     # Determine coverage based on insights count and specificity
-    if insights_count >= 5 and specificity_score.overall_score >= 0.7:
+    if (
+        insights_count >= MIN_INSIGHTS_COMPREHENSIVE
+        and specificity_score.overall_score >= MIN_SPECIFICITY_COMPREHENSIVE
+    ):
         coverage = "comprehensive"
-    elif insights_count >= 2:
+    elif insights_count >= MIN_INSIGHTS_PARTIAL:
         coverage = "partial"
     else:
         coverage = "minimal"
@@ -263,7 +274,7 @@ async def process_agent_result(
         if isinstance(steps, list) and steps:
             key_insights.append(f"Planned {len(steps)} implementation steps")
     # Add findings_summary as a key insight if available
-    if findings_summary and len(key_insights) < 3:
+    if findings_summary and len(key_insights) < MAX_KEY_INSIGHTS:
         key_insights.append(findings_summary)
 
     # Build success metrics
