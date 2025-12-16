@@ -59,7 +59,7 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
     from app.models.analysis_chunk import AnalysisChunk
     from app.models.artifact import Artifact
     from app.services.embeddings import EmbeddingService
-    from app.services.embeddings_deterministic import DeterministicEmbeddingService
+    from app.services.embeddings.deterministic import DeterministicEmbeddingService
 
     logger = get_logger(__name__)
 

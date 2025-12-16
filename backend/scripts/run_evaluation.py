@@ -141,7 +141,7 @@ async def run_evaluation(
 
     from app.db.session import AsyncSessionLocal, get_async_database_url
     from app.services.embeddings import EmbeddingService
-    from app.services.embeddings_deterministic import DeterministicEmbeddingService
+    from app.services.embeddings.deterministic import DeterministicEmbeddingService
 
     settings = get_settings()
     force_deterministic = (os.environ.get("SKILLFORGE_DETERMINISTIC_EMBEDDINGS") or "").lower() in {
