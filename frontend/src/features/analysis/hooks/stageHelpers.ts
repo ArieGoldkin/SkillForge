@@ -144,6 +144,7 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
     code_quality_audit: 'Code Quality Reviewer',
     trends_analysis: 'Trends Analyst',
     dependencies_analysis: 'Dependencies Analyzer',
+    integration_feasibility: 'Integration Feasibility Analyzer',
     aggregation: 'Aggregator',
     artifact_generation: 'Report Generator',
   }
@@ -162,6 +163,7 @@ const RUNNING_ACTIONS: Record<AgentStageName, string> = {
   code_quality_audit: 'Reviewing code quality...',
   trends_analysis: 'Analyzing technology trends...',
   dependencies_analysis: 'Analyzing dependencies...',
+  integration_feasibility: 'Analyzing integration feasibility...',
   aggregation: 'Aggregating agent results...',
   artifact_generation: 'Generating implementation guide...',
 }

@@ -238,9 +238,11 @@ describe('Progress calculation logic', () => {
           stage: 'tech_comparison',
           status: 'failed',
           timestamp: '2024-01-01T00:01:00Z',
-          error: 'Agent execution failed',
-          error_code: 'TECH_COMPARATOR_FAILED',
-          processing_time_ms: 5000,
+          details: {
+            error: 'Agent execution failed',
+            error_code: 'TECH_COMPARATOR_FAILED',
+            processing_time_ms: 5000,
+          },
         },
       ]
 
@@ -335,7 +337,9 @@ describe('Progress calculation logic', () => {
           stage: 'tech_comparison',
           status: 'failed',
           timestamp: '2024-01-01T00:01:00Z',
-          error: 'Agent execution failed',
+          details: {
+            error: 'Agent execution failed',
+          },
         },
         {
           type: 'progress',
@@ -343,7 +347,7 @@ describe('Progress calculation logic', () => {
           stage: 'supervisor_routing',
           status: 'complete',
           timestamp: '2024-01-01T00:00:00Z',
-          expected_total_stages: 9,
+          expected_total_stages: 10, // Updated from 9 to 10 to account for 13 total stages (was 12)
         },
       ]
 
@@ -353,7 +357,7 @@ describe('Progress calculation logic', () => {
       // Should show detailed status with counts
       expect(result.current.overallProgress.progress).toBeLessThan(99)
       expect(result.current.overallProgress.currentStep).toContain('failed')
-      expect(result.current.overallProgress.totalSteps).toBeGreaterThanOrEqual(9)
+      expect(result.current.overallProgress.totalSteps).toBeGreaterThanOrEqual(10)
       expect(result.current.overallProgress.completedSteps).toBeLessThanOrEqual(
         result.current.overallProgress.totalSteps
       )

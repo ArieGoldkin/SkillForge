@@ -44,8 +44,14 @@ export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
     uiStage: 'analyzing',
     optional: true,
   },
-  aggregation: { title: 'Aggregating Results', order: 11, uiStage: 'generating' },
-  artifact_generation: { title: 'Generating Report', order: 12, uiStage: 'generating' },
+  integration_feasibility: {
+    title: 'Integration Feasibility',
+    order: 11,
+    uiStage: 'analyzing',
+    optional: true,
+  },
+  aggregation: { title: 'Aggregating Results', order: 12, uiStage: 'generating' },
+  artifact_generation: { title: 'Generating Report', order: 13, uiStage: 'generating' },
 }
 
 export const TOTAL_STAGES = Object.keys(STAGE_CONFIG).length
@@ -74,9 +80,6 @@ const AGENT_TO_STAGE_MAP: Record<string, AgentStageName> = {
   supervisor: 'supervisor_routing',
   supervisor_route: 'supervisor_routing',
   embedding: 'embedding',
-
-  // Sub-agents that are part of larger stages
-  integration_feasibility: 'implementation_planning', // part of implementation planning
 }
 
 /**

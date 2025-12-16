@@ -19,6 +19,7 @@ export const ALL_STAGES: AgentStageName[] = [
   'code_quality_audit',
   'trends_analysis',
   'dependencies_analysis',
+  'integration_feasibility',
   'aggregation',
   'artifact_generation',
 ]
@@ -42,6 +43,7 @@ export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
   code_quality_audit: { label: 'Code Quality Review' },
   trends_analysis: { label: 'Trends Analysis' },
   dependencies_analysis: { label: 'Dependencies Review' },
+  integration_feasibility: { label: 'Integration Feasibility' },
   aggregation: { label: 'Results Aggregation' },
   artifact_generation: { label: 'Artifact Generation' },
 }

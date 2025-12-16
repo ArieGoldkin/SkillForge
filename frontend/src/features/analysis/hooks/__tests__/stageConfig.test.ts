@@ -16,8 +16,8 @@ import {
 
 describe('stageConfig', () => {
   describe('STAGE_CONFIG', () => {
-    it('contains all 12 stages with correct structure', () => {
-      expect(TOTAL_STAGES).toBe(12)
+    it('contains all 13 stages with correct structure', () => {
+      expect(TOTAL_STAGES).toBe(13)
 
       // Verify each stage has required properties
       Object.entries(STAGE_CONFIG).forEach(([_stageName, config]) => {
@@ -53,6 +53,7 @@ describe('stageConfig', () => {
         'code_quality_audit',
         'trends_analysis',
         'dependencies_analysis',
+        'integration_feasibility',
         'aggregation',
         'artifact_generation',
       ])('returns %s unchanged when it is a valid stage name', (stageName) => {
@@ -79,7 +80,6 @@ describe('stageConfig', () => {
         ['supervisor', 'supervisor_routing'],
         ['supervisor_route', 'supervisor_routing'],
         ['embedding', 'embedding'],
-        ['integration_feasibility', 'implementation_planning'],
       ])('maps alternative name "%s" to "%s"', (altName, expectedStage) => {
         expect(normalizeStageNameFromBackend(altName)).toBe(expectedStage)
       })
@@ -105,13 +105,13 @@ describe('stageConfig', () => {
     })
 
     it('returns ~1 minute when mid-way through', () => {
-      expect(estimateTimeRemaining(6)).toBe('~1 minute')
-      expect(estimateTimeRemaining(8)).toBe('~1 minute')
+      expect(estimateTimeRemaining(7)).toBe('~1 minute')
+      expect(estimateTimeRemaining(9)).toBe('~1 minute')
     })
 
     it('returns ~30 seconds when almost complete', () => {
-      expect(estimateTimeRemaining(9)).toBe('~30 seconds')
       expect(estimateTimeRemaining(10)).toBe('~30 seconds')
+      expect(estimateTimeRemaining(11)).toBe('~30 seconds')
     })
   })
 })

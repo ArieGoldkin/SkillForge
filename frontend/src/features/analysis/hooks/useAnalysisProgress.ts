@@ -5,7 +5,7 @@
 import { useMemo } from 'react'
 
 import { isProgressEvent, isCompleteEvent, isErrorEvent } from '@app-types/sse'
-import type { SSEEvent, AgentStageName } from '@app-types/sse'
+import type { SSEEvent, SSEProgressEvent, AgentStageName } from '@app-types/sse'
 
 import type { AgentActivity } from '../components/activity/AgentActivityFeed'
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
@@ -93,7 +93,6 @@ interface ProcessedEvents {
 }
 
 /* eslint-disable max-lines-per-function, complexity -- Function processes multiple event types (progress, complete, error) with different extraction logic for metadata, skip reasons, success metrics, and error details */
-/* eslint-disable @typescript-eslint/no-explicit-any -- SSE events may have additional fields at top level that aren't in the type definition */
 function processEvent(
   event: SSEEvent,
   stageStatuses: Map<AgentStageName, StageStatusEntry>,
@@ -117,12 +116,12 @@ function processEvent(
             findings_summary: event.findings_summary ?? event.details?.findings_summary,
             insights_count: event.insights_count ?? event.details?.insights_count,
             confidence_score: event.confidence_score ?? event.details?.confidence_score,
-            // Extract error details for failed progress events
-            error: event.error ?? event.details?.error,
-            error_code: event.error_code ?? event.details?.error_code,
-            processing_time_ms: event.processing_time_ms ?? event.details?.processing_time_ms,
+            // Extract error details for failed progress events (only from details)
+            error: event.details?.error,
+            error_code: event.details?.error_code,
+            processing_time_ms: event.details?.processing_time_ms,
             // Extract success_metrics for completed events
-            success_metrics: (event as any).success_metrics ?? event.details?.success_metrics,
+            success_metrics: event.success_metrics ?? event.details?.success_metrics,
           }
         : event.details
       stageStatuses.set(normalizedStage, {

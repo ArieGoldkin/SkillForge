@@ -18,6 +18,7 @@ export type AgentStageName =
   | 'code_quality_audit'
   | 'trends_analysis'
   | 'dependencies_analysis'
+  | 'integration_feasibility'
   | 'aggregation'
   | 'artifact_generation'
 

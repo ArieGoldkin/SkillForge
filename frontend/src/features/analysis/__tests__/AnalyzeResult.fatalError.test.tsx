@@ -390,8 +390,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
     })
 
     it('shows complete card when analysis completes', async () => {
-      // Setup: completed analysis with events but NO artifactId yet
-      // This tests the state before redirect to CompletedAnalysisView
+      // Setup: completed analysis with events and artifactId
       const events: SSEEvent[] = [
         {
           type: 'complete',
@@ -399,17 +398,16 @@ describe('AnalyzeResult - Fatal Error State', () => {
           stage: 'artifact_generation',
           status: 'complete',
           timestamp: new Date().toISOString(),
-          // artifact_id will be undefined initially
         },
       ]
 
       mockAnalysisStatus({
         shouldConnect: false,
         resolvedStatus: 'processing' as const, // Not yet "completed" to avoid redirect
-        resolvedArtifactId: undefined, // No artifact ID yet
+        resolvedArtifactId: 'artifact-456', // Artifact is now ready
       })
 
-      // Pre-set completed state but no artifact
+      // Pre-set completed state with artifact
       useSSEStore.setState({
         error: null,
         events,
