@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.domains.analysis.workflows.evaluation.evaluator import evaluate_agent_quality
+from app.workflows.evaluation.evaluator import evaluate_agent_quality
 from app.domains.analysis.workflows.state import AnalysisState
 
 

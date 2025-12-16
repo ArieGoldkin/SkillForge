@@ -16,13 +16,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
-
-@pytest.mark.unit
     get_app_settings,
     get_database_session,
     get_db,
     settings,
 )
+
+@pytest.mark.unit
 
 
 class TestGetDatabaseSession:
