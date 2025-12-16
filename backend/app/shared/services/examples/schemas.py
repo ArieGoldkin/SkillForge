@@ -5,7 +5,7 @@ Used for Few-Shot Prompting (Phase 1 - Week 1.2).
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentExample(BaseModel):
@@ -27,6 +27,8 @@ class AgentExample(BaseModel):
 
     """
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID = Field(..., description="Unique example ID")
     agent_type: str = Field(..., description="Agent type (e.g., 'tech_comparator')")
     input_summary: str = Field(..., description="Brief summary of input content")
@@ -43,11 +45,6 @@ class AgentExample(BaseModel):
     similarity_distance: float | None = Field(
         None, description="Cosine distance from query (lower = more similar)"
     )
-
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
 
 
 class ExampleSelectionResult(BaseModel):
