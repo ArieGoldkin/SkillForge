@@ -17,15 +17,18 @@ export interface StageConfig {
 /**
  * Configuration for agent stages (displayed in UI)
  * Only includes stages that represent actual agent work
+ * Note: implementation_planning is used by BOTH implementation_planner AND integration_feasibility agents
  */
 export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
+  // Core workflow stages (always present)
   extraction: { title: 'Content Extraction', order: 1, uiStage: 'extracting' },
   embedding: { title: 'Embedding Generation', order: 2, uiStage: 'processing' },
   supervisor_routing: { title: 'Routing to Agents', order: 3, uiStage: 'processing' },
+  // Agent stages (0-8 agents, dynamically selected by supervisor)
   tech_comparison: { title: 'Tech Comparison', order: 4, uiStage: 'analyzing', optional: true },
   security_audit: { title: 'Security Audit', order: 5, uiStage: 'analyzing', optional: true },
   implementation_planning: {
-    title: 'Implementation Planning',
+    title: 'Implementation Planning', // Covers BOTH implementation_planner AND integration_feasibility
     order: 6,
     uiStage: 'analyzing',
     optional: true,
@@ -44,14 +47,20 @@ export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
     uiStage: 'analyzing',
     optional: true,
   },
-  integration_feasibility: {
-    title: 'Integration Feasibility',
-    order: 11,
+  // Workflow stages
+  aggregation: { title: 'Aggregating Results', order: 11, uiStage: 'generating' },
+  quality_validation: { title: 'Quality Validation', order: 12, uiStage: 'generating' },
+  artifact_generation: { title: 'Generating Report', order: 13, uiStage: 'generating' },
+  // Optional stages
+  chunking: { title: 'Content Chunking', order: 14, uiStage: 'processing', optional: true },
+  workflow: { title: 'Workflow', order: 15, uiStage: 'processing' },
+  pattern_comparison: {
+    title: 'Pattern Comparison',
+    order: 16,
     uiStage: 'analyzing',
     optional: true,
   },
-  aggregation: { title: 'Aggregating Results', order: 12, uiStage: 'generating' },
-  artifact_generation: { title: 'Generating Report', order: 13, uiStage: 'generating' },
+  metrics: { title: 'Metrics Collection', order: 17, uiStage: 'generating', optional: true },
 }
 
 export const TOTAL_STAGES = Object.keys(STAGE_CONFIG).length
@@ -66,20 +75,27 @@ const AGENT_TO_STAGE_MAP: Record<string, AgentStageName> = {
   extraction: 'extraction',
   aggregation: 'aggregation',
   artifact_generation: 'artifact_generation',
+  quality_validation: 'quality_validation',
 
   // Agent names that need mapping
   implementation_planner: 'implementation_planning',
+  integration_feasibility: 'implementation_planning', // Maps to same stage as implementation_planner!
   tech_comparator: 'tech_comparison',
   security_auditor: 'security_audit',
   performance_auditor: 'performance_audit',
+  performance_analyst: 'performance_audit', // Alternative name
   code_quality_reviewer: 'code_quality_audit',
+  code_quality_critic: 'code_quality_audit', // Alternative name
   trends_analyst: 'trends_analysis',
+  trend_validator: 'trends_analysis', // Alternative name
   dependencies_analyzer: 'dependencies_analysis',
+  dependency_mapper: 'dependencies_analysis', // Alternative name
 
   // Alternative names backend might send
   supervisor: 'supervisor_routing',
   supervisor_route: 'supervisor_routing',
   embedding: 'embedding',
+  chunking: 'chunking',
 }
 
 /**

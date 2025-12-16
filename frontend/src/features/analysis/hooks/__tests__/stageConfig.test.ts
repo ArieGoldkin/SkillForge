@@ -16,8 +16,8 @@ import {
 
 describe('stageConfig', () => {
   describe('STAGE_CONFIG', () => {
-    it('contains all 13 stages with correct structure', () => {
-      expect(TOTAL_STAGES).toBe(13)
+    it('contains all 17 stages with correct structure', () => {
+      expect(TOTAL_STAGES).toBe(17)
 
       // Verify each stage has required properties
       Object.entries(STAGE_CONFIG).forEach(([_stageName, config]) => {
@@ -36,7 +36,9 @@ describe('stageConfig', () => {
         .map(([name]) => name)
 
       expect(orderedStages[0]).toBe('extraction')
-      expect(orderedStages[orderedStages.length - 1]).toBe('artifact_generation')
+      // artifact_generation is order 13, but optional stages come after (up to order 17)
+      expect(orderedStages[12]).toBe('artifact_generation') // 13th stage (index 12)
+      expect(orderedStages[orderedStages.length - 1]).toBe('metrics') // Last optional stage
     })
   })
 
@@ -53,9 +55,13 @@ describe('stageConfig', () => {
         'code_quality_audit',
         'trends_analysis',
         'dependencies_analysis',
-        'integration_feasibility',
         'aggregation',
+        'quality_validation',
         'artifact_generation',
+        'chunking',
+        'workflow',
+        'pattern_comparison',
+        'metrics',
       ])('returns %s unchanged when it is a valid stage name', (stageName) => {
         expect(normalizeStageNameFromBackend(stageName)).toBe(stageName)
       })
@@ -64,12 +70,17 @@ describe('stageConfig', () => {
     describe('agent name mappings (Issue #88 workaround)', () => {
       it.each([
         ['implementation_planner', 'implementation_planning'],
+        ['integration_feasibility', 'implementation_planning'], // Maps to same stage!
         ['tech_comparator', 'tech_comparison'],
         ['security_auditor', 'security_audit'],
         ['performance_auditor', 'performance_audit'],
+        ['performance_analyst', 'performance_audit'],
         ['code_quality_reviewer', 'code_quality_audit'],
+        ['code_quality_critic', 'code_quality_audit'],
         ['trends_analyst', 'trends_analysis'],
+        ['trend_validator', 'trends_analysis'],
         ['dependencies_analyzer', 'dependencies_analysis'],
+        ['dependency_mapper', 'dependencies_analysis'],
       ])('maps agent name "%s" to stage name "%s"', (agentName, expectedStage) => {
         expect(normalizeStageNameFromBackend(agentName)).toBe(expectedStage)
       })
@@ -105,13 +116,13 @@ describe('stageConfig', () => {
     })
 
     it('returns ~1 minute when mid-way through', () => {
-      expect(estimateTimeRemaining(7)).toBe('~1 minute')
-      expect(estimateTimeRemaining(9)).toBe('~1 minute')
+      expect(estimateTimeRemaining(11)).toBe('~1 minute')
+      expect(estimateTimeRemaining(13)).toBe('~1 minute')
     })
 
     it('returns ~30 seconds when almost complete', () => {
-      expect(estimateTimeRemaining(10)).toBe('~30 seconds')
-      expect(estimateTimeRemaining(11)).toBe('~30 seconds')
+      expect(estimateTimeRemaining(14)).toBe('~30 seconds')
+      expect(estimateTimeRemaining(15)).toBe('~30 seconds')
     })
   })
 })

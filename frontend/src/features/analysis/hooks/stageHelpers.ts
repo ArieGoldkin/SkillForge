@@ -134,38 +134,52 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
 
   // Default agent names based on stage
   const agentNames: Record<AgentStageName, string> = {
+    // Core workflow stages
     extraction: 'Content Extractor',
     embedding: 'Embedding Generator',
     supervisor_routing: 'Supervisor',
+    aggregation: 'Aggregator',
+    quality_validation: 'Quality Validator',
+    artifact_generation: 'Report Generator',
+    // Agent stages
     tech_comparison: 'Tech Comparator',
     security_audit: 'Security Auditor',
-    implementation_planning: 'Implementation Planner',
+    implementation_planning: 'Implementation Planner', // Covers BOTH implementation_planner AND integration_feasibility
     performance_audit: 'Performance Auditor',
     code_quality_audit: 'Code Quality Reviewer',
     trends_analysis: 'Trends Analyst',
     dependencies_analysis: 'Dependencies Analyzer',
-    integration_feasibility: 'Integration Feasibility Analyzer',
-    aggregation: 'Aggregator',
-    artifact_generation: 'Report Generator',
+    // Optional stages
+    chunking: 'Content Chunker',
+    workflow: 'Workflow',
+    pattern_comparison: 'Pattern Comparator',
+    metrics: 'Metrics Collector',
   }
 
   return agentNames[stage] || 'Agent'
 }
 
 const RUNNING_ACTIONS: Record<AgentStageName, string> = {
+  // Core workflow stages
   extraction: 'Extracting content from URL...',
   embedding: 'Generating embeddings...',
   supervisor_routing: 'Routing analysis to specialized agents...',
+  aggregation: 'Aggregating agent results...',
+  quality_validation: 'Validating quality standards...',
+  artifact_generation: 'Generating implementation guide...',
+  // Agent stages
   tech_comparison: 'Comparing technology patterns...',
   security_audit: 'Auditing security considerations...',
-  implementation_planning: 'Planning implementation steps...',
+  implementation_planning: 'Planning implementation steps...', // Covers BOTH implementation_planner AND integration_feasibility
   performance_audit: 'Analyzing performance patterns...',
   code_quality_audit: 'Reviewing code quality...',
   trends_analysis: 'Analyzing technology trends...',
   dependencies_analysis: 'Analyzing dependencies...',
-  integration_feasibility: 'Analyzing integration feasibility...',
-  aggregation: 'Aggregating agent results...',
-  artifact_generation: 'Generating implementation guide...',
+  // Optional stages
+  chunking: 'Chunking content...',
+  workflow: 'Managing workflow...',
+  pattern_comparison: 'Comparing patterns...',
+  metrics: 'Collecting metrics...',
 }
 
 /* eslint-disable complexity -- Function handles multiple stage types with different detail extraction logic */
