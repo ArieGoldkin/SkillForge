@@ -60,13 +60,9 @@ async def test_quality_gate_fail_node_emits_sse_error():
     }
 
     with (
-<<<<<<< Updated upstream
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock) as mock_emit,
-=======
         patch(
             "app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
->>>>>>> Stashed changes
         patch("app.workflows.graph_builder.logger"),
     ):
         await _quality_gate_fail_node(state)
