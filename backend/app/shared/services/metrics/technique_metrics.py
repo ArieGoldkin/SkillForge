@@ -26,6 +26,10 @@ class TechniqueMetrics:
     cache_hit: bool = False
     cache_level: str | None = None  # "l1_exact", "l2_redis", "l3_prompt"
 
+    # Few-Shot Prompting metrics
+    example_retrieval_ms: float = 0  # Time to retrieve examples from vector DB
+    num_examples_used: int = 0  # Number of examples injected into prompt
+
     # Quality (populated later via feedback)
     quality_score: float | None = None
 

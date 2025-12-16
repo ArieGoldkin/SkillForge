@@ -30,6 +30,8 @@ class TestTechniqueMetrics:
         assert metrics.token_count_output == 0
         assert metrics.cache_hit is False
         assert metrics.cache_level is None
+        assert metrics.example_retrieval_ms == 0
+        assert metrics.num_examples_used == 0
         assert metrics.quality_score is None
         assert metrics.estimated_cost_usd == 0
         assert metrics.started_at > 0
@@ -47,6 +49,8 @@ class TestTechniqueMetrics:
             token_count_output=800,
             cache_hit=True,
             cache_level="l2_redis",
+            example_retrieval_ms=45.2,
+            num_examples_used=3,
             quality_score=0.85,
             estimated_cost_usd=0.042,
             started_at=start_time,
@@ -61,6 +65,8 @@ class TestTechniqueMetrics:
         assert metrics.token_count_output == 800
         assert metrics.cache_hit is True
         assert metrics.cache_level == "l2_redis"
+        assert metrics.example_retrieval_ms == 45.2
+        assert metrics.num_examples_used == 3
         assert metrics.quality_score == 0.85
         assert metrics.estimated_cost_usd == 0.042
         assert metrics.started_at == start_time
@@ -107,6 +113,28 @@ class TestTechniqueMetrics:
             cache_level=None,
         )
         assert metrics_none.cache_level is None
+
+    def test_technique_metrics_few_shot_fields(self):
+        """TechniqueMetrics supports few-shot prompting metrics."""
+        metrics = TechniqueMetrics(
+            analysis_id="analysis-few-shot",
+            technique="few_shot_prompting",
+            variant="treatment",
+            example_retrieval_ms=120.5,
+            num_examples_used=5,
+        )
+
+        assert metrics.example_retrieval_ms == 120.5
+        assert metrics.num_examples_used == 5
+
+        # Control variant should have zero few-shot metrics
+        control_metrics = TechniqueMetrics(
+            analysis_id="analysis-control",
+            technique="few_shot_prompting",
+            variant="control",
+        )
+        assert control_metrics.example_retrieval_ms == 0
+        assert control_metrics.num_examples_used == 0
 
 
 @pytest.mark.unit
