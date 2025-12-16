@@ -1,5 +1,5 @@
 """Business logic layer."""
 
-from app.services.embeddings import EmbeddingService
+from app.services.embeddings.service import EmbeddingService
 
 __all__ = ["EmbeddingService"]

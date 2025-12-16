@@ -31,7 +31,7 @@ pytestmark = [
     pytest.mark.keyword,
     pytest.mark.skipif(
         os.getenv("CI") == "true",
-        reason="Fixtures use synthetic test data; golden dataset now has real production data"
+        reason="Fixtures use synthetic test data; golden dataset now has real production data",
     ),
 ]
 

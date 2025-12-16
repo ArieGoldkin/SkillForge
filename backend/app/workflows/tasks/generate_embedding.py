@@ -9,7 +9,7 @@ from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID, EmbeddingVector
 from app.services.chunking.chunker import ChunkText
 from app.services.chunking.summaries import SummaryChunk
-from app.services.embeddings import EmbeddingService
+from app.services.embeddings.service import EmbeddingService
 from app.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)

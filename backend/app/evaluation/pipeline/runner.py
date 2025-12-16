@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.services.embeddings import EmbeddingService
+    from app.services.embeddings.service import EmbeddingService
     from app.services.search.search_service import SearchService
 
 logger = get_logger(__name__)

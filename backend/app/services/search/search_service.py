@@ -42,7 +42,7 @@ from app.schemas.search import (
     SearchMode,
     SearchResult,
 )
-from app.services.embeddings import EmbeddingService
+from app.services.embeddings.service import EmbeddingService
 from app.services.metrics import get_metrics_service
 from app.services.search.reranker import ReRanker
 

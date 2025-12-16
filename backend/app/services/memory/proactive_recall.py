@@ -18,7 +18,7 @@ from app.core.logging import get_logger
 from app.services.memory.agent_memory_service import AgentMemoryService, MemorySnippet
 
 if TYPE_CHECKING:
-    from app.services.embeddings import EmbeddingService
+    from app.services.embeddings.service import EmbeddingService
 
 logger = get_logger(__name__)
 

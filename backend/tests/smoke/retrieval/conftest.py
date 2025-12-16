@@ -50,12 +50,12 @@ pytestmark = [
 @pytest.fixture(scope="module")
 def fixture_loader() -> FixtureLoader:
     """Provide fixture loader for test data.
-    
+
     FIXME(#299): These fixtures were designed for synthetic test data.
     After removing fake artifacts from golden dataset, we need to either:
     1. Regenerate queries.json to match real golden dataset content (RAG, LangGraph, etc.)
     2. Create separate synthetic test database for these smoke tests
-    
+
     For now, skip validation in CI to unblock PR #349.
     """
     loader = FixtureLoader()
