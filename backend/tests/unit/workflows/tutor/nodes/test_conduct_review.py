@@ -9,9 +9,6 @@ from app.domains.tutor.workflows.state import TutorState
 def sample_tutor_state_for_review():
     """Sample tutor state for section review."""
     import uuid
-
-@pytest.mark.unit
-
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,

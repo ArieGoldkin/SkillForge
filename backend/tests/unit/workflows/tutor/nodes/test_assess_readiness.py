@@ -12,9 +12,6 @@ from app.domains.tutor.workflows.state import TutorState
 def sample_tutor_state_for_assessment():
     """Sample tutor state for readiness assessment."""
     import uuid
-
-@pytest.mark.unit
-
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,

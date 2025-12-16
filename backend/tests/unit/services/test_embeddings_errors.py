@@ -7,8 +7,6 @@ import pytest_asyncio
 
 from app.shared.services.embeddings import EmbeddingError, EmbeddingService
 
-@pytest.mark.unit
-
 
 @pytest_asyncio.fixture
 async def embedding_service():

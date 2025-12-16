@@ -10,8 +10,6 @@ def sample_tutor_state_for_reflection():
     """Sample tutor state for reflection."""
     import uuid
 
-@pytest.mark.unit
-
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,
