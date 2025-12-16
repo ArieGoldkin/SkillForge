@@ -169,8 +169,8 @@ class TestBuildToolEnhancedPrompt:
 class TestCreateToolEnabledAgent:
     """Test create_tool_enabled_agent factory function."""
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_returns_runnable(
         self,
         mock_get_model,
@@ -219,8 +219,8 @@ class TestCreateToolEnabledAgent:
                 tools=None,  # type: ignore
             )
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_uses_default_config(
         self,
         mock_get_model,
@@ -248,8 +248,8 @@ class TestCreateToolEnabledAgent:
         call_kwargs = mock_model.bind_tools.call_args.kwargs
         assert call_kwargs.get("parallel_tool_calls") is True
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_uses_custom_config(
         self,
         mock_get_model,
@@ -281,9 +281,9 @@ class TestCreateToolEnabledAgent:
         call_kwargs = mock_model.bind_tools.call_args.kwargs
         assert call_kwargs.get("parallel_tool_calls") is False
 
-    @patch("app.workflows.agents.base._build_tool_enhanced_prompt")
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base._build_tool_enhanced_prompt")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_enhances_prompt_with_tools(
         self,
         mock_get_model,
@@ -323,9 +323,9 @@ class TestCreateToolEnabledAgent:
         call_kwargs = mock_create_agent.call_args.kwargs
         assert call_kwargs.get("system_prompt") == enhanced_prompt
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
-    @patch("app.workflows.agents.base.logger")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.logger")
     def test_logs_tool_creation(
         self,
         mock_logger,
@@ -355,8 +355,8 @@ class TestCreateToolEnabledAgent:
         log_call = mock_logger.info.call_args
         assert "creating_tool_enabled_agent" in log_call.args or log_call.kwargs
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_binds_tools_with_parallel_true(
         self,
         mock_get_model,
@@ -386,8 +386,8 @@ class TestCreateToolEnabledAgent:
         assert isinstance(call_args.args[0], list)
         assert call_args.kwargs.get("parallel_tool_calls") is True
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_binds_tools_with_parallel_false(
         self,
         mock_get_model,
@@ -419,8 +419,8 @@ class TestCreateToolEnabledAgent:
         call_args = mock_model.bind_tools.call_args
         assert call_args.kwargs.get("parallel_tool_calls") is False
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_passes_tools_to_create_agent(
         self,
         mock_get_model,
@@ -451,9 +451,9 @@ class TestCreateToolEnabledAgent:
         tools_arg = call_kwargs["tools"]
         assert isinstance(tools_arg, list)
 
-    @patch("app.workflows.agents.base._build_tool_enhanced_prompt")
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base._build_tool_enhanced_prompt")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_custom_max_tool_calls_passed_to_prompt_builder(
         self,
         mock_get_model,
@@ -496,8 +496,8 @@ class TestCreateToolEnabledAgent:
 class TestBackwardsCompatibility:
     """Test that existing create_structured_agent function remains unchanged."""
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_create_structured_agent_still_works(
         self,
         mock_get_model,
@@ -528,8 +528,8 @@ class TestBackwardsCompatibility:
         assert call_args.args[0] == []  # Empty tools
         assert call_args.kwargs.get("parallel_tool_calls") is False
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_create_structured_agent_no_tools(
         self,
         mock_get_model,
@@ -554,8 +554,8 @@ class TestBackwardsCompatibility:
         # Should work
         assert result is not None
 
-    @patch("app.workflows.agents.base.create_agent")
-    @patch("app.workflows.agents.base.get_chat_model")
+    @patch("app.domains.analysis.workflows.agents.base.create_agent")
+    @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_tool_enabled_vs_structured_agent_differences(
         self,
         mock_get_model,

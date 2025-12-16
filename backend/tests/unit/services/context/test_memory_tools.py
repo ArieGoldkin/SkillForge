@@ -20,7 +20,7 @@ from app.shared.services.memory import MemorySearchResult
 class TestSearchMemoryTool:
     """Tests for the search_memory tool."""
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_success(self, mock_session_factory):
         """Test search_memory returns formatted results on success."""
         # Setup mock session
@@ -37,7 +37,7 @@ class TestSearchMemoryTool:
         mock_result = MemorySearchResult(memory=mock_memory, similarity=0.88)
 
         # Mock the service search method
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[mock_result])
             mock_service_class.return_value = mock_service
@@ -64,7 +64,7 @@ class TestSearchMemoryTool:
             assert call_kwargs["memory_type"] == MemoryType.BEST_PRACTICE
             assert call_kwargs["limit"] == 5
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_invalid_memory_type(self, mock_session_factory):
         """Test search_memory returns error for invalid memory type."""
         mock_session = AsyncMock()
@@ -84,14 +84,14 @@ class TestSearchMemoryTool:
         assert "invalid_type" in result
         assert "Valid options" in result
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_no_results(self, mock_session_factory):
         """Test search_memory returns helpful message when no results found."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -107,14 +107,14 @@ class TestSearchMemoryTool:
             assert "No relevant memories found" in result
             assert "Try broadening your search terms" in result
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_database_error(self, mock_session_factory):
         """Test search_memory handles database errors gracefully."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(side_effect=Exception("Database connection lost"))
             mock_service_class.return_value = mock_service
@@ -130,14 +130,14 @@ class TestSearchMemoryTool:
             assert "Error searching memories" in result
             assert "Database connection lost" in result
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_all_type(self, mock_session_factory):
         """Test search_memory with 'all' type searches across all types."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -154,14 +154,14 @@ class TestSearchMemoryTool:
             call_kwargs = mock_service.search.call_args[1]
             assert call_kwargs["memory_type"] is None
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_limit_validation(self, mock_session_factory):
         """Test search_memory respects limit parameter."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -177,7 +177,7 @@ class TestSearchMemoryTool:
             call_kwargs = mock_service.search.call_args[1]
             assert call_kwargs["limit"] == 3
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_multiple_results(self, mock_session_factory):
         """Test search_memory formats multiple results correctly."""
         mock_session = AsyncMock()
@@ -193,7 +193,7 @@ class TestSearchMemoryTool:
             mock_memory.memory_type = "analysis_summary"
             mock_results.append(MemorySearchResult(memory=mock_memory, similarity=0.9 - i * 0.1))
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=mock_results)
             mock_service_class.return_value = mock_service
@@ -215,14 +215,14 @@ class TestSearchMemoryTool:
             assert "Memory content 2" in result
             assert "Memory content 3" in result
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_empty_query(self, mock_session_factory):
         """Test search_memory handles empty query string."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -245,14 +245,14 @@ class TestSearchMemoryTool:
 class TestSearchMemoryToolEdgeCases:
     """Tests for edge cases in search_memory tool."""
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_very_long_query(self, mock_session_factory):
         """Test search_memory handles very long queries."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -272,14 +272,14 @@ class TestSearchMemoryToolEdgeCases:
             call_kwargs = mock_service.search.call_args[1]
             assert call_kwargs["query"] == long_query
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_special_characters(self, mock_session_factory):
         """Test search_memory handles special characters in query."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -297,14 +297,14 @@ class TestSearchMemoryToolEdgeCases:
             # Should handle without crashing
             assert "No relevant memories found" in result or "Found" in result
 
-    @patch("app.services.context.memory_tools.get_session_factory")
+    @patch("app.domains.analysis.services.context.memory_tools.get_session_factory")
     async def test_search_memory_specific_memory_types(self, mock_session_factory):
         """Test search_memory with each specific memory type."""
         mock_session = AsyncMock()
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service

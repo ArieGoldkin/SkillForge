@@ -48,16 +48,16 @@ async def test_guide_reflection_provides_guidance_and_marks_complete(
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.guide_reflection.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.guide_reflection.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.guide_reflection.TutorMessageRepository"
+            "app.domains.tutor.workflows.nodes.guide_reflection.TutorMessageRepository"
         ) as mock_message_repo_class,
         patch(
-            "app.workflows.tutor.nodes.guide_reflection.TutorSessionRepository"
+            "app.domains.tutor.workflows.nodes.guide_reflection.TutorSessionRepository"
         ) as mock_session_repo_class,
         patch(
-            "app.workflows.tutor.nodes.guide_reflection._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.guide_reflection._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()

@@ -126,7 +126,7 @@ class TestAgentMemoryServiceInit:
         assert service.session == mock_session
         assert service._embedding_service == mock_embedding
 
-    @patch("app.services.memory.agent_memory_service.EmbeddingService")
+    @patch("app.shared.services.memory.agent_memory_service.EmbeddingService")
     def test_lazy_load_embedding_service(self, mock_embedding_class):
         """Test embedding service is lazy loaded on first access."""
         mock_session = MagicMock()

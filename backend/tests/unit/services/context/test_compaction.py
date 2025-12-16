@@ -216,7 +216,7 @@ class TestSessionCompactor:
         mock_response.content = "Summary: Discussion about Python programming language."
         mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
-        with patch("app.services.context.compaction.get_chat_model", return_value=mock_model):
+        with patch("app.domains.analysis.services.context.compaction.get_chat_model", return_value=mock_model):
             result = await compactor._summarize_turns(turns)
 
             assert result == "Summary: Discussion about Python programming language."

@@ -50,9 +50,9 @@ class TestArtifactSanitization:
         expected_table = "| a.py | First file |\n| b.py | Second file |"
 
         with (
-            patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
-            patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             mock_render.return_value = markdown_with_issues
             mock_db_session = AsyncMock()
@@ -61,7 +61,7 @@ class TestArtifactSanitization:
             mock_factory.return_value = mock_session_factory
 
             with patch(
-                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+                "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository"
             ) as mock_repo_class:
                 mock_repo = AsyncMock()
                 mock_artifact = MagicMock()
@@ -104,9 +104,9 @@ Security concerns • Performance issues • Migration complexity
 """
 
         with (
-            patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
-            patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             mock_render.return_value = markdown_complex
             mock_db_session = AsyncMock()
@@ -115,7 +115,7 @@ Security concerns • Performance issues • Migration complexity
             mock_factory.return_value = mock_session_factory
 
             with patch(
-                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+                "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository"
             ) as mock_repo_class:
                 mock_repo = AsyncMock()
                 mock_artifact = MagicMock()

@@ -89,7 +89,7 @@ class TestRunDependencyMapperWithTools:
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
         """Tool-enabled agent receives DependencyMapping response schema."""
-        from app.domains.analysis.workflows.agents.schemas.dependency_mapper import DependencyMapping
+        from app.domains.analysis.schemas.agents.dependency_mapper import DependencyMapping
 
         mock_agent = MagicMock()
         mock_create_tool_enabled.return_value = mock_agent

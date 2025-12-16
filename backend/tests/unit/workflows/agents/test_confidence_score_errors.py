@@ -88,8 +88,8 @@ async def test_extraction_handles_missing_gracefully():
     }
 
     with (
-        patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock),
-        patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock),
     ):
         result = await process_agent_result(
             findings=findings,
@@ -113,21 +113,25 @@ async def test_extraction_handles_invalid_type_gracefully():
         "confidence_score": "high",  # Invalid type (string)
     }
 
+    from uuid import uuid4
+
     with (
         patch(
-            "app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock
+            "app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock
         ) as mock_save,
-        patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock),
+        patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock),
     ):
         await process_agent_result(
             findings=findings,
-            analysis_id="test-id",
+            analysis_id=str(uuid4()),  # Use valid UUID
             agent_type="tech_comparator",
             session=AsyncMock(),
             start_time=0.0,
         )
 
         # Should handle gracefully - set to None
+        assert mock_save.called, "save_agent_finding should have been called"
         call_kwargs = mock_save.call_args.kwargs
         assert call_kwargs["confidence_score"] is None
         # Invalid value should be removed from findings

@@ -78,9 +78,9 @@ async def test_supervisor_route_success(mock_agent_selection):
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
-            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
     ):
         # Use "code" content type so both agents can process it
@@ -136,9 +136,9 @@ async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_min
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
-            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
     ):
         result = await supervisor_route(
@@ -180,9 +180,9 @@ async def test_supervisor_route_error_handling():
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
-            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
         pytest.raises(Exception, match="Model invocation failed"),
     ):
@@ -222,8 +222,8 @@ async def test_supervisor_route_content_dynamic_sizing():
     large_content = "x" * 25000  # 15K+: use 12K-15K
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         # Test small content (uses all)
         await supervisor_route(
@@ -257,8 +257,8 @@ async def test_supervisor_route_decision_structure(mock_agent_selection):
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(
             content="Test content about React and security.",
@@ -303,8 +303,8 @@ async def test_supervisor_auto_activates_dependency_mapper_with_imports():
     """
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(
             content=content_with_imports,
@@ -344,8 +344,8 @@ async def test_supervisor_auto_activates_dependency_mapper_with_package_files():
     """
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(
             content=content_with_package,
@@ -380,8 +380,8 @@ async def test_supervisor_auto_activates_dependency_mapper_with_install_commands
     """
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(
             content=content_with_install,
@@ -444,8 +444,8 @@ async def test_supervisor_auto_activates_performance_analyst():
     """
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(content, "code", "test-id")
         agents = result["supervisor_decision"]["agents"]
@@ -471,8 +471,8 @@ async def test_supervisor_auto_activates_security_auditor():
     content = "Use python-jose to decode the JWT token."
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(content, "code", "test-id")
         agents = result["supervisor_decision"]["agents"]
@@ -502,8 +502,8 @@ async def test_supervisor_auto_activates_tech_comparator():
     content = "Should we migrate from Django to FastAPI for better performance?"
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-        patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
     ):
         result = await supervisor_route(content, "article", "test-id")
         agents = result["supervisor_decision"]["agents"]

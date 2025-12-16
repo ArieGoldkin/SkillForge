@@ -199,9 +199,9 @@ class TestGenerateArtifact:
     async def test_generate_artifact_success(self, sample_state):
         """Test successful artifact generation."""
         with (
-            patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
-            patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             # Setup mocks
             mock_render.return_value = "# Test Artifact\n\nContent here."
@@ -214,7 +214,7 @@ class TestGenerateArtifact:
 
             # Mock repository
             with patch(
-                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+                "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository"
             ) as mock_repo_class:
                 mock_repo = AsyncMock()
                 mock_artifact = MagicMock()
@@ -239,7 +239,7 @@ class TestGenerateArtifact:
         """Test artifact generation with empty aggregated insights."""
         sample_state["aggregated_insights"] = {}
 
-        with patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse:
+        with patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse:
             with pytest.raises(ValueError, match="aggregated_insights is missing or invalid"):
                 await generate_artifact(sample_state)
 
@@ -258,7 +258,7 @@ class TestGenerateArtifact:
         """Test artifact generation with missing aggregated_insights."""
         del sample_state["aggregated_insights"]
 
-        with patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse:
+        with patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse:
             with pytest.raises(ValueError, match="aggregated_insights is missing or invalid"):
                 await generate_artifact(sample_state)
 
@@ -269,9 +269,9 @@ class TestGenerateArtifact:
     async def test_generate_artifact_database_error(self, sample_state):
         """Test artifact generation handles database errors."""
         with (
-            patch("app.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
-            patch("app.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
-            patch("app.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.render_jinja_template") as mock_render,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory") as mock_factory,
+            patch("app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event") as mock_sse,
         ):
             mock_render.return_value = "# Test\n\nContent."
             mock_db_session = AsyncMock()
@@ -280,7 +280,7 @@ class TestGenerateArtifact:
             mock_factory.return_value = mock_session_factory
 
             with patch(
-                "app.workflows.tasks.generate_artifact.ArtifactRepository"
+                "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository"
             ) as mock_repo_class:
                 mock_repo = AsyncMock()
                 mock_repo.create_artifact.side_effect = Exception("Database error")

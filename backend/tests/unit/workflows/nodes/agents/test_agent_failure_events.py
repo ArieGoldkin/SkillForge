@@ -28,11 +28,11 @@ def mock_state():
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session",
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session",
     new_callable=AsyncMock,
 )
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.emit_agent_progress",
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.emit_agent_progress",
     new_callable=AsyncMock,
 )
 async def test_implementation_planner_emits_failed_event_on_exception(
@@ -65,10 +65,10 @@ async def test_implementation_planner_emits_failed_event_on_exception(
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
 )
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.emit_agent_progress",
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.emit_agent_progress",
     new_callable=AsyncMock,
 )
 async def test_implementation_planner_does_not_emit_failed_on_success(

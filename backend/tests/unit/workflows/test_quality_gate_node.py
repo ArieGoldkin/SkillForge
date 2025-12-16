@@ -133,7 +133,7 @@ class TestShouldRetrySynthesis:
             },
         }  # type: ignore
 
-        with patch("app.workflows.nodes.quality_gate_node.logger"):
+        with patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"):
             result = should_retry_synthesis(state)
 
             # UPDATED: Should return "fail" (fail-closed), not "continue"
@@ -183,7 +183,7 @@ class TestQualityGateNode:
             return failing_evaluator
 
         monkeypatch.setattr(
-            "app.workflows.nodes.quality_gate_node.create_quality_evaluator",
+            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
             mock_create_evaluator,
         )
 

@@ -54,14 +54,14 @@ class TestSupervisorMinimumAgentEnforcement:
             return ["implementation_planner"], ["security_auditor", "performance_analyst"]
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.filter_agents_by_content_type",
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):
@@ -98,14 +98,14 @@ class TestSupervisorMinimumAgentEnforcement:
             return ["implementation_planner", "security_auditor"], ["performance_analyst"]
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.filter_agents_by_content_type",
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):
@@ -141,14 +141,14 @@ class TestSupervisorMinimumAgentEnforcement:
             return agents, []
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.filter_agents_by_content_type",
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):
@@ -189,14 +189,14 @@ class TestSupervisorMinimumAgentEnforcement:
             return [], agents
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.filter_agents_by_content_type",
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):
@@ -238,10 +238,10 @@ class TestSupervisorMinimumAgentEnforcement:
         """
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):
@@ -355,10 +355,10 @@ class TestSupervisorMinimumAgentEnforcement:
         mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
         with (
-            patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
-            patch("app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
+            patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+            patch("app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock),
             patch(
-                "app.workflows.nodes.supervisor.should_skip_agent",
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
                 side_effect=mock_no_skip,
             ),
         ):

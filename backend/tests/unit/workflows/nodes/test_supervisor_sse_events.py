@@ -50,9 +50,9 @@ async def test_supervisor_emits_expected_total_stages_3_agents(mock_agent_select
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
-            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
     ):
         await supervisor_route(
@@ -89,9 +89,9 @@ async def test_supervisor_emits_expected_total_stages_8_agents(mock_agent_select
     mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
 
     with (
-        patch("app.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
+        patch("app.domains.analysis.workflows.nodes.supervisor.get_chat_model", return_value=mock_model),
         patch(
-            "app.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
     ):
         await supervisor_route(

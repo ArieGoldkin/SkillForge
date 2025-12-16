@@ -82,10 +82,10 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
     """Test single evaluator timeout - should use default 0.7 score."""
     # Mock create_quality_evaluator to return timeout evaluator for one aspect
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -145,10 +145,10 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
 async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
     """Test all evaluators timeout - should still pass gate with default scores."""
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -193,9 +193,9 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
 async def test_quality_gate_partial_timeout(base_state: AnalysisState):
     """Test some evaluators succeed, some timeout - should combine scores."""
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -252,8 +252,8 @@ async def test_quality_gate_division_by_zero_protection(base_state: AnalysisStat
     empty_state["aggregated_insights"] = {}
 
     with (
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
     ):
         mock_run_tree.return_value = None
 
@@ -274,10 +274,10 @@ async def test_quality_gate_division_by_zero_protection(base_state: AnalysisStat
 async def test_quality_gate_timeout_logging(base_state: AnalysisState):
     """Test timeout is logged with correct fields."""
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -315,9 +315,9 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
 async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
     """Test SSE event is emitted even when evaluators timeout."""
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock) as mock_emit,
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock) as mock_emit,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -374,7 +374,7 @@ async def test_should_retry_synthesis_max_retries():
         },
     }
 
-    with patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger:
+    with patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger:
         result = should_retry_synthesis(state)
 
         # UPDATED: Should return "fail" (fail-closed), not "continue"
@@ -395,10 +395,10 @@ async def test_should_retry_synthesis_max_retries():
 async def test_quality_gate_fail_open_on_exception(base_state: AnalysisState):
     """Test exception during evaluation returns passed=True (fail open)."""
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
     ):
@@ -507,7 +507,7 @@ def test_should_retry_synthesis_trigger_retry():
         "quality_gate_avg_score": 0.5,
     }
 
-    with patch("app.workflows.nodes.quality_gate_node.logger"):
+    with patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"):
         result = should_retry_synthesis(state)
         assert result == "retry_synthesis"
 
@@ -555,10 +555,10 @@ async def test_quality_gate_coverage_adjusted_threshold_passes(low_coverage_stat
     This allows honest partial analysis to pass the gate.
     """
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
         mock_run_tree.return_value = None
 
@@ -594,10 +594,10 @@ async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state
     Issue #299-304: When coverage_score >= 0.5, normal thresholds (0.7) are used.
     """
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger"),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"),
     ):
         mock_run_tree.return_value = None
 
@@ -624,10 +624,10 @@ async def test_quality_gate_adjusted_aspect_minimums(low_coverage_state: Analysi
     - coherence: 0.4 (vs 0.4)
     """
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger"),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"),
     ):
         mock_run_tree.return_value = None
 
@@ -677,10 +677,10 @@ async def test_quality_gate_aspect_minimum_failure_with_adjusted():
     }
 
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
         mock_run_tree.return_value = None
 
@@ -723,10 +723,10 @@ async def test_quality_gate_logs_coverage_context(low_coverage_state: AnalysisSt
     Issue #299-304: Logs should include coverage_score and adjusted threshold info.
     """
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
         mock_run_tree.return_value = None
 
@@ -765,10 +765,10 @@ async def test_quality_gate_default_coverage_score():
     }
 
     with (
-        patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
-        patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
         mock_run_tree.return_value = None
 

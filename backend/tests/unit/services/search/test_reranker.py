@@ -427,7 +427,7 @@ class TestReRankerLazyLoading:
 
     def test_model_not_loaded_on_init(self):
         """Test that model is not loaded during initialization."""
-        with patch("app.services.search.reranker.get_chat_model") as mock_get_model:
+        with patch("app.core.model_factory.get_chat_model") as mock_get_model:
             reranker = ReRanker()
 
             # Model should not be loaded yet
@@ -435,7 +435,7 @@ class TestReRankerLazyLoading:
 
     def test_model_loaded_on_first_access(self):
         """Test that model is loaded on first property access."""
-        with patch("app.services.search.reranker.get_chat_model") as mock_get_model:
+        with patch("app.shared.services.search.reranker.get_chat_model") as mock_get_model:
             mock_get_model.return_value = MagicMock()
             reranker = ReRanker()
 

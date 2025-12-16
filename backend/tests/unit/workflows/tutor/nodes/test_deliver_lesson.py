@@ -55,12 +55,12 @@ async def test_deliver_lesson_generates_content(sample_tutor_state_with_syllabus
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.deliver_lesson.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.deliver_lesson.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
             "app.db.repositories.tutor_message_repository.TutorMessageRepository"
         ) as mock_repo_class,
-        patch("app.workflows.tutor.nodes.deliver_lesson._emit_tutor_event", new_callable=AsyncMock),
+        patch("app.domains.tutor.workflows.nodes.deliver_lesson._emit_tutor_event", new_callable=AsyncMock),
     ):
         mock_session = AsyncMock()
         mock_factory.return_value.__aenter__.return_value = mock_session

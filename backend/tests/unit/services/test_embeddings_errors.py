@@ -12,7 +12,7 @@ from app.shared.services.embeddings import EmbeddingError, EmbeddingService
 async def embedding_service():
     """Create an EmbeddingService instance with mocked client."""
     # Mock AsyncOpenAI before service initialization
-    with patch("app.services.embeddings.AsyncOpenAI") as mock_openai_class:
+    with patch("app.shared.services.embeddings.service.AsyncOpenAI") as mock_openai_class:
         mock_client = MagicMock()
         mock_client.embeddings = MagicMock()
         mock_client.embeddings.create = AsyncMock()

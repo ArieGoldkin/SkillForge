@@ -68,7 +68,7 @@ async def test_agent_applies_grounding(
     # Import the agent module dynamically
     import importlib
 
-    module = importlib.import_module(f"app.workflows.agents.{agent_module}")
+    module = importlib.import_module(f"app.domains.analysis.workflows.agents.{agent_module}")
     agent_func = getattr(module, agent_function)
 
     # Mock the create_structured_agent call to capture the prompt
@@ -92,11 +92,11 @@ async def test_agent_applies_grounding(
 
     with (
         patch(
-            f"app.workflows.agents.{agent_module}.create_structured_agent",
+            f"app.domains.analysis.workflows.agents.{agent_module}.create_structured_agent",
             side_effect=mock_create_agent,
         ),
         patch(
-            f"app.workflows.agents.{agent_module}.run_agent_with_tracking",
+            f"app.domains.analysis.workflows.agents.{agent_module}.run_agent_with_tracking",
             new_callable=AsyncMock,
             return_value=mock_tracking_result,
         ),
@@ -134,10 +134,10 @@ async def test_tech_comparator_uses_grounding(
     from app.domains.analysis.workflows.agents.tech_comparator import run_tech_comparator
 
     with (
-        patch("app.workflows.agents.tech_comparator.apply_grounding") as mock_apply,
-        patch("app.workflows.agents.tech_comparator.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.tech_comparator.apply_grounding") as mock_apply,
+        patch("app.domains.analysis.workflows.agents.tech_comparator.create_structured_agent"),
         patch(
-            "app.workflows.agents.tech_comparator.run_agent_with_tracking", new_callable=AsyncMock
+            "app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking", new_callable=AsyncMock
         ),
     ):
         # Set return value for apply_grounding
@@ -163,10 +163,10 @@ async def test_security_auditor_uses_grounding(
     from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
 
     with (
-        patch("app.workflows.agents.security_auditor.apply_grounding") as mock_apply,
-        patch("app.workflows.agents.security_auditor.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.security_auditor.apply_grounding") as mock_apply,
+        patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent"),
         patch(
-            "app.workflows.agents.security_auditor.run_agent_with_tracking", new_callable=AsyncMock
+            "app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking", new_callable=AsyncMock
         ),
     ):
         mock_apply.return_value = "grounded_prompt"
@@ -190,10 +190,10 @@ async def test_implementation_planner_uses_grounding(
     from app.domains.analysis.workflows.agents.implementation_planner import run_implementation_planner
 
     with (
-        patch("app.workflows.agents.implementation_planner.apply_grounding") as mock_apply,
-        patch("app.workflows.agents.implementation_planner.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.implementation_planner.apply_grounding") as mock_apply,
+        patch("app.domains.analysis.workflows.agents.implementation_planner.create_structured_agent"),
         patch(
-            "app.workflows.agents.implementation_planner.run_agent_with_tracking",
+            "app.domains.analysis.workflows.agents.implementation_planner.run_agent_with_tracking",
             new_callable=AsyncMock,
         ),
     ):
@@ -250,10 +250,10 @@ async def test_all_agents_import_grounding():
         # Import the module
         import importlib
 
-        module = importlib.import_module(f"app.workflows.agents.{module_name}")
+        module = importlib.import_module(f"app.domains.analysis.workflows.agents.{module_name}")
 
         # Check if apply_grounding is used in the module
-        source = importlib.import_module(f"app.workflows.agents.{module_name}").__file__
+        source = importlib.import_module(f"app.domains.analysis.workflows.agents.{module_name}").__file__
         if source:
             with Path(source).open() as f:
                 content = f.read()

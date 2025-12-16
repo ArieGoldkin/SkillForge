@@ -23,7 +23,7 @@ def sample_state() -> AnalysisState:
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
 )
 async def test_implementation_planner_node_success(
     mock_runner: AsyncMock, sample_state: AnalysisState
@@ -44,7 +44,7 @@ async def test_implementation_planner_node_success(
 
 @pytest.mark.asyncio
 @patch(
-    "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
 )
 async def test_implementation_planner_node_handles_error(
     mock_runner: AsyncMock, sample_state: AnalysisState

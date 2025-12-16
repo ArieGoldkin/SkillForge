@@ -125,7 +125,7 @@ async def test_run_integration_feasibility_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_integration_feasibility", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_integration_feasibility", mock_run_agent),
     ):
         result = await run_integration_feasibility_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -152,7 +152,7 @@ async def test_run_implementation_planner_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_implementation_planner", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_implementation_planner", mock_run_agent),
     ):
         result = await run_implementation_planner_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -179,7 +179,7 @@ async def test_run_security_auditor_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_security_auditor", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_security_auditor", mock_run_agent),
     ):
         result = await run_security_auditor_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -207,7 +207,7 @@ async def test_run_performance_analyst_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_performance_analyst", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_performance_analyst", mock_run_agent),
     ):
         result = await run_performance_analyst_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -234,7 +234,7 @@ async def test_run_code_quality_critic_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_code_quality_critic", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_code_quality_critic", mock_run_agent),
     ):
         result = await run_code_quality_critic_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -261,7 +261,7 @@ async def test_run_trend_validator_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_trend_validator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_trend_validator", mock_run_agent),
     ):
         result = await run_trend_validator_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -288,7 +288,7 @@ async def test_run_dependency_mapper_with_session(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_dependency_mapper", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_dependency_mapper", mock_run_agent),
     ):
         result = await run_dependency_mapper_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -318,7 +318,7 @@ async def test_run_tech_comparator_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
     ):
         result = await run_tech_comparator_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -345,7 +345,7 @@ async def test_run_implementation_planner_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_implementation_planner", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_implementation_planner", mock_run_agent),
     ):
         result = await run_implementation_planner_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -372,7 +372,7 @@ async def test_run_security_auditor_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_security_auditor", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_security_auditor", mock_run_agent),
     ):
         result = await run_security_auditor_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -399,7 +399,7 @@ async def test_run_integration_feasibility_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_integration_feasibility", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_integration_feasibility", mock_run_agent),
     ):
         result = await run_integration_feasibility_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -426,7 +426,7 @@ async def test_run_performance_analyst_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_performance_analyst", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_performance_analyst", mock_run_agent),
     ):
         result = await run_performance_analyst_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -453,7 +453,7 @@ async def test_run_code_quality_critic_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_code_quality_critic", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_code_quality_critic", mock_run_agent),
     ):
         result = await run_code_quality_critic_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -480,7 +480,7 @@ async def test_run_trend_validator_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_trend_validator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_trend_validator", mock_run_agent),
     ):
         result = await run_trend_validator_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -507,7 +507,7 @@ async def test_run_dependency_mapper_with_session_handles_generatorexit(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_dependency_mapper", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_dependency_mapper", mock_run_agent),
     ):
         result = await run_dependency_mapper_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
@@ -566,7 +566,7 @@ async def test_run_tech_comparator_loads_from_artifact(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
     ):
         result = await run_tech_comparator_with_session(
             test_content, test_content_type, mock_analysis_id, state
@@ -613,7 +613,7 @@ async def test_run_tech_comparator_falls_back_to_raw_content(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
     ):
         result = await run_tech_comparator_with_session(
             test_content, test_content_type, mock_analysis_id, state
@@ -672,7 +672,7 @@ async def test_run_tech_comparator_falls_back_on_artifact_error(
 
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
-        patch("app.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
+        patch("app.domains.analysis.workflows.tasks.runners.run_tech_comparator", mock_run_agent),
     ):
         result = await run_tech_comparator_with_session(
             test_content, test_content_type, mock_analysis_id, state

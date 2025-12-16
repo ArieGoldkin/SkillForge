@@ -52,13 +52,13 @@ async def test_rephrase_explain_generates_simpler_explanation(sample_tutor_state
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.rephrase_explain.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.rephrase_explain.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.rephrase_explain.TutorMessageRepository"
+            "app.domains.tutor.workflows.nodes.rephrase_explain.TutorMessageRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.rephrase_explain._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.rephrase_explain._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()

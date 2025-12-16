@@ -56,7 +56,7 @@ async def test_save_agent_finding_success(mock_session, analysis_id):
     mock_session.refresh = AsyncMock()
 
     # Mock AgentFinding creation
-    with patch("app.workflows.agents.base.AgentFinding") as mock_finding_class:
+    with patch("app.domains.analysis.workflows.agents.base.AgentFinding") as mock_finding_class:
         mock_finding = MagicMock()
         mock_finding_class.return_value = mock_finding
 

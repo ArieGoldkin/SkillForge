@@ -127,38 +127,38 @@ async def test_graph_execution_with_mocks(
     }
 
     with (
-        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.tasks.extract_content._create_artifact_ref",
+            "app.domains.analysis.workflows.tasks.extract_content._create_artifact_ref",
             new_callable=AsyncMock,
             return_value=mock_content_ref,
         ),
         patch(
-            "app.workflows.tasks.generate_embedding.EmbeddingService",
+            "app.domains.analysis.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
         ),
         patch(
-            "app.workflows.graph_builder.supervisor_route",
+            "app.domains.analysis.workflows.graph_builder.supervisor_route",
             new_callable=AsyncMock,
             return_value=sample_supervisor_result,
         ),
         patch(
-            "app.workflows.nodes.agent_router.route_to_agents",
+            "app.domains.analysis.workflows.nodes.agent_router.route_to_agents",
             return_value=[],  # No agents selected
         ),
         patch(
-            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
         patch(
-            "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
+            "app.domains.analysis.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
         ),
         patch(
-            "app.services.persistence.progress.persist_progress_event_async",
+            "app.shared.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(
-            "app.workflows.tasks.store_embeddings.store_embeddings",
+            "app.domains.analysis.workflows.tasks.store_embeddings.store_embeddings",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -186,7 +186,7 @@ async def test_graph_handles_extraction_error(sample_state: AnalysisState) -> No
     mock_jina.close = AsyncMock()
 
     with (
-        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         pytest.raises(JinaReaderError, match="Extraction failed"),
     ):
         graph = build_analysis_graph()
@@ -263,38 +263,38 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
     }
 
     with (
-        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.tasks.extract_content._create_artifact_ref",
+            "app.domains.analysis.workflows.tasks.extract_content._create_artifact_ref",
             new_callable=AsyncMock,
             return_value=mock_content_ref,
         ),
         patch(
-            "app.workflows.tasks.generate_embedding.EmbeddingService",
+            "app.domains.analysis.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
         ),
         patch(
-            "app.workflows.graph_builder.supervisor_route",
+            "app.domains.analysis.workflows.graph_builder.supervisor_route",
             new_callable=AsyncMock,
             return_value=mock_supervisor_result,
         ),
         patch(
-            "app.workflows.nodes.agent_router.route_to_agents",
+            "app.domains.analysis.workflows.nodes.agent_router.route_to_agents",
             return_value=[],  # No agents selected
         ),
         patch(
-            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
         patch(
-            "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
+            "app.domains.analysis.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
         ),
         patch(
-            "app.services.persistence.progress.persist_progress_event_async",
+            "app.shared.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(
-            "app.workflows.tasks.store_embeddings.store_embeddings",
+            "app.domains.analysis.workflows.tasks.store_embeddings.store_embeddings",
             new_callable=AsyncMock,
             return_value=[],
         ),

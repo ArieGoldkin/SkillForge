@@ -267,7 +267,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_success(
@@ -308,7 +308,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_fallback_to_static(
@@ -353,7 +353,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_fallback_to_minimal_schema(
@@ -401,7 +401,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_empty_findings(
@@ -433,7 +433,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_many_conflicts(
@@ -483,7 +483,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_reduced_tier_success(

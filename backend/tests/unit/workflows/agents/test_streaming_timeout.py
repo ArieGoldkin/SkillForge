@@ -24,7 +24,7 @@ def mock_agent():
 def mock_emit_progress():
     """Auto-mock emit_agent_progress to avoid agent_type validation."""
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock
     ):
         yield
 

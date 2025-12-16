@@ -33,7 +33,7 @@ class TestInvokeAgent:
         return {"messages": [{"role": "user", "content": "Analyze this code"}]}
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_ainvoke_success(self, mock_run_tree, mock_agent, input_messages):
         """Test successful async invocation."""
         mock_run_tree.return_value = None
@@ -49,7 +49,7 @@ class TestInvokeAgent:
         mock_agent.ainvoke.assert_awaited_once()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_ainvoke_with_langsmith_trace(self, mock_run_tree, mock_agent, input_messages):
         """Test invocation captures LangSmith trace ID."""
         run_tree = MagicMock()
@@ -66,7 +66,7 @@ class TestInvokeAgent:
         assert "findings" in result
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_ainvoke_langsmith_unavailable(self, mock_run_tree, mock_agent, input_messages):
         """Test invocation continues when LangSmith is unavailable."""
         mock_run_tree.side_effect = Exception("LangSmith not available")
@@ -81,7 +81,7 @@ class TestInvokeAgent:
         assert result == {"findings": "test results"}
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_ainvoke_error_raises(self, mock_run_tree, mock_agent, input_messages):
         """Test that errors during ainvoke are propagated."""
         mock_run_tree.return_value = None
@@ -96,7 +96,7 @@ class TestInvokeAgent:
             )
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_sync_invoke_fallback(self, mock_run_tree, mock_sync_agent, input_messages):
         """Test fallback to sync invoke when ainvoke not available."""
         mock_run_tree.return_value = None
@@ -112,7 +112,7 @@ class TestInvokeAgent:
         mock_sync_agent.invoke.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_sync_invoke_error_raises(self, mock_run_tree, mock_sync_agent, input_messages):
         """Test that errors during sync invoke are propagated."""
         mock_run_tree.return_value = None
@@ -127,7 +127,7 @@ class TestInvokeAgent:
             )
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_custom_timeout_parameter(self, mock_run_tree, mock_agent, input_messages):
         """Test that custom timeout is accepted (for logging reference)."""
         mock_run_tree.return_value = None
@@ -143,7 +143,7 @@ class TestInvokeAgent:
         assert result == {"findings": "test results"}
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.invocation.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
     async def test_langsmith_run_tree_without_id(self, mock_run_tree, mock_agent, input_messages):
         """Test handling of run tree without id attribute."""
         run_tree = MagicMock(spec=[])  # No id attribute

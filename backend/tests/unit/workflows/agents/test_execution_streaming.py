@@ -13,10 +13,10 @@ from tests.unit.workflows.agents.conftest import MockAgentSchema
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming(
     mock_save_finding,
     mock_emit_progress_result,
@@ -46,8 +46,7 @@ async def test_run_agent_with_tracking_streaming(
     # With ainvoke (not astream), we get "running" and "complete" events
     # No intermediate streaming events since ainvoke waits for full response
     min_expected_events = 1  # At least the "running" event from execution.py
-    total_calls = mock_emit_progress_streaming.call_count + mock_emit_progress_result.call_count
-    assert total_calls >= min_expected_events
+    assert mock_emit_progress.call_count >= min_expected_events
     # Verify final result is correct
     assert result["agent_type"] == "tech_comparator"
     assert "findings" in result
@@ -55,14 +54,12 @@ async def test_run_agent_with_tracking_streaming(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_throttling(
     mock_save_finding,
-    mock_emit_progress_result,
-    mock_emit_progress_streaming,
+    mock_emit_progress,
     mock_get_stage_name,
     mock_streaming_agent,
     mock_session,
@@ -92,8 +89,7 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
         # Verify SSE events were emitted
         # With ainvoke, we get "running" and "complete" events, no intermediate streaming
-        total_calls = mock_emit_progress_streaming.call_count + mock_emit_progress_result.call_count
-        assert total_calls >= 1, "At least the 'running' event should be emitted"
+        assert mock_emit_progress.call_count >= 1, "At least the 'running' event should be emitted"
         # No throttling tests needed since ainvoke doesn't produce streaming events
 
         assert result["agent_type"] == "tech_comparator"
@@ -102,9 +98,9 @@ async def test_run_agent_with_tracking_streaming_throttling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_streaming_early_response(
     mock_save_finding,
     mock_emit_progress,

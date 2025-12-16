@@ -54,7 +54,7 @@ class TestCodeQualityCriticNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
+        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_successful_execution(
@@ -72,7 +72,7 @@ class TestCodeQualityCriticNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
+        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
@@ -86,7 +86,7 @@ class TestCodeQualityCriticNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
+        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
@@ -100,7 +100,7 @@ class TestCodeQualityCriticNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
+        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_without_langsmith(
@@ -151,7 +151,7 @@ class TestIntegrationFeasibilityNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
+        "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
     async def test_successful_execution(
@@ -168,7 +168,7 @@ class TestIntegrationFeasibilityNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
+        "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
@@ -186,7 +186,7 @@ class TestPerformanceAnalystNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
+        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_successful_execution(
@@ -203,7 +203,7 @@ class TestPerformanceAnalystNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
+        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
@@ -217,7 +217,7 @@ class TestPerformanceAnalystNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
+        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_updates_langsmith_metadata(
@@ -344,7 +344,7 @@ class TestImplementationPlannerNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_successful_execution(
@@ -361,7 +361,7 @@ class TestImplementationPlannerNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
@@ -375,7 +375,7 @@ class TestImplementationPlannerNode:
 
     @pytest.mark.asyncio
     @patch(
-        "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
+        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
     @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):

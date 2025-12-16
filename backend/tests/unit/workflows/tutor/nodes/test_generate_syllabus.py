@@ -67,17 +67,17 @@ async def test_generate_syllabus_creates_syllabus(sample_tutor_state, mock_llm_r
 
     with (
         patch(
-            "app.workflows.tutor.nodes.generate_syllabus.get_chat_model", return_value=mock_model
+            "app.domains.tutor.workflows.nodes.generate_syllabus.get_chat_model", return_value=mock_model
         ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
             "app.db.repositories.tutor_session_repository.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.services.tutor.analysis_service.get_analysis_summary", new_callable=AsyncMock
+            "app.domains.tutor.services.analysis_service.get_analysis_summary", new_callable=AsyncMock
         ) as mock_analysis,
         patch(
-            "app.workflows.tutor.nodes.generate_syllabus._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.generate_syllabus._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()
@@ -108,17 +108,17 @@ async def test_generate_syllabus_handles_parse_error(sample_tutor_state):
 
     with (
         patch(
-            "app.workflows.tutor.nodes.generate_syllabus.get_chat_model", return_value=mock_model
+            "app.domains.tutor.workflows.nodes.generate_syllabus.get_chat_model", return_value=mock_model
         ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
             "app.db.repositories.tutor_session_repository.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.services.tutor.analysis_service.get_analysis_summary", new_callable=AsyncMock
+            "app.domains.tutor.services.analysis_service.get_analysis_summary", new_callable=AsyncMock
         ) as mock_analysis,
         patch(
-            "app.workflows.tutor.nodes.generate_syllabus._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.generate_syllabus._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()

@@ -46,13 +46,13 @@ async def test_final_challenge_creates_integrative_problem(sample_tutor_state_fo
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.final_challenge.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.final_challenge.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.final_challenge.TutorMessageRepository"
+            "app.domains.tutor.workflows.nodes.final_challenge.TutorMessageRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.final_challenge._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.final_challenge._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()

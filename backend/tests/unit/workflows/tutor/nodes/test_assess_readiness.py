@@ -66,13 +66,13 @@ async def test_assess_readiness_evaluates_understanding(
     mock_model.ainvoke = AsyncMock(return_value=mock_assessment_response)
 
     with (
-        patch("app.workflows.tutor.nodes.assess_readiness.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.assess_readiness.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness.TutorSessionRepository"
+            "app.domains.tutor.workflows.nodes.assess_readiness.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()
@@ -104,13 +104,13 @@ async def test_assess_readiness_handles_parse_error(sample_tutor_state_for_asses
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.assess_readiness.get_chat_model", return_value=mock_model),
+        patch("app.domains.tutor.workflows.nodes.assess_readiness.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness.TutorSessionRepository"
+            "app.domains.tutor.workflows.nodes.assess_readiness.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
         ),
     ):
         mock_db_session = AsyncMock()

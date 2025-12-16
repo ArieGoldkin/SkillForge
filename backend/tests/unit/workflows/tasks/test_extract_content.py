@@ -17,7 +17,7 @@ TEST_ANALYSIS_ID = str(uuid.uuid4())
 @pytest.fixture
 def mock_artifact_store():
     """Mock the artifact store to prevent database calls."""
-    with patch("app.workflows.tasks.extract_content._create_artifact_ref") as mock:
+    with patch("app.domains.analysis.workflows.tasks.extract_content._create_artifact_ref") as mock:
         mock.return_value = {
             "uri": "content://test-ref",
             "size_bytes": 1024,
@@ -47,7 +47,7 @@ def mock_jina_response():
 def mock_emit_event():
     """Mock SSE event emission."""
     with patch(
-        "app.workflows.tasks.extract_content.emit_streaming_event", new_callable=AsyncMock
+        "app.domains.analysis.workflows.tasks.extract_content.emit_streaming_event", new_callable=AsyncMock
     ) as mock:
         yield mock
 
@@ -57,7 +57,7 @@ async def test_extract_content_includes_title_in_metadata(
     mock_jina_response, mock_emit_event, mock_artifact_store
 ):
     """Test that title from Jina Reader is included in extraction_metadata."""
-    with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         # Setup mock
         mock_instance = AsyncMock()
         mock_instance.extract_article.return_value = mock_jina_response
@@ -83,7 +83,7 @@ async def test_extract_content_includes_word_count_in_metadata(
     mock_jina_response, mock_emit_event, mock_artifact_store
 ):
     """Test that word_count from Jina Reader is included in extraction_metadata."""
-    with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
         mock_instance.extract_article.return_value = mock_jina_response
         mock_instance.close = AsyncMock()
@@ -105,7 +105,7 @@ async def test_extract_content_preserves_original_metadata(
     mock_jina_response, mock_emit_event, mock_artifact_store
 ):
     """Test that original metadata fields from Jina Reader are preserved."""
-    with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
         mock_instance.extract_article.return_value = mock_jina_response
         mock_instance.close = AsyncMock()
@@ -138,7 +138,7 @@ async def test_extract_content_handles_missing_title(mock_emit_event, mock_artif
         },
     }
 
-    with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
         mock_instance.extract_article.return_value = response_without_title
         mock_instance.close = AsyncMock()
@@ -160,7 +160,7 @@ async def test_extract_content_returns_raw_content(
     mock_jina_response, mock_emit_event, mock_artifact_store
 ):
     """Test that raw_content is correctly returned."""
-    with patch("app.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
         mock_instance = AsyncMock()
         mock_instance.extract_article.return_value = mock_jina_response
         mock_instance.close = AsyncMock()

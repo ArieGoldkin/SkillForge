@@ -30,12 +30,12 @@ class TestImportWithoutDatabaseUrl:
             "app.main",
             "app.api.v1.analyze",
             "app.api.v1.workflow_runner",
-            "app.workflows.analysis",
-            "app.workflows.tasks",
+            "app.domains.analysis.workflows.analysis",
+            "app.domains.analysis.workflows.tasks",
             # Models should import Base without triggering DATABASE_URL validation
             "app.models.agent_finding",
             "app.models.analysis",
-            "app.workflows.agents.base",
+            "app.domains.analysis.workflows.agents.base",
         ],
     )
     def test_module_imports_without_database_url(self, module: str):

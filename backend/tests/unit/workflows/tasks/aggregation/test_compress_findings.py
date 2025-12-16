@@ -294,7 +294,7 @@ class TestCompressSingleFinding:
         )
 
         with patch(
-            "app.workflows.tasks.aggregation.compress_findings.invoke_agent",
+            "app.domains.analysis.workflows.tasks.aggregation.compress_findings.invoke_agent",
             return_value={
                 "agent_name": agent_name,
                 "key_insights": ["SQL injection found"],
@@ -326,7 +326,7 @@ class TestCompressSingleFinding:
         mock_llm = AsyncMock()
 
         with patch(
-            "app.workflows.tasks.aggregation.compress_findings.invoke_agent",
+            "app.domains.analysis.workflows.tasks.aggregation.compress_findings.invoke_agent",
             side_effect=TimeoutError("Compression timeout"),
         ):
             with pytest.raises(TimeoutError):
@@ -363,11 +363,11 @@ class TestCompressAllFindings:
 
         with (
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model",
                 return_value=mock_llm,
             ),
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.compress_single_finding",
                 return_value=CompressedFinding(
                     agent_name="test",
                     key_insights=["insight"],
@@ -415,11 +415,11 @@ class TestCompressAllFindings:
 
         with (
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model",
                 return_value=mock_llm,
             ),
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.compress_single_finding",
                 side_effect=mock_compress,
             ),
         ):
@@ -453,11 +453,11 @@ class TestCompressAllFindings:
 
         with (
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model",
                 side_effect=mock_get_chat_model,
             ),
             patch(
-                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.compress_single_finding",
                 return_value=CompressedFinding(
                     agent_name="agent1",
                     key_insights=["insight"],

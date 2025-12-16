@@ -97,10 +97,11 @@ def test_count_insights_implementation_planner():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_emits_rich_details(
-    mock_emit, mock_save, mock_session, sample_analysis_id
+    mock_emit, mock_save, mock_persist, mock_session, sample_analysis_id
 ):
     """Test that process_agent_result emits findings_summary and insights_count."""
     findings = {
@@ -138,10 +139,11 @@ async def test_process_agent_result_emits_rich_details(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_emits_rich_details_security_auditor(
-    mock_emit, mock_save, mock_session, sample_analysis_id
+    mock_emit, mock_save, mock_persist, mock_session, sample_analysis_id
 ):
     """Test rich details emission for security_auditor."""
     findings = {

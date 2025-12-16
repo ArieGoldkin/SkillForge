@@ -213,7 +213,7 @@ class TestMCPClientPoolAsync:
     async def test_pool_ensure_client_creates_client(self, server_configs, mock_client):
         pool = MCPClientPool(server_configs)
 
-        with patch("app.services.mcp.client.MultiServerMCPClient") as mock_client_class:
+        with patch("app.shared.services.mcp.client.MultiServerMCPClient") as mock_client_class:
             mock_client_class.return_value = mock_client
             client = await pool._ensure_client()
 
@@ -242,7 +242,7 @@ class TestMCPClientPoolAsync:
         pool = MCPClientPool(server_configs)
 
         with patch(
-            "app.services.mcp.client.MultiServerMCPClient",
+            "app.shared.services.mcp.client.MultiServerMCPClient",
             side_effect=RuntimeError("Creation failed"),
         ):
             with pytest.raises(MCPConnectionError, match="Failed to create MCP client"):
@@ -262,7 +262,7 @@ class TestMCPClientPoolAsync:
     ):
         pool = MCPClientPool(server_configs)
 
-        with patch("app.services.mcp.client.MultiServerMCPClient") as mock_client_class:
+        with patch("app.shared.services.mcp.client.MultiServerMCPClient") as mock_client_class:
             mock_client_class.return_value = mock_client
 
             tools = await pool.get_tools_for_capabilities(["invalid_capability_format"])
@@ -275,7 +275,7 @@ class TestMCPClientPoolAsync:
     ):
         pool = MCPClientPool(server_configs)
 
-        with patch("app.services.mcp.client.MultiServerMCPClient") as mock_client_class:
+        with patch("app.shared.services.mcp.client.MultiServerMCPClient") as mock_client_class:
             mock_client_class.return_value = mock_client
 
             tools = await pool.get_tools_for_capabilities(["unknown:tool"])

@@ -78,37 +78,37 @@ async def test_analysis_workflow_with_mocked_services(
     }
 
     with (
-        patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
+        patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina),
         patch(
-            "app.workflows.tasks.extract_content._create_artifact_ref",
+            "app.domains.analysis.workflows.tasks.extract_content._create_artifact_ref",
             new_callable=AsyncMock,
             return_value=mock_content_ref,
         ),
         patch(
-            "app.workflows.tasks.generate_embedding.EmbeddingService",
+            "app.domains.analysis.workflows.tasks.generate_embedding.EmbeddingService",
             return_value=mock_embedding_service,
         ),
         patch(
-            "app.workflows.graph_builder.supervisor_route",
+            "app.domains.analysis.workflows.graph_builder.supervisor_route",
             new_callable=AsyncMock,
             return_value=mock_supervisor_result,
         ),
         # Agents now execute as separate nodes via Send API
         # Mock router to return no agents (empty list)
         patch(
-            "app.workflows.nodes.agent_router.route_to_agents",
+            "app.domains.analysis.workflows.nodes.agent_router.route_to_agents",
             return_value=[],  # No agents selected
         ),
         patch(
-            "app.workflows.tasks.generate_artifact.ArtifactRepository",
+            "app.domains.analysis.workflows.tasks.generate_artifact.ArtifactRepository",
             return_value=mock_artifact_repo,
         ),
         patch(
-            "app.services.persistence.progress.persist_progress_event_async",
+            "app.shared.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(
-            "app.workflows.tasks.store_embeddings.store_embeddings",
+            "app.domains.analysis.workflows.tasks.store_embeddings.store_embeddings",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -159,7 +159,7 @@ async def test_analysis_workflow_error_handling() -> None:
     )
     mock_jina.close = AsyncMock()
 
-    with patch("app.workflows.tasks.extract_content.JinaReader", return_value=mock_jina):
+    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina):
         # LangGraph catches exceptions in nodes and the workflow wrapper catches BaseException
         # JinaReaderError is an Exception (not BaseException), so it should propagate
         # However, LangGraph may handle it internally, so we check that the error is logged

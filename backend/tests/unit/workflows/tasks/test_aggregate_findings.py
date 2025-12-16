@@ -268,12 +268,12 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
             patch(
-                "app.workflows.tasks.aggregate_findings.emit_aggregation_started"
+                "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"
             ) as mock_sse_start,
             patch(
-                "app.workflows.tasks.aggregate_findings.emit_aggregation_complete"
+                "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"
             ) as mock_sse_complete,
         ):
             mock_synthesize.return_value = mock_structured_response
@@ -320,9 +320,9 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -345,8 +345,8 @@ class TestAggregateFindings:
         )
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             result = await aggregate_findings(state)
 
@@ -387,9 +387,9 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -414,9 +414,9 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -432,9 +432,9 @@ class TestAggregateFindings:
     async def test_aggregate_llm_error_handling(self, sample_state):
         """Test graceful fallback when LLM synthesis fails."""
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             # Simulate LLM error
             mock_synthesize.side_effect = Exception("LLM API error")
@@ -467,9 +467,9 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -497,9 +497,9 @@ class TestAggregateFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -513,9 +513,9 @@ class TestAggregateFindings:
         mock_structured_response["key_findings"] = ["F1", "F2"]
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -649,9 +649,9 @@ class TestAggregationCoverageFeatures:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -682,9 +682,9 @@ class TestAggregationCoverageFeatures:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -717,9 +717,9 @@ class TestAggregationCoverageFeatures:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -762,9 +762,9 @@ class TestAggregationCoverageFeatures:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
         ):
             mock_synthesize.return_value = mock_structured_response
 
@@ -803,11 +803,11 @@ class TestStoreFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
             patch(
-                "app.workflows.tasks.aggregate_findings._store_findings_as_memories"
+                "app.domains.analysis.workflows.tasks.aggregate_findings._store_findings_as_memories"
             ) as mock_store_memories,
         ):
             mock_synthesize.return_value = mock_structured_response
@@ -842,11 +842,11 @@ class TestStoreFindings:
         }
 
         with (
-            patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started"),
-            patch("app.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
+            patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"),
             patch(
-                "app.workflows.tasks.aggregate_findings._store_findings_as_memories"
+                "app.domains.analysis.workflows.tasks.aggregate_findings._store_findings_as_memories"
             ) as mock_store_memories,
         ):
             mock_synthesize.return_value = mock_structured_response

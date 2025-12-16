@@ -78,8 +78,8 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.code_quality_critic.create_structured_agent")
-@patch("app.workflows.agents.code_quality_critic.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.run_agent_with_tracking")
 async def test_run_code_quality_critic_success(
     mock_run_tracking,
     mock_create_agent,
@@ -126,8 +126,8 @@ async def test_run_code_quality_critic_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.code_quality_critic.create_structured_agent")
-@patch("app.workflows.agents.code_quality_critic.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.run_agent_with_tracking")
 async def test_run_code_quality_critic_error_handling(
     mock_run_tracking,
     mock_create_agent,
@@ -148,8 +148,8 @@ async def test_run_code_quality_critic_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.code_quality_critic.create_structured_agent")
-@patch("app.workflows.agents.code_quality_critic.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.code_quality_critic.run_agent_with_tracking")
 async def test_run_code_quality_critic_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):

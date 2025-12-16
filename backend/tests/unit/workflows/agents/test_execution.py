@@ -246,7 +246,7 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
 
-    with patch("app.workflows.agents.execution.invoke_agent") as mock_invoke:
+    with patch("app.domains.analysis.workflows.agents.invocation.invoke_agent") as mock_invoke:
         # Mock invoke_agent to raise GeneratorExit (simulating timeout cancellation)
         mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
 
@@ -280,7 +280,7 @@ async def test_agent_execution_handles_timeouterror(
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
 
-    with patch("app.workflows.agents.execution.invoke_agent") as mock_invoke:
+    with patch("app.domains.analysis.workflows.agents.invocation.invoke_agent") as mock_invoke:
         # Mock invoke_agent to raise TimeoutError
         mock_invoke.side_effect = TimeoutError("Agent exceeded timeout")
 

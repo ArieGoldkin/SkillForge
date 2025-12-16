@@ -32,9 +32,9 @@ async def test_quality_gate_fail_node_sets_failed_status():
 
     with (
         patch(
-            "app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
-        patch("app.workflows.graph_builder.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         result = await _quality_gate_fail_node(state)
 
@@ -63,9 +63,9 @@ async def test_quality_gate_fail_node_emits_sse_error():
 
     with (
         patch(
-            "app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
-        patch("app.workflows.graph_builder.logger"),
+        patch("app.domains.analysis.workflows.graph_builder.logger"),
     ):
         await _quality_gate_fail_node(state)
 
@@ -107,8 +107,8 @@ async def test_quality_gate_fail_node_logs_error():
     }
 
     with (
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.graph_builder.logger") as mock_logger,
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         await _quality_gate_fail_node(state)
 
@@ -137,9 +137,9 @@ async def test_quality_gate_fail_node_handles_none_values():
 
     with (
         patch(
-            "app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
+            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
-        patch("app.workflows.graph_builder.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.graph_builder.logger") as mock_logger,
     ):
         # Should not raise exception
         result = await _quality_gate_fail_node(state)

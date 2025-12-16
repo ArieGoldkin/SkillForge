@@ -39,7 +39,7 @@ def test_graph_should_retry_synthesis_returns_fail():
         },
     }
 
-    with patch("app.workflows.nodes.quality_gate_node.logger"):
+    with patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"):
         result = should_retry_synthesis(state)
 
         # CRITICAL: Must return "fail", not "continue"
@@ -110,8 +110,8 @@ async def test_quality_gate_fail_node_basic():
     }
 
     with (
-        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
-        patch("app.workflows.graph_builder.logger"),
+        patch("app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.domains.analysis.workflows.graph_builder.logger"),
     ):
         result = await _quality_gate_fail_node(state)
 
