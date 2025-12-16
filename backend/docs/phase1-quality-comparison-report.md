@@ -1,116 +1,119 @@
-# Phase 1 Few-Shot Quality Comparison Report
+# Phase 1 Quality Comparison Report (Few-Shot vs Chain-of-Thought)
 
-**Generated:** 2025-12-16 20:06:29 UTC
+**Generated:** 2025-12-16 21:22:28 UTC
 
 ## Executive Summary
 
-- **Overall Quality Improvement**: +0.0%
+- **Few-Shot Improvement**: -0.6% ❌
+- **Chain-of-Thought Improvement**: +0.0% ❌
+- **Winner**: **CoT** (+0.0%)
 - **Target Achievement**: ❌ NO (target: 15-25%)
-- **Samples Tested**: 33 examples across 7 agent types
+- **Samples Tested**: 14 examples across 7 agent types
 
 ## Results by Agent Type
 
-| Agent Type | Samples | Control Avg | Treatment Avg | Improvement | Token Increase |
-|------------|---------|-------------|---------------|-------------|----------------|
-| code_reviewer | 5 | 0.123 | 0.123 | +0.0% | +0.0% |
-| implementation_planner | 4 | 0.093 | 0.093 | +0.0% | +0.0% |
-| learning_path | 4 | 0.123 | 0.123 | +0.0% | +0.0% |
-| performance_analyst | 5 | 0.123 | 0.123 | +0.0% | +0.0% |
-| research_analyst | 5 | 0.123 | 0.123 | +0.0% | +0.0% |
-| security_auditor | 5 | 0.093 | 0.093 | +0.0% | +0.0% |
-| tech_comparator | 5 | 0.093 | 0.093 | +0.0% | +0.0% |
+| Agent Type | Samples | Control | Few-Shot | CoT | Few-Shot Δ | CoT Δ |
+|------------|---------|---------|----------|-----|------------|-------|
+| code_reviewer | 2 | 0.395 | 0.395 | 0.395 | +0.0% | +0.0% |
+| implementation_planner | 2 | 0.366 | 0.366 | 0.366 | +0.0% | +0.0% |
+| learning_path | 2 | 0.395 | 0.395 | 0.379 | +0.0% | -4.1% |
+| performance_analyst | 2 | 0.438 | 0.438 | 0.438 | +0.0% | +0.0% |
+| research_analyst | 2 | 0.395 | 0.379 | 0.395 | -4.1% | +0.0% |
+| security_auditor | 2 | 0.411 | 0.411 | 0.411 | +0.0% | +0.0% |
+| tech_comparator | 2 | 0.381 | 0.381 | 0.397 | +0.0% | +4.2% |
 
 ## Statistical Analysis
 
-- **Mean improvement**: +0.0%
-- **Median improvement**: +0.0%
-- **Sample size**: 33 examples
+- **Few-Shot mean improvement**: -0.6%
+- **CoT mean improvement**: +0.0%
+- **Median improvement (Few-Shot)**: +0.0%
+- **Sample size**: 14 examples
 
 ## Detailed Agent Analysis
 
 ### code_reviewer
 
-- **Samples**: 5
-- **Control avg score**: 0.123
-- **Treatment avg score**: 0.123
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.395
+- **Few-Shot avg score**: 0.395 (+0.0%)
+- **CoT avg score**: 0.395 (+0.0%)
+- **Winner**: **Few-Shot**
 
-**Best improvement**: +0.0% (Example: ## Overview Microservices architecture structures applicatio...)
+**Best Few-Shot**: +0.0% (Example: ## Overview Microservices architecture structures ...)
 
-**Worst improvement**: +0.0% (Example: ## Overview Microservices architecture structures applicatio...)
+**Best CoT**: +0.0% (Example: ## Overview Microservices architecture structures ...)
 
 ### implementation_planner
 
-- **Samples**: 4
-- **Control avg score**: 0.093
-- **Treatment avg score**: 0.093
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.366
+- **Few-Shot avg score**: 0.366 (+0.0%)
+- **CoT avg score**: 0.366 (+0.0%)
+- **Winner**: **Few-Shot**
 
-**Best improvement**: +0.0% (Example: ## Overview The RAG Triad is a framework for evaluating retr...)
+**Best Few-Shot**: +0.0% (Example: ## Overview The RAG Triad is a framework for evalu...)
 
-**Worst improvement**: +0.0% (Example: ## Overview The RAG Triad is a framework for evaluating retr...)
+**Best CoT**: +0.0% (Example: ## Overview The RAG Triad is a framework for evalu...)
 
 ### learning_path
 
-- **Samples**: 4
-- **Control avg score**: 0.123
-- **Treatment avg score**: 0.123
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.395
+- **Few-Shot avg score**: 0.395 (+0.0%)
+- **CoT avg score**: 0.379 (-4.1%)
+- **Winner**: **Few-Shot**
 
-**Best improvement**: +0.0% (Example: ## Overview MLOps applies DevOps practices to machine learni...)
+**Best Few-Shot**: +0.0% (Example: ## Overview MLOps applies DevOps practices to mach...)
 
-**Worst improvement**: +0.0% (Example: ## Overview MLOps applies DevOps practices to machine learni...)
+**Best CoT**: +0.0% (Example: ## Overview Direct Preference Optimization (DPO) i...)
 
 ### performance_analyst
 
-- **Samples**: 5
-- **Control avg score**: 0.123
-- **Treatment avg score**: 0.123
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.438
+- **Few-Shot avg score**: 0.438 (+0.0%)
+- **CoT avg score**: 0.438 (+0.0%)
+- **Winner**: **Few-Shot**
 
-**Best improvement**: +0.0% (Example: ## Overview DoorDash's matching engine processes over 1 mill...)
+**Best Few-Shot**: +0.0% (Example: ## Overview DoorDash's matching engine processes o...)
 
-**Worst improvement**: +0.0% (Example: ## Overview DoorDash's matching engine processes over 1 mill...)
+**Best CoT**: +0.0% (Example: ## Overview DoorDash's matching engine processes o...)
 
 ### research_analyst
 
-- **Samples**: 5
-- **Control avg score**: 0.123
-- **Treatment avg score**: 0.123
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.395
+- **Few-Shot avg score**: 0.379 (-4.1%)
+- **CoT avg score**: 0.395 (+0.0%)
+- **Winner**: **CoT**
 
-**Best improvement**: +0.0% (Example: ## Overview Flipkart's Big Billion Day flash sales generate ...)
+**Best Few-Shot**: +0.0% (Example: ## Overview Flipkart's Big Billion Day flash sales...)
 
-**Worst improvement**: +0.0% (Example: ## Overview Flipkart's Big Billion Day flash sales generate ...)
+**Best CoT**: +0.0% (Example: ## Overview Flipkart's Big Billion Day flash sales...)
 
 ### security_auditor
 
-- **Samples**: 5
-- **Control avg score**: 0.093
-- **Treatment avg score**: 0.093
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.411
+- **Few-Shot avg score**: 0.411 (+0.0%)
+- **CoT avg score**: 0.411 (+0.0%)
+- **Winner**: **Few-Shot**
 
-**Best improvement**: +0.0% (Example: ## Overview Transport Layer Security (TLS) provides confiden...)
+**Best Few-Shot**: +0.0% (Example: ## Overview Transport Layer Security (TLS) provide...)
 
-**Worst improvement**: +0.0% (Example: ## Overview Transport Layer Security (TLS) provides confiden...)
+**Best CoT**: +0.0% (Example: ## Overview Transport Layer Security (TLS) provide...)
 
 ### tech_comparator
 
-- **Samples**: 5
-- **Control avg score**: 0.093
-- **Treatment avg score**: 0.093
-- **Improvement**: +0.0% ± 0.0%
-- **Token increase**: +0.0%
+- **Samples**: 2
+- **Control avg score**: 0.381
+- **Few-Shot avg score**: 0.381 (+0.0%)
+- **CoT avg score**: 0.397 (+4.2%)
+- **Winner**: **CoT**
 
-**Best improvement**: +0.0% (Example: ## Overview Sentence-BERT (SBERT) is a modification of BERT ...)
+**Best Few-Shot**: +0.0% (Example: ## Overview Sentence-BERT (SBERT) is a modificatio...)
 
-**Worst improvement**: +0.0% (Example: ## Overview Sentence-BERT (SBERT) is a modification of BERT ...)
+**Best CoT**: +8.4% (Example: Comparing React vs Vue for state management...)
 
 ## Recommendations
 
@@ -124,6 +127,6 @@
 ## Cost Analysis
 
 - **Average token increase**: +0.0%
-- **Quality per token**: 0.000
+- **Quality per token**: -0.006
 
 *Token increase is acceptable if quality improvement justifies cost.*

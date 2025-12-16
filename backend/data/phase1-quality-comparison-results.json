@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-12-16T20:06:29.362733+00:00",
+  "timestamp": "2025-12-16T21:22:28.364131+00:00",
   "config": {
     "agent_type": null,
-    "sample_size": 5,
+    "sample_size": 2,
     "dry_run": false
   },
   "results": [
@@ -10,232 +10,99 @@
       "example_id": "d9101c94-973e-4d7e-86b9-60420f327ae5",
       "agent_type": "research_analyst",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.395,
+      "treatment_score": 0.395
     },
     {
       "example_id": "bdf7a167-75dd-4a5c-a054-aa6db8888a63",
       "agent_type": "research_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "a569a856-3f8d-40c4-9fac-85a51fd74cf4",
-      "agent_type": "research_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "618b6ae9-fe52-4f34-8558-a403576d4d14",
-      "agent_type": "research_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "5390d368-3ec6-4840-b07e-36589d034f26",
-      "agent_type": "research_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "improvement_pct": -8.101265822784818,
+      "control_score": 0.395,
+      "treatment_score": 0.363
     },
     {
       "example_id": "316257f2-6c2d-45be-842b-c4527b1588a0",
       "agent_type": "implementation_planner",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.366,
+      "treatment_score": 0.366
     },
     {
       "example_id": "6712b9d2-72ce-46c1-997c-73243bf5ad2e",
       "agent_type": "implementation_planner",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "76820261-1969-4b0c-8ccc-224c10239fd1",
-      "agent_type": "implementation_planner",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "a25d9b8e-b618-47dd-9d55-005690c51ba0",
-      "agent_type": "implementation_planner",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.366,
+      "treatment_score": 0.366
     },
     {
       "example_id": "e7b160a4-4c92-4c44-9cda-84dc127aeb72",
       "agent_type": "code_reviewer",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.395,
+      "treatment_score": 0.395
     },
     {
       "example_id": "7d449c71-9523-4348-bb1d-f25e1be5d164",
       "agent_type": "code_reviewer",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "a2d50062-c27e-42c7-8f96-d4f06a26187a",
-      "agent_type": "code_reviewer",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "e8f45924-c874-4441-b748-6ddba09b2cd7",
-      "agent_type": "code_reviewer",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "6525f863-0d46-44f8-80da-a0c0cff18038",
-      "agent_type": "code_reviewer",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.395,
+      "treatment_score": 0.395
     },
     {
       "example_id": "140801f8-63fb-40dd-bcd1-7dd9a7890734",
       "agent_type": "learning_path",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.395,
+      "treatment_score": 0.395
     },
     {
       "example_id": "dc54ce8e-5bcc-4c70-8f5a-1acda3e5fd99",
       "agent_type": "learning_path",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "6a41ca66-20f3-4c95-8bcf-6134aa09a020",
-      "agent_type": "learning_path",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "5040546e-84da-43ff-a192-dc7617b7aeb0",
-      "agent_type": "learning_path",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.395,
+      "treatment_score": 0.395
     },
     {
       "example_id": "d8dab3b2-7867-4823-9b62-2767be39194e",
       "agent_type": "performance_analyst",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.43800000000000006,
+      "treatment_score": 0.43800000000000006
     },
     {
       "example_id": "9d633dce-aff8-457b-bdf2-fa8d45a96ba1",
       "agent_type": "performance_analyst",
       "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "f0628d1c-5a26-4507-80ae-abb45361f578",
-      "agent_type": "performance_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "7d4f0f72-d214-4216-bc86-55f75277bb12",
-      "agent_type": "performance_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
-    },
-    {
-      "example_id": "c14d5bf9-7051-49bf-8e42-275b47f9fa1c",
-      "agent_type": "performance_analyst",
-      "improvement_pct": 0.0,
-      "control_score": 0.123,
-      "treatment_score": 0.123
+      "control_score": 0.43800000000000006,
+      "treatment_score": 0.43800000000000006
     },
     {
       "example_id": "751b2c1f-e85c-4a79-bbfa-f56a2a25e81b",
       "agent_type": "tech_comparator",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.381,
+      "treatment_score": 0.381
     },
     {
       "example_id": "3e64d7c8-0ef6-4223-8e33-1964f57e96d3",
       "agent_type": "tech_comparator",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "07c91c8e-59ec-425f-bce6-4855ebc4ee93",
-      "agent_type": "tech_comparator",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "627fa7c1-226c-4a16-a34c-e627e757c6a1",
-      "agent_type": "tech_comparator",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "3ca771df-80e1-4dcd-88d0-f3d19c368f5c",
-      "agent_type": "tech_comparator",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.381,
+      "treatment_score": 0.381
     },
     {
       "example_id": "b1bbf1aa-b067-4c08-86ab-c126bda107d4",
       "agent_type": "security_auditor",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.411,
+      "treatment_score": 0.411
     },
     {
       "example_id": "1483c7ef-43dc-4039-ab57-dc415d2903fd",
       "agent_type": "security_auditor",
       "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "93453f51-8cb2-4105-a904-6bedddb44312",
-      "agent_type": "security_auditor",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "598ad634-4a0d-48d2-a607-3f37e3d9ecb7",
-      "agent_type": "security_auditor",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
-    },
-    {
-      "example_id": "f590c5ec-94a9-4490-977b-962ccc8d08d4",
-      "agent_type": "security_auditor",
-      "improvement_pct": 0.0,
-      "control_score": 0.093,
-      "treatment_score": 0.093
+      "control_score": 0.411,
+      "treatment_score": 0.411
     }
   ]
 }

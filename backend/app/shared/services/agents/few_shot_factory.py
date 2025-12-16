@@ -179,8 +179,8 @@ async def create_few_shot_agent(  # noqa: PLR0913 - Factory function needs multi
     session: AsyncSession,
     embedding_service: EmbeddingService,
     variant: Literal["control", "treatment"] = "treatment",
-    max_examples: int = 5,
-    min_quality_score: float = 0.8,
+    max_examples: int = 3,
+    min_quality_score: float = 0.95,
     **factory_kwargs: Any,
 ) -> Any:
     """Create agent with optional few-shot example injection.
@@ -198,8 +198,8 @@ async def create_few_shot_agent(  # noqa: PLR0913 - Factory function needs multi
         session: Database session for example retrieval
         embedding_service: Service for generating embeddings
         variant: A/B test variant ('control' or 'treatment')
-        max_examples: Maximum examples to retrieve (default: 5)
-        min_quality_score: Minimum quality threshold (default: 0.8)
+        max_examples: Maximum examples to retrieve (default: 3)
+        min_quality_score: Minimum quality threshold (default: 0.95)
         **factory_kwargs: Additional kwargs passed to base_agent_factory
 
     Returns:

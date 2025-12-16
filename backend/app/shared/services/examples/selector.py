@@ -38,6 +38,9 @@ logger = get_logger(__name__)
 # Embedding dimensions (OpenAI text-embedding-3-small)
 EMBEDDING_DIMENSIONS = 1536
 
+# Maximum cosine distance for relevant examples (0.3 = 70% similarity)
+MAX_SIMILARITY_DISTANCE = 0.3
+
 
 class SemanticExampleSelector:
     """Select few-shot examples using semantic similarity.
@@ -156,6 +159,7 @@ class SemanticExampleSelector:
 
         # Build vector similarity query
         # Using cosine_distance for semantic similarity
+        # Only include examples with high relevance (distance <= MAX_SIMILARITY_DISTANCE)
         query = (
             select(
                 AgentExampleModel,
@@ -164,6 +168,10 @@ class SemanticExampleSelector:
             .where(AgentExampleModel.agent_type == agent_type)
             .where(AgentExampleModel.quality_score >= min_quality_score)
             .where(AgentExampleModel.embedding.isnot(None))
+            .where(
+                AgentExampleModel.embedding.cosine_distance(query_embedding)
+                <= MAX_SIMILARITY_DISTANCE
+            )
         )
 
         # Optional content type filter

@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage
 from sqlalchemy import select
 from tqdm.asyncio import tqdm  # type: ignore[import-untyped]
 
@@ -65,8 +66,20 @@ load_dotenv()
 from app.core.logging import get_logger  # noqa: E402
 from app.db.session import get_session_factory  # noqa: E402
 from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
+from app.domains.analysis.workflows.agents.schemas.code_reviewer import (  # noqa: E402
+    CodeReview,
+)
 from app.domains.analysis.workflows.agents.schemas.implementation_planner import (  # noqa: E402
     ImplementationPlan,
+)
+from app.domains.analysis.workflows.agents.schemas.learning_path import (  # noqa: E402
+    LearningPath,
+)
+from app.domains.analysis.workflows.agents.schemas.performance_analyst import (  # noqa: E402
+    PerformanceAnalysis,
+)
+from app.domains.analysis.workflows.agents.schemas.research_analyst import (  # noqa: E402
+    ResearchAnalysis,
 )
 from app.domains.analysis.workflows.agents.schemas.security_auditor import (  # noqa: E402
     SecurityAudit,
@@ -77,6 +90,7 @@ from app.domains.analysis.workflows.agents.schemas.tech_comparator import (  # n
 from app.models.agent_example import AgentExample  # noqa: E402
 from app.shared.services.agents.few_shot_factory import create_few_shot_agent  # noqa: E402
 from app.shared.services.embeddings.service import EmbeddingService  # noqa: E402
+from app.shared.services.prompts.chain_of_thought import get_cot_prompt  # noqa: E402
 from app.shared.services.quality_scorer import QualityScore, score_output_quality  # noqa: E402
 
 logger = get_logger(__name__)
@@ -86,12 +100,12 @@ AGENT_SCHEMAS: dict[str, type | None] = {
     "tech_comparator": TechComparison,
     "security_auditor": SecurityAudit,
     "implementation_planner": ImplementationPlan,
+    "research_analyst": ResearchAnalysis,
+    "code_reviewer": CodeReview,
+    "learning_path": LearningPath,
+    "performance_analyst": PerformanceAnalysis,
     "dependency_mapper": None,  # Not yet implemented
     "trend_validator": None,
-    "performance_analyst": None,
-    "code_reviewer": None,
-    "learning_path": None,
-    "research_analyst": None,
 }
 
 # System prompts (simplified for testing)
@@ -108,18 +122,22 @@ AGENT_PROMPTS = {
 
 @dataclass
 class ComparisonResult:
-    """Result of comparing control vs treatment for a single example."""
+    """Result of comparing control vs treatment vs CoT for a single example."""
 
     example_id: str
     agent_type: str
     input_summary: str
     control_score: QualityScore
     treatment_score: QualityScore
-    improvement_pct: float
+    cot_score: QualityScore  # Chain-of-Thought variant
+    improvement_pct: float  # Few-shot vs control
+    cot_improvement_pct: float  # CoT vs control
     control_time_ms: float
     treatment_time_ms: float
+    cot_time_ms: float
     control_output: dict[str, Any] | None = None
     treatment_output: dict[str, Any] | None = None
+    cot_output: dict[str, Any] | None = None
 
 
 @dataclass
@@ -130,12 +148,17 @@ class AgentTypeResults:
     sample_count: int
     control_avg_score: float
     treatment_avg_score: float
-    improvement_pct: float
+    cot_avg_score: float  # CoT average
+    improvement_pct: float  # Few-shot improvement
+    cot_improvement_pct: float  # CoT improvement
     improvement_std: float
+    cot_improvement_std: float
     best_improvement: ComparisonResult | None
     worst_improvement: ComparisonResult | None
+    best_cot_improvement: ComparisonResult | None
     control_avg_tokens: float
     treatment_avg_tokens: float
+    cot_avg_tokens: float
     token_increase_pct: float
 
 
@@ -227,10 +250,9 @@ async def run_control_variant(
             response_schema=schema_class,
         )
 
-        # Invoke agent
-        result = await agent.ainvoke(
-            {"content": example.input_content_preview or example.input_summary}
-        )
+        # Invoke agent with proper message format (required by Gemini)
+        input_content = example.input_content_preview or example.input_summary
+        result = await agent.ainvoke({"messages": [HumanMessage(content=input_content)]})
 
         elapsed_ms = (time.perf_counter() - start_time) * 1000
 
@@ -338,10 +360,9 @@ async def run_treatment_variant(
                 system_prompt=AGENT_PROMPTS.get(example.agent_type, "You are an AI assistant."),
             )
 
-            # Invoke agent
-            result = await agent.ainvoke(
-                {"content": example.input_content_preview or example.input_summary}
-            )
+            # Invoke agent with proper message format (required by Gemini)
+            input_content = example.input_content_preview or example.input_summary
+            result = await agent.ainvoke({"messages": [HumanMessage(content=input_content)]})
 
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
@@ -374,18 +395,92 @@ async def run_treatment_variant(
         return None, elapsed_ms
 
 
+async def run_cot_variant(
+    example: AgentExample,
+    dry_run: bool = False,
+) -> tuple[dict[str, Any] | None, float]:
+    """Run Chain-of-Thought variant (structured reasoning prompts).
+
+    Uses explicit reasoning steps before generating structured output,
+    based on research showing CoT can outperform few-shot for complex tasks.
+
+    Args:
+        example: Agent example to test
+        dry_run: If True, return mock output without LLM call
+
+    Returns:
+        Tuple of (output_dict, time_ms)
+
+    """
+    start_time = time.perf_counter()
+
+    try:
+        schema_class = AGENT_SCHEMAS.get(example.agent_type)
+        if schema_class is None:
+            logger.warning(
+                "cot_variant_no_schema",
+                agent_type=example.agent_type,
+                example_id=str(example.id),
+            )
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            return None, elapsed_ms
+
+        # Get Chain-of-Thought prompt (includes reasoning steps)
+        cot_prompt = get_cot_prompt(example.agent_type)
+
+        # Create agent with CoT prompt
+        agent = create_structured_agent(
+            system_prompt=cot_prompt,
+            response_schema=schema_class,
+        )
+
+        # Invoke agent with proper message format (required by Gemini)
+        input_content = example.input_content_preview or example.input_summary
+        result = await agent.ainvoke({"messages": [HumanMessage(content=input_content)]})
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        # Extract output dict (handle both dict and Pydantic model)
+        if hasattr(result, "dict"):
+            output_dict = result.dict()
+        elif hasattr(result, "model_dump"):
+            output_dict = result.model_dump()
+        else:
+            output_dict = result
+
+        logger.info(
+            "cot_variant_completed",
+            agent_type=example.agent_type,
+            example_id=str(example.id),
+            elapsed_ms=elapsed_ms,
+        )
+
+        return output_dict, elapsed_ms
+
+    except Exception as e:
+        logger.error(
+            "cot_variant_failed",
+            agent_type=example.agent_type,
+            example_id=str(example.id),
+            error=str(e),
+            exc_info=True,
+        )
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        return None, elapsed_ms
+
+
 async def compare_example(
     example: AgentExample,
     dry_run: bool = False,
 ) -> ComparisonResult:
-    """Compare control vs treatment for a single example.
+    """Compare control vs treatment vs CoT for a single example.
 
     Args:
         example: Agent example to test
         dry_run: If True, use mock outputs
 
     Returns:
-        ComparisonResult with quality scores and timing
+        ComparisonResult with quality scores and timing for all three variants
 
     """
     logger.info(
@@ -394,11 +489,12 @@ async def compare_example(
         example_id=str(example.id),
     )
 
-    # Run both variants
+    # Run all three variants
     control_output, control_time = await run_control_variant(example, dry_run)
     treatment_output, treatment_time = await run_treatment_variant(example, dry_run)
+    cot_output, cot_time = await run_cot_variant(example, dry_run)
 
-    # Score both outputs
+    # Score all outputs
     schema_class = AGENT_SCHEMAS.get(example.agent_type)
     golden_example_dict = {
         "output_example": example.output_example,
@@ -419,14 +515,25 @@ async def compare_example(
         schema_class=schema_class,
     )
 
-    # Calculate improvement
+    cot_score = score_output_quality(
+        output=cot_output or {},
+        golden_example=golden_example_dict,
+        agent_type=example.agent_type,
+        schema_class=schema_class,
+    )
+
+    # Calculate improvements vs control
     if control_score.overall_score > 0:
         improvement_pct = (
             (treatment_score.overall_score - control_score.overall_score)
             / control_score.overall_score
         ) * 100
+        cot_improvement_pct = (
+            (cot_score.overall_score - control_score.overall_score) / control_score.overall_score
+        ) * 100
     else:
         improvement_pct = 0.0
+        cot_improvement_pct = 0.0
 
     return ComparisonResult(
         example_id=str(example.id),
@@ -434,11 +541,15 @@ async def compare_example(
         input_summary=example.input_summary[:100],
         control_score=control_score,
         treatment_score=treatment_score,
+        cot_score=cot_score,
         improvement_pct=improvement_pct,
+        cot_improvement_pct=cot_improvement_pct,
         control_time_ms=control_time,
         treatment_time_ms=treatment_time,
+        cot_time_ms=cot_time,
         control_output=control_output,
         treatment_output=treatment_output,
+        cot_output=cot_output,
     )
 
 
@@ -460,16 +571,23 @@ def aggregate_results(results: list[ComparisonResult]) -> dict[str, AgentTypeRes
     for agent_type, type_results in by_type.items():
         control_scores = [r.control_score.overall_score for r in type_results]
         treatment_scores = [r.treatment_score.overall_score for r in type_results]
+        cot_scores = [r.cot_score.overall_score for r in type_results]
         improvements = [r.improvement_pct for r in type_results]
+        cot_improvements = [r.cot_improvement_pct for r in type_results]
 
         control_tokens = [r.control_score.token_count for r in type_results]
         treatment_tokens = [r.treatment_score.token_count for r in type_results]
+        cot_tokens = [r.cot_score.token_count for r in type_results]
 
         control_avg = sum(control_scores) / len(control_scores) if control_scores else 0
         treatment_avg = sum(treatment_scores) / len(treatment_scores) if treatment_scores else 0
+        cot_avg = sum(cot_scores) / len(cot_scores) if cot_scores else 0
         improvement_avg = sum(improvements) / len(improvements) if improvements else 0
+        cot_improvement_avg = (
+            sum(cot_improvements) / len(cot_improvements) if cot_improvements else 0
+        )
 
-        # Standard deviation
+        # Standard deviation for few-shot
         if len(improvements) > 1:
             mean = improvement_avg
             variance = sum((x - mean) ** 2 for x in improvements) / len(improvements)
@@ -477,11 +595,22 @@ def aggregate_results(results: list[ComparisonResult]) -> dict[str, AgentTypeRes
         else:
             improvement_std = 0.0
 
+        # Standard deviation for CoT
+        if len(cot_improvements) > 1:
+            cot_mean = cot_improvement_avg
+            cot_variance = sum((x - cot_mean) ** 2 for x in cot_improvements) / len(
+                cot_improvements
+            )
+            cot_improvement_std = cot_variance**0.5
+        else:
+            cot_improvement_std = 0.0
+
         # Token usage
         control_avg_tokens = sum(control_tokens) / len(control_tokens) if control_tokens else 0
         treatment_avg_tokens = (
             sum(treatment_tokens) / len(treatment_tokens) if treatment_tokens else 0
         )
+        cot_avg_tokens = sum(cot_tokens) / len(cot_tokens) if cot_tokens else 0
         token_increase_pct = (
             ((treatment_avg_tokens - control_avg_tokens) / control_avg_tokens) * 100
             if control_avg_tokens > 0
@@ -491,18 +620,24 @@ def aggregate_results(results: list[ComparisonResult]) -> dict[str, AgentTypeRes
         # Best and worst improvements
         best = max(type_results, key=lambda r: r.improvement_pct)
         worst = min(type_results, key=lambda r: r.improvement_pct)
+        best_cot = max(type_results, key=lambda r: r.cot_improvement_pct)
 
         aggregated[agent_type] = AgentTypeResults(
             agent_type=agent_type,
             sample_count=len(type_results),
             control_avg_score=control_avg,
             treatment_avg_score=treatment_avg,
+            cot_avg_score=cot_avg,
             improvement_pct=improvement_avg,
+            cot_improvement_pct=cot_improvement_avg,
             improvement_std=improvement_std,
+            cot_improvement_std=cot_improvement_std,
             best_improvement=best,
             worst_improvement=worst,
+            best_cot_improvement=best_cot,
             control_avg_tokens=control_avg_tokens,
             treatment_avg_tokens=treatment_avg_tokens,
+            cot_avg_tokens=cot_avg_tokens,
             token_increase_pct=token_increase_pct,
         )
 
@@ -524,34 +659,45 @@ def generate_markdown_report(
     """
     # Calculate overall statistics
     all_improvements = [r.improvement_pct for r in results]
+    all_cot_improvements = [r.cot_improvement_pct for r in results]
     overall_avg = sum(all_improvements) / len(all_improvements) if all_improvements else 0
+    overall_cot_avg = (
+        sum(all_cot_improvements) / len(all_cot_improvements) if all_cot_improvements else 0
+    )
     overall_median = sorted(all_improvements)[len(all_improvements) // 2] if all_improvements else 0
 
     # Statistical significance (basic check)
     target_min = 15.0
     target_max = 25.0
     target_met = target_min <= overall_avg <= target_max
+    cot_target_met = target_min <= overall_cot_avg <= target_max
+
+    # Determine winner
+    winner = "CoT" if overall_cot_avg > overall_avg else "Few-Shot"
+    best_improvement = max(overall_avg, overall_cot_avg)
 
     lines = [
-        "# Phase 1 Few-Shot Quality Comparison Report",
+        "# Phase 1 Quality Comparison Report (Few-Shot vs Chain-of-Thought)",
         "",
         f"**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
         "",
         "## Executive Summary",
         "",
-        f"- **Overall Quality Improvement**: {overall_avg:+.1f}%",
-        f"- **Target Achievement**: {'✅ YES' if target_met else '❌ NO'} (target: 15-25%)",
+        f"- **Few-Shot Improvement**: {overall_avg:+.1f}% {'✅' if target_met else '❌'}",
+        f"- **Chain-of-Thought Improvement**: {overall_cot_avg:+.1f}% {'✅' if cot_target_met else '❌'}",
+        f"- **Winner**: **{winner}** ({best_improvement:+.1f}%)",
+        f"- **Target Achievement**: {'✅ YES' if target_met or cot_target_met else '❌ NO'} (target: 15-25%)",
         f"- **Samples Tested**: {len(results)} examples across {len(aggregated)} agent types",
         "",
         "## Results by Agent Type",
         "",
     ]
 
-    # Add table header
+    # Add table header with CoT column
     lines.extend(
         [
-            "| Agent Type | Samples | Control Avg | Treatment Avg | Improvement | Token Increase |",
-            "|------------|---------|-------------|---------------|-------------|----------------|",
+            "| Agent Type | Samples | Control | Few-Shot | CoT | Few-Shot Δ | CoT Δ |",
+            "|------------|---------|---------|----------|-----|------------|-------|",
         ]
     )
 
@@ -559,8 +705,8 @@ def generate_markdown_report(
         agg = aggregated[agent_type]
         lines.append(
             f"| {agent_type} | {agg.sample_count} | {agg.control_avg_score:.3f} | "
-            f"{agg.treatment_avg_score:.3f} | {agg.improvement_pct:+.1f}% | "
-            f"{agg.token_increase_pct:+.1f}% |"
+            f"{agg.treatment_avg_score:.3f} | {agg.cot_avg_score:.3f} | "
+            f"{agg.improvement_pct:+.1f}% | {agg.cot_improvement_pct:+.1f}% |"
         )
 
     lines.extend(
@@ -568,8 +714,9 @@ def generate_markdown_report(
             "",
             "## Statistical Analysis",
             "",
-            f"- **Mean improvement**: {overall_avg:+.1f}%",
-            f"- **Median improvement**: {overall_median:+.1f}%",
+            f"- **Few-Shot mean improvement**: {overall_avg:+.1f}%",
+            f"- **CoT mean improvement**: {overall_cot_avg:+.1f}%",
+            f"- **Median improvement (Few-Shot)**: {overall_median:+.1f}%",
             f"- **Sample size**: {len(results)} examples",
             "",
         ]
@@ -585,21 +732,22 @@ def generate_markdown_report(
 
     for agent_type in sorted(aggregated.keys()):
         agg = aggregated[agent_type]
+        local_winner = "CoT" if agg.cot_improvement_pct > agg.improvement_pct else "Few-Shot"
         lines.extend(
             [
                 f"### {agent_type}",
                 "",
                 f"- **Samples**: {agg.sample_count}",
                 f"- **Control avg score**: {agg.control_avg_score:.3f}",
-                f"- **Treatment avg score**: {agg.treatment_avg_score:.3f}",
-                f"- **Improvement**: {agg.improvement_pct:+.1f}% ± {agg.improvement_std:.1f}%",
-                f"- **Token increase**: {agg.token_increase_pct:+.1f}%",
+                f"- **Few-Shot avg score**: {agg.treatment_avg_score:.3f} ({agg.improvement_pct:+.1f}%)",
+                f"- **CoT avg score**: {agg.cot_avg_score:.3f} ({agg.cot_improvement_pct:+.1f}%)",
+                f"- **Winner**: **{local_winner}**",
                 "",
-                f"**Best improvement**: {agg.best_improvement.improvement_pct:+.1f}% "
-                f"(Example: {agg.best_improvement.input_summary[:60]}...)",
+                f"**Best Few-Shot**: {agg.best_improvement.improvement_pct:+.1f}% "
+                f"(Example: {agg.best_improvement.input_summary[:50]}...)",
                 "",
-                f"**Worst improvement**: {agg.worst_improvement.improvement_pct:+.1f}% "
-                f"(Example: {agg.worst_improvement.input_summary[:60]}...)",
+                f"**Best CoT**: {agg.best_cot_improvement.cot_improvement_pct:+.1f}% "
+                f"(Example: {agg.best_cot_improvement.input_summary[:50]}...)",
                 "",
             ]
         )
