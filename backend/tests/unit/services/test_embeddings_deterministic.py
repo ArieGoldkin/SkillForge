@@ -6,7 +6,6 @@ import pytest
 
 from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 
-@pytest.mark.unit
 
 
 class TestDeterministicEmbeddingService:

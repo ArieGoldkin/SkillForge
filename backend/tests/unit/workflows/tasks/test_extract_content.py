@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-@pytest.mark.unit
 
 # Valid UUID for testing
 TEST_ANALYSIS_ID = str(uuid.uuid4())

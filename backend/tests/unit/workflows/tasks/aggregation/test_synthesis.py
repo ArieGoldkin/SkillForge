@@ -14,8 +14,6 @@ from app.domains.analysis.workflows.tasks.aggregation.synthesis import (
 )
 from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
-@pytest.mark.unit
-
 
 @pytest.fixture
 def sample_analysis_id() -> str:
@@ -203,7 +201,9 @@ class TestCreateSynthesisAgentWithFallback:
     """Test synthesis agent with fallback chain creation (Issue #299-304)."""
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
-    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    @patch(
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model"
+    )
     def test_create_synthesis_agent_with_fallback_attaches_fallback(
         self,
         mock_create_fallback: MagicMock,
@@ -242,7 +242,9 @@ class TestCreateSynthesisAgentWithFallback:
         assert result == mock_agent_with_fallback
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
-    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    @patch(
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model"
+    )
     def test_create_synthesis_agent_with_fallback_logs_models(
         self,
         mock_create_fallback: MagicMock,

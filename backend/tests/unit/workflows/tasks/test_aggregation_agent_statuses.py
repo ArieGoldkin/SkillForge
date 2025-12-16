@@ -7,7 +7,6 @@ import pytest
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 
-@pytest.mark.unit
 
 
 @pytest.fixture

@@ -7,7 +7,6 @@ import pytest
 
 from app.shared.services.metrics.langsmith import LangSmithMetricsService
 
-@pytest.mark.unit
 
 
 @pytest.fixture

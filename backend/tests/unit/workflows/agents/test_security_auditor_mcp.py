@@ -15,7 +15,6 @@ from langchain_core.tools import BaseTool
 
 from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
 
-@pytest.mark.unit
 
 # ============================================================================
 # Fixtures

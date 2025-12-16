@@ -7,7 +7,6 @@ import pytest
 from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
 
-@pytest.mark.unit
 
 
 @pytest.fixture

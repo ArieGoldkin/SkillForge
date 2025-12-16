@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.workflows.agents.base import save_agent_finding
 
-@pytest.mark.unit
 
 
 @pytest.fixture

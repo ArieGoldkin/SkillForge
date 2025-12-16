@@ -10,7 +10,6 @@ from app.domains.analysis.workflows.agents.schemas.trend_validator import TrendA
 from app.domains.analysis.workflows.agents.trend_validator import run_trend_validator
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

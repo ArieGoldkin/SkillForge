@@ -10,7 +10,6 @@ import pytest
 
 from app.domains.analysis.workflows.agents.streaming import stream_agent_response
 
-@pytest.mark.unit
 
 
 @pytest.fixture

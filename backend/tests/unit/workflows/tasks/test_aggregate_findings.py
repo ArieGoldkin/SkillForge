@@ -9,7 +9,6 @@ from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_fi
 from app.domains.analysis.workflows.tasks.aggregation import validate_and_parse_findings
 from app.domains.analysis.workflows.tasks.aggregation_helpers import (
 
-@pytest.mark.unit
     calculate_coverage_score,
     detect_conflicts,
     detect_coverage_gaps,

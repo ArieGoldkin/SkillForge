@@ -7,7 +7,6 @@ import pytest
 
 from app.domains.analysis.workflows.agents.invocation import invoke_agent
 
-@pytest.mark.unit
 
 
 class TestInvokeAgent:

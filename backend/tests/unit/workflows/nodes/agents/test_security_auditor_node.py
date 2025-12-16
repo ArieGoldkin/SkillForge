@@ -8,7 +8,6 @@ import pytest
 from app.domains.analysis.workflows.nodes.agents.security_auditor_node import security_auditor_node
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

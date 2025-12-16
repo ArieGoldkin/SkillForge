@@ -7,7 +7,6 @@ import pytest
 
 from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
 
-@pytest.mark.unit
 
 
 @pytest.fixture

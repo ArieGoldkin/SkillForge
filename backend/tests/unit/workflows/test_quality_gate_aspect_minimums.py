@@ -20,7 +20,6 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
 )
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

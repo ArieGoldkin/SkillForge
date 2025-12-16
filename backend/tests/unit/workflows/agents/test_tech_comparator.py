@@ -11,7 +11,6 @@ from app.domains.analysis.workflows.agents.schemas.tech_comparator import TechCo
 from app.domains.analysis.workflows.agents.tech_comparator import run_tech_comparator
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

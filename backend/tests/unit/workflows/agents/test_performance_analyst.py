@@ -10,7 +10,6 @@ from app.domains.analysis.workflows.agents.performance_analyst import run_perfor
 from app.domains.analysis.workflows.agents.schemas.performance_analyst import PerformanceAnalysis, PerformanceMetric
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

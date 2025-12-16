@@ -20,8 +20,6 @@ import pytest
 from app.schemas.search import ChunkMetadata, ReRankConfig, SearchResult
 from app.shared.services.search.reranker import ReRanker, ReRankScore
 
-@pytest.mark.unit
-
 
 @pytest.fixture
 def sample_search_results() -> list[SearchResult]:

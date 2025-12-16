@@ -8,7 +8,6 @@ import pytest
 from app.domains.analysis.workflows.nodes.agents.trend_validator_node import trend_validator_node
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

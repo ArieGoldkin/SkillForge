@@ -8,7 +8,6 @@ import pytest
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 from app.api.v1.artifacts import router
 from app.db.repositories.artifact_repository import get_artifact_repository
 
-@pytest.mark.unit
 
 
 @pytest.fixture

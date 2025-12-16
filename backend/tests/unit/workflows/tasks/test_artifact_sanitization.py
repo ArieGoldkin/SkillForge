@@ -12,7 +12,6 @@ import pytest
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.generate_artifact import generate_artifact
 
-@pytest.mark.unit
 
 
 @pytest.fixture

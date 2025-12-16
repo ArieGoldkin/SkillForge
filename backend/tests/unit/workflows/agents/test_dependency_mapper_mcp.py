@@ -15,7 +15,6 @@ from langchain_core.tools import BaseTool
 
 from app.domains.analysis.workflows.agents.dependency_mapper import run_dependency_mapper
 
-@pytest.mark.unit
 
 # ============================================================================
 # Fixtures

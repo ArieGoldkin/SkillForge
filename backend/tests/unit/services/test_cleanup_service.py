@@ -12,7 +12,6 @@ from app.shared.services.cleanup.integrity_checks import VectorIntegrityChecker
 from app.shared.services.cleanup.orphan_cleanup import OrphanCleaner
 from app.shared.services.cleanup.ttl_cleanup import TTLCleaner
 
-@pytest.mark.unit
 
 
 @pytest.fixture

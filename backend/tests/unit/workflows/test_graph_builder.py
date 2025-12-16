@@ -8,7 +8,6 @@ import pytest
 from app.domains.analysis.workflows.graph_builder import build_analysis_graph
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536

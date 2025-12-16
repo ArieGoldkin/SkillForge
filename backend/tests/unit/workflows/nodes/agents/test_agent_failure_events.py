@@ -8,7 +8,6 @@ import pytest
 from app.domains.analysis.workflows.nodes.agents.implementation_planner_node import implementation_planner_node
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

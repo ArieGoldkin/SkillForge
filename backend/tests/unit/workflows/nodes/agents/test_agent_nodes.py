@@ -18,7 +18,6 @@ from app.domains.analysis.workflows.nodes.agents.security_auditor_node import se
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
 from app.domains.analysis.workflows.nodes.agents.trend_validator_node import trend_validator_node
 
-@pytest.mark.unit
 
 
 @pytest.fixture

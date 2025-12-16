@@ -14,7 +14,6 @@ from app.domains.analysis.workflows.tasks.artifact_helpers import (
 )
 from app.domains.analysis.workflows.tasks.generate_artifact import generate_artifact
 
-@pytest.mark.unit
 
 
 @pytest.fixture

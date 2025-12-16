@@ -13,7 +13,6 @@ from app.domains.analysis.workflows.agents.schemas.integration_feasibility impor
 )
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

@@ -10,7 +10,6 @@ import pytest
 
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
 
-@pytest.mark.unit
 
 
 @pytest.fixture

@@ -10,7 +10,6 @@ from app.domains.analysis.workflows.agents.schemas.security_auditor import Secur
 from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

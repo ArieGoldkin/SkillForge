@@ -10,7 +10,6 @@ from app.domains.analysis.workflows.agents.dependency_mapper import run_dependen
 from app.domains.analysis.workflows.agents.schemas.dependency_mapper import Dependency, DependencyMapping
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

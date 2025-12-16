@@ -15,7 +15,6 @@ from app.shared.services.memory.agent_memory_service import MemorySnippet
 from app.domains.analysis.workflows.nodes.inject_context_node import inject_context_node
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

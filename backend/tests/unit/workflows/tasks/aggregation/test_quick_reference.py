@@ -14,7 +14,6 @@ from app.domains.analysis.workflows.tasks.aggregation.quick_reference import (
 )
 from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
 
-@pytest.mark.unit
 
 
 @pytest.fixture

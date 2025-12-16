@@ -9,7 +9,6 @@ from app.db.repositories.analysis_repository import get_analysis_repository
 from app.main import app
 from app.models.analysis import Analysis
 
-@pytest.mark.unit
 
 client = TestClient(app)
 

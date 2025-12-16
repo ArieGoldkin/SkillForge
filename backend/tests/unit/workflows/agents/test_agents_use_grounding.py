@@ -14,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.analysis.workflows.agents.grounding import GROUNDING_INSTRUCTIONS, apply_grounding
 from app.domains.analysis.workflows.state import AnalysisState
 
-@pytest.mark.unit
 
 
 @pytest.fixture

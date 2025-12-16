@@ -19,7 +19,6 @@ from app.domains.analysis.workflows.nodes.agent_router import (
 )
 from app.domains.analysis.workflows.state import AnalysisState, ContentRef
 
-@pytest.mark.unit
 
 
 @pytest.fixture
