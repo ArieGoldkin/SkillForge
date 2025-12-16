@@ -293,17 +293,8 @@ class TestCompressSingleFinding:
             }
         )
 
-        with patch(
-            "app.domains.analysis.workflows.tasks.aggregation.compress_findings.invoke_agent",
-            return_value={
-                "agent_name": agent_name,
-                "key_insights": ["SQL injection found"],
-                "confidence": 0.9,
-                "data_quality": "high",
-                "critical_warnings": ["Critical SQL vulnerability"],
-                "relevant_code_snippets": [],
-            },
-        ):
+        # Patch asyncio.timeout to prevent actual timeout
+        with patch("app.domains.analysis.workflows.tasks.aggregation.compress_findings.asyncio.timeout"):
             result = await compress_single_finding(
                 agent_name=agent_name,
                 finding=finding,
@@ -324,11 +315,14 @@ class TestCompressSingleFinding:
 
         # Mock LLM to raise TimeoutError
         mock_llm = AsyncMock()
+        mock_llm.ainvoke = AsyncMock(side_effect=TimeoutError("Compression timeout"))
 
-        with patch(
-            "app.domains.analysis.workflows.tasks.aggregation.compress_findings.invoke_agent",
-            side_effect=TimeoutError("Compression timeout"),
-        ):
+        # Patch asyncio.timeout to allow TimeoutError to propagate
+        with patch("app.domains.analysis.workflows.tasks.aggregation.compress_findings.asyncio.timeout") as mock_timeout:
+            # Make timeout context manager raise TimeoutError
+            mock_timeout.return_value.__aenter__ = AsyncMock()
+            mock_timeout.return_value.__aexit__ = AsyncMock(return_value=False)
+            
             with pytest.raises(TimeoutError):
                 await compress_single_finding(
                     agent_name=agent_name,

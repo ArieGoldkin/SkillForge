@@ -235,7 +235,9 @@ async def test_run_agent_with_tracking_uuid_object(
 @pytest.mark.asyncio
 @patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
 @patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
 async def test_agent_execution_converts_generatorexit_to_timeouterror(
+    mock_persist,
     mock_emit_progress,
     mock_get_stage_name,
     mock_session,
@@ -246,7 +248,7 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
 
-    with patch("app.domains.analysis.workflows.agents.invocation.invoke_agent") as mock_invoke:
+    with patch("app.domains.analysis.workflows.agents.execution.invoke_agent", new_callable=AsyncMock) as mock_invoke:
         # Mock invoke_agent to raise GeneratorExit (simulating timeout cancellation)
         mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
 
@@ -257,7 +259,7 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
             agent=mock_agent,
             content="test content",
             content_type="article",
-            analysis_id=AnalysisID("test-id"),
+            analysis_id=AnalysisID(str(uuid4())),  # Use valid UUID string
             agent_type="tech_comparator",  # Use valid agent type
         )
         config = AgentExecutionConfig(session=mock_session)
@@ -269,7 +271,9 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
 @pytest.mark.asyncio
 @patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
 @patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
 async def test_agent_execution_handles_timeouterror(
+    mock_persist,
     mock_emit_progress,
     mock_get_stage_name,
     mock_session,
@@ -280,7 +284,7 @@ async def test_agent_execution_handles_timeouterror(
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
 
-    with patch("app.domains.analysis.workflows.agents.invocation.invoke_agent") as mock_invoke:
+    with patch("app.domains.analysis.workflows.agents.execution.invoke_agent", new_callable=AsyncMock) as mock_invoke:
         # Mock invoke_agent to raise TimeoutError
         mock_invoke.side_effect = TimeoutError("Agent exceeded timeout")
 
@@ -291,7 +295,7 @@ async def test_agent_execution_handles_timeouterror(
             agent=mock_agent,
             content="test content",
             content_type="article",
-            analysis_id=AnalysisID("test-id"),
+            analysis_id=AnalysisID(str(uuid4())),  # Use valid UUID string
             agent_type="tech_comparator",  # Use valid agent type
         )
         config = AgentExecutionConfig(session=mock_session)

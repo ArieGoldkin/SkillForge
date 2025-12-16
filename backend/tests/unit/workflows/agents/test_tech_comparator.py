@@ -137,13 +137,15 @@ async def test_run_tech_comparator_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.base.create_structured_agent")
-@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress")
-@patch("app.domains.analysis.workflows.agents.base.save_agent_finding")
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.invocation.invoke_agent", new_callable=AsyncMock)
 async def test_tech_comparator_structured_output(
-    mock_save_finding,
+    mock_invoke_agent,
+    mock_persist,
     mock_emit_progress,
-    mock_create_agent,
+    mock_save_finding,
     mock_agent,
     mock_session,
 ):
@@ -152,7 +154,16 @@ async def test_tech_comparator_structured_output(
     content = "React is a popular JavaScript library."
     content_type = "article"
 
-    mock_create_agent.return_value = mock_agent
+    # Mock invoke_agent to return structured response
+    mock_invoke_agent.return_value = {
+        "structured_response": {
+            "primary_tech": "React",
+            "alternatives": ["Vue.js"],
+            "comparison": {},
+            "recommendation": "Use React",
+            "confidence_score": 0.85,
+        }
+    }
     mock_save_finding.return_value = MagicMock()
 
     result = await run_agent_with_tracking(

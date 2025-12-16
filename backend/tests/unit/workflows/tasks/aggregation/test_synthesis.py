@@ -267,7 +267,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_success(
@@ -279,12 +279,9 @@ class TestSynthesizeWithLLM:
         sample_confidence_scores: dict[str, float],
         sample_llm_response: dict[str, object],
     ):
-        """Test successful LLM synthesis flow with tiered fallback chain (Issue #299-304)."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
-        # Setup mock to return result and tier
-        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
+        """Test successful LLM synthesis flow with multi-phase synthesis."""
+        # Setup mock to return result (synthesize_with_llm_phased returns dict, not tuple)
+        mock_synthesize_with_fallback_chain.return_value = sample_llm_response
 
         # Execute the actual synthesize_with_llm function
         result = await synthesize_with_llm(
@@ -294,21 +291,20 @@ class TestSynthesizeWithLLM:
             analysis_id=sample_analysis_id,
         )
 
-        # Verify synthesize_with_fallback_chain was called with correct args
+        # Verify synthesize_with_llm_phased was called with correct args
         mock_synthesize_with_fallback_chain.assert_called_once()
         call_kwargs = mock_synthesize_with_fallback_chain.call_args.kwargs
         assert call_kwargs["validated_findings"] == sample_validated_findings
         assert call_kwargs["conflicts"] == sample_conflicts
         assert call_kwargs["confidence_scores"] == sample_confidence_scores
         assert call_kwargs["analysis_id"] == sample_analysis_id
-        assert "full_schema" in call_kwargs
 
         # Verify result matches expected response
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_fallback_to_static(
@@ -319,10 +315,7 @@ class TestSynthesizeWithLLM:
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
     ):
-        """Test synthesize_with_llm falls back to static tier when all LLM tiers fail (Issue #299-304)."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
+        """Test synthesize_with_llm falls back to static tier when all LLM tiers fail."""
         # Setup mock to return static fallback result
         static_result = {
             "executive_summary": "Analysis completed with 2 specialized agents. Full synthesis unavailable.",
@@ -336,7 +329,7 @@ class TestSynthesizeWithLLM:
             "coverage_score": 0.3,
             "generation_notes": "Static fallback - full synthesis unavailable.",
         }
-        mock_synthesize_with_fallback_chain.return_value = (static_result, FallbackTier.STATIC)
+        mock_synthesize_with_fallback_chain.return_value = static_result
 
         # Execute
         result = await synthesize_with_llm(
@@ -353,7 +346,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_fallback_to_minimal_schema(
@@ -364,10 +357,7 @@ class TestSynthesizeWithLLM:
         sample_conflicts: list[dict[str, str]],
         sample_confidence_scores: dict[str, float],
     ):
-        """Test synthesize_with_llm can use minimal schema tier (Issue #299-304)."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
+        """Test synthesize_with_llm can use minimal schema tier."""
         # Setup mock to return minimal schema result
         minimal_result = {
             "executive_summary": "Quick summary from minimal schema tier.",
@@ -385,7 +375,7 @@ class TestSynthesizeWithLLM:
             "coverage_score": 0.5,
             "generation_notes": "Degraded mode - partial content generated",
         }
-        mock_synthesize_with_fallback_chain.return_value = (minimal_result, FallbackTier.MINIMAL)
+        mock_synthesize_with_fallback_chain.return_value = minimal_result
 
         # Execute
         result = await synthesize_with_llm(
@@ -401,7 +391,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_empty_findings(
@@ -411,11 +401,8 @@ class TestSynthesizeWithLLM:
         sample_llm_response: dict[str, object],
     ):
         """Test synthesize_with_llm with empty findings."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
         # Setup mock
-        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
+        mock_synthesize_with_fallback_chain.return_value = sample_llm_response
 
         # Execute with empty findings
         result = await synthesize_with_llm(
@@ -433,7 +420,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_many_conflicts(
@@ -445,9 +432,6 @@ class TestSynthesizeWithLLM:
         sample_llm_response: dict[str, object],
     ):
         """Test synthesize_with_llm with multiple conflicts."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
         # Setup many conflicts
         conflicts = [
             {"agent_1": "tech_comparator", "agent_2": "security_auditor", "conflict": "Conflict 1"},
@@ -464,7 +448,7 @@ class TestSynthesizeWithLLM:
         ]
 
         # Setup mock
-        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
+        mock_synthesize_with_fallback_chain.return_value = sample_llm_response
 
         # Execute
         result = await synthesize_with_llm(
@@ -483,7 +467,7 @@ class TestSynthesizeWithLLM:
 
     @pytest.mark.asyncio
     @patch(
-        "app.domains.analysis.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        "app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.synthesize_with_llm_phased",
         new_callable=AsyncMock,
     )
     async def test_synthesize_with_llm_reduced_tier_success(
@@ -496,14 +480,8 @@ class TestSynthesizeWithLLM:
         sample_llm_response: dict[str, object],
     ):
         """Test synthesize_with_llm succeeds with REDUCED tier (faster model)."""
-        # Import FallbackTier enum
-        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
-
-        # Setup mock to return reduced tier result
-        mock_synthesize_with_fallback_chain.return_value = (
-            sample_llm_response,
-            FallbackTier.REDUCED,
-        )
+        # Setup mock to return result
+        mock_synthesize_with_fallback_chain.return_value = sample_llm_response
 
         # Execute
         result = await synthesize_with_llm(
