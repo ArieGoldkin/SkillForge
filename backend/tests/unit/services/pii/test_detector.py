@@ -142,8 +142,6 @@ class PIIDetector:
 
         from app.shared.services.pii.types import PIIMatch
 
-@pytest.mark.unit
-
         matches_by_type: dict[PIIType, list[PIIMatch]] = {}
         types_found: set[PIIType] = set()
 

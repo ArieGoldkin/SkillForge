@@ -9,8 +9,9 @@ Tests cover:
 - Custom weights
 """
 
-from app.core.constants import (
 import pytest
+
+from app.core.constants import (
     STRUCTURAL_PATH_DEPTH_THRESHOLD,
     STRUCTURAL_WEIGHT_CODE_BLOCK,
     STRUCTURAL_WEIGHT_HEADING,
