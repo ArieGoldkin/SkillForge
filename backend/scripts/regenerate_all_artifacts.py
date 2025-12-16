@@ -30,7 +30,7 @@ from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.models.artifact import Artifact
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)
 

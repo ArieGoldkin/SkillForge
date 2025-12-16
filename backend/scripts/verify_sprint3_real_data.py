@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.logging import setup_logging
-from app.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
 
 # Setup logging
 setup_logging()

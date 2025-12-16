@@ -4,7 +4,7 @@ This script demonstrates the compression module without needing a full workflow 
 """
 
 import asyncio
-from app.workflows.tasks.aggregation.compress_findings import (
+from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
     CompressedFinding,
     build_compression_user_prompt,
     compress_all_findings,

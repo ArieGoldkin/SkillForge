@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.workflows.evaluation.evaluator import evaluate_agent_quality
+from app.domains.analysis.workflows.evaluation.evaluator import evaluate_agent_quality
 from app.domains.analysis.workflows.state import AnalysisState
 
 
@@ -57,7 +57,7 @@ async def test_evaluate_agent_quality_with_findings(
 ) -> None:
     """Test evaluator processes findings and calculates quality scores."""
     with patch(
-        "app.workflows.evaluation.evaluator.emit_streaming_event",
+        "app.domains.analysis.workflows.evaluation.evaluator.emit_streaming_event",
         new_callable=AsyncMock,
     ) as mock_emit:
         result = await evaluate_agent_quality(sample_state_with_findings)
@@ -111,7 +111,7 @@ async def test_evaluate_agent_quality_multiple_agents() -> None:
     }
 
     with patch(
-        "app.workflows.evaluation.evaluator.emit_streaming_event",
+        "app.domains.analysis.workflows.evaluation.evaluator.emit_streaming_event",
         new_callable=AsyncMock,
     ):
         result = await evaluate_agent_quality(state)

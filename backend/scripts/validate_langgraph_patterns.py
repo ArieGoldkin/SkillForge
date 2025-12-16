@@ -17,8 +17,8 @@ from pathlib import Path
 backend_path = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_path))
 
-from app.workflows.graph_builder import build_analysis_graph  # noqa: E402
-from app.workflows.state import AnalysisState  # noqa: E402
+from app.domains.analysis.workflows.graph_builder import build_analysis_graph  # noqa: E402
+from app.domains.analysis.workflows.state import AnalysisState  # noqa: E402
 
 
 def validate_stategraph_api():
@@ -72,14 +72,14 @@ def validate_node_return_patterns():
     # Check return type annotations
     import inspect
 
-    from app.workflows.nodes.parallel_agents import execute_parallel_agents
+    from app.domains.analysis.workflows.nodes.parallel_agents import execute_parallel_agents
 
-    from app.workflows.graph_builder import (
+    from app.domains.analysis.workflows.graph_builder import (
         _extract_content_node,
         _generate_embedding_node,
         _supervisor_node,
     )
-    from app.workflows.tasks.aggregate_findings import aggregate_findings
+    from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 
     nodes = [
         ("_extract_content_node", _extract_content_node),
@@ -123,7 +123,7 @@ def validate_checkpointing():
     """Validate checkpointing setup."""
     print("\n✅ Validating Checkpointing...")
 
-    from app.workflows.graph_builder import _get_checkpointer
+    from app.domains.analysis.workflows.graph_builder import _get_checkpointer
 
     checkpointer = _get_checkpointer()
 

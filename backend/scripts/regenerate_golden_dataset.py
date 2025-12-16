@@ -51,7 +51,7 @@ from app.api.v1.workflow_runner import _update_analysis_status
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)
 
