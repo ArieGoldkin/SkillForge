@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-@pytest.mark.unit
-
 # Get the backend directory dynamically (works in both local and CI)
 BACKEND_DIR = Path(__file__).parent.parent.parent.resolve()
+
+@pytest.mark.unit
 
 
 class TestImportWithoutDatabaseUrl:

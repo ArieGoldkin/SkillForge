@@ -3,8 +3,6 @@
 import pytest
 
 from app.core.task_model_config import (
-
-@pytest.mark.unit
     SELECTION_RATIONALE,
     SUPERVISOR_BENCHMARK_RESULTS,
     TASK_MODELS,
@@ -14,6 +12,8 @@ from app.core.task_model_config import (
     get_task_config,
     is_validated,
 )
+
+@pytest.mark.unit
 
 
 class TestTaskModelConfig:

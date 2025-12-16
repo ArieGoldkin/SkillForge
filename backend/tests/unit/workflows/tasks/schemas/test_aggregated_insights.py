@@ -12,8 +12,6 @@ import pytest
 from pydantic import ValidationError
 
 from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import (
-
-@pytest.mark.unit
     AggregatedInsights,
     AIAssistantPrompt,
     ConflictResolution,
@@ -30,6 +28,8 @@ from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import (
     Synthesis,
     TLDRSection,
 )
+
+@pytest.mark.unit
 
 # ============================================================================
 # QuizQuestion Tests (Priority - has validator)

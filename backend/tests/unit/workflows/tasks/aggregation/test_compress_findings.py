@@ -7,8 +7,6 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
-
-@pytest.mark.unit
     CompressedFinding,
     COMPRESSION_SYSTEM_PROMPT,
     build_compression_user_prompt,
@@ -18,6 +16,8 @@ from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
     _format_findings_for_compression,
     _format_value,
 )
+
+@pytest.mark.unit
 
 
 class TestCompressedFinding:

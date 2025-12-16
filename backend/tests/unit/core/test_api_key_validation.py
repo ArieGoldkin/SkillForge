@@ -4,13 +4,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.api_key_validation import (
-
-@pytest.mark.unit
     get_available_models_for_configured_providers,
     get_configured_providers,
     log_api_key_configuration,
     validate_llm_model_api_key,
 )
+
+@pytest.mark.unit
 
 
 class TestGetConfiguredProviders:
