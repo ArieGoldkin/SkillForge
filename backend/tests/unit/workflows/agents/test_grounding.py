@@ -6,9 +6,9 @@ to agent prompts to prevent hallucination and ensure content-grounded analysis.
 Issue #ARTIFACT-QUALITY: All agents now use grounding to analyze actual content.
 """
 
-from app.domains.analysis.workflows.agents.grounding import (
 import pytest
 
+from app.domains.analysis.workflows.agents.grounding import (
     GROUNDING_INSTRUCTIONS,
     apply_grounding,
 )

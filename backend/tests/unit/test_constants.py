@@ -1,7 +1,6 @@
 """Unit tests for constants module."""
 
 from app.core.constants import (
-import pytest
 
     CONTENT_TYPE_ARTICLE,
     CONTENT_TYPE_REPO,
