@@ -4,7 +4,11 @@ This module provides comprehensive quality assessment for agent outputs,
 comparing control (baseline) vs treatment (few-shot enhanced) variants.
 
 Phase 1, Week 3: Quality Comparison Testing
-Target: Validate 15-25% quality improvement from few-shot prompting
+Phase 2: G-Eval LLM-as-Judge Integration
+
+Scoring Approaches:
+1. Heuristic scoring (fast, synchronous): Schema validation + structural checks
+2. G-Eval scoring (deep, async): LLM-as-Judge with chain-of-thought rubrics
 
 Scoring Dimensions:
 - Completeness: Schema compliance, required fields, data depth
@@ -21,6 +25,14 @@ Example:
     ...     agent_type="tech_comparator",
     ... )
     >>> print(f"Overall quality: {score.overall_score:.2f}")
+
+    # Async with G-Eval:
+    >>> score = await score_output_quality_g_eval(
+    ...     output={"primary_tech": "React", ...},
+    ...     input_content="Compare React and Vue...",
+    ...     agent_type="tech_comparator",
+    ... )
+    >>> print(f"G-Eval quality: {score.overall_score:.2f}")
 
 """
 
@@ -479,5 +491,153 @@ def score_output_quality(
             structure_score=0.0,
             overall_score=0.0,
             token_count=0,
+            error_message=str(e),
+        )
+
+
+# ============================================================================
+# G-Eval LLM-as-Judge Scoring (Phase 2)
+# ============================================================================
+
+
+@dataclass
+class GEvalQualityScore:
+    """Quality score with G-Eval LLM-as-Judge dimensions.
+
+    Extends QualityScore with G-Eval specific fields:
+    - reasoning: Per-criterion chain-of-thought reasoning
+    - confidence: LLM confidence in the evaluation
+    - scoring_method: 'g_eval' or 'heuristic'
+    """
+
+    completeness_score: float
+    accuracy_score: float
+    detail_score: float
+    structure_score: float
+    overall_score: float
+    token_count: int
+    reasoning: dict[str, str]
+    confidence: float
+    scoring_method: str
+    error_message: str | None = None
+
+
+async def score_output_quality_g_eval(
+    output: dict[str, Any],
+    input_content: str,
+    agent_type: str,
+    schema_class: type[BaseModel] | None = None,
+    heuristic_weight: float = 0.3,
+    g_eval_weight: float = 0.7,
+) -> GEvalQualityScore:
+    """Score output quality using G-Eval LLM-as-Judge.
+
+    Combines heuristic scoring (fast) with G-Eval (deep) for
+    comprehensive quality assessment.
+
+    Args:
+        output: Agent output dictionary to score
+        input_content: Original input that generated the output
+        agent_type: Type of agent (e.g., 'tech_comparator')
+        schema_class: Optional Pydantic schema for validation
+        heuristic_weight: Weight for heuristic score (default 0.3)
+        g_eval_weight: Weight for G-Eval score (default 0.7)
+
+    Returns:
+        GEvalQualityScore with blended dimensions
+
+    Example:
+        >>> score = await score_output_quality_g_eval(
+        ...     output={"recommendation": "Use React", ...},
+        ...     input_content="Compare React vs Vue for our project",
+        ...     agent_type="tech_comparator",
+        ... )
+        >>> print(f"G-Eval quality: {score.overall_score:.2%}")
+        >>> print(f"Reasoning: {score.reasoning.get('completeness')}")
+
+    """
+    from app.shared.services.g_eval import g_eval_score
+
+    try:
+        # Fast path: Heuristic scoring
+        heuristic_score = score_output_quality(
+            output=output,
+            golden_example=None,
+            agent_type=agent_type,
+            schema_class=schema_class,
+        )
+
+        # Deep path: G-Eval LLM scoring
+        g_eval_result = await g_eval_score(
+            input_content=input_content,
+            output=output,
+            agent_type=agent_type,
+        )
+
+        # Blend scores
+        completeness = (
+            heuristic_score.completeness_score * heuristic_weight
+            + g_eval_result.completeness * g_eval_weight
+        )
+        accuracy = (
+            heuristic_score.accuracy_score * heuristic_weight
+            + g_eval_result.accuracy * g_eval_weight
+        )
+        detail = (
+            heuristic_score.detail_score * heuristic_weight + g_eval_result.depth * g_eval_weight
+        )
+        structure = (
+            heuristic_score.structure_score * heuristic_weight
+            + g_eval_result.coherence * g_eval_weight
+        )
+
+        # Overall is weighted average
+        overall = completeness * 0.30 + accuracy * 0.30 + detail * 0.20 + structure * 0.20
+
+        logger.info(
+            "g_eval_quality_scored",
+            agent_type=agent_type,
+            heuristic_overall=heuristic_score.overall_score,
+            g_eval_overall=g_eval_result.overall,
+            blended_overall=overall,
+            confidence=g_eval_result.confidence,
+        )
+
+        return GEvalQualityScore(
+            completeness_score=completeness,
+            accuracy_score=accuracy,
+            detail_score=detail,
+            structure_score=structure,
+            overall_score=overall,
+            token_count=heuristic_score.token_count,
+            reasoning=g_eval_result.reasoning,
+            confidence=g_eval_result.confidence,
+            scoring_method="g_eval",
+        )
+
+    except Exception as e:
+        logger.error(
+            "g_eval_scoring_failed",
+            agent_type=agent_type,
+            error=str(e),
+            exc_info=True,
+        )
+        # Fallback to heuristic only
+        heuristic_score = score_output_quality(
+            output=output,
+            golden_example=None,
+            agent_type=agent_type,
+            schema_class=schema_class,
+        )
+        return GEvalQualityScore(
+            completeness_score=heuristic_score.completeness_score,
+            accuracy_score=heuristic_score.accuracy_score,
+            detail_score=heuristic_score.detail_score,
+            structure_score=heuristic_score.structure_score,
+            overall_score=heuristic_score.overall_score,
+            token_count=heuristic_score.token_count,
+            reasoning={},
+            confidence=0.0,
+            scoring_method="heuristic_fallback",
             error_message=str(e),
         )
