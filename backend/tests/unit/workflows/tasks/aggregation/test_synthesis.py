@@ -262,7 +262,10 @@ class TestSynthesizeWithLLM:
     """Test LLM synthesis function."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_success(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -300,7 +303,10 @@ class TestSynthesizeWithLLM:
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_fallback_to_static(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -342,7 +348,10 @@ class TestSynthesizeWithLLM:
         assert "static fallback" in result["generation_notes"].lower()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_fallback_to_minimal_schema(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -387,7 +396,10 @@ class TestSynthesizeWithLLM:
         assert "generation_notes" in result
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_empty_findings(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -416,7 +428,10 @@ class TestSynthesizeWithLLM:
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_many_conflicts(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -463,7 +478,10 @@ class TestSynthesizeWithLLM:
         assert result == sample_llm_response
 
     @pytest.mark.asyncio
-    @patch("app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain", new_callable=AsyncMock)
+    @patch(
+        "app.workflows.tasks.aggregation_fallback.synthesize_with_fallback_chain",
+        new_callable=AsyncMock,
+    )
     async def test_synthesize_with_llm_reduced_tier_success(
         self,
         mock_synthesize_with_fallback_chain: AsyncMock,
@@ -478,7 +496,10 @@ class TestSynthesizeWithLLM:
         from app.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock to return reduced tier result
-        mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.REDUCED)
+        mock_synthesize_with_fallback_chain.return_value = (
+            sample_llm_response,
+            FallbackTier.REDUCED,
+        )
 
         # Execute
         result = await synthesize_with_llm(

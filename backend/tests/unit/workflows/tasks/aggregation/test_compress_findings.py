@@ -359,16 +359,19 @@ class TestCompressAllFindings:
         mock_structured_llm = MagicMock()
         mock_llm.with_structured_output.return_value = mock_structured_llm
 
-        with patch(
-            "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
-            return_value=mock_llm,
-        ), patch(
-            "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
-            return_value=CompressedFinding(
-                agent_name="test",
-                key_insights=["insight"],
-                confidence=0.8,
-                data_quality="high",
+        with (
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                return_value=mock_llm,
+            ),
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                return_value=CompressedFinding(
+                    agent_name="test",
+                    key_insights=["insight"],
+                    confidence=0.8,
+                    data_quality="high",
+                ),
             ),
         ):
             results = await compress_all_findings(agent_findings, analysis_id)
@@ -408,12 +411,15 @@ class TestCompressAllFindings:
         mock_structured_llm = MagicMock()
         mock_llm.with_structured_output.return_value = mock_structured_llm
 
-        with patch(
-            "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
-            return_value=mock_llm,
-        ), patch(
-            "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
-            side_effect=mock_compress,
+        with (
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                return_value=mock_llm,
+            ),
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                side_effect=mock_compress,
+            ),
         ):
             results = await compress_all_findings(agent_findings, analysis_id)
 
@@ -443,16 +449,19 @@ class TestCompressAllFindings:
             # Second call (fallback model) - succeed
             return mock_llm
 
-        with patch(
-            "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
-            side_effect=mock_get_chat_model,
-        ), patch(
-            "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
-            return_value=CompressedFinding(
-                agent_name="agent1",
-                key_insights=["insight"],
-                confidence=0.8,
-                data_quality="high",
+        with (
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                side_effect=mock_get_chat_model,
+            ),
+            patch(
+                "app.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                return_value=CompressedFinding(
+                    agent_name="agent1",
+                    key_insights=["insight"],
+                    confidence=0.8,
+                    data_quality="high",
+                ),
             ),
         ):
             results = await compress_all_findings(agent_findings, analysis_id)
