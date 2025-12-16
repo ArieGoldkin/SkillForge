@@ -12,12 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.agents.dependency_mapper import DependencyMapping
-from app.domains.analysis.workflows.agents.base import (
-    ToolCallConfig,
-    create_structured_agent,
-    create_tool_enabled_agent,
-)
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.factories import (
+    create_dependency_mapper_agent_with_few_shot,
+)
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
@@ -209,24 +207,23 @@ async def run_dependency_mapper(  # noqa: PLR0913 - All parameters required for 
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{DEPENDENCY_MAPPER_PROMPT}\n\n{skill_instructions}")
 
-    # Create agent - use tool-enabled factory if tools provided
+    # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
+    # Handles both tool-enabled and non-tool variants
+    agent = await create_dependency_mapper_agent_with_few_shot(
+        content=content,
+        system_prompt=full_prompt,
+        response_schema=DependencyMapping,
+        analysis_id=analysis_id,
+        session=session,
+        tools=tools,
+    )
+
     if tools:
-        agent = create_tool_enabled_agent(
-            system_prompt=full_prompt,
-            response_schema=DependencyMapping,
-            tools=tools,
-            tool_call_config=ToolCallConfig(max_tool_calls=20),
-        )
         logger.info(
             "dependency_mapper_using_mcp_tools",
             analysis_id=str(analysis_id),
             tool_count=len(tools),
             tool_names=[t.name for t in tools],
-        )
-    else:
-        agent = create_structured_agent(
-            system_prompt=full_prompt,
-            response_schema=DependencyMapping,
         )
 
     # Run agent with tracking and persistence

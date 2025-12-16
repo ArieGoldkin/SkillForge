@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.agents.implementation_planner import ImplementationPlan
-from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.factories import (
+    create_implementation_planner_agent_with_few_shot,
+)
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
@@ -106,10 +108,13 @@ async def run_implementation_planner(
     # Build prompt with skill level instructions
     full_prompt = apply_grounding(f"{IMPLEMENTATION_PLANNER_PROMPT}\n\n{skill_instructions}")
 
-    # Create agent with structured output
-    agent = create_structured_agent(
+    # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
+    agent = await create_implementation_planner_agent_with_few_shot(
+        content=content,
         system_prompt=full_prompt,
         response_schema=ImplementationPlan,
+        analysis_id=analysis_id,
+        session=session,
     )
 
     # Run agent with tracking and persistence
