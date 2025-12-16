@@ -10,6 +10,7 @@ Tests cover:
 """
 
 from app.core.constants import (
+import pytest
     STRUCTURAL_PATH_DEPTH_THRESHOLD,
     STRUCTURAL_WEIGHT_CODE_BLOCK,
     STRUCTURAL_WEIGHT_HEADING,

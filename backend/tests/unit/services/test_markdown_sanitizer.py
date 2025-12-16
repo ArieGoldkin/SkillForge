@@ -8,6 +8,7 @@ Tests cover:
 """
 
 from app.shared.services.utils.markdown import fix_lists, fix_tables, sanitize_markdown
+import pytest
 
 @pytest.mark.unit
 

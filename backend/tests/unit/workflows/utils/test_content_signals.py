@@ -4,6 +4,7 @@ Issue #299-304: Graceful degradation for varying content sizes.
 """
 
 from app.shared.workflows.utils.content_signals import (
+import pytest
 
 @pytest.mark.unit
     AgentExpectation,

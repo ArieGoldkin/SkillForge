@@ -1,6 +1,7 @@
 """Unit tests for supervisor configuration."""
 
 from app.core.agent_config import AGENT_REGISTRY
+import pytest
 from app.domains.analysis.workflows.nodes.supervisor_config import (
 
 @pytest.mark.unit

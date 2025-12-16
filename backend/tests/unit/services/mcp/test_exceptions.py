@@ -1,4 +1,5 @@
 from app.shared.services.mcp.exceptions import (
+import pytest
 
 @pytest.mark.unit
     MCPConfigurationError,

@@ -1,6 +1,7 @@
 """Unit tests for exception hierarchy."""
 
 from app.core.exceptions import (
+import pytest
 
 @pytest.mark.unit
     DatabaseError,

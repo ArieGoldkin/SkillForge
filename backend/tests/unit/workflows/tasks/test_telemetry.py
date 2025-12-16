@@ -1,6 +1,7 @@
 """Unit tests for telemetry helpers."""
 
 from unittest.mock import patch
+import pytest
 
 from app.domains.analysis.workflows.tasks.telemetry import log_chunking_metrics
 

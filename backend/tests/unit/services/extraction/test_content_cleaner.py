@@ -1,6 +1,7 @@
 """Unit tests for content cleaner module."""
 
 from app.shared.services.extraction.content_cleaner import (
+import pytest
 
 @pytest.mark.unit
     clean_extracted_content,

@@ -1,6 +1,7 @@
 """Unit tests for aggregation Jinja2 templates."""
 
 from app.core.template_utils import render_jinja_template
+import pytest
 
 @pytest.mark.unit
 

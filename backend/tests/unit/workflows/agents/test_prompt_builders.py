@@ -1,6 +1,7 @@
 """Unit tests for agent prompt builders."""
 
 from app.domains.analysis.workflows.agents.prompt_builders import (
+import pytest
 
 @pytest.mark.unit
     build_agent_user_prompt,

@@ -12,6 +12,7 @@ Reference: docs/issues/222-pluggable-parsers/README.md
 """
 
 from app.shared.services.chunking.parsers import (
+import pytest
 
 @pytest.mark.unit
     CodeParser,

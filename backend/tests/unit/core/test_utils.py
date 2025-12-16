@@ -1,6 +1,7 @@
 """Unit tests for core utility functions."""
 
 import uuid
+import pytest
 from uuid import UUID
 
 from app.core.constants import UUID_NAMESPACE_DNS

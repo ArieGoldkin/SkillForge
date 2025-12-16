@@ -1,6 +1,7 @@
 """Unit tests for Reciprocal Rank Fusion algorithm."""
 
 from app.shared.services.search.hybrid_fusion import reciprocal_rank_fusion
+import pytest
 
 @pytest.mark.unit
 

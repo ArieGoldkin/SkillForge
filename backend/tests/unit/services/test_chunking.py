@@ -1,4 +1,5 @@
 from app.shared.services.chunking.chunker import (
+import pytest
     ChunkText,
     chunk_document,
     compute_content_hash,

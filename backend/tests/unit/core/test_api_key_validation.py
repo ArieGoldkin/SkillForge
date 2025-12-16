@@ -1,6 +1,7 @@
 """Unit tests for API key configuration validation."""
 
 from unittest.mock import MagicMock, patch
+import pytest
 
 from app.core.api_key_validation import (
 

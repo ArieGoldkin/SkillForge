@@ -6,6 +6,7 @@ AI coding assistants, tutor system, and human readers.
 """
 
 from app.domains.analysis.workflows.tasks.prompt_builders import build_synthesis_user_prompt
+import pytest
 
 @pytest.mark.unit
 

@@ -1,6 +1,7 @@
 """Unit tests for constants module."""
 
 from app.core.constants import (
+import pytest
 
 @pytest.mark.unit
     CONTENT_TYPE_ARTICLE,

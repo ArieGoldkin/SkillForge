@@ -1,6 +1,7 @@
 """Unit tests for type aliases."""
 
 from app.core.types import (
+import pytest
 
 @pytest.mark.unit
     AnalysisID,

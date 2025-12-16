@@ -1,6 +1,7 @@
 """Unit tests for model factory module."""
 
 from unittest.mock import MagicMock, patch
+import pytest
 
 from app.core.model_factory import (
     _resolve_model_from_registry,

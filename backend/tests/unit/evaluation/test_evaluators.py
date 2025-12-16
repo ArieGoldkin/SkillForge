@@ -13,6 +13,7 @@ Each test validates:
 """
 
 from dataclasses import dataclass, field
+import pytest
 from datetime import UTC, datetime, timedelta
 from typing import Any
 

@@ -7,6 +7,7 @@ Issue #ARTIFACT-QUALITY: All agents now use grounding to analyze actual content.
 """
 
 from app.domains.analysis.workflows.agents.grounding import (
+import pytest
 
 @pytest.mark.unit
     GROUNDING_INSTRUCTIONS,
