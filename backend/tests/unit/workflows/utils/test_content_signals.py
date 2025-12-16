@@ -3,10 +3,9 @@
 Issue #299-304: Graceful degradation for varying content sizes.
 """
 
-from app.shared.workflows.utils.content_signals import (
 import pytest
 
-@pytest.mark.unit
+from app.shared.workflows.utils.content_signals import (
     AgentExpectation,
     ContentGenre,
     detect_content_signals,
@@ -558,9 +557,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_full_analysis(self) -> None:
         """FULL_ANALYSIS expectation should use standard threshold (0.70)."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         # Content with code and benchmarks = full analysis for performance_analyst
         content = """
@@ -581,9 +578,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_partial(self) -> None:
         """PARTIAL expectation should use reduced threshold (0.55)."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         # Content with just code (no benchmarks) = partial for performance_analyst
         content = """
@@ -600,9 +595,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_opportunistic(self) -> None:
         """OPPORTUNISTIC expectation should use lowest threshold (0.45)."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         # Conceptual content = opportunistic for performance_analyst
         content = "This is a discussion about AI concepts and theory."
@@ -642,9 +635,7 @@ class TestThresholdAdjustment:
 
     def test_trend_validator_always_full_analysis(self) -> None:
         """trend_validator should always get FULL_ANALYSIS threshold."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         # Even conceptual content gives trend_validator full_analysis expectation
         content = "This is a conceptual discussion about AI."
@@ -654,9 +645,7 @@ class TestThresholdAdjustment:
 
     def test_security_auditor_with_security_patterns(self) -> None:
         """security_auditor gets FULL_ANALYSIS when security patterns present."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         content = """
         OAuth2 authentication with JWT tokens.
@@ -669,9 +658,7 @@ class TestThresholdAdjustment:
 
     def test_security_auditor_without_security_patterns(self) -> None:
         """security_auditor gets OPPORTUNISTIC when no security patterns."""
-        from app.shared.workflows.utils.content_signals import (
-            get_adjusted_specificity_threshold,
-        )
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         content = "This is a simple hello world tutorial."
         signals = detect_content_signals(content)

@@ -959,17 +959,31 @@
 │  │     │ to access and manage prompts directly from Claude Desktop,│  │
 │  │     │ Cursor, or other MCP clients.                             │  │
 │  │     │                                                             │  │
-│  │     │ Features:                                                  │  │
-│  │     │   • Access prompts from Langfuse Prompt Management        │  │
-│  │     │   • Version control and prompt history                     │  │
-│  │     │   • Collaborative prompt management                        │  │
-│  │     │   • Direct integration with AI agent workflows              │  │
+│  │     │ AVAILABLE MCP TOOLS:                                       │  │
+│  │     │   • getPrompt(name, labels) - Fetch a specific prompt     │  │
+│  │     │     by name with optional label filtering                  │  │
+│  │     │   • listPrompts() - Browse all prompts in your project    │  │
+│  │     │   • createTextPrompt(name, prompt, config, labels) -      │  │
+│  │     │     Create a new text prompt version                      │  │
+│  │     │   • createChatPrompt(name, prompt, config, labels) -      │  │
+│  │     │     Create a new chat prompt version                      │  │
+│  │     │   • updatePromptLabels(name, labels) - Manage labels      │  │
+│  │     │     across prompt versions                                │  │
+│  │     │                                                             │  │
+│  │     │ EXAMPLE USAGE:                                             │  │
+│  │     │   Once MCP server is configured, tools are available      │  │
+│  │     │   in Claude chat. You can ask:                             │  │
+│  │     │   • "List all prompts in Langfuse"                        │  │
+│  │     │   • "Get the tech_comparator prompt"                      │  │
+│  │     │   • "Create a new prompt for security_auditor"            │  │
 │  │     │                                                             │  │
 │  │     │ Use Case for SkillForge:                                   │  │
 │  │     │   Our 8 specialized agents (tech_comparator,               │  │
 │  │     │   security_auditor, etc.) can access shared prompts        │  │
-│  │     │   directly from Langfuse, ensuring consistency and         │  │
-│  │     │   enabling prompt versioning across the team.              │  │
+│  │     │   directly from Langfuse via MCP, ensuring consistency     │  │
+│  │     │   and enabling prompt versioning across the team.          │  │
+│  │     │   Prompts can be managed in Langfuse UI and accessed      │  │
+│  │     │   by agents without code changes.                          │  │
 │  │     └───────────────────────────────────────────────────────────┘  │  │
 │  │                                                                     │  │
 │  │  2. MCP TRACING & OBSERVABILITY                                     │  │
@@ -1006,13 +1020,14 @@
 │  │     │   You'll need the absolute path to this file for config.   │  │
 │  │     │                                                             │  │
 │  │     │ STEP 2: Configure for Cursor IDE                          │  │
-│  │     │   Add to `.mcp.json` or `mcp.json`:                       │  │
+│  │     │   Add to `.mcp.json` or `mcp.json` (usually in project   │  │
+│  │     │   root or user config directory):                        │  │
 │  │     │   ```json                                                 │  │
 │  │     │   {                                                       │  │
 │  │     │     "mcpServers": {                                       │  │
 │  │     │       "langfuse-prompts": {                               │  │
 │  │     │         "command": "node",                                │  │
-│  │     │         "args": ["<absolute-path>/build/index.js"],       │  │
+│  │     │         "args": ["/absolute/path/to/mcp-server-langfuse/build/index.js"],│  │
 │  │     │         "env": {                                         │  │
 │  │     │           "LANGFUSE_PUBLIC_KEY": "pk-lf-...",            │  │
 │  │     │           "LANGFUSE_SECRET_KEY": "sk-lf-...",            │  │
@@ -1022,6 +1037,8 @@
 │  │     │     }                                                     │  │
 │  │     │   }                                                       │  │
 │  │     │   ```                                                     │  │
+│  │     │   After saving, restart Cursor to load the MCP server.    │  │
+│  │     │   You can then use prompts via MCP tools in Claude chat. │  │
 │  │     │                                                             │  │
 │  │     │ STEP 3: Configure for Claude Desktop                      │  │
 │  │     │   Add to `claude_desktop_config.json`:                    │  │
@@ -1042,6 +1059,7 @@
 │  │     │   ```                                                     │  │
 │  │     │                                                             │  │
 │  │     │ STEP 4: Configure for Claude Code (CLI)                   │  │
+│  │     │   Option A - Using CLI:                                   │  │
 │  │     │   ```bash                                                 │  │
 │  │     │   claude mcp add \                                        │  │
 │  │     │     --transport http \                                    │  │
@@ -1049,6 +1067,21 @@
 │  │     │     https://langfuse.com/api/mcp \                        │  │
 │  │     │     --scope user                                          │  │
 │  │     │   ```                                                     │  │
+│  │     │                                                             │  │
+│  │     │   Option B - Manual JSON config:                           │  │
+│  │     │   ```json                                                 │  │
+│  │     │   {                                                       │  │
+│  │     │     "mcpServers": {                                       │  │
+│  │     │       "langfuse-docs": {                                  │  │
+│  │     │         "transportType": "http",                          │  │
+│  │     │         "url": "https://langfuse.com/api/mcp",            │  │
+│  │     │         "verifySsl": true                                 │  │
+│  │     │       }                                                   │  │
+│  │     │     }                                                     │  │
+│  │     │   }                                                       │  │
+│  │     │   ```                                                     │  │
+│  │     │   Note: This connects to Langfuse Docs MCP (read-only),  │  │
+│  │     │   not the prompt management server.                       │  │
 │  │     │                                                             │  │
 │  │     │ STEP 5: Configure for Windsurf                            │  │
 │  │     │   ```json                                                 │  │
@@ -1061,11 +1094,22 @@
 │  │     │     }                                                     │  │
 │  │     │   }                                                       │  │
 │  │     │   ```                                                     │  │
+│  │     │   Note: Windsurf uses `mcp-remote` proxy for HTTP transport│  │
+│  │     │                                                             │  │
+│  │     │ HOW TO USE AFTER SETUP:                                    │  │
+│  │     │   Once configured, the MCP tools are available in your   │  │
+│  │     │   IDE's Claude chat. You can:                              │  │
+│  │     │   • Ask Claude to "list all prompts"                      │  │
+│  │     │   • Request "get the tech_comparator prompt"              │  │
+│  │     │   • Create new prompts via MCP tools                       │  │
+│  │     │   • Update prompt labels for versioning                   │  │
 │  │     │                                                             │  │
 │  │     │ Use Case for SkillForge:                                   │  │
 │  │     │   Developers can access Langfuse prompts directly from   │  │
 │  │     │   Cursor/Claude Desktop, making it easier to work with    │  │
-│  │     │   agent prompts during development.                       │  │
+│  │     │   agent prompts during development. Prompts can be       │  │
+│  │     │   versioned, A/B tested, and managed collaboratively     │  │
+│  │     │   through Langfuse UI, then accessed by agents via MCP.   │  │
 │  │     └───────────────────────────────────────────────────────────┘  │  │
 │  │                                                                     │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
@@ -1100,10 +1144,21 @@
 │  │  └─────────────────────────────────────────────────────────────┘  │  │
 │  │                                                                     │  │
 │  │  Implementation Steps:                                             │  │
-│  │  1. Configure MCP context propagation in agent code               │  │
-│  │  2. Inject OpenTelemetry trace context into MCP _meta field       │  │
-│  │  3. Langfuse automatically links client and server traces         │  │
-│  │  4. View complete agent workflow in Langfuse UI                   │  │
+│  │  1. Extract OpenTelemetry trace context on client side           │  │
+│  │     (when making MCP tool calls)                                 │  │
+│  │  2. Inject trace context into MCP _meta field in tool calls      │  │
+│  │  3. Extract and restore context on MCP server side               │  │
+│  │  4. All server operations inherit client's trace context          │  │
+│  │  5. Langfuse automatically links client and server traces        │  │
+│  │  6. View complete agent workflow in Langfuse UI                   │  │
+│  │                                                                     │  │
+│  │  BENEFIT FOR SKILLFORGE:                                           │  │
+│  │  When our agents use MCP tools (context7, postgres, memory),    │  │
+│  │  we get full trace visibility showing:                            │  │
+│  │  • Which MCP tools were called                                    │  │
+│  │  • Input/output for each tool call                                │  │
+│  │  • Latency and performance metrics                                │  │
+│  │  • Linked traces showing complete request flow                    │  │
 │  │                                                                     │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
@@ -1151,9 +1206,23 @@
 │  │    ✅ Direct integration with Claude Desktop/Cursor/Windsurf       │  │
 │  │    ✅ Works seamlessly with existing MCP servers                  │  │
 │  │                                                                     │  │
-│  │  KEY DIFFERENCE:                                                    │  │
-│  │    LangSmith exposes YOUR agents as MCP tools.                     │  │
-│  │    Langfuse provides an MCP server to access ITS prompts.          │  │
+│  │  KEY DIFFERENCES:                                                  │  │
+│  │    LangSmith:                                                      │  │
+│  │      • Exposes YOUR LangGraph agents as MCP tools                 │  │
+│  │      • Other MCP clients can call your agents via MCP            │  │
+│  │      • Requires Agent Server with /mcp endpoint                  │  │
+│  │      • Uses Streamable HTTP transport                            │  │
+│  │                                                                     │  │
+│  │    Langfuse:                                                       │  │
+│  │      • Provides MCP server to access ITS prompt management        │  │
+│  │      • Tools: getPrompt, listPrompts, createPrompt, etc.          │  │
+│  │      • Enables prompt versioning and management via MCP           │  │
+│  │      • Works with standard MCP clients (stdin/stdout)            │  │
+│  │                                                                     │  │
+│  │  COMPLEMENTARY USE CASES:                                          │  │
+│  │    • LangSmith MCP: Expose SkillForge agents to external tools   │  │
+│  │    • Langfuse MCP: Manage and access prompts for those agents     │  │
+│  │    • Both can be used together for complete observability         │  │
 │  │                                                                     │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
