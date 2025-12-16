@@ -315,7 +315,7 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
     """Test SSE event is emitted even when evaluators timeout."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock) as mock_emit,
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock) as mock_emit,
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
