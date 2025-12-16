@@ -1002,6 +1002,9 @@
 │  │     │   npm run build                                           │  │
 │  │     │   ```                                                     │  │
 │  │     │                                                             │  │
+│  │     │   Note: The built server will be at `build/index.js`      │  │
+│  │     │   You'll need the absolute path to this file for config.   │  │
+│  │     │                                                             │  │
 │  │     │ STEP 2: Configure for Cursor IDE                          │  │
 │  │     │   Add to `.mcp.json` or `mcp.json`:                       │  │
 │  │     │   ```json                                                 │  │

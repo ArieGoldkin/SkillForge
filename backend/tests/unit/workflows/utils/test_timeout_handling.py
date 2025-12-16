@@ -4,12 +4,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.shared.workflows.utils.timeout_handling import (
+import pytest
 
-@pytest.mark.unit
+from app.shared.workflows.utils.timeout_handling import (
     convert_generatorexit_to_timeouterror,
     handle_timeout_error,
 )
+
+@pytest.mark.unit
 
 
 @pytest.fixture

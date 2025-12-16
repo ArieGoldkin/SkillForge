@@ -6,8 +6,6 @@ import pytest
 
 from app.shared.workflows.utils.retrieval_routing import coarse_to_fine
 
-@pytest.mark.unit
-
 
 @pytest.fixture
 def mock_logger(monkeypatch):
@@ -16,7 +14,7 @@ def mock_logger(monkeypatch):
     logger.info = MagicMock()
 
     # Patch the logger in the retrieval_routing module
-    monkeypatch.setattr("app.workflows.utils.retrieval_routing.logger", logger)
+    monkeypatch.setattr("app.shared.workflows.utils.retrieval_routing.logger", logger)
     return logger
 
 

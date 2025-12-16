@@ -17,8 +17,6 @@ from app.shared.workflows.context_scope import (
 )
 from app.domains.analysis.workflows.state import AnalysisState, ContentRef
 
-@pytest.mark.unit
-
 
 @pytest.fixture
 def sample_full_state() -> AnalysisState:
