@@ -41,6 +41,7 @@ class MetricsCollector:
     """Collect and report technique metrics."""
 
     def __init__(self):
+        """Initialize MetricsCollector with empty metrics list."""
         self._metrics: list[TechniqueMetrics] = []
 
     def record(self, metrics: TechniqueMetrics) -> None:
