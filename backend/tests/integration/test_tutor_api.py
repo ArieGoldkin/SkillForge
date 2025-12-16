@@ -11,7 +11,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.db.repositories.tutor_repository import get_tutor_repository
 from app.main import app
-from app.services.event_broadcaster import broadcaster
+from app.services.messaging.broadcaster import broadcaster
 
 
 @pytest.fixture

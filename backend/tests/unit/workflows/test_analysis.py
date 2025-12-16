@@ -103,7 +103,7 @@ async def test_analysis_workflow_with_mocked_services(
             return_value=mock_artifact_repo,
         ),
         patch(
-            "app.services.sse_helpers.persist_progress_event_async",
+            "app.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(

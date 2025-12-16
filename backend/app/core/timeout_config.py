@@ -65,7 +65,9 @@ from langchain_core.runnables import RunnableConfig
 AGENT_TIMEOUT: float = 60.0  # 60 seconds (1 minute) - LLM calls should complete faster
 
 # LLM synthesis timeout (in seconds)
-SYNTHESIS_TIMEOUT: float = 90.0  # 90 seconds (1.5 minutes) - synthesis may need slightly more time
+# Issue #299-304: Increased from 90s to 180s to allow 60s per phase (3 phases)
+# The detailed schema prompts require more LLM processing time
+SYNTHESIS_TIMEOUT: float = 180.0  # 180 seconds (3 minutes) - allow 60s per phase
 
 # Streaming timeout (in seconds)
 STREAMING_TIMEOUT: float = 120.0  # 120 seconds (2 minutes) - streaming should be faster

@@ -108,7 +108,7 @@ async def test_quality_gate_fail_node_basic():
     }
 
     with (
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.graph_builder.logger"),
     ):
         result = await _quality_gate_fail_node(state)

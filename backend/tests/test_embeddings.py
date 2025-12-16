@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 
 from app.services.embeddings import EmbeddingError, EmbeddingService
-from app.services.embeddings_utils import normalize_vector
+from app.services.embeddings.utils import normalize_vector
 
 # Constants for test assertions
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -262,7 +262,7 @@ async def test_close_client(embedding_service: EmbeddingService) -> None:
 @pytest.mark.asyncio
 async def test_embedding_service_requires_api_key() -> None:
     """Test that EmbeddingService requires OpenAI API key."""
-    with patch("app.services.embeddings.service.settings") as mock_settings:
+    with patch("app.core.config.settings") as mock_settings:
         mock_settings.OPENAI_API_KEY = None
 
         with pytest.raises(ValueError, match="OPENAI_API_KEY is required"):

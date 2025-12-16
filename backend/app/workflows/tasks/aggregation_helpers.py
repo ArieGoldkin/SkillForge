@@ -114,6 +114,7 @@ def format_findings_for_llm(
 def detect_coverage_gaps(
     contributing_agents: list[str],
     agent_findings: list[dict[str, Any]] | None = None,
+    selected_agents: list[str] | None = None,
 ) -> list[dict[str, str]]:
     """Identify missing analysis perspectives.
 
@@ -121,9 +122,15 @@ def detect_coverage_gaps(
     Agents that contributed but with "limited" or "insufficient" data are
     treated as partial coverage gaps.
 
+    If selected_agents is provided, only compares against selected agents instead
+    of all possible agents. This correctly identifies agents that were selected
+    but failed to produce findings.
+
     Args:
         contributing_agents: List of agent types that contributed findings
         agent_findings: Optional list of agent findings with data_availability
+        selected_agents: Optional list of agents selected by supervisor.
+            If provided, only compares against these agents instead of ALL_ANALYSIS_AGENTS
 
     Returns:
         List of coverage gap dictionaries with missing_agent, missing_perspective, impact
@@ -142,8 +149,19 @@ def detect_coverage_gaps(
                 da_note = findings_data.get("data_availability_note", "")
                 data_availability_map[agent_type] = (da, da_note)
 
+    # Determine which agents to check against
+    if selected_agents:
+        # Only check selected agents (fixes coverage gap calculation)
+        agents_to_check = {agent: ALL_ANALYSIS_AGENTS.get(agent, "") for agent in selected_agents}
+    else:
+        # Fallback to checking all agents (backward compatibility)
+        agents_to_check = ALL_ANALYSIS_AGENTS
+
     # Check for missing agents
-    for agent_type, description in ALL_ANALYSIS_AGENTS.items():
+    for agent_type, description in agents_to_check.items():
+        if not description:
+            # Skip if agent not in ALL_ANALYSIS_AGENTS (shouldn't happen, but safe)
+            continue
         if agent_type not in contributing_agents:
             gaps.append(
                 {

@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.api.v1.analyze import router
 from app.api.v1.sse_handler import stream_analysis_progress
 from app.main import app
-from app.services.event_broadcaster import broadcaster
+from app.services.messaging.broadcaster import broadcaster
 
 
 @pytest.mark.asyncio

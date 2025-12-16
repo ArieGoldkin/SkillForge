@@ -94,21 +94,26 @@ def get_fallback_content(state: AnalysisState) -> str:
 
 # Agent-specific content section mapping (Issue #268)
 # Each agent gets optimized content section to minimize token usage
+# Issue #299-304: Increased content for tech_comparator, trend_validator, performance_analyst
+# to handle research papers which need more context than just summaries/code blocks
 AGENT_SECTION_MAPPING: dict[str, ArtifactSection] = {
     "code_quality_critic": ArtifactSection.FULL,  # Needs full code for antipatterns
     "security_auditor": ArtifactSection.FULL,  # Requires complete code for scanning
     "dependency_mapper": ArtifactSection.FULL,  # Needs all imports and package files
-    "performance_analyst": ArtifactSection.CODE_BLOCKS,  # Focuses on code patterns
+    "performance_analyst": ArtifactSection.FIRST_N,  # Needs more context for research papers
     "implementation_planner": ArtifactSection.FIRST_N,  # Overview, not exhaustive
-    "tech_comparator": ArtifactSection.SUMMARY,  # High-level tech identification
-    "trend_validator": ArtifactSection.SUMMARY,  # Only needs tech names/concepts
+    "tech_comparator": ArtifactSection.FIRST_N,  # Needs more than summary for articles
+    "trend_validator": ArtifactSection.FIRST_N,  # Needs more context for trend analysis
     "integration_feasibility": ArtifactSection.FIRST_N,  # Integration point overview
 }
 
-# Max characters for FIRST_N section per agent (Issue #268)
+# Max characters for FIRST_N section per agent (Issue #268, #299-304)
 AGENT_MAX_CHARS: dict[str, int | None] = {
     "implementation_planner": 10000,  # Overview section
     "integration_feasibility": 8000,  # Integration points
+    "tech_comparator": 15000,  # Needs more context for tech identification
+    "trend_validator": 15000,  # Needs more context for trend analysis
+    "performance_analyst": 12000,  # Performance patterns require context
 }
 
 

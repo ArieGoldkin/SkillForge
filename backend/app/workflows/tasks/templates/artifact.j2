@@ -358,7 +358,7 @@ After completing this content, you should be able to:
 | Term | Definition |
 |------|------------|
 {% for term in aggregated_insights.glossary | default([]) %}
-| **{{ term.term | default("N/A") }}** | {{ term.definition | default("N/A") }}{% if term.see_also %} _See also: {% for s in term.see_also | default([]) %}[{{ s }}](#{{ s | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
+| <span id="{{ term.term | slugify }}">**{{ term.term | default("N/A") }}**</span> | {{ term.definition | default("N/A") }}{% if term.see_also %} _See also: {% for s in term.see_also | default([]) %}[{{ s }}](#{{ s | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
 {% endfor %}
 
 ---
@@ -422,6 +422,22 @@ No agent findings available.
 {% endif %}
 
 ---
+
+{# ================================================================ #}
+{# SECTION 11.5: AGENT EXECUTION STATUS                           #}
+{# ================================================================ #}
+
+{% if agent_statuses %}
+## Agent Execution Status
+
+| Agent | Status | Notes |
+|-------|--------|-------|
+{% for agent_type, status in agent_statuses.items() %}
+| {{ agent_type | replace('_', ' ') | title }} | {% if status == 'failed' %}❌ Failed{% elif status == 'success' %}✅ Success{% else %}⏭️ Skipped{% endif %} | {% if status == 'failed' %}Analysis failed for this agent{% elif status == 'skipped' %}Not selected by supervisor{% else %}Analysis completed successfully{% endif %} |
+{% endfor %}
+
+---
+{% endif %}
 
 {# ================================================================ #}
 {# SECTION 12: CONFLICTS & CROSS-DOMAIN CONNECTIONS                #}

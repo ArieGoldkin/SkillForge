@@ -20,7 +20,7 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.embeddings_deterministic import DeterministicEmbeddingService
+from app.services.embeddings.deterministic import DeterministicEmbeddingService
 from tests.smoke.retrieval.fixtures import FixtureLoader
 from tests.smoke.retrieval.metrics import MetricsCalculator
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from app.models.analysis import Analysis
     from app.models.analysis_chunk import AnalysisChunk
-    from app.services.embeddings_deterministic import (
+    from app.services.embeddings.deterministic import (
         DeterministicEmbeddingService as EmbeddingService,
     )
     from app.services.search.search_service import SearchService

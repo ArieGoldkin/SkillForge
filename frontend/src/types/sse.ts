@@ -48,10 +48,42 @@ export interface SSEProgressEvent {
   stage: StageName
   status: StageStatus
   timestamp: string
+  expected_total_stages?: number
+  findings_summary?: string
+  insights_count?: number
+  confidence_score?: number
+  analysis_metadata?: {
+    title?: string
+    content_type?: 'article' | 'video' | 'repo'
+    url?: string
+    word_count?: number
+  }
+  skip_reasons?: Record<string, string> // agent_type -> reason
+  success_metrics?: {
+    findings_quality?: 'high' | 'medium' | 'low'
+    coverage?: 'comprehensive' | 'partial' | 'minimal'
+    key_insights?: string[]
+  }
   details?: {
     word_count?: number
     agent?: string
     progress_percent?: number
+    expected_total_stages?: number
+    findings_summary?: string
+    insights_count?: number
+    confidence_score?: number
+    analysis_metadata?: {
+      title?: string
+      content_type?: 'article' | 'video' | 'repo'
+      url?: string
+      word_count?: number
+    }
+    skip_reasons?: Record<string, string>
+    success_metrics?: {
+      findings_quality?: 'high' | 'medium' | 'low'
+      coverage?: 'comprehensive' | 'partial' | 'minimal'
+      key_insights?: string[]
+    }
     [key: string]: unknown
   }
 }

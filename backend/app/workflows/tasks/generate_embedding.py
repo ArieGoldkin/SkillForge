@@ -10,7 +10,7 @@ from app.core.types import AnalysisID, EmbeddingVector
 from app.services.chunking.chunker import ChunkText
 from app.services.chunking.summaries import SummaryChunk
 from app.services.embeddings import EmbeddingService
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
 

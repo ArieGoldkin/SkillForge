@@ -107,14 +107,10 @@ async def run_code_quality_critic(
     proactive_context = state.get("proactive_context", "")
 
     # Issue #299-304: Get content-aware specificity threshold
+    # Read from flat field injected by build_scoped_context()
     # Note: code_quality_critic is not in standard agent_expectations since it's skipped
     # when there's no code. Use opportunistic threshold as default.
-    supervisor_decision = state.get("supervisor_decision", {})
-    expectation = None
-    if isinstance(supervisor_decision, dict):
-        agent_expectations = supervisor_decision.get("agent_expectations", {})
-        if isinstance(agent_expectations, dict):
-            expectation = agent_expectations.get("code_quality_critic")
+    expectation = state.get("agent_expectation")
     specificity_threshold = get_threshold_for_expectation(expectation)
 
     # Build prompt with skill level instructions

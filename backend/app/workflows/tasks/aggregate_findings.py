@@ -317,22 +317,46 @@ async def _aggregate_findings_impl(
     )
 
     try:
+        # Extract selected_agents from supervisor_decision
+        supervisor_decision = state.get("supervisor_decision", {})
+        selected_agents_raw = supervisor_decision.get("agents", [])
+        selected_agents: list[str] = (
+            selected_agents_raw if isinstance(selected_agents_raw, list) else []
+        )
+
         # Step 1: Validate and parse findings
         validated_findings, agent_types, confidence_scores = validate_and_parse_findings(
             agent_findings
         )
+
+        # Build agent_statuses dict: compare selected_agents vs agent_types
+        agent_statuses: dict[str, str] = {}
+        for agent_type in selected_agents:
+            if agent_type in agent_types:
+                agent_statuses[agent_type] = "success"
+            else:
+                # Selected but no findings = failed
+                agent_statuses[agent_type] = "failed"
+        # Note: Skipped agents (not in selected_agents) are not included in agent_statuses
 
         if not validated_findings:
             logger.warning(
                 "workflow_aggregation_no_findings",
                 analysis_id=analysis_id,
             )
-            # Return basic structure with no findings
-            return {"aggregated_insights": create_empty_aggregated_insights(start_time)}
+            # Return basic structure with no findings, but include agent_statuses
+            empty_insights = create_empty_aggregated_insights(start_time)
+            empty_insights["agent_statuses"] = agent_statuses
+            return {"aggregated_insights": empty_insights}
 
         # Step 1.5: Detect coverage gaps and calculate coverage score
         # Issue #299-304: Pass validated_findings to detect data availability gaps
-        coverage_gaps = detect_coverage_gaps(agent_types, validated_findings)
+        # Fix: Pass selected_agents to only check selected agents, not all agents
+        coverage_gaps = detect_coverage_gaps(
+            contributing_agents=agent_types,
+            agent_findings=validated_findings,
+            selected_agents=selected_agents if selected_agents else None,
+        )
         coverage_score = calculate_coverage_score(agent_types)
 
         logger.debug(
@@ -385,9 +409,10 @@ async def _aggregate_findings_impl(
         if quick_reference:
             aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
 
-        # Step 7.5: Add coverage gaps and coverage score
+        # Step 7.5: Add coverage gaps, coverage score, and agent_statuses
         aggregated_insights_dict["coverage_gaps"] = coverage_gaps
         aggregated_insights_dict["coverage_score"] = coverage_score
+        aggregated_insights_dict["agent_statuses"] = agent_statuses
 
         # Step 8: Calculate metadata using extracted function
         aggregated_insights_dict = calculate_aggregation_metadata(

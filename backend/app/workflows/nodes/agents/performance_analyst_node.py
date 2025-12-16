@@ -15,6 +15,7 @@ from langsmith import get_current_run_tree
 
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.workflows.agents.base import emit_agent_progress
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.runners import (
     get_fallback_content,
@@ -127,6 +128,18 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         return {"agent_findings": []}
     except Exception as e:
         duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        # Emit failed event using existing emit_agent_progress helper
+        await emit_agent_progress(
+            analysis_id,
+            "performance_analyst",
+            "failed",
+            error=str(e),
+            error_code="PERFORMANCE_ANALYST_FAILED",
+            processing_time_ms=processing_time_ms,
+        )
+
         logger.error(
             "agent_node_failed",
             agent_type="performance_analyst",

@@ -3,6 +3,10 @@
 Issue #244: Handle Pattern Integration
 - Creates ArtifactRef after extraction for lightweight state passing
 - Returns both raw_content (backward compat) and content_ref (new pattern)
+
+Issue #299-304: ArXiv PDF Extraction
+- Detects arXiv URLs and routes to ArxivPDFExtractor for full paper content
+- Standard URLs still use Jina Reader for HTML extraction
 """
 
 from langsmith import get_current_run_tree
@@ -13,8 +17,10 @@ from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.db.session import get_session_factory
 from app.services.context.artifact_store import ArtifactStore
+from app.services.extraction.arxiv_pdf_extractor import ArxivPDFExtractor, is_arxiv_url
+from app.services.extraction.content_type import detect_content_type
 from app.services.extraction.jina_reader import JinaReader
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.state import ContentRef
 
 logger = get_logger(__name__)
@@ -64,17 +70,48 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         pass
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
-    jina = JinaReader()
-    try:
-        extracted = await jina.extract_article(url)
 
-        # Emit SSE event: extraction complete
+    # Issue #299-304: Route arXiv URLs to PDF extractor for full paper content
+    # Standard URLs use Jina Reader (HTML extraction)
+    extractor: ArxivPDFExtractor | JinaReader
+    if is_arxiv_url(url):
+        logger.info(
+            "workflow_extraction_arxiv_detected",
+            analysis_id=analysis_id,
+            url=url,
+        )
+        extractor = ArxivPDFExtractor()
+    else:
+        extractor = JinaReader()
+
+    try:
+        extracted = await extractor.extract_article(url)
+
+        # Detect content type from URL
+        try:
+            detected_content_type = detect_content_type(url)
+        except Exception:  # noqa: BLE001 - ContentTypeError or other exceptions, fallback gracefully
+            # Fallback to article if detection fails
+            detected_content_type = "article"
+
+        # Get title from extracted metadata
+        title = extracted.get("title")
+        if not isinstance(title, str):
+            title = None
+
+        # Emit SSE event: extraction complete with metadata
         await emit_streaming_event(
             "progress",
             analysis_id=analysis_id,
             stage="extraction",
             status="complete",
             word_count=extracted.get("word_count", 0),
+            analysis_metadata={
+                "title": title,
+                "content_type": detected_content_type,
+                "url": url,
+                "word_count": extracted.get("word_count", 0),
+            },
         )
 
         logger.info(
@@ -134,7 +171,7 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         )
         raise
     finally:
-        await jina.close()
+        await extractor.close()
 
 
 async def _create_artifact_ref(analysis_id: str, content: str) -> ContentRef:

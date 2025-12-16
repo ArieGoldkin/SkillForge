@@ -45,7 +45,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.main import app
-from app.services.event_broadcaster import broadcaster
+from app.services.messaging.broadcaster import broadcaster
 
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
 # to avoid DATABASE_URL validation errors in CI environments without database config

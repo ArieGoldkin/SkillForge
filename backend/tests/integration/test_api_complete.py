@@ -20,7 +20,7 @@ from sqlalchemy import select
 from app.db.session import AsyncSessionLocal
 from app.main import app
 from app.models.analysis import Analysis
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 
 # Import timeout session helper from conftest
 # Note: We need to import from tests.conftest, but pytest handles this automatically

@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
 
@@ -356,9 +356,10 @@ async def synthesize_with_llm(
         Exception: If Phase 1 (Core) fails - other phases fail gracefully
 
     """
-    # TEMPORARY: Use legacy implementation until multi-phase is fully tested
-    # TODO(yonatan): Switch to multi-phase implementation after validation - Issue #299-304
-    return await _synthesize_with_llm_legacy(
+    # Issue #299-304: Use multi-phase parallel synthesis
+    from app.workflows.tasks.aggregation.synthesis_phased import synthesize_with_llm_phased
+
+    return await synthesize_with_llm_phased(
         validated_findings=validated_findings,
         conflicts=conflicts,
         confidence_scores=confidence_scores,

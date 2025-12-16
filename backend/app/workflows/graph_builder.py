@@ -217,7 +217,9 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
     analysis_id = state["analysis_id"]
 
     # SSE: chunking started
-    from app.services.sse_helpers import emit_streaming_event  # local import to avoid cycles
+    from app.services.messaging.sse_helpers import (
+        emit_streaming_event,
+    )  # local import to avoid cycles
 
     await emit_streaming_event(
         "progress",
@@ -326,7 +328,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     Users prefer getting a low-quality artifact over nothing at all.
     The quality warning is logged and can be shown in the UI.
     """
-    from app.services.sse_helpers import emit_streaming_event
+    from app.services.messaging.sse_helpers import emit_streaming_event
 
     analysis_id = str(state.get("analysis_id", ""))
     avg_score = float(state.get("quality_gate_avg_score", 0.0) or 0.0)

@@ -392,7 +392,15 @@ def _compute_agent_expectations(signals: ContentSignals) -> dict[str, AgentExpec
 
     # Security auditor
     if signals.has_security_patterns:
-        expectations["security_auditor"] = AgentExpectation.FULL_ANALYSIS
+        # Content-aware: lower expectations for conceptual/research content
+        if signals.has_conceptual_only and signals.detected_genre in [
+            ContentGenre.ARTICLE,
+            ContentGenre.RESEARCH,
+            ContentGenre.OPINION,
+        ]:
+            expectations["security_auditor"] = AgentExpectation.PARTIAL
+        else:
+            expectations["security_auditor"] = AgentExpectation.FULL_ANALYSIS
     elif signals.has_code_patterns or signals.has_architecture:
         expectations["security_auditor"] = AgentExpectation.PARTIAL
     else:
@@ -400,7 +408,15 @@ def _compute_agent_expectations(signals: ContentSignals) -> dict[str, AgentExpec
 
     # Performance analyst
     if signals.has_benchmarks:
-        expectations["performance_analyst"] = AgentExpectation.FULL_ANALYSIS
+        # Content-aware: lower expectations for conceptual/research content
+        if signals.has_conceptual_only and signals.detected_genre in [
+            ContentGenre.ARTICLE,
+            ContentGenre.RESEARCH,
+            ContentGenre.OPINION,
+        ]:
+            expectations["performance_analyst"] = AgentExpectation.PARTIAL
+        else:
+            expectations["performance_analyst"] = AgentExpectation.FULL_ANALYSIS
     elif signals.has_code_patterns:
         expectations["performance_analyst"] = AgentExpectation.PARTIAL
     else:
@@ -430,8 +446,23 @@ def _compute_agent_expectations(signals: ContentSignals) -> dict[str, AgentExpec
     else:
         expectations["dependency_mapper"] = AgentExpectation.OPPORTUNISTIC
 
-    # Trend validator (can always work)
-    expectations["trend_validator"] = AgentExpectation.FULL_ANALYSIS
+    # Trend validator - adjust based on content type
+    # Research papers are conceptual, so use lower threshold
+    if signals.has_code_patterns or signals.has_tutorials:
+        expectations["trend_validator"] = AgentExpectation.FULL_ANALYSIS
+    elif signals.has_comparisons or signals.has_architecture:
+        # Content-aware: lower expectations for conceptual content
+        if signals.has_conceptual_only and signals.detected_genre in [
+            ContentGenre.ARTICLE,
+            ContentGenre.RESEARCH,
+            ContentGenre.OPINION,
+        ]:
+            expectations["trend_validator"] = AgentExpectation.OPPORTUNISTIC
+        else:
+            expectations["trend_validator"] = AgentExpectation.PARTIAL
+    else:
+        # Purely conceptual (research papers, opinion pieces)
+        expectations["trend_validator"] = AgentExpectation.OPPORTUNISTIC
 
     # Integration feasibility
     if signals.has_code_patterns and signals.has_architecture:

@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.event_broadcaster import broadcaster
+from app.services.messaging.broadcaster import broadcaster
 
 
 @pytest.mark.asyncio

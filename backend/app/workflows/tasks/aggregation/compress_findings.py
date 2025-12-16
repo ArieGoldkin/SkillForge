@@ -15,7 +15,6 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
-from app.workflows.agents.invocation import invoke_agent
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -180,22 +179,20 @@ async def compress_single_finding(
     # Build compression prompt
     user_prompt = build_compression_user_prompt(agent_name, finding)
 
-    # Create input messages
-    input_messages = {
-        "messages": [
-            {"role": "system", "content": COMPRESSION_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ]
-    }
+    # Issue #299-304: Fix - llm.with_structured_output() expects messages directly,
+    # NOT wrapped in {"messages": [...]} dict format. Use HumanMessage/SystemMessage.
+    from langchain_core.messages import HumanMessage, SystemMessage
 
-    # Invoke LLM with timeout (30s for compression - should be fast)
-    result = await invoke_agent(
-        agent=llm,
-        input_messages=input_messages,
-        analysis_id=analysis_id,
-        agent_type=f"compress_{agent_name}",
-        timeout=30.0,  # Fast model should complete quickly
-    )
+    messages = [
+        SystemMessage(content=COMPRESSION_SYSTEM_PROMPT),
+        HumanMessage(content=user_prompt),
+    ]
+
+    # Invoke LLM directly with asyncio.timeout (30s for compression - should be fast)
+    # Note: We bypass invoke_agent because llm.with_structured_output() expects
+    # direct message input, not the agent-style {"messages": [...]} format
+    async with asyncio.timeout(30.0):
+        result = await llm.ainvoke(messages)
 
     # Extract structured response
     # The LLM has structured output bound, so result should be CompressedFinding

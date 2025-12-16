@@ -16,8 +16,8 @@ from app.core.template_utils import render_jinja_template
 from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
-from app.services.markdown_sanitizer import sanitize_markdown
-from app.services.sse_helpers import emit_streaming_event
+from app.services.utils.markdown import sanitize_markdown
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.state import AnalysisState
 from app.workflows.tasks.aggregation.validation import validate_and_parse_findings
 from app.workflows.tasks.artifact_helpers import build_claude_code_prompt, extract_artifact_metadata
@@ -60,6 +60,13 @@ async def generate_artifact(
     agent_findings = state.get("agent_findings", [])
     extraction_metadata = state.get("extraction_metadata", {})
     url = state.get("url", "")
+
+    # Extract agent_statuses from aggregated_insights
+    agent_statuses = (
+        aggregated_insights.get("agent_statuses", {})
+        if isinstance(aggregated_insights, dict)
+        else {}
+    )
 
     start_time = time.time()
 
@@ -124,6 +131,7 @@ async def generate_artifact(
             "analysis_metadata": analysis_metadata,
             "claude_code_prompt": claude_code_prompt,
             "quick_reference": quick_reference,  # Pass at top level for template
+            "agent_statuses": agent_statuses,  # Pass agent statuses for template display
         }
 
         markdown_content = render_jinja_template("artifact.j2", template_context)

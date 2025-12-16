@@ -21,7 +21,7 @@ from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.workflows.nodes.supervisor_schema import AgentSelection
@@ -339,10 +339,12 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         # ISSUE #299-304: Filter agents that should be skipped based on content signals
         # Skip agents when there's NO relevant data (different from OPPORTUNISTIC)
         agents_to_skip: list[str] = []
+        skip_reasons: dict[str, str] = {}  # Track reasons for skipped agents
         for agent in filtered_agents.copy():
             skip, reason = should_skip_agent(agent, content_signals)
             if skip:
                 agents_to_skip.append(agent)
+                skip_reasons[agent] = reason
                 filtered_agents.remove(agent)
                 logger.info(
                     "supervisor_agent_skipped_by_signals",
@@ -464,6 +466,19 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             "agents_skipped_by_signals": agents_to_skip,
         }
 
+        # Calculate expected total stages: 5 fixed stages + selected agents
+        # Fixed stages: extraction, embedding, supervisor, aggregation, artifact_generation
+        expected_total_stages = 5 + len(filtered_agents)
+
+        # Build skip_reasons dict for all skipped agents (content type + signal-based)
+        all_skip_reasons: dict[str, str] = {}
+        # Add content type based skip reasons
+        if skipped_agents:
+            for agent in skipped_agents:
+                all_skip_reasons[agent] = f"Not applicable for {detected_content_type} content type"
+        # Add signal-based skip reasons
+        all_skip_reasons.update(skip_reasons)
+
         # Emit SSE event: supervisor complete
         await emit_streaming_event(
             "progress",
@@ -473,7 +488,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             agent_count=len(filtered_agents),
             selected_agents=filtered_agents,
             skipped_agents=skipped_agents if skipped_agents else None,
+            skip_reasons=all_skip_reasons if all_skip_reasons else None,
             confidence=selection.confidence,
+            expected_total_stages=expected_total_stages,
         )
 
         logger.info(

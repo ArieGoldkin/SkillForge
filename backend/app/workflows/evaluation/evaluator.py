@@ -11,7 +11,7 @@ from langsmith import Client
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.state import AnalysisState
 
 logger = get_logger(__name__)

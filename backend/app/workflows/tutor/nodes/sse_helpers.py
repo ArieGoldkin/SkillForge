@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 
 from app.core.logging import get_logger
-from app.services.event_broadcaster import broadcaster
+from app.services.messaging.broadcaster import broadcaster
 
 logger = get_logger(__name__)
 

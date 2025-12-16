@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.services.validation.vector_validator import (
+from app.core.validation.vector import (
     ValidationResult,
     VectorValidationError,
     VectorValidator,

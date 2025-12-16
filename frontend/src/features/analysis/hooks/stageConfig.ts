@@ -138,19 +138,65 @@ export interface StageStatusEntry {
 }
 
 /**
+ * Map agent type (backend name) to stage name (frontend name)
+ */
+export function getStageNameFromAgentType(agentType: string): AgentStageName | null {
+  // Check direct mapping
+  if (agentType in AGENT_TO_STAGE_MAP) {
+    return AGENT_TO_STAGE_MAP[agentType]
+  }
+  // Check if it's already a stage name
+  if (agentType in STAGE_CONFIG) {
+    return agentType as AgentStageName
+  }
+  return null
+}
+
+/**
  * Mark unselected optional agents as 'skipped' after supervisor completes
  * Bug #165 fix: Shows skipped state instead of pending for non-selected agents
  */
-export function markSkippedAgents(stageStatuses: Map<AgentStageName, StageStatusEntry>): void {
+export function markSkippedAgents(
+  stageStatuses: Map<AgentStageName, StageStatusEntry>,
+  skippedAgentsInfo?: { agents: string[]; selectedAgents?: string[] }
+): void {
   const supervisorStatus = stageStatuses.get('supervisor_routing')
   if (supervisorStatus?.status !== 'complete') return
 
+  const selectedAgentStages = new Set<AgentStageName>()
+  if (skippedAgentsInfo?.selectedAgents) {
+    for (const agentType of skippedAgentsInfo.selectedAgents) {
+      const stageName = getStageNameFromAgentType(agentType)
+      if (stageName) {
+        selectedAgentStages.add(stageName)
+      }
+    }
+  }
+
   for (const agentStage of getOptionalStages()) {
     if (!stageStatuses.has(agentStage)) {
+      // Determine skip reason
+      let skipReason = 'Not selected by supervisor'
+
+      // Check if this agent was explicitly skipped
+      if (skippedAgentsInfo?.agents) {
+        const agentType = Object.entries(AGENT_TO_STAGE_MAP).find(
+          ([, stage]) => stage === agentStage
+        )?.[0]
+        if (agentType && skippedAgentsInfo.agents.includes(agentType)) {
+          skipReason = 'Not applicable for this content type'
+        } else if (!selectedAgentStages.has(agentStage)) {
+          skipReason = 'Not selected by supervisor'
+        }
+      }
+
       stageStatuses.set(agentStage, {
         status: 'skipped',
         timestamp: supervisorStatus.timestamp,
-        details: { skipped_by: 'supervisor_routing' },
+        details: {
+          skipped_by: 'supervisor_routing',
+          skip_reason: skipReason,
+        },
       })
     }
   }

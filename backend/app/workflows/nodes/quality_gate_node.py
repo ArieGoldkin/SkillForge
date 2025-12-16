@@ -259,7 +259,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Emit SSE event for quality gate result
-        from app.services.sse_helpers import emit_streaming_event
+        from app.services.messaging.sse_helpers import emit_streaming_event
 
         await emit_streaming_event(
             "quality_gate",

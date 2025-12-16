@@ -153,4 +153,4 @@ See `docs/issues/220-pii-safety-guardrails/ARCHITECTURE_DESIGN.md` for full inte
 
 - Issue: #220 - PII/Safety Guardrails
 - Architecture: `docs/issues/220-pii-safety-guardrails/ARCHITECTURE_DESIGN.md`
-- Existing services: `app/services/validation/vector_validator.py` (pattern reference)
+- Existing services: `app/core/validation/vector.py` (pattern reference)

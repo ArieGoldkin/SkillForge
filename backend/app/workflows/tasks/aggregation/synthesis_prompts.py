@@ -109,41 +109,40 @@ Return valid JSON matching the CoreSynthesisSchema with fields:
 LEARNING_SYNTHESIS_PROMPT = """You are creating educational content from technical analysis.
 
 ## Your Task
-Generate tutor-ready learning materials for a Socratic learning system:
+Generate tutor-ready learning materials for the LearningSynthesisSchema.
 
-1. **Core Concepts** (3-7 items):
-   - name: Concept name
-   - definition: Clear 2-3 sentence definition
-   - why_it_matters: Practical importance
-   - complexity_level: beginner/intermediate/advanced
-   - related_concepts: Connected ideas (list of strings)
+### 1. Core Concepts (core_concepts) - List of 3-7 objects
+Each concept object must have these EXACT fields:
+- name: String 2-100 chars, concept name (e.g., "Semantic Chunking")
+- definition: String 50-500 chars, clear 2-3 sentence definition
+- why_it_matters: String 30-300 chars, practical importance
+- complexity_level: String, MUST be one of: "Beginner", "Intermediate", "Advanced", "Expert"
+- related_concepts: List of 0-5 strings, connected concept names
 
-2. **Exercises** (2-4 items):
-   - title: Exercise name
-   - difficulty: easy/medium/hard
-   - description: What to do (clear task description)
-   - hints: Help without giving away the answer (list of 2-4 hints)
-   - learning_objectives: What skills this builds (list of strings)
-   - solution: Complete solution (hidden from learner initially)
+### 2. Exercises (exercises) - List of 2-4 objects
+Each exercise object must have these EXACT fields:
+- title: String 5-100 chars, action-oriented name (e.g., "Build a Semantic Search API")
+- difficulty: String, MUST be one of: "Beginner", "Intermediate", "Advanced", "Expert"
+- description: String 50-1000 chars, what to build and why
+- hints: List of 3-5 progressive hints (strings), guide without spoiling
+- solution: String (can be empty), complete working solution with comments
+- learning_objectives: List of 2-5 strings, skills this exercise reinforces
 
-3. **Self Assessment**:
-   - quiz_questions: 5-10 multiple choice questions, each with:
-     * question: The question text
-     * options: List of 3-4 answer choices
-     * correct_answer: The correct option text
-     * explanation: Why this is correct and others aren't
-   - mastery_checklist: 5-10 "I can..." statements
+### 3. Self Assessment (self_assessment) - Single object with:
+- quiz_questions: List of 5-10 question objects, each with:
+    * question: String 10-300 chars, clear question testing a concept
+    * options: List of 2-5 answer choices (strings)
+    * correct_answer: String, MUST EXACTLY match one of the options
+    * explanation: String 30-500 chars, why this answer is correct
+- mastery_checklist: List of 5-10 "I can..." statements (strings)
 
-## Guidelines
-- Use analogies to explain complex concepts
-- Order concepts from simple to complex (beginner → intermediate → advanced)
-- Make exercises practical, not theoretical
-- Quiz questions should test understanding, not memorization
-- Difficulty progression: start easy, build to harder challenges
-- Learning objectives should be measurable and specific
+## CRITICAL FIELD VALUE CONSTRAINTS
+- complexity_level and difficulty MUST be exactly: "Beginner", "Intermediate", "Advanced", or "Expert"
+- NOT: "beginner", "easy", "medium", "hard", "simple", "1", "2", etc.
+- correct_answer MUST exactly match one option or validation fails
 
 ## PEDAGOGICAL PRINCIPLES
-- **Scaffolding**: Build on previous concepts
+- **Scaffolding**: Build on previous concepts (order Beginner → Expert)
 - **Active Learning**: Exercises require hands-on practice
 - **Metacognition**: Self-assessment helps learners track progress
 - **Socratic Method**: Hints guide discovery rather than providing answers
@@ -151,11 +150,19 @@ Generate tutor-ready learning materials for a Socratic learning system:
 ## Agent Findings Summary:
 {agent_findings}
 
-## Output Format:
-Return valid JSON matching the LearningSynthesisSchema with fields:
-- core_concepts (list of objects)
-- exercises (list of objects)
-- self_assessment (object with quiz_questions and mastery_checklist)
+## CRITICAL OUTPUT FORMAT
+Return VALID JSON matching LearningSynthesisSchema EXACTLY:
+```json
+{{
+  "core_concepts": [...3-7 concept objects...],
+  "exercises": [...2-4 exercise objects...],
+  "self_assessment": {{
+    "quiz_questions": [...5-10 question objects...],
+    "mastery_checklist": [...5-10 strings...]
+  }}
+}}
+```
+Field names, counts, and string patterns must match EXACTLY or validation will fail.
 """
 
 
@@ -166,59 +173,54 @@ Return valid JSON matching the LearningSynthesisSchema with fields:
 DOCS_SYNTHESIS_PROMPT = """You are creating documentation for developers and AI assistants.
 
 ## Your Task
-Generate developer-friendly documentation in THREE parts:
+Generate developer-friendly documentation for the DocsSynthesisSchema.
 
-### PART 1: Quick Reference
-- primary_technology: Main tech discussed
-- complexity: 1-5 scale (1=beginner, 5=expert)
-- prerequisites: What you need to know first (list of strings)
-- key_commands: Important CLI commands (list of strings)
-- common_pitfalls: What to avoid (list of strings)
-- debugging_tips: How to fix common issues (list of strings)
+### PART 1: Quick Reference (quick_reference)
+Generate an object with these EXACT fields:
+- primary_technology: String "TechName version" (e.g., "LangGraph 0.6.7 + PostgreSQL 14")
+- complexity: String "Level (Est. X-Y hours)" (e.g., "Intermediate (Est. 3-4 hours)")
+- prerequisites: List of 0-4 strings (e.g., ["Python 3.11+", "Docker installed"])
+- critical_commands: List of 0-6 copy-paste commands (e.g., ["pip install langgraph==0.6.7"])
+- files_to_modify: List of 0-10 file paths with purpose
+- files_disclaimer: String (use default: "⚠️ AI-suggested structure based on content patterns")
+- gotchas: List of 0-5 objects, each with:
+    * issue: String - the pitfall description
+    * symptom: String - what you'll see when this happens
+    * quick_fix: String - how to fix it
 
-### PART 2: TL;DR Section
-- one_liner: 20-word summary
-- use_when: When to use this
-- skip_when: When NOT to use this
-- key_takeaways: 3-5 bullet points
-- time_to_implement: Estimated hours/days
+### PART 2: TL;DR Section (tldr)
+Generate an object with these EXACT fields:
+- summary: String 50-500 chars, 2-3 sentences overview
+- key_takeaways: List of 3-5 concrete outcomes (strings)
+- time_to_implement: String "Total time (breakdown)" (e.g., "4-6 hours (2h setup, 2h impl)")
 
-### PART 3: AI Assistant Prompt
-Pre-formatted prompt that enables AI coding assistants (Claude, Cursor, Copilot, Windsurf)
-to generate accurate code on first attempt:
-- context: What an AI assistant needs to know (architectural background)
-- implementation_steps: 5-10 ordered, imperative commands
-- code_snippets: Dict of purpose→complete runnable code (max 5 snippets)
-- file_structure: Dict of file_path→responsibility
-- success_criteria: 3-7 testable outcomes
+### PART 3: AI Assistant Prompt (ai_assistant_prompt)
+Pre-formatted context for AI coding assistants with these EXACT fields:
+- context: String 50-1000 chars, architectural background
+- implementation_steps: List of 5-10 ordered imperative commands (strings)
+- code_snippets: Dict of purpose→complete runnable code (max 5 keys)
+- file_structure: Dict of file_path→responsibility description
+- success_criteria: List of 3-7 testable outcomes (strings)
 
-### PART 4: Diagrams (1-3 Mermaid diagrams)
-- title: Diagram name
-- type: flowchart/sequence/class/er
-- content: Valid Mermaid syntax
-- description: What the diagram shows
+### PART 4: Diagrams (diagrams)
+Generate a list of 1-3 Mermaid diagram objects, each with these EXACT fields:
+- title: String 5-100 chars, diagram name
+- type: String, one of: "flowchart", "sequence", "class", "state", "er", "gantt"
+- mermaid_code: String, valid Mermaid.js syntax (NOT "content"!)
+- description: String 30-500 chars, what the diagram shows
 
 **CRITICAL DIAGRAM CONSTRAINTS** (prevents rendering issues):
-- Diamond nodes {label}: MAX 5 chars (use {OK?}, {Yes}, {No} - NOT {Valid?})
+- Diamond nodes {{label}}: MAX 5 chars (use {{OK?}}, {{Yes}}, {{No}} - NOT {{Valid?}})
 - Rectangle nodes [label]: Split long text, max 15 chars/word
 - Terminal nodes: Keep concise ([Done], [End], [Error])
-- Always test: labels must fit inside shapes without truncation
 
-### PART 5: Glossary (5-10 terms)
-- term: Technical term
-- definition: Plain English definition
-- see_also: Related terms (list of strings)
+### PART 5: Glossary (glossary)
+Generate a list of 5-10 term objects, each with these EXACT fields:
+- term: String 1-100 chars, the technical term or acronym
+- definition: String 20-500 chars, clear definition
+- see_also: List of 0-5 related term names (strings)
 
-## Guidelines
-- Mermaid diagrams MUST use valid syntax (test before outputting)
-- AI prompt should work with ANY coding assistant (Claude, Cursor, Copilot, etc.)
-- Quick reference should fit on one screen
-- Glossary for terms a junior developer might not know
-- Code snippets must be complete and runnable with comments
-- File structure should show recommended project organization
-- Success criteria should be objective and testable
-
-## DOCUMENTATION QUALITY
+## DOCUMENTATION QUALITY REQUIREMENTS
 1. **Actionable**: Every section enables immediate action
 2. **Specific**: Include versions, paths, commands - no vague guidance
 3. **Complete**: Code snippets must be runnable, diagrams must render
@@ -227,13 +229,18 @@ to generate accurate code on first attempt:
 ## Agent Findings Summary:
 {agent_findings}
 
-## Output Format:
-Return valid JSON matching the DocsSynthesisSchema with fields:
-- quick_reference (object)
-- tldr (object)
-- ai_assistant_prompt (object)
-- diagrams (list of objects)
-- glossary (list of objects)
+## CRITICAL OUTPUT FORMAT
+Return VALID JSON matching DocsSynthesisSchema EXACTLY:
+```json
+{{
+  "quick_reference": {{...exact fields above...}},
+  "tldr": {{...exact fields above...}},
+  "ai_assistant_prompt": {{...exact fields above...}},
+  "diagrams": [...1-3 diagram objects with mermaid_code NOT content...],
+  "glossary": [...5-10 term objects...]
+}}
+```
+Field names and structures must match EXACTLY or validation will fail.
 """
 
 

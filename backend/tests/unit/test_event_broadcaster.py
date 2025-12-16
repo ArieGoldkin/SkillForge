@@ -5,7 +5,7 @@ import contextlib
 
 import pytest
 
-from app.services.event_broadcaster import EventBroadcaster
+from app.services.messaging.broadcaster import EventBroadcaster, MAX_BUFFER_SIZE
 
 
 @pytest.mark.asyncio
@@ -333,7 +333,7 @@ async def test_buffer_per_channel_isolation():
 @pytest.mark.asyncio
 async def test_buffer_max_size_limit():
     """Test that buffer respects max size limit."""
-    from app.services.event_broadcaster import MAX_BUFFER_SIZE
+    from app.services.messaging.broadcaster import MAX_BUFFER_SIZE
 
     broadcaster = EventBroadcaster()
     channel = "test:buffer_limit"

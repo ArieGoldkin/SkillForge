@@ -1,6 +1,7 @@
+/* eslint-disable max-lines -- Component includes rich expandable sections for success metrics, skip reasons, and error details which require additional lines */
 import * as React from 'react'
 
-import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Circle, Info, Loader2, XCircle } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -21,6 +22,9 @@ export type AnalysisStepStatus = 'pending' | 'in-progress' | 'completed' | 'fail
  * @property status - Current status of the step
  * @property timestamp - Optional timestamp when step was updated
  * @property duration - Optional duration in milliseconds
+ * @property successMetrics - Optional success metrics for completed stages
+ * @property skipReason - Optional reason why stage was skipped
+ * @property errorDetails - Optional error details for failed stages
  */
 export interface AnalysisStep {
   id: string
@@ -29,6 +33,17 @@ export interface AnalysisStep {
   status: AnalysisStepStatus
   timestamp?: Date
   duration?: number
+  successMetrics?: {
+    findingsQuality?: 'high' | 'medium' | 'low'
+    coverage?: 'comprehensive' | 'partial' | 'minimal'
+    keyInsights?: string[]
+  }
+  skipReason?: string
+  errorDetails?: {
+    error: string
+    errorCode?: string
+    processingTime?: number
+  }
 }
 
 /**
@@ -111,7 +126,7 @@ const getStatusBadgeVariant = (
 /**
  * Individual step item component
  */
-/* eslint-disable max-lines-per-function -- StepItem requires complete timeline step layout (dot, connecting line, expandable content with button, timestamp/duration, description). Interactive expandable state and conditional rendering necessitate current structure. */
+/* eslint-disable max-lines-per-function, complexity -- StepItem requires complete timeline step layout (dot, connecting line, expandable content with button, timestamp/duration, description). Interactive expandable state and conditional rendering with success metrics, skip reasons, and error details necessitate current structure. */
 const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isLast }) => {
   const [isExpanded, setIsExpanded] = React.useState(false)
 
@@ -161,10 +176,105 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
           </div>
         </button>
 
-        {/* Expandable description */}
+        {/* Expandable description with rich details */}
         {isExpanded && (
-          <div className="mt-2 text-sm text-muted-foreground animate-in slide-in-from-top-2 duration-200">
-            {step.description}
+          <div className="mt-2 space-y-3 text-sm animate-in slide-in-from-top-2 duration-200">
+            {/* Main description */}
+            <p className="text-muted-foreground">{step.description}</p>
+
+            {/* Success metrics for completed stages */}
+            {step.status === 'completed' && step.successMetrics && (
+              <div className="rounded-md bg-green-500/10 border border-green-500/20 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="font-medium">Success Metrics</span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  {step.successMetrics.findingsQuality && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Quality:</span>
+                      <Badge
+                        variant={
+                          step.successMetrics.findingsQuality === 'high'
+                            ? 'success'
+                            : step.successMetrics.findingsQuality === 'medium'
+                              ? 'default'
+                              : 'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {step.successMetrics.findingsQuality}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.successMetrics.coverage && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Coverage:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {step.successMetrics.coverage}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.successMetrics.keyInsights &&
+                    step.successMetrics.keyInsights.length > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">Key Insights:</span>
+                        <ul className="mt-1 ml-4 list-disc space-y-0.5">
+                          {step.successMetrics.keyInsights.slice(0, 3).map((insight, idx) => (
+                            // eslint-disable-next-line react/no-array-index-key -- Limited to 3 items, stable order
+                            <li key={idx} className="text-muted-foreground">
+                              {insight}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* Skip reason for skipped stages */}
+            {step.status === 'skipped' && step.skipReason && (
+              <div className="rounded-md bg-muted border border-border p-3">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Info className="h-4 w-4" />
+                  <span className="font-medium">Skip Reason</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{step.skipReason}</p>
+              </div>
+            )}
+
+            {/* Error details for failed stages */}
+            {step.status === 'failed' && step.errorDetails && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">Error Details</span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Error:</span>
+                    <p className="mt-0.5 text-destructive break-words">{step.errorDetails.error}</p>
+                  </div>
+                  {step.errorDetails.errorCode && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Code:</span>
+                      <Badge variant="destructive" className="text-xs">
+                        {step.errorDetails.errorCode}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.errorDetails.processingTime !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="text-muted-foreground">
+                        {formatDuration(step.errorDetails.processingTime)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -202,7 +312,6 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
  * />
  * ```
  */
-
 export const AnalysisStepList: React.FC<AnalysisStepListProps> = ({ steps, className }) => {
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>

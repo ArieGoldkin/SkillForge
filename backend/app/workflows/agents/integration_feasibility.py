@@ -117,12 +117,8 @@ async def run_integration_feasibility(
     proactive_context = state.get("proactive_context", "")
 
     # Issue #299-304: Get content-aware specificity threshold
-    supervisor_decision = state.get("supervisor_decision", {})
-    expectation = None
-    if isinstance(supervisor_decision, dict):
-        agent_expectations = supervisor_decision.get("agent_expectations", {})
-        if isinstance(agent_expectations, dict):
-            expectation = agent_expectations.get("integration_feasibility")
+    # Read from flat field injected by build_scoped_context()
+    expectation = state.get("agent_expectation")
     specificity_threshold = get_threshold_for_expectation(expectation)
 
     # Build prompt with skill level instructions

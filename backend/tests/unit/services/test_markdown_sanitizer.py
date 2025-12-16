@@ -7,7 +7,7 @@ Tests cover:
 - Integration of all sanitizers
 """
 
-from app.services.markdown_sanitizer import fix_lists, fix_tables, sanitize_markdown
+from app.services.utils.markdown import fix_lists, fix_tables, sanitize_markdown
 
 
 class TestFixTables:

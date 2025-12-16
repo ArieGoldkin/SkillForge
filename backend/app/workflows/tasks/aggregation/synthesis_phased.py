@@ -24,7 +24,7 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.types import AnalysisID
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 from app.workflows.agents.base import create_structured_agent
 from app.workflows.agents.invocation import invoke_agent
 from app.workflows.agents.response_processing import extract_structured_response

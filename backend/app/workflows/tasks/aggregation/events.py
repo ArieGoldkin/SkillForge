@@ -6,7 +6,7 @@ aggregation processing.
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.services.sse_helpers import emit_streaming_event
+from app.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
 

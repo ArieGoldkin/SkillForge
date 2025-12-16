@@ -153,7 +153,7 @@ async def test_graph_execution_with_mocks(
             "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
         ),
         patch(
-            "app.services.sse_helpers.persist_progress_event_async",
+            "app.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(
@@ -289,7 +289,7 @@ async def test_graph_state_structure(sample_state: AnalysisState) -> None:
             "app.workflows.graph_builder.get_session_factory", return_value=_dummy_session_factory
         ),
         patch(
-            "app.services.sse_helpers.persist_progress_event_async",
+            "app.services.persistence.progress.persist_progress_event_async",
             return_value=None,
         ),
         patch(

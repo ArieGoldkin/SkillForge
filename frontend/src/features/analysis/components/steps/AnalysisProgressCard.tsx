@@ -1,6 +1,6 @@
 import type * as React from 'react'
 
-import { Loader2 } from 'lucide-react'
+import { FileText, Github, Loader2, Video } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -22,6 +22,8 @@ export type AnalysisStage = 'extracting' | 'processing' | 'analyzing' | 'generat
  * @property totalSteps - Total number of steps in analysis
  * @property completedSteps - Number of completed steps
  * @property estimatedTimeRemaining - Optional time estimate (e.g., "2-3 minutes")
+ * @property contentType - Optional content type (article, video, repo)
+ * @property wordCount - Optional word count
  */
 export interface AnalysisProgressCardProps {
   stage: AnalysisStage
@@ -30,6 +32,8 @@ export interface AnalysisProgressCardProps {
   totalSteps: number
   completedSteps: number
   estimatedTimeRemaining?: string
+  contentType?: 'article' | 'video' | 'repo'
+  wordCount?: number
   className?: string
 }
 
@@ -71,6 +75,24 @@ const getStageConfig = (
  * ```
  */
 /* eslint-disable max-lines-per-function -- Main component requires complete JSX layout for progress card (header with spinner, progress bar, step info, time estimate, completion message). Already well-structured. */
+const CONTENT_TYPE_CONFIG = {
+  article: {
+    icon: FileText,
+    label: 'Article',
+    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  },
+  video: {
+    icon: Video,
+    label: 'Video',
+    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+  },
+  repo: {
+    icon: Github,
+    label: 'Repository',
+    color: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  },
+} as const
+
 export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
   stage,
   progress,
@@ -78,11 +100,15 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
   totalSteps,
   completedSteps,
   estimatedTimeRemaining,
+  contentType,
+  wordCount,
   className,
 }) => {
   const stageConfig = getStageConfig(stage)
   const isComplete = stage === 'complete'
   const isActive = !isComplete
+  const contentTypeConfig = contentType ? CONTENT_TYPE_CONFIG[contentType] : null
+  const ContentIcon = contentTypeConfig?.icon
 
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>
@@ -99,6 +125,30 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Metadata Section */}
+        {(contentType || wordCount !== undefined) && (
+          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              Content Information
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {contentTypeConfig && ContentIcon && (
+                <Badge
+                  variant="outline"
+                  className={cn('flex items-center gap-1.5 text-xs', contentTypeConfig.color)}
+                >
+                  <ContentIcon className="h-3 w-3" />
+                  {contentTypeConfig.label}
+                </Badge>
+              )}
+              {wordCount !== undefined && wordCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {wordCount.toLocaleString()} words
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {/* Progress Bar */}
         <div className="space-y-2">
           <Progress

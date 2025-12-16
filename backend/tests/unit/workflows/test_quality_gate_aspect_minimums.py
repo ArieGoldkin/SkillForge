@@ -46,7 +46,7 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
     """
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
@@ -97,7 +97,7 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
     """Test that quality gate passes when all aspects meet minimums."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
@@ -142,7 +142,7 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when depth is below minimum (0.4)."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
@@ -183,7 +183,7 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when coherence is below minimum (0.4)."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("langsmith.schemas.Run") as mock_run_class,
         patch("langsmith.schemas.Example") as mock_example_class,
@@ -224,7 +224,7 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
     """Test that quality gate fails when multiple aspects are below minimums."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
@@ -329,7 +329,7 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
     """Test that quality gate logs which aspects failed minimum thresholds."""
     with (
         patch("app.workflows.nodes.quality_gate_node.create_quality_evaluator") as mock_create,
-        patch("app.services.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
+        patch("app.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock),
         patch("app.workflows.nodes.quality_gate_node.get_current_run_tree") as mock_run_tree,
         patch("app.workflows.nodes.quality_gate_node.logger") as mock_logger,
         patch("langsmith.schemas.Run") as mock_run_class,
