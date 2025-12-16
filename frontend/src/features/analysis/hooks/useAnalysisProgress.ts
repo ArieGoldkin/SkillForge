@@ -311,20 +311,25 @@ function buildSteps(
 ): ProgressStep[] {
   // Build reverse map: stage name -> agent type (for skip reasons lookup)
   // Use AGENT_TO_STAGE_MAP in reverse
+  // Note: implementation_planning stage is used by BOTH implementation_planner AND integration_feasibility agents
   const STAGE_TO_AGENT_MAP: Record<AgentStageName, string> = {
     tech_comparison: 'tech_comparator',
     security_audit: 'security_auditor',
-    implementation_planning: 'implementation_planner',
+    implementation_planning: 'implementation_planner', // Also used by integration_feasibility agent
     performance_audit: 'performance_analyst',
     code_quality_audit: 'code_quality_critic',
     trends_analysis: 'trend_validator',
     dependencies_analysis: 'dependency_mapper',
-    integration_feasibility: 'integration_feasibility',
     extraction: 'extraction',
     embedding: 'embedding',
     supervisor_routing: 'supervisor_routing',
     aggregation: 'aggregation',
     artifact_generation: 'artifact_generation',
+    quality_validation: 'quality_validation',
+    chunking: 'chunking',
+    workflow: 'workflow',
+    pattern_comparison: 'pattern_comparison',
+    metrics: 'metrics',
   }
 
   return Object.entries(STAGE_CONFIG)

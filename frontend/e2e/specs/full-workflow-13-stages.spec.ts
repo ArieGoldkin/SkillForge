@@ -11,10 +11,14 @@ import { HomePage, AnalyzePage } from '../page-objects';
  * - Form submission from home page
  * - Redirect to analysis page
  * - SSE event reception and parsing
- * - All 13 stages appear in correct order
- * - New integration_feasibility stage (order 11)
- * - Progress calculation with 13 stages
+ * - Core workflow stages appear (6 minimum)
+ * - Agent stages selected by supervisor (0-8 agents)
+ * - Progress calculation with dynamic stage count
  * - Final completion or error handling
+ *
+ * STAGE NAMES: Based on AgentStageName type (frontend/src/types/sse.ts)
+ * Note: Backend AGENT_REGISTRY maps agent names to stage names
+ * (e.g., implementation_planner → implementation_planning)
  *
  * IMPORTANT: This test makes real LLM calls and takes 2-3 minutes.
  * Run with: npm run test:e2e:chromium -- full-workflow-13-stages.spec.ts --headed
@@ -22,21 +26,40 @@ import { HomePage, AnalyzePage } from '../page-objects';
 
 const TEST_URL = 'https://inbarshirizly.substack.com/p/coming-soon';
 
-// All 13 expected stages in order
-const EXPECTED_STAGES = [
-  'supervisor_routing',       // 1
-  'content_extraction',       // 2
-  'metadata_extraction',      // 3
-  'content_synthesis',        // 4
-  'learning_objectives',      // 5
-  'learning_path',            // 6
-  'prerequisites',            // 7
-  'tech_stack_analysis',      // 8
-  'context_analysis',         // 9
-  'dependencies_analysis',    // 10
-  'integration_feasibility',  // 11 - NEW STAGE
-  'artifact_generation',      // 12
-  'quality_gate',             // 13
+// Core workflow stages (ALWAYS appear in every analysis)
+const CORE_STAGES = [
+  'extraction',           // Content extraction
+  'embedding',            // Embedding generation
+  'supervisor_routing',   // Agent selection
+  'aggregation',          // Results aggregation
+  'quality_validation',   // Quality check
+  'artifact_generation',  // Final report generation
+];
+
+// Optional agent stages (0-8 selected dynamically by supervisor)
+const OPTIONAL_AGENT_STAGES = [
+  'tech_comparison',      // Tech Comparator agent
+  'security_audit',       // Security Auditor agent
+  'implementation_planning', // Implementation Planner + Integration Feasibility agents (both use this stage!)
+  'performance_audit',    // Performance Auditor agent
+  'code_quality_audit',   // Code Quality Reviewer agent
+  'trends_analysis',      // Trends Analyst agent
+  'dependencies_analysis', // Dependencies Analyzer agent
+  'pattern_comparison',   // Pattern comparison (workflow-level)
+];
+
+// Other optional stages
+const OTHER_OPTIONAL_STAGES = [
+  'chunking',   // Only if ENABLE_COARSE_TO_FINE=true
+  'workflow',   // Error handling (workflow-level)
+  'metrics',    // Metrics collection (workflow-level)
+];
+
+// All 17 possible stages (from STAGE_CONFIG)
+const ALL_POSSIBLE_STAGES = [
+  ...CORE_STAGES,
+  ...OPTIONAL_AGENT_STAGES,
+  ...OTHER_OPTIONAL_STAGES,
 ];
 
 interface SSEEvent {
@@ -173,36 +196,46 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     console.log(`   Initial progress: ${initialProgress}%`);
     await takeScreenshot('04_sse_connected');
 
-    // STEP 5: Monitor all 13 stages
-    console.log('\n📍 Step 5: Monitor stage progression (13 stages expected)');
-    console.log('   Expected stages:', EXPECTED_STAGES);
+    // STEP 5: Monitor stage progression (dynamic count based on supervisor selection)
+    console.log('\n📍 Step 5: Monitor stage progression (6 core + 0-8 agents)');
+    console.log('   Core stages (required):', CORE_STAGES);
+    console.log('   Optional agent stages (0-8):', OPTIONAL_AGENT_STAGES);
 
     let lastProgress = initialProgress;
     let stagnantCount = 0;
-    const maxStagnantChecks = 30; // 30 checks * 5s = 2.5 minutes max wait
+    const maxStagnantChecks = 36; // 36 checks * 5s = 3 minutes max wait
+
+    // Count how many core stages we've seen
+    const coreStagesEncountered = () =>
+      CORE_STAGES.filter(stage => stagesEncountered.has(stage)).length;
 
     // Poll for stages with timeout protection
-    while (stagesEncountered.size < EXPECTED_STAGES.length && stagnantCount < maxStagnantChecks) {
+    // Continue until we see all 6 core stages OR reach max wait time OR progress is 100%
+    while (coreStagesEncountered() < CORE_STAGES.length && stagnantCount < maxStagnantChecks) {
       await page.waitForTimeout(5000);
 
       const currentProgress = await analyzePage.getProgress();
-      const stagesList = Array.from(stagesEncountered).join(', ');
+      const coreCount = coreStagesEncountered();
+      const agentCount = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s)).length;
 
-      console.log(`   Progress: ${currentProgress}% | Stages: ${stagesEncountered.size}/13 | Last: ${Array.from(stagesEncountered).pop() || 'none'}`);
+      console.log(`   Progress: ${currentProgress}% | Core: ${coreCount}/${CORE_STAGES.length} | Agents: ${agentCount} | Total: ${stagesEncountered.size}`);
 
       // Take screenshot at key stages
-      if (stagesEncountered.has('supervisor_routing') && !stagesEncountered.has('content_extraction')) {
+      if (stagesEncountered.has('supervisor_routing') && !stagesEncountered.has('aggregation')) {
         await takeScreenshot('05_supervisor_routing_complete');
       }
-      if (stagesEncountered.has('content_extraction') && !stagesEncountered.has('content_synthesis')) {
+      if (stagesEncountered.has('extraction') && !stagesEncountered.has('embedding')) {
         await takeScreenshot('06_extraction_complete');
       }
-      if (stagesEncountered.has('integration_feasibility') && stagesEncountered.size >= 11) {
-        await takeScreenshot('07_integration_feasibility_detected');
-        console.log('🎯 CRITICAL: integration_feasibility stage detected!');
+      if (stagesEncountered.has('implementation_planning')) {
+        await takeScreenshot('07_implementation_planning_detected');
+        console.log('🎯 CRITICAL: implementation_planning stage detected!');
       }
-      if (currentProgress === 100 || stagesEncountered.size === EXPECTED_STAGES.length) {
-        await takeScreenshot('08_all_stages_complete');
+      if (currentProgress >= 90 || coreCount === CORE_STAGES.length) {
+        await takeScreenshot('08_near_complete');
+      }
+      if (currentProgress === 100) {
+        await takeScreenshot('09_100_percent');
         break;
       }
 
@@ -211,7 +244,8 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
         stagnantCount++;
         if (stagnantCount % 6 === 0) { // Every 30 seconds
           console.log(`   ⚠️  Progress stagnant for ${stagnantCount * 5}s at ${currentProgress}%`);
-          await takeScreenshot(`09_stagnant_${stagnantCount}`);
+          console.log(`      Stages so far: ${Array.from(stagesEncountered).join(', ')}`);
+          await takeScreenshot(`10_stagnant_${stagnantCount}`);
         }
       } else {
         stagnantCount = 0;
@@ -219,23 +253,27 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       }
     }
 
-    // STEP 6: Validate all stages appeared
+    // STEP 6: Validate stage completion
     console.log('\n📍 Step 6: Validate stage completion');
-    console.log(`   Stages encountered: ${stagesEncountered.size}/13`);
-    console.log(`   Stages: ${Array.from(stagesEncountered).join(', ')}`);
+    const coreCount = CORE_STAGES.filter(s => stagesEncountered.has(s)).length;
+    const agentCount = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s)).length;
+    console.log(`   Total stages encountered: ${stagesEncountered.size}`);
+    console.log(`   Core stages: ${coreCount}/${CORE_STAGES.length}`);
+    console.log(`   Agent stages: ${agentCount}/${OPTIONAL_AGENT_STAGES.length}`);
+    console.log(`   All stages: ${Array.from(stagesEncountered).join(', ')}`);
 
-    const missingStages = EXPECTED_STAGES.filter(stage => !stagesEncountered.has(stage));
-    if (missingStages.length > 0) {
-      console.error('❌ Missing stages:', missingStages);
-      await takeScreenshot('10_error_missing_stages');
+    // Check which core stages are missing (if any)
+    const missingCoreStages = CORE_STAGES.filter(stage => !stagesEncountered.has(stage));
+    if (missingCoreStages.length > 0) {
+      console.error('❌ Missing CORE stages:', missingCoreStages);
+      await takeScreenshot('11_error_missing_core_stages');
     } else {
-      console.log('✅ All 13 stages detected!');
+      console.log('✅ All 6 core stages detected!');
     }
 
-    // CRITICAL: Validate integration_feasibility stage
-    expect(stagesEncountered.has('integration_feasibility'),
-      'integration_feasibility stage must appear').toBe(true);
-    console.log('✅ integration_feasibility stage validated');
+    // Log which agent stages appeared
+    const presentAgentStages = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s));
+    console.log(`   Agent stages selected by supervisor: ${presentAgentStages.join(', ') || 'none'}`);
 
     // STEP 7: Wait for completion
     console.log('\n📍 Step 7: Wait for final completion');
@@ -267,36 +305,51 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     console.log('\n📊 FINAL REPORT');
     console.log('════════════════════════════════════════════════');
     console.log(`Total SSE events received: ${sseEvents.length}`);
-    console.log(`Total stages encountered: ${stagesEncountered.size}/13`);
+    console.log(`Total stages encountered: ${stagesEncountered.size}`);
+    console.log(`Core stages: ${coreCount}/${CORE_STAGES.length}`);
+    console.log(`Agent stages: ${agentCount}/${OPTIONAL_AGENT_STAGES.length}`);
     console.log(`Final progress: ${await analyzePage.getProgress()}%`);
     console.log(`Screenshots saved: ${screenshotCounter}`);
     console.log('');
-    console.log('Stage order encountered:');
-
-    const orderedStages: string[] = [];
-    for (const stage of EXPECTED_STAGES) {
+    console.log('Core stages (required):');
+    for (const stage of CORE_STAGES) {
       const encountered = stagesEncountered.has(stage);
       const symbol = encountered ? '✅' : '❌';
       console.log(`  ${symbol} ${stage}`);
-      if (encountered) orderedStages.push(stage);
     }
-
     console.log('');
-    console.log('Missing stages:', missingStages.length === 0 ? 'None' : missingStages.join(', '));
+    console.log('Agent stages (0-8 selected by supervisor):');
+    for (const stage of OPTIONAL_AGENT_STAGES) {
+      const encountered = stagesEncountered.has(stage);
+      const symbol = encountered ? '✅' : '⚪';
+      console.log(`  ${symbol} ${stage}`);
+    }
+    console.log('');
+    console.log('Missing CORE stages:', missingCoreStages.length === 0 ? 'None ✅' : missingCoreStages.join(', '));
     console.log('════════════════════════════════════════════════');
 
     // Final assertions
-    expect(stagesEncountered.size).toBeGreaterThanOrEqual(11); // At least 11 stages must appear
-    expect(stagesEncountered.has('integration_feasibility')).toBe(true);
-    expect(missingStages.length).toBeLessThan(3); // Allow up to 2 missing stages for flakiness
+    // CRITICAL: All 6 core stages MUST appear
+    expect(coreCount, 'All 6 core stages must appear').toBe(CORE_STAGES.length);
+    expect(missingCoreStages.length, 'No core stages should be missing').toBe(0);
+
+    // At least 1 agent should be selected by supervisor (in practice, 3-5 agents are typical)
+    expect(agentCount, 'At least 1 agent stage should appear').toBeGreaterThanOrEqual(1);
+
+    // Total stages should be at least 7 (6 core + at least 1 agent)
+    expect(stagesEncountered.size, 'At least 7 total stages should appear').toBeGreaterThanOrEqual(7);
 
     // Save event log for debugging
     const eventLog = {
       testUrl: TEST_URL,
       analysisId,
       totalEvents: sseEvents.length,
+      totalStages: stagesEncountered.size,
+      coreStages: coreCount,
+      agentStages: agentCount,
       stagesEncountered: Array.from(stagesEncountered),
-      missingStages,
+      missingCoreStages,
+      presentAgentStages,
       events: sseEvents.slice(0, 50), // First 50 events
     };
 
@@ -328,8 +381,8 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     expect(progress).toBeLessThanOrEqual(100);
   });
 
-  test('should calculate progress correctly with 13 stages', async ({ page }) => {
-    console.log('\n📐 Testing progress calculation with 13 stages...\n');
+  test('should calculate progress correctly with dynamic stage count', async ({ page }) => {
+    console.log('\n📐 Testing progress calculation with dynamic stages...\n');
 
     const homePage = new HomePage(page);
     await homePage.goto();
@@ -347,13 +400,15 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     const progress = await analyzePage.getProgress();
     console.log(`   Current progress: ${progress}%`);
 
-    // With 13 stages, each stage is ~7.69% progress
-    // Verify progress makes sense (not showing 100% when only 1 stage complete)
+    // Progress should be reasonable (0-100%)
+    expect(progress).toBeGreaterThanOrEqual(0);
+    expect(progress).toBeLessThanOrEqual(100);
+
+    // If progress is between 0-100 (exclusive), verify it's not showing 100% prematurely
     if (progress > 0 && progress < 100) {
-      const estimatedStages = Math.round((progress / 100) * 13);
-      console.log(`   Estimated stages complete: ${estimatedStages}/13`);
-      expect(estimatedStages).toBeGreaterThan(0);
-      expect(estimatedStages).toBeLessThan(13);
+      // With dynamic stages (typically 6 core + 3-5 agents = 9-11 total)
+      // Progress should reflect actual completion, not jump to 100% early
+      console.log(`   ✓ Progress is ${progress}%, not prematurely showing 100%`);
     }
 
     console.log('✓ Progress calculation appears correct');
