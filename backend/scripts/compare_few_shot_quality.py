@@ -64,6 +64,7 @@ load_dotenv()
 
 from app.core.logging import get_logger  # noqa: E402
 from app.db.session import get_session_factory  # noqa: E402
+from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
 from app.domains.analysis.workflows.agents.schemas.implementation_planner import (  # noqa: E402
     ImplementationPlan,
 )
@@ -74,6 +75,8 @@ from app.domains.analysis.workflows.agents.schemas.tech_comparator import (  # n
     TechComparison,
 )
 from app.models.agent_example import AgentExample  # noqa: E402
+from app.shared.services.agents.few_shot_factory import create_few_shot_agent  # noqa: E402
+from app.shared.services.embeddings.service import EmbeddingService  # noqa: E402
 from app.shared.services.quality_scorer import QualityScore, score_output_quality  # noqa: E402
 
 logger = get_logger(__name__)
@@ -205,16 +208,59 @@ async def run_control_variant(
         elapsed_ms = 100  # Mock timing
         return mock_output, elapsed_ms
 
-    # TODO(yonatan): Implement actual LLM call via agent factory (#299-304)
-    # For now, return None to avoid API costs during development
-    logger.warning(
-        "control_variant_not_implemented",
-        agent_type=example.agent_type,
-        example_id=str(example.id),
-    )
+    # Use baseline agent (no few-shot examples)
+    try:
+        # Get schema for this agent type
+        schema_class = AGENT_SCHEMAS.get(example.agent_type)
+        if schema_class is None:
+            logger.warning(
+                "agent_type_no_schema",
+                agent_type=example.agent_type,
+                example_id=str(example.id),
+            )
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            return None, elapsed_ms
 
-    elapsed_ms = (time.perf_counter() - start_time) * 1000
-    return None, elapsed_ms
+        # Create baseline agent directly (bypassing few-shot factory)
+        agent = create_structured_agent(
+            system_prompt=AGENT_PROMPTS.get(example.agent_type, "You are an AI assistant."),
+            response_schema=schema_class,
+        )
+
+        # Invoke agent
+        result = await agent.ainvoke(
+            {"content": example.input_content_preview or example.input_summary}
+        )
+
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+        # Extract output dict (handle both dict and Pydantic model)
+        if hasattr(result, "dict"):
+            output_dict = result.dict()
+        elif hasattr(result, "model_dump"):
+            output_dict = result.model_dump()
+        else:
+            output_dict = result
+
+        logger.info(
+            "control_variant_completed",
+            agent_type=example.agent_type,
+            example_id=str(example.id),
+            elapsed_ms=elapsed_ms,
+        )
+
+        return output_dict, elapsed_ms
+
+    except Exception as e:
+        logger.error(
+            "control_variant_failed",
+            agent_type=example.agent_type,
+            example_id=str(example.id),
+            error=str(e),
+            exc_info=True,
+        )
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        return None, elapsed_ms
 
 
 async def run_treatment_variant(
@@ -251,16 +297,81 @@ async def run_treatment_variant(
         elapsed_ms = 150  # Slightly longer due to few-shot overhead
         return mock_output, elapsed_ms
 
-    # TODO(yonatan): Implement actual LLM call via few-shot agent factory (#299-304)
-    # For now, return None to avoid API costs during development
-    logger.warning(
-        "treatment_variant_not_implemented",
-        agent_type=example.agent_type,
-        example_id=str(example.id),
-    )
+    # Use few-shot factory with treatment variant (with few-shot examples)
+    try:
+        async with get_session_factory()() as session:
+            # Get schema for this agent type
+            schema_class = AGENT_SCHEMAS.get(example.agent_type)
+            if schema_class is None:
+                logger.warning(
+                    "agent_type_no_schema",
+                    agent_type=example.agent_type,
+                    example_id=str(example.id),
+                )
+                elapsed_ms = (time.perf_counter() - start_time) * 1000
+                return None, elapsed_ms
 
-    elapsed_ms = (time.perf_counter() - start_time) * 1000
-    return None, elapsed_ms
+            # Base agent factory for few-shot wrapper
+            def base_agent_factory(**kwargs):
+                prompt = kwargs.get(
+                    "system_prompt",
+                    AGENT_PROMPTS.get(example.agent_type, "You are an AI assistant."),
+                )
+                return create_structured_agent(
+                    system_prompt=prompt,
+                    response_schema=schema_class,
+                )
+
+            # Create embedding service
+            embedding_service = EmbeddingService()
+
+            # Create agent with few-shot examples using treatment variant
+            agent = await create_few_shot_agent(
+                agent_type=example.agent_type,
+                content=example.input_content_preview or example.input_summary,
+                base_agent_factory=base_agent_factory,
+                session=session,
+                embedding_service=embedding_service,
+                variant="treatment",  # Force treatment variant
+                max_examples=3,
+                min_quality_score=0.8,
+                system_prompt=AGENT_PROMPTS.get(example.agent_type, "You are an AI assistant."),
+            )
+
+            # Invoke agent
+            result = await agent.ainvoke(
+                {"content": example.input_content_preview or example.input_summary}
+            )
+
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+
+            # Extract output dict (handle both dict and Pydantic model)
+            if hasattr(result, "dict"):
+                output_dict = result.dict()
+            elif hasattr(result, "model_dump"):
+                output_dict = result.model_dump()
+            else:
+                output_dict = result
+
+            logger.info(
+                "treatment_variant_completed",
+                agent_type=example.agent_type,
+                example_id=str(example.id),
+                elapsed_ms=elapsed_ms,
+            )
+
+            return output_dict, elapsed_ms
+
+    except Exception as e:
+        logger.error(
+            "treatment_variant_failed",
+            agent_type=example.agent_type,
+            example_id=str(example.id),
+            error=str(e),
+            exc_info=True,
+        )
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        return None, elapsed_ms
 
 
 async def compare_example(
