@@ -10,7 +10,6 @@ import pytest
 
 from app.shared.services.mcp.registry import (
 
-@pytest.mark.unit
     AGENT_TOOL_CONFIGS,
     AgentToolConfig,
     ToolCapability,

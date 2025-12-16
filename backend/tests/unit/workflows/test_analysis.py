@@ -20,7 +20,6 @@ TEST_ANALYSIS_ID = str(uuid4())
 def sample_extraction_result() -> dict:
     """Sample extraction result from JinaReader."""
 
-@pytest.mark.unit
     return {
         "title": "Test Article",
         "content": "# Test Article\n\nThis is test content.",

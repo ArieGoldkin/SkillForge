@@ -4,7 +4,6 @@ from app.core.agent_config import AGENT_REGISTRY
 import pytest
 from app.domains.analysis.workflows.nodes.supervisor_config import (
 
-@pytest.mark.unit
     SUPERVISOR_PROMPT,
     WORKFLOW_STAGES,
     build_supervisor_prompt,

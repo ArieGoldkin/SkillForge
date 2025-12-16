@@ -10,7 +10,6 @@ import pytest
 
 from app.evaluation.pipeline.thresholds import (
 
-@pytest.mark.unit
     THRESHOLDS,
     Difficulty,
     ThresholdConfig,

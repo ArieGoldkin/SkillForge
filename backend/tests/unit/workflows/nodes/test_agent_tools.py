@@ -5,7 +5,6 @@ from langchain_core.tools import BaseTool
 
 from app.domains.analysis.workflows.nodes.agent_tools import (
 
-@pytest.mark.unit
     AGENT_TOOLS,
     TOOL_TO_AGENT_MAP,
     code_quality_critic_tool,

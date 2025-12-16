@@ -15,7 +15,6 @@ import pytest
 
 from app.evaluation.schemas.validation import (
 
-@pytest.mark.unit
     MIN_QUERIES_PER_DIFFICULTY,
     VALID_DIFFICULTY_LEVELS,
     ValidationResult,

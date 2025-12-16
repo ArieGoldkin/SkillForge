@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from app.domains.analysis.workflows.agents.result_processing import process_agent_result
 from app.domains.analysis.workflows.agents.schemas.implementation_planner import (
 
-@pytest.mark.unit
     ImplementationPlan,
     ImplementationStep,
 )

@@ -18,7 +18,6 @@ import pytest
 
 from app.evaluation.ingestion.langsmith_extractor import (
 
-@pytest.mark.unit
     AGENT_TO_DOMAIN,
     ALL_AGENT_TYPES,
     KEYWORD_DOMAIN_MAP,

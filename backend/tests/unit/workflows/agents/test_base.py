@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from app.domains.analysis.workflows.agents.base import (
 
-@pytest.mark.unit
     create_structured_agent,
     emit_agent_progress,
     save_agent_finding,

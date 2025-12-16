@@ -13,7 +13,6 @@ from pathlib import Path
 
 from app.evaluation.metrics.regression import (
 
-@pytest.mark.unit
     RegressionReport,
     check_regression,
 )

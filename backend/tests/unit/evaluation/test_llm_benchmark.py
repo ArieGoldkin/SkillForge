@@ -8,7 +8,6 @@ import pytest
 
 from app.evaluation.llm_benchmark import (
 
-@pytest.mark.unit
     LLMBenchmark,
     benchmark_model_context,
     get_benchmark_model_id,

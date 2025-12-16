@@ -12,7 +12,6 @@ import pytest
 from app.models.agent_memory import MemoryType
 from app.shared.services.memory import (
 
-@pytest.mark.unit
     AgentMemoryService,
     MemorySearchResult,
     MemorySnippet,

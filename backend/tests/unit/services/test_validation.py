@@ -4,7 +4,6 @@ import pytest
 
 from app.core.validation.vector import (
 
-@pytest.mark.unit
     ValidationResult,
     VectorValidationError,
     VectorValidator,

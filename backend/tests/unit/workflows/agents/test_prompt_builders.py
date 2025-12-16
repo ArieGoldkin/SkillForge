@@ -3,7 +3,6 @@
 from app.domains.analysis.workflows.agents.prompt_builders import (
 import pytest
 
-@pytest.mark.unit
     build_agent_user_prompt,
     build_supervisor_user_prompt,
 )

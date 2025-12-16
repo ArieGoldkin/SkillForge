@@ -15,7 +15,6 @@ import pytest
 
 from app.shared.services.mcp.batch import (
 
-@pytest.mark.unit
     MAX_BATCH_SIZE,
     ActionableError,
     BatchResult,

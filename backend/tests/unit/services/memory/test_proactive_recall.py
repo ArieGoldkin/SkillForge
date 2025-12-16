@@ -10,7 +10,6 @@ import pytest
 from app.shared.services.memory import MemorySnippet
 from app.shared.services.memory.proactive_recall import (
 
-@pytest.mark.unit
     format_memory_context,
     inject_proactive_context,
 )

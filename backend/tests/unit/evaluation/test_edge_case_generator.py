@@ -20,7 +20,6 @@ from app.evaluation.ingestion.edge_case_generator import (
 )
 from app.evaluation.ingestion.edge_case_templates import (
 
-@pytest.mark.unit
     AMBIGUOUS_TEMPLATES,
     CONTRADICTORY_TEMPLATES,
     MINIMAL_CONTEXT_TEMPLATES,

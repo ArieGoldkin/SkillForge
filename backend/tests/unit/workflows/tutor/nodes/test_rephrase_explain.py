@@ -10,8 +10,6 @@ def sample_tutor_state_for_rephrase():
     """Sample tutor state for rephrasing."""
     import uuid
 
-@pytest.mark.unit
-
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,

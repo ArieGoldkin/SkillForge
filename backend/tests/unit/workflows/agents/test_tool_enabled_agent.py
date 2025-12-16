@@ -16,7 +16,6 @@ from pydantic import BaseModel
 
 from app.domains.analysis.workflows.agents.base import (
 
-@pytest.mark.unit
     ToolCallConfig,
     _build_tool_enhanced_prompt,
     create_structured_agent,

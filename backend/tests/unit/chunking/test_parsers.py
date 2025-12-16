@@ -11,10 +11,9 @@ Tests cover:
 Reference: docs/issues/222-pluggable-parsers/README.md
 """
 
-from app.shared.services.chunking.parsers import (
 import pytest
 
-@pytest.mark.unit
+from app.shared.services.chunking.parsers import (
     CodeParser,
     HTMLParser,
     MarkdownParser,

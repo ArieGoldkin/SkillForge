@@ -6,7 +6,6 @@ import pytest
 )
 from app.shared.services.chunking.dedup import (
 
-@pytest.mark.unit
     DatabaseDedupStats,
     compute_chunk_hash,
     deduplicate,

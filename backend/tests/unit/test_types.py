@@ -3,7 +3,6 @@
 from app.core.types import (
 import pytest
 
-@pytest.mark.unit
     AnalysisID,
     ChannelName,
     EmbeddingVector,

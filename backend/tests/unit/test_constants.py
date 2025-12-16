@@ -3,7 +3,6 @@
 from app.core.constants import (
 import pytest
 
-@pytest.mark.unit
     CONTENT_TYPE_ARTICLE,
     CONTENT_TYPE_REPO,
     CONTENT_TYPE_VIDEO,
