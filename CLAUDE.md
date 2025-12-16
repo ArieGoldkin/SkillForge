@@ -83,6 +83,36 @@ version: 4.0.0
 4. **Use TodoWrite** to track multi-step tasks
 5. **Never commit directly** to dev/main - always use feature branches + PRs
 
+## 🧪 Testing Standards (MANDATORY)
+
+**ALWAYS run tests with live progress output that the user can watch:**
+
+```bash
+# Backend tests - with live progress log
+cd backend
+poetry run pytest tests/unit/ --tb=short -v 2>&1 | tee /tmp/test_results.log | grep -E "(PASSED|FAILED|ERROR|===|test session|passed|failed)" | tail -50
+
+# Or for full output:
+poetry run pytest tests/unit/ --tb=short -v 2>&1 | tee /tmp/test_results.log
+
+# Quick summary:
+poetry run pytest tests/unit/ --tb=no -q 2>&1 | tail -20
+```
+
+**Key Requirements:**
+- **ALWAYS use `tee`** to save output to `/tmp/test_results.log` for later review
+- **ALWAYS use `-v` (verbose)** or `-q` (quiet) - never silent
+- **ALWAYS show progress** - use `grep` filters or `tail` to show recent activity
+- **NEVER run tests without visible output** - user needs to see progress
+- **For long-running tests**, use `--maxfail=5` to stop after first few failures
+
+**Test Output Patterns:**
+- `tee /tmp/test_results.log` - Saves full log for analysis
+- `grep -E "(PASSED|FAILED|ERROR)"` - Shows only test results
+- `tail -50` - Shows last 50 lines (recent activity)
+- `--tb=short` - Shorter tracebacks (faster output)
+- `--tb=no` - No tracebacks (fastest, summary only)
+
 
 ## 🚨 CRITICAL: Pre-Commit Validation (NEVER SKIP)
 

@@ -16,7 +16,9 @@ import pytest
 import pytest_asyncio
 
 from app.schemas.search import SearchFilters, SearchMode
-from app.services.search import SearchService
+from app.shared.services.search import SearchService
+
+@pytest.mark.unit
 
 
 @pytest.fixture

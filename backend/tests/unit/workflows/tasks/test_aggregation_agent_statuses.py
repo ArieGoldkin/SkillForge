@@ -4,8 +4,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import aggregate_findings
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -64,12 +66,12 @@ def state_with_all_successful():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started", new_callable=AsyncMock)
-@patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm", new_callable=AsyncMock)
-@patch("app.workflows.tasks.aggregate_findings.extract_quick_reference")
-@patch("app.workflows.tasks.aggregate_findings.detect_conflicts")
-@patch("app.workflows.tasks.aggregate_findings.detect_coverage_gaps")
-@patch("app.workflows.tasks.aggregate_findings.calculate_coverage_score")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.extract_quick_reference")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_conflicts")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_coverage_gaps")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_coverage_score")
 async def test_aggregate_findings_tracks_agent_statuses(
     mock_coverage_score,
     mock_coverage_gaps,
@@ -117,12 +119,12 @@ async def test_aggregate_findings_tracks_agent_statuses(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.tasks.aggregate_findings.emit_aggregation_started", new_callable=AsyncMock)
-@patch("app.workflows.tasks.aggregate_findings.synthesize_with_llm", new_callable=AsyncMock)
-@patch("app.workflows.tasks.aggregate_findings.extract_quick_reference")
-@patch("app.workflows.tasks.aggregate_findings.detect_conflicts")
-@patch("app.workflows.tasks.aggregate_findings.detect_coverage_gaps")
-@patch("app.workflows.tasks.aggregate_findings.calculate_coverage_score")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.extract_quick_reference")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_conflicts")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_coverage_gaps")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_coverage_score")
 async def test_aggregate_findings_all_successful_agents(
     mock_coverage_score,
     mock_coverage_gaps,

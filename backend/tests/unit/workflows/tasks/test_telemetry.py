@@ -2,13 +2,15 @@
 
 from unittest.mock import patch
 
-from app.workflows.tasks.telemetry import log_chunking_metrics
+from app.domains.analysis.workflows.tasks.telemetry import log_chunking_metrics
+
+@pytest.mark.unit
 
 
 class TestLogChunkingMetrics:
     """Tests for log_chunking_metrics function."""
 
-    @patch("app.workflows.tasks.telemetry.logger")
+    @patch("app.domains.analysis.workflows.tasks.telemetry.logger")
     def test_logs_required_metrics(self, mock_logger):
         """Test that required metrics are logged."""
         log_chunking_metrics(
@@ -27,7 +29,7 @@ class TestLogChunkingMetrics:
         assert call_kwargs["dedup_kept"] == 45
         assert call_kwargs["dedup_dropped"] == 5
 
-    @patch("app.workflows.tasks.telemetry.logger")
+    @patch("app.domains.analysis.workflows.tasks.telemetry.logger")
     def test_logs_optional_metrics(self, mock_logger):
         """Test that optional metrics are logged when provided."""
         log_chunking_metrics(
@@ -46,7 +48,7 @@ class TestLogChunkingMetrics:
         assert call_kwargs["chunking_latency_ms"] == 150.5
         assert call_kwargs["overlap_pct"] == 0.15
 
-    @patch("app.workflows.tasks.telemetry.logger")
+    @patch("app.domains.analysis.workflows.tasks.telemetry.logger")
     def test_logs_window_parameters(self, mock_logger):
         """Test that window parameters are logged."""
         log_chunking_metrics(
@@ -65,7 +67,7 @@ class TestLogChunkingMetrics:
         assert call_kwargs["long_window"] == 500
         assert call_kwargs["doc_len_threshold"] == 1000
 
-    @patch("app.workflows.tasks.telemetry.logger")
+    @patch("app.domains.analysis.workflows.tasks.telemetry.logger")
     def test_logs_event_name(self, mock_logger):
         """Test that event name is chunking_metrics."""
         log_chunking_metrics(
@@ -79,7 +81,7 @@ class TestLogChunkingMetrics:
         call_args = mock_logger.info.call_args[0]
         assert call_args[0] == "chunking_metrics"
 
-    @patch("app.workflows.tasks.telemetry.logger")
+    @patch("app.domains.analysis.workflows.tasks.telemetry.logger")
     def test_handles_none_optional_values(self, mock_logger):
         """Test that None values are handled for optional params."""
         log_chunking_metrics(

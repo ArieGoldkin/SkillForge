@@ -1,6 +1,8 @@
 # Folder Structure: Current vs Proposed (Visual Comparison)
 
-## 🔴 CURRENT STATE (Problems)
+## 🟡 CURRENT STATE (After Phase 1-6 Cleanup)
+
+**Status**: Services cleaned ✅ | Schemas & Workflows remain ⚠️
 
 ```
 app/
@@ -29,23 +31,31 @@ app/
 │       ├── nodes/            ❌ 3 levels deep
 │       └── tasks/            ❌ 3 levels deep
 │
-├── services/                  ❌ DUPLICATES + MIXED CONCERNS
-│   ├── embeddings.py         ❌ Duplicate!
-│   ├── embeddings_deterministic.py  ❌ Duplicate!
-│   ├── sse_helpers.py        ❌ Duplicate!
-│   ├── progress_persistence.py  ❌ Should be in persistence/
-│   ├── embeddings/           ✅ But also has embeddings/
-│   └── messaging/
-│       └── sse_helpers.py    ❌ Duplicate!
+├── services/                  ✅ CLEANED: No duplicates
+│   ├── embeddings/           ✅ Single source
+│   │   ├── service.py
+│   │   ├── deterministic.py
+│   │   └── utils.py
+│   ├── messaging/             ✅ Single source
+│   │   └── sse_helpers.py
+│   ├── persistence/           ✅ Single source
+│   │   └── progress.py
+│   ├── search/                ✅ Consolidated
+│   │   └── coarse_to_fine.py  # Moved from retrieval/
+│   └── ...
 │
 └── models/                    ✅ OK
 
-ISSUES:
-❌ Schemas in 5 different locations
-❌ 3-4 levels of nesting
-❌ Duplicate files
-❌ No domain boundaries
-❌ Hard to find related code
+REMAINING ISSUES:
+⚠️ Schemas in 5 different locations (not yet consolidated)
+⚠️ 3-4 levels of nesting (workflows still deep)
+⚠️ No domain boundaries (still organized by technical layer)
+⚠️ Hard to find related code (analysis code scattered)
+
+FIXED:
+✅ Duplicate files removed (Phase 1-2)
+✅ Services organized (Phase 1-2)
+✅ Imports updated (Phase 3)
 ```
 
 ---

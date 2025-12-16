@@ -9,8 +9,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.generate_artifact import generate_artifact
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.generate_artifact import generate_artifact
+
+@pytest.mark.unit
 
 
 @pytest.fixture

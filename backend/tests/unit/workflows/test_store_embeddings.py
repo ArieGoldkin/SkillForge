@@ -4,7 +4,9 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.tasks.store_embeddings import store_embeddings
+from app.domains.analysis.workflows.tasks.store_embeddings import store_embeddings
+
+@pytest.mark.unit
 
 
 class FakeChunkRepo:

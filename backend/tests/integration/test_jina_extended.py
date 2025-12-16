@@ -5,14 +5,14 @@ import os
 import pytest
 
 from app.core.config import get_settings
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
 @pytest.mark.asyncio
 @pytest.mark.external
 async def test_multiple_urls(requires_jina_api_key):
     """Test extraction from multiple different URLs."""
-    from app.services.extraction.content_type import detect_content_type
+    from app.shared.services.extraction.content_type import detect_content_type
 
     test_urls = [
         ("https://react.dev", "article"),

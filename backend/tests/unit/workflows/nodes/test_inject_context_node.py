@@ -11,9 +11,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.memory.agent_memory_service import MemorySnippet
-from app.workflows.nodes.inject_context_node import inject_context_node
-from app.workflows.state import AnalysisState
+from app.shared.services.memory.agent_memory_service import MemorySnippet
+from app.domains.analysis.workflows.nodes.inject_context_node import inject_context_node
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -83,23 +85,29 @@ class TestInjectContextNodeHappyPath:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
+                new_callable=AsyncMock,
                 return_value=sample_memory_snippets,
             ) as mock_fetch,
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="## Relevant Context\n\n1. Test context",
             ) as mock_format,
+            patch(
+                "app.shared.services.embeddings.service.EmbeddingService.generate_embedding",
+                new_callable=AsyncMock,
+                return_value=[0.1] * 1536,
+            ),
         ):
             result = await inject_context_node(sample_state)
 
             # Verify fetch_proactive_context was called correctly
-            mock_fetch.assert_called_once()
-            call_kwargs = mock_fetch.call_args[1]
+            mock_fetch.assert_awaited_once()
+            call_kwargs = mock_fetch.await_args.kwargs if mock_fetch.await_args.kwargs else mock_fetch.await_args.args[0] if mock_fetch.await_args.args else {}
             assert call_kwargs["session"] == mock_session
             assert call_kwargs["agent_type"] == "all"
             assert call_kwargs["limit"] == 5
@@ -134,18 +142,18 @@ class TestInjectContextNodeHappyPath:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=sample_memory_snippets,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="Test context",
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
         ):
             await inject_context_node(sample_state)
 
@@ -183,7 +191,7 @@ class TestInjectContextNodeEmptyContent:
 
         This verifies the early return path when raw_content is empty.
         """
-        with patch("app.workflows.nodes.inject_context_node.logger") as mock_logger:
+        with patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger:
             result = await inject_context_node(sample_state_no_content)
 
             # Should return empty context
@@ -203,7 +211,7 @@ class TestInjectContextNodeEmptyContent:
             url="https://example.com",
         )
 
-        with patch("app.workflows.nodes.inject_context_node.logger") as mock_logger:
+        with patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger:
             result = await inject_context_node(state)
 
             # Should return empty context
@@ -244,15 +252,15 @@ class TestInjectContextNodeTimeoutHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 side_effect=slow_fetch,
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
-            patch("app.workflows.nodes.inject_context_node.asyncio.timeout") as mock_timeout,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.asyncio.timeout") as mock_timeout,
         ):
             # Make timeout raise TimeoutError
             mock_timeout.side_effect = TimeoutError()
@@ -282,11 +290,11 @@ class TestInjectContextNodeTimeoutHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
-            patch("app.workflows.nodes.inject_context_node.asyncio.timeout") as mock_timeout,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.asyncio.timeout") as mock_timeout,
         ):
             # Make timeout raise TimeoutError
             mock_timeout.side_effect = TimeoutError()
@@ -320,10 +328,10 @@ class TestInjectContextNodeExceptionHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
         ):
             result = await inject_context_node(sample_state)
 
@@ -356,14 +364,14 @@ class TestInjectContextNodeExceptionHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 side_effect=ValueError("Invalid embedding dimension"),
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
         ):
             result = await inject_context_node(sample_state)
 
@@ -392,18 +400,18 @@ class TestInjectContextNodeExceptionHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=sample_memory_snippets,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 side_effect=AttributeError("Invalid snippet format"),
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
         ):
             result = await inject_context_node(sample_state)
 
@@ -426,10 +434,10 @@ class TestInjectContextNodeExceptionHandling:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
-            patch("app.workflows.nodes.inject_context_node.logger") as mock_logger,
+            patch("app.domains.analysis.workflows.nodes.inject_context_node.logger") as mock_logger,
         ):
             await inject_context_node(sample_state)
 
@@ -456,15 +464,15 @@ class TestInjectContextNodeEdgeCases:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=[],  # No snippets
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="",  # Empty format for no snippets
             ),
         ):
@@ -489,15 +497,15 @@ class TestInjectContextNodeEdgeCases:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=[],
             ) as mock_fetch,
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="",
             ),
         ):
@@ -524,15 +532,15 @@ class TestInjectContextNodeEdgeCases:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=[],
             ) as mock_fetch,
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="",
             ),
         ):
@@ -561,15 +569,15 @@ class TestInjectContextNodeEdgeCases:
 
         with (
             patch(
-                "app.workflows.nodes.inject_context_node.get_session_factory",
+                "app.domains.analysis.workflows.nodes.inject_context_node.get_session_factory",
                 return_value=mock_session_factory,
             ),
             patch(
-                "app.workflows.nodes.inject_context_node.fetch_proactive_context",
+                "app.shared.services.memory.proactive_recall.fetch_proactive_context",
                 return_value=[],
             ) as mock_fetch,
             patch(
-                "app.workflows.nodes.inject_context_node.format_memory_context",
+                "app.shared.services.memory.proactive_recall.format_memory_context",
                 return_value="",
             ),
         ):

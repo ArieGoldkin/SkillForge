@@ -19,7 +19,9 @@ from app.core.constants import (
     STRUCTURAL_WEIGHT_SECTION_PRESENT,
 )
 from app.schemas.search import ChunkMetadata
-from app.services.search.structural_priors import StructuralPriorScorer, StructuralWeights
+from app.shared.services.search.structural_priors import StructuralPriorScorer, StructuralWeights
+
+@pytest.mark.unit
 
 
 class TestStructuralPriorScorerSectionBoost:

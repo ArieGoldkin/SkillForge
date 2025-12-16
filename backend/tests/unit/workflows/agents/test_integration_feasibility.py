@@ -6,12 +6,14 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.integration_feasibility import run_integration_feasibility
-from app.workflows.agents.schemas.integration_feasibility import (
+from app.domains.analysis.workflows.agents.integration_feasibility import run_integration_feasibility
+from app.domains.analysis.workflows.agents.schemas.integration_feasibility import (
     CompatibilityScore,
     IntegrationFeasibility,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture

@@ -2,14 +2,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.mcp.client import (
+from app.shared.services.mcp.client import (
     MAX_CONSECUTIVE_ERRORS,
     ConnectionState,
     MCPClientPool,
     MCPConnection,
 )
-from app.services.mcp.config import MCPServerConfig, MCPTransport
-from app.services.mcp.exceptions import MCPConnectionError
+from app.shared.services.mcp.config import MCPServerConfig, MCPTransport
+from app.shared.services.mcp.exceptions import MCPConnectionError
+
+@pytest.mark.unit
 
 
 class TestConnectionState:

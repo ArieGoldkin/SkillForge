@@ -5,7 +5,9 @@ Tests updated to match the new prompt format that explicitly mentions
 AI coding assistants, tutor system, and human readers.
 """
 
-from app.workflows.tasks.prompt_builders import build_synthesis_user_prompt
+from app.domains.analysis.workflows.tasks.prompt_builders import build_synthesis_user_prompt
+
+@pytest.mark.unit
 
 
 class TestBuildSynthesisUserPrompt:

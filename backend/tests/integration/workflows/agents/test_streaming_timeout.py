@@ -11,8 +11,8 @@ from uuid import uuid4
 import pytest
 from langchain.messages import AIMessage
 
-from app.workflows.agents.invocation import invoke_agent
-from app.workflows.agents.streaming import stream_agent_response
+from app.domains.analysis.workflows.agents.invocation import invoke_agent
+from app.domains.analysis.workflows.agents.streaming import stream_agent_response
 
 
 @pytest.fixture

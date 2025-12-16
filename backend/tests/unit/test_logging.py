@@ -9,6 +9,8 @@ import structlog
 from app.core.config import Settings
 from app.core.logging import get_logger, setup_logging
 
+@pytest.mark.unit
+
 
 @pytest.fixture
 def reset_logging():

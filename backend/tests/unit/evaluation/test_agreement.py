@@ -18,6 +18,8 @@ from app.evaluation.validation.agreement import (
 )
 from app.evaluation.validation.models import Annotation, RelevanceScore
 
+@pytest.mark.unit
+
 
 class TestCohensKappa:
     """Tests for Cohen's Kappa coefficient."""

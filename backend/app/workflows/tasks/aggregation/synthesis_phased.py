@@ -24,10 +24,10 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.types import AnalysisID
-from app.services.messaging.sse_helpers import emit_streaming_event
-from app.workflows.agents.base import create_structured_agent
-from app.workflows.agents.invocation import invoke_agent
-from app.workflows.agents.response_processing import extract_structured_response
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.domains.analysis.workflows.agents.base import create_structured_agent
+from app.domains.analysis.workflows.agents.invocation import invoke_agent
+from app.domains.analysis.workflows.agents.response_processing import extract_structured_response
 
 logger = get_logger(__name__)
 
@@ -108,7 +108,7 @@ async def synthesize_with_llm_phased(
 
     try:
         # Import compression and phase functions
-        from app.workflows.tasks.aggregation.compress_findings import compress_all_findings
+        from app.domains.analysis.workflows.tasks.aggregation.compress_findings import compress_all_findings
 
         # Phase 0: Compress findings (fast LLM, parallel for all agents)
         await _emit_synthesis_heartbeat(analysis_id, start_time, "Phase 0: Compressing findings...")
@@ -271,8 +271,8 @@ async def _synthesize_core(
 
     try:
         # Import phase schema and prompts
-        from app.workflows.tasks.aggregation.synthesis_prompts import build_core_prompt
-        from app.workflows.tasks.schemas.core_synthesis import CoreSynthesisSchema
+        from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import build_core_prompt
+        from app.domains.analysis.schemas.tasks.core_synthesis import CoreSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
@@ -364,8 +364,8 @@ async def _synthesize_learning(
 
     try:
         # Import phase schema and prompts
-        from app.workflows.tasks.aggregation.synthesis_prompts import build_learning_prompt
-        from app.workflows.tasks.schemas.learning_synthesis import LearningSynthesisSchema
+        from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import build_learning_prompt
+        from app.domains.analysis.schemas.tasks.learning_synthesis import LearningSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
@@ -459,8 +459,8 @@ async def _synthesize_docs(
 
     try:
         # Import phase schema and prompts
-        from app.workflows.tasks.aggregation.synthesis_prompts import build_docs_prompt
-        from app.workflows.tasks.schemas.docs_synthesis import DocsSynthesisSchema
+        from app.domains.analysis.workflows.tasks.aggregation.synthesis_prompts import build_docs_prompt
+        from app.domains.analysis.schemas.tasks.docs_synthesis import DocsSynthesisSchema
 
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]

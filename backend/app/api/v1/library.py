@@ -21,7 +21,7 @@ from app.db.repositories.library_repository import ILibraryRepository, get_libra
 from app.db.session import get_db
 from app.models.analysis import Analysis
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
-from app.services.embeddings.service import EmbeddingService
+from app.shared.services.embeddings.service import EmbeddingService
 
 router = APIRouter(tags=["library"])
 logger = get_logger(__name__)

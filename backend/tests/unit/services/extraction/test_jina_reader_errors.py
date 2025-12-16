@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
+
+@pytest.mark.unit
 
 
 @pytest.fixture

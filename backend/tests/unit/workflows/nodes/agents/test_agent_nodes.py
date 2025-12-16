@@ -5,18 +5,20 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.nodes.agents.code_quality_critic_node import code_quality_critic_node
-from app.workflows.nodes.agents.dependency_mapper_node import dependency_mapper_node
-from app.workflows.nodes.agents.implementation_planner_node import (
+from app.domains.analysis.workflows.nodes.agents.code_quality_critic_node import code_quality_critic_node
+from app.domains.analysis.workflows.nodes.agents.dependency_mapper_node import dependency_mapper_node
+from app.domains.analysis.workflows.nodes.agents.implementation_planner_node import (
     implementation_planner_node,
 )
-from app.workflows.nodes.agents.integration_feasibility_node import (
+from app.domains.analysis.workflows.nodes.agents.integration_feasibility_node import (
     integration_feasibility_node,
 )
-from app.workflows.nodes.agents.performance_analyst_node import performance_analyst_node
-from app.workflows.nodes.agents.security_auditor_node import security_auditor_node
-from app.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
-from app.workflows.nodes.agents.trend_validator_node import trend_validator_node
+from app.domains.analysis.workflows.nodes.agents.performance_analyst_node import performance_analyst_node
+from app.domains.analysis.workflows.nodes.agents.security_auditor_node import security_auditor_node
+from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
+from app.domains.analysis.workflows.nodes.agents.trend_validator_node import trend_validator_node
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -55,7 +57,7 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch("app.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -73,7 +75,7 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch("app.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of GeneratorExit (cancellation)."""
         mock_get_tree.return_value = None
@@ -87,7 +89,7 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch("app.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -101,7 +103,7 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch("app.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree")
     async def test_without_langsmith(
         self, mock_get_tree, mock_runner, mock_state, mock_agent_result
     ):
@@ -118,8 +120,8 @@ class TestDependencyMapperNode:
     """Tests for dependency_mapper_node."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session")
-    @patch("app.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -133,8 +135,8 @@ class TestDependencyMapperNode:
         assert result["agent_findings"] == [mock_agent_result]
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session")
-    @patch("app.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -152,7 +154,7 @@ class TestIntegrationFeasibilityNode:
     @patch(
         "app.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
-    @patch("app.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -169,7 +171,7 @@ class TestIntegrationFeasibilityNode:
     @patch(
         "app.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
-    @patch("app.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
         mock_get_tree.return_value = None
@@ -187,7 +189,7 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch("app.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -204,7 +206,7 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch("app.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -218,7 +220,7 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch("app.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree")
     async def test_updates_langsmith_metadata(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -236,8 +238,8 @@ class TestSecurityAuditorNode:
     """Tests for security_auditor_node."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
-    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -252,8 +254,8 @@ class TestSecurityAuditorNode:
         mock_runner.assert_awaited_once()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
-    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -264,8 +266,8 @@ class TestSecurityAuditorNode:
         assert result == {"agent_findings": []}
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
-    @patch("app.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
         mock_get_tree.return_value = None
@@ -280,8 +282,8 @@ class TestTechComparatorNode:
     """Tests for tech_comparator_node."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
-    @patch("app.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -295,8 +297,8 @@ class TestTechComparatorNode:
         assert result["agent_findings"] == [mock_agent_result]
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
-    @patch("app.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -311,8 +313,8 @@ class TestTrendValidatorNode:
     """Tests for trend_validator_node."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
-    @patch("app.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -326,8 +328,8 @@ class TestTrendValidatorNode:
         assert result["agent_findings"] == [mock_agent_result]
 
     @pytest.mark.asyncio
-    @patch("app.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
-    @patch("app.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session")
+    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -345,7 +347,7 @@ class TestImplementationPlannerNode:
     @patch(
         "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_successful_execution(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
@@ -362,7 +364,7 @@ class TestImplementationPlannerNode:
     @patch(
         "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
         mock_get_tree.return_value = None
@@ -376,7 +378,7 @@ class TestImplementationPlannerNode:
     @patch(
         "app.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch("app.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
+    @patch("app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree")
     async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
         mock_get_tree.return_value = None

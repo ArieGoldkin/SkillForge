@@ -139,7 +139,7 @@ class TutorRepository:
 
     async def get_analysis_summary(self, analysis_id: UUID) -> dict[str, object] | None:
         """Get analysis summary for context (from aggregated_insights)."""
-        from app.services.tutor.analysis_service import get_analysis_summary
+        from app.domains.tutor.services.analysis_service import get_analysis_summary
 
         return await get_analysis_summary(self.session, analysis_id)
 

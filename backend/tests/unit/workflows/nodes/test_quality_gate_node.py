@@ -16,14 +16,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langsmith.schemas import Example, Run
 
-from app.workflows.nodes.quality_gate_node import (
+from app.domains.analysis.workflows.nodes.quality_gate_node import (
     MAX_RETRY_ATTEMPTS,
     QUALITY_THRESHOLD,
     _format_insights_for_evaluation,
     quality_gate_node,
     should_retry_synthesis,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture

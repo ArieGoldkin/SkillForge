@@ -5,8 +5,10 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.nodes.agents.security_auditor_node import security_auditor_node
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.nodes.agents.security_auditor_node import security_auditor_node
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -21,7 +23,7 @@ def sample_state() -> AnalysisState:
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+@patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
 async def test_security_auditor_node_success(
     mock_runner: AsyncMock, sample_state: AnalysisState
 ) -> None:
@@ -40,7 +42,7 @@ async def test_security_auditor_node_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
+@patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session")
 async def test_security_auditor_node_handles_error(
     mock_runner: AsyncMock, sample_state: AnalysisState
 ) -> None:

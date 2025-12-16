@@ -5,46 +5,12 @@ Schemas ensure type safety and automatic validation of incoming requests and
 outgoing responses.
 
 Modules:
-    - analyze: Schemas for analysis endpoints (AnalyzeRequest, AnalyzeResponse)
     - library: Schemas for library search and filtering (LibraryFilters, LibrarySearchResult)
     - search: Schemas for search API (SearchRequest, SearchResponse, SearchMode, etc.)
-    - context: Schemas for context engineering (ArtifactRef, ArtifactSection, etc.)
+
+Note: Analysis schemas have been moved to app.domains.analysis.schemas.api
 """
 
-from app.schemas.context import (
-    ArtifactRef,
-    ArtifactSection,
-    CodeBlockInfo,
-    ContentSections,
-    HeadingInfo,
-    LoadArtifactRequest,
-    LoadArtifactResponse,
-)
-from app.schemas.search import (
-    ChunkMetadata,
-    DateRange,
-    ReRankConfig,
-    SearchFilters,
-    SearchMode,
-    SearchRequest,
-    SearchResponse,
-    SearchResult,
-)
-
-__all__ = [
-    "ArtifactRef",
-    "ArtifactSection",
-    "ChunkMetadata",
-    "CodeBlockInfo",
-    "ContentSections",
-    "DateRange",
-    "HeadingInfo",
-    "LoadArtifactRequest",
-    "LoadArtifactResponse",
-    "ReRankConfig",
-    "SearchFilters",
-    "SearchMode",
-    "SearchRequest",
-    "SearchResponse",
-    "SearchResult",
-]
+# Keep library and search schemas here (they may move to their own domains later)
+from app.schemas.library import *  # noqa: F403, F405
+from app.schemas.search import *  # noqa: F403, F405

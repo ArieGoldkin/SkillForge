@@ -15,6 +15,8 @@ from app.db.repositories.library_repository import get_library_repository
 from app.main import app
 from app.models.analysis import Analysis
 
+@pytest.mark.unit
+
 client = TestClient(app)
 
 

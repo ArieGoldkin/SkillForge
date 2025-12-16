@@ -1,0 +1,282 @@
+"""Base utilities for agent implementation.
+
+This module provides shared functionality for all specialized analysis agents,
+including agent creation with structured output, database persistence, and
+SSE event emission.
+"""
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import cast
+from uuid import UUID
+
+from langchain.agents import create_agent
+from langchain.agents.structured_output import ToolStrategy
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.runnables import Runnable
+from langchain_core.tools import BaseTool
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.agent_config import get_stage_name
+from app.core.logging import get_logger
+from app.core.model_factory import get_chat_model
+from app.core.types import AnalysisID
+from app.models.agent_finding import AgentFinding
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+
+logger = get_logger(__name__)
+
+
+@dataclass
+class ToolCallConfig:
+    """Configuration for tool-enabled agent behavior.
+
+    Attributes:
+        max_tool_calls: Maximum number of tool calls allowed per agent run
+        parallel_tool_calls: Whether to allow parallel tool execution
+
+    """
+
+    max_tool_calls: int = 10
+    parallel_tool_calls: bool = True
+
+
+def create_structured_agent(
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    tools: Sequence[BaseTool] | None = None,
+) -> Runnable:
+    """Create an agent with structured output using ToolStrategy.
+
+    Args:
+        system_prompt: System prompt for the agent
+        response_schema: Pydantic model defining the expected output structure
+        tools: Optional list of tools for the agent
+
+    Returns:
+        Configured agent instance with structured output support
+
+    Note:
+        ToolStrategy automatically validates output against response_schema.
+        Validation errors are automatically traced by LangSmith when they occur.
+
+    """
+    model = get_chat_model()
+    # Prevent multiple parallel tool calls; we expect exactly one structured response
+    bound_model: Runnable = model.bind_tools(tools or [], parallel_tool_calls=False)
+    agent = create_agent(
+        cast(BaseChatModel, bound_model),
+        tools=tools or [],
+        system_prompt=system_prompt,
+        response_format=ToolStrategy(response_schema),
+    )
+
+    # Note: ToolStrategy already validates output against response_schema.
+    # Validation errors are automatically captured by LangChain and traced by LangSmith.
+    # We don't need to wrap invoke here as ToolStrategy handles validation internally.
+    # The validation errors will appear in LangSmith traces automatically.
+
+    return agent
+
+
+def _build_tool_enhanced_prompt(
+    base_prompt: str,
+    tools: Sequence[BaseTool],
+    max_tool_calls: int,
+) -> str:
+    """Enhance system prompt with tool usage guidelines.
+
+    Args:
+        base_prompt: Original system prompt for the agent
+        tools: List of available MCP tools
+        max_tool_calls: Maximum allowed tool invocations
+
+    Returns:
+        Enhanced prompt with tool descriptions and usage guidelines
+
+    """
+    if not tools:
+        return base_prompt
+
+    tool_descriptions = "\n".join(f"- **{tool.name}**: {tool.description}" for tool in tools)
+
+    tool_section = f"""
+
+## Available Tools
+
+You have access to the following tools for real-time data lookup:
+
+{tool_descriptions}
+
+## Tool Usage Guidelines
+
+1. **Verify claims:** Use tools to check specific versions, CVEs, package metadata
+2. **Be efficient:** Maximum {max_tool_calls} tool calls allowed - prioritize wisely
+3. **Handle failures gracefully:** If a tool fails, note the gap in your findings
+4. **Cite sources:** Reference tool results (e.g., "Per npm registry, v3.0.0...")
+5. **Don't over-rely:** Trust your training for concepts; use tools for current facts
+
+IMPORTANT: After your tool calls, you MUST produce a structured response matching
+the expected schema. Tool usage is for research - your final output must be structured.
+"""
+
+    return base_prompt + tool_section
+
+
+def create_tool_enabled_agent(
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    tools: Sequence[BaseTool],
+    tool_call_config: ToolCallConfig | None = None,
+) -> Runnable:
+    """Create an agent with MCP tool access and structured output.
+
+    This factory creates agents that can call external MCP tools (GitHub, npm, PyPI)
+    during their reasoning process while still producing validated structured output.
+
+    Args:
+        system_prompt: Base system prompt for the agent
+        response_schema: Pydantic model defining expected output structure
+        tools: List of MCP tools (pre-filtered by ToolRegistry)
+        tool_call_config: Optional configuration for tool behavior
+
+    Returns:
+        Configured agent with tool calling and structured output support
+
+    Raises:
+        ValueError: If tools sequence is empty
+
+    Example:
+        >>> from app.shared.services.mcp import MCPClientPool, ToolRegistry
+        >>> registry = ToolRegistry()
+        >>> tools = await pool.get_tools_for_capabilities(
+        ...     registry.get_capabilities("security_auditor")
+        ... )
+        >>> agent = create_tool_enabled_agent(
+        ...     system_prompt="Analyze security...",
+        ...     response_schema=SecurityAudit,
+        ...     tools=tools,
+        ... )
+
+    Note:
+        Unlike create_structured_agent(), this factory:
+        - Enables parallel_tool_calls for efficiency
+        - Enhances the prompt with tool usage guidelines
+        - Requires at least one tool (use create_structured_agent for no-tool agents)
+
+    """
+    if not tools:
+        msg = "tools must not be empty; use create_structured_agent() for agents without tools"
+        raise ValueError(msg)
+
+    config = tool_call_config or ToolCallConfig()
+
+    # Enhance prompt with tool information
+    enhanced_prompt = _build_tool_enhanced_prompt(
+        base_prompt=system_prompt,
+        tools=tools,
+        max_tool_calls=config.max_tool_calls,
+    )
+
+    logger.info(
+        "creating_tool_enabled_agent",
+        tool_count=len(tools),
+        tool_names=[t.name for t in tools],
+        max_tool_calls=config.max_tool_calls,
+        parallel_tool_calls=config.parallel_tool_calls,
+    )
+
+    model = get_chat_model()
+    # Enable parallel tool calls for MCP tools (efficiency)
+    bound_model: Runnable = model.bind_tools(
+        list(tools), parallel_tool_calls=config.parallel_tool_calls
+    )
+
+    agent = create_agent(
+        cast(BaseChatModel, bound_model),
+        tools=list(tools),
+        system_prompt=enhanced_prompt,
+        response_format=ToolStrategy(response_schema),
+    )
+
+    return agent
+
+
+async def save_agent_finding(  # noqa: PLR0913
+    session: AsyncSession,
+    analysis_id: UUID,
+    agent_type: str,
+    findings: dict[str, object],
+    confidence_score: float | None = None,
+    processing_time_ms: int | None = None,
+) -> AgentFinding:
+    """Save agent finding to database.
+
+    Args:
+        session: Database session
+        analysis_id: UUID of the analysis
+        agent_type: Type of agent (e.g., "tech_comparator")
+        findings: Structured findings dictionary
+        confidence_score: Optional confidence score (0.0-1.0)
+        processing_time_ms: Optional processing time in milliseconds
+
+    Returns:
+        Created AgentFinding instance
+
+    Raises:
+        ValueError: If Analysis record does not exist (foreign key constraint)
+
+    """
+    # Verify Analysis exists before saving finding (prevents foreign key violations)
+    from sqlalchemy import select
+
+    from app.models.analysis import Analysis
+
+    result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
+    analysis = result.scalar_one_or_none()
+    if not analysis:
+        error_msg = (
+            f"Analysis record with id={analysis_id} does not exist. "
+            "Analysis must be created before agents can save findings."
+        )
+        raise ValueError(error_msg)
+
+    finding = AgentFinding(
+        analysis_id=analysis_id,
+        agent_type=agent_type,
+        findings=findings,
+        confidence_score=confidence_score,
+        processing_time_ms=processing_time_ms,
+    )
+    session.add(finding)
+    await session.commit()
+    await session.refresh(finding)
+    return finding
+
+
+async def emit_agent_progress(
+    analysis_id: AnalysisID,
+    agent_type: str,
+    status: str,
+    **kwargs: object,
+) -> None:
+    """Emit SSE event for agent progress.
+
+    Args:
+        analysis_id: UUID of the analysis
+        agent_type: Type of agent
+        status: Status ("running", "streaming", "complete", "failed")
+        **kwargs: Additional event data
+
+    """
+    # Get stage name from agent config (single source of truth)
+    stage_name = get_stage_name(agent_type)
+    await emit_streaming_event(
+        "progress",
+        analysis_id=analysis_id,
+        stage=stage_name,
+        status=status,
+        agent_type=agent_type,  # Keep agent_type in details for debugging
+        **kwargs,
+    )

@@ -1,6 +1,8 @@
 """Unit tests for content type detection utilities."""
 
-from app.workflows.utils.content_type_detection import (
+from app.shared.workflows.utils.content_type_detection import (
+
+@pytest.mark.unit
     AGENT_CAPABILITIES,
     can_agent_process_content,
     detect_content_type,

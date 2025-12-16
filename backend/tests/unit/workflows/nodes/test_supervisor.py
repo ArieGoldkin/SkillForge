@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.nodes.supervisor import _get_content_for_supervisor, supervisor_route
-from app.workflows.nodes.supervisor_schema import AgentSelection
-from app.workflows.utils.import_detection import detect_code_patterns
+from app.domains.analysis.workflows.nodes.supervisor import _get_content_for_supervisor, supervisor_route
+from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
+from app.shared.workflows.utils.import_detection import detect_code_patterns
+
+@pytest.mark.unit
 
 
 @pytest.fixture

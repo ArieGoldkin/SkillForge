@@ -7,10 +7,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.cleanup.cleanup_service import CleanupService
-from app.services.cleanup.integrity_checks import VectorIntegrityChecker
-from app.services.cleanup.orphan_cleanup import OrphanCleaner
-from app.services.cleanup.ttl_cleanup import TTLCleaner
+from app.shared.services.cleanup.cleanup_service import CleanupService
+from app.shared.services.cleanup.integrity_checks import VectorIntegrityChecker
+from app.shared.services.cleanup.orphan_cleanup import OrphanCleaner
+from app.shared.services.cleanup.ttl_cleanup import TTLCleaner
+
+@pytest.mark.unit
 
 
 @pytest.fixture

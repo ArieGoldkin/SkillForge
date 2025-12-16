@@ -17,9 +17,9 @@ import pytest
 from sqlalchemy import select, text
 
 from app.models.agent_memory import AgentMemory, MemoryType
-from app.services.embeddings import EmbeddingService
-from app.services.memory.agent_memory_service import AgentMemoryService
-from app.services.memory.proactive_recall import (
+from app.shared.services.embeddings import EmbeddingService
+from app.shared.services.memory.agent_memory_service import AgentMemoryService
+from app.shared.services.memory.proactive_recall import (
     fetch_proactive_context,
     format_memory_context,
 )

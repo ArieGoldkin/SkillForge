@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event
+from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event
+
+@pytest.mark.unit
 
 
 class TestEmitTutorEvent:

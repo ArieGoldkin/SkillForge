@@ -8,7 +8,7 @@ import pytest
 
 from app.api.v1.workflow_runner import run_workflow_task
 from app.models.analysis import Analysis
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 
 @pytest.mark.asyncio

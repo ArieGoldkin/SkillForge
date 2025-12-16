@@ -9,7 +9,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.workflows.tasks.metrics import MetricsClient, emit_metric, set_metrics_client
+from app.domains.analysis.workflows.tasks.metrics import MetricsClient, emit_metric, set_metrics_client
+
+@pytest.mark.unit
 
 
 class MockMetricsClient:

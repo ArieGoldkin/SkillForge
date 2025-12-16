@@ -8,15 +8,17 @@ and that the mixin behavior is correct.
 import pytest
 from pydantic import ValidationError
 
-from app.workflows.agents.schemas.base import DataAvailabilityLevel, DataAvailabilityMixin
-from app.workflows.agents.schemas.code_quality_critic import CodeQualityReview
-from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
-from app.workflows.agents.schemas.implementation_planner import ImplementationPlan
-from app.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
-from app.workflows.agents.schemas.performance_analyst import PerformanceAnalysis
-from app.workflows.agents.schemas.security_auditor import SecurityAudit
-from app.workflows.agents.schemas.tech_comparator import TechComparison
-from app.workflows.agents.schemas.trend_validator import TrendValidation
+from app.domains.analysis.workflows.agents.schemas.base import DataAvailabilityLevel, DataAvailabilityMixin
+from app.domains.analysis.workflows.agents.schemas.code_quality_critic import CodeQualityReview
+from app.domains.analysis.workflows.agents.schemas.dependency_mapper import DependencyMapping
+from app.domains.analysis.workflows.agents.schemas.implementation_planner import ImplementationPlan
+from app.domains.analysis.workflows.agents.schemas.integration_feasibility import IntegrationFeasibility
+from app.domains.analysis.workflows.agents.schemas.performance_analyst import PerformanceAnalysis
+from app.domains.analysis.workflows.agents.schemas.security_auditor import SecurityAudit
+from app.domains.analysis.workflows.agents.schemas.tech_comparator import TechComparison
+from app.domains.analysis.workflows.agents.schemas.trend_validator import TrendValidation
+
+@pytest.mark.unit
 
 
 class TestDataAvailabilityMixin:

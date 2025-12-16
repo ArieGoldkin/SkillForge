@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.result_processing import (
+from app.domains.analysis.workflows.agents.result_processing import (
+
+@pytest.mark.unit
     _count_insights,
     _extract_findings_summary,
     process_agent_result,

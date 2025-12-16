@@ -14,8 +14,8 @@ from httpx import ASGITransport, AsyncClient
 from pydantic import HttpUrl
 
 from app.main import app
-from app.schemas.analyze import AnalyzeCreateResponse, AnalyzeRequest
-from app.services.messaging.sse_helpers import emit_streaming_event
+from app.domains.analysis.schemas.api import AnalyzeCreateResponse, AnalyzeRequest
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 
 def resolve_ref(schema: dict, openapi_schema: dict) -> dict:

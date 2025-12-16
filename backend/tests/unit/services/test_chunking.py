@@ -1,9 +1,11 @@
-from app.services.chunking.chunker import (
+from app.shared.services.chunking.chunker import (
     ChunkText,
     chunk_document,
     compute_content_hash,
 )
-from app.services.chunking.dedup import (
+from app.shared.services.chunking.dedup import (
+
+@pytest.mark.unit
     DatabaseDedupStats,
     compute_chunk_hash,
     deduplicate,

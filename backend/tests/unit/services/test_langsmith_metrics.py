@@ -5,7 +5,9 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.metrics.langsmith import LangSmithMetricsService
+from app.shared.services.metrics.langsmith import LangSmithMetricsService
+
+@pytest.mark.unit
 
 
 @pytest.fixture

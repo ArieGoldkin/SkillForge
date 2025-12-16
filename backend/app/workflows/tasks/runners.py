@@ -23,8 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.types import AnalysisID
-from app.schemas.context import ArtifactSection
-from app.services.context.artifact_store import ArtifactStore
+from app.domains.analysis.schemas.api import ArtifactSection
+from app.domains.analysis.services.context.artifact_store import ArtifactStore
 from app.workflows.agents import (
     run_code_quality_critic,
     run_dependency_mapper,
@@ -35,7 +35,7 @@ from app.workflows.agents import (
     run_tech_comparator,
     run_trend_validator,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
 
 # Note: AsyncSessionLocal is imported lazily inside each function to avoid
 # DATABASE_URL validation at import time (required for CI without database)

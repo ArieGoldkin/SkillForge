@@ -84,7 +84,7 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PL
             async with session_factory() as db_session:
                 from uuid import UUID
 
-                from app.services.tutor.analysis_service import get_analysis_summary
+                from app.domains.tutor.services.analysis_service import get_analysis_summary
 
                 analysis_summary = await get_analysis_summary(db_session, UUID(analysis_id))
 

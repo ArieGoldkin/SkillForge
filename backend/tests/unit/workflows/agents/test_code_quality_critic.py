@@ -6,9 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.code_quality_critic import run_code_quality_critic
-from app.workflows.agents.schemas.code_quality_critic import CodeIssue, CodeQualityReview
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.code_quality_critic import run_code_quality_critic
+from app.domains.analysis.workflows.agents.schemas.code_quality_critic import CodeIssue, CodeQualityReview
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture

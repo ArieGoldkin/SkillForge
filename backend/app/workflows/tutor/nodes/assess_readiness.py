@@ -19,7 +19,7 @@ from app.workflows.context_compiler import create_workflow_compiler
 from app.workflows.tutor.config import READINESS_ASSESSMENT_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.workflows.tutor.nodes.response_helpers import extract_string_content
 from app.workflows.tutor.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
-from app.workflows.tutor.schemas.assessment import ReadinessAssessment
+from app.domains.tutor.schemas.assessment import ReadinessAssessment
 from app.workflows.tutor.state import TutorState
 
 logger = get_logger(__name__)

@@ -17,8 +17,8 @@ from sse_starlette.sse import EventSourceResponse
 from app.api.v1.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.messaging.broadcaster import broadcaster
-from app.workflows.analysis import analysis_workflow
+from app.shared.services.messaging.broadcaster import broadcaster
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Check if .env.test exists
 TEST_ENV_FILE = Path(__file__).parent.parent.parent / ".env.test"

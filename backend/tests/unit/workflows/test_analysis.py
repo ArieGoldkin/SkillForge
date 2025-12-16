@@ -5,9 +5,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.services.extraction.jina_reader import JinaReaderError
-from app.workflows.analysis import analysis_workflow
-from app.workflows.state import AnalysisState
+from app.shared.services.extraction.jina_reader import JinaReaderError
+from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.state import AnalysisState
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -19,6 +19,8 @@ TEST_ANALYSIS_ID = str(uuid4())
 @pytest.fixture
 def sample_extraction_result() -> dict:
     """Sample extraction result from JinaReader."""
+
+@pytest.mark.unit
     return {
         "title": "Test Article",
         "content": "# Test Article\n\nThis is test content.",

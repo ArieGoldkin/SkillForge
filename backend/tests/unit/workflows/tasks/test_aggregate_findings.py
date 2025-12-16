@@ -4,10 +4,12 @@ from unittest.mock import patch
 
 import pytest
 
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import aggregate_findings
-from app.workflows.tasks.aggregation import validate_and_parse_findings
-from app.workflows.tasks.aggregation_helpers import (
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
+from app.domains.analysis.workflows.tasks.aggregation import validate_and_parse_findings
+from app.domains.analysis.workflows.tasks.aggregation_helpers import (
+
+@pytest.mark.unit
     calculate_coverage_score,
     detect_conflicts,
     detect_coverage_gaps,
@@ -555,7 +557,7 @@ class TestDetectCoverageGaps:
         """Test gap detection when all agents contribute."""
         # Get all analysis agents (8 total)
         from app.core.agent_config import AGENT_REGISTRY
-        from app.workflows.nodes.supervisor_config import WORKFLOW_STAGES
+        from app.domains.analysis.workflows.nodes.supervisor_config import WORKFLOW_STAGES
 
         all_agents = [
             agent_type
@@ -591,7 +593,7 @@ class TestCalculateCoverageScore:
     def test_calculate_coverage_score_all(self):
         """Test coverage score when all agents contribute."""
         from app.core.agent_config import AGENT_REGISTRY
-        from app.workflows.nodes.supervisor_config import WORKFLOW_STAGES
+        from app.domains.analysis.workflows.nodes.supervisor_config import WORKFLOW_STAGES
 
         all_agents = [
             agent_type
@@ -864,7 +866,7 @@ class TestExtractFindingContent:
 
     def test_extract_security_auditor_content(self):
         """Test content extraction for security_auditor findings."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         finding_data = {
             "security_risks": [
@@ -883,7 +885,7 @@ class TestExtractFindingContent:
 
     def test_extract_tech_comparator_content(self):
         """Test content extraction for tech_comparator findings."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         finding_data = {
             "primary_tech": "LangGraph",
@@ -900,7 +902,7 @@ class TestExtractFindingContent:
 
     def test_extract_implementation_planner_content(self):
         """Test content extraction for implementation_planner findings."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         finding_data = {
             "prerequisites": ["Python 3.13", "PostgreSQL 15", "Redis"],
@@ -915,7 +917,7 @@ class TestExtractFindingContent:
 
     def test_extract_fallback_content(self):
         """Test content extraction falls back to key summary for unknown structures."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         finding_data = {
             "custom_field": "custom_value",
@@ -930,7 +932,7 @@ class TestExtractFindingContent:
 
     def test_extract_empty_finding(self):
         """Test content extraction with empty findings."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         content = _extract_finding_content("tech_comparator", {})
 
@@ -938,7 +940,7 @@ class TestExtractFindingContent:
 
     def test_extract_truncates_long_content(self):
         """Test content extraction truncates at 2000 chars."""
-        from app.workflows.tasks.aggregate_findings import _extract_finding_content
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _extract_finding_content
 
         finding_data = {
             "recommendation": "X" * 3000,  # Very long recommendation
@@ -955,7 +957,7 @@ class TestAgentMemoryTypeMap:
     def test_all_agents_have_memory_type(self):
         """Test that all analysis agents have memory type mappings."""
         from app.models.agent_memory import MemoryType
-        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         expected_agents = [
             "security_auditor",
@@ -975,20 +977,20 @@ class TestAgentMemoryTypeMap:
     def test_security_auditor_maps_to_vulnerability_pattern(self):
         """Test security_auditor findings are stored as vulnerability patterns."""
         from app.models.agent_memory import MemoryType
-        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["security_auditor"] == MemoryType.VULNERABILITY_PATTERN
 
     def test_tech_comparator_maps_to_analysis_summary(self):
         """Test tech_comparator findings are stored as analysis summaries."""
         from app.models.agent_memory import MemoryType
-        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["tech_comparator"] == MemoryType.ANALYSIS_SUMMARY
 
     def test_implementation_planner_maps_to_best_practice(self):
         """Test implementation_planner findings are stored as best practices."""
         from app.models.agent_memory import MemoryType
-        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["implementation_planner"] == MemoryType.BEST_PRACTICE

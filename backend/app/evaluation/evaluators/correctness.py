@@ -20,9 +20,9 @@ from typing import Any
 from langsmith.schemas import Example, Run
 from pydantic import ValidationError
 
-from app.workflows.agents.schemas.security_auditor import SecurityAudit
-from app.workflows.agents.schemas.tech_comparator import TechComparison
-from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
+from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit
+from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
+from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
 
 
 def _calculate_supervisor_metrics(

@@ -2,7 +2,9 @@
 
 import pytest
 
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
@@ -14,7 +16,7 @@ async def test_extract_content_task():
     """
     # Tasks are tested through the workflow, not in isolation
     # This test verifies the task is importable and part of the workflow
-    from app.workflows.tasks import extract_content
+    from app.domains.analysis.workflows.tasks import extract_content
 
     assert extract_content is not None, "extract_content task should be importable"
 
@@ -28,7 +30,7 @@ async def test_generate_embedding_task():
     """
     # Tasks are tested through the workflow, not in isolation
     # This test verifies the task is importable and part of the workflow
-    from app.workflows.tasks import generate_embedding
+    from app.domains.analysis.workflows.tasks import generate_embedding
 
     assert generate_embedding is not None, "generate_embedding task should be importable"
 
@@ -45,7 +47,7 @@ async def test_analysis_workflow_structure():
 
 def test_analysis_state_typeddict():
     """Test AnalysisState TypedDict structure."""
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     # Verify TypedDict structure
     state: AnalysisState = {

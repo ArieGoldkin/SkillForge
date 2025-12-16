@@ -20,7 +20,7 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.embeddings.deterministic import DeterministicEmbeddingService
+from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 from tests.smoke.retrieval.fixtures import FixtureLoader
 from tests.smoke.retrieval.metrics import MetricsCalculator
 
@@ -29,10 +29,10 @@ if TYPE_CHECKING:
 
     from app.models.analysis import Analysis
     from app.models.analysis_chunk import AnalysisChunk
-    from app.services.embeddings.deterministic import (
+    from app.shared.services.embeddings.deterministic import (
         DeterministicEmbeddingService as EmbeddingService,
     )
-    from app.services.search.search_service import SearchService
+    from app.shared.services.search.search_service import SearchService
 
 
 # Mark all tests in this module as smoke tests
@@ -140,7 +140,7 @@ async def embedding_service():
 
     if use_real:
         try:
-            from app.services.embeddings import EmbeddingService
+            from app.shared.services.embeddings import EmbeddingService
 
             return EmbeddingService()
         except ValueError as e:
@@ -304,7 +304,7 @@ async def search_service(
     embedding_service: EmbeddingService,
 ) -> SearchService:
     """Create SearchService for smoke tests."""
-    from app.services.search.search_service import SearchService
+    from app.shared.services.search.search_service import SearchService
 
     return SearchService(
         session=smoke_db_session,

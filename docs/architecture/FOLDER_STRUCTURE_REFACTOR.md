@@ -20,15 +20,18 @@ backend/app/
 │   ├── artifact.py
 │   └── ...
 │
-├── services/                     # ⚠️ ISSUE: Mixed concerns, duplicates
-│   ├── embeddings.py            # ❌ Duplicate (also in embeddings/)
-│   ├── embeddings_deterministic.py  # ❌ Duplicate
-│   ├── embeddings_utils.py     # ❌ Duplicate
-│   ├── sse_helpers.py           # ❌ Duplicate (also in messaging/)
-│   ├── progress_persistence.py  # ❌ Should be in persistence/
-│   ├── embeddings/              # ✅ Good: Organized
+├── services/                     # ✅ CLEANED: Duplicates removed
+│   ├── embeddings/              # ✅ Single source of truth
+│   │   ├── service.py
+│   │   ├── deterministic.py
+│   │   └── utils.py
+│   ├── messaging/               # ✅ Single source of truth
+│   │   └── sse_helpers.py
+│   ├── persistence/             # ✅ Single source of truth
+│   │   └── progress.py
 │   ├── extraction/              # ✅ Good: Organized
-│   ├── chunking/                # ✅ Good: Organized
+│   ├── chunking/                 # ✅ Good: Organized
+│   ├── search/                  # ✅ Moved from retrieval/
 │   └── ...
 │
 └── workflows/                    # ⚠️ MAJOR ISSUE: Deep nesting, mixed concerns
@@ -77,10 +80,12 @@ backend/app/
    - `workflows/tasks/aggregation/` - 3 levels
    - `workflows/tutor/nodes/` - 3 levels
 
-3. **Duplicate Files**:
-   - `services/embeddings.py` vs `services/embeddings/service.py`
-   - `services/sse_helpers.py` vs `services/messaging/sse_helpers.py`
-   - `services/progress_persistence.py` vs `services/persistence/progress.py`
+3. **Duplicate Files**: ✅ FIXED (Phase 1-2 Complete)
+   - ~~`services/embeddings.py` vs `services/embeddings/service.py`~~ → Removed
+   - ~~`services/sse_helpers.py` vs `services/messaging/sse_helpers.py`~~ → Removed
+   - ~~`services/progress_persistence.py` vs `services/persistence/progress.py`~~ → Removed
+   - ~~`services/validation/`~~ → Moved to `core/validation/`
+   - ~~`services/retrieval/`~~ → Moved to `services/search/`
 
 4. **Confusing Organization**:
    - `workflows/agents/` vs `workflows/nodes/agents/` - unclear relationship
@@ -281,20 +286,34 @@ Data Layer     → db/repositories/
 
 ## Migration Strategy
 
-### Phase 1: Create New Structure (Non-Breaking)
-1. Create `domains/` and `shared/` directories
-2. Move files incrementally, keeping old locations temporarily
-3. Update imports gradually
+### ✅ Phase 1-6: COMPLETE (2025-01-XX)
+- **Phase 1**: Deleted 8 duplicate service files
+- **Phase 2**: Removed old directories (validation/, retrieval/)
+- **Phase 3**: Fixed 8 import paths
+- **Phase 4-6**: Verification (66/69 tests passing, imports working)
 
-### Phase 2: Update Imports
-1. Update all imports to new locations
-2. Run tests to verify
-3. Remove old duplicate files
+**See**: `docs/architecture/FOLDER_STRUCTURE_MIGRATION_PLAN.md` for detailed progress.
 
-### Phase 3: Cleanup
+### 🔄 Phase 7: Consolidate Schemas (Next)
+1. Create `domains/` structure for schemas
+2. Move schemas from 5 locations to domain-based structure
+3. Update ~44 import statements gradually
+4. Keep compatibility imports during migration
+
+### ⏳ Phase 8: Consolidate Workflows
+1. Move workflows to domain structure
+2. Update ~100+ import statements
+3. Move shared utilities to `shared/workflows/`
+
+### ⏳ Phase 9: Consolidate Services
+1. Move domain-specific services to domains
+2. Move shared services to `shared/services/`
+3. Update ~30 import statements
+
+### ⏳ Phase 10: Final Cleanup
 1. Remove old empty directories
 2. Update documentation
-3. Update CI/CD if needed
+3. Final verification
 
 ---
 

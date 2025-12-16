@@ -4,7 +4,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.workflows.utils.retrieval_routing import coarse_to_fine
+from app.shared.workflows.utils.retrieval_routing import coarse_to_fine
+
+@pytest.mark.unit
 
 
 @pytest.fixture

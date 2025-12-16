@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_for_review():
     """Sample tutor state for section review."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -44,7 +46,7 @@ async def test_conduct_review_creates_quiz(sample_tutor_state_for_review):
     """Test that conduct_review creates a section quiz."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.conduct_review import conduct_review
+    from app.domains.tutor.workflows.nodes.conduct_review import conduct_review
 
     mock_response = MagicMock()
     mock_response.content = "Quiz: 1. What is Concept 1? 2. Explain Concept 2..."

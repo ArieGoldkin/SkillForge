@@ -11,9 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.core.utils import normalize_analysis_id_to_uuid
-from app.workflows.agents.base import emit_agent_progress, save_agent_finding
-from app.workflows.agents.validation import score_agent_output
-from app.workflows.agents.validation.specificity_scorer import LOW_SPECIFICITY_WARNING_THRESHOLD
+from app.domains.analysis.workflows.agents.base import emit_agent_progress, save_agent_finding
+from app.domains.analysis.workflows.agents.validation import score_agent_output
+from app.domains.analysis.workflows.agents.validation.specificity_scorer import LOW_SPECIFICITY_WARNING_THRESHOLD
 
 logger = get_logger(__name__)
 

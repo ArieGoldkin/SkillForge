@@ -13,7 +13,9 @@ from uuid import uuid4
 import pytest
 from langchain_core.tools import BaseTool
 
-from app.workflows.agents.security_auditor import run_security_auditor
+from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
+
+@pytest.mark.unit
 
 # ============================================================================
 # Fixtures
@@ -84,7 +86,7 @@ class TestRunSecurityAuditorWithTools:
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
         """Tool-enabled agent receives SecurityAudit response schema."""
-        from app.workflows.agents.schemas.security_auditor import SecurityAudit
+        from app.domains.analysis.workflows.agents.schemas.security_auditor import SecurityAudit
 
         mock_agent = MagicMock()
         mock_create_tool_enabled.return_value = mock_agent
@@ -272,7 +274,7 @@ class TestSecurityAuditorWithSessionMCP:
         """Verify runner function signature includes tools parameter."""
         import inspect
 
-        from app.workflows.tasks.runners import run_security_auditor_with_session
+        from app.domains.analysis.workflows.tasks.runners import run_security_auditor_with_session
 
         sig = inspect.signature(run_security_auditor_with_session)
         # The runner should accept the standard parameters
@@ -286,11 +288,11 @@ class TestSecurityAuditorWithSessionMCP:
         """Verify runner file has proper MCP imports."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
         # Verify the dynamic import pattern is present
-        assert "from app.services.mcp import" in source
+        assert "from app.shared.services.mcp import" in source
         assert "MCPClientPool" in source
         assert "ToolRegistry" in source
         assert "get_mcp_settings" in source
@@ -299,7 +301,7 @@ class TestSecurityAuditorWithSessionMCP:
         """Verify runner has exception handling for MCP failures."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
         # Verify graceful degradation pattern
@@ -311,7 +313,7 @@ class TestSecurityAuditorWithSessionMCP:
         """Verify runner checks if agent is enabled in registry."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
         # Verify registry check
@@ -322,7 +324,7 @@ class TestSecurityAuditorWithSessionMCP:
         """Verify runner passes tools parameter to run_security_auditor."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_security_auditor_with_session)
         # Verify tools are passed

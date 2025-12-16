@@ -23,6 +23,8 @@ from app.evaluation.ingestion.cutting_edge_generator import (
 )
 from app.evaluation.ingestion.cutting_edge_templates import ALL_TEMPLATES
 
+@pytest.mark.unit
+
 
 class TestCuttingEdgeGenerator:
     """Tests for CuttingEdgeGenerator class."""

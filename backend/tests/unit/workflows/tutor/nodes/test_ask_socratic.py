@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_with_message():
     """Sample tutor state with user message."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -44,7 +46,7 @@ async def test_ask_socratic_generates_question(sample_tutor_state_with_message):
     """Test that ask_socratic generates a Socratic question."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.ask_socratic import ask_socratic
+    from app.domains.tutor.workflows.nodes.ask_socratic import ask_socratic
 
     mock_response = MagicMock()
     mock_response.content = "Can you explain how this concept applies in practice?"

@@ -5,13 +5,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state():
     """Sample tutor state for testing."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -60,7 +62,7 @@ def mock_llm_response():
 @pytest.mark.asyncio
 async def test_generate_syllabus_creates_syllabus(sample_tutor_state, mock_llm_response):
     """Test that generate_syllabus creates a syllabus."""
-    from app.workflows.tutor.nodes.generate_syllabus import generate_syllabus
+    from app.domains.tutor.workflows.nodes.generate_syllabus import generate_syllabus
 
     mock_model = AsyncMock()
     mock_model.ainvoke = AsyncMock(return_value=mock_llm_response)
@@ -98,7 +100,7 @@ async def test_generate_syllabus_creates_syllabus(sample_tutor_state, mock_llm_r
 @pytest.mark.asyncio
 async def test_generate_syllabus_handles_parse_error(sample_tutor_state):
     """Test that generate_syllabus handles JSON parse errors gracefully."""
-    from app.workflows.tutor.nodes.generate_syllabus import generate_syllabus
+    from app.domains.tutor.workflows.nodes.generate_syllabus import generate_syllabus
 
     # Mock LLM response with invalid JSON
     mock_response = MagicMock()

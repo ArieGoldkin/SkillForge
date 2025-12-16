@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import pytest_asyncio
 
-from app.services.embeddings import EmbeddingError, EmbeddingService
+from app.shared.services.embeddings import EmbeddingError, EmbeddingService
+
+@pytest.mark.unit
 
 
 @pytest_asyncio.fixture

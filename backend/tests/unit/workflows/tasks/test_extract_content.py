@@ -9,6 +9,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+@pytest.mark.unit
+
 # Valid UUID for testing
 TEST_ANALYSIS_ID = str(uuid.uuid4())
 
@@ -64,7 +66,7 @@ async def test_extract_content_includes_title_in_metadata(
         mock_jina_class.return_value = mock_instance
 
         # Import after patching
-        from app.workflows.tasks.extract_content import extract_content
+        from app.domains.analysis.workflows.tasks.extract_content import extract_content
 
         # Execute
         result = await extract_content(
@@ -88,7 +90,7 @@ async def test_extract_content_includes_word_count_in_metadata(
         mock_instance.close = AsyncMock()
         mock_jina_class.return_value = mock_instance
 
-        from app.workflows.tasks.extract_content import extract_content
+        from app.domains.analysis.workflows.tasks.extract_content import extract_content
 
         result = await extract_content(
             url="https://example.com",
@@ -110,7 +112,7 @@ async def test_extract_content_preserves_original_metadata(
         mock_instance.close = AsyncMock()
         mock_jina_class.return_value = mock_instance
 
-        from app.workflows.tasks.extract_content import extract_content
+        from app.domains.analysis.workflows.tasks.extract_content import extract_content
 
         result = await extract_content(
             url="https://example.com",
@@ -143,7 +145,7 @@ async def test_extract_content_handles_missing_title(mock_emit_event, mock_artif
         mock_instance.close = AsyncMock()
         mock_jina_class.return_value = mock_instance
 
-        from app.workflows.tasks.extract_content import extract_content
+        from app.domains.analysis.workflows.tasks.extract_content import extract_content
 
         result = await extract_content(
             url="https://example.com",
@@ -165,7 +167,7 @@ async def test_extract_content_returns_raw_content(
         mock_instance.close = AsyncMock()
         mock_jina_class.return_value = mock_instance
 
-        from app.workflows.tasks.extract_content import extract_content
+        from app.domains.analysis.workflows.tasks.extract_content import extract_content
 
         result = await extract_content(
             url="https://example.com",

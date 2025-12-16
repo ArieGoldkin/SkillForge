@@ -4,6 +4,8 @@ import pytest
 
 from app.core.config import Settings, get_settings
 
+@pytest.mark.unit
+
 
 def test_settings_loads_defaults(monkeypatch):
     """Test settings load with defaults.

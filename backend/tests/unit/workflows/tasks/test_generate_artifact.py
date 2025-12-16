@@ -6,13 +6,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.core.template_utils import render_jinja_template
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.artifact_helpers import (
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
     extract_artifact_metadata,
     generate_filename,
 )
-from app.workflows.tasks.generate_artifact import generate_artifact
+from app.domains.analysis.workflows.tasks.generate_artifact import generate_artifact
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -1152,7 +1154,7 @@ class TestTemplateSectionNullSafety:
 
     def test_artifact_files_disclaimer_rendering(self):
         """Test that files disclaimer is rendered correctly (Issue #299-304)."""
-        from app.workflows.tasks.schemas.aggregated_insights import QuickReference
+        from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
 
         quick_ref = QuickReference(
             primary_technology="Test Framework 1.0",
@@ -1195,7 +1197,7 @@ class TestTemplateSectionNullSafety:
 
     def test_artifact_files_section_hidden_when_empty(self):
         """Test that files section is not shown when files list is empty."""
-        from app.workflows.tasks.schemas.aggregated_insights import QuickReference
+        from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
 
         quick_ref = QuickReference(
             primary_technology="Test Framework 1.0",

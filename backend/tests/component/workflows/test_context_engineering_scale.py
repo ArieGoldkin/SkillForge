@@ -13,11 +13,11 @@ from uuid import uuid4
 
 import pytest
 
-from app.services.context.compaction import CompactionConfig, CompiledContext, SessionCompactor
-from app.workflows.context_scope import build_scoped_context
-from app.workflows.nodes.agent_router import route_to_agents
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import (
+from app.domains.analysis.services.context.compaction import CompactionConfig, CompiledContext, SessionCompactor
+from app.shared.workflows.context_scope import build_scoped_context
+from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import (
     _extract_finding_content,
     _store_findings_as_memories,
 )
@@ -330,7 +330,7 @@ class TestCompilerScale:
     @pytest.mark.asyncio
     async def test_compile_with_large_session_history(self) -> None:
         """Test compilation with large session history."""
-        from app.workflows.context_compiler import create_workflow_compiler
+        from app.shared.workflows.context_compiler import create_workflow_compiler
 
         compiler = create_workflow_compiler("tutor")
 
@@ -360,7 +360,7 @@ class TestCompilerScale:
     @pytest.mark.asyncio
     async def test_multiple_compilers_concurrent(self) -> None:
         """Test multiple compilers operating concurrently."""
-        from app.workflows.context_compiler import create_workflow_compiler
+        from app.shared.workflows.context_compiler import create_workflow_compiler
 
         # Create different compilers
         tutor_compiler = create_workflow_compiler("tutor")
@@ -427,7 +427,7 @@ class TestScopingPerformance:
         """Test that translate_findings handles many findings efficiently."""
         import time
 
-        from app.workflows.context_scope import translate_findings
+        from app.shared.workflows.context_scope import translate_findings
 
         # Many findings
         many_findings = [
@@ -448,8 +448,8 @@ class TestMemoryTypeMapping:
 
     def test_all_agents_have_consistent_mappings(self) -> None:
         """Test that memory type mappings are consistent with scopes."""
-        from app.workflows.context_scope import AGENT_SCOPES
-        from app.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.shared.workflows.context_scope import AGENT_SCOPES
+        from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         # All agents in memory map should also be in scopes
         for agent in AGENT_MEMORY_TYPE_MAP:

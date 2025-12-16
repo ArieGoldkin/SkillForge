@@ -6,10 +6,12 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.execution import run_agent_with_tracking
-from app.workflows.agents.schemas.tech_comparator import TechComparison, TechComparisonEntry
-from app.workflows.agents.tech_comparator import run_tech_comparator
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.schemas.tech_comparator import TechComparison, TechComparisonEntry
+from app.domains.analysis.workflows.agents.tech_comparator import run_tech_comparator
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture

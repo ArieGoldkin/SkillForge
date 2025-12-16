@@ -9,9 +9,11 @@ import inspect
 
 import pytest
 
-from app.workflows.graph_builder import build_analysis_graph
-from app.workflows.nodes.quality_gate_node import MAX_RETRY_ATTEMPTS, should_retry_synthesis
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.graph_builder import build_analysis_graph
+from app.domains.analysis.workflows.nodes.quality_gate_node import MAX_RETRY_ATTEMPTS, should_retry_synthesis
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 def test_graph_has_quality_gate_fail_node():
@@ -62,7 +64,7 @@ def test_graph_conditional_edges_include_fail():
 
 def test_quality_gate_fail_route_exists_in_code():
     """Test that graph_builder.py includes fail route in conditional_edges."""
-    from app.workflows.graph_builder import build_analysis_graph
+    from app.domains.analysis.workflows.graph_builder import build_analysis_graph
 
     # Get source code of build_analysis_graph
     source = inspect.getsource(build_analysis_graph)
@@ -85,7 +87,7 @@ def test_quality_gate_fail_route_exists_in_code():
 
 def test_quality_gate_fail_node_function_exists():
     """Test that _quality_gate_fail_node function exists in graph_builder."""
-    from app.workflows.graph_builder import _quality_gate_fail_node
+    from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
 
     assert callable(_quality_gate_fail_node), "_quality_gate_fail_node should be callable"
 
@@ -95,7 +97,7 @@ async def test_quality_gate_fail_node_basic():
     """Test basic functionality of _quality_gate_fail_node."""
     from unittest.mock import AsyncMock, patch
 
-    from app.workflows.graph_builder import _quality_gate_fail_node
+    from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
 
     state: AnalysisState = {
         "analysis_id": "test-123",

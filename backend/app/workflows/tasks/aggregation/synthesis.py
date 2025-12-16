@@ -16,9 +16,9 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
-from app.services.messaging.sse_helpers import emit_streaming_event
-from app.workflows.agents.base import create_structured_agent
-from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.domains.analysis.workflows.agents.base import create_structured_agent
+from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
 
 if TYPE_CHECKING:
     from langchain_core.runnables import Runnable
@@ -296,7 +296,7 @@ async def _synthesize_with_llm_legacy(
     await _emit_synthesis_heartbeat(analysis_id, start_time, "Starting LLM synthesis...")
 
     # Import the fallback chain function
-    from app.workflows.tasks.aggregation_fallback import synthesize_with_fallback_chain
+    from app.domains.analysis.workflows.tasks.aggregation_fallback import synthesize_with_fallback_chain
 
     # Use the tiered fallback chain
     # This will try progressively degraded approaches until one succeeds
@@ -357,7 +357,7 @@ async def synthesize_with_llm(
 
     """
     # Issue #299-304: Use multi-phase parallel synthesis
-    from app.workflows.tasks.aggregation.synthesis_phased import synthesize_with_llm_phased
+    from app.domains.analysis.workflows.tasks.aggregation.synthesis_phased import synthesize_with_llm_phased
 
     return await synthesize_with_llm_phased(
         validated_findings=validated_findings,

@@ -6,6 +6,8 @@ from uuid import UUID
 from app.core.constants import UUID_NAMESPACE_DNS
 from app.core.utils import normalize_analysis_id_to_uuid
 
+@pytest.mark.unit
+
 
 def test_normalize_uuid_string():
     """Test that valid UUID strings are converted correctly."""

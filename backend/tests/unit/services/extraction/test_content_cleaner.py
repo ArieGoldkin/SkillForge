@@ -1,6 +1,8 @@
 """Unit tests for content cleaner module."""
 
-from app.services.extraction.content_cleaner import (
+from app.shared.services.extraction.content_cleaner import (
+
+@pytest.mark.unit
     clean_extracted_content,
     extract_main_content,
 )

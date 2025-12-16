@@ -15,7 +15,7 @@ from app.services.memory.proactive_recall import (
     fetch_proactive_context,
     format_memory_context,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 

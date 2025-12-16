@@ -10,8 +10,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.models.agent_memory import AgentMemory, MemoryType
-from app.services.context.memory_tools import search_memory
-from app.services.memory import MemorySearchResult
+from app.domains.analysis.services.context.memory_tools import search_memory
+from app.shared.services.memory import MemorySearchResult
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio

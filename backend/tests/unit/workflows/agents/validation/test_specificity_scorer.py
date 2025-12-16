@@ -1,6 +1,8 @@
 """Tests for specificity scorer."""
 
-from app.workflows.agents.validation.specificity_scorer import (
+from app.domains.analysis.workflows.agents.validation.specificity_scorer import (
+
+@pytest.mark.unit
     SpecificityScorer,
     score_agent_output,
     validate_specificity_threshold,

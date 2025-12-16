@@ -5,8 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import pytest_asyncio
 
-from app.services.embeddings import EmbeddingError, EmbeddingService
-from app.services.embeddings.utils import normalize_vector
+from app.shared.services.embeddings.service import EmbeddingService
+from app.shared.services.embeddings.utils import normalize_vector
+from app.shared.services.embeddings import EmbeddingError
 
 # Constants for test assertions
 EXPECTED_EMBEDDING_DIMENSIONS = 1536

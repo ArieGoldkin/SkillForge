@@ -2,6 +2,8 @@
 
 from app.core.template_utils import render_jinja_template
 
+@pytest.mark.unit
+
 
 class TestAggregationFindingsTemplate:
     """Test aggregation_findings.j2 template rendering."""

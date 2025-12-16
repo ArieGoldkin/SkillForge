@@ -51,7 +51,7 @@ def get_skill_level_instructions(skill_level: str) -> str:
 
     Example:
         ```python
-        from app.workflows.agents.skill_level_prompts import get_skill_level_instructions
+        from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 
         skill_level = state.get("skill_level", "intermediate")
         instructions = get_skill_level_instructions(skill_level)

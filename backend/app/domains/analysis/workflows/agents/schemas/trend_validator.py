@@ -1,0 +1,69 @@
+"""Trend validation agent schemas."""
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+from app.domains.analysis.workflows.agents.schemas.base import DataAvailabilityMixin
+
+
+class TrendAssessment(BaseModel):
+    """Trend assessment for a technology or pattern."""
+
+    category: str = Field(
+        description="Trend category (e.g., 'framework', 'language', 'pattern', 'tool')"
+    )
+    trend_status: Literal["emerging", "current", "stable", "declining", "legacy"] = Field(
+        description="Current trend status in 2025 technology landscape"
+    )
+    evidence: str = Field(
+        description=(
+            "Single sentence providing evidence for trend status "
+            "(e.g., GitHub stars, community activity, industry adoption)."
+        )
+    )
+    adoption_rate: str = Field(
+        description="Adoption rate description (e.g., 'growing', 'stable', 'declining')"
+    )
+
+
+class TrendValidation(DataAvailabilityMixin):
+    """Trend validation analysis output schema.
+
+    Issue #299-304: Inherits DataAvailabilityMixin to report data coverage.
+    """
+
+    trend_assessments: list[TrendAssessment] = Field(
+        description="Trend assessments for different aspects of the technology",
+        default_factory=list,
+    )
+    modern_alternatives: list[str] = Field(
+        description=(
+            "Modern alternatives if technology is legacy or declining. "
+            "Each item should be a single concise phrase naming the alternative."
+        ),
+        default_factory=list,
+    )
+    future_outlook: str = Field(
+        description=(
+            "Future outlook and predictions for the technology. "
+            "Write as 2-3 cohesive sentences covering expected trajectory and timeline."
+        )
+    )
+    recommendation: str = Field(
+        description=(
+            "Recommendation based on trend analysis. "
+            "Write as 2-3 cohesive sentences advising whether to adopt, wait, or avoid."
+        )
+    )
+    confidence_score: float = Field(
+        description=(
+            "Confidence score (0.0-1.0) representing both the quality and certainty "
+            "of this trend validation. Consider: accuracy of trend status assessment, "
+            "correctness of adoption rate evaluation, completeness of modern alternatives "
+            "identification, and confidence in future outlook predictions. Higher scores "
+            "indicate more accurate and comprehensive trend assessments."
+        ),
+        ge=0.0,
+        le=1.0,
+    )

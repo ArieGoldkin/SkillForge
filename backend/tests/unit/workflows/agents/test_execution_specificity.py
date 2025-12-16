@@ -1,6 +1,8 @@
 import pytest
 
-from app.workflows.agents import execution, result_processing
+from app.domains.analysis.workflows.agents import execution, result_processing
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
@@ -42,7 +44,7 @@ async def test_specificity_retry_then_success(monkeypatch):
         content="content",
         content_type="article",
         analysis_id="123",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         session=None,
     )
 
@@ -90,7 +92,7 @@ async def test_specificity_failure_after_retries(monkeypatch):
             content="content",
             content_type="article",
             analysis_id="123",
-            agent_type="test_agent",
+            agent_type="tech_comparator",
             session=None,
         )
 

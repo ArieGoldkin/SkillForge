@@ -2,7 +2,9 @@
 
 import pytest
 
-from app.workflows.evaluation.optimizer import optimize_agent_strategy
+from app.domains.analysis.workflows.evaluation.optimizer import optimize_agent_strategy
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio

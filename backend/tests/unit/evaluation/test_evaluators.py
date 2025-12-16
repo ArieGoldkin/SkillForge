@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+@pytest.mark.unit
+
 # =============================================================================
 # MOCK CLASSES (avoiding LangSmith imports)
 # =============================================================================

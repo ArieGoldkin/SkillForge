@@ -12,8 +12,8 @@ backend_dir = Path(__file__).parent
 sys.path.insert(0, str(backend_dir))
 
 from app.core.logging import setup_logging  # noqa: E402
-from app.services.extraction.content_type import detect_content_type  # noqa: E402
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
+from app.shared.services.extraction.content_type import detect_content_type  # noqa: E402
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
 
 
 def _print_extraction_results(result: dict) -> None:

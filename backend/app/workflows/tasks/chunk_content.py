@@ -9,17 +9,17 @@ from typing import TypedDict
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.chunking.chunker import (
+from app.shared.services.chunking.chunker import (
     DEFAULT_LONG_WINDOW,
     DEFAULT_OVERLAP_PCT,
     DEFAULT_SHORT_WINDOW,
     ChunkText,
     chunk_document,
 )
-from app.services.chunking.dedup import DedupStats, deduplicate
-from app.services.chunking.summaries import SummaryChunk, summarize_sections
+from app.shared.services.chunking.dedup import DedupStats, deduplicate
+from app.shared.services.chunking.summaries import SummaryChunk, summarize_sections
 from app.services.pii import PIIDetector, PIIResult
-from app.workflows.tasks.metrics import emit_metric
+from app.domains.analysis.workflows.tasks.metrics import emit_metric
 
 logger = get_logger(__name__)
 

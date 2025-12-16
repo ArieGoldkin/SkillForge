@@ -41,8 +41,8 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.services.embeddings.service import EmbeddingService
-    from app.services.search.search_service import SearchService
+    from app.shared.services.embeddings.service import EmbeddingService
+    from app.shared.services.search.search_service import SearchService
 
 logger = get_logger(__name__)
 
@@ -234,7 +234,7 @@ class EvaluationRunner:
         self.embedding_service = embedding_service
 
         if search_service is None:
-            from app.services.search.search_service import SearchService
+            from app.shared.services.search.search_service import SearchService
 
             search_service = SearchService(
                 session=session,

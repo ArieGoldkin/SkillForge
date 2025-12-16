@@ -19,7 +19,9 @@ from app.evaluation.ingestion.pii_anonymizer import (
     PIIReplacement,
     get_anonymizer,
 )
-from app.services.pii.types import PIIType, SensitivityLevel
+from app.shared.services.pii.types import PIIType, SensitivityLevel
+
+@pytest.mark.unit
 
 
 class TestAnonymizedResult:

@@ -3,7 +3,9 @@
 import pytest
 
 from app.core.constants import CONTENT_TYPE_ARTICLE, CONTENT_TYPE_REPO, CONTENT_TYPE_VIDEO
-from app.services.extraction.content_type import ContentTypeError, detect_content_type
+from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
+
+@pytest.mark.unit
 
 
 def test_detect_youtube_video() -> None:

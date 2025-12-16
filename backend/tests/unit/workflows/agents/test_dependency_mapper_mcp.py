@@ -13,7 +13,9 @@ from uuid import uuid4
 import pytest
 from langchain_core.tools import BaseTool
 
-from app.workflows.agents.dependency_mapper import run_dependency_mapper
+from app.domains.analysis.workflows.agents.dependency_mapper import run_dependency_mapper
+
+@pytest.mark.unit
 
 # ============================================================================
 # Fixtures
@@ -53,8 +55,8 @@ class TestRunDependencyMapperWithTools:
     """Test run_dependency_mapper with MCP tools parameter."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_uses_tool_enabled_agent_when_tools_provided(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -82,13 +84,13 @@ class TestRunDependencyMapperWithTools:
         assert call_kwargs["tool_call_config"].max_tool_calls == 20
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_passes_dependency_mapping_schema_to_tool_agent(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
         """Tool-enabled agent receives DependencyMapping response schema."""
-        from app.workflows.agents.schemas.dependency_mapper import DependencyMapping
+        from app.domains.analysis.workflows.agents.schemas.dependency_mapper import DependencyMapping
 
         mock_agent = MagicMock()
         mock_create_tool_enabled.return_value = mock_agent
@@ -111,8 +113,8 @@ class TestRunDependencyMapperWithTools:
         assert call_kwargs["response_schema"] == DependencyMapping
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_enhances_prompt_with_skill_level_and_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -143,8 +145,8 @@ class TestRunDependencyMapperWithTools:
         assert "intermediate" in system_prompt.lower() or "skill" in system_prompt.lower()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
     async def test_uses_structured_agent_when_no_tools(
         self, mock_create_structured, mock_run_tracking, mock_state
     ):
@@ -169,8 +171,8 @@ class TestRunDependencyMapperWithTools:
         mock_create_structured.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
     async def test_uses_structured_agent_when_empty_tools(
         self, mock_create_structured, mock_run_tracking, mock_state
     ):
@@ -195,8 +197,8 @@ class TestRunDependencyMapperWithTools:
         mock_create_structured.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_tool_call_config_max_calls_is_20(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -222,8 +224,8 @@ class TestRunDependencyMapperWithTools:
         assert call_kwargs["tool_call_config"].max_tool_calls == 20
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_runs_agent_with_tracking(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -276,7 +278,7 @@ class TestDependencyMapperWithSessionMCP:
         """Verify runner function signature includes tools parameter."""
         import inspect
 
-        from app.workflows.tasks.runners import run_dependency_mapper_with_session
+        from app.domains.analysis.workflows.tasks.runners import run_dependency_mapper_with_session
 
         sig = inspect.signature(run_dependency_mapper_with_session)
         # The runner should accept the standard parameters
@@ -290,11 +292,11 @@ class TestDependencyMapperWithSessionMCP:
         """Verify runner file has proper MCP imports."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
         # Verify the dynamic import pattern is present
-        assert "from app.services.mcp import" in source
+        assert "from app.shared.services.mcp import" in source
         assert "MCPClientPool" in source
         assert "ToolRegistry" in source
         assert "get_mcp_settings" in source
@@ -303,7 +305,7 @@ class TestDependencyMapperWithSessionMCP:
         """Verify runner has exception handling for MCP failures."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
         # Verify graceful degradation pattern
@@ -315,7 +317,7 @@ class TestDependencyMapperWithSessionMCP:
         """Verify runner checks if agent is enabled in registry."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
         # Verify registry check
@@ -326,7 +328,7 @@ class TestDependencyMapperWithSessionMCP:
         """Verify runner passes tools parameter to run_dependency_mapper."""
         import inspect
 
-        from app.workflows.tasks import runners
+        from app.domains.analysis.workflows.tasks import runners
 
         source = inspect.getsource(runners.run_dependency_mapper_with_session)
         # Verify tools are passed
@@ -342,8 +344,8 @@ class TestSkillLevelIntegration:
     """Test that skill level instructions work correctly with MCP tools."""
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_beginner_skill_level_with_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools
     ):
@@ -371,8 +373,8 @@ class TestSkillLevelIntegration:
         assert "beginner" in system_prompt.lower() or "basic" in system_prompt.lower()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
     async def test_expert_skill_level_with_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools
     ):
@@ -400,8 +402,8 @@ class TestSkillLevelIntegration:
         assert "expert" in system_prompt.lower() or "advanced" in system_prompt.lower()
 
     @pytest.mark.asyncio
-    @patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.workflows.agents.dependency_mapper.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
     async def test_skill_level_without_tools(self, mock_create_structured, mock_run_tracking):
         """Skill level instructions work with structured-only agent."""
         mock_agent = MagicMock()

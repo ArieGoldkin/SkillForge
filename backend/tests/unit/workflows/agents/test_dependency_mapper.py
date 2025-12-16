@@ -6,9 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.dependency_mapper import run_dependency_mapper
-from app.workflows.agents.schemas.dependency_mapper import Dependency, DependencyMapping
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.dependency_mapper import run_dependency_mapper
+from app.domains.analysis.workflows.agents.schemas.dependency_mapper import Dependency, DependencyMapping
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -127,8 +129,8 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.dependency_mapper.create_structured_agent")
-@patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_success(
     mock_run_tracking,
     mock_create_agent,
@@ -175,8 +177,8 @@ async def test_run_dependency_mapper_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.dependency_mapper.create_structured_agent")
-@patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_error_handling(
     mock_run_tracking,
     mock_create_agent,
@@ -197,8 +199,8 @@ async def test_run_dependency_mapper_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.dependency_mapper.create_structured_agent")
-@patch("app.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):

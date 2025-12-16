@@ -6,7 +6,9 @@ Tests Phase 0 implementation of finding compression for multi-phase synthesis.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.workflows.tasks.aggregation.compress_findings import (
+from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
+
+@pytest.mark.unit
     CompressedFinding,
     COMPRESSION_SYSTEM_PROMPT,
     build_compression_user_prompt,

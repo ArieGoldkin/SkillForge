@@ -6,13 +6,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.core.types import AnalysisID
-from app.workflows.tasks.aggregation.synthesis import (
+from app.domains.analysis.workflows.tasks.aggregation.synthesis import (
     create_fallback_synthesis_model,
     create_synthesis_agent,
     create_synthesis_agent_with_fallback,
     synthesize_with_llm,
 )
-from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
+from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -116,7 +118,7 @@ def sample_llm_response() -> dict[str, object]:
 class TestCreateSynthesisAgent:
     """Test synthesis agent creation."""
 
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_structured_agent")
     def test_create_synthesis_agent_calls_create_structured_agent(
         self, mock_create_structured_agent: MagicMock
     ):
@@ -145,7 +147,7 @@ class TestCreateSynthesisAgent:
         # Verify result is the mock agent
         assert result == mock_agent
 
-    @patch("app.workflows.tasks.aggregation.synthesis.create_structured_agent")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_structured_agent")
     def test_create_synthesis_agent_returns_runnable(self, mock_create_structured_agent: MagicMock):
         """Test that create_synthesis_agent returns a Runnable."""
         mock_agent = MagicMock()
@@ -161,7 +163,7 @@ class TestCreateSynthesisAgent:
 class TestCreateFallbackSynthesisModel:
     """Test fallback synthesis model creation (Issue #299-304)."""
 
-    @patch("app.workflows.tasks.aggregation.synthesis.get_chat_model")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.get_chat_model")
     def test_create_fallback_synthesis_model_uses_fallback_setting(
         self, mock_get_chat_model: MagicMock
     ):
@@ -184,7 +186,7 @@ class TestCreateFallbackSynthesisModel:
 
         assert result is not None
 
-    @patch("app.workflows.tasks.aggregation.synthesis.get_chat_model")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.get_chat_model")
     def test_create_fallback_synthesis_model_returns_runnable(self, mock_get_chat_model: MagicMock):
         """Test that fallback model returns a runnable with structured output."""
         mock_model = MagicMock()
@@ -200,8 +202,8 @@ class TestCreateFallbackSynthesisModel:
 class TestCreateSynthesisAgentWithFallback:
     """Test synthesis agent with fallback chain creation (Issue #299-304)."""
 
-    @patch("app.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
     def test_create_synthesis_agent_with_fallback_attaches_fallback(
         self,
         mock_create_fallback: MagicMock,
@@ -239,8 +241,8 @@ class TestCreateSynthesisAgentWithFallback:
         # Verify result is the agent with fallback
         assert result == mock_agent_with_fallback
 
-    @patch("app.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
-    @patch("app.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model")
     def test_create_synthesis_agent_with_fallback_logs_models(
         self,
         mock_create_fallback: MagicMock,
@@ -277,7 +279,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test successful LLM synthesis flow with tiered fallback chain (Issue #299-304)."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock to return result and tier
         mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
@@ -317,7 +319,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test synthesize_with_llm falls back to static tier when all LLM tiers fail (Issue #299-304)."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock to return static fallback result
         static_result = {
@@ -362,7 +364,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test synthesize_with_llm can use minimal schema tier (Issue #299-304)."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock to return minimal schema result
         minimal_result = {
@@ -408,7 +410,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test synthesize_with_llm with empty findings."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock
         mock_synthesize_with_fallback_chain.return_value = (sample_llm_response, FallbackTier.FULL)
@@ -442,7 +444,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test synthesize_with_llm with multiple conflicts."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup many conflicts
         conflicts = [
@@ -493,7 +495,7 @@ class TestSynthesizeWithLLM:
     ):
         """Test synthesize_with_llm succeeds with REDUCED tier (faster model)."""
         # Import FallbackTier enum
-        from app.workflows.tasks.aggregation_fallback import FallbackTier
+        from app.domains.analysis.workflows.tasks.aggregation_fallback import FallbackTier
 
         # Setup mock to return reduced tier result
         mock_synthesize_with_fallback_chain.return_value = (

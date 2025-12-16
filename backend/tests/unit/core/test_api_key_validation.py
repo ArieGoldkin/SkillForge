@@ -3,6 +3,8 @@
 from unittest.mock import MagicMock, patch
 
 from app.core.api_key_validation import (
+
+@pytest.mark.unit
     get_available_models_for_configured_providers,
     get_configured_providers,
     log_api_key_configuration,

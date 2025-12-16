@@ -5,6 +5,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from app.evaluation.run_experiments import (
+
+@pytest.mark.unit
     DEFAULT_MODELS,
     TASK_DATASETS,
     run_preflight_checks,

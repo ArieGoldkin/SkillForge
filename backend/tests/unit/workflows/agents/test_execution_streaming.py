@@ -6,8 +6,10 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 from tests.unit.workflows.agents.conftest import MockAgentSchema
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
@@ -34,7 +36,7 @@ async def test_run_agent_with_tracking_streaming(
         content=content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         session=mock_session,
     )
 
@@ -47,7 +49,7 @@ async def test_run_agent_with_tracking_streaming(
     total_calls = mock_emit_progress_streaming.call_count + mock_emit_progress_result.call_count
     assert total_calls >= min_expected_events
     # Verify final result is correct
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
     assert "findings" in result
     mock_save_finding.assert_called_once()
 
@@ -81,7 +83,7 @@ async def test_run_agent_with_tracking_streaming_throttling(
             content=content,
             content_type="article",
             analysis_id=analysis_id,
-            agent_type="test_agent",
+            agent_type="tech_comparator",
             session=mock_session,
         )
 
@@ -94,7 +96,7 @@ async def test_run_agent_with_tracking_streaming_throttling(
         assert total_calls >= 1, "At least the 'running' event should be emitted"
         # No throttling tests needed since ainvoke doesn't produce streaming events
 
-        assert result["agent_type"] == "test_agent"
+        assert result["agent_type"] == "tech_comparator"
         assert "findings" in result
         mock_save_finding.assert_called_once()
 
@@ -125,13 +127,13 @@ async def test_run_agent_with_tracking_streaming_early_response(
         content=content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         session=mock_session,
     )
 
     # Verify structured_response was captured
     expected_field2 = 42  # Expected value from MockAgentSchema
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
     assert "findings" in result
     findings = result["findings"]
     assert isinstance(findings, dict)

@@ -4,8 +4,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.workflows.evaluation.evaluator import evaluate_agent_quality
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.evaluation.evaluator import evaluate_agent_quality
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536

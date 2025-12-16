@@ -23,7 +23,7 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
 from app.models.agent_finding import AgentFinding
-from app.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
 

@@ -19,12 +19,12 @@ from pydantic import BaseModel, Field
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.services.messaging.sse_helpers import emit_streaming_event
-from app.workflows.agents.base import create_structured_agent
-from app.workflows.agents.invocation import invoke_agent
-from app.workflows.agents.response_processing import extract_structured_response
-from app.workflows.tasks.aggregation_helpers import format_findings_for_llm
-from app.workflows.tasks.prompt_builders import build_synthesis_user_prompt
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.domains.analysis.workflows.agents.base import create_structured_agent
+from app.domains.analysis.workflows.agents.invocation import invoke_agent
+from app.domains.analysis.workflows.agents.response_processing import extract_structured_response
+from app.domains.analysis.workflows.tasks.aggregation_helpers import format_findings_for_llm
+from app.domains.analysis.workflows.tasks.prompt_builders import build_synthesis_user_prompt
 
 logger = get_logger(__name__)
 
@@ -340,7 +340,7 @@ async def _attempt_synthesis(  # noqa: PLR0913
 
     # Import default system prompt if not provided
     if system_prompt is None:
-        from app.workflows.tasks.aggregation.synthesis import SYNTHESIS_SYSTEM_PROMPT
+        from app.domains.analysis.workflows.tasks.aggregation.synthesis import SYNTHESIS_SYSTEM_PROMPT
 
         system_prompt = SYNTHESIS_SYSTEM_PROMPT
 

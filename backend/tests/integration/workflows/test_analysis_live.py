@@ -24,7 +24,7 @@ from app.core.config import get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.analysis import Analysis
 from app.models.analysis_chunk import AnalysisChunk
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 
 @pytest.fixture

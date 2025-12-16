@@ -7,6 +7,8 @@ import pytest
 
 from app.api.v1.sse_handler import stream_analysis_progress
 
+@pytest.mark.unit
+
 
 @pytest.fixture
 def mock_analysis_id():

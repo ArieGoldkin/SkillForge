@@ -1,6 +1,8 @@
 """Unit tests for constants module."""
 
 from app.core.constants import (
+
+@pytest.mark.unit
     CONTENT_TYPE_ARTICLE,
     CONTENT_TYPE_REPO,
     CONTENT_TYPE_VIDEO,

@@ -6,7 +6,9 @@ from uuid import uuid4
 import pytest
 from pydantic import BaseModel
 
-from app.workflows.agents.base import (
+from app.domains.analysis.workflows.agents.base import (
+
+@pytest.mark.unit
     create_structured_agent,
     emit_agent_progress,
     save_agent_finding,
@@ -41,8 +43,8 @@ def mock_session():
     return session
 
 
-@patch("app.workflows.agents.base.get_chat_model")
-@patch("app.workflows.agents.base.create_agent")
+@patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+@patch("app.domains.analysis.workflows.agents.base.create_agent")
 def test_create_structured_agent(mock_create_agent, mock_get_model):
     """Test creating agent with structured output."""
     mock_model = MagicMock()
@@ -69,7 +71,7 @@ async def test_save_agent_finding(mock_session):
     await save_agent_finding(
         session=mock_session,
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         findings=findings,
         confidence_score=0.9,
         processing_time_ms=1000,
@@ -81,8 +83,8 @@ async def test_save_agent_finding(mock_session):
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_streaming_event")
-@patch("app.workflows.agents.base.get_stage_name")
+@patch("app.domains.analysis.workflows.agents.base.emit_streaming_event")
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name")
 async def test_emit_agent_progress_success(mock_get_stage_name, mock_emit_event):
     """Test emitting agent progress SSE event."""
     # Setup mocks
@@ -113,8 +115,8 @@ async def test_emit_agent_progress_success(mock_get_stage_name, mock_emit_event)
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.emit_streaming_event")
-@patch("app.workflows.agents.base.get_stage_name")
+@patch("app.domains.analysis.workflows.agents.base.emit_streaming_event")
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name")
 async def test_emit_agent_progress_with_kwargs(mock_get_stage_name, mock_emit_event):
     """Test emitting agent progress with additional kwargs."""
     # Setup mocks

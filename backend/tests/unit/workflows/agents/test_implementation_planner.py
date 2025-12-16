@@ -6,12 +6,14 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.implementation_planner import run_implementation_planner
-from app.workflows.agents.schemas.implementation_planner import (
+from app.domains.analysis.workflows.agents.implementation_planner import run_implementation_planner
+from app.domains.analysis.workflows.agents.schemas.implementation_planner import (
     ImplementationPlan,
     ImplementationStep,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture

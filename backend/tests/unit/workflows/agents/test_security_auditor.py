@@ -6,9 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.schemas.security_auditor import SecurityAudit, SecurityRisk
-from app.workflows.agents.security_auditor import run_security_auditor
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.schemas.security_auditor import SecurityAudit, SecurityRisk
+from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -56,8 +58,6 @@ def mock_session():
     session.execute = AsyncMock(return_value=mock_result)
     return session
 
-    return session
-
 
 @pytest.fixture
 def mock_state():
@@ -78,8 +78,8 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.security_auditor.create_structured_agent")
-@patch("app.workflows.agents.security_auditor.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_success(
     mock_run_tracking,
     mock_create_agent,
@@ -124,8 +124,8 @@ async def test_run_security_auditor_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.security_auditor.create_structured_agent")
-@patch("app.workflows.agents.security_auditor.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_error_handling(
     mock_run_tracking,
     mock_create_agent,
@@ -146,8 +146,8 @@ async def test_run_security_auditor_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.security_auditor.create_structured_agent")
-@patch("app.workflows.agents.security_auditor.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):

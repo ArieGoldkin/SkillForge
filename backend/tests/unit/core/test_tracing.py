@@ -10,6 +10,8 @@ import pytest
 
 from app.core.tracing import robust_traceable
 
+@pytest.mark.unit
+
 
 @pytest.mark.asyncio
 @patch("app.core.tracing.traceable")

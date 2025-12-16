@@ -3,7 +3,9 @@
 Issue #299-304: Graceful degradation for varying content sizes.
 """
 
-from app.workflows.utils.content_signals import (
+from app.shared.workflows.utils.content_signals import (
+
+@pytest.mark.unit
     AgentExpectation,
     ContentGenre,
     detect_content_signals,
@@ -555,7 +557,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_full_analysis(self) -> None:
         """FULL_ANALYSIS expectation should use standard threshold (0.70)."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -578,7 +580,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_partial(self) -> None:
         """PARTIAL expectation should use reduced threshold (0.55)."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -597,7 +599,7 @@ class TestThresholdAdjustment:
 
     def test_get_adjusted_specificity_threshold_opportunistic(self) -> None:
         """OPPORTUNISTIC expectation should use lowest threshold (0.45)."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -609,37 +611,37 @@ class TestThresholdAdjustment:
 
     def test_get_threshold_for_expectation_full_analysis(self) -> None:
         """get_threshold_for_expectation with 'full_analysis' returns 0.70."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         assert get_threshold_for_expectation("full_analysis") == 0.70
 
     def test_get_threshold_for_expectation_partial(self) -> None:
         """get_threshold_for_expectation with 'partial' returns 0.55."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         assert get_threshold_for_expectation("partial") == 0.55
 
     def test_get_threshold_for_expectation_opportunistic(self) -> None:
         """get_threshold_for_expectation with 'opportunistic' returns 0.45."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         assert get_threshold_for_expectation("opportunistic") == 0.45
 
     def test_get_threshold_for_expectation_none(self) -> None:
         """get_threshold_for_expectation with None returns default (0.70)."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         assert get_threshold_for_expectation(None) == 0.70
 
     def test_get_threshold_for_expectation_invalid(self) -> None:
         """get_threshold_for_expectation with invalid string returns default (0.70)."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         assert get_threshold_for_expectation("invalid_expectation") == 0.70
 
     def test_trend_validator_always_full_analysis(self) -> None:
         """trend_validator should always get FULL_ANALYSIS threshold."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -651,7 +653,7 @@ class TestThresholdAdjustment:
 
     def test_security_auditor_with_security_patterns(self) -> None:
         """security_auditor gets FULL_ANALYSIS when security patterns present."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -666,7 +668,7 @@ class TestThresholdAdjustment:
 
     def test_security_auditor_without_security_patterns(self) -> None:
         """security_auditor gets OPPORTUNISTIC when no security patterns."""
-        from app.workflows.utils.content_signals import (
+        from app.shared.workflows.utils.content_signals import (
             get_adjusted_specificity_threshold,
         )
 
@@ -685,7 +687,7 @@ class TestAgentStateFlowIntegration:
 
     def test_agent_extracts_expectation_from_state(self) -> None:
         """Agent should correctly extract expectation from supervisor_decision in state."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # Simulate state with supervisor_decision containing agent_expectations
         state = {
@@ -721,7 +723,7 @@ class TestAgentStateFlowIntegration:
 
     def test_agent_handles_empty_supervisor_decision(self) -> None:
         """Agent should return default threshold when supervisor_decision is empty."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # State without supervisor_decision
         state = {"skill_level": "intermediate"}
@@ -736,7 +738,7 @@ class TestAgentStateFlowIntegration:
 
     def test_agent_handles_missing_agent_expectations(self) -> None:
         """Agent should return default threshold when agent_expectations is missing."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # State with supervisor_decision but no agent_expectations
         state = {
@@ -754,7 +756,7 @@ class TestAgentStateFlowIntegration:
 
     def test_agent_handles_missing_specific_agent(self) -> None:
         """Agent should return default threshold when specific agent not in expectations."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # State with expectations for other agents but not this one
         state = {
@@ -775,7 +777,7 @@ class TestAgentStateFlowIntegration:
 
     def test_full_state_flow_with_content_signals(self) -> None:
         """Test complete state flow: content signals → expectations → thresholds."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # Simulate state as it would exist after supervisor runs
         # For conceptual-only content
@@ -819,7 +821,7 @@ class TestAgentStateFlowIntegration:
 
     def test_state_flow_with_code_rich_content(self) -> None:
         """Test state flow for code-rich content with full expectations."""
-        from app.workflows.utils.content_signals import get_threshold_for_expectation
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
         # Simulate state for code-rich tutorial content
         state = {

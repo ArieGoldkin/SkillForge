@@ -1,6 +1,8 @@
 """Unit tests for tutor graph builder."""
 
-from app.workflows.tutor.graph_builder import build_tutor_graph
+from app.domains.tutor.workflows.graph_builder import build_tutor_graph
+
+@pytest.mark.unit
 
 
 def test_build_tutor_graph_compiles():

@@ -4,17 +4,21 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
 async def test_emit_streaming_event():
     """Test emitting a streaming event."""
-    analysis_id = "123e4567-e89b-12d3-a456-426614174000"
+    # Use unique analysis_id to avoid buffered events from previous tests
+    import uuid
+    analysis_id = str(uuid.uuid4())
     channel = f"workflow:{analysis_id}"
 
     # Subscribe to channel to capture event
-    from app.services.messaging.broadcaster import broadcaster
+    from app.shared.services.messaging.broadcaster import broadcaster
 
     messages = []
 
@@ -52,10 +56,12 @@ async def test_emit_streaming_event():
 @pytest.mark.asyncio
 async def test_emit_streaming_event_with_kwargs():
     """Test emitting event with additional kwargs."""
-    analysis_id = "123e4567-e89b-12d3-a456-426614174000"
+    # Use unique analysis_id to avoid buffered events from previous tests
+    import uuid
+    analysis_id = str(uuid.uuid4())
     channel = f"workflow:{analysis_id}"
 
-    from app.services.messaging.broadcaster import broadcaster
+    from app.shared.services.messaging.broadcaster import broadcaster
 
     messages = []
 
@@ -88,14 +94,15 @@ async def test_emit_streaming_event_with_kwargs():
 
 
 @pytest.mark.asyncio
-@patch("app.services.persistence.progress.persist_progress_event_async")
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async")
 async def test_emit_streaming_event_persists_to_database(mock_persist):
     """Test that emit_streaming_event triggers progress persistence.
 
     This test verifies the fix where SSE events are persisted to the
     analysis_progress table for historical tracking.
     """
-    analysis_id = "123e4567-e89b-12d3-a456-426614174000"
+    import uuid
+    analysis_id = str(uuid.uuid4())
 
     await emit_streaming_event(
         "progress",
@@ -120,7 +127,7 @@ async def test_emit_streaming_event_persists_to_database(mock_persist):
 
 
 @pytest.mark.asyncio
-@patch("app.services.persistence.progress.persist_progress_event_async")
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async")
 async def test_emit_streaming_event_persistence_non_blocking(mock_persist):
     """Test that persistence failure doesn't break SSE event emission.
 
@@ -129,14 +136,15 @@ async def test_emit_streaming_event_persistence_non_blocking(mock_persist):
     not raised synchronously. This test verifies that even if persistence fails,
     the SSE event is still broadcast successfully.
     """
-    analysis_id = "123e4567-e89b-12d3-a456-426614174000"
+    import uuid
+    analysis_id = str(uuid.uuid4())
 
     # Mock persistence to do nothing (simulating it being called but errors handled internally)
     # The actual implementation creates a task that handles errors in its callback
     mock_persist.return_value = None
 
     # Event should still be emitted (persistence is fire-and-forget)
-    from app.services.messaging.broadcaster import broadcaster
+    from app.shared.services.messaging.broadcaster import broadcaster
 
     channel = f"workflow:{analysis_id}"
     messages = []

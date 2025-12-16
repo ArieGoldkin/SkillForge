@@ -10,7 +10,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.models.agent_memory import MemoryType
-from app.services.memory import (
+from app.shared.services.memory import (
+
+@pytest.mark.unit
     AgentMemoryService,
     MemorySearchResult,
     MemorySnippet,

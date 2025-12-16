@@ -16,8 +16,8 @@ sys.path.insert(0, str(backend_dir))
 
 from app.core.config import settings  # noqa: E402
 from app.core.logging import setup_logging  # noqa: E402
-from app.services.extraction.content_type import detect_content_type  # noqa: E402
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
+from app.shared.services.extraction.content_type import detect_content_type  # noqa: E402
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError  # noqa: E402
 
 
 async def test_content_type_detection() -> None:

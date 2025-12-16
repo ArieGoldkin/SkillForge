@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 from app.core.model_factory import (
     _resolve_model_from_registry,
+
+@pytest.mark.unit
     _should_strip_provider_prefix,
     get_chat_model,
 )

@@ -5,11 +5,13 @@ Tests the quality gate validation logic using LLM-as-judge evaluators.
 
 import pytest
 
-from app.workflows.nodes.quality_gate_node import (
+from app.domains.analysis.workflows.nodes.quality_gate_node import (
     _format_insights_for_evaluation,
     should_retry_synthesis,
 )
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 class TestFormatInsightsForEvaluation:
@@ -157,7 +159,7 @@ class TestQualityGateNode:
 
     async def test_quality_gate_skips_when_no_insights(self):
         """Test that quality gate is skipped when no insights."""
-        from app.workflows.nodes.quality_gate_node import quality_gate_node
+        from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         state: AnalysisState = {
             "analysis_id": "test-id",
@@ -171,7 +173,7 @@ class TestQualityGateNode:
 
     async def test_quality_gate_fail_open_on_error(self, monkeypatch):
         """Test that quality gate fails open on evaluation error."""
-        from app.workflows.nodes.quality_gate_node import quality_gate_node
+        from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         # Mock evaluator to raise exception
         def mock_create_evaluator(*args, **kwargs):

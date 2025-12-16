@@ -5,8 +5,10 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.graph_builder import build_analysis_graph
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.graph_builder import build_analysis_graph
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -178,7 +180,7 @@ async def test_graph_execution_with_mocks(
 @pytest.mark.asyncio
 async def test_graph_handles_extraction_error(sample_state: AnalysisState) -> None:
     """Test graph handles extraction errors correctly."""
-    from app.services.extraction.jina_reader import JinaReaderError
+    from app.shared.services.extraction.jina_reader import JinaReaderError
 
     mock_jina = MagicMock()
     mock_jina.extract_article = AsyncMock(side_effect=JinaReaderError("Extraction failed"))

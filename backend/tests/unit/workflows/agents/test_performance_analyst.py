@@ -6,9 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.performance_analyst import run_performance_analyst
-from app.workflows.agents.schemas.performance_analyst import PerformanceAnalysis, PerformanceMetric
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.performance_analyst import run_performance_analyst
+from app.domains.analysis.workflows.agents.schemas.performance_analyst import PerformanceAnalysis, PerformanceMetric
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -57,8 +59,6 @@ def mock_session():
     session.execute = AsyncMock(return_value=mock_result)
     return session
 
-    return session
-
 
 @pytest.fixture
 def mock_state():
@@ -79,8 +79,8 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.performance_analyst.create_structured_agent")
-@patch("app.workflows.agents.performance_analyst.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.run_agent_with_tracking")
 async def test_run_performance_analyst_success(
     mock_run_tracking,
     mock_create_agent,
@@ -119,8 +119,8 @@ async def test_run_performance_analyst_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.performance_analyst.create_structured_agent")
-@patch("app.workflows.agents.performance_analyst.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.run_agent_with_tracking")
 async def test_run_performance_analyst_error_handling(
     mock_run_tracking,
     mock_create_agent,
@@ -141,8 +141,8 @@ async def test_run_performance_analyst_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.performance_analyst.create_structured_agent")
-@patch("app.workflows.agents.performance_analyst.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.performance_analyst.run_agent_with_tracking")
 async def test_run_performance_analyst_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):

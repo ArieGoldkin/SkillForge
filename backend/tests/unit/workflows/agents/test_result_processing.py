@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.result_processing import process_agent_result
+from app.domains.analysis.workflows.agents.result_processing import process_agent_result
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -24,8 +26,8 @@ def sample_analysis_id():
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_with_confidence_score(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -72,8 +74,8 @@ async def test_process_agent_result_with_confidence_score(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_without_confidence_score(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -106,8 +108,8 @@ async def test_process_agent_result_without_confidence_score(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_type_conversion(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -134,8 +136,8 @@ async def test_process_agent_result_confidence_score_type_conversion(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_invalid_confidence_score_ignored(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -165,8 +167,8 @@ async def test_process_agent_result_invalid_confidence_score_ignored(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_with_confidence_score_boundary_0(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -192,8 +194,8 @@ async def test_process_agent_result_with_confidence_score_boundary_0(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_with_confidence_score_boundary_1(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -219,8 +221,8 @@ async def test_process_agent_result_with_confidence_score_boundary_1(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 @pytest.mark.parametrize("confidence_value", [0.25, 0.5, 0.75, 0.999])
 async def test_process_agent_result_with_confidence_score_mid_range(
     mock_emit, mock_save, mock_session, sample_analysis_id, confidence_value
@@ -247,8 +249,8 @@ async def test_process_agent_result_with_confidence_score_mid_range(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_precision_preserved(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -276,8 +278,8 @@ async def test_process_agent_result_confidence_score_precision_preserved(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_removed_from_findings(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -315,8 +317,8 @@ async def test_process_agent_result_confidence_score_removed_from_findings(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_passed_to_save(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -352,8 +354,8 @@ async def test_process_agent_result_confidence_score_passed_to_save(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_at_top_level_for_template(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -397,8 +399,8 @@ async def test_process_agent_result_confidence_score_at_top_level_for_template(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_confidence_score_none_at_top_level(
     mock_emit, mock_save, mock_session, sample_analysis_id
 ):
@@ -424,9 +426,9 @@ async def test_process_agent_result_confidence_score_none_at_top_level(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.score_agent_output")
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.score_agent_output")
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_process_agent_result_specificity_scoring(
     mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
 ):
@@ -446,7 +448,7 @@ async def test_process_agent_result_specificity_scoring(
     start_time = time.time()
 
     # Mock specificity score result
-    from app.workflows.agents.validation import SpecificityScore
+    from app.domains.analysis.workflows.agents.validation import SpecificityScore
 
     mock_specificity_score = SpecificityScore(
         overall_score=0.82,
@@ -476,10 +478,10 @@ async def test_process_agent_result_specificity_scoring(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.score_agent_output")
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.logger")
+@patch("app.domains.analysis.workflows.agents.result_processing.score_agent_output")
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.logger")
 async def test_process_agent_result_logs_specificity_score(
     mock_logger, mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
 ):
@@ -492,7 +494,7 @@ async def test_process_agent_result_logs_specificity_score(
     start_time = time.time()
 
     # Mock specificity score result
-    from app.workflows.agents.validation import SpecificityScore
+    from app.domains.analysis.workflows.agents.validation import SpecificityScore
 
     mock_specificity_score = SpecificityScore(
         overall_score=0.75,
@@ -529,10 +531,10 @@ async def test_process_agent_result_logs_specificity_score(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.result_processing.score_agent_output")
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.logger")
+@patch("app.domains.analysis.workflows.agents.result_processing.score_agent_output")
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.logger")
 async def test_process_agent_result_warns_on_low_specificity(
     mock_logger, mock_emit, mock_save, mock_score_output, mock_session, sample_analysis_id
 ):
@@ -545,7 +547,7 @@ async def test_process_agent_result_warns_on_low_specificity(
     start_time = time.time()
 
     # Mock low specificity score
-    from app.workflows.agents.validation import SpecificityScore, VaguePhrase
+    from app.domains.analysis.workflows.agents.validation import SpecificityScore, VaguePhrase
 
     mock_specificity_score = SpecificityScore(
         overall_score=0.45,  # Below 0.60 threshold

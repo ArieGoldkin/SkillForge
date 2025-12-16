@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_for_rephrase():
     """Sample tutor state for rephrasing."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -44,7 +46,7 @@ async def test_rephrase_explain_generates_simpler_explanation(sample_tutor_state
     """Test that rephrase_explain generates a simpler explanation."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.rephrase_explain import rephrase_explain
+    from app.domains.tutor.workflows.nodes.rephrase_explain import rephrase_explain
 
     mock_response = MagicMock()
     mock_response.content = "Let me explain this more simply..."

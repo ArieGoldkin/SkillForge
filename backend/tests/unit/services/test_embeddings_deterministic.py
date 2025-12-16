@@ -4,7 +4,9 @@ import math
 
 import pytest
 
-from app.services.embeddings.deterministic import DeterministicEmbeddingService
+from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
+
+@pytest.mark.unit
 
 
 class TestDeterministicEmbeddingService:

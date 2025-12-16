@@ -6,8 +6,8 @@ import httpx
 import pytest
 
 from app.core.config import get_settings
-from app.services.extraction.content_type import detect_content_type
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.shared.services.extraction.content_type import detect_content_type
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
 @pytest.fixture

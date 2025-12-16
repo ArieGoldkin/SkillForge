@@ -10,9 +10,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.nodes.supervisor import supervisor_route
-from app.workflows.nodes.supervisor_config import build_supervisor_prompt
-from app.workflows.nodes.supervisor_schema import AgentSelection
+from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.nodes.supervisor_config import build_supervisor_prompt
+from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
+
+@pytest.mark.unit
 
 
 # Helper to disable signal-based skipping for isolated enforcement tests

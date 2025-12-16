@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_for_reflection():
     """Sample tutor state for reflection."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -40,7 +42,7 @@ async def test_guide_reflection_provides_guidance_and_marks_complete(
     """Test that guide_reflection provides guidance and marks session complete."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.guide_reflection import guide_reflection
+    from app.domains.tutor.workflows.nodes.guide_reflection import guide_reflection
 
     mock_response = MagicMock()
     mock_response.content = "Great job! Here are real-world applications..."

@@ -2,7 +2,9 @@
 
 import pytest
 
-from app.workflows.agents.skill_level_prompts import (
+from app.domains.analysis.workflows.agents.skill_level_prompts import (
+
+@pytest.mark.unit
     SKILL_LEVEL_INSTRUCTIONS,
     get_skill_level_instructions,
 )

@@ -380,8 +380,8 @@ Content Signals → Supervisor Selection → MIN(3, selected) → Filtered Agent
 
 ### Implementation Details
 
-- **Content Signals:** `backend/app/workflows/utils/content_signals.py`
-- **Supervisor Logic:** `backend/app/workflows/nodes/supervisor.py` (lines 355-388)
+- **Content Signals:** `backend/app/shared/workflows/utils/content_signals.py`
+- **Supervisor Logic:** `backend/app/domains/analysis/workflows/nodes/supervisor.py` (lines 355-388)
 - **Schema Enforcement:** `AgentSelection` Pydantic model with `min_length=3`
 - **Agent Expectations:** Propagated via `supervisor_decision.agent_expectations` in state
 

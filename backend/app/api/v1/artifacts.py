@@ -8,8 +8,8 @@ from fastapi.responses import Response
 
 from app.core.logging import get_logger
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
-from app.schemas.artifact import ArtifactMetadataResponse
-from app.workflows.tasks.artifact_helpers import generate_filename
+from app.domains.analysis.schemas.api import ArtifactMetadataResponse
+from app.domains.analysis.workflows.tasks.artifact_helpers import generate_filename
 
 router = APIRouter(tags=["artifacts"])
 logger = get_logger(__name__)

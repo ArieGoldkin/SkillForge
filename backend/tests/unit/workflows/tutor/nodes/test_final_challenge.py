@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_for_challenge():
     """Sample tutor state for final challenge."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -39,7 +41,7 @@ async def test_final_challenge_creates_integrative_problem(sample_tutor_state_fo
     """Test that final_challenge creates an integrative problem."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.final_challenge import final_challenge
+    from app.domains.tutor.workflows.nodes.final_challenge import final_challenge
 
     mock_response = MagicMock()
     mock_response.content = "Challenge: Create a solution that combines Concept 1 and Concept 2..."

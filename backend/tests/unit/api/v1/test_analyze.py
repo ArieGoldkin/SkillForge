@@ -8,6 +8,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+@pytest.mark.unit
+
 
 def create_mock_task():
     """Create a mock asyncio.Task with proper methods."""
@@ -54,7 +56,7 @@ class TestCreateAnalysis:
     ):
         """Test successful analysis creation by calling endpoint directly."""
         from app.api.v1.analyze import create_analysis
-        from app.schemas.analyze import AnalyzeRequest
+        from app.domains.analysis.schemas.api import AnalyzeRequest
 
         # Setup mocks
         analysis_uuid = uuid.uuid4()
@@ -98,7 +100,7 @@ class TestCreateAnalysis:
         self, mock_detect_type, client: TestClient
     ):
         """Test that content type detection failure returns 422."""
-        from app.services.extraction.content_type import ContentTypeError
+        from app.shared.services.extraction.content_type import ContentTypeError
 
         mock_detect_type.side_effect = ContentTypeError("Invalid URL format")
 
@@ -122,7 +124,7 @@ class TestCreateAnalysis:
     ):
         """Test that custom analysis_id in request is used."""
         from app.api.v1.analyze import create_analysis
-        from app.schemas.analyze import AnalyzeRequest
+        from app.domains.analysis.schemas.api import AnalyzeRequest
 
         analysis_uuid = uuid.uuid4()
         mock_normalize_id.return_value = analysis_uuid
@@ -171,7 +173,7 @@ class TestCreateAnalysis:
     async def test_create_analysis_content_type_detection(self, mock_detect_type, mock_create_task):
         """Test content type detection for different URL types."""
         from app.api.v1.analyze import create_analysis
-        from app.schemas.analyze import AnalyzeRequest
+        from app.domains.analysis.schemas.api import AnalyzeRequest
 
         mock_create_task.return_value = create_mock_task()
 
@@ -200,7 +202,7 @@ class TestCreateAnalysis:
         from fastapi import HTTPException
 
         from app.api.v1.analyze import create_analysis
-        from app.schemas.analyze import AnalyzeRequest
+        from app.domains.analysis.schemas.api import AnalyzeRequest
 
         mock_detect_type.return_value = "article"
 
@@ -229,7 +231,7 @@ class TestCreateAnalysis:
     ):
         """Test that SSE endpoint URL is in correct format."""
         from app.api.v1.analyze import create_analysis
-        from app.schemas.analyze import AnalyzeRequest
+        from app.domains.analysis.schemas.api import AnalyzeRequest
 
         analysis_uuid = uuid.uuid4()
         mock_detect_type.return_value = "article"

@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.workflows.tasks.aggregation.quick_reference import (
+from app.domains.analysis.workflows.tasks.aggregation.quick_reference import (
     FILES_DISCLAIMER,
     _extract_complexity,
     _extract_critical_commands,
@@ -12,7 +12,9 @@ from app.workflows.tasks.aggregation.quick_reference import (
     _extract_primary_technology,
     extract_quick_reference,
 )
-from app.workflows.tasks.schemas.aggregated_insights import QuickReference
+from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
+
+@pytest.mark.unit
 
 
 @pytest.fixture

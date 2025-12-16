@@ -7,14 +7,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.context.compaction import (
+from app.domains.analysis.services.context.compaction import (
     CompactionConfig,
     CompactionMetrics,
     CompiledContext,
     SessionCompactor,
 )
-from app.services.context.compiler import ContextCompiler
-from app.workflows.context_compiler import create_workflow_compiler
+from app.domains.analysis.services.context.compiler import ContextCompiler
+from app.shared.workflows.context_compiler import create_workflow_compiler
+
+@pytest.mark.unit
 
 
 class TestCompactionConfig:

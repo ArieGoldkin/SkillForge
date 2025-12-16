@@ -12,7 +12,7 @@ from app.api.v1.workflow_runner import run_workflow_task
 from app.core.config import get_settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.analysis import Analysis
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536

@@ -14,8 +14,12 @@ from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
 from app.db.repositories.analysis_repository import IAnalysisRepository, get_analysis_repository
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
-from app.schemas.analyze import AnalyzeCreateResponse, AnalyzeRequest, AnalyzeStatusResponse
-from app.services.extraction.content_type import ContentTypeError, detect_content_type
+from app.domains.analysis.schemas.api import (
+    AnalyzeCreateResponse,
+    AnalyzeRequest,
+    AnalyzeStatusResponse,
+)
+from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)

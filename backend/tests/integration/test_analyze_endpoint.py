@@ -257,7 +257,7 @@ async def test_workflow_status_updates_to_complete(
 ):
     """Test that workflow status is updated to 'complete' after successful execution."""
     from app.api.v1.workflow_runner import run_workflow_task
-    from app.workflows.analysis import analysis_workflow
+    from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()
 
@@ -311,7 +311,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
 ):
     """Test that workflow status is updated to 'failed' when GeneratorExit occurs."""
     from app.api.v1.workflow_runner import run_workflow_task
-    from app.workflows.analysis import analysis_workflow
+    from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()
 

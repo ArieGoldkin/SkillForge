@@ -1,6 +1,8 @@
 """Unit tests for import detection utilities."""
 
-from app.workflows.utils.import_detection import detect_code_patterns
+from app.shared.workflows.utils.import_detection import detect_code_patterns
+
+@pytest.mark.unit
 
 
 def test_detect_python_imports():

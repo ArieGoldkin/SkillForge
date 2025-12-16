@@ -45,7 +45,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.main import app
-from app.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster import broadcaster
 
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
 # to avoid DATABASE_URL validation errors in CI environments without database config
@@ -231,6 +231,41 @@ def ensure_llm_model_set(monkeypatch):
         monkeypatch.setenv("LLM_MAX_RETRIES", "1")
     # Clear settings cache to pick up env vars
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def mock_async_session_local():
+    """Create a properly mocked AsyncSessionLocal for unit tests.
+    
+    This fixture provides a mock AsyncSessionLocal that returns an async context manager,
+    which in turn yields a mock session. Use this in unit tests that need to mock database
+    sessions without making real database connections.
+    
+    Usage:
+        async def test_something(mock_async_session_local, mock_session):
+            with patch("app.db.session.AsyncSessionLocal", mock_async_session_local):
+                # Your test code here
+                pass
+    """
+    from unittest.mock import AsyncMock, MagicMock
+    
+    # Create a mock session
+    mock_session = MagicMock()
+    mock_session.configure_mock(**{
+        "__aenter__": AsyncMock(return_value=mock_session),
+        "__aexit__": AsyncMock(return_value=False),
+    })
+    
+    # Create a mock async context manager that yields the session
+    mock_context_manager = MagicMock()
+    mock_context_manager.configure_mock(**{
+        "__aenter__": AsyncMock(return_value=mock_session),
+        "__aexit__": AsyncMock(return_value=False),
+    })
+    
+    # AsyncSessionLocal itself is callable and returns the context manager
+    mock_async_session_local = MagicMock(return_value=mock_context_manager)
+    return mock_async_session_local
 
 
 @pytest.fixture

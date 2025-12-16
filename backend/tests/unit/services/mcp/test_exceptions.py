@@ -1,4 +1,6 @@
-from app.services.mcp.exceptions import (
+from app.shared.services.mcp.exceptions import (
+
+@pytest.mark.unit
     MCPConfigurationError,
     MCPConnectionError,
     MCPError,

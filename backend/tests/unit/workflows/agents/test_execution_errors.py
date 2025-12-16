@@ -5,8 +5,10 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 from tests.unit.workflows.agents.conftest import MockAgentSchema
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
@@ -33,7 +35,7 @@ async def test_run_agent_with_tracking_generatorexit_handling(
             content="test",
             content_type="article",
             analysis_id=analysis_id,
-            agent_type="test_agent",
+            agent_type="tech_comparator",
             session=mock_session,
         )
 
@@ -67,12 +69,12 @@ async def test_run_agent_with_tracking_generatorexit_with_partial_result(
         content="test",
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         session=mock_session,
     )
 
     # Verify result was preserved
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
     findings = result["findings"]
     assert isinstance(findings, dict)
     assert findings["field1"] == "partial"

@@ -8,7 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.agents.streaming import stream_agent_response
+from app.domains.analysis.workflows.agents.streaming import stream_agent_response
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -57,7 +59,7 @@ async def test_streaming_completes_successfully(mock_agent):
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id="test-id",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         timeout=5.0,  # Reference timeout (not used - step_timeout handles it)
     )
 
@@ -92,7 +94,7 @@ async def test_streaming_generatorexit_still_handled_gracefully(mock_agent):
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id="test-id",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         timeout=5.0,  # Long timeout - GeneratorExit happens from generator itself
     )
 
@@ -125,7 +127,7 @@ async def test_streaming_handles_slow_iteration(mock_agent):
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id="test-id",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         timeout=5.0,  # Reference timeout (not used - step_timeout handles it)
     )
 
@@ -160,7 +162,7 @@ async def test_streaming_generatorexit_preserves_partial_result(mock_agent):
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id="test-id",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         timeout=5.0,  # Long timeout - GeneratorExit happens during iteration
     )
 
@@ -189,7 +191,7 @@ async def test_streaming_success_returns_result(mock_agent):
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id="test-id",
-        agent_type="test_agent",
+        agent_type="tech_comparator",
         timeout=5.0,
     )
 

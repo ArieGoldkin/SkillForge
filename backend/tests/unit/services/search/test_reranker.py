@@ -18,7 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.schemas.search import ChunkMetadata, ReRankConfig, SearchResult
-from app.services.search.reranker import ReRanker, ReRankScore
+from app.shared.services.search.reranker import ReRanker, ReRankScore
+
+@pytest.mark.unit
 
 
 @pytest.fixture

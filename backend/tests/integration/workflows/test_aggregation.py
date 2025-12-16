@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import aggregate_findings
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 
 
 @pytest.fixture

@@ -21,19 +21,16 @@ from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
-from app.services.messaging.sse_helpers import emit_streaming_event
-from app.workflows.agents.prompt_builders import build_supervisor_user_prompt
-from app.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
-from app.workflows.nodes.supervisor_schema import AgentSelection
-from app.workflows.utils.content_signals import (
-    detect_content_signals,
-    should_skip_agent,
-)
-from app.workflows.utils.content_type_detection import (
+from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
+from app.domains.analysis.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
+from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.workflows.utils.content_signals import detect_content_signals, should_skip_agent
+from app.shared.workflows.utils.content_type_detection import (
     detect_content_type,
     filter_agents_by_content_type,
 )
-from app.workflows.utils.import_detection import detect_code_patterns
+from app.shared.workflows.utils.import_detection import detect_code_patterns
 
 logger = get_logger(__name__)
 
@@ -133,7 +130,12 @@ async def _invoke_supervisor_with_retry(
             result = await model.ainvoke(prompt, config=config)
 
             # Type assertion: structured output guarantees AgentSelection
-            if not isinstance(result, AgentSelection):
+            # Check by class name to handle imports from different locations
+            if (
+                not hasattr(result, "agents")
+                or not hasattr(result, "reasoning")
+                or not hasattr(result, "confidence")
+            ):
                 msg = f"Supervisor returned unexpected type: {type(result)}"
                 raise TypeError(msg)
             return result

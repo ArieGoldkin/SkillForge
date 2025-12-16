@@ -15,8 +15,8 @@ from app.core.tracing import robust_traceable
 from app.db.session import get_session_factory
 from app.models.agent_memory import MemoryType
 from app.services.memory.agent_memory_service import AgentMemoryService
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregation import (
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
     emit_aggregation_complete,
     emit_aggregation_detecting_conflicts,
@@ -29,15 +29,15 @@ from app.workflows.tasks.aggregation import (
     synthesize_with_llm,
     validate_and_parse_findings,
 )
-from app.workflows.tasks.aggregation_fallback import (
+from app.domains.analysis.workflows.tasks.aggregation_fallback import (
     create_empty_aggregated_insights,
 )
-from app.workflows.tasks.aggregation_helpers import (
+from app.domains.analysis.workflows.tasks.aggregation_helpers import (
     calculate_coverage_score,
     detect_conflicts,
     detect_coverage_gaps,
 )
-from app.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
+from app.domains.analysis.workflows.tasks.aggregation_postprocessing import validate_and_format_aggregated_insights
 
 logger = get_logger(__name__)
 

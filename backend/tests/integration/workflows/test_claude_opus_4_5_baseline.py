@@ -12,7 +12,7 @@ import pytest
 
 from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
-from app.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Test constants
 EXPECTED_EMBEDDING_DIMENSIONS = 1536  # OpenAI text-embedding-3-small dimensions

@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.models.analysis import Analysis
-from app.workflows.agents import (
+from app.domains.analysis.workflows.agents import (
     run_implementation_planner,
     run_integration_feasibility,
     run_tech_comparator,
@@ -45,7 +45,7 @@ async def test_tech_comparator_integration(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),
@@ -125,7 +125,7 @@ async def test_integration_feasibility_integration(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),
@@ -206,7 +206,7 @@ async def test_implementation_planner_integration(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),
@@ -300,7 +300,7 @@ async def test_agents_parallel_execution_with_separate_sessions(
         shared_session.add(analysis)
         await shared_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),
@@ -414,7 +414,7 @@ async def test_agent_returns_confidence_score_in_output(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),
@@ -481,7 +481,7 @@ async def test_confidence_score_range_enforced(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),

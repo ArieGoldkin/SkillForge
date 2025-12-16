@@ -7,13 +7,15 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.core.types import AnalysisID
-from app.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_success(
     mock_save_finding,
     mock_emit_progress,
@@ -33,11 +35,11 @@ async def test_run_agent_with_tracking_success(
         content=content,
         content_type=content_type,
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",  # Use valid agent type
         session=mock_session,
     )
 
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
     assert "findings" in result
     assert "processing_time_ms" in result
     mock_emit_progress.assert_called()
@@ -45,8 +47,8 @@ async def test_run_agent_with_tracking_success(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_no_structured_response(
     mock_emit_progress,
     mock_get_stage_name,
@@ -64,15 +66,15 @@ async def test_run_agent_with_tracking_no_structured_response(
             content="test",
             content_type="article",
             analysis_id=analysis_id,
-            agent_type="test_agent",
+            agent_type="tech_comparator",  # Use valid agent type
             session=mock_session,
         )
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_non_uuid_analysis_id(
     mock_save_finding,
     mock_emit_progress,
@@ -91,7 +93,7 @@ async def test_run_agent_with_tracking_non_uuid_analysis_id(
         content=content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",  # Use valid agent type
         session=mock_session,
     )
 
@@ -106,13 +108,13 @@ async def test_run_agent_with_tracking_non_uuid_analysis_id(
     assert called_analysis_id == expected_uuid
 
     # Verify result still works
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_valid_uuid_string(
     mock_save_finding,
     mock_emit_progress,
@@ -131,7 +133,7 @@ async def test_run_agent_with_tracking_valid_uuid_string(
         content=content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",  # Use valid agent type
         session=mock_session,
     )
 
@@ -142,13 +144,13 @@ async def test_run_agent_with_tracking_valid_uuid_string(
     assert isinstance(called_analysis_id, UUID)
     assert str(called_analysis_id) == analysis_id  # Should match exactly
 
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_content_truncation(
     mock_save_finding,
     mock_emit_progress,
@@ -172,7 +174,7 @@ async def test_run_agent_with_tracking_content_truncation(
         content=long_content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",  # Use valid agent type
         session=mock_session,
     )
 
@@ -191,13 +193,13 @@ async def test_run_agent_with_tracking_content_truncation(
         )
         max_content_length = 12000  # Default max_content_length for agents
         assert len(content_part) <= max_content_length
-        assert result["agent_type"] == "test_agent"
+        assert result["agent_type"] == "tech_comparator"
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
-@patch("app.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.result_processing.save_agent_finding", new_callable=AsyncMock)
 async def test_run_agent_with_tracking_uuid_object(
     mock_save_finding,
     mock_emit_progress,
@@ -216,7 +218,7 @@ async def test_run_agent_with_tracking_uuid_object(
         content=content,
         content_type="article",
         analysis_id=analysis_id,
-        agent_type="test_agent",
+        agent_type="tech_comparator",  # Use valid agent type
         session=mock_session,
     )
 
@@ -227,19 +229,19 @@ async def test_run_agent_with_tracking_uuid_object(
     assert isinstance(called_analysis_id, UUID)
     assert str(called_analysis_id) == analysis_id  # Compare string representations
 
-    assert result["agent_type"] == "test_agent"
+    assert result["agent_type"] == "tech_comparator"
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_agent_execution_converts_generatorexit_to_timeouterror(
     mock_emit_progress,
     mock_get_stage_name,
     mock_session,
 ):
     """Test that GeneratorExit from invoke_agent is converted to TimeoutError."""
-    from app.workflows.agents.execution import _run_agent_with_tracking_impl
+    from app.domains.analysis.workflows.agents.execution import _run_agent_with_tracking_impl
 
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
@@ -249,14 +251,14 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
         mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
 
         # Should convert GeneratorExit to TimeoutError
-        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+        from app.domains.analysis.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
 
         params = AgentExecutionParams(
             agent=mock_agent,
             content="test content",
             content_type="article",
             analysis_id=AnalysisID("test-id"),
-            agent_type="test_agent",
+            agent_type="tech_comparator",  # Use valid agent type
         )
         config = AgentExecutionConfig(session=mock_session)
 
@@ -265,15 +267,15 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
 
 
 @pytest.mark.asyncio
-@patch("app.workflows.agents.base.get_stage_name", return_value="test_stage")
-@patch("app.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.get_stage_name", return_value="test_stage")
+@patch("app.domains.analysis.workflows.agents.result_processing.emit_agent_progress", new_callable=AsyncMock)
 async def test_agent_execution_handles_timeouterror(
     mock_emit_progress,
     mock_get_stage_name,
     mock_session,
 ):
     """Test that TimeoutError from invoke_agent is handled correctly."""
-    from app.workflows.agents.execution import _run_agent_with_tracking_impl
+    from app.domains.analysis.workflows.agents.execution import _run_agent_with_tracking_impl
 
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
@@ -283,14 +285,14 @@ async def test_agent_execution_handles_timeouterror(
         mock_invoke.side_effect = TimeoutError("Agent exceeded timeout")
 
         # Should re-raise TimeoutError
-        from app.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
+        from app.domains.analysis.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
 
         params = AgentExecutionParams(
             agent=mock_agent,
             content="test content",
             content_type="article",
             analysis_id=AnalysisID("test-id"),
-            agent_type="test_agent",
+            agent_type="tech_comparator",  # Use valid agent type
         )
         config = AgentExecutionConfig(session=mock_session)
 

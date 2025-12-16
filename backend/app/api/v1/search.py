@@ -19,8 +19,8 @@ from app.core.logging import get_logger
 from app.db.repositories.analysis_repository import IAnalysisRepository, get_analysis_repository
 from app.db.session import get_db
 from app.schemas.search import SearchRequest, SearchResponse
-from app.services.embeddings.service import EmbeddingService
-from app.services.search.search_service import SearchService
+from app.shared.services.embeddings.service import EmbeddingService
+from app.shared.services.search.search_service import SearchService
 
 router = APIRouter(tags=["search"])
 logger = get_logger(__name__)

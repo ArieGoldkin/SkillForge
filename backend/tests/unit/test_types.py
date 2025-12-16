@@ -1,6 +1,8 @@
 """Unit tests for type aliases."""
 
 from app.core.types import (
+
+@pytest.mark.unit
     AnalysisID,
     ChannelName,
     EmbeddingVector,

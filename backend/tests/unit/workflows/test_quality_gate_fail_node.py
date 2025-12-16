@@ -9,8 +9,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.workflows.graph_builder import _quality_gate_fail_node
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.mark.asyncio

@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.base import save_agent_finding
+from app.domains.analysis.workflows.agents.base import save_agent_finding
+
+@pytest.mark.unit
 
 
 @pytest.fixture

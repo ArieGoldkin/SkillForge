@@ -5,7 +5,9 @@ from uuid import uuid4
 
 import pytest
 
-from app.workflows.agents.invocation import invoke_agent
+from app.domains.analysis.workflows.agents.invocation import invoke_agent
+
+@pytest.mark.unit
 
 
 class TestInvokeAgent:
@@ -41,7 +43,7 @@ class TestInvokeAgent:
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
         )
 
         assert result == {"findings": "test results"}
@@ -59,7 +61,7 @@ class TestInvokeAgent:
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
         )
 
         assert "findings" in result
@@ -74,7 +76,7 @@ class TestInvokeAgent:
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
         )
 
         assert result == {"findings": "test results"}
@@ -91,7 +93,7 @@ class TestInvokeAgent:
                 agent=mock_agent,
                 input_messages=input_messages,
                 analysis_id=uuid4(),
-                agent_type="test_agent",
+                agent_type="tech_comparator",
             )
 
     @pytest.mark.asyncio
@@ -104,7 +106,7 @@ class TestInvokeAgent:
             agent=mock_sync_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
         )
 
         assert result == {"findings": "sync results"}
@@ -122,7 +124,7 @@ class TestInvokeAgent:
                 agent=mock_sync_agent,
                 input_messages=input_messages,
                 analysis_id=uuid4(),
-                agent_type="test_agent",
+                agent_type="tech_comparator",
             )
 
     @pytest.mark.asyncio
@@ -135,7 +137,7 @@ class TestInvokeAgent:
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
             timeout=120.0,
         )
 
@@ -152,7 +154,7 @@ class TestInvokeAgent:
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=uuid4(),
-            agent_type="test_agent",
+            agent_type="tech_comparator",
         )
 
         assert result == {"findings": "test results"}

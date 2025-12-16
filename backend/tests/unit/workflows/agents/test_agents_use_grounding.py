@@ -11,8 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.workflows.agents.grounding import GROUNDING_INSTRUCTIONS, apply_grounding
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.agents.grounding import GROUNDING_INSTRUCTIONS, apply_grounding
+from app.domains.analysis.workflows.state import AnalysisState
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -130,7 +132,7 @@ async def test_tech_comparator_uses_grounding(
     mock_session: AsyncSession, base_state: AnalysisState
 ):
     """Test tech_comparator specifically uses apply_grounding."""
-    from app.workflows.agents.tech_comparator import run_tech_comparator
+    from app.domains.analysis.workflows.agents.tech_comparator import run_tech_comparator
 
     with (
         patch("app.workflows.agents.tech_comparator.apply_grounding") as mock_apply,
@@ -159,7 +161,7 @@ async def test_security_auditor_uses_grounding(
     mock_session: AsyncSession, base_state: AnalysisState
 ):
     """Test security_auditor specifically uses apply_grounding."""
-    from app.workflows.agents.security_auditor import run_security_auditor
+    from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
 
     with (
         patch("app.workflows.agents.security_auditor.apply_grounding") as mock_apply,
@@ -186,7 +188,7 @@ async def test_implementation_planner_uses_grounding(
     mock_session: AsyncSession, base_state: AnalysisState
 ):
     """Test implementation_planner specifically uses apply_grounding."""
-    from app.workflows.agents.implementation_planner import run_implementation_planner
+    from app.domains.analysis.workflows.agents.implementation_planner import run_implementation_planner
 
     with (
         patch("app.workflows.agents.implementation_planner.apply_grounding") as mock_apply,
@@ -221,7 +223,7 @@ def test_apply_grounding_function_exists():
 
 def test_grounding_instructions_constant_exists():
     """Test that GROUNDING_INSTRUCTIONS constant is exported."""
-    from app.workflows.agents.grounding import GROUNDING_INSTRUCTIONS
+    from app.domains.analysis.workflows.agents.grounding import GROUNDING_INSTRUCTIONS
 
     assert isinstance(GROUNDING_INSTRUCTIONS, str), "GROUNDING_INSTRUCTIONS is not a string"
     assert len(GROUNDING_INSTRUCTIONS) > 100, "GROUNDING_INSTRUCTIONS seems too short"
@@ -256,7 +258,7 @@ async def test_all_agents_import_grounding():
         if source:
             with Path(source).open() as f:
                 content = f.read()
-                assert "from app.workflows.agents.grounding import apply_grounding" in content, (
+                assert "from app.domains.analysis.workflows.agents.grounding import apply_grounding" in content, (
                     f"{module_name} does not import apply_grounding"
                 )
                 assert "apply_grounding(" in content, f"{module_name} does not call apply_grounding"

@@ -15,8 +15,8 @@ import pytest
 from sqlalchemy import select
 
 from app.models.analysis import Analysis
-from app.schemas.context import ArtifactSection
-from app.services.context.artifact_store import (
+from app.domains.analysis.schemas.api import ArtifactSection
+from app.domains.analysis.services.context.artifact_store import (
     ArtifactNotFoundError,
     ArtifactStore,
     InvalidURIError,

@@ -5,6 +5,8 @@ from pydantic import ValidationError
 
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 
+@pytest.mark.unit
+
 
 class TestLibraryFilters:
     """Tests for LibraryFilters schema."""

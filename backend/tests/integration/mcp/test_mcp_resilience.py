@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.mcp.client import (
+from app.shared.services.mcp.client import (
     MAX_CONSECUTIVE_ERRORS,
     ConnectionState,
     MCPClientPool,
     MCPConnection,
 )
-from app.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
+from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
 
 # ============================================================================
 # TestGracefulDegradation
@@ -72,7 +72,7 @@ class TestGracefulDegradation:
             with patch("app.services.mcp.get_mcp_settings") as mock_settings:
                 mock_settings.return_value = MagicMock(enabled=False)
 
-                from app.services.mcp import get_mcp_settings
+                from app.shared.services.mcp import get_mcp_settings
 
                 settings = get_mcp_settings()
                 if settings.enabled:
@@ -174,7 +174,7 @@ class TestRetryBehavior:
     @pytest.mark.mcp_integration
     async def test_retry_constants_configured(self):
         """Retry constants are properly configured."""
-        from app.services.mcp.client import (
+        from app.shared.services.mcp.client import (
             MCP_RETRY_ATTEMPTS,
             MCP_RETRY_MAX_WAIT,
             MCP_RETRY_MIN_WAIT,
@@ -190,7 +190,7 @@ class TestRetryBehavior:
     @pytest.mark.mcp_integration
     async def test_retry_decorator_retries_on_connection_error(self):
         """Retry decorator retries on MCPConnectionError."""
-        from app.services.mcp.client import create_mcp_retry_decorator
+        from app.shared.services.mcp.client import create_mcp_retry_decorator
 
         call_count = 0
 
@@ -212,7 +212,7 @@ class TestRetryBehavior:
     @pytest.mark.mcp_integration
     async def test_retry_decorator_retries_on_timeout_error(self):
         """Retry decorator retries on MCPTimeoutError."""
-        from app.services.mcp.client import create_mcp_retry_decorator
+        from app.shared.services.mcp.client import create_mcp_retry_decorator
 
         call_count = 0
 
@@ -234,7 +234,7 @@ class TestRetryBehavior:
     @pytest.mark.mcp_integration
     async def test_retry_decorator_gives_up_after_max_attempts(self):
         """Retry decorator raises after max attempts exhausted."""
-        from app.services.mcp.client import create_mcp_retry_decorator
+        from app.shared.services.mcp.client import create_mcp_retry_decorator
 
         call_count = 0
 
@@ -263,7 +263,7 @@ class TestTimeoutBehavior:
     @pytest.mark.mcp_integration
     async def test_execute_with_timeout_succeeds_fast_operation(self):
         """Fast operations complete within timeout."""
-        from app.services.mcp.client import execute_with_timeout
+        from app.shared.services.mcp.client import execute_with_timeout
 
         async def fast_op():
             return "quick"
@@ -282,7 +282,7 @@ class TestTimeoutBehavior:
         """Slow operations raise MCPTimeoutError."""
         import asyncio
 
-        from app.services.mcp.client import execute_with_timeout
+        from app.shared.services.mcp.client import execute_with_timeout
 
         async def slow_op():
             await asyncio.sleep(10.0)
@@ -312,7 +312,7 @@ class TestMCPSettingsIntegration:
     @pytest.mark.mcp_integration
     async def test_disabled_mcp_settings_returns_empty_servers(self):
         """When MCP disabled, get_enabled_servers returns empty dict."""
-        from app.services.mcp.config import MCPSettings
+        from app.shared.services.mcp.config import MCPSettings
 
         # Create settings with enabled=False
         settings = MCPSettings(enabled=False, servers={})
@@ -335,7 +335,7 @@ class TestMCPSettingsIntegration:
                 mock_registry.is_tool_enabled.return_value = False
                 mock_registry_class.return_value = mock_registry
 
-                from app.services.mcp import ToolRegistry
+                from app.shared.services.mcp import ToolRegistry
 
                 registry = ToolRegistry()
                 if registry.is_tool_enabled("security_auditor"):

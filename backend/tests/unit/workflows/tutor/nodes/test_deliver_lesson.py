@@ -2,13 +2,15 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
 def sample_tutor_state_with_syllabus():
     """Sample tutor state with syllabus."""
     import uuid
+
+@pytest.mark.unit
 
     return TutorState(
         session_id=str(uuid.uuid4()),
@@ -48,7 +50,7 @@ async def test_deliver_lesson_generates_content(sample_tutor_state_with_syllabus
     """Test that deliver_lesson generates lesson content."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.deliver_lesson import deliver_lesson
+    from app.domains.tutor.workflows.nodes.deliver_lesson import deliver_lesson
 
     mock_response = MagicMock()
     mock_response.content = "This is a lesson about the concept."

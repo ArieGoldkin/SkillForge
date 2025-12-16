@@ -21,7 +21,7 @@ from tests.smoke.retrieval.fixtures.loader import Query
 from tests.smoke.retrieval.metrics import MetricsCalculator
 
 if TYPE_CHECKING:
-    from app.services.search.search_service import SearchService
+    from app.shared.services.search.search_service import SearchService
 
 
 # FIXME(#299): Skip in CI until queries.json is updated for real golden dataset

@@ -9,8 +9,8 @@ Tests the complete lifecycle of MCP connections including:
 
 import pytest
 
-from app.services.mcp.client import ConnectionState, MCPClientPool
-from app.services.mcp.exceptions import MCPConnectionError
+from app.shared.services.mcp.client import ConnectionState, MCPClientPool
+from app.shared.services.mcp.exceptions import MCPConnectionError
 
 # ============================================================================
 # TestPoolConnectionLifecycle

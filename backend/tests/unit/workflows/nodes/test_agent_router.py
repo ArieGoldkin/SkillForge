@@ -11,13 +11,15 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from langgraph.types import Send
 
-from app.services.memory.agent_memory_service import MemorySnippet
-from app.workflows.nodes.agent_router import (
+from app.shared.services.memory.agent_memory_service import MemorySnippet
+from app.domains.analysis.workflows.nodes.agent_router import (
     _fetch_agent_memory,
     _get_content_summary,
     route_to_agents,
 )
-from app.workflows.state import AnalysisState, ContentRef
+from app.domains.analysis.workflows.state import AnalysisState, ContentRef
+
+@pytest.mark.unit
 
 
 @pytest.fixture
@@ -102,9 +104,9 @@ class TestFetchAgentMemory:
         mock_session.__aexit__ = AsyncMock(return_value=None)
 
         with (
-            patch("app.workflows.nodes.agent_router.get_session_factory") as mock_session_factory,
+            patch("app.domains.analysis.workflows.nodes.agent_router.get_session_factory") as mock_session_factory,
             patch(
-                "app.workflows.nodes.agent_router.fetch_proactive_context",
+                "app.domains.analysis.workflows.nodes.agent_router.fetch_proactive_context",
                 new_callable=AsyncMock,
             ) as mock_fetch,
         ):
@@ -127,7 +129,7 @@ class TestFetchAgentMemory:
     @pytest.mark.asyncio
     async def test_graceful_fallback_on_value_error(self) -> None:
         """Test graceful handling of ValueError (missing API key)."""
-        with patch("app.workflows.nodes.agent_router.get_session_factory") as mock_session_factory:
+        with patch("app.domains.analysis.workflows.nodes.agent_router.get_session_factory") as mock_session_factory:
             # Setup mock to raise ValueError
             mock_session_factory.side_effect = ValueError("OPENAI_API_KEY not set")
 
@@ -145,7 +147,7 @@ class TestFetchAgentMemory:
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(side_effect=RuntimeError("Database connection failed"))
 
-        with patch("app.workflows.nodes.agent_router.get_session_factory") as mock_session_factory:
+        with patch("app.domains.analysis.workflows.nodes.agent_router.get_session_factory") as mock_session_factory:
             mock_session_factory.return_value.return_value = mock_session
 
             # Should not raise, should return empty string
@@ -174,7 +176,7 @@ class TestRouteToAgents:
         """Test memory injection for agents with inject_memory=True."""
         # Mock memory fetch to return some content
         with patch(
-            "app.workflows.nodes.agent_router._fetch_agent_memory",
+            "app.domains.analysis.workflows.nodes.agent_router._fetch_agent_memory",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = "## Relevant Context\n\nSome prior memory..."
@@ -196,7 +198,7 @@ class TestRouteToAgents:
     async def test_no_memory_injection_when_disabled(self, sample_state: AnalysisState) -> None:
         """Test no memory injection for agents with inject_memory=False."""
         with patch(
-            "app.workflows.nodes.agent_router._fetch_agent_memory",
+            "app.domains.analysis.workflows.nodes.agent_router._fetch_agent_memory",
             new_callable=AsyncMock,
         ) as mock_fetch:
             mock_fetch.return_value = "## Relevant Context\n\nSome prior memory..."
@@ -215,7 +217,7 @@ class TestRouteToAgents:
     ) -> None:
         """Test no memory injection when content_summary is empty."""
         with patch(
-            "app.workflows.nodes.agent_router._fetch_agent_memory",
+            "app.domains.analysis.workflows.nodes.agent_router._fetch_agent_memory",
             new_callable=AsyncMock,
         ) as mock_fetch:
             sends = await route_to_agents(sample_state_no_content)
@@ -230,7 +232,7 @@ class TestRouteToAgents:
     async def test_graceful_fallback_on_memory_error(self, sample_state: AnalysisState) -> None:
         """Test routing continues when memory fetch fails."""
         with patch(
-            "app.workflows.nodes.agent_router._fetch_agent_memory",
+            "app.domains.analysis.workflows.nodes.agent_router._fetch_agent_memory",
             new_callable=AsyncMock,
         ) as mock_fetch:
             # Simulate memory fetch returning empty string (error case)

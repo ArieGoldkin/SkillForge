@@ -8,14 +8,16 @@ Reference: Issue #246 - Multi-Agent Context Scoping
 
 import pytest
 
-from app.workflows.context_scope import (
+from app.shared.workflows.context_scope import (
     AGENT_SCOPES,
     ContextScope,
     ScopedState,
     build_scoped_context,
     translate_findings,
 )
-from app.workflows.state import AnalysisState, ContentRef
+from app.domains.analysis.workflows.state import AnalysisState, ContentRef
+
+@pytest.mark.unit
 
 
 @pytest.fixture
