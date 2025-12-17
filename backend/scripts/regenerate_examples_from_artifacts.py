@@ -48,15 +48,25 @@ from sqlalchemy import delete
 
 from app.core.logging import get_logger
 from app.db.session import get_session_factory
+from app.domains.analysis.schemas.agents.code_quality_critic import CodeQualityReview
 from app.domains.analysis.schemas.agents.implementation_planner import ImplementationPlan
+from app.domains.analysis.schemas.agents.learning_path import LearningPath
+from app.domains.analysis.schemas.agents.performance_analyst import PerformanceAnalysis
+from app.domains.analysis.schemas.agents.research_analyst import ResearchAnalysis
 from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit
 
 # Import agent schemas and prompts
 from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
 from app.domains.analysis.workflows.agents.base import create_structured_agent
+from app.domains.analysis.workflows.agents.code_quality_critic import (
+    CODE_QUALITY_CRITIC_PROMPT,
+)
 from app.domains.analysis.workflows.agents.implementation_planner import (
     IMPLEMENTATION_PLANNER_PROMPT,
 )
+from app.domains.analysis.workflows.agents.learning_path import LEARNING_PATH_PROMPT
+from app.domains.analysis.workflows.agents.performance_analyst import PERFORMANCE_ANALYST_PROMPT
+from app.domains.analysis.workflows.agents.research_analyst import RESEARCH_ANALYST_PROMPT
 from app.domains.analysis.workflows.agents.security_auditor import SECURITY_AUDITOR_PROMPT
 
 # Import prompts
@@ -96,6 +106,28 @@ AGENT_CONFIGS: dict[str, AgentConfig] = {
         prompt=IMPLEMENTATION_PLANNER_PROMPT,
         schema=ImplementationPlan,
         content_types=["tutorial", "article"],
+    ),
+    "performance_analyst": AgentConfig(
+        prompt=PERFORMANCE_ANALYST_PROMPT,
+        schema=PerformanceAnalysis,
+        content_types=["article", "tutorial", "repo"],
+    ),
+    # Note: DB stores as "code_reviewer", G-Eval rubric uses "code_reviewer"
+    # Schema/prompt file is named code_quality_critic but agent_type is code_reviewer
+    "code_reviewer": AgentConfig(
+        prompt=CODE_QUALITY_CRITIC_PROMPT,
+        schema=CodeQualityReview,
+        content_types=["article", "tutorial", "repo"],
+    ),
+    "research_analyst": AgentConfig(
+        prompt=RESEARCH_ANALYST_PROMPT,
+        schema=ResearchAnalysis,
+        content_types=["article", "research_paper", "tutorial"],
+    ),
+    "learning_path": AgentConfig(
+        prompt=LEARNING_PATH_PROMPT,
+        schema=LearningPath,
+        content_types=["article", "tutorial", "course"],
     ),
 }
 
@@ -711,6 +743,12 @@ async def main() -> None:
         default="data/golden_dataset_backup.json",
         help="Path to golden dataset backup",
     )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=5,
+        help="Number of parallel workers (default: 5)",
+    )
 
     args = parser.parse_args()
 
@@ -721,6 +759,7 @@ async def main() -> None:
     print(f"   Limit:               {args.limit or 'None'}")
     print(f"   Min quality:         {args.min_quality}")
     print(f"   Self-consistency:    {args.self_consistency}")
+    print(f"   Concurrency:         {args.concurrency} workers")
     print(f"   Update database:     {args.update_db}")
     print(f"   Replace existing:    {args.replace_existing}")
     print("=" * 60)
@@ -747,20 +786,37 @@ async def main() -> None:
         print("No artifacts found matching criteria. Exiting.")
         return
 
-    # Process artifacts
+    # Process artifacts in PARALLEL using semaphore for concurrency control
     results: list[GeneratedExample] = []
+    semaphore = asyncio.Semaphore(args.concurrency)
+    completed = 0
+    high_quality_found = 0
 
-    for i, artifact in enumerate(artifacts, 1):
-        print(
-            f"\r   Processing {i}/{len(artifacts)}: {artifact.title[:40]:40}...", end="", flush=True
-        )
+    async def process_with_semaphore(artifact: GoldenArtifact) -> GeneratedExample:
+        """Process single artifact with semaphore-limited concurrency."""
+        nonlocal completed, high_quality_found
+        async with semaphore:
+            example = await generate_example_from_artifact(
+                artifact=artifact,
+                agent_type=args.agent_type,
+                use_self_consistency=args.self_consistency,
+            )
+            completed += 1
+            if example.quality_score >= args.min_quality:
+                high_quality_found += 1
+            print(
+                f"\r   ⚡ Processed {completed}/{len(artifacts)} | "
+                f"HQ: {high_quality_found} | "
+                f"Latest: {artifact.title[:30]:30} → {example.quality_score:.2f}",
+                end="",
+                flush=True,
+            )
+            return example
 
-        example = await generate_example_from_artifact(
-            artifact=artifact,
-            agent_type=args.agent_type,
-            use_self_consistency=args.self_consistency,
-        )
-        results.append(example)
+    # Run all tasks in parallel (semaphore limits actual concurrency)
+    print(f"\n   🚀 Running {args.concurrency} parallel workers...")
+    tasks = [process_with_semaphore(artifact) for artifact in artifacts]
+    results = await asyncio.gather(*tasks)
 
     print()  # New line after progress
 

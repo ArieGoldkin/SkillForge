@@ -35,6 +35,8 @@ logger = get_logger(__name__)
 
 # URLs to analyze - Using arXiv directly (HuggingFace only has abstracts)
 URLS_TO_ANALYZE = [
+    # ACE Paper - Agentic Context Engineering for self-improving LLMs
+    {"url": "https://arxiv.org/abs/2510.04618", "type": "research_paper"},  # ACE: Evolving Contexts
     # AI Coding resources - arXiv HTML versions have full content
     {"url": "https://arxiv.org/abs/2508.11126", "type": "research_paper"},  # AI Agentic Programming Survey
     {"url": "https://arxiv.org/abs/2511.04427", "type": "research_paper"},  # AI-Assisted Coding Study
