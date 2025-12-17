@@ -91,6 +91,120 @@ class AgentConfig:
     content_types: list[str]  # Which content types this agent handles
 
 
+@dataclass
+class ContentSignals:
+    """Content signals that indicate suitability for an agent.
+
+    Issue #299-304: Content filtering to improve HQ rates.
+    Research: tech_comparator needs comparison content (2% of dataset → 80% HQ when filtered)
+              research_analyst needs research content (3% of dataset → 60% HQ when filtered)
+    """
+
+    # Keywords to search for in title (case-insensitive)
+    title_keywords: list[str] = field(default_factory=list)
+    # Keywords to search for in content (case-insensitive)
+    content_keywords: list[str] = field(default_factory=list)
+    # Minimum number of keyword matches required
+    min_matches: int = 1
+    # If True, agent works well on ANY content (no filtering needed)
+    universal: bool = False
+
+
+# Content signals for agents that need specific content types
+# Issue #299-304: Tightened criteria after initial testing showed 45% pass rate was too lenient
+AGENT_CONTENT_SIGNALS: dict[str, ContentSignals] = {
+    "tech_comparator": ContentSignals(
+        # Title keywords are strong indicators - any match is sufficient
+        title_keywords=["vs", "versus", "comparison", "compare"],
+        # Content keywords require multiple matches (weak signals individually)
+        content_keywords=[
+            "compared to",
+            "versus",
+            "pros and cons",
+            "trade-off",
+            "better than",
+            "worse than",
+            "advantages over",
+            "disadvantages of",
+        ],
+        min_matches=2,  # Increased from 1 - need stronger evidence of comparison
+        universal=False,
+    ),
+    "research_analyst": ContentSignals(
+        title_keywords=["survey", "study", "research", "evaluation", "benchmark"],
+        content_keywords=[
+            "methodology",
+            "findings",
+            "results show",
+            "study found",
+            "sample size",
+            "participants",
+            "experiment",
+            "hypothesis",
+            "statistical significance",
+        ],
+        min_matches=2,  # Needs stronger signals
+        universal=False,
+    ),
+    # These agents work well on most content
+    "security_auditor": ContentSignals(universal=True),
+    "implementation_planner": ContentSignals(universal=True),
+    "performance_analyst": ContentSignals(universal=True),
+    "code_reviewer": ContentSignals(universal=True),
+    "learning_path": ContentSignals(universal=True),
+}
+
+
+def check_content_signals(
+    artifact: "GoldenArtifact",
+    agent_type: str,
+) -> tuple[bool, int, str]:
+    """Check if content has signals suitable for the agent.
+
+    Issue #299-304: Title keywords are strong indicators (count as 2 matches).
+    Content keywords are weaker and need multiple matches.
+
+    Args:
+        artifact: Golden artifact to check
+        agent_type: Agent type to check compatibility
+
+    Returns:
+        Tuple of (is_suitable, match_count, reason)
+    """
+    signals = AGENT_CONTENT_SIGNALS.get(agent_type)
+
+    # No signals defined = universal
+    if not signals or signals.universal:
+        return True, 0, "Agent works on all content"
+
+    title_lower = artifact.title.lower()
+    content_lower = artifact.markdown_content.lower()
+
+    matches = 0
+    matched_keywords: list[str] = []
+
+    # Check title keywords - these are STRONG indicators (count as 2 matches)
+    for kw in signals.title_keywords:
+        if kw.lower() in title_lower:
+            matches += 2  # Title match is worth 2 points
+            matched_keywords.append(f"TITLE:{kw}")
+
+    # Check content keywords - weaker signals
+    for kw in signals.content_keywords:
+        if kw.lower() in content_lower:
+            matches += 1
+            matched_keywords.append(f"content:{kw}")
+
+    is_suitable = matches >= signals.min_matches
+    reason = (
+        f"Found {matches} signals: {', '.join(matched_keywords[:5])}"
+        if matched_keywords
+        else f"No signals found (need {signals.min_matches})"
+    )
+
+    return is_suitable, matches, reason
+
+
 AGENT_CONFIGS: dict[str, AgentConfig] = {
     "tech_comparator": AgentConfig(
         prompt=TECH_COMPARATOR_PROMPT,
@@ -173,6 +287,7 @@ class RegenerationReport:
     processed: int
     successful: int
     errors: int
+    filtered_out: int  # Issue #299-304: Content not suitable
     avg_quality_score: float
     score_distribution: dict[str, int]
     examples_by_agent: dict[str, int]
@@ -427,6 +542,7 @@ async def generate_example_from_artifact(
     artifact: GoldenArtifact,
     agent_type: str | None = None,
     use_self_consistency: bool = False,
+    skip_content_filtering: bool = False,
 ) -> GeneratedExample:
     """Generate a high-quality example from a golden artifact.
 
@@ -434,6 +550,7 @@ async def generate_example_from_artifact(
         artifact: Golden artifact to process
         agent_type: Force specific agent type (optional)
         use_self_consistency: Use multiple samples for quality
+        skip_content_filtering: Skip content signal checking (default: False)
 
     Returns:
         GeneratedExample with output and quality score
@@ -455,6 +572,22 @@ async def generate_example_from_artifact(
             reasoning="",
             error="Could not determine agent type for artifact",
         )
+
+    # Issue #299-304: Content signal filtering to improve HQ rates
+    if not skip_content_filtering:
+        is_suitable, match_count, reason = check_content_signals(artifact, agent_type)
+        if not is_suitable:
+            return GeneratedExample(
+                artifact_id=artifact.id,
+                agent_type=agent_type,
+                input_summary=artifact.title,
+                input_content_preview=artifact.markdown_content[:500],
+                output_example={},
+                quality_score=0.0,
+                criteria_scores={},
+                reasoning=reason,
+                error=f"Content not suitable for {agent_type}: {reason}",
+            )
 
     # Run agent on artifact
     output = await run_agent_on_artifact(
@@ -581,6 +714,10 @@ def generate_report(results: list[GeneratedExample]) -> RegenerationReport:
     successful = [r for r in results if not r.error]
     errors = [r for r in results if r.error]
 
+    # Issue #299-304: Track content-filtered results separately
+    filtered_out = len([r for r in errors if r.error and "Content not suitable" in r.error])
+    actual_errors = len(errors) - filtered_out
+
     avg_quality = sum(r.quality_score for r in successful) / len(successful) if successful else 0.0
 
     # Score distribution
@@ -600,7 +737,8 @@ def generate_report(results: list[GeneratedExample]) -> RegenerationReport:
         total_artifacts=len(results),
         processed=len(results),
         successful=len(successful),
-        errors=len(errors),
+        errors=actual_errors,
+        filtered_out=filtered_out,
         avg_quality_score=avg_quality,
         score_distribution=distribution,
         examples_by_agent=by_agent,
@@ -619,9 +757,15 @@ def print_report(report: RegenerationReport) -> None:
     print(f"   Total artifacts:      {report.total_artifacts}")
     print(f"   Processed:            {report.processed}")
     print(f"   Successful:           {report.successful}")
+    print(f"   Filtered out:         {report.filtered_out} (content not suitable)")
     print(f"   Errors:               {report.errors}")
     print(f"   Avg quality score:    {report.avg_quality_score:.3f}")
     print(f"   High quality (≥0.70): {report.high_quality_count}")
+
+    # Show HQ rate for processed vs successful
+    if report.successful > 0:
+        hq_rate = report.high_quality_count / report.successful * 100
+        print(f"   HQ Rate:              {hq_rate:.1f}% of processed")
 
     print("\n📈 Score Distribution:")
     for bucket, count in sorted(report.score_distribution.items(), reverse=True):
@@ -650,15 +794,18 @@ def print_report(report: RegenerationReport) -> None:
 
 def save_report_json(report: RegenerationReport, path: Path) -> None:
     """Save report as JSON for later analysis."""
+    hq_rate = report.high_quality_count / report.successful * 100 if report.successful > 0 else 0.0
     data = {
         "generated_at": datetime.now(UTC).isoformat(),
         "summary": {
             "total_artifacts": report.total_artifacts,
             "processed": report.processed,
             "successful": report.successful,
+            "filtered_out": report.filtered_out,
             "errors": report.errors,
             "avg_quality_score": report.avg_quality_score,
             "high_quality_count": report.high_quality_count,
+            "hq_rate_percent": hq_rate,
             "score_distribution": report.score_distribution,
             "examples_by_agent": report.examples_by_agent,
         },
@@ -749,6 +896,11 @@ async def main() -> None:
         default=5,
         help="Number of parallel workers (default: 5)",
     )
+    parser.add_argument(
+        "--skip-content-filtering",
+        action="store_true",
+        help="Skip content signal filtering (run all agent-artifact combinations)",
+    )
 
     args = parser.parse_args()
 
@@ -760,6 +912,7 @@ async def main() -> None:
     print(f"   Min quality:         {args.min_quality}")
     print(f"   Self-consistency:    {args.self_consistency}")
     print(f"   Concurrency:         {args.concurrency} workers")
+    print(f"   Content filtering:   {'DISABLED' if args.skip_content_filtering else 'ENABLED'}")
     print(f"   Update database:     {args.update_db}")
     print(f"   Replace existing:    {args.replace_existing}")
     print("=" * 60)
@@ -800,6 +953,7 @@ async def main() -> None:
                 artifact=artifact,
                 agent_type=args.agent_type,
                 use_self_consistency=args.self_consistency,
+                skip_content_filtering=args.skip_content_filtering,
             )
             completed += 1
             if example.quality_score >= args.min_quality:
