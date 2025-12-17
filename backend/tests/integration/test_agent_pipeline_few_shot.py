@@ -2,13 +2,16 @@
 
 Tests the full integration of few-shot prompting into the agent creation pipeline,
 including:
-- Feature flag enable/disable behavior
-- A/B test variant selection
+- A/B test variant selection (control vs treatment)
 - Example retrieval and injection
 - Graceful degradation on errors
-- Metrics tracking
+- Multiple agent types
 
 These tests use real database and real embedding service (with mocked OpenAI calls).
+
+Note (Dec 2025): Few-shot is always enabled. Tests focus on:
+- Control variant: Creates baseline agent (no examples injected)
+- Treatment variant: Creates agent with few-shot examples
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -17,7 +20,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.feature_flags import TechniqueFlags
+from app.core.feature_flags import PromptTechniqueConfig
 from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
 from app.domains.analysis.workflows.agents.factories import (
     create_dependency_mapper_agent_with_few_shot,
@@ -30,24 +33,17 @@ from app.models.agent_example import AgentExample
 
 
 @pytest.fixture
-def mock_technique_flags_disabled() -> TechniqueFlags:
-    """Mock technique flags with few-shot disabled."""
-    flags = TechniqueFlags()
-    flags.enable_few_shot = False
-    flags.ab_test_enabled = False
-    return flags
+def mock_technique_config() -> PromptTechniqueConfig:
+    """Mock technique config with default values.
 
-
-@pytest.fixture
-def mock_technique_flags_enabled() -> TechniqueFlags:
-    """Mock technique flags with few-shot enabled."""
-    flags = TechniqueFlags()
-    flags.enable_few_shot = True
-    flags.ab_test_enabled = True
-    flags.ab_test_treatment_pct = 0.2
-    flags.few_shot_max_examples = 3
-    flags.few_shot_min_quality = 0.8
-    return flags
+    Note: Few-shot is always enabled as of Dec 2025.
+    Config values control behavior, not enable/disable.
+    """
+    return PromptTechniqueConfig(
+        few_shot_max_examples=3,
+        few_shot_min_quality=0.8,
+        few_shot_use_semantic=True,
+    )
 
 
 @pytest.fixture
@@ -110,58 +106,24 @@ async def sample_examples(db_session: AsyncSession) -> list[AgentExample]:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_tech_comparator_few_shot_disabled(
+async def test_tech_comparator_control_variant(
     db_session: AsyncSession,
-    mock_technique_flags_disabled: TechniqueFlags,
+    mock_technique_config: PromptTechniqueConfig,
 ) -> None:
-    """Test tech comparator agent creation with few-shot disabled.
+    """Test tech comparator agent creation with control variant.
 
-    Should create baseline agent without example injection.
+    Control variant creates baseline agent without example injection.
     """
-    with patch(
-        "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-        return_value=mock_technique_flags_disabled,
-    ):
-        agent = await create_tech_comparator_agent_with_few_shot(
-            content="Comparing React hooks vs class components",
-            system_prompt="You are a tech comparator",
-            response_schema=TechComparison,
-            analysis_id=uuid4(),
-            session=db_session,
-        )
-
-        # Verify agent was created (baseline, no few-shot)
-        assert agent is not None
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_tech_comparator_few_shot_control_variant(
-    db_session: AsyncSession,
-    mock_technique_flags_enabled: TechniqueFlags,
-    sample_examples: list[AgentExample],
-) -> None:
-    """Test tech comparator with control variant (no examples).
-
-    Even with few-shot enabled, control variant should not inject examples.
-    """
-    # Use deterministic analysis_id that maps to control variant
-    # Hash of "control-test:few_shot_prompting" % 100 should be >= 20
     analysis_id = uuid4()
 
     with (
         patch(
-            "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-            return_value=mock_technique_flags_enabled,
+            "app.domains.analysis.workflows.agents.factories.get_technique_config",
+            return_value=mock_technique_config,
         ),
         patch(
             "app.domains.analysis.workflows.agents.factories.get_variant_selector"
         ) as mock_selector,
-        patch(
-            "app.shared.services.embeddings.service.EmbeddingService.generate_embedding",
-            new_callable=AsyncMock,
-            return_value=[0.1] * 1536,
-        ),
     ):
         # Force control variant
         mock_variant_selector = MagicMock()
@@ -176,7 +138,7 @@ async def test_tech_comparator_few_shot_control_variant(
             session=db_session,
         )
 
-        # Verify agent was created
+        # Verify agent was created (baseline, no few-shot)
         assert agent is not None
 
         # Verify control variant was selected
@@ -188,9 +150,9 @@ async def test_tech_comparator_few_shot_control_variant(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_tech_comparator_few_shot_treatment_variant(
+async def test_tech_comparator_treatment_variant(
     db_session: AsyncSession,
-    mock_technique_flags_enabled: TechniqueFlags,
+    mock_technique_config: PromptTechniqueConfig,
     sample_examples: list[AgentExample],
 ) -> None:
     """Test tech comparator with treatment variant (with examples).
@@ -201,8 +163,8 @@ async def test_tech_comparator_few_shot_treatment_variant(
 
     with (
         patch(
-            "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-            return_value=mock_technique_flags_enabled,
+            "app.domains.analysis.workflows.agents.factories.get_technique_config",
+            return_value=mock_technique_config,
         ),
         patch(
             "app.domains.analysis.workflows.agents.factories.get_variant_selector"
@@ -238,9 +200,9 @@ async def test_tech_comparator_few_shot_treatment_variant(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_security_auditor_few_shot_with_tools(
+async def test_security_auditor_with_tools(
     db_session: AsyncSession,
-    mock_technique_flags_enabled: TechniqueFlags,
+    mock_technique_config: PromptTechniqueConfig,
     sample_examples: list[AgentExample],
 ) -> None:
     """Test security auditor with MCP tools and few-shot prompting.
@@ -253,8 +215,8 @@ async def test_security_auditor_few_shot_with_tools(
 
     with (
         patch(
-            "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-            return_value=mock_technique_flags_enabled,
+            "app.domains.analysis.workflows.agents.factories.get_technique_config",
+            return_value=mock_technique_config,
         ),
         patch(
             "app.domains.analysis.workflows.agents.factories.get_variant_selector"
@@ -286,9 +248,9 @@ async def test_security_auditor_few_shot_with_tools(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_few_shot_graceful_degradation_on_error(
+async def test_graceful_degradation_on_error(
     db_session: AsyncSession,
-    mock_technique_flags_enabled: TechniqueFlags,
+    mock_technique_config: PromptTechniqueConfig,
 ) -> None:
     """Test graceful degradation when example retrieval fails.
 
@@ -298,8 +260,8 @@ async def test_few_shot_graceful_degradation_on_error(
 
     with (
         patch(
-            "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-            return_value=mock_technique_flags_enabled,
+            "app.domains.analysis.workflows.agents.factories.get_technique_config",
+            return_value=mock_technique_config,
         ),
         patch(
             "app.domains.analysis.workflows.agents.factories.get_variant_selector"
@@ -330,9 +292,9 @@ async def test_few_shot_graceful_degradation_on_error(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_multiple_agents_with_few_shot(
+async def test_multiple_agent_types(
     db_session: AsyncSession,
-    mock_technique_flags_enabled: TechniqueFlags,
+    mock_technique_config: PromptTechniqueConfig,
     sample_examples: list[AgentExample],
 ) -> None:
     """Test multiple different agent types with few-shot prompting.
@@ -349,8 +311,8 @@ async def test_multiple_agents_with_few_shot(
 
     with (
         patch(
-            "app.domains.analysis.workflows.agents.factories.get_technique_flags",
-            return_value=mock_technique_flags_enabled,
+            "app.domains.analysis.workflows.agents.factories.get_technique_config",
+            return_value=mock_technique_config,
         ),
         patch(
             "app.domains.analysis.workflows.agents.factories.get_variant_selector"

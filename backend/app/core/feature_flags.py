@@ -58,3 +58,7 @@ def get_technique_config() -> PromptTechniqueConfig:
 def get_technique_flags() -> PromptTechniqueConfig:
     """Return technique config (deprecated, use get_technique_config instead)."""
     return get_technique_config()
+
+
+# Type alias for backwards compatibility with tests
+TechniqueFlags = PromptTechniqueConfig
