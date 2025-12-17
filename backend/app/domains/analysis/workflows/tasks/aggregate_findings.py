@@ -14,6 +14,10 @@ from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state_accessors import (
+    get_agent_findings,
+    get_supervisor_decision,
+)
 from app.domains.analysis.workflows.tasks.aggregation import (
     calculate_aggregation_metadata,
     emit_aggregation_complete,
@@ -306,7 +310,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
 
     """
     analysis_id = state["analysis_id"]
-    agent_findings = state.get("agent_findings", [])
+    agent_findings = get_agent_findings(state)
     start_time = time.time()
 
     # Emit SSE event: aggregation started
@@ -320,7 +324,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
 
     try:
         # Extract selected_agents from supervisor_decision
-        supervisor_decision = state.get("supervisor_decision", {})
+        supervisor_decision = get_supervisor_decision(state)
         selected_agents_raw = supervisor_decision.get("agents", [])
         selected_agents: list[str] = (
             selected_agents_raw if isinstance(selected_agents_raw, list) else []
@@ -451,13 +455,12 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         )
 
         # Add memory storage and synthesis status metadata to insights
-        metadata = aggregated_insights_dict.get("metadata", {})
-        if isinstance(metadata, dict):
-            metadata["memories_stored"] = stored_memories
-            # Issue #299-304: Track synthesis status for debugging
-            if "synthesis_status" not in metadata:
-                metadata["synthesis_status"] = "success"
-            aggregated_insights_dict["metadata"] = metadata
+        metadata: dict[str, object] = dict(aggregated_insights_dict.get("metadata", {}))  # type: ignore[arg-type]
+        metadata["memories_stored"] = stored_memories
+        # Issue #299-304: Track synthesis status for debugging
+        if "synthesis_status" not in metadata:
+            metadata["synthesis_status"] = "success"
+        aggregated_insights_dict["metadata"] = metadata
 
         # Return only updated fields, not entire state
         return {"aggregated_insights": aggregated_insights_dict}

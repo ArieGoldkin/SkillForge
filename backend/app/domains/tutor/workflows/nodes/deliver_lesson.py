@@ -15,6 +15,10 @@ from app.domains.tutor.workflows.config import LESSON_DELIVERY_PROMPT, TUTOR_COM
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_accessors import (
+    get_syllabus,
+    get_understanding_scores,
+)
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -55,11 +59,11 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR09
 
     """
     session_id = state["session_id"]
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
     current_lesson = state.get("current_lesson", 0)
     user_level = state.get("user_level", "intermediate")
-    understanding_scores = state.get("understanding_scores", {})
+    understanding_scores = get_understanding_scores(state)
 
     # Thread grouping and runtime metadata
     try:

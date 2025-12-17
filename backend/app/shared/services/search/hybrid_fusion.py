@@ -57,7 +57,7 @@ def reciprocal_rank_fusion[T](
 
     """
     # Accumulate RRF scores for each unique item
-    rrf_scores: dict[T, float] = defaultdict(float)
+    rrf_scores: defaultdict[T, float] = defaultdict(float)
 
     # Process each ranked list
     for result_list in result_lists:

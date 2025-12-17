@@ -12,7 +12,9 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state_accessors import get_agent_findings
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
 
@@ -41,7 +43,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
 
     """
     analysis_id = state["analysis_id"]
-    agent_findings = state.get("agent_findings", [])
+    agent_findings = get_agent_findings(state)
 
     if not agent_findings:
         logger.debug("workflow_no_findings_to_evaluate", analysis_id=analysis_id)
@@ -87,7 +89,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
                 quality_score=quality_score,
             )
 
-        state["evaluation_results"] = evaluation_results
+        state["evaluation_results"] = evaluation_results  # type: ignore[typeddict-item]
 
         logger.info(
             "workflow_evaluation_complete",
@@ -108,7 +110,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
         return state
 
 
-def _calculate_quality_score(finding: dict[str, object]) -> float:
+def _calculate_quality_score(finding: AgentFinding) -> float:
     """Calculate quality score for an agent finding.
 
     Simple heuristic-based scoring. Future enhancement can use LangSmith

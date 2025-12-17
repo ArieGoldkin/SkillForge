@@ -82,7 +82,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.tech_comparator.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.tech_comparator.create_tech_comparator_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking")
 async def test_run_tech_comparator_success(
     mock_run_tracking,
@@ -117,7 +117,7 @@ async def test_run_tech_comparator_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.tech_comparator.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.tech_comparator.create_tech_comparator_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking")
 async def test_run_tech_comparator_error_handling(
     mock_run_tracking,

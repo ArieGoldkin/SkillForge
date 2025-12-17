@@ -151,7 +151,7 @@ class AnalysisChunk(Base):
     def path_str(self) -> str:
         """Return a stringified path for convenience."""
         if isinstance(self.path, Sequence):
-            return " / ".join(map(str, self.path))
+            return " / ".join(str(x) for x in self.path)
         return ""
 
     # Property aliases to provide consistent interface for SearchService

@@ -20,6 +20,8 @@ from app.domains.tutor.workflows.config import READINESS_ASSESSMENT_PROMPT, TUTO
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.types import TutorMessage
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -60,7 +62,7 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
 
     """
     session_id = state["session_id"]
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
     current_lesson = state.get("current_lesson", 0)
     last_user_message = state.get("last_user_message", "")
@@ -213,17 +215,15 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
         # Update conversation history if user message exists
         conversation_history = state.get("conversation_history", [])
         if state.get("last_user_message"):
-            updated_history: list[dict[str, object]] = [
-                *conversation_history,  # type: ignore[list-item]
-                {
-                    "role": "user",
-                    "content": state["last_user_message"],
-                    "created_at": datetime.now(UTC).isoformat(),
-                    "metadata": {"phase": "readiness_assessment"},
-                },
-            ]
+            new_message: TutorMessage = {
+                "role": "user",
+                "content": state["last_user_message"],  # type: ignore[typeddict-item]
+                "created_at": datetime.now(UTC).isoformat(),
+                "metadata": {"phase": "readiness_assessment"},
+            }
+            updated_history: list[TutorMessage] = [*conversation_history, new_message]  # type: ignore[list-item]
         else:
-            updated_history = conversation_history  # type: ignore[assignment]
+            updated_history = list(conversation_history)  # type: ignore[arg-type]
 
         # Return only updated fields
         return {

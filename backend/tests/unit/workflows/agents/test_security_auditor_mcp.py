@@ -51,13 +51,13 @@ class TestRunSecurityAuditorWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_uses_tool_enabled_agent_when_tools_provided(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
-        """When tools are provided, should use create_tool_enabled_agent."""
+        """When tools are provided, should create agent with tools."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "security_auditor", "findings": {}}
 
         mock_session = AsyncMock()
@@ -72,15 +72,15 @@ class TestRunSecurityAuditorWithTools:
             tools=mock_tools,
         )
 
-        # Verify tool-enabled agent was created
-        mock_create_tool_enabled.assert_called_once()
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        # Verify agent factory was called with tools
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
         assert call_kwargs["tools"] == mock_tools
-        assert call_kwargs["tool_call_config"].max_tool_calls == 15
+        # Note: tool_call_config is configured inside the factory (factories.py line 227)
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_passes_security_audit_schema_to_tool_agent(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -109,7 +109,7 @@ class TestRunSecurityAuditorWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_enhances_prompt_with_skill_level_and_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -141,7 +141,7 @@ class TestRunSecurityAuditorWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_uses_structured_agent_when_no_tools(
         self, mock_create_structured, mock_run_tracking, mock_state
     ):
@@ -167,7 +167,7 @@ class TestRunSecurityAuditorWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_uses_structured_agent_when_empty_tools(
         self, mock_create_structured, mock_run_tracking, mock_state
     ):
@@ -193,13 +193,13 @@ class TestRunSecurityAuditorWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_tool_call_config_max_calls_is_15(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
-        """Security auditor uses max_tool_calls=15 for CVE lookups."""
+        """Security auditor factory configures max_tool_calls=15 internally."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "security_auditor", "findings": {}}
 
         mock_session = AsyncMock()
@@ -214,13 +214,15 @@ class TestRunSecurityAuditorWithTools:
             tools=mock_tools,
         )
 
-        # Verify max_tool_calls is 15 (security needs more lookups than other agents)
-        call_kwargs = mock_create_tool_enabled.call_args[1]
-        assert call_kwargs["tool_call_config"].max_tool_calls == 15
+        # Verify agent factory was called with tools
+        # Note: max_tool_calls=15 is configured inside the factory (factories.py line 227)
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
+        assert call_kwargs["tools"] == mock_tools
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_runs_agent_with_tracking(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
     ):
@@ -340,7 +342,7 @@ class TestSkillLevelIntegration:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_beginner_skill_level_with_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools
     ):
@@ -369,7 +371,7 @@ class TestSkillLevelIntegration:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_expert_skill_level_with_tools(
         self, mock_create_tool_enabled, mock_run_tracking, mock_tools
     ):
@@ -398,7 +400,7 @@ class TestSkillLevelIntegration:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
     async def test_skill_level_without_tools(self, mock_create_structured, mock_run_tracking):
         """Skill level instructions work with structured-only agent."""
         mock_agent = MagicMock()

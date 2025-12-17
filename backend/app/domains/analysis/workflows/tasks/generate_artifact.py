@@ -17,6 +17,11 @@ from app.core.tracing import robust_traceable
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state_accessors import (
+    get_agent_findings,
+    get_aggregated_insights,
+    get_extraction_metadata,
+)
 from app.domains.analysis.workflows.tasks.aggregation.validation import validate_and_parse_findings
 from app.domains.analysis.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
@@ -59,9 +64,9 @@ async def generate_artifact(
 
     """
     analysis_id = state["analysis_id"]
-    aggregated_insights = state.get("aggregated_insights", {})
-    agent_findings = state.get("agent_findings", [])
-    extraction_metadata = state.get("extraction_metadata", {})
+    aggregated_insights = get_aggregated_insights(state)
+    agent_findings = get_agent_findings(state)
+    extraction_metadata = get_extraction_metadata(state)
     url = state.get("url", "")
 
     # Extract agent_statuses from aggregated_insights

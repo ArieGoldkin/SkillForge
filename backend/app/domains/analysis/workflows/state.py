@@ -11,6 +11,16 @@ import operator
 from typing import Annotated, TypedDict
 
 from app.core.types import AnalysisID, EmbeddingVector
+from app.domains.analysis.workflows.state_types import (
+    AggregatedInsights,
+    ChunkCounts,
+    DedupStats,
+    EvaluationResults,
+    ExtractionMetadata,
+    QualityScores,
+    SupervisorDecision,
+)
+from app.shared.types import AgentFinding, WorkflowMetrics
 
 
 class ContentRef(TypedDict, total=False):
@@ -76,21 +86,21 @@ class AnalysisState(TypedDict, total=False):
     skill_level: str  # "beginner" | "intermediate" | "expert"
     raw_content: str  # DEPRECATED: Use content_ref for new code
     content_ref: ContentRef  # Issue #244: Handle Pattern - lightweight ref
-    extraction_metadata: dict[str, object]
+    extraction_metadata: ExtractionMetadata  # Was dict[str, object]
     content_embedding: EmbeddingVector
-    supervisor_decision: dict[str, object]
-    agent_findings: Annotated[list[dict[str, object]], operator.add]
-    aggregated_insights: dict[str, object]  # Issue #71: Synthesized insights
+    supervisor_decision: SupervisorDecision  # Was dict[str, object]
+    agent_findings: Annotated[list[AgentFinding], operator.add]  # Typed findings
+    aggregated_insights: AggregatedInsights  # Issue #71: Synthesized insights
     artifact_id: str | None  # Issue #72: Generated artifact ID
-    evaluation_results: dict[str, object]  # NEW: Agent quality scores
-    metrics: dict[str, object]  # NEW: Performance metrics
+    evaluation_results: EvaluationResults  # Agent quality scores
+    metrics: WorkflowMetrics  # Performance metrics
     # Issue #221: Hierarchical chunking results
-    chunk_counts: dict[str, int]  # {"coarse": N, "fine": M, "summaries": K}
-    dedup_stats: dict[str, int]  # {"kept": N, "dropped": M}
+    chunk_counts: ChunkCounts  # {"coarse": N, "fine": M, "summaries": K}
+    dedup_stats: DedupStats  # {"kept": N, "dropped": M}
     # Issue #300: Proactive memory recall context
     proactive_context: str  # Formatted memory context from past analyses
     # Issue #301: Quality gate validation
-    quality_scores: dict[str, object]  # LLM-as-judge quality scores (relevance, depth, coherence)
+    quality_scores: QualityScores  # LLM-as-judge quality scores
     quality_gate_avg_score: float  # Average quality score (0.0-1.0)
     quality_gate_passed: bool  # Whether quality gate passed
     quality_gate_retry_count: int  # Number of synthesis retries

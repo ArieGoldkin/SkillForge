@@ -7,6 +7,8 @@ State is managed by LangGraph's StateGraph and automatically checkpointed.
 from typing import TypedDict
 
 from app.core.types import AnalysisID
+from app.domains.tutor.workflows.state_types import SessionMetadata, Syllabus
+from app.shared.types import TutorMessage
 
 
 class TutorState(TypedDict, total=False):
@@ -36,16 +38,16 @@ class TutorState(TypedDict, total=False):
 
     session_id: str
     analysis_id: AnalysisID | None
-    syllabus: dict[str, object] | None
+    syllabus: Syllabus | None  # Was dict[str, object] | None
     current_section: int
     current_lesson: int
     current_phase: str
     user_level: str
     understanding_scores: dict[str, float]
-    conversation_history: list[dict[str, object]]
+    conversation_history: list[TutorMessage]  # Typed message history
     conversation_summary: str | None
     last_user_message: str | None
     last_assistant_response: str | None
     user_ready: bool
     attempts_current_lesson: int
-    session_metadata: dict[str, object] | None
+    session_metadata: SessionMetadata | None  # Was dict[str, object] | None

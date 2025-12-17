@@ -11,7 +11,7 @@ GeneratorExit during LangGraph cleanup.
 import inspect
 import time
 from contextlib import aclosing
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast, overload
 
 from langchain_core.runnables import Runnable
 from langsmith import get_current_run_tree
@@ -241,8 +241,38 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
     return final_result
 
 
+@overload
+def _check_for_generators_recursive(
+    obj: dict[str, object],
+    agent_type: str,
+    analysis_id: AnalysisID,
+    trace_id: str | None,
+    path: str = "",
+) -> None: ...
+
+
+@overload
+def _check_for_generators_recursive(
+    obj: list[object],
+    agent_type: str,
+    analysis_id: AnalysisID,
+    trace_id: str | None,
+    path: str = "",
+) -> None: ...
+
+
+@overload
 def _check_for_generators_recursive(
     obj: object,
+    agent_type: str,
+    analysis_id: AnalysisID,
+    trace_id: str | None,
+    path: str = "",
+) -> None: ...
+
+
+def _check_for_generators_recursive(
+    obj: dict[str, object] | list[object] | object,
     agent_type: str,
     analysis_id: AnalysisID,
     trace_id: str | None,
@@ -273,7 +303,7 @@ def _check_for_generators_recursive(
         )
     elif isinstance(obj, dict):
         for key, value in obj.items():
-            current_path = f"{path}.{key}" if path else key
+            current_path = f"{path}.{key}" if path else str(key)
             _check_for_generators_recursive(value, agent_type, analysis_id, trace_id, current_path)
     elif isinstance(obj, (list, tuple)):
         for idx, item in enumerate(obj):

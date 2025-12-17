@@ -45,7 +45,7 @@ pytest-cov = "^7.0.0"
 pytest-timeout = "^2.3.1"
 pytest-xdist = "^3.6.1"
 ruff = "^0.14.8"
-mypy = "^1.13.0"
+ty = "^0.0.2"
 isort = "^7.0.0"
 # langgraph-cli is installed separately via pip due to dependency conflict:
 # langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
@@ -163,42 +163,9 @@ indent-style = "space"
 line-ending = "auto"
 docstring-code-format = true
 
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-check_untyped_defs = true
-# Performance optimizations
-incremental = true
-cache_dir = ".mypy_cache"
-show_error_codes = true
-# Exclude test files and unnecessary directories for faster checks
-exclude = [
-    "tests/",
-    "alembic/",
-    "scripts/",
-    "app/evaluation/",  # Experimental evaluation framework with complex generic types
-    ".*/__pycache__/",
-    ".*\\.pyc$",
-]
-# Optimize import checking (follows imports but doesn't check their bodies if not needed)
-follow_imports = "normal"
-follow_imports_for_stubs = false
-[[tool.mypy.overrides]]
-module = "langgraph.checkpoint.postgres"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-    "openai",
-    "langchain.*",
-    "langchain_mcp_adapters.*",
-    "mcp.*",
-    "sse_starlette.*",
-    "tiktoken",
-]
-ignore_missing_imports = true
+[tool.ty]
+# ty type checker configuration (Astral's Rust-based type checker)
+# https://pypi.org/project/ty/
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

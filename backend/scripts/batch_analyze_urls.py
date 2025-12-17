@@ -28,7 +28,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.analysis import Analysis
 from app.models.analysis_chunk import AnalysisChunk
 from app.models.artifact import Artifact
-from app.services.extraction import JinaReader
+from app.shared.services.extraction import JinaReader
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)
@@ -45,6 +45,31 @@ URLS_TO_ANALYZE = [
     {"url": "https://github.com/ghuntley/how-to-build-a-coding-agent", "type": "tutorial"},
     {"url": "https://www.turingpost.com/p/aisoftwarestack", "type": "article"},
 ]
+
+# Issue #299-304: Comparison content for tech_comparator quality improvement
+# TEMP: Testing threshold fix with single URL
+COMPARISON_URLS = [
+    # Framework Comparison (known to work)
+    {"url": "https://www.datacamp.com/blog/langchain-vs-llamaindex", "type": "article"},
+]
+
+# Full list (commented out for testing)
+# COMPARISON_URLS = [
+#     # Framework Comparisons
+#     {"url": "https://www.datacamp.com/blog/langchain-vs-llamaindex", "type": "article"},
+#     {"url": "https://medium.com/@bijit211987/qdrant-vs-pinecone-a-comprehensive-comparison-of-vector-databases-b55d0b36b6a5", "type": "article"},
+#     {"url": "https://www.merge.dev/blog/rest-vs-graphql", "type": "article"},
+#     {"url": "https://aws.amazon.com/compare/the-difference-between-grpc-and-rest/", "type": "article"},
+#     # Database Comparisons
+#     {"url": "https://www.mongodb.com/resources/compare/mongodb-postgresql", "type": "article"},
+#     {"url": "https://aws.amazon.com/elasticache/redis-vs-memcached/", "type": "article"},  # Replaced 404 redis.io URL
+#     # ML/AI Framework Comparisons
+#     {"url": "https://neptune.ai/blog/mlflow-vs-kubeflow-vs-prefect-differences", "type": "article"},
+#     {"url": "https://www.confident-ai.com/blog/the-definitive-guide-to-evaluating-and-comparing-llms", "type": "article"},
+#     # Infrastructure Comparisons
+#     {"url": "https://www.confluent.io/learn/kafka-vs-rabbitmq/", "type": "article"},
+#     {"url": "https://circleci.com/blog/gitlab-ci-cd-vs-github-actions/", "type": "article"},
+# ]
 
 
 async def load_fixture(fixture_id: str) -> dict[str, Any] | None:
@@ -229,7 +254,7 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
         }
 
 
-async def verify_no_golden_overlap() -> tuple[bool, list[str]]:
+async def verify_no_golden_overlap(urls_to_check: list[dict[str, Any]]) -> tuple[bool, list[str]]:
     """Verify URLs don't overlap with golden dataset (safety check)."""
     # Load golden dataset metadata
     metadata_path = Path(__file__).parent.parent / "data/golden_dataset_metadata.json"
@@ -243,7 +268,7 @@ async def verify_no_golden_overlap() -> tuple[bool, list[str]]:
     golden_urls = set(metadata.get("urls", []))
     conflicts = []
 
-    for url_info in URLS_TO_ANALYZE:
+    for url_info in urls_to_check:
         url = url_info["url"]
         if url.startswith("fixture:"):
             fixture_id = url.split(":")[1]
@@ -261,14 +286,20 @@ async def main() -> int:
     """Main batch analysis function."""
     # Parse args
     dry_run = "--dry-run" in sys.argv
+    use_comparison = "--comparison" in sys.argv
+
+    # Select URL list based on CLI args
+    urls_to_process = COMPARISON_URLS if use_comparison else URLS_TO_ANALYZE
+    url_set_name = "Comparison URLs" if use_comparison else "Default URLs"
 
     logger.info("=" * 60)
     logger.info("Batch URL Analysis" + (" (DRY RUN)" if dry_run else ""))
     logger.info("=" * 60)
-    logger.info(f"URLs to analyze: {len(URLS_TO_ANALYZE)}")
+    logger.info(f"URL Set: {url_set_name}")
+    logger.info(f"URLs to analyze: {len(urls_to_process)}")
 
     # Safety check: verify no golden dataset overlap
-    safe, conflicts = await verify_no_golden_overlap()
+    safe, conflicts = await verify_no_golden_overlap(urls_to_process)
     if conflicts:
         logger.warning("⚠️  Found URLs that overlap with golden dataset:")
         for c in conflicts:
@@ -281,19 +312,19 @@ async def main() -> int:
     if dry_run:
         logger.info("")
         logger.info("DRY RUN - Would process these URLs:")
-        for i, url_info in enumerate(URLS_TO_ANALYZE):
+        for i, url_info in enumerate(urls_to_process):
             logger.info(f"  {i+1}. [{url_info['type']}] {url_info['url'][:60]}")
         logger.info("")
         logger.info("No changes made. Remove --dry-run to execute.")
         return 0
 
     results = []
-    for i, url_info in enumerate(URLS_TO_ANALYZE):
-        result = await analyze_url(url_info, i, len(URLS_TO_ANALYZE))
+    for i, url_info in enumerate(urls_to_process):
+        result = await analyze_url(url_info, i, len(urls_to_process))
         results.append(result)
 
         # Rate limiting between analyses
-        if i < len(URLS_TO_ANALYZE) - 1:
+        if i < len(urls_to_process) - 1:
             await asyncio.sleep(2)
 
     # Summary

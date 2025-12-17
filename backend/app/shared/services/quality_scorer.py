@@ -27,10 +27,13 @@ Example:
     >>> print(f"Overall quality: {score.overall_score:.2f}")
 
     # Async with G-Eval:
+    >>> from app.shared.services.quality_scorer import GEvalConfig
+    >>> config = GEvalConfig(heuristic_weight=0.4, g_eval_weight=0.6)
     >>> score = await score_output_quality_g_eval(
     ...     output={"primary_tech": "React", ...},
     ...     input_content="Compare React and Vue...",
     ...     agent_type="tech_comparator",
+    ...     config=config,
     ... )
     >>> print(f"G-Eval quality: {score.overall_score:.2f}")
 
@@ -501,6 +504,24 @@ def score_output_quality(
 
 
 @dataclass
+class GEvalConfig:
+    """Configuration for G-Eval scoring.
+
+    Groups related parameters to reduce function argument count.
+
+    Attributes:
+        schema_class: Optional Pydantic schema for validation
+        heuristic_weight: Weight for heuristic score (default 0.3)
+        g_eval_weight: Weight for G-Eval score (default 0.7)
+
+    """
+
+    schema_class: type[BaseModel] | None = None
+    heuristic_weight: float = 0.3
+    g_eval_weight: float = 0.7
+
+
+@dataclass
 class GEvalQualityScore:
     """Quality score with G-Eval LLM-as-Judge dimensions.
 
@@ -526,9 +547,7 @@ async def score_output_quality_g_eval(
     output: dict[str, Any],
     input_content: str,
     agent_type: str,
-    schema_class: type[BaseModel] | None = None,
-    heuristic_weight: float = 0.3,
-    g_eval_weight: float = 0.7,
+    config: GEvalConfig | None = None,
 ) -> GEvalQualityScore:
     """Score output quality using G-Eval LLM-as-Judge.
 
@@ -539,9 +558,7 @@ async def score_output_quality_g_eval(
         output: Agent output dictionary to score
         input_content: Original input that generated the output
         agent_type: Type of agent (e.g., 'tech_comparator')
-        schema_class: Optional Pydantic schema for validation
-        heuristic_weight: Weight for heuristic score (default 0.3)
-        g_eval_weight: Weight for G-Eval score (default 0.7)
+        config: Optional GEvalConfig for schema, weights, etc.
 
     Returns:
         GEvalQualityScore with blended dimensions
@@ -558,13 +575,17 @@ async def score_output_quality_g_eval(
     """
     from app.shared.services.g_eval import g_eval_score
 
+    # Use default config if not provided
+    if config is None:
+        config = GEvalConfig()
+
     try:
         # Fast path: Heuristic scoring
         heuristic_score = score_output_quality(
             output=output,
             golden_example=None,
             agent_type=agent_type,
-            schema_class=schema_class,
+            schema_class=config.schema_class,
         )
 
         # Deep path: G-Eval LLM scoring
@@ -576,19 +597,20 @@ async def score_output_quality_g_eval(
 
         # Blend scores
         completeness = (
-            heuristic_score.completeness_score * heuristic_weight
-            + g_eval_result.completeness * g_eval_weight
+            heuristic_score.completeness_score * config.heuristic_weight
+            + g_eval_result.completeness * config.g_eval_weight
         )
         accuracy = (
-            heuristic_score.accuracy_score * heuristic_weight
-            + g_eval_result.accuracy * g_eval_weight
+            heuristic_score.accuracy_score * config.heuristic_weight
+            + g_eval_result.accuracy * config.g_eval_weight
         )
         detail = (
-            heuristic_score.detail_score * heuristic_weight + g_eval_result.depth * g_eval_weight
+            heuristic_score.detail_score * config.heuristic_weight
+            + g_eval_result.depth * config.g_eval_weight
         )
         structure = (
-            heuristic_score.structure_score * heuristic_weight
-            + g_eval_result.coherence * g_eval_weight
+            heuristic_score.structure_score * config.heuristic_weight
+            + g_eval_result.coherence * config.g_eval_weight
         )
 
         # Overall is weighted average
@@ -627,7 +649,7 @@ async def score_output_quality_g_eval(
             output=output,
             golden_example=None,
             agent_type=agent_type,
-            schema_class=schema_class,
+            schema_class=config.schema_class,
         )
         return GEvalQualityScore(
             completeness_score=heuristic_score.completeness_score,

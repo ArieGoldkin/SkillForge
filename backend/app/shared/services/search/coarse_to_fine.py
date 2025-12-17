@@ -18,7 +18,8 @@ async def retrieve_coarse_to_fine(
     """
     coarse_hits = await repo.search_coarse(limit=top_k_coarse)
     coarse_paths: list[list[str]] = [
-        list(hit.path) if hit.path else []
+        # SQLAlchemy Column type - ty can't infer list() on Column[ARRAY]
+        list(hit.path) if hit.path else []  # type: ignore[arg-type]
         for hit, _ in coarse_hits
         if isinstance(hit, AnalysisChunk) and hit.path
     ]

@@ -118,9 +118,10 @@ class AgentMemory(Base):
     def summary(self) -> str:
         """Return truncated content for preview."""
         max_preview = 200
-        if len(self.content) <= max_preview:
-            return str(self.content)
-        return str(self.content)[:max_preview] + "..."
+        content_str = str(self.content) if self.content else ""
+        if len(content_str) <= max_preview:
+            return content_str
+        return content_str[:max_preview] + "..."
 
     def to_snippet(self) -> dict:
         """Convert to lightweight snippet for injection into agent context."""

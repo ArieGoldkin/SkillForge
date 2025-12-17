@@ -17,6 +17,7 @@ from typing import Any
 
 from app.core.logging import get_logger
 from app.domains.analysis.schemas.tasks.aggregated_insights import GotchaItem, QuickReference
+from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
 
@@ -38,7 +39,7 @@ COMPLEXITY_ADVANCED_MAX_HOURS = 8
 MIN_TECH_WORDS_FOR_NAME = 2
 
 
-def extract_quick_reference(agent_findings: list[dict[str, Any]]) -> QuickReference | None:
+def extract_quick_reference(agent_findings: list[AgentFinding]) -> QuickReference | None:
     """Extract QuickReference from agent findings.
 
     Args:

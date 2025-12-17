@@ -310,7 +310,7 @@ app = FastAPI(
 
 # CORS Middleware
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[arg-type]
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
@@ -319,7 +319,7 @@ app.add_middleware(
 
 
 # Request ID Middleware
-app.add_middleware(RequestIDMiddleware)
+app.add_middleware(RequestIDMiddleware)  # type: ignore[arg-type]
 
 
 # Global Exception Handler

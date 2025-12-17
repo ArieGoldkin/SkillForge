@@ -55,7 +55,7 @@ class CleanupService:
         include_superseded: bool = False,
         hard_delete: bool = False,
         dry_run: bool = False,
-    ) -> dict[str, dict]:
+    ) -> dict[str, object]:
         """Run comprehensive cleanup operation.
 
         Args:
@@ -87,7 +87,7 @@ class CleanupService:
             dry_run=dry_run,
         )
 
-        report: dict[str, dict] = {
+        report: dict[str, object] = {
             "orphan_cleanup": {},
             "ttl_cleanup": {},
             "integrity_checks": {},
@@ -122,16 +122,21 @@ class CleanupService:
         report["integrity_checks"] = integrity_report
 
         # 4. Calculate summary
-        orphan_total = 0
+        orphan_total: int = 0
         if include_orphans and report["orphan_cleanup"]:
             if dry_run:
-                orphan_total = report["orphan_cleanup"]["counts"].get("total", 0)
+                orphan_total = int(report["orphan_cleanup"]["counts"].get("total", 0))
             else:
-                orphan_total = report["orphan_cleanup"]["stats"].get("total_deleted", 0)
+                orphan_total = int(report["orphan_cleanup"]["stats"].get("total_deleted", 0))
 
-        expired_total = report["ttl_cleanup"].get("analyses_to_delete", 0)
-        if not dry_run:
-            expired_total = report["ttl_cleanup"].get("analyses_deleted", 0)
+        ttl_cleanup = report.get("ttl_cleanup", {})
+        expired_total = 0
+        if isinstance(ttl_cleanup, dict):
+            val = ttl_cleanup.get("analyses_to_delete", 0)  # type: ignore[call-overload]
+            expired_total = int(val) if isinstance(val, (int, float, str)) else 0
+            if not dry_run:
+                val = ttl_cleanup.get("analyses_deleted", 0)  # type: ignore[call-overload]
+                expired_total = int(val) if isinstance(val, (int, float, str)) else 0
 
         integrity_issues = sum(
             len(v) if isinstance(v, list) else 0 for v in integrity_report.values()

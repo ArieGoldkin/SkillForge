@@ -77,7 +77,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_success(
     mock_run_tracking,
@@ -123,7 +123,7 @@ async def test_run_security_auditor_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_error_handling(
     mock_run_tracking,
@@ -145,7 +145,7 @@ async def test_run_security_auditor_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking")
 async def test_run_security_auditor_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state

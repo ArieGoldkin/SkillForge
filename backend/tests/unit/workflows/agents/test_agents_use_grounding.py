@@ -71,12 +71,23 @@ async def test_agent_applies_grounding(
     module = importlib.import_module(f"app.domains.analysis.workflows.agents.{agent_module}")
     agent_func = getattr(module, agent_function)
 
-    # Mock the create_structured_agent call to capture the prompt
+    # Mock the factory function call to capture the prompt
     captured_prompt = None
 
-    def mock_create_agent(system_prompt, response_schema):
+    # Determine the factory function name - try factory first, fallback to create_structured_agent
+    factory_name = f"create_{agent_module}_agent_with_few_shot"
+    if not hasattr(module, factory_name):
+        # This agent hasn't been migrated to factory pattern yet
+        factory_name = "create_structured_agent"
+
+    def mock_create_agent(*args, **kwargs):
         nonlocal captured_prompt
-        captured_prompt = system_prompt
+        # Factory functions use system_prompt kwarg, create_structured_agent uses positional args
+        if "system_prompt" in kwargs:
+            captured_prompt = kwargs["system_prompt"]
+        elif len(args) > 0:
+            # First positional arg is system_prompt
+            captured_prompt = args[0]
 
         # Return a mock agent
         mock_agent = MagicMock()
@@ -92,7 +103,7 @@ async def test_agent_applies_grounding(
 
     with (
         patch(
-            f"app.domains.analysis.workflows.agents.{agent_module}.create_structured_agent",
+            f"app.domains.analysis.workflows.agents.{agent_module}.{factory_name}",
             side_effect=mock_create_agent,
         ),
         patch(
@@ -135,7 +146,7 @@ async def test_tech_comparator_uses_grounding(
 
     with (
         patch("app.domains.analysis.workflows.agents.tech_comparator.apply_grounding") as mock_apply,
-        patch("app.domains.analysis.workflows.agents.tech_comparator.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.tech_comparator.create_tech_comparator_agent_with_few_shot"),
         patch(
             "app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking", new_callable=AsyncMock
         ),
@@ -164,7 +175,7 @@ async def test_security_auditor_uses_grounding(
 
     with (
         patch("app.domains.analysis.workflows.agents.security_auditor.apply_grounding") as mock_apply,
-        patch("app.domains.analysis.workflows.agents.security_auditor.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.security_auditor.create_security_auditor_agent_with_few_shot"),
         patch(
             "app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking", new_callable=AsyncMock
         ),
@@ -191,7 +202,7 @@ async def test_implementation_planner_uses_grounding(
 
     with (
         patch("app.domains.analysis.workflows.agents.implementation_planner.apply_grounding") as mock_apply,
-        patch("app.domains.analysis.workflows.agents.implementation_planner.create_structured_agent"),
+        patch("app.domains.analysis.workflows.agents.implementation_planner.create_implementation_planner_agent_with_few_shot"),
         patch(
             "app.domains.analysis.workflows.agents.implementation_planner.run_agent_with_tracking",
             new_callable=AsyncMock,

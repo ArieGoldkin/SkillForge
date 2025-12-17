@@ -79,7 +79,7 @@ version: 4.0.0
 
 1. **ALWAYS add/update tests** before running real analysis
 2. **ALWAYS use Claude subagents and skills** for specialized tasks (Explore, Plan, code-quality-reviewer, etc.)
-3. **Run lint checks** (`ruff format --check`, `ruff check`, `mypy`) before committing
+3. **Run lint checks** (`ruff format --check`, `ruff check`, `ty check`) before committing
 4. **Use TodoWrite** to track multi-step tasks
 5. **Never commit directly** to dev/main - always use feature branches + PRs
 
@@ -123,7 +123,7 @@ poetry run pytest tests/unit/ --tb=no -q 2>&1 | tail -20
 cd backend
 poetry run ruff format --check app/  # ⚠️ CI runs BOTH format AND lint!
 poetry run ruff check app/           # Lint check
-poetry run mypy app/                          # Type check (config in pyproject.toml)
+poetry run ty check app/ --exclude "app/evaluation/*"  # Type check (ty - Rust-based)
 
 # Frontend (TypeScript) - from frontend/ directory:
 cd frontend
@@ -139,7 +139,7 @@ npm run typecheck          # Type checking
 **Common mistakes to NEVER make:**
 - ❌ Running only `ruff check` without `ruff format --check`
 - ❌ `ruff check app/services/embeddings.py` (only checks one file)
-- ✅ Run ALL three commands above (format, lint, mypy)
+- ✅ Run ALL three commands above (format, lint, ty check)
 
 
 ## 🛑 ABSOLUTE: Git Branch & PR Workflow (NEVER VIOLATE)

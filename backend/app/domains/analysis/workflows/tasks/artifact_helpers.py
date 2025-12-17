@@ -5,10 +5,13 @@ filenames, and building Claude Code prompts for artifacts.
 """
 
 import re
+from collections.abc import Mapping
 from typing import Any
 
 from app.core.logging import get_logger
 from app.core.tech_keywords import TECH_KEYWORDS
+from app.domains.analysis.workflows.state_types import AggregatedInsights
+from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
 
@@ -21,8 +24,8 @@ MAX_FILENAME_LENGTH = 100
 
 
 def extract_artifact_metadata(
-    aggregated_insights: dict[str, Any],
-    agent_findings: list[dict[str, Any]],
+    aggregated_insights: AggregatedInsights | Mapping[str, Any],
+    agent_findings: list[AgentFinding] | list[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Extract topics and complexity from aggregated insights.
 
@@ -120,8 +123,8 @@ def generate_filename(title: str | None, analysis_id: str) -> str:
 
 
 def build_claude_code_prompt(
-    aggregated_insights: dict[str, Any],
-    analysis_metadata: dict[str, Any],
+    aggregated_insights: AggregatedInsights | Mapping[str, Any],
+    analysis_metadata: Mapping[str, Any],
 ) -> str:
     """Build Claude Code prompt section from aggregated insights.
 
@@ -140,7 +143,11 @@ def build_claude_code_prompt(
     url = analysis_metadata.get("url", "N/A")
     exec_summary = aggregated_insights.get("executive_summary", "")
     key_findings = aggregated_insights.get("key_findings", [])
-    implementation = aggregated_insights.get("synthesis", {}).get("implementation_guidance", "")
+    # ty can't chain .get() calls properly on TypedDict
+    synthesis = aggregated_insights.get("synthesis", {})
+    implementation = (
+        synthesis.get("implementation_guidance", "") if isinstance(synthesis, dict) else ""
+    )  # type: ignore[union-attr]
 
     prompt_parts = [
         f"# Implementation Guide: {title}",

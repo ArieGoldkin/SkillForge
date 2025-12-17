@@ -413,11 +413,12 @@ async def score_with_three_tier(
         tier="g_eval_deep",
     )
 
+    config = GEvalConfig(schema_class=schema_class)
     return await score_output_quality_g_eval(
         output=output,
         input_content=input_content,
         agent_type=agent_type,
-        schema_class=schema_class,
+        config=config,
     )
 ```
 

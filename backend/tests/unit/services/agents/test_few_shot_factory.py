@@ -344,7 +344,7 @@ class TestCreateFewShotAgentTreatmentVariant:
                 content="Test content",
                 agent_type="tech_comparator",
                 max_examples=5,
-                min_quality_score=0.8,
+                min_quality_score=0.95,
             )
 
     @pytest.mark.asyncio

@@ -101,8 +101,15 @@ async def run_implementation_planner(
     # Issue #299-304: Get content-aware specificity threshold
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
+
+    # Issue #299-304: Get content signals for comparison-aware thresholds
+    content_signals_dict = state.get("content_signals", {})
+    has_comparisons = content_signals_dict.get("has_comparisons", False)
+
     specificity_threshold = get_threshold_for_expectation(
-        str(expectation) if expectation is not None else None
+        expectation_str=str(expectation) if expectation is not None else None,
+        agent_name="implementation_planner",
+        has_comparisons=has_comparisons,
     )
 
     # Build prompt with skill level instructions

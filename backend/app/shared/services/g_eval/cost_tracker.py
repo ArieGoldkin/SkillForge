@@ -180,6 +180,8 @@ class GEvalCostTracker:
                 if cls._instance is None:
                     cls._instance = cls()
                     logger.info("cost_tracker_initialized")
+        # At this point _instance is guaranteed to be set
+        assert cls._instance is not None  # Help type checker understand
         return cls._instance
 
     @classmethod

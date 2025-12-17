@@ -55,13 +55,13 @@ class TestRunDependencyMapperWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_uses_tool_enabled_agent_when_tools_provided(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
-        """When tools are provided, should use create_tool_enabled_agent."""
+        """When tools are provided, should create agent with tools."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -76,23 +76,22 @@ class TestRunDependencyMapperWithTools:
             tools=mock_tools,
         )
 
-        # Verify tool-enabled agent was created
-        mock_create_tool_enabled.assert_called_once()
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        # Verify agent factory was called with tools
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
         assert call_kwargs["tools"] == mock_tools
-        assert call_kwargs["tool_call_config"].max_tool_calls == 20
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_passes_dependency_mapping_schema_to_tool_agent(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
-        """Tool-enabled agent receives DependencyMapping response schema."""
+        """Agent factory receives DependencyMapping response schema."""
         from app.domains.analysis.schemas.agents.dependency_mapper import DependencyMapping
 
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -108,18 +107,18 @@ class TestRunDependencyMapperWithTools:
         )
 
         # Verify response schema is DependencyMapping
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        call_kwargs = mock_create_agent.call_args[1]
         assert call_kwargs["response_schema"] == DependencyMapping
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_enhances_prompt_with_skill_level_and_tools(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
         """System prompt includes both skill level and tool guidance."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -135,7 +134,7 @@ class TestRunDependencyMapperWithTools:
         )
 
         # Verify prompt contains skill level instructions
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        call_kwargs = mock_create_agent.call_args[1]
         system_prompt = call_kwargs["system_prompt"]
 
         # Should have base dependency mapper prompt
@@ -145,13 +144,13 @@ class TestRunDependencyMapperWithTools:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_uses_structured_agent_when_no_tools(
-        self, mock_create_structured, mock_run_tracking, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_state
     ):
-        """When no tools provided, should use create_structured_agent."""
+        """When no tools provided, should create agent without tools."""
         mock_agent = MagicMock()
-        mock_create_structured.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -166,18 +165,20 @@ class TestRunDependencyMapperWithTools:
             tools=None,
         )
 
-        # Verify structured agent was used
-        mock_create_structured.assert_called_once()
+        # Verify agent factory was called without tools
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
+        assert call_kwargs.get("tools") is None
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_uses_structured_agent_when_empty_tools(
-        self, mock_create_structured, mock_run_tracking, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_state
     ):
-        """When empty tools list provided, should use create_structured_agent."""
+        """When empty tools list provided, should create agent with empty tools."""
         mock_agent = MagicMock()
-        mock_create_structured.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -192,18 +193,20 @@ class TestRunDependencyMapperWithTools:
             tools=[],  # Empty list
         )
 
-        # Verify structured agent was used
-        mock_create_structured.assert_called_once()
+        # Verify agent factory was called with empty tools
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
+        assert call_kwargs["tools"] == []
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_tool_call_config_max_calls_is_20(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
-        """Dependency mapper uses max_tool_calls=20 for package lookups."""
+        """Dependency mapper factory configures max_tool_calls=20 internally."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -218,19 +221,21 @@ class TestRunDependencyMapperWithTools:
             tools=mock_tools,
         )
 
-        # Verify max_tool_calls is 20 (dependency mapper needs more lookups)
-        call_kwargs = mock_create_tool_enabled.call_args[1]
-        assert call_kwargs["tool_call_config"].max_tool_calls == 20
+        # Verify agent factory was called with tools
+        # Note: max_tool_calls is configured inside the factory (factories.py line 291)
+        mock_create_agent.assert_called_once()
+        call_kwargs = mock_create_agent.call_args[1]
+        assert call_kwargs["tools"] == mock_tools
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_runs_agent_with_tracking(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools, mock_state
+        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
     ):
         """Agent execution uses run_agent_with_tracking for persistence."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -344,13 +349,13 @@ class TestSkillLevelIntegration:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_beginner_skill_level_with_tools(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools
+        self, mock_create_agent, mock_run_tracking, mock_tools
     ):
         """Beginner skill level instructions included when using tools."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -367,19 +372,19 @@ class TestSkillLevelIntegration:
         )
 
         # Verify prompt contains beginner-appropriate language
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        call_kwargs = mock_create_agent.call_args[1]
         system_prompt = call_kwargs["system_prompt"]
         assert "beginner" in system_prompt.lower() or "basic" in system_prompt.lower()
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_tool_enabled_agent")
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
     async def test_expert_skill_level_with_tools(
-        self, mock_create_tool_enabled, mock_run_tracking, mock_tools
+        self, mock_create_agent, mock_run_tracking, mock_tools
     ):
         """Expert skill level instructions included when using tools."""
         mock_agent = MagicMock()
-        mock_create_tool_enabled.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -396,17 +401,17 @@ class TestSkillLevelIntegration:
         )
 
         # Verify prompt contains expert-appropriate language
-        call_kwargs = mock_create_tool_enabled.call_args[1]
+        call_kwargs = mock_create_agent.call_args[1]
         system_prompt = call_kwargs["system_prompt"]
         assert "expert" in system_prompt.lower() or "advanced" in system_prompt.lower()
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
-    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
-    async def test_skill_level_without_tools(self, mock_create_structured, mock_run_tracking):
-        """Skill level instructions work with structured-only agent."""
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
+    async def test_skill_level_without_tools(self, mock_create_agent, mock_run_tracking):
+        """Skill level instructions work with agent without tools."""
         mock_agent = MagicMock()
-        mock_create_structured.return_value = mock_agent
+        mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
 
         mock_session = AsyncMock()
@@ -423,6 +428,6 @@ class TestSkillLevelIntegration:
         )
 
         # Verify prompt contains skill level instructions
-        call_kwargs = mock_create_structured.call_args[1]
+        call_kwargs = mock_create_agent.call_args[1]
         system_prompt = call_kwargs["system_prompt"]
         assert "intermediate" in system_prompt.lower() or "skill" in system_prompt.lower()

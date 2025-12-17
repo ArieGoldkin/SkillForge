@@ -444,6 +444,95 @@ class TestAgentScopes:
             )
 
 
+class TestContentSignalsInjection:
+    """Test content_signals injection for comparison-aware thresholds (Issue #299-304)."""
+
+    def test_content_signals_injected_when_in_scope(self) -> None:
+        """Test that content_signals is injected when agent scope includes it."""
+        # Create state with supervisor_decision containing content_signals
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            content_ref=ContentRef(
+                uri="analysis://test-123/content",
+                summary="LangChain vs LlamaIndex comparison",
+                size_bytes=5000,
+                content_type="text/markdown",
+                available_sections=["summary", "full"],
+            ),
+            supervisor_decision={
+                "agents": ["tech_comparator"],
+                "agent_expectations": {
+                    "tech_comparator": "full_analysis",
+                },
+                "content_signals": {
+                    "richness_score": 6.2,
+                    "genre": "research",
+                    "has_comparisons": True,  # Key field for threshold adjustment
+                    "coverage_summary": "technology comparisons",
+                },
+            },
+        )
+
+        # tech_comparator scope includes content_signals
+        scoped = build_scoped_context(state, "tech_comparator")
+
+        # Should include content_signals
+        assert "content_signals" in scoped, "content_signals should be injected for tech_comparator"
+        assert scoped["content_signals"]["has_comparisons"] is True
+        assert scoped["content_signals"]["richness_score"] == 6.2
+
+    def test_content_signals_not_injected_when_not_in_scope(self) -> None:
+        """Test that content_signals is NOT injected when agent scope doesn't include it."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            content_ref=ContentRef(
+                uri="analysis://test-123/content",
+                summary="Test article",
+                size_bytes=5000,
+                content_type="text/markdown",
+                available_sections=["summary", "full"],
+            ),
+            supervisor_decision={
+                "agents": ["security_auditor"],
+                "agent_expectations": {
+                    "security_auditor": "full_analysis",
+                },
+                "content_signals": {
+                    "has_comparisons": True,
+                },
+            },
+        )
+
+        # security_auditor scope does NOT include content_signals
+        scoped = build_scoped_context(state, "security_auditor")
+
+        # Should NOT include content_signals
+        assert "content_signals" not in scoped, "content_signals should NOT be injected for security_auditor"
+
+    def test_agents_with_content_signals_in_scope(self) -> None:
+        """Test that expected agents have content_signals in their scope."""
+        # These agents need content_signals for comparison-aware thresholds
+        agents_needing_content_signals = [
+            "tech_comparator",
+            "trend_validator",
+            "implementation_planner",
+            "dependency_mapper",
+        ]
+
+        for agent in agents_needing_content_signals:
+            scope = AGENT_SCOPES.get(agent)
+            assert scope is not None, f"Agent {agent} should have a scope"
+            assert "content_signals" in scope.include, (
+                f"Agent {agent} should have content_signals in scope for comparison-aware thresholds"
+            )
+
+
 class TestScopedState:
     """Test ScopedState type."""
 

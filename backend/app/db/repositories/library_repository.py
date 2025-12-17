@@ -259,14 +259,12 @@ class LibraryRepository:
         vector_results = await self.search_by_vector(embedding, limit=candidate_limit)
 
         # Assign ranks (1-indexed) and compute RRF scores
-        # Type ignore needed: analysis.id is UUID at runtime, but mypy sees Column[UUID]
+        # Cast analysis.id to UUID - at runtime it's UUID, but type checker sees Column[UUID]
         fts_ranks: dict[UUID, int] = {
-            analysis.id: i + 1  # type: ignore[misc]
-            for i, (analysis, _) in enumerate(fts_results)
+            UUID(str(analysis.id)): i + 1 for i, (analysis, _) in enumerate(fts_results)
         }
         vec_ranks: dict[UUID, int] = {
-            analysis.id: i + 1  # type: ignore[misc]
-            for i, (analysis, _) in enumerate(vector_results)
+            UUID(str(analysis.id)): i + 1 for i, (analysis, _) in enumerate(vector_results)
         }
 
         # Combine unique analysis IDs
@@ -301,10 +299,9 @@ class LibraryRepository:
         # Fetch analyses by IDs
         stmt = select(Analysis).where(Analysis.id.in_(paginated_ids))
         result = await self.session.execute(stmt)
-        # Type ignore needed: analysis.id is UUID at runtime, but mypy sees Column[UUID]
+        # Cast analysis.id to UUID - at runtime it's UUID, but type checker sees Column[UUID]
         analyses_by_id: dict[UUID, Analysis] = {
-            analysis.id: analysis  # type: ignore[misc]
-            for analysis in result.scalars().all()
+            UUID(str(analysis.id)): analysis for analysis in result.scalars().all()
         }
 
         # Build result list in sorted order with RRF scores

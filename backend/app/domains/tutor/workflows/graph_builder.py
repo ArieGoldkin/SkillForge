@@ -23,11 +23,12 @@ from app.domains.tutor.workflows.nodes import (
     rephrase_explain,  # Phase 2
 )
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_accessors import get_syllabus
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
-    from langgraph.checkpoint.postgres import (
-        PostgresSaver,  # type: ignore[import-not-found,import-untyped]
+    from langgraph.checkpoint.postgres import (  # type: ignore[unresolved-import]
+        PostgresSaver,
     )
 except ImportError:
     PostgresSaver = None  # type: ignore[assignment, misc]
@@ -77,7 +78,7 @@ def _route_after_assessment(state: TutorState) -> str:
     user_ready = state.get("user_ready", False)
     attempts = state.get("attempts_current_lesson", 0)
     max_attempts = 3
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
     current_lesson = state.get("current_lesson", 0)
 
@@ -131,7 +132,7 @@ def _route_after_review(state: TutorState) -> str:
         Next node name: "final_challenge" or "end"
 
     """
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
 
     if syllabus and isinstance(syllabus, dict):
@@ -153,7 +154,8 @@ def build_tutor_graph():
         Compiled StateGraph ready for execution
 
     """
-    graph = StateGraph(TutorState)
+    # LangGraph lacks type stubs for TypedDict state
+    graph = StateGraph(TutorState)  # type: ignore[arg-type]
 
     # Add nodes (Phase 1: Core 4 + Phase 2: rephrase + Phase 3: completion)
     graph.add_node("generate_syllabus", generate_syllabus)

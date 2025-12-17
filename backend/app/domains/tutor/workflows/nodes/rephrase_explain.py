@@ -14,6 +14,7 @@ from app.domains.tutor.workflows.config import TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_accessors import get_syllabus
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -74,7 +75,7 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:  # noqa: PLR
 
     """
     session_id = state["session_id"]
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
     current_lesson = state.get("current_lesson", 0)
     user_level = state.get("user_level", "intermediate")

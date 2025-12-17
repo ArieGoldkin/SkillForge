@@ -138,8 +138,10 @@ def render_jinja_template(
 
     """
     if template_dir is None:
-        # Default to workflows/tasks/templates
-        template_dir = str(TEMPLATE_BASE_DIR / "workflows" / "tasks" / "templates")
+        # Default to domains/analysis/workflows/tasks/templates
+        template_dir = str(
+            TEMPLATE_BASE_DIR / "domains" / "analysis" / "workflows" / "tasks" / "templates"
+        )
     elif not Path(template_dir).is_absolute():
         # Resolve relative to base if relative path provided
         template_dir = str(TEMPLATE_BASE_DIR / template_dir)

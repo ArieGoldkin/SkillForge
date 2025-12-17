@@ -3,7 +3,6 @@
 Issue #299-304: Graceful degradation for varying content sizes.
 """
 
-import pytest
 
 from app.shared.workflows.utils.content_signals import (
     AgentExpectation,
@@ -846,3 +845,114 @@ class TestAgentStateFlowIntegration:
         for agent in state["supervisor_decision"]["agents"]:
             threshold = get_threshold_for_expectation(agent_expectations.get(agent))
             assert threshold == 0.70, f"{agent} should have threshold 0.70"
+
+
+class TestComparisonAwareThresholds:
+    """Tests for Issue #299-304 comparison-aware threshold adjustments.
+
+    These tests verify that comparison content gets special threshold treatment
+    to allow for breadth instead of depth.
+    """
+
+    def test_comparison_threshold_tech_comparator(self) -> None:
+        """tech_comparator should get 0.50 threshold for comparison content."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="tech_comparator",
+            has_comparisons=True,
+        )
+        assert threshold == 0.50
+
+    def test_comparison_threshold_trend_validator(self) -> None:
+        """trend_validator should get 0.50 threshold for comparison content."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="trend_validator",
+            has_comparisons=True,
+        )
+        assert threshold == 0.50
+
+    def test_comparison_threshold_implementation_planner(self) -> None:
+        """implementation_planner should get 0.35 threshold for comparison content."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="implementation_planner",
+            has_comparisons=True,
+        )
+        assert threshold == 0.35
+
+    def test_comparison_threshold_dependency_mapper(self) -> None:
+        """dependency_mapper should get 0.65 threshold for comparison content."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="dependency_mapper",
+            has_comparisons=True,
+        )
+        assert threshold == 0.65
+
+    def test_non_comparison_uses_expectation_threshold(self) -> None:
+        """Without comparisons, should use expectation-based threshold."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        # tech_comparator without comparisons should use expectation threshold
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="tech_comparator",
+            has_comparisons=False,
+        )
+        assert threshold == 0.70  # full_analysis threshold, not comparison
+
+    def test_comparison_overrides_expectation(self) -> None:
+        """Comparison threshold should override expectation-based threshold."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        # Even with opportunistic expectation, comparison threshold applies
+        threshold_opportunistic = get_threshold_for_expectation(
+            expectation_str="opportunistic",
+            agent_name="tech_comparator",
+            has_comparisons=True,
+        )
+        threshold_full = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="tech_comparator",
+            has_comparisons=True,
+        )
+        # Both should use comparison threshold (0.50), not expectation threshold
+        assert threshold_opportunistic == 0.50
+        assert threshold_full == 0.50
+
+    def test_unknown_agent_with_comparison(self) -> None:
+        """Unknown agent with comparisons should use expectation threshold."""
+        from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+        threshold = get_threshold_for_expectation(
+            expectation_str="full_analysis",
+            agent_name="unknown_agent",  # Not in COMPARISON_THRESHOLDS
+            has_comparisons=True,
+        )
+        # Should fall back to expectation threshold
+        assert threshold == 0.70
+
+    def test_comparison_threshold_constants_exist(self) -> None:
+        """Verify COMPARISON_THRESHOLDS dictionary is properly defined."""
+        from app.shared.workflows.utils.content_signals import COMPARISON_THRESHOLDS
+
+        # Verify all expected agents are defined
+        expected_agents = {
+            "tech_comparator": 0.50,
+            "trend_validator": 0.50,
+            "implementation_planner": 0.35,
+            "dependency_mapper": 0.65,
+        }
+
+        for agent, expected_threshold in expected_agents.items():
+            assert agent in COMPARISON_THRESHOLDS
+            assert COMPARISON_THRESHOLDS[agent] == expected_threshold

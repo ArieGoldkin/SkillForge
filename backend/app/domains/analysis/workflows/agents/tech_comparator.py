@@ -6,6 +6,7 @@ it to relevant alternatives, providing pros, cons, use cases, and recommendation
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
@@ -16,6 +17,8 @@ from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
+
+logger = get_logger(__name__)
 
 # System prompt for tech comparator agent
 TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist.
@@ -128,8 +131,24 @@ async def run_tech_comparator(
     # Issue #299-304: Get content-aware specificity threshold
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
+
+    # Issue #299-304: Get content signals for comparison-aware thresholds
+    content_signals_dict = state.get("content_signals", {})
+    has_comparisons = content_signals_dict.get("has_comparisons", False)
+
     specificity_threshold = get_threshold_for_expectation(
-        str(expectation) if expectation is not None else None
+        expectation_str=str(expectation) if expectation is not None else None,
+        agent_name="tech_comparator",
+        has_comparisons=has_comparisons,
+    )
+
+    # DEBUG: Log threshold calculation (Issue #299-304)
+    logger.info(
+        "threshold_calculated_tech_comparator",
+        analysis_id=analysis_id,
+        has_comparisons=has_comparisons,
+        expectation=expectation,
+        calculated_threshold=specificity_threshold,
     )
 
     # Build prompt with skill level instructions and grounding

@@ -223,7 +223,8 @@ def partition_results[T](
             failed.append(FailedItem(item=item, error=str(result)))
             errors.append(make_actionable_error(item, result))
         else:
-            successful.append(SuccessItem(item=item, result=result))
+            # ty can't narrow T | Exception to T after isinstance check
+            successful.append(SuccessItem(item=item, result=result))  # type: ignore[arg-type]
 
     return BatchResult(
         total=len(results),
@@ -480,7 +481,8 @@ async def batch_check_dependencies(
     async def check_package(name: str) -> PackageInfo:
         return await _check_single_package(name, pool, tools_cache)
 
-    return await execute_batch(
+    # ty can't infer generic return type through async wrapper
+    return await execute_batch(  # type: ignore[return-value]
         items=packages,
         operation=check_package,
         max_concurrent=max_concurrent,
@@ -574,7 +576,8 @@ async def batch_check_vulnerabilities(
     async def check_cve(cve_id: str) -> VulnerabilityInfo:
         return await _check_single_vulnerability(cve_id, pool, tools_cache)
 
-    return await execute_batch(
+    # ty can't infer generic return type through async wrapper
+    return await execute_batch(  # type: ignore[return-value]
         items=cve_ids,
         operation=check_cve,
         max_concurrent=max_concurrent,

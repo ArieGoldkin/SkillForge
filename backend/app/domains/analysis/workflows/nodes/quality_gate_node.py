@@ -14,6 +14,11 @@ from langsmith import get_current_run_tree
 
 from app.core.logging import get_logger
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state_accessors import (
+    get_aggregated_insights,
+    get_quality_scores,
+)
+from app.domains.analysis.workflows.state_types import AggregatedInsights
 from app.evaluation.evaluators.quality import (
     create_quality_evaluator,
 )
@@ -69,7 +74,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
 
     """
     analysis_id = state["analysis_id"]
-    aggregated_insights = state.get("aggregated_insights", {})
+    aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
 
     if not aggregated_insights:
@@ -304,7 +309,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         }
 
 
-def _format_insights_for_evaluation(aggregated_insights: dict) -> str:
+def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> str:
     """Format aggregated insights for evaluation.
 
     Extracts key fields from aggregated insights dictionary and formats
@@ -376,7 +381,7 @@ def should_retry_synthesis(state: AnalysisState) -> str:
     if retry_count >= MAX_RETRY_ATTEMPTS:
         analysis_id = state.get("analysis_id")
         avg_score = state.get("quality_gate_avg_score", 0.0)
-        quality_scores = state.get("quality_scores", {})
+        quality_scores = get_quality_scores(state)
 
         logger.error(
             "quality_gate_max_retries_exhausted",

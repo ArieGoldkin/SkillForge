@@ -4,15 +4,17 @@ This module provides validation and parsing logic for agent findings
 before aggregation processing.
 """
 
+from collections.abc import Mapping
 from typing import Any
 
 from app.core.logging import get_logger
+from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
 
 
 def validate_and_parse_findings(
-    agent_findings: list[dict[str, Any]],
+    agent_findings: list[AgentFinding] | list[Mapping[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, float]]:
     """Validate and parse agent findings.
 

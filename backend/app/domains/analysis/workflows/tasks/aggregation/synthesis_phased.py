@@ -61,7 +61,7 @@ async def synthesize_with_llm_phased(
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
     analysis_id: AnalysisID,
-) -> dict[str, object]:
+) -> dict[str, object]:  # Returns AggregatedInsights-compatible dict
     """Synthesize agent findings using multi-phase parallel execution.
 
     Issue #299-304: Replaces monolithic 50-80K token synthesis with 3 parallel phases.
@@ -185,15 +185,17 @@ async def synthesize_with_llm_phased(
         # Merge results with graceful degradation for failures
         result = _merge_phase_results(core_result, learning_result, docs_result)
 
-        # Add metadata about synthesis method
-        metadata = result.get("metadata", {})
-        if isinstance(metadata, dict):
-            metadata["synthesis_method"] = "multi_phase_parallel"
-            metadata["phase0_compressed_count"] = len(compressed_findings)
-            metadata["phase1_core_success"] = True
-            metadata["phase2_learning_success"] = not isinstance(learning_result, Exception)
-            metadata["phase3_docs_success"] = not isinstance(docs_result, Exception)
-            result["metadata"] = metadata
+        # Add metadata about synthesis method (typed)
+        from app.shared.types import SynthesisMetadata
+
+        synthesis_meta: SynthesisMetadata = {
+            "synthesis_method": "multi_phase_parallel",
+            "phase0_compressed_count": len(compressed_findings),
+            "phase1_core_success": True,
+            "phase2_learning_success": not isinstance(learning_result, Exception),
+            "phase3_docs_success": not isinstance(docs_result, Exception),
+        }
+        result["metadata"] = synthesis_meta  # type: ignore[assignment]
 
         elapsed = time.time() - start_time
         logger.info(

@@ -128,7 +128,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_success(
     mock_run_tracking,
@@ -176,7 +176,7 @@ async def test_run_dependency_mapper_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_error_handling(
     mock_run_tracking,
@@ -198,7 +198,7 @@ async def test_run_dependency_mapper_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
 async def test_run_dependency_mapper_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state

@@ -41,7 +41,8 @@ def extract_metadata_for_logging(
     """
     metadata_for_logging = aggregated_insights_dict.get("metadata", {})
     if isinstance(metadata_for_logging, dict):
-        conflicts_resolved_for_log = metadata_for_logging.get("conflicts_resolved", 0)
+        # ty can't narrow dict[object, object] properly after isinstance
+        conflicts_resolved_for_log = metadata_for_logging.get("conflicts_resolved", 0)  # type: ignore[call-overload]
         if isinstance(conflicts_resolved_for_log, int):
             return conflicts_resolved_for_log
     return 0
@@ -62,7 +63,8 @@ def extract_sse_metadata(
     metadata_dict = aggregated_insights_dict.get("metadata", {})
     if not isinstance(metadata_dict, dict):
         metadata_dict = {}
-    conflicts_resolved_count = metadata_dict.get("conflicts_resolved", 0)
+    # ty can't narrow dict[object, object] properly after isinstance
+    conflicts_resolved_count = metadata_dict.get("conflicts_resolved", 0)  # type: ignore[call-overload]
     if not isinstance(conflicts_resolved_count, int):
         conflicts_resolved_count = 0
 

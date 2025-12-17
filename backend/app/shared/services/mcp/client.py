@@ -419,8 +419,8 @@ class MCPClientPool:
 
             # Load tools with timeout enforcement
             async def _do_load() -> list[BaseTool]:
-                async with client:
-                    tools: list[BaseTool] = client.get_tools()
+                async with client:  # type: ignore[attr-defined]
+                    tools: list[BaseTool] = await client.get_tools()  # type: ignore[misc]
                     return tools
 
             tools = await execute_with_timeout(
@@ -629,9 +629,9 @@ class MCPClientPool:
             try:
                 # Note: Check langchain-mcp-adapters for proper cleanup method
                 if hasattr(self._client, "close"):
-                    await self._client.close()
+                    await self._client.close()  # type: ignore[misc]
                 elif hasattr(self._client, "__aexit__"):
-                    await self._client.__aexit__(None, None, None)
+                    await self._client.__aexit__(None, None, None)  # type: ignore[misc]
             except (OSError, RuntimeError) as e:
                 # OSError for network/process issues, RuntimeError for event loop issues
                 logger.warning(

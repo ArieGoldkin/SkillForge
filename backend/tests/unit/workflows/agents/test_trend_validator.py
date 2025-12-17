@@ -77,7 +77,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.trend_validator.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.trend_validator.create_trend_validator_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.trend_validator.run_agent_with_tracking")
 async def test_run_trend_validator_success(
     mock_run_tracking,
@@ -121,7 +121,7 @@ async def test_run_trend_validator_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.trend_validator.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.trend_validator.create_trend_validator_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.trend_validator.run_agent_with_tracking")
 async def test_run_trend_validator_error_handling(
     mock_run_tracking,
@@ -143,7 +143,7 @@ async def test_run_trend_validator_error_handling(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.trend_validator.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.trend_validator.create_trend_validator_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.trend_validator.run_agent_with_tracking")
 async def test_run_trend_validator_schema_validation(
     mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state

@@ -511,6 +511,16 @@ THRESHOLD_BY_EXPECTATION = {
     AgentExpectation.OPPORTUNISTIC: 0.45,  # Further reduced for opportunistic
 }
 
+# Comparison-specific thresholds (Issue #299-304)
+# Comparison content is inherently broader, covering multiple technologies
+# rather than deep diving into one. Lower thresholds reflect this reality.
+COMPARISON_THRESHOLDS = {
+    "tech_comparator": 0.50,  # Breadth is the point of comparisons
+    "trend_validator": 0.50,  # Trends span multiple technologies
+    "implementation_planner": 0.35,  # No single implementation path in comparisons
+    "dependency_mapper": 0.65,  # Dependencies are still specific even in comparisons
+}
+
 
 def get_adjusted_specificity_threshold(
     agent_name: str,
@@ -521,6 +531,10 @@ def get_adjusted_specificity_threshold(
     Issue #299-304: Adjust threshold based on what's expected for this agent
     given the content signals. Agents with OPPORTUNISTIC expectations get
     lower thresholds since they're expected to work with limited data.
+
+    Additionally, comparison content gets special treatment - since comparisons
+    are inherently broad (covering multiple technologies side-by-side) rather
+    than deep, we use lowered thresholds to reflect this reality.
 
     Args:
         agent_name: Name of the agent (e.g., "trend_validator")
@@ -537,22 +551,45 @@ def get_adjusted_specificity_threshold(
         0.7  # trend_validator always expects full analysis
         >>> get_adjusted_specificity_threshold("security_auditor", signals)
         0.45  # security_auditor is opportunistic for conceptual content
+        >>> signals_comparison = detect_content_signals("REST vs GraphQL comparison")
+        >>> signals_comparison.has_comparisons
+        True
+        >>> get_adjusted_specificity_threshold("tech_comparator", signals_comparison)
+        0.5  # Lowered for comparison content
 
     """
+    # Priority 1: Check for comparison content
+    if signals.has_comparisons and agent_name in COMPARISON_THRESHOLDS:
+        logger.debug(
+            "using_comparison_threshold",
+            agent_name=agent_name,
+            threshold=COMPARISON_THRESHOLDS[agent_name],
+        )
+        return COMPARISON_THRESHOLDS[agent_name]
+
+    # Priority 2: Use expectation-based threshold
     expectation = signals.agent_expectations.get(agent_name, AgentExpectation.OPPORTUNISTIC)
 
     return THRESHOLD_BY_EXPECTATION.get(expectation, DEFAULT_SPECIFICITY_THRESHOLD)
 
 
-def get_threshold_for_expectation(expectation_str: str | None) -> float:
+def get_threshold_for_expectation(
+    expectation_str: str | None,
+    agent_name: str | None = None,
+    has_comparisons: bool = False,
+) -> float:
     """Get specificity threshold from expectation string.
 
     Simpler version that works with expectation strings stored in state.
     Use this when you have the expectation value from supervisor_decision.
 
+    Issue #299-304: Added comparison-aware threshold support.
+
     Args:
         expectation_str: Expectation value string (e.g., "full_analysis", "partial", "opportunistic")
             or None if not available.
+        agent_name: Optional agent name for comparison threshold lookup
+        has_comparisons: Whether content contains comparison patterns (from content_signals)
 
     Returns:
         Adjusted specificity threshold (0.0-1.0)
@@ -565,8 +602,21 @@ def get_threshold_for_expectation(expectation_str: str | None) -> float:
         0.45
         >>> get_threshold_for_expectation(None)  # Not found in state
         0.7  # Default to standard threshold
+        >>> # Comparison content gets special treatment
+        >>> get_threshold_for_expectation("full_analysis", "tech_comparator", has_comparisons=True)
+        0.5  # Lowered for comparison content
 
     """
+    # Priority 1: Check for comparison content
+    if has_comparisons and agent_name and agent_name in COMPARISON_THRESHOLDS:
+        logger.debug(
+            "using_comparison_threshold",
+            agent_name=agent_name,
+            threshold=COMPARISON_THRESHOLDS[agent_name],
+        )
+        return COMPARISON_THRESHOLDS[agent_name]
+
+    # Priority 2: Use expectation-based threshold
     if expectation_str is None:
         return DEFAULT_SPECIFICITY_THRESHOLD
 

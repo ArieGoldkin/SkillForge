@@ -28,7 +28,6 @@ Example:
 
 from collections.abc import Sequence
 from typing import Any
-from uuid import UUID
 
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
@@ -37,6 +36,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.feature_flags import get_technique_flags
 from app.core.logging import get_logger
+from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import (
     ToolCallConfig,
     create_structured_agent,
@@ -54,7 +54,7 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
     tools: Sequence[BaseTool] | None = None,
     tool_call_config: ToolCallConfig | None = None,
@@ -168,7 +168,7 @@ async def create_tech_comparator_agent_with_few_shot(
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
 ) -> Runnable:
     """Create tech comparator agent with optional few-shot prompting.
@@ -198,7 +198,7 @@ async def create_security_auditor_agent_with_few_shot(  # noqa: PLR0913 - Factor
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
     tools: Sequence[BaseTool] | None = None,
 ) -> Runnable:
@@ -232,7 +232,7 @@ async def create_implementation_planner_agent_with_few_shot(
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
 ) -> Runnable:
     """Create implementation planner agent with optional few-shot prompting.
@@ -262,7 +262,7 @@ async def create_dependency_mapper_agent_with_few_shot(  # noqa: PLR0913 - Facto
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
     tools: Sequence[BaseTool] | None = None,
 ) -> Runnable:
@@ -296,7 +296,7 @@ async def create_trend_validator_agent_with_few_shot(
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
-    analysis_id: UUID,
+    analysis_id: AnalysisID,
     session: AsyncSession,
 ) -> Runnable:
     """Create trend validator agent with optional few-shot prompting.

@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
 from app.domains.analysis.workflows.state import AnalysisState
+from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
 
@@ -85,12 +86,24 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         include_other_findings=False,
     ),
     "tech_comparator": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=True,
         include_other_findings=False,
     ),
     "implementation_planner": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=True,
         include_other_findings=True,  # Planner benefits from other findings
     ),
@@ -100,7 +113,13 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         include_other_findings=False,
     ),
     "dependency_mapper": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=False,
         include_other_findings=False,
     ),
@@ -125,7 +144,13 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         include_other_findings=False,
     ),
     "trend_validator": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=False,
         include_other_findings=False,
     ),
@@ -216,16 +241,20 @@ def build_scoped_context(
                 agent_type=agent_type,
                 expectation=agent_expectations[agent_type],
             )
-        # Also inject coverage summary so agents can reference it
-        content_signals = supervisor_decision.get("content_signals", {})
-        if isinstance(content_signals, dict):
-            coverage = content_signals.get("coverage_summary")
-            if coverage:
-                scoped_state["content_coverage"] = coverage
+        # Also inject coverage summary and content_signals if needed
+        content_signals = supervisor_decision.get("content_signals")
+        if isinstance(content_signals, dict) and (
+            coverage := content_signals.get("coverage_summary")
+        ):
+            scoped_state["content_coverage"] = coverage
+        # Issue #299-304: Inject full content_signals for comparison-aware thresholds
+        if isinstance(content_signals, dict) and "content_signals" in scope.include:
+            scoped_state["content_signals"] = content_signals
 
     # Calculate size reduction
     # Cast to dict for size estimation (AnalysisState is TypedDict)
-    original_size = _estimate_state_size(dict(full_state))
+    # ty can't infer dict() constructor on TypedDict
+    original_size = _estimate_state_size(dict(full_state))  # type: ignore[arg-type]
     scoped_size = _estimate_state_size(scoped_state)
     reduction_pct = (
         ((original_size - scoped_size) / original_size * 100) if original_size > 0 else 0
@@ -244,7 +273,7 @@ def build_scoped_context(
 
 
 def translate_findings(
-    findings: list[dict[str, object]],
+    findings: list[AgentFinding],
     target_agent: str,
     include_findings: bool = True,
 ) -> str:

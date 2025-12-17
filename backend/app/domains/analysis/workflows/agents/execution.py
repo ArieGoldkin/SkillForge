@@ -146,6 +146,16 @@ async def _run_agent_with_tracking_impl(
             else get_specificity_min_score()
         )
 
+        # DEBUG: Log threshold being used (Issue #299-304)
+        logger.info(
+            "threshold_being_used_in_execution",
+            agent_type=params.agent_type,
+            analysis_id=params.analysis_id,
+            config_threshold=config.specificity_threshold,
+            final_min_score=min_score,
+            used_config=config.specificity_threshold is not None,
+        )
+
         while attempts <= max_retries:
             try:
                 final_result = await invoke_agent(

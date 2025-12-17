@@ -5,6 +5,7 @@ parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
+from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -33,6 +34,7 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
 )
 from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.state_accessors import get_extraction_metadata
 from app.domains.analysis.workflows.tasks import (
     aggregate_findings,
     chunk_content,
@@ -106,7 +108,7 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
             "extract_skipped_content_provided",
             analysis_id=analysis_id,
             content_length=len(raw_content),
-            has_metadata=bool(state.get("extraction_metadata")),
+            has_metadata=bool(get_extraction_metadata(state)),
         )
 
         # Create content_ref for Handle Pattern (Issue #299-304)
@@ -118,7 +120,7 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
         return {
             "raw_content": raw_content,
-            "extraction_metadata": state.get("extraction_metadata", {}),
+            "extraction_metadata": get_extraction_metadata(state),
             "content_type": content_type,
             "content_ref": content_ref,
         }
@@ -335,15 +337,29 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
 
     analysis_id = str(state.get("analysis_id", ""))
     avg_score = float(state.get("quality_gate_avg_score", 0.0) or 0.0)
-    quality_scores: dict[str, dict[str, object]] = state.get("quality_scores", {}) or {}  # type: ignore[assignment]
+    quality_scores_raw = state.get("quality_scores", {})
     retry_count = int(state.get("quality_gate_retry_count", 0) or 0)
+
+    # Extract score values from nested structure (e.g., {"relevance": {"score": 0.3, "comment": "..."}})
+    # to flat structure (e.g., {"relevance": 0.3})
+    quality_scores_flat: dict[str, float] = {}
+    if quality_scores_raw:
+        for aspect, value in quality_scores_raw.items():
+            if isinstance(value, dict) and "score" in value:
+                # Type checker needs explicit cast to understand value is dict[str, Any]
+                value_dict = cast(dict[str, Any], value)
+                score_val = value_dict.get("score")
+                if isinstance(score_val, (int, float)):
+                    quality_scores_flat[aspect] = float(score_val)
+            elif isinstance(value, (int, float)):
+                quality_scores_flat[aspect] = float(value)
 
     logger.warning(
         "quality_gate_failed_continuing_to_artifact",
         analysis_id=analysis_id,
         avg_score=avg_score,
         retry_count=retry_count,
-        quality_scores={k: v.get("score") for k, v in quality_scores.items()},
+        quality_scores=quality_scores_flat,
         message="Quality gate failed but continuing to artifact generation (fail-open)",
     )
 
@@ -357,7 +373,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
             f"Quality below threshold after {retry_count} retries "
             f"(score: {avg_score:.2f}). Generating artifact anyway."
         ),
-        quality_scores={k: v.get("score") for k, v in quality_scores.items()},
+        quality_scores=quality_scores_flat,
     )
 
     # Return quality metadata but don't mark as failed - let artifact generation continue
@@ -392,7 +408,8 @@ def build_analysis_graph():
 
     """
     # Create graph with AnalysisState
-    graph = StateGraph(AnalysisState)
+    # LangGraph lacks type stubs for TypedDict state
+    graph = StateGraph(AnalysisState)  # type: ignore[arg-type]
 
     # Add workflow nodes
     graph.add_node("extract", _extract_content_node)

@@ -83,7 +83,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.implementation_planner.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.implementation_planner.create_implementation_planner_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.implementation_planner.run_agent_with_tracking")
 async def test_run_implementation_planner_success(
     mock_run_tracking,
@@ -121,7 +121,7 @@ async def test_run_implementation_planner_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.implementation_planner.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.implementation_planner.create_implementation_planner_agent_with_few_shot")
 @patch("app.domains.analysis.workflows.agents.implementation_planner.run_agent_with_tracking")
 async def test_implementation_planner_error_handling(
     mock_run_tracking,

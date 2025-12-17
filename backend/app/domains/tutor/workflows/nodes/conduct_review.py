@@ -14,6 +14,8 @@ from app.domains.tutor.workflows.config import TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.types import TutorMessage
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -69,7 +71,7 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
 
     """
     session_id = state["session_id"]
-    syllabus = state.get("syllabus")
+    syllabus = get_syllabus(state)
     current_section = state.get("current_section", 0)
     user_level = state.get("user_level", "intermediate")
     understanding_scores = state.get("understanding_scores", {})
@@ -180,15 +182,13 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
 
         # Update conversation history
         conversation_history = state.get("conversation_history", [])
-        updated_history = [
-            *conversation_history,
-            {
-                "role": "assistant",
-                "content": review_content,
-                "created_at": saved_message.created_at.isoformat(),
-                "metadata": {"phase": "section_review", "section": current_section},
-            },
-        ]
+        new_message: TutorMessage = {
+            "role": "assistant",
+            "content": review_content,
+            "created_at": saved_message.created_at.isoformat(),
+            "metadata": {"phase": "section_review", "section": current_section},
+        }
+        updated_history: list[TutorMessage] = [*conversation_history, new_message]
 
         # Emit SSE event: review complete
         await _emit_tutor_event(
