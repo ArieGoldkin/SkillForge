@@ -16,20 +16,16 @@ import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import AsyncSessionLocal
 from app.main import app
 from app.models.analysis import Analysis
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
-# Import timeout session helper from conftest
-# Note: We need to import from tests.conftest, but pytest handles this automatically
-# For now, we'll use the direct pattern to avoid import issues
-
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)  # 30 second timeout to prevent hanging
-async def test_full_workflow_e2e(reset_engine_connections):
+async def test_full_workflow_e2e(reset_engine_connections, db_session):
     """Test complete workflow from POST to SSE completion.
 
     This test verifies:
@@ -41,8 +37,16 @@ async def test_full_workflow_e2e(reset_engine_connections):
     analysis_uuid = uuid.uuid4()
     test_url = "https://example.com/article"
 
-    async def mock_workflow_with_events(analysis_id: str, url: str) -> None:
-        """Mock workflow that emits SSE events in correct order."""
+    async def mock_workflow_with_events(
+        analysis_id: str, url: str, db: AsyncSession | None = None
+    ) -> None:
+        """Mock workflow that emits SSE events in correct order.
+
+        Args:
+            analysis_id: The analysis ID
+            url: The URL being analyzed
+            db: Database session (optional, used for updating analysis status)
+        """
         # Extraction stage
         await emit_streaming_event(
             "progress",
@@ -116,16 +120,8 @@ async def test_full_workflow_e2e(reset_engine_connections):
             artifact_id=str(uuid.uuid4()),
         )
 
-        # Update database status
-        # Use timeout protection for session creation
-        # Note: pool_timeout in engine config should prevent hanging,
-        # but we add explicit timeout protection for safety
-        from app.core.constants import DB_TIMEOUT
-
-        try:
-            session = AsyncSessionLocal()
-            enter_task = asyncio.create_task(session.__aenter__())
-            db = await asyncio.wait_for(enter_task, timeout=DB_TIMEOUT)
+        # Update database status using provided session
+        if db is not None:
             try:
                 result = await db.execute(
                     select(Analysis).where(Analysis.id == uuid.UUID(analysis_id))
@@ -136,17 +132,20 @@ async def test_full_workflow_e2e(reset_engine_connections):
                     # but mypy's type stubs see them as Column[str]. This is a known SQLAlchemy
                     # typing limitation with Column-based style. Assignment is safe at runtime.
                     analysis.status = "complete"  # type: ignore[assignment]
-                    await db.commit()
-            finally:
-                await session.__aexit__(None, None, None)
-        except (TimeoutError, Exception):
-            # Skip database update if connection times out or fails
-            # This is in a mock workflow, so it's acceptable to skip
-            pass
+                    # Don't commit - let the test fixture handle rollback
+            except Exception:
+                # Skip database update if it fails
+                # This is in a mock workflow, so it's acceptable to skip
+                pass
+
+    # Create a patched version of the mock workflow that includes db_session
+    async def mock_workflow_with_db(analysis_id: str, url: str) -> None:
+        """Wrapper that passes db_session to the mock workflow."""
+        await mock_workflow_with_events(analysis_id, url, db=db_session)
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow_with_events),
+        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow_with_db),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -164,23 +163,14 @@ async def test_full_workflow_e2e(reset_engine_connections):
             assert data["status"] == "pending"
             assert "/stream" in data["sse_endpoint"]
 
-            # Step 2: Verify database record
-            from app.core.constants import DB_TIMEOUT
-
-            try:
-                session = AsyncSessionLocal()
-                enter_task = asyncio.create_task(session.__aenter__())
-                db = await asyncio.wait_for(enter_task, timeout=DB_TIMEOUT)
-                try:
-                    result = await db.execute(select(Analysis).where(Analysis.id == analysis_uuid))
-                    analysis = result.scalar_one_or_none()
-                    assert analysis is not None
-                    assert analysis.url == test_url
-                    assert analysis.status == "pending"
-                finally:
-                    await session.__aexit__(None, None, None)
-            except TimeoutError:
-                pytest.skip("Database connection timeout")
+            # Step 2: Verify database record using the fixture's session
+            result = await db_session.execute(
+                select(Analysis).where(Analysis.id == analysis_uuid)
+            )
+            analysis = result.scalar_one_or_none()
+            assert analysis is not None
+            assert analysis.url == test_url
+            assert analysis.status == "pending"
 
             # Step 3: Connect to SSE and verify endpoint is accessible
             # Note: ASGITransport does NOT support streaming properly - it blocks
@@ -205,23 +195,14 @@ async def test_full_workflow_e2e(reset_engine_connections):
             # Wait for mock workflow to complete its events
             await asyncio.sleep(1.0)
 
-            # Step 4: Verify final database status
-            try:
-                session = AsyncSessionLocal()
-                enter_task = asyncio.create_task(session.__aenter__())
-                db_session = await asyncio.wait_for(enter_task, timeout=DB_TIMEOUT)
-                try:
-                    result = await db_session.execute(
-                        select(Analysis).where(Analysis.id == analysis_uuid)
-                    )
-                    analysis = result.scalar_one_or_none()
-                    assert analysis is not None
-                    # Status may be updated by mock workflow
-                    assert analysis.status in ("pending", "complete")
-                finally:
-                    await session.__aexit__(None, None, None)
-            except TimeoutError:
-                pytest.skip("Database connection timeout")
+            # Step 4: Verify final database status using the fixture's session
+            result = await db_session.execute(
+                select(Analysis).where(Analysis.id == analysis_uuid)
+            )
+            analysis = result.scalar_one_or_none()
+            assert analysis is not None
+            # Status may be updated by mock workflow
+            assert analysis.status in ("pending", "complete")
 
 
 @pytest.mark.asyncio
