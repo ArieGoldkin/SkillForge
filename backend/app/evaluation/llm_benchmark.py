@@ -1,7 +1,7 @@
 """LLM Benchmark Runner for SkillForge Evaluation Framework.
 
 This module provides tools for benchmarking different LLM models (GPT-4o-mini, Claude Sonnet 4,
-Gemini Flash, Grok-3-mini) across three task types:
+Gemini Flash, DeepSeek V3) across three task types:
 1. Supervisor routing - selecting which agents to run
 2. Agent analysis - generating structured analysis outputs
 3. Synthesis - aggregating multiple agent findings
@@ -24,7 +24,7 @@ Example:
     results = await benchmark.run_experiment(
         task_type="supervisor",
         model_id="gemini-2.5-flash",
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
         evaluators=[
             supervisor_correctness_evaluator,
             latency_evaluator,
@@ -37,7 +37,7 @@ Example:
     comparison = await benchmark.compare_models(
         task_type="supervisor",
         model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
     )
     print(f"Winner by accuracy: {comparison.winner_by_metric['accuracy']}")
     ```
@@ -403,7 +403,7 @@ class LLMBenchmark:
             results = await benchmark.run_experiment(
                 task_type="supervisor",
                 model_id="gemini-2.5-flash",
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
                 evaluators=[
                     supervisor_correctness_evaluator,
                     latency_evaluator,
@@ -566,7 +566,7 @@ class LLMBenchmark:
             comparison = await benchmark.compare_models(
                 task_type="supervisor",
                 model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
             )
             print(comparison.recommendation)
             ```

@@ -37,31 +37,31 @@ from app.evaluation.datasets import list_datasets, load_dataset
 
 logger = get_logger(__name__)
 
-# Default models to test for each task (December 2025 - Latest Models)
-# Multi-provider support: supervisor_route now accepts model_id parameter
-# for runtime model switching across OpenAI, Anthropic, Google, and xAI
+# Default models to test for each task (December 2025 - Cost-Optimized)
 DEFAULT_MODELS = {
     "supervisor": [
-        "gpt-5-mini",  # OpenAI - Latest balanced model
-        "claude-haiku-3-5-20241022",  # Anthropic - Fast throughput
-        "gemini-2.5-flash",  # Google - Cost-effective, 1M context
-        "grok-3-mini",  # xAI - Affordable alternative
+        "gemini-2.5-flash-lite",  # Google - $0.10/$0.40, 1M ctx, BEST VALUE
+        "deepseek-v3",  # DeepSeek - $0.14/$0.28, cheapest quality
+        "gpt-4o-mini",  # OpenAI - $0.15/$0.60, reliable fallback
+        "claude-haiku-3-5-20241022",  # Anthropic - $0.80/$4.00, quality
     ],
     "agent": [
-        "gpt-5-mini",  # OpenAI - Latest
+        "gemini-2.5-flash",  # Google - $0.30/$2.50, 1M context
         "claude-sonnet-4-20250514",  # Anthropic - SWE-bench leader (72.5%)
-    ],  # Agent analysis still uses env var (TODO: add model_id support)
+        "gpt-5-mini",  # OpenAI - $0.25/$2.00, balanced
+    ],
     "synthesis": [
-        "gpt-5-mini",  # OpenAI - Latest
-        "claude-sonnet-4-20250514",  # Anthropic - Best synthesis
-    ],  # Synthesis still uses env var (TODO: add model_id support)
+        "grok-4.1-fast",  # xAI - $0.20/$0.50, 2M context!
+        "gemini-2.5-flash",  # Google - $0.30/$2.50, 1M context
+        "claude-sonnet-4-20250514",  # Anthropic - quality synthesis
+    ],
 }
 
-# Dataset mappings
+# Dataset mappings (use new folder structure)
 TASK_DATASETS = {
-    "supervisor": "supervisor_golden_v1",
-    "agent": "agent_analysis_golden_v1",
-    "synthesis": "synthesis_golden_v1",
+    "supervisor": "golden/supervisor",
+    "agent": "golden/agent_analysis",
+    "synthesis": "golden/synthesis",
 }
 
 

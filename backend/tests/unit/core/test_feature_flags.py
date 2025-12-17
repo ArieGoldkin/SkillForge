@@ -8,7 +8,6 @@ import pytest
 from app.core.feature_flags import (
     PromptTechniqueConfig,
     get_technique_config,
-    get_technique_flags,
 )
 
 
@@ -82,24 +81,3 @@ class TestGetTechniqueConfig:
 
         # After cache clear, should get different instance
         assert config1 is not config2
-
-
-@pytest.mark.unit
-class TestBackwardsCompatibility:
-    """Tests for backwards compatibility alias."""
-
-    def test_get_technique_flags_returns_config(self):
-        """Test that deprecated get_technique_flags still works."""
-        get_technique_config.cache_clear()
-        result = get_technique_flags()
-
-        assert isinstance(result, PromptTechniqueConfig)
-
-    def test_get_technique_flags_returns_same_as_config(self):
-        """Test that get_technique_flags returns same instance as get_technique_config."""
-        get_technique_config.cache_clear()
-        flags = get_technique_flags()
-        config = get_technique_config()
-
-        # Both should return the same cached instance
-        assert flags is config
