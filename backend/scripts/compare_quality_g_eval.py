@@ -32,20 +32,20 @@ from app.core.logging import get_logger  # noqa: E402
 from app.db.session import get_session_factory  # noqa: E402
 from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
 from app.domains.analysis.workflows.agents.schemas.code_reviewer import CodeReview  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.implementation_planner import (
+from app.domains.analysis.workflows.agents.schemas.implementation_planner import (  # noqa: E402
     ImplementationPlan,
 )
 from app.domains.analysis.workflows.agents.schemas.learning_path import LearningPath  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.performance_analyst import (
+from app.domains.analysis.workflows.agents.schemas.performance_analyst import (  # noqa: E402
     PerformanceAnalysis,
 )
-from app.domains.analysis.workflows.agents.schemas.research_analyst import (
+from app.domains.analysis.workflows.agents.schemas.research_analyst import (  # noqa: E402
     ResearchAnalysis,
 )
-from app.domains.analysis.workflows.agents.schemas.security_auditor import (
+from app.domains.analysis.workflows.agents.schemas.security_auditor import (  # noqa: E402
     SecurityAudit,
 )
-from app.domains.analysis.workflows.agents.schemas.tech_comparator import (
+from app.domains.analysis.workflows.agents.schemas.tech_comparator import (  # noqa: E402
     TechComparison,
 )
 from app.models.agent_example import AgentExample  # noqa: E402
@@ -127,10 +127,22 @@ async def run_variant(
         # Few-shot with golden examples
         system_prompt = base_prompt
         if few_shot_examples:
-            examples_text = "\n\n".join(
-                f"Example {i + 1}:\nInput: {ex.get('input_summary', '')[:200]}\nOutput: {json.dumps(ex.get('output_example', {}), indent=2)[:500]}"
-                for i, ex in enumerate(few_shot_examples[:3])
-            )
+            # Format examples with sufficient context (increased from 200/500 to 500/1500)
+            formatted_examples = []
+            for i, ex in enumerate(few_shot_examples[:3]):
+                input_preview = ex.get("input_summary", "")[:500]
+                output_json = json.dumps(ex.get("output_example", {}), indent=2)
+                # Truncate at valid JSON boundary to avoid malformed examples
+                if len(output_json) > 1500:
+                    # Find last complete key-value pair boundary
+                    truncated = output_json[:1500]
+                    last_newline = truncated.rfind("\n")
+                    if last_newline > 100:
+                        output_json = truncated[:last_newline] + "\n  // ... (truncated)"
+                formatted_examples.append(
+                    f"Example {i + 1}:\nInput: {input_preview}\nOutput:\n{output_json}"
+                )
+            examples_text = "\n\n".join(formatted_examples)
             system_prompt += f"\n\nHere are examples of high-quality outputs:\n{examples_text}"
         agent = create_structured_agent(
             system_prompt=system_prompt,
@@ -144,7 +156,8 @@ async def run_variant(
             response_schema=schema_class,
         )
     else:
-        raise ValueError(f"Unknown variant: {variant}")
+        msg = f"Unknown variant: {variant}"
+        raise ValueError(msg)
 
     result = await agent.ainvoke({"messages": [HumanMessage(content=input_content)]})
 
@@ -273,8 +286,12 @@ def select_diverse_examples(
         List of diverse few-shot examples
 
     """
-    # Filter by quality
-    high_quality = [ex for ex in examples if ex.quality_score >= min_quality]
+    # Filter by quality and sort by quality score (highest first)
+    high_quality = sorted(
+        [ex for ex in examples if ex.quality_score >= min_quality],
+        key=lambda x: x.quality_score,
+        reverse=True,
+    )
 
     if len(high_quality) < num_examples:
         # Not enough high-quality examples, fall back to best available
@@ -286,7 +303,8 @@ def select_diverse_examples(
         ]
 
     # Select diverse examples using Jaccard similarity on output keys
-    selected: list[AgentExample] = [high_quality[0]]  # Start with first high-quality
+    # Start with BEST quality example (list is pre-sorted by quality)
+    selected: list[AgentExample] = [high_quality[0]]
 
     for candidate in high_quality[1:]:
         if len(selected) >= num_examples:
@@ -321,7 +339,7 @@ def select_diverse_examples(
     ]
 
 
-async def run_g_eval_comparison(sample_size: int = 2) -> None:
+async def run_g_eval_comparison(sample_size: int = 2) -> None:  # noqa: PLR0912
     """Run G-Eval quality comparison."""
     # Reset cost tracker for this session
     tracker = GEvalCostTracker.get_instance()
@@ -469,7 +487,7 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
     report_path = Path("docs/phase2-g-eval-comparison-report.md")
     report_path.parent.mkdir(exist_ok=True)
 
-    with open(report_path, "w") as f:
+    with report_path.open("w") as f:
         f.write("# Phase 2 G-Eval Quality Comparison Report\n\n")
         f.write(f"**Generated:** {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n")
         f.write("## Executive Summary\n\n")
