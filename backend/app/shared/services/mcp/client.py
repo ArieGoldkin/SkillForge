@@ -420,7 +420,7 @@ class MCPClientPool:
             # Load tools with timeout enforcement
             async def _do_load() -> list[BaseTool]:
                 async with client:  # type: ignore[attr-defined]
-                    tools: list[BaseTool] = await client.get_tools()  # type: ignore[misc]
+                    tools: list[BaseTool] = client.get_tools()  # type: ignore[misc]
                     return tools
 
             tools = await execute_with_timeout(

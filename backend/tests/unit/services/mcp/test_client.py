@@ -327,3 +327,41 @@ class TestMCPClientPoolAsync:
 
         assert pool._closed is True
         assert pool._client is None
+
+    @pytest.mark.asyncio
+    async def test_load_tools_does_not_await_list(self, server_configs):
+        """Test that _load_tools correctly handles synchronous get_tools() method.
+
+        Regression test for bug where client.get_tools() was incorrectly awaited.
+        The MultiServerMCPClient.get_tools() method returns list[BaseTool] directly,
+        not a coroutine, so it should not be awaited.
+        """
+        from langchain_core.tools import BaseTool
+
+        # Create mock tools
+        mock_tool = MagicMock(spec=BaseTool)
+        mock_tool.name = "github_test_tool"
+        mock_tools = [mock_tool]
+
+        # Create mock client that returns tools synchronously (not async)
+        mock_client = MagicMock()
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+        mock_client.get_tools = MagicMock(return_value=mock_tools)  # Synchronous method
+
+        pool = MCPClientPool(server_configs)
+        conn = pool._get_or_create_connection("github")
+
+        with patch("app.shared.services.mcp.client.MultiServerMCPClient") as mock_client_class:
+            mock_client_class.return_value = mock_client
+
+            # This should NOT raise "object list can't be used in 'await' expression"
+            await pool._load_tools(conn)
+
+            # Verify tools were loaded correctly
+            assert conn.state == ConnectionState.CONNECTED
+            assert len(conn.tools) == 1
+            assert conn.tools[0].name == "github_test_tool"
+
+            # Verify get_tools was called (synchronously, not awaited)
+            mock_client.get_tools.assert_called_once()

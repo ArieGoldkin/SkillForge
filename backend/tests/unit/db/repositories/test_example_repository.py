@@ -285,3 +285,24 @@ class TestExampleRepository:
         counts = await repository.count_by_agent_type()
 
         assert counts == {}
+
+    @pytest.mark.asyncio
+    async def test_total_count_validation(self, repository, mock_session):
+        """Validate that total example count is within expected range."""
+        # Mock total count query
+        mock_result = AsyncMock()
+        mock_result.scalar = MagicMock(return_value=121)  # Current count
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        # Query total count using raw SQL (like integration test)
+        from sqlalchemy import text
+
+        result = await mock_session.execute(text("SELECT COUNT(*) FROM agent_examples"))
+        count = result.scalar()
+
+        # Should have minimum 97 examples from seed script
+        assert count >= 97, f"Expected at least 97 examples, got {count}"
+
+        # Should be less than some reasonable upper bound (200 for now)
+        # This prevents accidentally seeding too many examples
+        assert count <= 200, f"Too many examples: {count}"

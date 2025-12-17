@@ -46,7 +46,7 @@ async def test_streaming_timeout_integration_success(mock_streaming_agent):
     input_messages = {"messages": [{"role": "user", "content": "test"}]}
 
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
     ):
         result = await stream_agent_response(
             agent=mock_streaming_agent,
@@ -83,7 +83,7 @@ async def test_streaming_timeout_integration_timeout_triggered(mock_streaming_ag
     mock_streaming_agent.astream = slow_astream
 
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
     ):
         # Function doesn't raise TimeoutError - timeout is handled by LangGraph's step_timeout
         # This test verifies the function completes successfully
@@ -105,7 +105,7 @@ async def test_streaming_timeout_integration_with_invocation(mock_streaming_agen
     input_messages = {"messages": [{"role": "user", "content": "test"}]}
 
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
     ):
         result = await invoke_agent(
             agent=mock_streaming_agent,
@@ -139,7 +139,7 @@ async def test_streaming_timeout_integration_partial_result_preserved(mock_strea
     mock_streaming_agent.astream = partial_astream
 
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
     ):
         # Function doesn't raise TimeoutError - it returns partial results
         result = await stream_agent_response(
@@ -169,7 +169,7 @@ async def test_streaming_timeout_integration_generatorexit_handled(mock_streamin
     mock_streaming_agent.astream = generatorexit_astream
 
     with patch(
-        "app.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
+        "app.domains.analysis.workflows.agents.streaming_helpers.emit_agent_progress", new_callable=AsyncMock
     ):
         result = await stream_agent_response(
             agent=mock_streaming_agent,
