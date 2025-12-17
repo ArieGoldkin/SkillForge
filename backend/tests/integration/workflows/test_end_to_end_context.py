@@ -29,6 +29,7 @@ from app.shared.services.memory.proactive_recall import (
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
+    pytest.mark.external,  # These tests require real LLM API calls
 ]
 
 

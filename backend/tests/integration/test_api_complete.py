@@ -342,7 +342,7 @@ async def test_api_content_type_detection_repo(reset_engine_connections):
 
 
 @pytest.mark.asyncio
-async def test_api_concurrent_requests(reset_engine_connections):
+async def test_api_concurrent_requests(reset_engine_connections, db_session):
     """Test handling of multiple concurrent POST requests.
 
     Note: With concurrent requests, response order is not guaranteed.
@@ -378,25 +378,14 @@ async def test_api_concurrent_requests(reset_engine_connections):
             # Verify all analysis_ids are unique
             assert len(set(analysis_ids)) == 3, "All analysis IDs should be unique"
 
-            # Verify all records in database
-            from app.core.constants import DB_TIMEOUT
-
-            try:
-                session = AsyncSessionLocal()
-                enter_task = asyncio.create_task(session.__aenter__())
-                db = await asyncio.wait_for(enter_task, timeout=DB_TIMEOUT)
-                try:
-                    for analysis_id in analysis_ids:
-                        result = await db.execute(
-                            select(Analysis).where(Analysis.id == uuid.UUID(analysis_id))
-                        )
-                        analysis = result.scalar_one_or_none()
-                        assert analysis is not None
-                        assert analysis.status == "pending"
-                finally:
-                    await session.__aexit__(None, None, None)
-            except TimeoutError:
-                pytest.skip("Database connection timeout")
+            # Verify all records in database using fixture (auto-rollback)
+            for analysis_id in analysis_ids:
+                result = await db_session.execute(
+                    select(Analysis).where(Analysis.id == uuid.UUID(analysis_id))
+                )
+                analysis = result.scalar_one_or_none()
+                assert analysis is not None
+                assert analysis.status == "pending"
 
 
 @pytest.mark.asyncio
