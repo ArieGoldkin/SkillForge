@@ -125,25 +125,34 @@ async def run_variant(
         )
     elif variant == "few_shot":
         # Few-shot with golden examples
+        # Research: Quality > quantity, 3-5 examples optimal (Cleanlab.ai, DSPy)
         system_prompt = base_prompt
         if few_shot_examples:
-            # Format examples with sufficient context (increased from 200/500 to 500/1500)
+            # Format examples with sufficient context and quality indicators
             formatted_examples = []
-            for i, ex in enumerate(few_shot_examples[:3]):
+            for i, ex in enumerate(few_shot_examples[:4]):  # Use up to 4 examples
                 input_preview = ex.get("input_summary", "")[:500]
                 output_json = json.dumps(ex.get("output_example", {}), indent=2)
                 # Truncate at valid JSON boundary to avoid malformed examples
                 if len(output_json) > 1500:
-                    # Find last complete key-value pair boundary
                     truncated = output_json[:1500]
                     last_newline = truncated.rfind("\n")
                     if last_newline > 100:
                         output_json = truncated[:last_newline] + "\n  // ... (truncated)"
+                # Include quality context to help model understand what makes it good
+                quality_note = ex.get("quality_note", "High-quality curated example")
                 formatted_examples.append(
-                    f"Example {i + 1}:\nInput: {input_preview}\nOutput:\n{output_json}"
+                    f"--- EXAMPLE {i + 1} ({quality_note}) ---\n"
+                    f"Input Context: {input_preview}\n\n"
+                    f"Expected Output Structure:\n{output_json}"
                 )
             examples_text = "\n\n".join(formatted_examples)
-            system_prompt += f"\n\nHere are examples of high-quality outputs:\n{examples_text}"
+            system_prompt += (
+                f"\n\n## Reference Examples\n"
+                f"Study these high-quality examples to understand the expected output structure and level of detail:\n\n"
+                f"{examples_text}\n\n"
+                f"Follow a similar structure and depth of analysis in your response."
+            )
         agent = create_structured_agent(
             system_prompt=system_prompt,
             response_schema=schema_class,
@@ -380,11 +389,12 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:  # noqa: PLR0912
         print("-" * 50)
 
         # OPTIMIZATION: Smart few-shot selection with quality filter + diversity
-        # Old: Just took first 2 examples (no quality or diversity check)
-        # New: Filter by quality >= 0.85, check Jaccard similarity for diversity
+        # Research shows 3-5 examples optimal (diminishing returns after)
+        # Sources: PromptingGuide.ai, Cleanlab.ai, DSPy best practices
+        # Strategy: Filter quality >= 0.85, ensure Jaccard diversity, rank by quality
         few_shot_examples = select_diverse_examples(
             examples,
-            num_examples=2,
+            num_examples=4,  # Increased from 2 (research: 3-5 optimal)
             min_quality=0.85,
         )
 
