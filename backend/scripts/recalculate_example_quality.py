@@ -107,18 +107,26 @@ async def score_example(example: AgentExample) -> ScoringResult:
             agent_type=example.agent_type,
         )
 
+        # Extract criteria scores as simple floats
+        criteria_scores_dict = {
+            k: v.normalized if hasattr(v, "normalized") else float(v)
+            for k, v in result.criteria_scores.items()
+        }
+
+        # Extract reasoning from criteria scores
+        reasoning_parts = []
+        for k, v in result.criteria_scores.items():
+            if hasattr(v, "reasoning") and v.reasoning:
+                reasoning_parts.append(f"{k}: {v.reasoning[:50]}")
+        reasoning_text = "; ".join(reasoning_parts) if reasoning_parts else "No reasoning"
+
         return ScoringResult(
             example_id=str(example.id),
             agent_type=example.agent_type,
             old_score=example.quality_score,
-            new_score=result.weighted_score,
-            criteria_scores=result.criteria_scores,
-            reasoning="; ".join(
-                f"{k}: {v.get('reasoning', 'N/A')[:50]}"
-                for k, v in result.details.items()
-            )
-            if result.details
-            else "No reasoning available",
+            new_score=result.overall,  # Use 'overall' not 'weighted_score'
+            criteria_scores=criteria_scores_dict,
+            reasoning=reasoning_text,
         )
 
     except Exception as exc:
@@ -374,12 +382,13 @@ async def main() -> None:
     print_report(report)
 
     # Print cost summary
-    cost_summary = tracker.get_summary()
+    cost_summary = tracker.get_session_summary()
     print("\n💰 Cost Summary:")
-    print(f"   Total LLM calls:   {cost_summary.get('total_calls', 0)}")
-    print(f"   Input tokens:      {cost_summary.get('total_input_tokens', 0):,}")
-    print(f"   Output tokens:     {cost_summary.get('total_output_tokens', 0):,}")
-    print(f"   Estimated cost:    ${cost_summary.get('total_cost', 0):.4f}")
+    print(f"   Total evaluations: {cost_summary.total_evaluations}")
+    print(f"   Input tokens:      {cost_summary.total_input_tokens:,}")
+    print(f"   Output tokens:     {cost_summary.total_output_tokens:,}")
+    print(f"   Cached tokens:     {cost_summary.total_cached_tokens:,}")
+    print(f"   Estimated cost:    ${cost_summary.total_cost:.4f}")
 
     # Save JSON report
     save_report_json(report, Path(args.output))
