@@ -424,6 +424,40 @@ class Settings(BaseSettings):
         description="Batch size for cleanup operations",
     )
 
+    # Redis Configuration (LLM Caching & Chat History)
+    REDIS_URL: str = Field(
+        default="redis://localhost:6380",
+        description=(
+            "Redis connection URL. Used for semantic caching (LLM responses), "
+            "exact caching (supervisor routing), and chat history (tutor sessions)."
+        ),
+    )
+    REDIS_SEMANTIC_CACHE_TTL: int = Field(
+        default=86400,
+        description="TTL in seconds for semantic cache (24 hours default)",
+    )
+    REDIS_EXACT_CACHE_TTL: int = Field(
+        default=3600,
+        description="TTL in seconds for exact match cache (1 hour default)",
+    )
+    REDIS_CHAT_HISTORY_TTL: int = Field(
+        default=7200,
+        description="TTL in seconds for tutor chat history (2 hours default)",
+    )
+    REDIS_SIMILARITY_THRESHOLD: float = Field(
+        default=0.08,
+        description=(
+            "Distance threshold for semantic cache hits (lower = stricter). "
+            "0.08 means ~92% similarity required for cache hit."
+        ),
+    )
+
+    # Anthropic Prompt Caching Configuration
+    ANTHROPIC_PROMPT_CACHE_TTL: str = Field(
+        default="1h",
+        description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

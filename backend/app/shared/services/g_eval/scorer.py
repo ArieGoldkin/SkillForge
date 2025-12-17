@@ -7,7 +7,7 @@ The scorer:
 1. Uses agent-specific rubrics for domain-aware evaluation
 2. Scores multiple criteria in parallel for efficiency
 3. Provides confidence scores and reasoning for transparency
-4. Caches results to reduce redundant LLM calls
+4. Two-layer caching: file-based cache + Redis semantic cache (at model level)
 
 Reference: G-Eval paper (https://arxiv.org/abs/2303.16634)
 """
@@ -190,10 +190,15 @@ async def _score_criterion(
     """
     cache = get_cache()
 
-    # Check cache first
+    # Check L1 file-based cache first (fastest, exact match)
     if use_cache:
         cached = cache.get(input_content, output, agent_type, criterion)
         if cached:
+            logger.debug(
+                "g_eval_file_cache_hit",
+                criterion=criterion,
+                agent_type=agent_type,
+            )
             return CriterionScore(
                 criterion=criterion,
                 score=cached.score,
@@ -202,8 +207,10 @@ async def _score_criterion(
                 reasoning=cached.reasoning,
             )
 
-    # Cache miss - call LLM
-    model = get_chat_model()
+    # L1 miss - call LLM with task routing for cost optimization
+    # L2 Redis semantic cache is automatically integrated at model level via get_chat_model()
+    # This provides semantic matching for similar (but not identical) evaluations
+    model = get_chat_model(task_type="g_eval")
 
     # Get agent-specific rubric
     rubric_text = format_rubric_for_prompt(agent_type, criterion)
@@ -230,7 +237,8 @@ async def _score_criterion(
         content = response.content if isinstance(response.content, str) else str(response.content)
         result = _parse_g_eval_response(content, criterion)
 
-        # Store in cache
+        # Store in L1 file-based cache for future exact matches
+        # L2 Redis semantic cache is automatically managed by LangChain at the model level
         if use_cache:
             cache.set(
                 input_content=input_content,
@@ -241,6 +249,12 @@ async def _score_criterion(
                 normalized=result.normalized,
                 confidence=result.confidence,
                 reasoning=result.reasoning,
+            )
+            logger.debug(
+                "g_eval_file_cache_set",
+                criterion=criterion,
+                agent_type=agent_type,
+                score=result.score,
             )
 
         return result

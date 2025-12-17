@@ -28,6 +28,7 @@ langchain-community = "^0.4.1"
 langchain-openai = "^1.1.0"
 langchain-anthropic = "^1.2.0"
 langchain-google-genai = "^3.2.0"
+langchain-redis = {version = "^0.2.5", python = ">=3.13,<3.14"}
 langgraph-checkpoint = "^3.0.1"
 # MCP Integration (Sprint 9) - Issue #230
 langchain-mcp-adapters = "^0.1.0"

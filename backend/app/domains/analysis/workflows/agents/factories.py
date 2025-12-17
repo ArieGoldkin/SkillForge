@@ -1,17 +1,14 @@
 """Agent factory wrappers with few-shot prompting integration.
 
-This module provides factory functions that wrap agent creation with optional
+This module provides factory functions that wrap agent creation with
 few-shot prompting capabilities. Each factory:
-- Checks feature flags to enable/disable few-shot prompting
-- Uses A/B testing to assign analyses to control/treatment groups
 - Injects relevant examples via semantic search
+- Uses quality filtering for example selection
 - Falls back gracefully to baseline agents on errors
 
-Architecture:
-- Feature flag: TECHNIQUE_ENABLE_FEW_SHOT controls overall feature
-- A/B testing: 20% traffic split between control and treatment
-- Variant selection: Deterministic hash-based assignment per analysis_id
-- Example retrieval: Semantic search with quality filtering
+Architecture (Dec 2025 - all features enabled by default):
+- Few-shot prompting is always enabled
+- Example retrieval via semantic search with quality filtering
 - Graceful degradation: Falls back to baseline on any errors
 
 Example:
@@ -34,7 +31,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.feature_flags import get_technique_flags
+from app.core.feature_flags import get_technique_config
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import (
@@ -86,28 +83,9 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
         Exception: If agent creation fails (after logging and fallback attempts)
 
     """
-    flags = get_technique_flags()
+    config = get_technique_config()
 
-    # If few-shot is disabled, create baseline agent
-    if not flags.enable_few_shot:
-        logger.debug(
-            "few_shot_disabled",
-            agent_type=agent_type,
-            analysis_id=str(analysis_id),
-        )
-        if tools:
-            return create_tool_enabled_agent(
-                system_prompt=system_prompt,
-                response_schema=response_schema,
-                tools=tools,
-                tool_call_config=tool_call_config,
-            )
-        return create_structured_agent(
-            system_prompt=system_prompt,
-            response_schema=response_schema,
-        )
-
-    # Select A/B test variant (deterministic based on analysis_id)
+    # Get variant (always "treatment" as of Dec 2025 - features always enabled)
     variant_selector = get_variant_selector()
     variant = variant_selector.select_variant(
         analysis_id=str(analysis_id),
@@ -115,11 +93,10 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
     )
 
     logger.info(
-        "few_shot_variant_selected",
+        "few_shot_agent_creating",
         agent_type=agent_type,
         analysis_id=str(analysis_id),
         variant=variant,
-        ab_test_enabled=flags.ab_test_enabled,
     )
 
     # Create base agent factory for few-shot wrapper
@@ -154,8 +131,8 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
         session=session,
         embedding_service=embedding_service,
         variant=variant,
-        max_examples=flags.few_shot_max_examples,
-        min_quality_score=flags.few_shot_min_quality,
+        max_examples=config.few_shot_max_examples,
+        min_quality_score=config.few_shot_min_quality,
         system_prompt=system_prompt,
     )
     return agent

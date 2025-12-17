@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from langchain.chat_models import init_chat_model
+from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.core.config import _infer_provider_from_model, _split_provider_from_model, settings
@@ -10,6 +11,37 @@ from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY
 
 logger = get_logger(__name__)
+
+# Task-based model routing for cost optimization
+# Maps specific task types to optimized models (cheaper/faster)
+TASK_MODEL_MAP: dict[str, str] = {
+    "supervisor": "claude-haiku-3-5-20241022",  # Fast classification
+    "g_eval": "gemini-2.5-flash",  # Cheap scoring
+    # "agent" and "synthesis" use the default model from settings
+}
+
+
+def _get_redis_cache_for_model():
+    """Get Redis semantic cache for LLM responses.
+
+    Returns:
+        RedisSemanticCache instance or None if Redis is unavailable.
+
+    """
+    try:
+        from app.shared.services.cache import get_semantic_cache
+
+        cache = get_semantic_cache()
+        logger.debug("redis_cache_enabled_for_model")
+        return cache
+    except Exception as e:  # noqa: BLE001
+        # Gracefully handle Redis connection failures
+        logger.warning(
+            "redis_cache_unavailable",
+            error=str(e),
+            fallback="no_cache",
+        )
+        return None
 
 
 def _resolve_model_from_registry(model_key: str) -> tuple[str, str | None]:
@@ -46,10 +78,14 @@ def _should_strip_provider_prefix(provider: str | None) -> bool:
     return provider in {"openai", "anthropic", "google_genai"}
 
 
-def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseChatModel:  # noqa: PLR0912, PLR0915
+def get_chat_model(  # noqa: PLR0912, PLR0915
+    config: dict[str, dict[str, object]] | None = None,
+    task_type: str | None = None,
+) -> BaseChatModel:
     """Create a chat model instance using the configured provider/model.
 
     Supports runtime configuration via config parameter for model switching.
+    Supports task-based routing to use cheaper/faster models for specific tasks.
     Configures temperature, max_tokens, timeout, and max_retries from settings.
     Uses LangChain's built-in retry mechanism (max_retries) for automatic retry handling.
 
@@ -60,6 +96,9 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
             - config.get("configurable", {}).get("max_tokens") - override max_tokens
             - config.get("configurable", {}).get("timeout") - override timeout
             - config.get("configurable", {}).get("max_retries") - override max_retries
+        task_type: Optional task type for model routing (e.g., "supervisor", "g_eval").
+            If provided and in TASK_MODEL_MAP, uses the mapped model instead of default.
+            Takes precedence over config["configurable"]["model"].
 
     Returns:
         Configured chat model instance that can be further customized via config
@@ -75,14 +114,25 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
     runtime_config: dict[str, object] = config.get("configurable", {}) if config else {}  # type: ignore[union-attr]
     runtime_model = runtime_config.get("model")
 
-    # Use runtime model if provided, otherwise use settings
-    model_identifier_raw = runtime_model or settings.LLM_MODEL
+    # Task-based routing takes precedence over config, then runtime model, then settings
+    routed_model: str | None = None
+    if task_type and task_type in TASK_MODEL_MAP:
+        routed_model = TASK_MODEL_MAP[task_type]
+        logger.info(
+            "model_routing_applied",
+            task_type=task_type,
+            routed_model=routed_model,
+            default_model=settings.LLM_MODEL,
+        )
+
+    # Use routed model if task routing applied, otherwise runtime model, otherwise settings
+    model_identifier_raw = routed_model or runtime_model or settings.LLM_MODEL
     model_identifier = str(model_identifier_raw).strip()
 
-    # Re-resolve provider/model if runtime model was provided
+    # Re-resolve provider/model if routed or runtime model was provided
     provider: str | None = None
     model_name: str = ""
-    if runtime_model:
+    if routed_model or runtime_model:
         # First, check if this is a registry key that needs resolution
         # Registry keys may differ from actual API model IDs
         # (e.g., "claude-haiku-3-5-20241022" -> "claude-3-5-haiku-20241022")
@@ -157,6 +207,65 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
         # For custom providers (e.g., perplexity/composer), pass the raw identifier
         model_identifier_to_use = model_identifier
 
+    # Get Redis semantic cache for LLM response caching
+    redis_cache = _get_redis_cache_for_model()
+
+    # For Anthropic models, use ChatAnthropic directly to enable prompt caching
+    if provider == "anthropic":
+        # Add extended cache TTL beta header if configured for 1 hour
+        cache_enabled = False
+        betas_list: list[str] | None = None
+        if settings.ANTHROPIC_PROMPT_CACHE_TTL == "1h":
+            # Use extended cache TTL (1 hour) with beta header
+            betas_list = ["extended-cache-ttl-2025-04-11"]
+            cache_enabled = True
+            cache_ttl = "1h"
+        else:
+            # Default is 5 minutes (no beta header needed)
+            cache_enabled = True
+            cache_ttl = "5m"
+
+        logger.info(
+            "chat_model_initializing",
+            configured_model=model_identifier,
+            resolved_model=model_identifier_to_use,
+            provider=provider,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=timeout,
+            max_retries=max_retries,
+            runtime_override=runtime_model is not None,
+            task_type=task_type,
+            routed_model=routed_model,
+            prompt_cache_enabled=cache_enabled,
+            prompt_cache_ttl=cache_ttl,
+            redis_cache_enabled=redis_cache is not None,
+        )
+
+        # Create ChatAnthropic instance directly
+        # Note: We need to extract kwargs that ChatAnthropic accepts
+        anthropic_kwargs = {
+            "model": model_identifier_to_use,
+        }
+        if "api_key" in init_kwargs:
+            anthropic_kwargs["api_key"] = init_kwargs["api_key"]  # type: ignore[assignment]
+        if "temperature" in init_kwargs:
+            anthropic_kwargs["temperature"] = init_kwargs["temperature"]  # type: ignore[assignment]
+        if "max_tokens" in init_kwargs:
+            anthropic_kwargs["max_tokens"] = init_kwargs["max_tokens"]  # type: ignore[assignment]
+        if "timeout" in init_kwargs:
+            anthropic_kwargs["timeout"] = init_kwargs["timeout"]  # type: ignore[assignment]
+        if "max_retries" in init_kwargs:
+            anthropic_kwargs["max_retries"] = init_kwargs["max_retries"]  # type: ignore[assignment]
+        if betas_list:
+            anthropic_kwargs["betas"] = betas_list  # type: ignore[assignment]
+        # Add Redis semantic cache
+        if redis_cache is not None:
+            anthropic_kwargs["cache"] = redis_cache  # type: ignore[assignment]
+
+        return ChatAnthropic(**anthropic_kwargs)  # type: ignore[arg-type,return-value]
+
+    # For non-Anthropic models, use init_chat_model
     logger.info(
         "chat_model_initializing",
         configured_model=model_identifier,
@@ -167,7 +276,14 @@ def get_chat_model(config: dict[str, dict[str, object]] | None = None) -> BaseCh
         timeout=timeout,
         max_retries=max_retries,
         runtime_override=runtime_model is not None,
+        task_type=task_type,
+        routed_model=routed_model,
+        redis_cache_enabled=redis_cache is not None,
     )
+
+    # Add Redis semantic cache if available
+    if redis_cache is not None:
+        init_kwargs["cache"] = redis_cache  # type: ignore[typeddict-item]
 
     # Create configurable model that can be switched at invocation time
     # If no runtime model was provided, the model is still configurable via config at invoke time

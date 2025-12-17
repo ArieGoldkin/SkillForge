@@ -8,8 +8,11 @@ Architecture:
     - Supervisor uses model.with_structured_output() for direct JSON response
     - No tool calling overhead - faster inference
     - Returns structured decision: {"agents": [...], "reasoning": "...", "confidence": 0.0-1.0}
+    - Redis exact-match caching for deterministic routing (same content = same agents)
 """
 
+import hashlib
+import json
 import time
 
 from langchain_core.runnables import Runnable
@@ -24,6 +27,7 @@ from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.domains.analysis.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
+from app.shared.services.cache import get_exact_cache
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 from app.shared.workflows.utils.content_signals import (
     detect_content_signals,
@@ -162,6 +166,22 @@ async def _invoke_supervisor_with_retry(
     raise RuntimeError(msg)
 
 
+def _generate_supervisor_cache_key(content: str, content_type: str) -> str:
+    """Generate cache key for supervisor routing decisions.
+
+    Args:
+        content: Content to analyze
+        content_type: Type of content
+
+    Returns:
+        Cache key combining content hash and type
+
+    """
+    # Use first 3000 chars for cache key (enough to be unique)
+    content_hash = hashlib.sha256(f"{content[:3000]}{content_type}".encode()).hexdigest()[:16]
+    return f"supervisor:{content_type}:{content_hash}"
+
+
 @robust_traceable(
     name="supervisor_route",
     run_type="chain",
@@ -182,6 +202,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
 
     Uses structured output for faster inference (no tool calling overhead).
     Implements dynamic content sizing and progressive timeout retry logic.
+    Uses Redis exact-match caching to return same agents for identical content.
 
     Args:
         content: The extracted text content to analyze
@@ -217,6 +238,58 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         content_type=content_type,
         content_length=len(content),
     )
+
+    # Check Redis exact-match cache for supervisor routing
+    cache_key = _generate_supervisor_cache_key(content, content_type)
+    exact_cache = None
+    cached_decision = None
+
+    try:
+        exact_cache = get_exact_cache()
+        # Try to get cached decision
+        cached_value = await exact_cache.aget(cache_key)
+        if cached_value:
+            cached_decision = (
+                json.loads(cached_value) if isinstance(cached_value, str) else cached_decision
+            )
+            logger.info(
+                "supervisor_cache_hit",
+                analysis_id=analysis_id,
+                cache_key=cache_key[:32],
+                cached_agents=cached_decision.get("agents") if cached_decision else None,
+            )
+    except Exception as cache_error:  # noqa: BLE001 - Non-critical cache lookup
+        # Gracefully handle Redis connection failures
+        logger.warning(
+            "supervisor_cache_unavailable",
+            analysis_id=analysis_id,
+            error=str(cache_error),
+        )
+        exact_cache = None
+
+    # If we have a valid cached decision, return it immediately
+    if cached_decision and cached_decision.get("agents"):
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.info(
+            "supervisor_returning_cached_decision",
+            analysis_id=analysis_id,
+            agents=cached_decision.get("agents"),
+            duration_ms=duration_ms,
+            cache_hit=True,
+        )
+
+        # Emit SSE event: supervisor complete (from cache)
+        await emit_streaming_event(
+            "progress",
+            analysis_id=analysis_id,
+            stage=get_stage_name("supervisor"),
+            status="complete",
+            agent_count=len(cached_decision.get("agents", [])),
+            selected_agents=cached_decision.get("agents"),
+            cache_hit=True,
+        )
+
+        return {"supervisor_decision": cached_decision}
 
     try:
         # Detect actual content type from content (may differ from extraction metadata)
@@ -267,11 +340,14 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         )
 
         # Get model with structured output (no tools, faster inference)
-        # Use runtime model override if model_id is provided
+        # Use runtime model override if model_id is provided, otherwise use task routing
+        # Task routing uses cheaper/faster models for supervisor classification
         model_config: dict[str, dict[str, object]] | None = (
             {"configurable": {"model": model_id}} if model_id else None
         )
-        model = get_chat_model(model_config)
+        # Only apply task routing if no explicit model_id is provided
+        task_type_to_use = None if model_id else "supervisor"
+        model = get_chat_model(config=model_config, task_type=task_type_to_use)
         structured_model = model.with_structured_output(AgentSelection)
 
         # Invoke with progressive timeout retry
@@ -466,6 +542,24 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             # Agents skipped due to no relevant data
             "agents_skipped_by_signals": agents_to_skip,
         }
+
+        # Store decision in Redis exact-match cache for future identical content
+        if exact_cache is not None:
+            try:
+                await exact_cache.aset(cache_key, json.dumps(supervisor_decision))
+                logger.debug(
+                    "supervisor_decision_cached",
+                    analysis_id=analysis_id,
+                    cache_key=cache_key[:32],
+                    agents=filtered_agents,
+                )
+            except Exception as cache_error:  # noqa: BLE001 - Non-critical cache set
+                # Non-critical - log and continue
+                logger.warning(
+                    "supervisor_cache_set_failed",
+                    analysis_id=analysis_id,
+                    error=str(cache_error),
+                )
 
         # Calculate expected total stages: 5 fixed stages + selected agents
         # Fixed stages: extraction, embedding, supervisor, aggregation, artifact_generation

@@ -61,6 +61,42 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
     assert "response_format" in call_args.kwargs
 
 
+@patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+@patch("app.domains.analysis.workflows.agents.base.create_agent")
+def test_create_structured_agent_with_task_type(mock_create_agent, mock_get_model):
+    """Test creating agent with task_type for model routing."""
+    mock_model = MagicMock()
+    mock_get_model.return_value = mock_model
+    mock_create_agent.return_value = MagicMock()
+
+    create_structured_agent(
+        system_prompt="Test prompt",
+        response_schema=MockAgentSchema,
+        task_type="synthesis",
+    )
+
+    # Verify get_chat_model was called with task_type
+    mock_get_model.assert_called_once_with(task_type="synthesis")
+    mock_create_agent.assert_called_once()
+
+
+@patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+@patch("app.domains.analysis.workflows.agents.base.create_agent")
+def test_create_structured_agent_without_task_type(mock_create_agent, mock_get_model):
+    """Test creating agent without task_type passes None to model factory."""
+    mock_model = MagicMock()
+    mock_get_model.return_value = mock_model
+    mock_create_agent.return_value = MagicMock()
+
+    create_structured_agent(
+        system_prompt="Test prompt",
+        response_schema=MockAgentSchema,
+    )
+
+    # Verify get_chat_model was called with task_type=None (default)
+    mock_get_model.assert_called_once_with(task_type=None)
+
+
 @pytest.mark.asyncio
 async def test_save_agent_finding(mock_session):
     """Test saving agent finding to database."""

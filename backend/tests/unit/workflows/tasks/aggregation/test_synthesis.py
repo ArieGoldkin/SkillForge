@@ -142,6 +142,10 @@ class TestCreateSynthesisAgent:
         assert "response_schema" in call_kwargs
         assert call_kwargs["response_schema"] == AggregatedInsights
 
+        # Verify task_type is set for model routing observability
+        assert "task_type" in call_kwargs
+        assert call_kwargs["task_type"] == "synthesis"
+
         # Verify result is the mock agent
         assert result == mock_agent
 

@@ -13,12 +13,14 @@ from uuid import UUID
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import SystemMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.agent_config import get_stage_name
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
@@ -26,6 +28,60 @@ from app.models.agent_finding import AgentFinding
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
+
+
+def _create_system_message_with_cache_control(system_prompt: str) -> SystemMessage:
+    """Create a SystemMessage with Anthropic prompt caching support.
+
+    Args:
+        system_prompt: System prompt text
+
+    Returns:
+        SystemMessage with cache_control configured based on settings
+
+    Note:
+        Cache control is only added when using Anthropic models.
+        - 5m TTL: Default Anthropic ephemeral caching (no beta header needed)
+        - 1h TTL: Extended caching (requires beta header in model factory)
+
+    """
+    # Check if we should add cache_control for Anthropic models
+    provider = settings.resolved_llm_provider()
+    if provider != "anthropic":
+        # No cache control for non-Anthropic providers
+        return SystemMessage(content=system_prompt)
+
+    # Determine cache_control based on configured TTL
+    cache_control: dict[str, str] = {"type": "ephemeral"}
+    if settings.ANTHROPIC_PROMPT_CACHE_TTL == "1h":
+        # Extended 1-hour cache (requires beta header)
+        cache_control["ttl"] = "1h"
+        logger.debug(
+            "system_prompt_cache_control_enabled",
+            cache_type="ephemeral",
+            ttl="1h",
+            provider=provider,
+        )
+    else:
+        # Default 5-minute cache
+        logger.debug(
+            "system_prompt_cache_control_enabled",
+            cache_type="ephemeral",
+            ttl="5m",
+            provider=provider,
+        )
+
+    # Create SystemMessage with cache_control in additional_kwargs
+    # Anthropic expects cache_control at the content level for text blocks
+    return SystemMessage(
+        content=[
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": cache_control,
+            }
+        ]
+    )
 
 
 @dataclass
@@ -46,6 +102,7 @@ def create_structured_agent(
     system_prompt: str,
     response_schema: type[BaseModel],
     tools: Sequence[BaseTool] | None = None,
+    task_type: str | None = None,
 ) -> Runnable:
     """Create an agent with structured output using ToolStrategy.
 
@@ -53,6 +110,9 @@ def create_structured_agent(
         system_prompt: System prompt for the agent
         response_schema: Pydantic model defining the expected output structure
         tools: Optional list of tools for the agent
+        task_type: Optional task type for model routing (e.g., "synthesis", "agent").
+            If provided and in TASK_MODEL_MAP, routes to optimized model.
+            If not in map, uses default model (intentional for complex tasks).
 
     Returns:
         Configured agent instance with structured output support
@@ -60,15 +120,20 @@ def create_structured_agent(
     Note:
         ToolStrategy automatically validates output against response_schema.
         Validation errors are automatically traced by LangSmith when they occur.
+        For Anthropic models, system prompts are automatically cached for cost savings.
 
     """
-    model = get_chat_model()
+    model = get_chat_model(task_type=task_type)
     # Prevent multiple parallel tool calls; we expect exactly one structured response
     bound_model: Runnable = model.bind_tools(tools or [], parallel_tool_calls=False)
+
+    # Create system message with prompt caching support
+    system_message = _create_system_message_with_cache_control(system_prompt)
+
     agent = create_agent(
         cast(BaseChatModel, bound_model),
         tools=tools or [],
-        system_prompt=system_prompt,
+        system_prompt=system_message,
         response_format=ToolStrategy(response_schema),
     )
 
@@ -129,6 +194,7 @@ def create_tool_enabled_agent(
     response_schema: type[BaseModel],
     tools: Sequence[BaseTool],
     tool_call_config: ToolCallConfig | None = None,
+    task_type: str | None = None,
 ) -> Runnable:
     """Create an agent with MCP tool access and structured output.
 
@@ -140,6 +206,8 @@ def create_tool_enabled_agent(
         response_schema: Pydantic model defining expected output structure
         tools: List of MCP tools (pre-filtered by ToolRegistry)
         tool_call_config: Optional configuration for tool behavior
+        task_type: Optional task type for model routing (e.g., "agent").
+            If provided and in TASK_MODEL_MAP, routes to optimized model.
 
     Returns:
         Configured agent with tool calling and structured output support
@@ -187,16 +255,19 @@ def create_tool_enabled_agent(
         parallel_tool_calls=config.parallel_tool_calls,
     )
 
-    model = get_chat_model()
+    model = get_chat_model(task_type=task_type)
     # Enable parallel tool calls for MCP tools (efficiency)
     bound_model: Runnable = model.bind_tools(
         list(tools), parallel_tool_calls=config.parallel_tool_calls
     )
 
+    # Create system message with prompt caching support
+    system_message = _create_system_message_with_cache_control(enhanced_prompt)
+
     agent = create_agent(
         cast(BaseChatModel, bound_model),
         tools=list(tools),
-        system_prompt=enhanced_prompt,
+        system_prompt=system_message,
         response_format=ToolStrategy(response_schema),
     )
 

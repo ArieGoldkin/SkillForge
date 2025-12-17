@@ -318,10 +318,15 @@ class TestCreateToolEnabledAgent:
         assert call_kwargs.get("tools") == mock_tools
         assert call_kwargs.get("max_tool_calls") == 10  # Default
 
-        # Verify enhanced prompt was passed to create_agent
+        # Verify enhanced prompt was passed to create_agent (wrapped in SystemMessage)
         mock_create_agent.assert_called_once()
         call_kwargs = mock_create_agent.call_args.kwargs
-        assert call_kwargs.get("system_prompt") == enhanced_prompt
+        system_prompt = call_kwargs.get("system_prompt")
+        # SystemMessage wraps the prompt for Anthropic cache control
+        assert system_prompt.content == enhanced_prompt or (
+            isinstance(system_prompt.content, list)
+            and system_prompt.content[0]["text"] == enhanced_prompt
+        )
 
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")

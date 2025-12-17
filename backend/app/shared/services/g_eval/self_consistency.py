@@ -101,13 +101,14 @@ async def _score_criterion_with_temperature(  # noqa: PLR0913 - Function needs a
         CriterionScore with evaluation results
 
     """
-    # Get model with specific temperature for sampling
+    # Get model with specific temperature for sampling and task routing for cost optimization
     model = get_chat_model(
         config={
             "configurable": {
                 "temperature": temperature,
             }
-        }
+        },
+        task_type="g_eval",
     )
 
     system_prompt = G_EVAL_SYSTEM_PROMPT.format(

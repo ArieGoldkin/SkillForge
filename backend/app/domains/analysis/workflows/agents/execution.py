@@ -2,6 +2,9 @@
 
 This module handles the execution of agents with progress tracking,
 streaming support, error handling, and database persistence.
+
+Redis semantic caching is integrated at the model factory level (get_chat_model),
+providing automatic caching for all LLM calls without explicit cache management here.
 """
 
 import os
@@ -91,6 +94,9 @@ async def _run_agent_with_tracking_impl(
     This function contains the actual logic. The public `run_agent_with_tracking`
     function wraps this with @traceable for LangSmith instrumentation.
 
+    Redis semantic caching is automatically enabled for all agents via the model
+    factory (get_chat_model). No explicit cache management needed here.
+
     Args:
         params: Agent execution parameters
         config: Agent execution configuration
@@ -118,6 +124,7 @@ async def _run_agent_with_tracking_impl(
     try:
         # Build user prompt using prompt builder
         # Issue #300: Include proactive context from memory recall
+        # Note: Redis semantic caching is integrated at model level (no manual cache management)
         user_prompt = build_agent_user_prompt(
             content=params.content,
             content_type=params.content_type,

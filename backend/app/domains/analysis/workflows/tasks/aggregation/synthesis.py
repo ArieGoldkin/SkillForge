@@ -169,10 +169,16 @@ def create_synthesis_agent() -> "Runnable":
     Returns:
         Structured agent instance configured for synthesis
 
+    Note:
+        Uses task_type="synthesis" for model routing observability.
+        Synthesis intentionally uses the default model (not routed to cheaper models)
+        because it performs complex multi-agent aggregation requiring high quality.
+
     """
     return create_structured_agent(
         system_prompt=SYNTHESIS_SYSTEM_PROMPT,
         response_schema=AggregatedInsights,
+        task_type="synthesis",
     )
 
 
