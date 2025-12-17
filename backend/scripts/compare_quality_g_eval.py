@@ -32,14 +32,24 @@ from app.core.logging import get_logger  # noqa: E402
 from app.db.session import get_session_factory  # noqa: E402
 from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
 from app.domains.analysis.workflows.agents.schemas.code_reviewer import CodeReview  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.implementation_planner import ImplementationPlan  # noqa: E402
+from app.domains.analysis.workflows.agents.schemas.implementation_planner import (
+    ImplementationPlan,
+)
 from app.domains.analysis.workflows.agents.schemas.learning_path import LearningPath  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.performance_analyst import PerformanceAnalysis  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.research_analyst import ResearchAnalysis  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.security_auditor import SecurityAudit  # noqa: E402
-from app.domains.analysis.workflows.agents.schemas.tech_comparator import TechComparison  # noqa: E402
+from app.domains.analysis.workflows.agents.schemas.performance_analyst import (
+    PerformanceAnalysis,
+)
+from app.domains.analysis.workflows.agents.schemas.research_analyst import (
+    ResearchAnalysis,
+)
+from app.domains.analysis.workflows.agents.schemas.security_auditor import (
+    SecurityAudit,
+)
+from app.domains.analysis.workflows.agents.schemas.tech_comparator import (
+    TechComparison,
+)
 from app.models.agent_example import AgentExample  # noqa: E402
-from app.shared.services.g_eval import g_eval_score  # noqa: E402
+from app.shared.services.g_eval import GEvalCostTracker, g_eval_score  # noqa: E402
 from app.shared.services.prompts.chain_of_thought import get_cot_prompt  # noqa: E402
 
 logger = get_logger(__name__)
@@ -172,7 +182,7 @@ async def score_variant(
             confidence=g_eval_result.confidence,
             reasoning=g_eval_result.reasoning,
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.exception("variant_scoring_error", variant=variant, error=str(e))
         return VariantResult(
             variant=variant,
@@ -194,15 +204,17 @@ async def compare_example(
     """Run full comparison for a single example."""
     input_content = example.input_content_preview or example.input_summary
 
-    # Run all variants sequentially (to avoid rate limits)
-    print("      Running control variant...")
-    control_output = await run_variant(example, "control")
-
-    print("      Running few-shot variant...")
-    few_shot_output = await run_variant(example, "few_shot", few_shot_examples)
-
-    print("      Running CoT variant...")
-    cot_output = await run_variant(example, "cot")
+    # OPTIMIZATION: Run all variants in parallel for 3x speedup
+    # This is safe because:
+    # 1. Each variant uses independent LLM calls
+    # 2. Model factory handles rate limiting internally
+    # 3. Variants don't share state
+    print("      Running variants in parallel (3x speedup)...")
+    control_output, few_shot_output, cot_output = await asyncio.gather(
+        run_variant(example, "control"),
+        run_variant(example, "few_shot", few_shot_examples),
+        run_variant(example, "cot"),
+    )
 
     # Score all variants with G-Eval in parallel
     print("      Scoring with G-Eval...")
@@ -240,8 +252,81 @@ async def compare_example(
     )
 
 
+def select_diverse_examples(
+    examples: list[AgentExample],
+    num_examples: int = 2,
+    min_quality: float = 0.85,
+) -> list[dict]:
+    """Select diverse, high-quality few-shot examples.
+
+    Strategy:
+    1. Filter by quality threshold (>= 0.85)
+    2. Select diverse examples using Jaccard similarity on output keys
+    3. Avoid redundant examples with similar structures
+
+    Args:
+        examples: Pool of candidate examples
+        num_examples: Number to select (default: 2)
+        min_quality: Minimum quality score (default: 0.85)
+
+    Returns:
+        List of diverse few-shot examples
+
+    """
+    # Filter by quality
+    high_quality = [ex for ex in examples if ex.quality_score >= min_quality]
+
+    if len(high_quality) < num_examples:
+        # Not enough high-quality examples, fall back to best available
+        print(f"      Warning: Only {len(high_quality)} examples with quality >= {min_quality}")
+        sorted_examples = sorted(examples, key=lambda x: x.quality_score, reverse=True)
+        return [
+            {"input_summary": ex.input_summary, "output_example": ex.output_example}
+            for ex in sorted_examples[:num_examples]
+        ]
+
+    # Select diverse examples using Jaccard similarity on output keys
+    selected: list[AgentExample] = [high_quality[0]]  # Start with first high-quality
+
+    for candidate in high_quality[1:]:
+        if len(selected) >= num_examples:
+            break
+
+        # Check diversity: compare output structure using Jaccard similarity
+        candidate_keys = set(candidate.output_example.keys()) if candidate.output_example else set()
+        is_diverse = True
+
+        for selected_ex in selected:
+            selected_keys = (
+                set(selected_ex.output_example.keys()) if selected_ex.output_example else set()
+            )
+
+            # Jaccard similarity: intersection / union
+            if candidate_keys and selected_keys:
+                intersection = len(candidate_keys & selected_keys)
+                union = len(candidate_keys | selected_keys)
+                similarity = intersection / union if union > 0 else 0.0
+
+                # If too similar (>80% overlap), skip this candidate
+                if similarity > 0.8:
+                    is_diverse = False
+                    break
+
+        if is_diverse:
+            selected.append(candidate)
+
+    print(f"      Selected {len(selected)} diverse examples (quality >= {min_quality})")
+    return [
+        {"input_summary": ex.input_summary, "output_example": ex.output_example} for ex in selected
+    ]
+
+
 async def run_g_eval_comparison(sample_size: int = 2) -> None:
     """Run G-Eval quality comparison."""
+    # Reset cost tracker for this session
+    tracker = GEvalCostTracker.get_instance()
+    tracker.reset()
+
     print("\n" + "=" * 70)
     print("G-EVAL QUALITY COMPARISON")
     print("=" * 70)
@@ -252,7 +337,9 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
     # Load examples
     factory = get_session_factory()
     async with factory() as session:
-        query = select(AgentExample).where(AgentExample.quality_score >= 0.8).limit(sample_size * 10)
+        query = (
+            select(AgentExample).where(AgentExample.quality_score >= 0.8).limit(sample_size * 10)
+        )
         result = await session.execute(query)
         all_examples = result.scalars().all()
 
@@ -274,11 +361,14 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
         print(f"\n📊 Agent Type: {agent_type}")
         print("-" * 50)
 
-        # Get few-shot examples (use first golden example as template)
-        few_shot_examples = [
-            {"input_summary": ex.input_summary, "output_example": ex.output_example}
-            for ex in examples[:2]  # Use first 2 as few-shot examples
-        ]
+        # OPTIMIZATION: Smart few-shot selection with quality filter + diversity
+        # Old: Just took first 2 examples (no quality or diversity check)
+        # New: Filter by quality >= 0.85, check Jaccard similarity for diversity
+        few_shot_examples = select_diverse_examples(
+            examples,
+            num_examples=2,
+            min_quality=0.85,
+        )
 
         for i, example in enumerate(examples, 1):
             print(f"\n  Example {i}/{len(examples)}: {example.input_summary[:40]}...")
@@ -290,10 +380,14 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
 
                 # Print results
                 print(f"\n    Control:   {comparison.control.g_eval_overall:.3f}")
-                print(f"    Few-Shot:  {comparison.few_shot.g_eval_overall:.3f} ({comparison.few_shot_improvement:+.1f}%)")
-                print(f"    CoT:       {comparison.cot.g_eval_overall:.3f} ({comparison.cot_improvement:+.1f}%)")
+                print(
+                    f"    Few-Shot:  {comparison.few_shot.g_eval_overall:.3f} ({comparison.few_shot_improvement:+.1f}%)"
+                )
+                print(
+                    f"    CoT:       {comparison.cot.g_eval_overall:.3f} ({comparison.cot_improvement:+.1f}%)"
+                )
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 print(f"    Error: {e}")
 
     # Summary
@@ -342,9 +436,32 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
             agent_results[r.agent_type].append(r)
 
         for agent_type, agent_results_list in agent_results.items():
-            avg_fs = sum(r.few_shot_improvement for r in agent_results_list) / len(agent_results_list)
+            avg_fs = sum(r.few_shot_improvement for r in agent_results_list) / len(
+                agent_results_list
+            )
             avg_ct = sum(r.cot_improvement for r in agent_results_list) / len(agent_results_list)
             print(f"  {agent_type:25} Few-Shot: {avg_fs:+.1f}%  CoT: {avg_ct:+.1f}%")
+
+        # Token and Cost Summary
+        print("\n" + "-" * 50)
+        print("Token Usage & Cost Summary:")
+        print("-" * 50)
+
+        summary = tracker.get_session_summary()
+        print(f"  Total Evaluations:         {summary.total_evaluations}")
+        print(f"  Total Tokens:              {summary.total_tokens:,}")
+        print(f"    - Input Tokens:          {summary.total_input_tokens:,}")
+        print(f"    - Output Tokens:         {summary.total_output_tokens:,}")
+        print(f"    - Cached Tokens:         {summary.total_cached_tokens:,}")
+        print(f"  Total Cost:                ${summary.total_cost:.4f}")
+        print(f"  Avg Tokens/Eval:           {summary.avg_tokens_per_eval:,.0f}")
+        print(f"  Avg Cost/Eval:             ${summary.avg_cost_per_eval:.4f}")
+
+        # Breakdown by model (if multiple models used)
+        if len(summary.by_model) > 0:
+            print("\n  By Model:")
+            for model, cost in summary.by_model.items():
+                print(f"    {model:25} {cost.total_tokens:,} tokens  ${cost.total_cost:.4f}")
 
     print("\n" + "=" * 70)
 
@@ -360,23 +477,35 @@ async def run_g_eval_comparison(sample_size: int = 2) -> None:
             f.write(f"- **Few-Shot Improvement:** {avg_few_shot_improvement:+.1f}%\n")
             f.write(f"- **CoT Improvement:** {avg_cot_improvement:+.1f}%\n")
             f.write(f"- **Winner:** {winner}\n")
-            f.write(f"- **Target Achievement:** {'✅ YES' if best_improvement >= 15 else '❌ NO'} (target: 15-25%)\n")
+            f.write(
+                f"- **Target Achievement:** {'✅ YES' if best_improvement >= 15 else '❌ NO'} (target: 15-25%)\n"
+            )
             f.write(f"- **Samples Tested:** {len(results)}\n\n")
 
             f.write("## Results by Agent Type\n\n")
             f.write("| Agent Type | Control | Few-Shot | CoT | FS Δ | CoT Δ |\n")
             f.write("|------------|---------|----------|-----|------|-------|\n")
             for agent_type, agent_results_list in agent_results.items():
-                ctrl = sum(r.control.g_eval_overall for r in agent_results_list) / len(agent_results_list)
-                fs = sum(r.few_shot.g_eval_overall for r in agent_results_list) / len(agent_results_list)
+                ctrl = sum(r.control.g_eval_overall for r in agent_results_list) / len(
+                    agent_results_list
+                )
+                fs = sum(r.few_shot.g_eval_overall for r in agent_results_list) / len(
+                    agent_results_list
+                )
                 ct = sum(r.cot.g_eval_overall for r in agent_results_list) / len(agent_results_list)
-                fs_d = sum(r.few_shot_improvement for r in agent_results_list) / len(agent_results_list)
+                fs_d = sum(r.few_shot_improvement for r in agent_results_list) / len(
+                    agent_results_list
+                )
                 ct_d = sum(r.cot_improvement for r in agent_results_list) / len(agent_results_list)
-                f.write(f"| {agent_type} | {ctrl:.3f} | {fs:.3f} | {ct:.3f} | {fs_d:+.1f}% | {ct_d:+.1f}% |\n")
+                f.write(
+                    f"| {agent_type} | {ctrl:.3f} | {fs:.3f} | {ct:.3f} | {fs_d:+.1f}% | {ct_d:+.1f}% |\n"
+                )
 
             f.write("\n## Key Insight\n\n")
             f.write("G-Eval LLM-as-Judge provides meaningful quality differentiation compared to\n")
-            f.write("the heuristic scorer which produced identical scores across variants in Phase 1.\n")
+            f.write(
+                "the heuristic scorer which produced identical scores across variants in Phase 1.\n"
+            )
 
     print(f"\nReport saved to: {report_path}")
 

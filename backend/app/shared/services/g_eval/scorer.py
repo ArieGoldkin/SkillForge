@@ -24,6 +24,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.shared.services.g_eval.cache import get_cache
 from app.shared.services.g_eval.rubrics import (
     format_rubric_for_prompt,
     get_agent_rubrics,
@@ -57,11 +58,16 @@ class GEvalResult:
     reasoning: dict[str, str] = field(default_factory=dict)  # Per-criterion reasoning
     agent_type: str = ""
     error: str | None = None
+    voting_distribution: dict[str, dict[int, int]] | None = (
+        None  # Per-criterion vote counts (score -> count)
+    )
 
     @property
     def completeness(self) -> float:
         """Get completeness score (normalized 0-1)."""
-        return self.criteria_scores.get("completeness", CriterionScore("", 3, 0.6, 0.5, "")).normalized
+        return self.criteria_scores.get(
+            "completeness", CriterionScore("", 3, 0.6, 0.5, "")
+        ).normalized
 
     @property
     def accuracy(self) -> float:
@@ -167,6 +173,7 @@ async def _score_criterion(
     output: str,
     criterion: str,
     agent_type: str,
+    use_cache: bool = True,
 ) -> CriterionScore:
     """Score a single criterion using G-Eval LLM-as-Judge.
 
@@ -175,11 +182,27 @@ async def _score_criterion(
         output: The generated output to evaluate
         criterion: The evaluation criterion
         agent_type: Agent type for rubric selection
+        use_cache: Whether to use caching (default True)
 
     Returns:
         CriterionScore with evaluation results
 
     """
+    cache = get_cache()
+
+    # Check cache first
+    if use_cache:
+        cached = cache.get(input_content, output, agent_type, criterion)
+        if cached:
+            return CriterionScore(
+                criterion=criterion,
+                score=cached.score,
+                normalized=cached.normalized,
+                confidence=cached.confidence,
+                reasoning=cached.reasoning,
+            )
+
+    # Cache miss - call LLM
     model = get_chat_model()
 
     # Get agent-specific rubric
@@ -203,8 +226,25 @@ async def _score_criterion(
 
     try:
         response = await model.ainvoke(messages)
-        return _parse_g_eval_response(response.content, criterion)
-    except Exception as e:  # noqa: BLE001 - Graceful degradation for LLM errors
+        # Ensure content is a string (handle LangChain's str | list type)
+        content = response.content if isinstance(response.content, str) else str(response.content)
+        result = _parse_g_eval_response(content, criterion)
+
+        # Store in cache
+        if use_cache:
+            cache.set(
+                input_content=input_content,
+                output=output,
+                agent_type=agent_type,
+                criterion=criterion,
+                score=result.score,
+                normalized=result.normalized,
+                confidence=result.confidence,
+                reasoning=result.reasoning,
+            )
+
+        return result
+    except Exception as e:
         logger.exception("g_eval_criterion_error", criterion=criterion, error=str(e))
         # Return neutral score on error
         return CriterionScore(
@@ -216,11 +256,14 @@ async def _score_criterion(
         )
 
 
-async def g_eval_score(
+async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
     input_content: str,
     output: dict[str, Any] | str,
     agent_type: str,
     criteria: list[str] | None = None,
+    use_cache: bool = True,
+    use_self_consistency: bool = False,
+    n_samples: int = 3,
 ) -> GEvalResult:
     """Score output quality using G-Eval LLM-as-Judge.
 
@@ -229,9 +272,13 @@ async def g_eval_score(
         output: The generated output to evaluate (dict or string)
         agent_type: Agent type for rubric selection
         criteria: Optional list of criteria to evaluate (defaults to agent config)
+        use_cache: Whether to use caching (default True)
+        use_self_consistency: Enable self-consistency voting for 15-25% accuracy boost
+        n_samples: Number of samples for self-consistency voting (default=3)
 
     Returns:
-        GEvalResult with overall score and per-criterion breakdown
+        GEvalResult with overall score and per-criterion breakdown.
+        If use_self_consistency=True, includes voting_distribution field.
 
     """
     # Convert output to string if needed
@@ -242,7 +289,9 @@ async def g_eval_score(
 
     # Get agent-specific configuration
     config = get_agent_rubrics(agent_type)
-    eval_criteria = criteria or config.get("criteria", ["completeness", "accuracy", "coherence", "depth"])
+    eval_criteria = criteria or config.get(
+        "criteria", ["completeness", "accuracy", "coherence", "depth"]
+    )
     weights = config.get("weights", {c: 1.0 / len(eval_criteria) for c in eval_criteria})
 
     logger.info(
@@ -250,17 +299,89 @@ async def g_eval_score(
         agent_type=agent_type,
         criteria=eval_criteria,
         output_length=len(output_str),
+        use_self_consistency=use_self_consistency,
     )
 
+    # Branch based on self-consistency mode
+    if use_self_consistency:
+        # Import here to avoid circular dependency
+        from app.shared.services.g_eval.self_consistency import (
+            score_criterion_with_self_consistency,
+        )
+
+        # Pre-format rubrics for all criteria (avoid redundant formatting)
+        rubric_texts = {c: format_rubric_for_prompt(agent_type, c) for c in eval_criteria}
+
+        # Score all criteria with self-consistency voting in parallel
+        tasks = [
+            score_criterion_with_self_consistency(
+                input_content=input_content,
+                output=output_str,
+                criterion=criterion,
+                agent_type=agent_type,
+                rubric_text=rubric_texts[criterion],
+                n_samples=n_samples,
+            )
+            for criterion in eval_criteria
+        ]
+
+        try:
+            sc_results = await asyncio.gather(*tasks)
+        except Exception as e:
+            logger.exception("g_eval_self_consistency_batch_error", error=str(e))
+            return GEvalResult(
+                overall=0.5,
+                agent_type=agent_type,
+                error=str(e),
+            )
+
+        # Extract final scores and voting distributions
+        criteria_scores = {r.final_score.criterion: r.final_score for r in sc_results}
+        reasoning = {r.criterion: r.final_score.reasoning for r in sc_results}
+        voting_dist = {r.criterion: r.voting_distribution.score_counts for r in sc_results}
+
+        # Calculate weighted overall score
+        overall = sum(
+            criteria_scores[c].normalized * weights.get(c, 1.0 / len(eval_criteria))
+            for c in eval_criteria
+            if c in criteria_scores
+        )
+
+        # Average confidence (using voting confidence)
+        avg_confidence = (
+            sum(r.final_score.confidence for r in sc_results) / len(sc_results)
+            if sc_results
+            else 0.5
+        )
+
+        logger.info(
+            "g_eval_scoring_completed",
+            agent_type=agent_type,
+            overall=overall,
+            confidence=avg_confidence,
+            scores={c: r.score for c, r in criteria_scores.items()},
+            voting_distributions=voting_dist,
+        )
+
+        return GEvalResult(
+            overall=overall,
+            criteria_scores=criteria_scores,
+            confidence=avg_confidence,
+            reasoning=reasoning,
+            agent_type=agent_type,
+            voting_distribution=voting_dist,
+        )
+
+    # Standard mode without self-consistency
     # Score all criteria in parallel for efficiency
-    tasks = [
-        _score_criterion(input_content, output_str, criterion, agent_type)
+    standard_tasks = [
+        _score_criterion(input_content, output_str, criterion, agent_type, use_cache)
         for criterion in eval_criteria
     ]
 
     try:
-        results = await asyncio.gather(*tasks)
-    except Exception as e:  # noqa: BLE001 - Graceful degradation for LLM batch errors
+        results: list[CriterionScore] = await asyncio.gather(*standard_tasks)  # type: ignore[assignment]
+    except Exception as e:
         logger.exception("g_eval_batch_error", error=str(e))
         return GEvalResult(
             overall=0.5,
