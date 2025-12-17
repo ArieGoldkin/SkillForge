@@ -704,3 +704,250 @@ def test_validate_workflow_result_identifies_missing_fields():
 
     missing = _validate_workflow_result(result)
     assert set(missing) == {"extraction_metadata", "content_embedding"}
+
+
+# ============================================================================
+# Tests for _handle_workflow_exception
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_handle_generator_exit_during_execution():
+    """Test GeneratorExit during execution (workflow_completed=False).
+
+    Should call _update_analysis_status("failed"), emit error, and re-raise.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = GeneratorExit()
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(GeneratorExit):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Verify status was updated to failed
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_generator_exit_during_cleanup():
+    """Test GeneratorExit during cleanup (workflow_completed=True).
+
+    Should suppress exception, not call status update, and not raise.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = GeneratorExit()
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            # Should not raise exception
+            await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
+
+            # Verify status was NOT updated (cleanup is normal)
+            mock_status.assert_not_called()
+
+            # Verify error event was NOT emitted (cleanup is normal)
+            mock_emit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_converted_generator_exit_during_execution():
+    """Test RuntimeError with 'coroutine ignored GeneratorExit' during execution.
+
+    Python's async runtime converts GeneratorExit to RuntimeError in async functions.
+    Should treat same as GeneratorExit during execution.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = RuntimeError("coroutine ignored GeneratorExit")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(RuntimeError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Verify status was updated to failed
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_converted_generator_exit_during_cleanup():
+    """Test RuntimeError with 'coroutine ignored GeneratorExit' during cleanup.
+
+    Should suppress exception, not call status update, and not raise.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = RuntimeError("coroutine ignored GeneratorExit")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            # Should not raise exception
+            await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
+
+            # Verify status was NOT updated (cleanup is normal)
+            mock_status.assert_not_called()
+
+            # Verify error event was NOT emitted (cleanup is normal)
+            mock_emit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handle_other_runtime_error_during_execution():
+    """Test RuntimeError without 'coroutine ignored GeneratorExit' message.
+
+    Should treat as regular exception (not converted GeneratorExit).
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = RuntimeError("Some other runtime error")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(RuntimeError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Verify status was updated to failed
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_value_error_during_execution():
+    """Test ValueError (other exception type) during execution.
+
+    Should call _update_analysis_status("failed"), emit error, and re-raise.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = ValueError("Invalid workflow state")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(ValueError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Verify status was updated to failed
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_key_error_during_execution():
+    """Test KeyError (other exception type) during execution.
+
+    Should call _update_analysis_status("failed"), emit error, and re-raise.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = KeyError("missing_field")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(KeyError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Verify status was updated to failed
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_exception_during_cleanup_is_not_suppressed():
+    """Test non-GeneratorExit exceptions during cleanup are still treated as errors.
+
+    workflow_completed=True only suppresses GeneratorExit, not other exceptions.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = ValueError("Error during cleanup")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(ValueError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
+
+            # Verify status was updated to failed (even during cleanup)
+            mock_status.assert_called_once_with(analysis_id, "failed")
+
+            # Verify error event was emitted
+            mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+@pytest.mark.asyncio
+async def test_handle_partial_match_runtime_error():
+    """Test RuntimeError with partial match of 'GeneratorExit' string.
+
+    Only exact match 'coroutine ignored GeneratorExit' should be treated as converted.
+    """
+    from app.api.v1.workflow_runner import _handle_workflow_exception
+
+    analysis_id = uuid.uuid4()
+    exc = RuntimeError("GeneratorExit was found")
+
+    with patch(
+        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+    ) as mock_status:
+        with patch(
+            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+        ) as mock_emit:
+            with pytest.raises(RuntimeError):
+                await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
+
+            # Should be treated as regular RuntimeError, not converted GeneratorExit
+            mock_status.assert_called_once_with(analysis_id, "failed")
+            mock_emit.assert_called_once_with(analysis_id, exc)
