@@ -162,6 +162,18 @@ MODEL_REGISTRY: Final[dict[str, ModelInfo]] = {
     # =========================================================================
     # GOOGLE MODELS (December 2025)
     # =========================================================================
+    "gemini-3-flash": ModelInfo(
+        provider="google_genai",
+        model_id="gemini-3-flash",
+        display_name="Gemini 3 Flash",
+        input_cost_per_1m=0.50,
+        output_cost_per_1m=3.00,
+        context_window=1_000_000,
+        latency_tier="fast",
+        capabilities=("reasoning", "coding", "agents", "multimodal"),
+        api_key_field="GOOGLE_API_KEY",
+        notes="Dec 2025 release, 78% SWE-bench, frontier performance at Flash speed",
+    ),
     "gemini-2.5-pro": ModelInfo(
         provider="google_genai",
         model_id="gemini-2.5-pro",  # Use stable name, LangChain resolves to latest

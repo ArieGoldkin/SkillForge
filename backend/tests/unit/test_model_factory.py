@@ -475,7 +475,7 @@ def test_task_model_map_contains_supervisor():
 def test_task_model_map_contains_g_eval():
     """Test TASK_MODEL_MAP includes g_eval routing to Gemini Flash."""
     assert "g_eval" in TASK_MODEL_MAP
-    assert TASK_MODEL_MAP["g_eval"] == "gemini-2.5-flash"
+    assert TASK_MODEL_MAP["g_eval"] == "gemini-3-flash"
 
 
 def test_task_model_map_excludes_agents():
@@ -551,8 +551,8 @@ def test_get_chat_model_with_task_routing_g_eval(
 
     # Verify init_chat_model was called with Gemini model
     mock_init_chat_model.assert_called_once()
-    # First positional arg should be gemini-2.5-flash
-    assert mock_init_chat_model.call_args[0][0] == "gemini-2.5-flash"
+    # First positional arg should be gemini-3-flash
+    assert mock_init_chat_model.call_args[0][0] == "gemini-3-flash"
     call_kwargs = mock_init_chat_model.call_args[1]
     assert call_kwargs["model_provider"] == "google_genai"
     assert result == mock_model
