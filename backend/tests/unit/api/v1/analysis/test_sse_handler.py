@@ -8,7 +8,6 @@ import pytest
 from app.api.v1.analysis.sse_handler import stream_analysis_progress
 
 
-
 @pytest.fixture
 def mock_analysis_id():
     """Create a test analysis ID."""

@@ -13,14 +13,18 @@ from uuid import uuid4
 
 import pytest
 
-from app.domains.analysis.services.context.compaction import CompactionConfig, CompiledContext, SessionCompactor
-from app.shared.workflows.context_scope import build_scoped_context
+from app.domains.analysis.services.context.compaction import (
+    CompactionConfig,
+    CompiledContext,
+    SessionCompactor,
+)
 from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import (
     _extract_finding_content,
     _store_findings_as_memories,
 )
+from app.shared.workflows.context_scope import build_scoped_context
 
 
 class TestConcurrentMemoryAccess:
@@ -448,8 +452,8 @@ class TestMemoryTypeMapping:
 
     def test_all_agents_have_consistent_mappings(self) -> None:
         """Test that memory type mappings are consistent with scopes."""
-        from app.shared.workflows.context_scope import AGENT_SCOPES
         from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
+        from app.shared.workflows.context_scope import AGENT_SCOPES
 
         # All agents in memory map should also be in scopes
         for agent in AGENT_MEMORY_TYPE_MAP:

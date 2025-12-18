@@ -8,8 +8,10 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db.models.progress import AnalysisProgress
-from app.shared.services.persistence.progress import persist_progress_event, persist_progress_event_async
-
+from app.shared.services.persistence.progress import (
+    persist_progress_event,
+    persist_progress_event_async,
+)
 
 
 @pytest.fixture

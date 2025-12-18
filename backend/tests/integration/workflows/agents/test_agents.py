@@ -367,8 +367,8 @@ async def test_agents_parallel_execution_with_separate_sessions(
     # Verify all agents returned confidence_score and it was saved
     from sqlalchemy import select
 
-    from app.db.session import AsyncSessionLocal
     from app.db.models.agent_finding import AgentFinding
+    from app.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:
         result_query = await session.execute(

@@ -1,15 +1,15 @@
 """Unit tests for core utility functions."""
 
 import uuid
-import pytest
 from uuid import UUID
+
+import pytest
 
 from app.core.constants import UUID_NAMESPACE_DNS
 from app.core.utils import normalize_analysis_id_to_uuid
 
+
 @pytest.mark.unit
-
-
 def test_normalize_uuid_string():
     """Test that valid UUID strings are converted correctly."""
     uuid_str = "123e4567-e89b-12d3-a456-426614174000"

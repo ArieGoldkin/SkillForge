@@ -11,9 +11,8 @@ from app.shared.services.mcp.client import (
 from app.shared.services.mcp.config import MCPServerConfig, MCPTransport
 from app.shared.services.mcp.exceptions import MCPConnectionError
 
+
 @pytest.mark.unit
-
-
 class TestConnectionState:
     def test_connection_state_enum_values(self):
         assert ConnectionState.DISCONNECTED.value == "disconnected"

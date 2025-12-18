@@ -9,7 +9,6 @@ Tests cover:
 import pytest
 
 from app.evaluation.pipeline.thresholds import (
-
     THRESHOLDS,
     Difficulty,
     ThresholdConfig,

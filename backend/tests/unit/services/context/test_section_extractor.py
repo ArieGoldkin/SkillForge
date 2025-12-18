@@ -11,7 +11,6 @@ import pytest
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
 
 
-
 @pytest.fixture
 def extractor() -> SectionExtractor:
     """Create SectionExtractor instance."""

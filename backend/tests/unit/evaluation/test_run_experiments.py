@@ -1,12 +1,10 @@
 """Tests for run_experiments module."""
 
 from __future__ import annotations
-import pytest
 
 from unittest.mock import MagicMock, patch
 
 from app.evaluation.run_experiments import (
-
     DEFAULT_MODELS,
     TASK_DATASETS,
     run_preflight_checks,

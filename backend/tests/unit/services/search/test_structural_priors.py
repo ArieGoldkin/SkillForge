@@ -23,9 +23,8 @@ from app.core.constants import (
 from app.schemas.search import ChunkMetadata
 from app.shared.services.search.structural_priors import StructuralPriorScorer, StructuralWeights
 
+
 @pytest.mark.unit
-
-
 class TestStructuralPriorScorerSectionBoost:
     """Tests for section presence boost."""
 

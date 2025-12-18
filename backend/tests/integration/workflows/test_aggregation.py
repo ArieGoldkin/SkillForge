@@ -123,13 +123,19 @@ async def test_full_workflow_with_aggregation(sample_state_with_findings):
     }
 
     with (
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm"
+        ) as mock_synthesize,
         patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"),
         patch(
             "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"
         ) as mock_sse_complete,
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"),
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"),
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"
+        ),
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"
+        ),
     ):
         mock_synthesize.return_value = mock_structured_response
 
@@ -187,13 +193,21 @@ async def test_aggregation_sse_events(sample_state_with_findings):
     }
 
     with (
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm") as mock_synthesize,
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started") as mock_sse_start,
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm"
+        ) as mock_synthesize,
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"
+        ) as mock_sse_start,
         patch(
             "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"
         ) as mock_sse_complete,
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"),
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"),
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"
+        ),
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"
+        ),
     ):
         mock_synthesize.return_value = mock_structured_response
 
@@ -219,7 +233,9 @@ async def test_aggregation_with_empty_state():
     )
 
     with (
-        patch("app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started") as mock_sse_start,
+        patch(
+            "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"
+        ) as mock_sse_start,
         patch(
             "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"
         ) as mock_sse_complete,

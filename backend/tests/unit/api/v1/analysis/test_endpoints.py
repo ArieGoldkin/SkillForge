@@ -8,9 +8,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 @pytest.mark.unit
-
-
 def create_mock_task():
     """Create a mock asyncio.Task with proper methods."""
     mock_task = MagicMock()

@@ -12,9 +12,8 @@ from app.core.task_model_config import (
     is_validated,
 )
 
+
 @pytest.mark.unit
-
-
 class TestTaskModelConfig:
     """Tests for TaskModelConfig dataclass."""
 

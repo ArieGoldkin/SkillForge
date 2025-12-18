@@ -9,6 +9,7 @@ from app.domains.tutor.workflows.state import TutorState
 def sample_tutor_state_for_challenge():
     """Sample tutor state for final challenge."""
     import uuid
+
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,
@@ -46,13 +47,17 @@ async def test_final_challenge_creates_integrative_problem(sample_tutor_state_fo
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.domains.tutor.workflows.nodes.final_challenge.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.final_challenge.get_chat_model",
+            return_value=mock_model,
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
             "app.domains.tutor.workflows.nodes.final_challenge.TutorMessageRepository"
         ) as mock_repo_class,
         patch(
-            "app.domains.tutor.workflows.nodes.final_challenge._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.final_challenge._emit_tutor_event",
+            new_callable=AsyncMock,
         ),
     ):
         mock_db_session = AsyncMock()

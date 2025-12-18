@@ -8,11 +8,9 @@ Tests cover:
 """
 
 import json
-import pytest
 from pathlib import Path
 
 from app.evaluation.metrics.regression import (
-
     RegressionReport,
     check_regression,
 )

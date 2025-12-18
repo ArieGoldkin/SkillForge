@@ -1,6 +1,7 @@
 """Unit tests for API key configuration validation."""
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from app.core.api_key_validation import (
@@ -10,9 +11,8 @@ from app.core.api_key_validation import (
     validate_llm_model_api_key,
 )
 
+
 @pytest.mark.unit
-
-
 class TestGetConfiguredProviders:
     """Tests for get_configured_providers function."""
 

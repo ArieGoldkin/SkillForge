@@ -13,9 +13,8 @@ from app.db.models.agent_memory import AgentMemory, MemoryType
 from app.domains.analysis.services.context.memory_tools import search_memory
 from app.shared.services.memory import MemorySearchResult
 
+
 @pytest.mark.unit
-
-
 @pytest.mark.asyncio
 class TestSearchMemoryTool:
     """Tests for the search_memory tool."""
@@ -37,7 +36,9 @@ class TestSearchMemoryTool:
         mock_result = MemorySearchResult(memory=mock_memory, similarity=0.88)
 
         # Mock the service search method
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[mock_result])
             mock_service_class.return_value = mock_service
@@ -91,7 +92,9 @@ class TestSearchMemoryTool:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -114,7 +117,9 @@ class TestSearchMemoryTool:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(side_effect=Exception("Database connection lost"))
             mock_service_class.return_value = mock_service
@@ -137,7 +142,9 @@ class TestSearchMemoryTool:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -161,7 +168,9 @@ class TestSearchMemoryTool:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -193,7 +202,9 @@ class TestSearchMemoryTool:
             mock_memory.memory_type = "analysis_summary"
             mock_results.append(MemorySearchResult(memory=mock_memory, similarity=0.9 - i * 0.1))
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=mock_results)
             mock_service_class.return_value = mock_service
@@ -222,7 +233,9 @@ class TestSearchMemoryTool:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -252,7 +265,9 @@ class TestSearchMemoryToolEdgeCases:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -279,7 +294,9 @@ class TestSearchMemoryToolEdgeCases:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service
@@ -304,7 +321,9 @@ class TestSearchMemoryToolEdgeCases:
         mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("app.domains.analysis.services.context.memory_tools.AgentMemoryService") as mock_service_class:
+        with patch(
+            "app.domains.analysis.services.context.memory_tools.AgentMemoryService"
+        ) as mock_service_class:
             mock_service = AsyncMock()
             mock_service.search = AsyncMock(return_value=[])
             mock_service_class.return_value = mock_service

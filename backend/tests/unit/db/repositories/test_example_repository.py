@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.repositories.example_repository import ExampleRepository
 from app.db.models.agent_example import AgentExample
+from app.db.repositories.example_repository import ExampleRepository
 
 
 @pytest.mark.unit

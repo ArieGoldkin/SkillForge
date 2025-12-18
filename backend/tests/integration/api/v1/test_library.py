@@ -7,8 +7,8 @@ from uuid import uuid4
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import app
 from app.db.models.analysis import Analysis
+from app.main import app
 
 
 @pytest.fixture

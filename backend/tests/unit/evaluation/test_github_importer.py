@@ -17,7 +17,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.evaluation.ingestion.github_importer import (
-
     AGENT_KEYWORDS,
     LABEL_TO_AGENT,
     REPO_DOMAIN_MAP,

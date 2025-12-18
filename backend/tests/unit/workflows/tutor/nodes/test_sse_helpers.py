@@ -6,9 +6,8 @@ import pytest
 
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event
 
+
 @pytest.mark.unit
-
-
 class TestEmitTutorEvent:
     """Tests for emit_tutor_event function."""
 

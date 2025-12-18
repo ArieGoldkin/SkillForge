@@ -5,10 +5,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from app.db.models.analysis import Analysis
 from app.db.repositories.analysis_repository import get_analysis_repository
 from app.main import app
-from app.db.models.analysis import Analysis
-
 
 client = TestClient(app)
 

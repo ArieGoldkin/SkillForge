@@ -236,11 +236,11 @@ def ensure_llm_model_set(monkeypatch):
 @pytest.fixture
 def mock_async_session_local():
     """Create a properly mocked AsyncSessionLocal for unit tests.
-    
+
     This fixture provides a mock AsyncSessionLocal that returns an async context manager,
     which in turn yields a mock session. Use this in unit tests that need to mock database
     sessions without making real database connections.
-    
+
     Usage:
         async def test_something(mock_async_session_local, mock_session):
             with patch("app.db.session.AsyncSessionLocal", mock_async_session_local):
@@ -248,21 +248,25 @@ def mock_async_session_local():
                 pass
     """
     from unittest.mock import AsyncMock, MagicMock
-    
+
     # Create a mock session
     mock_session = MagicMock()
-    mock_session.configure_mock(**{
-        "__aenter__": AsyncMock(return_value=mock_session),
-        "__aexit__": AsyncMock(return_value=False),
-    })
-    
+    mock_session.configure_mock(
+        **{
+            "__aenter__": AsyncMock(return_value=mock_session),
+            "__aexit__": AsyncMock(return_value=False),
+        }
+    )
+
     # Create a mock async context manager that yields the session
     mock_context_manager = MagicMock()
-    mock_context_manager.configure_mock(**{
-        "__aenter__": AsyncMock(return_value=mock_session),
-        "__aexit__": AsyncMock(return_value=False),
-    })
-    
+    mock_context_manager.configure_mock(
+        **{
+            "__aenter__": AsyncMock(return_value=mock_session),
+            "__aexit__": AsyncMock(return_value=False),
+        }
+    )
+
     # AsyncSessionLocal itself is callable and returns the context manager
     mock_async_session_local = MagicMock(return_value=mock_context_manager)
     return mock_async_session_local

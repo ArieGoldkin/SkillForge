@@ -19,7 +19,6 @@ Issue: #220 - PII/Safety Guardrails
 """
 
 from __future__ import annotations
-import pytest
 
 import re
 from typing import TYPE_CHECKING

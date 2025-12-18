@@ -8,9 +8,8 @@ from app.shared.services.mcp.config import (
 )
 from app.shared.services.mcp.exceptions import MCPConfigurationError
 
+
 @pytest.mark.unit
-
-
 class TestMCPTransport:
     def test_transport_enum_values(self):
         assert MCPTransport.STDIO.value == "stdio"

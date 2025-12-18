@@ -173,4 +173,3 @@ async def test_update_session_status_to_completed(db_session: AsyncSession):
 
     assert updated.status == "completed"
     assert updated.completed_at is not None
-

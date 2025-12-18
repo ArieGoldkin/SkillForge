@@ -19,7 +19,6 @@ from app.evaluation.ingestion.adversarial_generator import (
     AdversarialGenerator,
 )
 from app.evaluation.ingestion.adversarial_templates import (
-
     HALLUCINATION_TRIGGER_TEMPLATES,
     JAILBREAK_TEMPLATES,
     MISLEADING_BENCHMARK_TEMPLATES,

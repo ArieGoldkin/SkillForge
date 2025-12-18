@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.api.v1.analysis.workflow_runner import (
-
     _persist_analysis_data,
     _validate_workflow_result,
     run_workflow_task,

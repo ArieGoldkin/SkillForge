@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.evaluation.evaluators.quality import (
-
     _extract_evaluable_content,
     _format_list_items,
     _format_nested_dict,

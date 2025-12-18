@@ -8,7 +8,6 @@ import pytest
 from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
 
 
-
 @pytest.fixture
 def jina_reader():
     """Create a JinaReader instance."""

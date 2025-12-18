@@ -6,8 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.repositories.chunk_repository import ChunkRepository
 from app.db.models.analysis_chunk import AnalysisChunk
+from app.db.repositories.chunk_repository import ChunkRepository
+
 
 @pytest.fixture
 def mock_session():

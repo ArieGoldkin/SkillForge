@@ -8,7 +8,6 @@ import pytest
 from app.shared.services.metrics.langsmith import LangSmithMetricsService
 
 
-
 @pytest.fixture
 def metrics_service() -> LangSmithMetricsService:
     """Create metrics service instance."""

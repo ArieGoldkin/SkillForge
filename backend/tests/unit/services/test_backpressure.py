@@ -1,15 +1,15 @@
 """Unit tests for the backpressure module."""
 
 import time
+
 import pytest
 
 from app.shared.services.backpressure.batch_sizer import AdaptiveBatchSizer
 from app.shared.services.backpressure.error_tracker import ErrorTracker, ErrorType
 from app.shared.services.backpressure.rate_limiter import RateLimiter
 
+
 @pytest.mark.unit
-
-
 class TestErrorTracker:
     """Tests for ErrorTracker class."""
 

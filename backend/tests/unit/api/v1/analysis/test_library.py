@@ -11,10 +11,9 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from app.db.models.analysis import Analysis
 from app.db.repositories.library_repository import get_library_repository
 from app.main import app
-from app.db.models.analysis import Analysis
-
 
 client = TestClient(app)
 

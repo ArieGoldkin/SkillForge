@@ -5,11 +5,9 @@ Tests the proactive context injection functionality.
 """
 
 import uuid
-import pytest
 
 from app.shared.services.memory import MemorySnippet
 from app.shared.services.memory.proactive_recall import (
-
     format_memory_context,
     inject_proactive_context,
 )

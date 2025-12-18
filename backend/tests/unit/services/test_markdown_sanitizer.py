@@ -7,12 +7,12 @@ Tests cover:
 - Integration of all sanitizers
 """
 
-from app.shared.services.utils.markdown import fix_lists, fix_tables, sanitize_markdown
 import pytest
 
+from app.shared.services.utils.markdown import fix_lists, fix_tables, sanitize_markdown
+
+
 @pytest.mark.unit
-
-
 class TestFixTables:
     """Tests for fix_tables function."""
 

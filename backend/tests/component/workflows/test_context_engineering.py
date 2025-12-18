@@ -19,18 +19,18 @@ import pytest
 from app.db.models.agent_memory import MemoryType
 from app.domains.analysis.services.context.compaction import CompactionConfig, SessionCompactor
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
-from app.shared.workflows.context_compiler import create_workflow_compiler
-from app.shared.workflows.context_scope import (
-    AGENT_SCOPES,
-    build_scoped_context,
-    translate_findings,
-)
 from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import (
     AGENT_MEMORY_TYPE_MAP,
     _extract_finding_content,
     _store_findings_as_memories,
+)
+from app.shared.workflows.context_compiler import create_workflow_compiler
+from app.shared.workflows.context_scope import (
+    AGENT_SCOPES,
+    build_scoped_context,
+    translate_findings,
 )
 
 

@@ -13,7 +13,6 @@ from app.shared.services.cleanup.orphan_cleanup import OrphanCleaner
 from app.shared.services.cleanup.ttl_cleanup import TTLCleaner
 
 
-
 @pytest.fixture
 def mock_session():
     """Mock AsyncSession."""

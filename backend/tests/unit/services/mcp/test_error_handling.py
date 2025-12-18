@@ -23,6 +23,7 @@ from app.shared.services.mcp.client import (
 )
 from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
 
+
 @pytest.mark.unit
 
 # ============================================================================

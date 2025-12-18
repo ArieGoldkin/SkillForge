@@ -13,12 +13,13 @@ Each test validates:
 """
 
 from dataclasses import dataclass, field
-import pytest
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-@pytest.mark.unit
+import pytest
 
+
+@pytest.mark.unit
 # =============================================================================
 # MOCK CLASSES (avoiding LangSmith imports)
 # =============================================================================

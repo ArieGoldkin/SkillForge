@@ -19,7 +19,6 @@ from app.schemas.search import SearchFilters, SearchMode
 from app.shared.services.search import SearchService
 
 
-
 @pytest.fixture
 def mock_embedding_service():
     """Create a mock EmbeddingService."""

@@ -7,6 +7,7 @@ import pytest
 
 from app.db.repositories.artifact_repository import ArtifactRepository
 
+
 @pytest.fixture
 def mock_session():
     """Mock database session.

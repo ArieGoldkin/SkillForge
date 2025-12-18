@@ -16,9 +16,8 @@ from app.domains.analysis.services.context.compaction import (
 from app.domains.analysis.services.context.compiler import ContextCompiler
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
+
 @pytest.mark.unit
-
-
 class TestCompactionConfig:
     """Tests for CompactionConfig model."""
 
@@ -216,7 +215,10 @@ class TestSessionCompactor:
         mock_response.content = "Summary: Discussion about Python programming language."
         mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
-        with patch("app.domains.analysis.services.context.compaction.get_chat_model", return_value=mock_model):
+        with patch(
+            "app.domains.analysis.services.context.compaction.get_chat_model",
+            return_value=mock_model,
+        ):
             result = await compactor._summarize_turns(turns)
 
             assert result == "Summary: Discussion about Python programming language."

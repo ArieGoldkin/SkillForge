@@ -22,9 +22,8 @@ from app.api.dependencies import (
     settings,
 )
 
+
 @pytest.mark.unit
-
-
 class TestGetDatabaseSession:
     """Test cases for get_database_session() dependency."""
 

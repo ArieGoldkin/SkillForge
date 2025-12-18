@@ -9,6 +9,7 @@ from app.domains.tutor.workflows.state import TutorState
 def sample_tutor_state_for_review():
     """Sample tutor state for section review."""
     import uuid
+
     return TutorState(
         session_id=str(uuid.uuid4()),
         analysis_id=None,
@@ -51,10 +52,18 @@ async def test_conduct_review_creates_quiz(sample_tutor_state_for_review):
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.domains.tutor.workflows.nodes.conduct_review.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review.get_chat_model",
+            return_value=mock_model,
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
-        patch("app.domains.tutor.workflows.nodes.conduct_review.TutorMessageRepository") as mock_repo_class,
-        patch("app.domains.tutor.workflows.nodes.conduct_review._emit_tutor_event", new_callable=AsyncMock),
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review.TutorMessageRepository"
+        ) as mock_repo_class,
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review._emit_tutor_event",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_db_session = AsyncMock()
         mock_factory.return_value.__aenter__.return_value = mock_db_session

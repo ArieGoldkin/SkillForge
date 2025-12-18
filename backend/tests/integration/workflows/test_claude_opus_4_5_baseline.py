@@ -10,8 +10,8 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Test constants

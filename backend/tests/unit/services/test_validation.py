@@ -3,7 +3,6 @@
 import pytest
 
 from app.core.validation.vector import (
-
     ValidationResult,
     VectorValidationError,
     VectorValidator,

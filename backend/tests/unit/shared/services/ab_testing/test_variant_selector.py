@@ -37,7 +37,9 @@ class TestVariantSelector:
         selector = VariantSelector()
 
         # UUID format
-        assert selector.select_variant("123e4567-e89b-12d3-a456-426614174000", "tech") == "treatment"
+        assert (
+            selector.select_variant("123e4567-e89b-12d3-a456-426614174000", "tech") == "treatment"
+        )
         # Simple string
         assert selector.select_variant("analysis-123", "tech") == "treatment"
         # Empty string

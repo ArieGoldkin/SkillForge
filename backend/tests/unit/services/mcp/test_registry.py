@@ -9,7 +9,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.shared.services.mcp.registry import (
-
     AGENT_TOOL_CONFIGS,
     AgentToolConfig,
     ToolCapability,
