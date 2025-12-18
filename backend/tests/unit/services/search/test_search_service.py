@@ -1,7 +1,7 @@
 """Unit tests for SearchService metadata boosting and query detection.
 
 Tests the Phase 1 retrieval quality improvements:
-- Section title boosting (1.5x when query matches section title)
+- Section title boosting (2.0x when query matches section title)
 - Document path boosting (1.15x when query matches path)
 - Technical query detection for code_block boosting
 - Dynamic top_k calculation in evaluation
@@ -117,15 +117,15 @@ class TestMetadataBoosts:
         )
 
     def test_section_title_boost_applied(self, search_service):
-        """Section title matching query terms should get 1.5x boost."""
+        """Section title matching query terms should get 2.0x boost."""
         results = [
             self._make_result(score=0.5, section="OAuth2 Implementation"),
         ]
 
         boosted = search_service._apply_metadata_boosts(results, "OAuth2 setup")
 
-        # 0.5 * 1.5 = 0.75
-        assert boosted[0].score == pytest.approx(0.75, rel=0.01)
+        # 0.5 * 2.0 = 1.0 (capped at 1.0)
+        assert boosted[0].score == pytest.approx(1.0, rel=0.01)
 
     def test_document_path_boost_applied(self, search_service):
         """Path matching query terms should get 1.15x boost."""
@@ -150,8 +150,8 @@ class TestMetadataBoosts:
 
         boosted = search_service._apply_metadata_boosts(results, "OAuth2 guide")
 
-        # 0.5 * 1.5 (section) * 1.15 (path) = 0.8625
-        assert boosted[0].score == pytest.approx(0.8625, rel=0.01)
+        # 0.5 * 2.0 (section) * 1.15 (path) = 1.15, capped at 1.0
+        assert boosted[0].score == pytest.approx(1.0, rel=0.01)
 
     def test_boost_capped_at_one(self, search_service):
         """Boosted score should not exceed 1.0."""
@@ -198,8 +198,8 @@ class TestMetadataBoosts:
 
         boosted = search_service._apply_metadata_boosts(results, "OAuth2")
 
-        # Second result (0.6 * 1.5 = 0.9) should now be first
-        assert boosted[0].score == pytest.approx(0.9, rel=0.01)
+        # Second result (0.6 * 2.0 = 1.2, capped at 1.0) should now be first
+        assert boosted[0].score == pytest.approx(1.0, rel=0.01)
         assert boosted[1].score == 0.8
 
     def test_empty_results_handled(self, search_service):
