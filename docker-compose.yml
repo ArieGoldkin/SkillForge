@@ -49,7 +49,9 @@ services:
       PORT: 8500
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:5175"]'
       REDIS_URL: redis://redis:6379
-      # Note: DATABASE_URL is overridden above for container-internal connection
+      # Langfuse: Override localhost with Docker network hostname
+      LANGFUSE_HOST: http://langfuse-web:3000
+      # Note: DATABASE_URL and LANGFUSE_HOST are overridden above for container-internal connections
       # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
     ports:
       - "8500:8500"
@@ -116,14 +118,18 @@ services:
       # Database connections
       DATABASE_URL: postgresql://langfuse:langfuse-dev@langfuse-db:5432/langfuse
       CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://default:clickhouse-dev@langfuse-clickhouse:9000/langfuse
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse-dev
-      REDIS_CONNECTION_STRING: redis://:redis-dev@langfuse-redis:6379
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      # Redis configuration
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: redis-dev
 
       # S3/MinIO for blob storage (local - FREE)
-      LANGFUSE_S3_EVENT_UPLOAD_ENABLED: "true"
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
-      LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-dev-access
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-dev-secret-key
       LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
@@ -152,32 +158,36 @@ services:
       langfuse-minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
-      interval: 30s
+      test: ["CMD-SHELL", "wget -q -O- --timeout=5 http://langfuse-web:3000/api/public/health || exit 1"]
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
       start_period: 60s
     networks:
       - default
 
   langfuse-worker:
-    image: langfuse/langfuse:3
+    image: langfuse/langfuse-worker:3
     container_name: skillforge-langfuse-worker
-    command: ["node", "packages/worker/dist/index.js"]
     environment:
       DATABASE_URL: postgresql://langfuse:langfuse-dev@langfuse-db:5432/langfuse
       CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://default:clickhouse-dev@langfuse-clickhouse:9000/langfuse
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse-dev
-      REDIS_CONNECTION_STRING: redis://:redis-dev@langfuse-redis:6379
-      LANGFUSE_S3_EVENT_UPLOAD_ENABLED: "true"
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      # Redis configuration (worker uses individual vars, not connection string)
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: redis-dev
+      # S3/MinIO configuration
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
-      LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-dev-access
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-dev-secret-key
       LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
       LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
-      NEXTAUTH_SECRET: skillforge-dev-nextauth-secret-32chars
+      # Security
       SALT: skillforge-dev-salt-minimum-32-chars
       ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     depends_on:
@@ -214,10 +224,11 @@ services:
       - langfuse-clickhouse-data:/var/lib/clickhouse
       - langfuse-clickhouse-logs:/var/log/clickhouse-server
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     networks:
       - default
 
