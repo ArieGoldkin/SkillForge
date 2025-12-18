@@ -107,8 +107,9 @@ test.describe('Error Handling Tests', () => {
       ).toBeVisible();
     } else {
       // If no search input, just verify library page loaded
+      // Use .first() to avoid strict mode violation when multiple headings match
       await expect(
-        page.getByRole('heading', { name: /library/i })
+        page.getByRole('heading', { name: /library/i }).first()
       ).toBeVisible();
     }
   });
@@ -291,9 +292,10 @@ test.describe('Error Handling Tests', () => {
       // Grid might not exist
     });
 
-    // Library should load successfully
+    // Library should load successfully - use .first() to avoid strict mode violation
+    // (page may have multiple "library" headings - main heading + sidebar/nav)
     await expect(
-      page.getByRole('heading', { name: /library/i })
+      page.getByRole('heading', { name: /library/i }).first()
     ).toBeVisible({ timeout: 5000 });
   });
 });
