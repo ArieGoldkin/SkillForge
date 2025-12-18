@@ -1,14 +1,19 @@
 """Golden datasets for LLM evaluation.
 
-This module provides curated evaluation datasets for:
-- Supervisor routing decisions
-- Agent analysis quality
-- Synthesis coherence
-- Edge cases and adversarial examples (v2.0)
+This module provides curated evaluation datasets organized by category:
+- golden/       Production-validated golden datasets
+- adversarial/  Attack and stress test datasets
+- edge_cases/   Edge case and boundary datasets
+- archive/      Deprecated versions (not loaded)
+
+Dataset naming convention (no more _v1/_v2 suffixes):
+- golden/supervisor.json      Supervisor routing golden set
+- golden/agent_analysis.json  Agent analysis golden set
+- golden/synthesis.json       Synthesis golden set
+- adversarial/adversarial.json
+- edge_cases/edge_cases.json
 
 Datasets are designed for use with LangSmith experiments.
-
-Supports both v1.0 (flat list) and v2.0 (wrapped with metadata) formats.
 """
 
 import json
@@ -16,6 +21,48 @@ from pathlib import Path
 from typing import Any
 
 DATASETS_DIR = Path(__file__).parent
+
+# Dataset category folders
+GOLDEN_DIR = DATASETS_DIR / "golden"
+ADVERSARIAL_DIR = DATASETS_DIR / "adversarial"
+EDGE_CASES_DIR = DATASETS_DIR / "edge_cases"
+ARCHIVE_DIR = DATASETS_DIR / "archive"
+
+# Mapping from legacy names to new paths (backwards compatibility)
+LEGACY_NAME_MAP: dict[str, str] = {
+    "supervisor_golden_v1": "golden/supervisor",
+    "agent_analysis_golden_v1": "archive/agent_analysis_golden_v1",
+    "agent_analysis_golden_v2": "golden/agent_analysis",
+    "synthesis_golden_v1": "golden/synthesis",
+    "adversarial_v2": "adversarial/adversarial",
+    "edge_cases_v2": "edge_cases/edge_cases",
+}
+
+
+def _resolve_dataset_path(name: str) -> Path:
+    """Resolve dataset name to file path.
+
+    Supports both new paths (golden/supervisor) and legacy names (supervisor_golden_v1).
+    """
+    # Check if it's a legacy name (use .get for cleaner code)
+    resolved_name = LEGACY_NAME_MAP.get(name, name)
+
+    # Try with path separators (new format: golden/supervisor)
+    if "/" in resolved_name:
+        return DATASETS_DIR / f"{resolved_name}.json"
+
+    # Try direct file in root (backwards compat)
+    direct_path = DATASETS_DIR / f"{resolved_name}.json"
+    if direct_path.exists():
+        return direct_path
+
+    # Try in golden/ folder by default
+    golden_path = GOLDEN_DIR / f"{resolved_name}.json"
+    if golden_path.exists():
+        return golden_path
+
+    # Return the direct path (will raise FileNotFoundError if doesn't exist)
+    return direct_path
 
 
 def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, Any]]:
@@ -25,7 +72,9 @@ def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, An
     For v2.0 datasets, extracts the 'examples' array by default.
 
     Args:
-        name: Dataset name (e.g., 'supervisor_golden_v1', 'adversarial_v2')
+        name: Dataset name. Supports:
+              - New format: "golden/supervisor", "adversarial/adversarial"
+              - Legacy format: "supervisor_golden_v1", "adversarial_v2"
         include_metadata: If True and v2.0 format, return full dataset with metadata.
 
     Returns:
@@ -33,9 +82,9 @@ def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, An
         If include_metadata=True for v2 datasets, returns the full dataset dict.
 
     """
-    dataset_path = DATASETS_DIR / f"{name}.json"
+    dataset_path = _resolve_dataset_path(name)
     if not dataset_path.exists():
-        msg = f"Dataset not found: {name}"
+        msg = f"Dataset not found: {name} (tried {dataset_path})"
         raise FileNotFoundError(msg)
 
     with dataset_path.open() as f:
@@ -57,7 +106,7 @@ def load_dataset_with_metadata(name: str) -> dict[str, Any]:
     """Load a v2.0 dataset with full metadata.
 
     Args:
-        name: Dataset name (e.g., 'adversarial_v2', 'edge_cases_v2')
+        name: Dataset name (e.g., "golden/agent_analysis", "adversarial/adversarial")
 
     Returns:
         Full dataset dictionary with version, metadata, and examples.
@@ -66,7 +115,7 @@ def load_dataset_with_metadata(name: str) -> dict[str, Any]:
         ValueError: If dataset is not v2.0 format.
 
     """
-    dataset_path = DATASETS_DIR / f"{name}.json"
+    dataset_path = _resolve_dataset_path(name)
     if not dataset_path.exists():
         msg = f"Dataset not found: {name}"
         raise FileNotFoundError(msg)
@@ -91,7 +140,7 @@ def get_dataset_info(name: str) -> dict[str, Any]:
         Dictionary with dataset info (version, example_count, metadata for v2).
 
     """
-    dataset_path = DATASETS_DIR / f"{name}.json"
+    dataset_path = _resolve_dataset_path(name)
     if not dataset_path.exists():
         msg = f"Dataset not found: {name}"
         raise FileNotFoundError(msg)
@@ -118,5 +167,21 @@ def get_dataset_info(name: str) -> dict[str, Any]:
 
 
 def list_datasets() -> list[str]:
-    """List all available golden datasets."""
-    return [p.stem for p in DATASETS_DIR.glob("*.json")]
+    """List all available golden datasets (excludes archive)."""
+    datasets = []
+
+    # List from category folders
+    for category_dir in [GOLDEN_DIR, ADVERSARIAL_DIR, EDGE_CASES_DIR]:
+        if category_dir.exists():
+            for p in category_dir.glob("*.json"):
+                rel_path = p.relative_to(DATASETS_DIR)
+                datasets.append(str(rel_path.with_suffix("")))
+
+    return sorted(datasets)
+
+
+def list_golden_datasets() -> list[str]:
+    """List only production golden datasets."""
+    if not GOLDEN_DIR.exists():
+        return []
+    return sorted([p.stem for p in GOLDEN_DIR.glob("*.json")])

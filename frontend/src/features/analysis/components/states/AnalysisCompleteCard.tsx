@@ -9,10 +9,19 @@ interface AnalysisCompleteCardProps {
   analysisId?: string
   variant?: 'default' | 'column'
   sourceUrl?: string
+  hasFailedStages?: boolean
+  failedStagesCount?: number
 }
 
 export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
-  const { artifactId, analysisId, variant = 'default', sourceUrl } = props
+  const {
+    artifactId,
+    analysisId,
+    variant = 'default',
+    sourceUrl,
+    hasFailedStages = false,
+    failedStagesCount = 0,
+  } = props
   const isColumn = variant === 'column'
   const preview = useArtifactPreview(artifactId)
 
@@ -26,6 +35,8 @@ export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
           analysisId={analysisId}
           isColumn={isColumn}
           onPreview={preview.openPreview}
+          hasFailedStages={hasFailedStages}
+          failedStagesCount={failedStagesCount}
         />
       </div>
       <ArtifactPreviewModal

@@ -13,8 +13,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.analysis import Analysis
 from app.db.session import get_db
-from app.models.analysis import Analysis
 
 # Embedding dimensions constant (OpenAI text-embedding-3-small)
 EMBEDDING_DIMENSIONS = 1536
@@ -151,7 +151,7 @@ class AnalysisRepository:
         # Convert Python list to PostgreSQL array format (pgvector-compatible)
         # pgvector expects array format: '[0.1,0.2,0.3,...]' (square brackets, not curly)
         # Safe: query_embedding is list[float] from embedding service, not user input
-        vector_array_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        vector_array_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
         # Cast array string directly to Vector type
         # Using text() with literal array string is safe here (floats only, no SQL injection)
         query_vector_expr = func.cast(

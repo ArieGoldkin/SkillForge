@@ -474,7 +474,7 @@ User clicks "Teach Me" → selects topic → has multi-turn Socratic conversatio
 |---------|------|--------------|--------------|---------------------|
 | 4.1.1 | Add PostgreSQL full-text search | 2 | 1.2.4 | `search_vector` column + GIN index created |
 | 4.1.2 | Implement search query builder | 3 | 4.1.1 | Hybrid keyword + semantic search works |
-| 4.1.3 | Create search endpoint | 2 | 4.1.2 | `GET /api/v1/library?search=...` returns paginated results |
+| 4.1.3 | Create search endpoint | 2 | 4.1.2 | `GET /api/v1/library?query=...` returns paginated results |
 | 4.1.4 | Test search accuracy | 1 | 4.1.3 | Top 5 results relevant for test queries |
 
 **Arie Involvement:**

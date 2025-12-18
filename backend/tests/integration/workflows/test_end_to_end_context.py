@@ -16,11 +16,11 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.agent_memory import MemoryType
-from app.services.context.artifact_store import ArtifactStore
-from app.services.embeddings import EmbeddingService
-from app.services.memory.agent_memory_service import AgentMemoryService
-from app.services.memory.proactive_recall import (
+from app.db.models.agent_memory import MemoryType
+from app.domains.analysis.services.context.artifact_store import ArtifactStore
+from app.shared.services.embeddings import EmbeddingService
+from app.shared.services.memory.agent_memory_service import AgentMemoryService
+from app.shared.services.memory.proactive_recall import (
     build_proactive_prompt,
     fetch_proactive_context,
     format_memory_context,
@@ -29,6 +29,7 @@ from app.services.memory.proactive_recall import (
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.asyncio,
+    pytest.mark.external,  # These tests require real LLM API calls
 ]
 
 
@@ -231,7 +232,7 @@ class TestContextScopingRealData:
         create_test_analysis,
     ):
         """Test that context scoping works with realistic state sizes."""
-        from app.workflows.context_scope import build_scoped_context
+        from app.shared.workflows.context_scope import build_scoped_context
 
         analysis = await create_test_analysis(
             analysis_id=str(uuid4()),

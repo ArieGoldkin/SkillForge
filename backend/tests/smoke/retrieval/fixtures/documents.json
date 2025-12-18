@@ -1,300 +1,127 @@
 {
-  "version": "1.0",
-  "generated": "2025-12-10",
+  "version": "2.0",
+  "generated_from": "canonical_backup",
+  "generated_at": "2025-12-15T11:21:59.940991+00:00",
   "documents": [
     {
-      "id": "fastapi-auth",
-      "title": "FastAPI Authentication Guide",
-      "content_type": "article",
-      "bucket": "short",
-      "language": "en",
-      "tags": ["fastapi", "python", "authentication", "oauth2", "security"],
-      "sections": [
-        {
-          "id": "fastapi-auth/intro",
-          "title": "Introduction to FastAPI Security",
-          "content": "FastAPI provides built-in security utilities that make implementing authentication straightforward. The framework includes OAuth2 with Password flow, JWT tokens, and API key authentication out of the box. This guide covers the essential patterns for securing your FastAPI applications with industry-standard practices.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "fastapi-auth/oauth2-password",
-          "title": "OAuth2 with Password Flow",
-          "content": "The OAuth2 password flow is ideal for first-party applications where you control both the client and the server. To implement it, first create a token endpoint that validates credentials and returns a JWT. Use the OAuth2PasswordBearer class to define the token URL. The password flow exchanges username and password for an access token, which is then used for subsequent API requests. Always use HTTPS in production to protect credentials.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "fastapi-auth/jwt-tokens",
-          "title": "JWT Token Management",
-          "content": "JSON Web Tokens (JWT) are the standard for stateless authentication in FastAPI. Create tokens using the python-jose library with HS256 or RS256 algorithms. Include user claims like user_id, email, and roles in the payload. Set appropriate expiration times - typically 15 minutes for access tokens and 7 days for refresh tokens. Always validate tokens on protected endpoints using FastAPI dependency injection system.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "rag-survey",
+      "title": "RAG Survey - Naive, Advanced, and Modular Paradigms",
+      "url": "https://arxiv.org/abs/2312.10997",
+      "content_type": "research_paper"
     },
     {
-      "id": "python-async",
-      "title": "Python Async Programming Basics",
-      "content_type": "tutorial",
-      "bucket": "short",
-      "language": "en",
-      "tags": ["python", "async", "asyncio", "concurrency"],
-      "sections": [
-        {
-          "id": "python-async/intro",
-          "title": "Understanding Async/Await",
-          "content": "Python's async/await syntax provides a clean way to write concurrent code. Unlike threading, asyncio uses a single-threaded event loop to manage multiple tasks efficiently. This is particularly useful for I/O-bound operations like network requests, database queries, and file operations where the program spends most time waiting.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "python-async/basics",
-          "title": "Basic Async Patterns",
-          "content": "To create an async function, use the 'async def' syntax. Call async functions with 'await' to pause execution until the result is ready. Use asyncio.gather() to run multiple coroutines concurrently. For CPU-bound tasks, consider using ProcessPoolExecutor with asyncio.run_in_executor() to avoid blocking the event loop.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "python-async/patterns",
-          "title": "Common Async Patterns",
-          "content": "Async context managers (async with) are essential for database connections and HTTP sessions. Async iterators (async for) enable streaming data processing. Use asyncio.Queue for producer-consumer patterns. Handle exceptions with try/except inside async functions. Consider using aiocache for async-compatible caching.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "chain-of-thought",
+      "title": "Chain-of-Thought Prompting",
+      "url": "https://arxiv.org/abs/2201.11903",
+      "content_type": "article"
     },
     {
-      "id": "react-hooks",
-      "title": "React Hooks Complete Guide",
-      "content_type": "article",
-      "bucket": "short",
-      "language": "en",
-      "tags": ["react", "javascript", "hooks", "frontend"],
-      "sections": [
-        {
-          "id": "react-hooks/intro",
-          "title": "Introduction to React Hooks",
-          "content": "React Hooks revolutionized how we write React components by allowing function components to have state and lifecycle features. Introduced in React 16.8, hooks like useState and useEffect replace class component patterns with simpler, more composable code. Hooks follow the Rules of Hooks: only call at top level and only from React functions.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "react-hooks/usestate",
-          "title": "useState Hook",
-          "content": "The useState hook adds state to function components. Call useState with an initial value to get a state variable and setter function. For complex state, consider useReducer instead. Remember that state updates are batched and asynchronous. Use the functional update form when new state depends on previous state to avoid stale closure issues.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "react-hooks/useeffect",
-          "title": "useEffect Hook",
-          "content": "useEffect handles side effects in function components - data fetching, subscriptions, DOM manipulation. Pass a dependency array to control when effects run. Empty array means run once on mount. Return a cleanup function for subscriptions. Be careful with object dependencies as they change identity on each render.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "tree-of-thoughts",
+      "title": "Tree-of-Thoughts Reasoning",
+      "url": "https://arxiv.org/abs/2305.10601",
+      "content_type": "article"
     },
     {
-      "id": "sql-basics",
-      "title": "SQL Query Fundamentals",
-      "content_type": "tutorial",
-      "bucket": "short",
-      "language": "en",
-      "tags": ["sql", "database", "queries", "postgresql"],
-      "sections": [
-        {
-          "id": "sql-basics/intro",
-          "title": "Introduction to SQL",
-          "content": "SQL (Structured Query Language) is the standard language for managing relational databases. It provides commands for querying data (SELECT), modifying data (INSERT, UPDATE, DELETE), and defining database structure (CREATE, ALTER, DROP). Understanding SQL is essential for backend development and data analysis.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "sql-basics/select",
-          "title": "SELECT Queries",
-          "content": "The SELECT statement retrieves data from tables. Use WHERE to filter rows, ORDER BY to sort results, and LIMIT to restrict output size. JOIN combines related tables - INNER JOIN for matching rows, LEFT JOIN to include all left table rows. GROUP BY aggregates data with functions like COUNT, SUM, AVG.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "sql-basics/optimization",
-          "title": "Query Optimization",
-          "content": "Optimize SQL queries by adding indexes on frequently queried columns. Use EXPLAIN ANALYZE to understand query execution plans. Avoid SELECT * in production - specify needed columns. Use parameterized queries to prevent SQL injection. Consider query caching for frequently executed queries.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "langgraph-multiagent",
+      "title": "LangGraph Multi-Agent Patterns",
+      "url": "https://reference.langchain.com/python/langgraph/supervisor/",
+      "content_type": "tutorial"
     },
     {
-      "id": "langchain-agents",
-      "title": "LangChain Agent Development",
-      "content_type": "tutorial",
-      "bucket": "long",
-      "language": "en",
-      "tags": ["langchain", "ai", "agents", "llm", "python"],
-      "sections": [
-        {
-          "id": "langchain-agents/intro",
-          "title": "Introduction to LangChain Agents",
-          "content": "LangChain agents are autonomous systems that use language models to decide which actions to take. Unlike simple chains that follow predefined steps, agents dynamically choose tools based on user input and intermediate results. This enables complex reasoning and multi-step problem solving.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "langchain-agents/intro/what-agents-do",
-          "title": "What Agents Do",
-          "content": "Agents break down complex tasks into steps. They observe the current state, reason about what to do next, execute an action, and repeat until the task is complete. This autonomous behavior distinguishes them from simple prompt-response systems.",
-          "granularity": "fine",
-          "parent_section": "langchain-agents/intro"
-        },
-        {
-          "id": "langchain-agents/architecture",
-          "title": "Agent Architecture",
-          "content": "A LangChain agent consists of three main components: the LLM (brain), tools (capabilities), and memory (context). The agent loop follows: observe input, think about next action, act using a tool, observe result, repeat until done. ReAct (Reasoning + Acting) is the most common agent pattern.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "langchain-agents/architecture/react-pattern",
-          "title": "ReAct Pattern Details",
-          "content": "The ReAct pattern interleaves reasoning and acting. First, the agent generates a Thought explaining its reasoning. Then it produces an Action to execute. After observing the Action Result, it generates another Thought. This loop continues until a Final Answer is reached.",
-          "granularity": "fine",
-          "parent_section": "langchain-agents/architecture"
-        },
-        {
-          "id": "langchain-agents/tools",
-          "title": "Building Custom Tools",
-          "content": "Tools extend agent capabilities. Create tools using the @tool decorator or Tool class. Each tool needs a name, description (critical for LLM selection), and function. Tools can be synchronous or async. Common tools include search, calculators, APIs, and database queries. Structure descriptions clearly for reliable tool selection.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "langchain-agents/tools/decorator-usage",
-          "title": "Tool Decorator Usage",
-          "content": "Use @tool decorator for simple functions: @tool def search(query: str) -> str. The decorator extracts the docstring as description. For more control, use Tool(name='search', func=search_fn, description='...'). Always include type hints for automatic schema generation.",
-          "granularity": "fine",
-          "parent_section": "langchain-agents/tools"
-        },
-        {
-          "id": "langchain-agents/tools/best-practices",
-          "title": "Tool Description Best Practices",
-          "content": "Write clear, specific tool descriptions. Include: what the tool does, when to use it, input format expected, output format returned. Bad: 'Search tool'. Good: 'Search the web for current information. Use when asked about recent events or facts you dont know. Input: search query string. Returns: relevant text snippets.'",
-          "granularity": "fine",
-          "parent_section": "langchain-agents/tools"
-        },
-        {
-          "id": "langchain-agents/memory",
-          "title": "Agent Memory Systems",
-          "content": "Memory enables agents to maintain context across interactions. ConversationBufferMemory stores full history. ConversationSummaryMemory compresses older messages. VectorStoreRetrieverMemory uses embeddings for semantic retrieval of relevant past interactions. Choose based on context length constraints and use case.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "langchain-agents/debugging",
-          "title": "Debugging Agents",
-          "content": "Debug agents using verbose mode to see reasoning steps. LangSmith provides tracing and observability for production. Common issues: wrong tool selection (improve descriptions), infinite loops (add max iterations), hallucinated tool names (validate tool list). Test agents with diverse inputs.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "langchain-agents/production",
-          "title": "Production Deployment",
-          "content": "Deploy agents with proper error handling and fallbacks. Implement rate limiting to control LLM costs. Use streaming for better UX on long-running tasks. Monitor token usage and latency. Consider async execution for concurrent requests. Add human-in-the-loop for sensitive operations.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "langsmith-evaluation",
+      "title": "LangSmith Evaluation Framework",
+      "url": "https://docs.langchain.com/langsmith/evaluation",
+      "content_type": "tutorial"
     },
     {
-      "id": "kubernetes-deploy",
-      "title": "Kubernetes Deployment Guide",
-      "content_type": "article",
-      "bucket": "long",
-      "language": "en",
-      "tags": ["kubernetes", "devops", "docker", "deployment", "infrastructure"],
-      "sections": [
-        {
-          "id": "kubernetes-deploy/intro",
-          "title": "Kubernetes Overview",
-          "content": "Kubernetes (K8s) is the industry-standard container orchestration platform. It automates deployment, scaling, and management of containerized applications. Key concepts include Pods (smallest deployable units), Services (network abstraction), and Deployments (desired state management).",
-          "granularity": "coarse"
-        },
-        {
-          "id": "kubernetes-deploy/pods",
-          "title": "Working with Pods",
-          "content": "Pods are groups of containers that share storage and network. Define pods using YAML manifests specifying container images, ports, and resources. Use resource limits (CPU, memory) to prevent noisy neighbors. Liveness probes detect stuck containers. Readiness probes control traffic routing.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "kubernetes-deploy/deployments",
-          "title": "Deployment Strategies",
-          "content": "Deployments manage pod replicas and updates. Rolling updates replace pods gradually for zero-downtime deployments. Use maxUnavailable and maxSurge to control update speed. Recreate strategy stops all pods before starting new ones. Blue-green deployments use two identical environments.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "kubernetes-deploy/services",
-          "title": "Services and Networking",
-          "content": "Services provide stable network endpoints for pods. ClusterIP exposes internally. NodePort opens on each node. LoadBalancer integrates with cloud providers. Ingress manages external HTTP/HTTPS routing. Use NetworkPolicies to control pod-to-pod communication.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "kubernetes-deploy/scaling",
-          "title": "Horizontal Pod Autoscaling",
-          "content": "HPA automatically adjusts pod replicas based on metrics. Configure target CPU/memory utilization thresholds. Custom metrics enable scaling on application-specific indicators. Vertical Pod Autoscaler adjusts resource requests. Use PodDisruptionBudgets to maintain availability during scaling.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "rag-triad",
+      "title": "RAG Triad Metrics",
+      "url": "https://deepeval.com/guides/guides-rag-triad",
+      "content_type": "article"
     },
     {
-      "id": "graphql-api",
-      "title": "GraphQL API Design",
-      "content_type": "api_docs",
-      "bucket": "long",
-      "language": "en",
-      "tags": ["graphql", "api", "backend", "schema"],
-      "sections": [
-        {
-          "id": "graphql-api/intro",
-          "title": "GraphQL Fundamentals",
-          "content": "GraphQL is a query language for APIs that lets clients request exactly the data they need. Unlike REST with fixed endpoints, GraphQL uses a single endpoint with a flexible schema. Clients specify fields in queries, reducing over-fetching and under-fetching problems common in REST APIs.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "graphql-api/schema",
-          "title": "Schema Design",
-          "content": "The GraphQL schema defines types, queries, and mutations. Use SDL (Schema Definition Language) for type definitions. Design schemas around business domains, not database tables. Prefer nullable fields by default. Use interfaces and unions for polymorphism. Document types with descriptions.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "graphql-api/resolvers",
-          "title": "Writing Resolvers",
-          "content": "Resolvers are functions that return data for schema fields. Each field can have its own resolver. Use DataLoader to batch database queries and prevent N+1 problems. Implement field-level authorization in resolvers. Handle errors by throwing GraphQL errors with appropriate codes.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "graphql-api/auth",
-          "title": "Authentication in GraphQL",
-          "content": "Implement authentication using context. Pass user info from JWT or session to resolvers via context object. Use directives like @auth for declarative authorization. Check permissions in resolvers for field-level access control. Consider persisted queries for security.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "graphql-api/performance",
-          "title": "Performance Optimization",
-          "content": "Optimize GraphQL performance with query complexity analysis to limit expensive queries. Use DataLoader for batching. Implement query caching with persisted queries. Consider query depth limiting. Use subscriptions judiciously as they maintain connections.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "microservices-patterns",
+      "title": "Microservices Patterns",
+      "url": "https://microservices.io/patterns/",
+      "content_type": "article"
     },
     {
-      "id": "embeddings-guide",
-      "title": "Understanding Embeddings",
-      "content_type": "article",
-      "bucket": "short",
-      "language": "en",
-      "tags": ["embeddings", "ai", "ml", "vectors", "semantic-search"],
-      "sections": [
-        {
-          "id": "embeddings-guide/intro",
-          "title": "What are Embeddings",
-          "content": "Embeddings are dense vector representations of data that capture semantic meaning. Text embeddings convert words, sentences, or documents into numerical vectors where similar content has similar vectors. This enables semantic search, clustering, and recommendation systems beyond keyword matching.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "embeddings-guide/models",
-          "title": "Embedding Models",
-          "content": "Popular embedding models include OpenAI text-embedding-3-small (1536 dimensions), Cohere embed-v3, and open-source models like sentence-transformers. Model choice affects accuracy, cost, and latency. Larger models generally produce better embeddings but are slower and more expensive.",
-          "granularity": "coarse"
-        },
-        {
-          "id": "embeddings-guide/search",
-          "title": "Semantic Search with Embeddings",
-          "content": "Semantic search uses cosine similarity between query and document embeddings. Store embeddings in vector databases like pgvector, Pinecone, or Weaviate. Use approximate nearest neighbor algorithms (HNSW, IVF) for fast search at scale. Combine with keyword search (hybrid) for best results.",
-          "granularity": "coarse"
-        }
-      ]
+      "id": "rest-api-principles",
+      "title": "REST API Design Principles",
+      "url": "https://restfulapi.net/rest-architectural-constraints/",
+      "content_type": "article"
+    },
+    {
+      "id": "grpc-guide",
+      "title": "gRPC Introduction",
+      "url": "https://grpc.io/docs/what-is-grpc/introduction/",
+      "content_type": "tutorial"
+    },
+    {
+      "id": "graphql-basics",
+      "title": "GraphQL Basics",
+      "url": "https://graphql.org/learn/",
+      "content_type": "tutorial"
+    },
+    {
+      "id": "vector-embeddings",
+      "title": "Vector Embeddings Guide",
+      "url": "https://platform.openai.com/docs/guides/embeddings",
+      "content_type": "article"
+    },
+    {
+      "id": "pgvector-guide",
+      "title": "pgvector PostgreSQL Extension",
+      "url": "https://github.com/pgvector/pgvector",
+      "content_type": "tutorial"
+    },
+    {
+      "id": "hnsw-algorithm",
+      "title": "HNSW Approximate Nearest Neighbor",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/30602420/",
+      "content_type": "article"
+    },
+    {
+      "id": "rlhf-guide",
+      "title": "RLHF - Reinforcement Learning from Human Feedback",
+      "url": "https://arxiv.org/abs/2312.14925",
+      "content_type": "article"
+    },
+    {
+      "id": "lora-finetuning",
+      "title": "LoRA Fine-Tuning for LLMs",
+      "url": "https://arxiv.org/abs/2106.09685",
+      "content_type": "tutorial"
+    },
+    {
+      "id": "mlops-guide",
+      "title": "MLOps - Machine Learning Operations",
+      "url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning",
+      "content_type": "article"
+    },
+    {
+      "id": "llm-agents-guide",
+      "title": "LLM Agents - Comprehensive Guide",
+      "url": "https://arxiv.org/abs/2308.11432",
+      "content_type": "article"
+    },
+    {
+      "id": "service-mesh",
+      "title": "Service Mesh Architecture",
+      "url": "https://istio.io/latest/about/service-mesh",
+      "content_type": "article"
+    },
+    {
+      "id": "write-ahead-log",
+      "title": "Write-Ahead Log Pattern",
+      "url": "https://www.postgresql.org/docs/current/wal-intro.html",
+      "content_type": "article"
+    },
+    {
+      "id": "prompt-engineering",
+      "title": "Advanced Prompt Engineering Techniques",
+      "url": "https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-the-openai-api",
+      "content_type": "tutorial"
     }
   ]
 }

@@ -37,7 +37,7 @@ from tenacity import (
 
 from app.core.logging import get_logger
 from app.evaluation.ingestion.pii_anonymizer import PIIAnonymizer, get_anonymizer
-from app.services.backpressure.rate_limiter import RateLimiter
+from app.shared.services.backpressure.rate_limiter import RateLimiter
 
 logger = get_logger(__name__)
 

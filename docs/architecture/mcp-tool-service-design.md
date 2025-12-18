@@ -93,7 +93,7 @@ This document defines the architecture for integrating Model Context Protocol (M
 
 **Context**: Need to integrate MCP tools with existing LangChain/LangGraph agents.
 
-**Decision**: Use official `langchain-mcp-adapters` library (v0.2.1+).
+**Decision**: Use `langchain-mcp-adapters` (current backend pins `^0.1.0` in `backend/pyproject.toml`).
 
 **Rationale**:
 - Official LangChain support (released March 2025)

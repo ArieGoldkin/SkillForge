@@ -12,9 +12,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.analysis import Analysis
+from app.db.models.artifact import Artifact
 from app.db.session import get_db
-from app.models.analysis import Analysis
-from app.models.artifact import Artifact
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

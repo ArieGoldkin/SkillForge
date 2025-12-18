@@ -601,6 +601,29 @@ structlog.contextvars.bind_contextvars(request_id=request_id)
 - [ ] No `TODO` or `FIXME` comments (create issues instead)
 - [ ] File sizes within limits (200 lines source, 300 lines tests)
 
+### Test Execution (MANDATORY)
+
+**✅ GOOD: Always run tests with visible output/logging**
+```bash
+# Always use -v (verbose) or tee to capture output
+pytest tests/ -v 2>&1 | tee /tmp/test_results.log
+pytest tests/unit/ --tb=short -v
+pytest tests/ --tb=no -q 2>&1 | tail -50  # Show summary at end
+```
+
+**❌ BAD: Running tests silently without logs**
+```bash
+pytest tests/  # No output - cannot diagnose failures
+pytest tests/ > /dev/null  # Discards output
+```
+
+**Key Requirements:**
+- **ALWAYS** use `-v` (verbose) or `-q` (quiet summary) - never silent
+- **ALWAYS** use `tee` to save output when running long test suites
+- **ALWAYS** show progress/logs - user needs to see what's happening
+- Use `--tb=short` for faster output, `--tb=no` for summary only
+- Use `tail -N` to show last N lines of output for summary
+
 ---
 
 ## 📚 Reference

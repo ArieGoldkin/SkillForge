@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [dev, main]
     paths:
-      - "backend/app/services/**"
-      - "backend/app/workflows/**"
+      - "backend/app/shared/services/**"
+      - "backend/app/domains/**/workflows/**"
       - "backend/app/api/**"
       - "backend/scripts/**"
       - ".github/workflows/external-sanity.yml"

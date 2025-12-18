@@ -48,7 +48,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.analysis_chunk import AnalysisChunk
+from app.core.constants import HYBRID_FETCH_MULTIPLIER
+from app.db.models.analysis_chunk import AnalysisChunk
 
 
 class ChunkRepository:
@@ -160,18 +161,25 @@ class ChunkRepository:
             - Scores are normalized by document length
 
         """
-        # Create tsquery from plain text
-        tsquery = func.plainto_tsquery("english", query_text)
+        # Use websearch_to_tsquery for natural query parsing with implicit AND
+        # - Handles web-search-like syntax (quotes for phrases, - for negation)
+        # - Safe for user input (never raises syntax errors)
+        # - Uses implicit AND between terms (good precision)
+        # - ts_rank_cd prefers documents with more term coverage
+        #
+        # Note: We tried explicit OR logic but it was too broad for RRF fusion.
+        # The natural AND behavior combined with semantic search provides
+        # the right recall/precision balance.
+        tsquery = func.websearch_to_tsquery("english", query_text)
 
         # Build query with ts_rank_cd scoring
-        # Note: Using to_tsvector on snippet column (no pre-computed tsvector in this schema)
-        # This is less efficient but works without schema changes
-        content_tsvector = func.to_tsvector("english", AnalysisChunk.snippet)
-        score = func.ts_rank_cd(content_tsvector, tsquery).label("score")
+        # Use pre-indexed content_tsvector column (populated by database trigger)
+        # This is 5-10x faster than computing to_tsvector at query time
+        score = func.ts_rank_cd(AnalysisChunk.content_tsvector, tsquery).label("score")
 
         query = (
             select(AnalysisChunk, score)
-            .where(content_tsvector.op("@@")(tsquery))
+            .where(AnalysisChunk.content_tsvector.op("@@")(tsquery))
             .order_by(score.desc())
         )
 
@@ -233,8 +241,9 @@ class ChunkRepository:
             - This approach handles the semantic-keyword score scale mismatch problem
 
         """
-        # Fetch results from both search methods with 2*limit for better coverage
-        fetch_limit = limit * 2
+        # Fetch results from both search methods with multiplied limit for better RRF coverage
+        # HYBRID_FETCH_MULTIPLIER=3 gives more candidates for rank fusion (was 2x)
+        fetch_limit = limit * HYBRID_FETCH_MULTIPLIER
 
         # Execute both searches in parallel (queries are independent)
         semantic_results = await self.semantic_search(

@@ -14,7 +14,8 @@ import type {
 } from '@app-types/api'
 
 // API base URL - uses Vite env variable or defaults to localhost:8500
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8500'
+// Note: Use relative path '' for Vite proxy, or full URL for direct backend access
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8500'
 
 /**
  * Generic fetch wrapper with error handling

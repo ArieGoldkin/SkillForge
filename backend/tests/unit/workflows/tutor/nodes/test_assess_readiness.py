@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
@@ -61,19 +61,23 @@ async def test_assess_readiness_evaluates_understanding(
     sample_tutor_state_for_assessment, mock_assessment_response
 ):
     """Test that assess_readiness evaluates user understanding."""
-    from app.workflows.tutor.nodes.assess_readiness import assess_readiness
+    from app.domains.tutor.workflows.nodes.assess_readiness import assess_readiness
 
     mock_model = AsyncMock()
     mock_model.ainvoke = AsyncMock(return_value=mock_assessment_response)
 
     with (
-        patch("app.workflows.tutor.nodes.assess_readiness.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.assess_readiness.get_chat_model",
+            return_value=mock_model,
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness.TutorSessionRepository"
+            "app.domains.tutor.workflows.nodes.assess_readiness.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.assess_readiness._emit_tutor_event",
+            new_callable=AsyncMock,
         ),
     ):
         mock_db_session = AsyncMock()
@@ -96,7 +100,7 @@ async def test_assess_readiness_evaluates_understanding(
 @pytest.mark.asyncio
 async def test_assess_readiness_handles_parse_error(sample_tutor_state_for_assessment):
     """Test that assess_readiness handles JSON parse errors gracefully."""
-    from app.workflows.tutor.nodes.assess_readiness import assess_readiness
+    from app.domains.tutor.workflows.nodes.assess_readiness import assess_readiness
 
     # Mock LLM response with invalid JSON
     mock_response = MagicMock()
@@ -105,13 +109,17 @@ async def test_assess_readiness_handles_parse_error(sample_tutor_state_for_asses
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.assess_readiness.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.assess_readiness.get_chat_model",
+            return_value=mock_model,
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness.TutorSessionRepository"
+            "app.domains.tutor.workflows.nodes.assess_readiness.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
-            "app.workflows.tutor.nodes.assess_readiness._emit_tutor_event", new_callable=AsyncMock
+            "app.domains.tutor.workflows.nodes.assess_readiness._emit_tutor_event",
+            new_callable=AsyncMock,
         ),
     ):
         mock_db_session = AsyncMock()

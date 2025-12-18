@@ -134,7 +134,7 @@ class TestLLMBenchmarkValidation:
         mock_settings.XAI_API_KEY = "xai-real-key"
 
         benchmark = LLMBenchmark(project_name="test", local_mode=True)
-        is_valid, error = benchmark.validate_api_key("grok-3-mini")
+        is_valid, error = benchmark.validate_api_key("grok-4.1-fast")
 
         assert is_valid is True
         assert error is None
@@ -148,16 +148,16 @@ class TestLLMBenchmarkValidation:
         mock_settings.XAI_API_KEY = None
 
         benchmark = LLMBenchmark(project_name="test", local_mode=True)
-        models = ["gpt-5-mini", "claude-haiku-3-5-20241022", "gemini-2.5-flash", "grok-3-mini"]
+        models = ["gpt-5-mini", "claude-haiku-3-5-20241022", "gemini-2.5-flash", "grok-4.1-fast"]
 
         available, errors = benchmark.get_available_models(models)
 
         assert "gpt-5-mini" in available
         assert "gemini-2.5-flash" in available
         assert "claude-haiku-3-5-20241022" not in available
-        assert "grok-3-mini" not in available
+        assert "grok-4.1-fast" not in available
         assert "claude-haiku-3-5-20241022" in errors
-        assert "grok-3-mini" in errors
+        assert "grok-4.1-fast" in errors
 
     def test_validate_api_key_unknown_model(self):
         """Unknown model returns False with appropriate error."""

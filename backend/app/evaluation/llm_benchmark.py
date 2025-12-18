@@ -1,7 +1,7 @@
 """LLM Benchmark Runner for SkillForge Evaluation Framework.
 
 This module provides tools for benchmarking different LLM models (GPT-4o-mini, Claude Sonnet 4,
-Gemini Flash, Grok-3-mini) across three task types:
+Gemini Flash, DeepSeek V3) across three task types:
 1. Supervisor routing - selecting which agents to run
 2. Agent analysis - generating structured analysis outputs
 3. Synthesis - aggregating multiple agent findings
@@ -24,7 +24,7 @@ Example:
     results = await benchmark.run_experiment(
         task_type="supervisor",
         model_id="gemini-2.5-flash",
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
         evaluators=[
             supervisor_correctness_evaluator,
             latency_evaluator,
@@ -37,7 +37,7 @@ Example:
     comparison = await benchmark.compare_models(
         task_type="supervisor",
         model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
     )
     print(f"Winner by accuracy: {comparison.winner_by_metric['accuracy']}")
     ```
@@ -64,11 +64,11 @@ from langsmith import Client
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
+from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
+from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 from app.evaluation.datasets import load_dataset
-from app.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
-from app.workflows.nodes.supervisor import supervisor_route
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import aggregate_findings
 
 logger = get_logger(__name__)
 
@@ -403,7 +403,7 @@ class LLMBenchmark:
             results = await benchmark.run_experiment(
                 task_type="supervisor",
                 model_id="gemini-2.5-flash",
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
                 evaluators=[
                     supervisor_correctness_evaluator,
                     latency_evaluator,
@@ -566,7 +566,7 @@ class LLMBenchmark:
             comparison = await benchmark.compare_models(
                 task_type="supervisor",
                 model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
             )
             print(comparison.recommendation)
             ```
@@ -757,7 +757,7 @@ class LLMBenchmark:
                 "skill_level": "intermediate",
                 "raw_content": content,
                 "extraction_metadata": {},
-                "supervisor_decision": {"agents": [agent_type]},
+                "supervisor_decision": {"agents": [agent_type]},  # type: ignore[typeddict-unknown-key]
             }
 
             # Use thread-safe context variable instead of mutating global settings

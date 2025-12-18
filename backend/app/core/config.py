@@ -205,6 +205,16 @@ class Settings(BaseSettings):
             "from LLM_MODEL."
         ),
     )
+    LLM_FALLBACK_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description=(
+            "Fallback LLM model used when primary model fails or times out. "
+            "Should be a lighter/faster model for resilience. "
+            "Used with LangChain's with_fallbacks() pattern for graceful degradation. "
+            "Default: gemini-2.5-flash (fast, cheap, reliable). "
+            "Alternatives: gpt-4o-mini, claude-haiku-3-5-20241022."
+        ),
+    )
     OPENAI_API_KEY: str | None = Field(
         default=None,
         description="OpenAI API key (required when using OpenAI models).",
@@ -252,6 +262,17 @@ class Settings(BaseSettings):
             "Maximum number of retry attempts for LLM API calls. "
             "Uses LangChain's built-in retry mechanism via max_retries parameter. "
             "Defaults to 3. Set to 0 to disable retries."
+        ),
+    )
+
+    # Quality Evaluation Configuration
+    QUALITY_JUDGE_MODEL: str = Field(
+        default="gemini-3-flash",
+        description=(
+            "LLM model for quality evaluation (LLM-as-judge). "
+            "Used by quality gate to score relevance, depth, coherence. "
+            "Defaults to gemini-3-flash ($0.50/$3.00 per 1M tokens) for best eval quality. "
+            "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
 
@@ -401,6 +422,60 @@ class Settings(BaseSettings):
     CLEANUP_BATCH_SIZE: int = Field(
         default=1000,
         description="Batch size for cleanup operations",
+    )
+
+    # Redis Configuration (LLM Caching & Chat History)
+    REDIS_URL: str = Field(
+        default="redis://localhost:6380",
+        description=(
+            "Redis connection URL. Used for semantic caching (LLM responses), "
+            "exact caching (supervisor routing), and chat history (tutor sessions)."
+        ),
+    )
+    REDIS_SEMANTIC_CACHE_TTL: int = Field(
+        default=86400,
+        description="TTL in seconds for semantic cache (24 hours default)",
+    )
+    REDIS_EXACT_CACHE_TTL: int = Field(
+        default=3600,
+        description="TTL in seconds for exact match cache (1 hour default)",
+    )
+    REDIS_CHAT_HISTORY_TTL: int = Field(
+        default=7200,
+        description="TTL in seconds for tutor chat history (2 hours default)",
+    )
+    REDIS_SIMILARITY_THRESHOLD: float = Field(
+        default=0.08,
+        description=(
+            "Distance threshold for semantic cache hits (lower = stricter). "
+            "0.08 means ~92% similarity required for cache hit."
+        ),
+    )
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for establishing Redis connection",
+    )
+    REDIS_SOCKET_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for Redis read/write operations",
+    )
+    REDIS_SOCKET_KEEPALIVE: bool = Field(
+        default=True,
+        description="Enable TCP keepalive for Redis connections",
+    )
+    REDIS_MAX_CONNECTIONS: int = Field(
+        default=20,
+        description="Maximum number of connections in the Redis pool",
+    )
+    REDIS_HEALTH_CHECK_INTERVAL: int = Field(
+        default=30,
+        description="Seconds between Redis connection health checks",
+    )
+
+    # Anthropic Prompt Caching Configuration
+    ANTHROPIC_PROMPT_CACHE_TTL: str = Field(
+        default="1h",
+        description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
     )
 
     model_config = SettingsConfigDict(

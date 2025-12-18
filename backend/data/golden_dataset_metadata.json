@@ -1,18 +1,18 @@
 {
-  "version": "1.0",
-  "created_at": "2025-12-12T09:05:23.065266+00:00",
+  "version": "2.0",
+  "created_at": "2025-12-15T11:02:46.751556+00:00",
   "counts": {
-    "analyses": 96,
-    "artifacts": 96,
-    "chunks": 408
+    "analyses": 97,
+    "artifacts": 97,
+    "chunks": 411,
+    "fixtures": 98
   },
   "content_types": {
-    "article": 76,
-    "research_paper": 1,
+    "research_paper": 3,
+    "article": 75,
     "tutorial": 19
   },
   "sample_titles": [
-    "Anthropic Context Engineering Guide",
     "RAG Survey - Naive, Advanced, and Modular Paradigms",
     "Chain-of-Thought Prompting",
     "Tree-of-Thoughts Reasoning",
@@ -21,6 +21,8 @@
     "RAG Triad Metrics",
     "Microservices Patterns",
     "REST API Design Principles",
-    "gRPC Introduction"
-  ]
+    "gRPC Introduction",
+    "GraphQL Basics"
+  ],
+  "includes_fixtures": true
 }

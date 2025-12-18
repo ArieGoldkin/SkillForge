@@ -15,8 +15,8 @@ boundary (e.g., workflow_runner.py) where we have context (analysis_id, status u
 This decorator focuses solely on tracing and lets exceptions propagate naturally.
 """
 
-from collections.abc import Awaitable, Callable
-from typing import Literal, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable, Mapping
+from typing import Any, Literal, ParamSpec, TypeVar
 
 from langsmith import traceable
 
@@ -32,8 +32,7 @@ def robust_traceable(
     name: str | None = None,
     run_type: RunType = "chain",
     tags: list[str] | None = None,
-    metadata: dict[str, str | int | float | bool] | None = None,
-    **traceable_kwargs: object,
+    metadata: Mapping[str, Any] | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Production-ready traceable wrapper for LangSmith instrumentation.
 
@@ -50,7 +49,6 @@ def robust_traceable(
         run_type: Run type for LangSmith ("chain", "tool", etc.)
         tags: List of tags for filtering traces
         metadata: Additional metadata to attach to trace
-        **traceable_kwargs: Additional arguments passed to @traceable decorator
 
     Returns:
         Decorated function with tracing enabled
@@ -64,18 +62,20 @@ def robust_traceable(
     """
 
     def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        # Get function name safely for the trace name
+        func_name = getattr(func, "__name__", "unknown")
+        trace_name = name if name is not None else func_name
+
         # Use keyword-only arguments for traceable to match LangSmith API
-        # Type ignore: LangSmith traceable has complex overloads that mypy can't resolve
-        traced_func = traceable(  # type: ignore[call-overload, no-any-return]
+        # Type ignore: LangSmith traceable has complex overloads that ty/mypy can't resolve
+        traced_func = traceable(  # type: ignore[call-overload]
             run_type=run_type,
-            name=name or func.__name__,
+            name=trace_name,
             tags=tags or [],
             metadata=metadata or {},
-            **traceable_kwargs,
         )
         # Apply tracing directly - no exception handling wrapper
         # Exceptions propagate naturally to application boundary handlers
-        # Type ignore: traced_func returns wrapped function with LangSmith extras
-        return traced_func(func)  # type: ignore[return-value, no-any-return]
+        return traced_func(func)  # type: ignore[return-value]
 
     return decorator

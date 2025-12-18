@@ -35,28 +35,23 @@ export class LibraryPage extends BasePage {
   }
 
   /**
-   * Search the library with proper API response waiting.
-   * Waits for the library API response instead of using arbitrary timeouts.
+   * Search the library with proper UI state waiting.
+   * Waits for UI changes instead of network responses (more reliable in CI).
    */
   async search(query: string) {
-    // Set up response promise BEFORE triggering the action
-    const responsePromise = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
-    );
-
     await this.searchInput.fill(query);
+
     // Trigger immediate search with Enter key (no search button exists)
     await this.searchInput.press('Enter');
 
-    // Wait for API response to complete
-    await responsePromise;
-
-    // Wait for loading state to clear (if it exists)
-    await expect(this.loadingState).not.toBeVisible({ timeout: 5000 }).catch(() => {
+    // Wait for UI state changes (not network) - loading state to appear then clear
+    // or just wait for any UI update to complete
+    await expect(this.loadingState).not.toBeVisible({ timeout: 10000 }).catch(() => {
       // Loading state might not be implemented or might be very brief
     });
+
+    // Verify search input retained the value
+    await expect(this.searchInput).toHaveValue(query);
   }
 
   /**

@@ -11,7 +11,7 @@ Tests cover:
 Reference: docs/issues/222-pluggable-parsers/README.md
 """
 
-from app.services.chunking.parsers import (
+from app.shared.services.chunking.parsers import (
     CodeParser,
     HTMLParser,
     MarkdownParser,

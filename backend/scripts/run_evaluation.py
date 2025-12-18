@@ -140,8 +140,8 @@ async def run_evaluation(
     from sqlalchemy.ext.asyncio import create_async_engine
 
     from app.db.session import AsyncSessionLocal, get_async_database_url
-    from app.services.embeddings import EmbeddingService
-    from app.services.embeddings_deterministic import DeterministicEmbeddingService
+    from app.shared.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 
     settings = get_settings()
     force_deterministic = (os.environ.get("SKILLFORGE_DETERMINISTIC_EMBEDDINGS") or "").lower() in {

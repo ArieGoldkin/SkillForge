@@ -1,0 +1,85 @@
+/**
+ * Table of Contents Styles - SkillForge Design System
+ *
+ * Sticky sidebar navigation for artifact pages
+ *
+ * @see src/index.css for variable definitions
+ */
+
+/* ============================================================================
+   TOC CONTAINER
+   ============================================================================ */
+
+.toc-nav {
+  /* Subtle background for the TOC */
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  max-width: 100%;
+}
+
+/* Desktop: make it sticky */
+@media (min-width: 1024px) {
+  .toc-nav {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING (Desktop only)
+   ============================================================================ */
+
+@media (min-width: 1024px) {
+  .toc-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .toc-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .toc-nav::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+  }
+
+  .toc-nav::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
+
+  /* Firefox */
+  .toc-nav {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+/* ============================================================================
+   TOC HEADER (Mobile)
+   ============================================================================ */
+
+.toc-nav > button {
+  /* Styles are inline in the component for clarity */
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+/* Focus visible styles for keyboard navigation */
+.toc-nav button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .toc-nav button {
+    transition: none !important;
+  }
+}

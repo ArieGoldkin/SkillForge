@@ -1,8 +1,11 @@
 """Unit tests for response_helpers module."""
 
-from app.workflows.tutor.nodes.response_helpers import extract_string_content
+import pytest
+
+from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 
 
+@pytest.mark.unit
 class TestExtractStringContent:
     """Test extract_string_content function."""
 

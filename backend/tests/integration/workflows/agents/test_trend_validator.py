@@ -4,8 +4,8 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.models.analysis import Analysis
-from app.workflows.agents import run_trend_validator
+from app.db.models.analysis import Analysis
+from app.domains.analysis.workflows.agents import run_trend_validator
 
 # Note: requires_llm fixture is provided by backend/tests/conftest.py
 # It automatically checks for the correct API key based on LLM_MODEL configuration
@@ -41,7 +41,7 @@ async def test_trend_validator_integration(
     db_session.add(analysis)
     await db_session.commit()
 
-    from app.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.state import AnalysisState
 
     mock_state = AnalysisState(
         analysis_id=UUID(analysis_id),

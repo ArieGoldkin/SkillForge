@@ -13,7 +13,7 @@ import asyncio
 
 import pytest
 
-from app.services.mcp.client import (
+from app.shared.services.mcp.client import (
     MCP_RETRY_ATTEMPTS,
     MCP_RETRY_MAX_WAIT,
     MCP_RETRY_MIN_WAIT,
@@ -21,7 +21,10 @@ from app.services.mcp.client import (
     create_mcp_retry_decorator,
     execute_with_timeout,
 )
-from app.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
+from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
+
+
+@pytest.mark.unit
 
 # ============================================================================
 # Test Constants
@@ -278,7 +281,7 @@ class TestLoadToolsWithRetry:
         """_load_tools uses timeout from server config."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         # Verify timeout is extracted from config
@@ -288,7 +291,7 @@ class TestLoadToolsWithRetry:
         """_load_tools uses max_retries from server config."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         # Verify max_retries is extracted from config
@@ -298,7 +301,7 @@ class TestLoadToolsWithRetry:
         """_load_tools uses create_mcp_retry_decorator."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         assert "create_mcp_retry_decorator" in source
@@ -307,7 +310,7 @@ class TestLoadToolsWithRetry:
         """_load_tools wraps operations with execute_with_timeout."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         assert "execute_with_timeout" in source
@@ -316,7 +319,7 @@ class TestLoadToolsWithRetry:
         """_load_tools catches and re-raises MCPTimeoutError."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         assert "MCPTimeoutError" in source
@@ -325,7 +328,7 @@ class TestLoadToolsWithRetry:
         """_load_tools records errors in connection state."""
         import inspect
 
-        from app.services.mcp.client import MCPClientPool
+        from app.shared.services.mcp.client import MCPClientPool
 
         source = inspect.getsource(MCPClientPool._load_tools)
         assert "conn.record_error" in source

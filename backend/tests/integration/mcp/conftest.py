@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from langchain_core.tools import BaseTool
 
-from app.services.mcp.client import ConnectionState, MCPClientPool, MCPConnection
-from app.services.mcp.config import MCPServerConfig, MCPTransport
+from app.shared.services.mcp.client import ConnectionState, MCPClientPool, MCPConnection
+from app.shared.services.mcp.config import MCPServerConfig, MCPTransport
 
 # ============================================================================
 # Mock Tool Fixtures
@@ -299,7 +299,7 @@ def error_connection(github_server_config):
 @pytest.fixture
 def failing_pool(all_server_configs):
     """MCPClientPool that fails on tool loading."""
-    from app.services.mcp.exceptions import MCPConnectionError
+    from app.shared.services.mcp.exceptions import MCPConnectionError
 
     pool = MCPClientPool(all_server_configs)
 
@@ -325,7 +325,7 @@ def intermittent_pool(all_server_configs, all_mock_tools):
         nonlocal call_count
         call_count += 1
         if call_count == 1:
-            from app.services.mcp.exceptions import MCPConnectionError
+            from app.shared.services.mcp.exceptions import MCPConnectionError
 
             msg = "Transient failure"
             raise MCPConnectionError(msg, server_name="github")
@@ -348,7 +348,7 @@ def intermittent_pool(all_server_configs, all_mock_tools):
 @pytest.fixture
 def tool_registry():
     """Real ToolRegistry with default agent configurations."""
-    from app.services.mcp.registry import ToolRegistry
+    from app.shared.services.mcp.registry import ToolRegistry
 
     return ToolRegistry()
 

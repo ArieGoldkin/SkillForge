@@ -4,6 +4,8 @@ import { getCompletedAnalysis, createAnalysis, getAnalysis } from '../utils/api-
 
 test.describe('Analysis Page - Progress Tracking', () => {
   test('should display the analysis page with progress indicator', async ({ page, request }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Get a completed analysis to avoid waiting for real processing
     const completed = await getCompletedAnalysis(request);
 
@@ -73,6 +75,8 @@ test.describe('Analysis Page - Progress Tracking', () => {
   });
 
   test('should handle SSE connection lifecycle', async ({ page, request }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Create a new analysis to observe SSE stream behavior
     const { analysis_id } = await createAnalysis(request);
 
@@ -107,6 +111,8 @@ test.describe('Analysis Page - Progress Tracking', () => {
   });
 
   test('should display analysis metadata', async ({ page, request }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Get any analysis (completed or in-progress)
     const completed = await getCompletedAnalysis(request);
     const analysisId = completed?.analysis_id || (await createAnalysis(request)).analysis_id;

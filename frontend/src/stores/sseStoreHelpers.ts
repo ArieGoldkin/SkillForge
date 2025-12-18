@@ -10,6 +10,7 @@ import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 let eventSource: EventSource | null = null
 let reconnectAttempts = 0
 let reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null
+let permanentlyFailed = false // Prevents reconnection after max attempts exhausted
 
 const MAX_RECONNECT_ATTEMPTS = 3
 const INITIAL_RECONNECT_DELAY = 1000 // 1s
@@ -96,9 +97,16 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
 
 /**
  * Handle server error event
+ * Note: This handles server-sent 'error' events, not connection errors (handled by onerror)
  */
 function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
   return (event: MessageEvent) => {
+    // Guard: connection errors may fire this with undefined data
+    if (!event.data) {
+      console.warn('[SSE] Received error event with no data (connection error)')
+      return
+    }
+
     try {
       const data: SSEEvent = JSON.parse(event.data)
       console.error('[SSE] Server error event:', data)
@@ -146,9 +154,10 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
         store.getState().connect(analysisId)
       }, delay)
     } else {
-      console.error('[SSE] Max reconnection attempts reached')
+      console.error('[SSE] Max reconnection attempts reached - giving up')
+      permanentlyFailed = true // Prevent further reconnection attempts
       store.setState({
-        error: new Error('Connection failed after multiple attempts'),
+        error: new Error('Connection failed after multiple attempts. Please refresh to retry.'),
       })
       store.getState().disconnect()
     }
@@ -178,9 +187,17 @@ export function createConnection(analysisId: string, store: StoreAPI): void {
     return
   }
 
+  // Prevent reconnection after permanent failure (for same analysis)
+  if (permanentlyFailed && currentState.activeAnalysisId === analysisId) {
+    console.warn(`[SSE] Connection permanently failed for ${analysisId}. Refresh to retry.`)
+    return
+  }
+
   // Disconnect existing connection if different analysis
   if (eventSource && currentState.activeAnalysisId !== analysisId) {
     store.getState().disconnect()
+    // Reset permanent failure flag for new analysis
+    permanentlyFailed = false
   }
 
   // Clear any pending reconnect
@@ -190,7 +207,7 @@ export function createConnection(analysisId: string, store: StoreAPI): void {
   }
 
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8500'
+    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8500'
     const url = `${apiUrl}/api/v1/analyze/${analysisId}/stream`
 
     eventSource = new EventSource(url)

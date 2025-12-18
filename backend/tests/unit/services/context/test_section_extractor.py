@@ -8,7 +8,7 @@ Tests content analysis for partial loading:
 
 import pytest
 
-from app.services.context.section_extractor import SectionExtractor
+from app.domains.analysis.services.context.section_extractor import SectionExtractor
 
 
 @pytest.fixture

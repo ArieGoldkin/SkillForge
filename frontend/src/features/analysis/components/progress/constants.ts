@@ -3,54 +3,73 @@
  * Shared stage configuration and helper functions
  */
 
-import type { AgentStageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@app-types/sse'
 
 /**
  * All available pipeline stages
+ * Note: Agents are dynamically selected by supervisor (0-8 agents)
+ * Total stages = 5 fixed + N agents (where 0 ≤ N ≤ 8)
  */
-export const ALL_STAGES: AgentStageName[] = [
+export const ALL_STAGES: StageName[] = [
+  // Core workflow stages (always present)
   'extraction',
   'embedding',
   'supervisor_routing',
+  // Agent stages (dynamically selected, 0-8)
   'tech_comparison',
   'security_audit',
-  'implementation_planning',
+  'implementation_planning', // Used by BOTH implementation_planner AND integration_feasibility
   'performance_audit',
   'code_quality_audit',
   'trends_analysis',
   'dependencies_analysis',
+  // Workflow stages
   'aggregation',
+  'quality_validation',
   'artifact_generation',
+  // Optional stages
+  'chunking', // Only if ENABLE_COARSE_TO_FINE=true
+  'workflow', // Error handling
+  'pattern_comparison',
+  'metrics',
 ]
 
 /**
  * Currently working stages (for testing with real backend)
  */
-export const WORKING_STAGES: AgentStageName[] = ['extraction', 'embedding', 'supervisor_routing']
+export const WORKING_STAGES: StageName[] = ['extraction', 'embedding', 'supervisor_routing']
 
 /**
  * Stage configuration with user-friendly labels
  */
-export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
+export const STAGE_CONFIG: Record<StageName, { label: string }> = {
+  // Core workflow stages
   extraction: { label: 'Content Extraction' },
   embedding: { label: 'Embedding Generation' },
   supervisor_routing: { label: 'Agent Routing' },
+  aggregation: { label: 'Results Aggregation' },
+  quality_validation: { label: 'Quality Validation' },
+  artifact_generation: { label: 'Artifact Generation' },
+  // Agent stages
   tech_comparison: { label: 'Technology Comparison' },
   security_audit: { label: 'Security Audit' },
-  implementation_planning: { label: 'Implementation Planning' },
+  implementation_planning: { label: 'Implementation Planning' }, // Covers both implementation_planner AND integration_feasibility
   performance_audit: { label: 'Performance Analysis' },
   code_quality_audit: { label: 'Code Quality Review' },
   trends_analysis: { label: 'Trends Analysis' },
   dependencies_analysis: { label: 'Dependencies Review' },
-  aggregation: { label: 'Results Aggregation' },
-  artifact_generation: { label: 'Artifact Generation' },
+  // Optional stages
+  chunking: { label: 'Content Chunking' },
+  workflow: { label: 'Workflow' },
+  pattern_comparison: { label: 'Pattern Comparison' },
+  metrics: { label: 'Metrics Collection' },
 }
 
 /**
  * Internal state for each stage
  */
 export interface StageState {
-  name: AgentStageName
+  name: StageName
   label: string
   status: StageStatus
   agent?: string
@@ -61,7 +80,7 @@ export interface StageState {
 /**
  * Create initial stage states from stage list
  */
-export function createInitialStages(stages: AgentStageName[]): StageState[] {
+export function createInitialStages(stages: StageName[]): StageState[] {
   return stages.map((name) => ({
     name,
     label: STAGE_CONFIG[name].label,

@@ -1,9 +1,20 @@
 """Real integration tests for Agent Memory Service.
 
 IMPORTANT: These tests use REAL PostgreSQL database connections.
-They require:
+
+Test categories:
+1. Database integration tests (mock embeddings):
+   - Memory storage and retrieval
+   - Database constraints and cascades
+   - Concurrent access patterns
+
+2. Semantic search tests (real embeddings, requires_llm):
+   - Vector similarity search with pgvector
+   - Proactive recall with semantic matching
+
+Requirements:
 - Running PostgreSQL with pgvector extension (port 5437)
-- Valid OPENAI_API_KEY or GOOGLE_API_KEY for embeddings
+- Valid OPENAI_API_KEY or GOOGLE_API_KEY (only for semantic search tests)
 
 Tests verify:
 - #245: Agent Memory Access (RAG) - storage and retrieval
@@ -11,15 +22,17 @@ Tests verify:
 - #269: Store Findings as Memories - end-to-end storage flow
 """
 
+from typing import cast
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import select, text
 
-from app.models.agent_memory import AgentMemory, MemoryType
-from app.services.embeddings import EmbeddingService
-from app.services.memory.agent_memory_service import AgentMemoryService
-from app.services.memory.proactive_recall import (
+from app.db.models.agent_memory import AgentMemory, MemoryType
+from app.shared.services.embeddings import EmbeddingService
+from app.shared.services.memory.agent_memory_service import AgentMemoryService
+from app.shared.services.memory.proactive_recall import (
     fetch_proactive_context,
     format_memory_context,
 )
@@ -30,6 +43,36 @@ pytestmark = [
 ]
 
 
+@pytest.fixture
+def mock_embedding_service():
+    """Create a mock embedding service for integration tests.
+
+    Integration tests use the real database but mock the embedding service
+    to avoid external API calls while still testing the full database flow.
+
+    Returns unique embeddings for different inputs to simulate real behavior.
+    """
+    import hashlib
+
+    service = MagicMock(spec=EmbeddingService)
+
+    async def generate_unique_embedding(text: str) -> list[float]:
+        """Generate a deterministic unique embedding based on text hash."""
+        # Use hash of text to generate unique but deterministic embedding
+        text_hash = hashlib.sha256(text.encode()).digest()
+        # Convert first 1536 bytes to floats in range [-1, 1]
+        # Use modulo to cycle through hash bytes if needed
+        embedding = []
+        for i in range(1536):
+            byte_val = text_hash[i % len(text_hash)]
+            # Normalize byte (0-255) to float in range [-1, 1]
+            embedding.append((byte_val / 127.5) - 1.0)
+        return embedding
+
+    service.generate_embedding = AsyncMock(side_effect=generate_unique_embedding)
+    return cast(EmbeddingService, service)
+
+
 class TestAgentMemoryStorageIntegration:
     """Integration tests for memory storage with real PostgreSQL."""
 
@@ -37,7 +80,7 @@ class TestAgentMemoryStorageIntegration:
         self,
         db_session,
         create_test_analysis,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that storing memory creates actual record in PostgreSQL."""
         # Create a real analysis record first
@@ -47,11 +90,8 @@ class TestAgentMemoryStorageIntegration:
             content_type="article",
         )
 
-        # Create real embedding service
-        embedding_service = EmbeddingService()
-
-        # Create service with real session
-        service = AgentMemoryService(db_session, embedding_service)
+        # Create service with real session and mock embedding service
+        service = AgentMemoryService(db_session, mock_embedding_service)
 
         # Store a real memory
         memory = await service.store(
@@ -82,11 +122,10 @@ class TestAgentMemoryStorageIntegration:
     async def test_store_memory_generates_valid_embedding(
         self,
         db_session,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that stored memories have valid embeddings for similarity search."""
-        embedding_service = EmbeddingService()
-        service = AgentMemoryService(db_session, embedding_service)
+        service = AgentMemoryService(db_session, mock_embedding_service)
 
         # Store two related memories
         memory1 = await service.store(
@@ -112,13 +151,11 @@ class TestAgentMemoryStorageIntegration:
     async def test_memory_type_constraint_enforced_by_database(
         self,
         db_session,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that PostgreSQL enforces memory_type check constraint."""
-        embedding_service = EmbeddingService()
-
         # Generate a valid embedding
-        embedding = await embedding_service.generate_embedding("test content")
+        embedding = await mock_embedding_service.generate_embedding("test content")
 
         # Try to insert with invalid memory_type directly
         invalid_memory = AgentMemory(
@@ -142,15 +179,24 @@ class TestAgentMemoryStorageIntegration:
         await db_session.rollback()
 
 
+@pytest.mark.external
 class TestSemanticSearchIntegration:
-    """Integration tests for vector similarity search with pgvector."""
+    """Integration tests for vector similarity search with pgvector.
+
+    These tests require real embedding service to test actual semantic similarity.
+    Marked with @pytest.mark.external - skip if no real API keys available.
+    """
 
     async def test_semantic_search_returns_similar_memories(
         self,
         db_session,
         requires_llm,
     ):
-        """Test that pgvector cosine similarity search works correctly."""
+        """Test that pgvector cosine similarity search works correctly.
+
+        Requires real embeddings to test semantic similarity matching.
+        """
+        # Use real embedding service for semantic similarity testing
         embedding_service = EmbeddingService()
         service = AgentMemoryService(db_session, embedding_service)
 
@@ -191,7 +237,11 @@ class TestSemanticSearchIntegration:
         db_session,
         requires_llm,
     ):
-        """Test that search correctly filters by memory_type."""
+        """Test that search correctly filters by memory_type.
+
+        Requires real embeddings to test semantic similarity matching.
+        """
+        # Use real embedding service for semantic similarity testing
         embedding_service = EmbeddingService()
         service = AgentMemoryService(db_session, embedding_service)
 
@@ -225,7 +275,11 @@ class TestSemanticSearchIntegration:
         db_session,
         requires_llm,
     ):
-        """Test that search only returns results above similarity threshold."""
+        """Test that search only returns results above similarity threshold.
+
+        Requires real embeddings to test semantic similarity matching.
+        """
+        # Use real embedding service for semantic similarity testing
         embedding_service = EmbeddingService()
         service = AgentMemoryService(db_session, embedding_service)
 
@@ -248,15 +302,23 @@ class TestSemanticSearchIntegration:
         assert len(results) == 0
 
 
+@pytest.mark.external
 class TestProactiveRecallIntegration:
-    """Integration tests for proactive recall with real database."""
+    """Integration tests for proactive recall with real database.
+
+    Marked with @pytest.mark.external - skip if no real API keys available.
+    """
 
     async def test_proactive_recall_retrieves_relevant_memories(
         self,
         db_session,
         requires_llm,
     ):
-        """Test end-to-end proactive recall flow."""
+        """Test end-to-end proactive recall flow.
+
+        Requires real embeddings to test semantic similarity matching.
+        """
+        # Use real embedding service for semantic similarity testing
         embedding_service = EmbeddingService()
         service = AgentMemoryService(db_session, embedding_service)
 
@@ -299,9 +361,12 @@ class TestProactiveRecallIntegration:
         db_session,
         requires_llm,
     ):
-        """Test that fetch_proactive_context returns properly formatted snippets."""
-        embedding_service = EmbeddingService()
+        """Test that fetch_proactive_context returns properly formatted snippets.
 
+        Requires real embeddings to test semantic similarity matching.
+        """
+        # Use real embedding service for semantic similarity testing
+        embedding_service = EmbeddingService()
         # Store a memory first
         service = AgentMemoryService(db_session, embedding_service)
         await service.store(
@@ -334,11 +399,10 @@ class TestMemoryPersistenceIntegration:
     async def test_memories_persist_across_sessions(
         self,
         db_session,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that stored memories persist and can be retrieved."""
-        embedding_service = EmbeddingService()
-        service = AgentMemoryService(db_session, embedding_service)
+        service = AgentMemoryService(db_session, mock_embedding_service)
 
         # Store a memory
         memory = await service.store(
@@ -369,7 +433,7 @@ class TestMemoryPersistenceIntegration:
         self,
         db_session,
         create_test_analysis,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that deleting an analysis cascades to delete its memories."""
         # Create analysis
@@ -379,8 +443,7 @@ class TestMemoryPersistenceIntegration:
         )
         analysis_id = analysis.id
 
-        embedding_service = EmbeddingService()
-        service = AgentMemoryService(db_session, embedding_service)
+        service = AgentMemoryService(db_session, mock_embedding_service)
 
         # Store memory linked to analysis
         memory = await service.store(
@@ -413,11 +476,10 @@ class TestConcurrentMemoryAccessIntegration:
     async def test_concurrent_memory_storage(
         self,
         db_session,
-        requires_llm,
+        mock_embedding_service,
     ):
         """Test that concurrent memory storage doesn't cause conflicts."""
-        embedding_service = EmbeddingService()
-        service = AgentMemoryService(db_session, embedding_service)
+        service = AgentMemoryService(db_session, mock_embedding_service)
 
         # Store multiple memories concurrently
         # Note: Using same session so they're serialized, but tests transaction handling

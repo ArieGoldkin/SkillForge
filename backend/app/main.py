@@ -34,7 +34,8 @@ if env_file.exists():
         os.environ.pop("LANGSMITH_PROJECT", None)  # Remove old value first
         os.environ["LANGSMITH_PROJECT"] = project_from_env
 
-from app.api.v1 import analyze, artifacts, health, library, search  # noqa: E402
+from app.api.v1 import health  # noqa: E402
+from app.api.v1.analysis import router as analysis_router  # noqa: E402
 from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.api_key_validation import log_api_key_configuration  # noqa: E402
 from app.core.config import settings  # noqa: E402
@@ -310,7 +311,7 @@ app = FastAPI(
 
 # CORS Middleware
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # type: ignore[arg-type]
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
@@ -319,7 +320,7 @@ app.add_middleware(
 
 
 # Request ID Middleware
-app.add_middleware(RequestIDMiddleware)
+app.add_middleware(RequestIDMiddleware)  # type: ignore[arg-type]
 
 
 # Global Exception Handler
@@ -372,10 +373,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Register routers
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
-app.include_router(analyze.router, prefix=settings.API_V1_PREFIX)
-app.include_router(artifacts.router, prefix=settings.API_V1_PREFIX)
-app.include_router(search.router, prefix=settings.API_V1_PREFIX)
-app.include_router(library.router, prefix=settings.API_V1_PREFIX)
+app.include_router(analysis_router, prefix=settings.API_V1_PREFIX)
 app.include_router(tutor_router, prefix=settings.API_V1_PREFIX)
 
 

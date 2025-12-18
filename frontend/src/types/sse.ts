@@ -6,20 +6,28 @@
 
 /**
  * Agent stage names - represent individual processing stages
+ *
+ * IMPORTANT: These match backend stage names from AGENT_REGISTRY (backend/app/core/agent_config.py)
+ * Note: 'implementation_planning' is used by BOTH implementation_planner AND integration_feasibility agents
  */
 export type AgentStageName =
+  // Core workflow stages (always present)
   | 'extraction'
   | 'embedding'
   | 'supervisor_routing'
+  | 'aggregation'
+  | 'quality_validation'
+  | 'artifact_generation'
+  // Agent stages (dynamically selected by supervisor, 0-8 agents)
   | 'tech_comparison'
   | 'security_audit'
-  | 'implementation_planning'
+  | 'implementation_planning' // Used by BOTH implementation_planner AND integration_feasibility
   | 'performance_audit'
   | 'code_quality_audit'
   | 'trends_analysis'
   | 'dependencies_analysis'
-  | 'aggregation'
-  | 'artifact_generation'
+  // Optional stages
+  | 'chunking' // Only if ENABLE_COARSE_TO_FINE=true
 
 /**
  * Workflow-level stage names - represent workflow-wide events
@@ -48,10 +56,42 @@ export interface SSEProgressEvent {
   stage: StageName
   status: StageStatus
   timestamp: string
+  expected_total_stages?: number
+  findings_summary?: string
+  insights_count?: number
+  confidence_score?: number
+  analysis_metadata?: {
+    title?: string
+    content_type?: 'article' | 'video' | 'repo'
+    url?: string
+    word_count?: number
+  }
+  skip_reasons?: Record<string, string> // agent_type -> reason
+  success_metrics?: {
+    findings_quality?: 'high' | 'medium' | 'low'
+    coverage?: 'comprehensive' | 'partial' | 'minimal'
+    key_insights?: string[]
+  }
   details?: {
     word_count?: number
     agent?: string
     progress_percent?: number
+    expected_total_stages?: number
+    findings_summary?: string
+    insights_count?: number
+    confidence_score?: number
+    analysis_metadata?: {
+      title?: string
+      content_type?: 'article' | 'video' | 'repo'
+      url?: string
+      word_count?: number
+    }
+    skip_reasons?: Record<string, string>
+    success_metrics?: {
+      findings_quality?: 'high' | 'medium' | 'low'
+      coverage?: 'comprehensive' | 'partial' | 'minimal'
+      key_insights?: string[]
+    }
     [key: string]: unknown
   }
 }

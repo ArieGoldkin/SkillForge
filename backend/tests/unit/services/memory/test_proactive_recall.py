@@ -6,8 +6,8 @@ Tests the proactive context injection functionality.
 
 import uuid
 
-from app.services.memory import MemorySnippet
-from app.services.memory.proactive_recall import (
+from app.shared.services.memory import MemorySnippet
+from app.shared.services.memory.proactive_recall import (
     format_memory_context,
     inject_proactive_context,
 )

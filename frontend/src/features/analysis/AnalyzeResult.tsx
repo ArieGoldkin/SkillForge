@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
 import { useEffect, useMemo } from 'react'
 
 import { useSSEStore } from '@stores/sseStore'
@@ -61,6 +62,7 @@ const checkWaitingForFirstEvent = (params: {
   !params.isComplete &&
   (params.statusLoading || !params.resolvedStatus)
 
+/* eslint-disable max-lines-per-function -- Function handles complex state derivation with multiple conditions for completion, failures, and error states */
 const useDerivedState = ({
   artifactId,
   urlArtifactId,
@@ -71,6 +73,8 @@ const useDerivedState = ({
   error,
   errorMessage,
   completed,
+  overallProgress,
+  hasFailedStages,
 }: {
   artifactId?: string
   urlArtifactId?: string
@@ -81,6 +85,8 @@ const useDerivedState = ({
   error: Error | null
   errorMessage?: string | null
   completed?: boolean
+  overallProgress: { stage: string; progress: number }
+  hasFailedStages: boolean
 }) => {
   const resolvedArtifactId = useMemo(
     () => artifactId || statusState.resolvedArtifactId || urlArtifactId,
@@ -92,8 +98,18 @@ const useDerivedState = ({
     [isComplete, statusState.resolvedStatus]
   )
 
-  const isResolvedComplete =
-    (completed && Boolean(urlArtifactId)) || isStatusComplete(resolvedStatus) || isComplete
+  // CRITICAL: Only consider analysis truly complete if:
+  // 1. Artifact generation completed (isComplete = true)
+  // 2. No failed stages (overallProgress.stage === 'complete', not just 'analyzing' or 'generating')
+  // 3. Progress is 100% (not 99% which indicates failures or pending stages)
+  // 4. No failed stages (hasFailedStages = false) - CRITICAL: Never show as truly complete if there are failed stages
+  const isTrulyComplete =
+    !hasFailedStages &&
+    ((completed && Boolean(urlArtifactId)) ||
+      isStatusComplete(resolvedStatus) ||
+      (isComplete && overallProgress.stage === 'complete' && overallProgress.progress === 100))
+
+  const isResolvedComplete = isTrulyComplete
   const isFailed = resolvedStatus === 'failed' || hasError
   const effectiveError =
     statusState.statusError || errorMessage || error?.message || 'An error occurred during analysis'
@@ -110,13 +126,22 @@ const useDerivedState = ({
   return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
 }
 
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line complexity -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
   const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
-  const { overallProgress, steps, activities, hasError, errorMessage, artifactId } =
-    useAnalysisProgress(events)
+  const {
+    overallProgress,
+    steps,
+    activities,
+    hasError,
+    errorMessage,
+    artifactId,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+  } = useAnalysisProgress(events)
   const statusState = useAnalysisStatus({
     analysisId: id,
     completedParam: Boolean(completed),
@@ -142,40 +167,84 @@ export default function AnalyzeResult() {
       error,
       errorMessage,
       completed,
+      overallProgress,
+      hasFailedStages,
     })
 
   if (completed && urlArtifactId) {
-    return <CompletedAnalysisView analysisId={id} artifactId={urlArtifactId} />
+    return (
+      <CompletedAnalysisView
+        analysisId={id}
+        artifactId={urlArtifactId}
+        overallProgress={overallProgress}
+        steps={steps}
+        hasFailedStages={hasFailedStages}
+        failedStagesCount={failedStagesCount}
+        analysisMetadata={analysisMetadata}
+      />
+    )
   }
 
   if (isResolvedComplete && resolvedArtifactId) {
-    return <CompletedAnalysisView analysisId={id} artifactId={resolvedArtifactId} />
+    return (
+      <CompletedAnalysisView
+        analysisId={id}
+        artifactId={resolvedArtifactId}
+        overallProgress={overallProgress}
+        steps={steps}
+        hasFailedStages={hasFailedStages}
+        failedStagesCount={failedStagesCount}
+        analysisMetadata={analysisMetadata}
+      />
+    )
   }
 
   if (waitingForFirstEvent) {
     return <LoadingState />
   }
 
+  // Determine if this is a fatal error (no events received and connection failed)
+  const isFatalError =
+    (error || statusState.statusError || isFailed) && events.length === 0 && !isConnected
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <AnalysisHeader title="Content Analysis" url={id ? `Analysis ID: ${id}` : ''} />
+      <AnalysisHeader
+        title={analysisMetadata?.title || 'Content Analysis'}
+        url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
+        contentType={analysisMetadata?.contentType}
+        wordCount={analysisMetadata?.wordCount}
+      />
 
       {(error || hasError || statusState.statusError || isFailed) && (
         <ErrorAlert message={effectiveError} />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProgressColumn overallProgress={overallProgress} steps={steps} />
-        {isComplete || isResolvedComplete ? (
-          <AnalysisCompleteCard
-            artifactId={resolvedArtifactId || artifactId}
-            analysisId={id}
-            variant="column"
+      {/* Only show progress UI if not a fatal error (i.e., we have some data or connection) */}
+      {!isFatalError && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ProgressColumn
+            overallProgress={overallProgress}
+            steps={steps}
+            hasFailedStages={hasFailedStages}
+            failedStagesCount={failedStagesCount}
+            analysisMetadata={analysisMetadata}
           />
-        ) : (
-          <ActivityColumn activities={activities} isLive={isConnected} />
-        )}
-      </div>
+          {/* Show completion card only when artifact is ready (isComplete = true), regardless of failures */}
+          {/* The card itself will show appropriate message based on hasFailedStages */}
+          {isComplete && (resolvedArtifactId || artifactId) ? (
+            <AnalysisCompleteCard
+              artifactId={resolvedArtifactId || artifactId}
+              analysisId={id}
+              variant="column"
+              hasFailedStages={hasFailedStages}
+              failedStagesCount={failedStagesCount}
+            />
+          ) : (
+            <ActivityColumn activities={activities} isLive={isConnected} />
+          )}
+        </div>
+      )}
     </div>
   )
 }

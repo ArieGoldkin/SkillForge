@@ -63,6 +63,41 @@ Check `.claude/context-triggers.md` for keywords (test, review, quality, bug, li
 - Performance: No N+1 queries, proper memoization
 - Documentation: JSDoc for public APIs, README updates
 
+## Async & LLM Code Review (v3.6.0)
+**When reviewing async code, check for:**
+- Timeout protection: All external calls wrapped with `asyncio.timeout()` or `Promise.race()`
+- Graceful degradation: Operations fail open with sensible defaults
+- Retry logic: Exponential backoff for transient failures
+- Division by zero: Check `len()` before division in averaging operations
+
+**When reviewing LLM integration code, check for:**
+- LLM-as-judge evaluation: Quality scores normalized 0.0-1.0
+- Token budget management: Track input/output tokens
+- Structured output validation: Pydantic v2 models with validators
+- Confidence handling: Agent outputs include confidence scores
+- Partial failure recovery: 90% complete responses preserved, not discarded
+
+## Pydantic v2 Validation Patterns (v3.6.0)
+**Check for proper validators:**
+```python
+# REQUIRED: Cross-field validation
+@model_validator(mode='after')
+def validate_cross_fields(self) -> 'Model':
+    if self.answer not in self.options:
+        raise ValueError(f"answer must be in options")
+    return self
+
+# REQUIRED: String constraints
+field: str = Field(min_length=1, max_length=500)
+```
+
+## Template Safety Review (v3.6.0)
+**Jinja2 template checks:**
+- Nested access guards: `{% if obj and obj.nested %}` before `{{ obj.nested.value }}`
+- Default filters: `{{ value | default('N/A') }}` for optional fields
+- Empty collection safety: `{% for item in items | default([]) %}`
+- Content truncation: Long code snippets limited to prevent overflow
+
 ## Example
 Task: "Review authentication code"
 Action: Run `npm run lint && npm run typecheck && npm test auth.test.ts`

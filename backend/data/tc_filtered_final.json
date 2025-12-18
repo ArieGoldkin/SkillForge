@@ -1,0 +1,835 @@
+{
+  "generated_at": "2025-12-17T09:36:14.537622+00:00",
+  "summary": {
+    "total_artifacts": 97,
+    "processed": 97,
+    "successful": 7,
+    "filtered_out": 90,
+    "errors": 0,
+    "avg_quality_score": 0.6,
+    "high_quality_count": 2,
+    "hq_rate_percent": 28.57142857142857,
+    "score_distribution": {
+      "0.0-0.5 (unusable)": 3,
+      "0.8-0.9 (good)": 1,
+      "0.5-0.7 (poor)": 2,
+      "0.7-0.8 (acceptable)": 1
+    },
+    "examples_by_agent": {
+      "tech_comparator": 7
+    }
+  },
+  "results": [
+    {
+      "artifact_id": "246ce519-beb4-4ccd-b632-4d22fa635e59",
+      "agent_type": "tech_comparator",
+      "input_summary": "Context Compression Techniques",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "29340a7d-1ba4-4ada-884f-e121d06a9b08",
+      "agent_type": "tech_comparator",
+      "input_summary": "Terraform Infrastructure as Code: Declarative Cloud Management",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "37042224-9676-4311-bff1-c330fb496400",
+      "agent_type": "tech_comparator",
+      "input_summary": "Document Chunking Strategies for RAG",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "10473be2-fd4c-47e7-85d9-0b923d22d6be",
+      "agent_type": "tech_comparator",
+      "input_summary": "HTTP/2 vs HTTP/3: Evolution of Web Protocols",
+      "quality_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 0.25,
+        "balance": 0.25,
+        "recommendation": 1.0
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "57606d77-cb37-4e51-bf29-c7a641e4035d",
+      "agent_type": "tech_comparator",
+      "input_summary": "LLM Agent Architectures and Patterns",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "36fb85d4-7902-4a87-9976-7489282b60e5",
+      "agent_type": "tech_comparator",
+      "input_summary": "MLOps - Machine Learning Operations",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "28af2f07-3f1e-44e9-9f5f-385f38116fa8",
+      "agent_type": "tech_comparator",
+      "input_summary": "Pinterest: Visual Search Engine",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "c88e7a04-c4e7-4945-8226-076d62b40dcf",
+      "agent_type": "tech_comparator",
+      "input_summary": "LangSmith Observability for LLM Applications",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "09d57ba9-5748-4aba-8379-531854aa04e8",
+      "agent_type": "tech_comparator",
+      "input_summary": "Text Embedding Models Comparison",
+      "quality_score": 0.875,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 1.0,
+        "balance": 1.0,
+        "recommendation": 1.0
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "d761f4f6-ff80-47bd-8980-194c220a6edb",
+      "agent_type": "tech_comparator",
+      "input_summary": "Reddit: Database Sharding Strategy",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "a7e3944d-13cc-40a1-b223-72921c074c08",
+      "agent_type": "tech_comparator",
+      "input_summary": "LLM Agents - Comprehensive Guide",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "9c2a6b21-7a75-47ef-8c19-3a0eebb60388",
+      "agent_type": "tech_comparator",
+      "input_summary": "gRPC: High-Performance RPC Framework",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d8cc3f55-2c78-4e9e-ae26-a7a837abd636",
+      "agent_type": "tech_comparator",
+      "input_summary": "Netflix: Microservices Architecture at Scale",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "4f58b688-259a-484d-8dd3-12ca862c2a08",
+      "agent_type": "tech_comparator",
+      "input_summary": "Spotify: Event-Driven Architecture for Music Streaming",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "fa40d388-9446-4dd2-a04b-e221429c2635",
+      "agent_type": "tech_comparator",
+      "input_summary": "Towards a Science of Scaling Agent Systems",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:trade-off"
+    },
+    {
+      "artifact_id": "66c01250-00e4-47ce-a348-2282fdd066bb",
+      "agent_type": "tech_comparator",
+      "input_summary": "RAG Triad Metrics",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "b7b46423-7bc5-4c7a-a155-2fd8386d444e",
+      "agent_type": "tech_comparator",
+      "input_summary": "ML Model Monitoring and Drift Detection in Production",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "41665e3f-e9b8-419a-8221-2dd7c3d42938",
+      "agent_type": "tech_comparator",
+      "input_summary": "Feature Stores: The Backbone of Production ML",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "646b0fef-11ec-402e-b5fd-8b6a1c71fed8",
+      "agent_type": "tech_comparator",
+      "input_summary": "LLM Output Formatting and Structured Generation",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "c89cdfc8-d6e5-4561-9563-c60f7c919e6d",
+      "agent_type": "tech_comparator",
+      "input_summary": "Prometheus and Grafana: Modern Monitoring Stack",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "be23d0e2-52cf-4291-a9d7-4b2f0cef54bc",
+      "agent_type": "tech_comparator",
+      "input_summary": "Constitutional AI: AI-Feedback Alignment",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "cad7e011-59f7-4753-b342-a4e383d76305",
+      "agent_type": "tech_comparator",
+      "input_summary": "LoRA Fine-Tuning for LLMs",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "e777feca-e074-44d2-8454-29dfe4f99f9d",
+      "agent_type": "tech_comparator",
+      "input_summary": "Agent Memory Systems and Architectures",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "36db3397-1f45-4d29-ac88-a2f0f6a89d9a",
+      "agent_type": "tech_comparator",
+      "input_summary": "OpenAI: GPT Inference at Scale",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "5eeabf7b-ad12-4248-8a22-f9f46992d5cf",
+      "agent_type": "tech_comparator",
+      "input_summary": "Anthropic Context Engineering Guide",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "a97bb456-07db-43fa-b45d-2c598a8002fe",
+      "agent_type": "tech_comparator",
+      "input_summary": "Hybrid Search: Combining Dense and Sparse Retrieval",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "3bc38c31-9911-488c-b898-c96a0586f201",
+      "agent_type": "tech_comparator",
+      "input_summary": "Nubank: Serverless Banking Architecture",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "2256f560-37f4-4c79-b312-858f5ec02473",
+      "agent_type": "tech_comparator",
+      "input_summary": "Tree-of-Thoughts Reasoning",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "428f2e18-e1b6-4cc6-b36a-b9f54103f1d4",
+      "agent_type": "tech_comparator",
+      "input_summary": "Tool-Augmented RAG Systems",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:versus"
+    },
+    {
+      "artifact_id": "744e1c80-235d-41c4-8c52-3e74e49cef17",
+      "agent_type": "tech_comparator",
+      "input_summary": "Memory Systems for LLM Applications",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "0f8f44e9-19e0-49b8-abe2-1547be8f3680",
+      "agent_type": "tech_comparator",
+      "input_summary": "RLHF - Reinforcement Learning from Human Feedback",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "df6c43c5-f554-4e75-9982-b9e1f9a8278e",
+      "agent_type": "tech_comparator",
+      "input_summary": "Write-Ahead Log Pattern",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "90267eca-39b7-4146-807b-a55e6b7377a3",
+      "agent_type": "tech_comparator",
+      "input_summary": "DoorDash: Real-Time Logistics Optimization",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "6ec05eed-4811-44f8-a681-5c6ae5cf5313",
+      "agent_type": "tech_comparator",
+      "input_summary": "Dynamic Context Management",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "bae3f711-8f18-4258-8390-825609d95d91",
+      "agent_type": "tech_comparator",
+      "input_summary": "Feature Flag Systems for ML Experimentation",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "f1178d9d-7cf0-4632-bb49-0783c74c5945",
+      "agent_type": "tech_comparator",
+      "input_summary": "Statistical Significance in ML Experiments",
+      "quality_score": 0.6375,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.5,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "8392235e-a37b-4490-8fbb-71c760824afb",
+      "agent_type": "tech_comparator",
+      "input_summary": "Microservices Patterns",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "60d235b2-de98-4ab5-bef9-d2e363fa9291",
+      "agent_type": "tech_comparator",
+      "input_summary": "Kubernetes Fundamentals: Container Orchestration at Scale",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d84ff7ac-4a01-4931-b39a-089ba8937076",
+      "agent_type": "tech_comparator",
+      "input_summary": "Perplexity: LLM Inference Infrastructure",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "b8115156-bd36-4110-8799-4e089f37645d",
+      "agent_type": "tech_comparator",
+      "input_summary": "Knowledge Graphs for Agentic RAG",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "64f4eb6d-7d54-4185-9532-3b40177b93bd",
+      "agent_type": "tech_comparator",
+      "input_summary": "Datadog: Time-Series Monitoring at Scale",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "3355d22c-30a2-4658-8dda-ae2d46bf2e2a",
+      "agent_type": "tech_comparator",
+      "input_summary": "LangSmith Evaluation Framework",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "56e966fe-da11-493a-b8b3-a45fb026759f",
+      "agent_type": "tech_comparator",
+      "input_summary": "Container Orchestration Patterns: Beyond Basic Kubernetes",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "0a94259c-00f6-4c08-9bf0-f6a008c8ec19",
+      "agent_type": "tech_comparator",
+      "input_summary": "LoRA and QLoRA: Efficient Fine-Tuning",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "454ec6df-6002-4dc5-92d0-5992936a56d9",
+      "agent_type": "tech_comparator",
+      "input_summary": "Multi-Agent RAG Orchestration",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "9ecdd18f-7b0f-46fd-880d-1bd444821179",
+      "agent_type": "tech_comparator",
+      "input_summary": "CI/CD with GitHub Actions: Automated Software Delivery",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "e44f1846-ec6d-4324-85f9-b501f5685566",
+      "agent_type": "tech_comparator",
+      "input_summary": "Disney Hotstar: Scaling to 25 Million Concurrent Users",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "2b0dee95-90a3-45fa-a167-b0a584fe2a84",
+      "agent_type": "tech_comparator",
+      "input_summary": "DeepCode: Open Agentic Coding",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d2d7ce75-09e4-4582-bf3a-e58263864e43",
+      "agent_type": "tech_comparator",
+      "input_summary": "Graph Databases with Neo4j: Modeling Connected Data",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "15f3cd81-6931-471b-8d3f-831ff282347a",
+      "agent_type": "tech_comparator",
+      "input_summary": "MongoDB Document Design Patterns",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:versus"
+    },
+    {
+      "artifact_id": "d0705087-f621-411d-94bd-ec526faab570",
+      "agent_type": "tech_comparator",
+      "input_summary": "RAG Architecture Patterns and Best Practices",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d955cb5d-21c9-4975-b254-124f379153a1",
+      "agent_type": "tech_comparator",
+      "input_summary": "Tinder: Matching Algorithm and Infrastructure",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "4bbbba62-a884-40b9-a47c-dc1e44d9361c",
+      "agent_type": "tech_comparator",
+      "input_summary": "Context Engineering for AI Agents",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "17f68173-4867-4193-a993-a134810c49bc",
+      "agent_type": "tech_comparator",
+      "input_summary": "REST API Design Principles",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "401ebb2e-5d13-42e7-8edd-c63da8f266a7",
+      "agent_type": "tech_comparator",
+      "input_summary": "LangGraph Multi-Agent Patterns",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "fde05a32-c787-47cb-88ac-98172b6e935d",
+      "agent_type": "tech_comparator",
+      "input_summary": "Advanced Prompt Engineering Techniques",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "a9948268-d921-4978-b681-825eaff87aad",
+      "agent_type": "tech_comparator",
+      "input_summary": "HNSW Approximate Nearest Neighbor",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "cf2d7a55-c268-4c4d-a502-bb0193853ca0",
+      "agent_type": "tech_comparator",
+      "input_summary": "TLS and mTLS: Securing Network Communications",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "73384cd3-68c2-4bfe-bf8b-248649d6e396",
+      "agent_type": "tech_comparator",
+      "input_summary": "Semantic Kernel Framework",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "4519c73b-f666-46d5-8a9a-b48cb14eb552",
+      "agent_type": "tech_comparator",
+      "input_summary": "RAG Query Optimization Techniques",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "9cc903cf-5e4d-423e-9b9a-3991eca7a827",
+      "agent_type": "tech_comparator",
+      "input_summary": "Zero Trust Architecture: Security for Modern Infrastructure",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "b9c0ce36-20c2-43ad-991a-a182d901d9e9",
+      "agent_type": "tech_comparator",
+      "input_summary": "LangGraph: Stateful Multi-Agent Workflows",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "f073574b-de9e-4ce6-b433-cb9a762e8d81",
+      "agent_type": "tech_comparator",
+      "input_summary": "Meta: AI Agent Infrastructure",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "b834f941-6c6f-438f-8a12-3d5b7a96df21",
+      "agent_type": "tech_comparator",
+      "input_summary": "Self-Reflective RAG Agents",
+      "quality_score": 0.7625,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 1.0,
+        "balance": 0.75,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "d5357cda-3070-40b5-8e2c-83504951dd3f",
+      "agent_type": "tech_comparator",
+      "input_summary": "Grab: Geospatial Data Infrastructure",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "e434706c-7f32-41dc-82db-58555a489e1b",
+      "agent_type": "tech_comparator",
+      "input_summary": "GraphQL API Design and Implementation",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d41af618-d79c-4476-9fac-159bf0412f4a",
+      "agent_type": "tech_comparator",
+      "input_summary": "pgvector PostgreSQL Extension",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "5137eb62-db79-4f94-932a-26b893bc1e32",
+      "agent_type": "tech_comparator",
+      "input_summary": "gRPC Introduction",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "4c87c299-5b11-44fc-b646-77c8ff0c0346",
+      "agent_type": "tech_comparator",
+      "input_summary": "REST API Design Best Practices",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "08287bdf-af87-4e54-9021-e435d0f3c682",
+      "agent_type": "tech_comparator",
+      "input_summary": "Facebook: FOQS Queueing System",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "05a28aba-d7e9-4eda-8259-718160636458",
+      "agent_type": "tech_comparator",
+      "input_summary": "Context Window Optimization Strategies",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "c0042c9c-7d6e-431e-ab9e-0dec360a2226",
+      "agent_type": "tech_comparator",
+      "input_summary": "A/B Testing Fundamentals for ML Models",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:worse than"
+    },
+    {
+      "artifact_id": "0f971c59-dd93-42cf-b0cc-276e50d97127",
+      "agent_type": "tech_comparator",
+      "input_summary": "RLHF: Reinforcement Learning from Human Feedback",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "3a778cee-917a-4661-9e60-26d8e79763a8",
+      "agent_type": "tech_comparator",
+      "input_summary": "Database Connection Pooling: Performance and Reliability",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "4b48abc0-b6f9-4169-a0d2-e39361cc59c9",
+      "agent_type": "tech_comparator",
+      "input_summary": "Dropbox: File Synchronization Engine",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "8328636a-746e-4db0-81a5-054cb8790141",
+      "agent_type": "tech_comparator",
+      "input_summary": "DPO: Direct Preference Optimization",
+      "quality_score": 0.41250000000000003,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 0.25,
+        "balance": 0.25,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "8ec1b89f-3ff2-4b89-8d2a-faa47627eecf",
+      "agent_type": "tech_comparator",
+      "input_summary": "DNS Architecture: The Internet's Phone Book",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "facf1e5c-84d5-45f7-96c0-f216cdcfd02e",
+      "agent_type": "tech_comparator",
+      "input_summary": "RAG Evaluation Metrics and Benchmarks",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "d286afe7-7a4e-4b15-8e33-1d0e4ab24553",
+      "agent_type": "tech_comparator",
+      "input_summary": "Reranking Models for Retrieval Quality",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "bbdbe660-471b-4dc9-9088-f7ac4d948e37",
+      "agent_type": "tech_comparator",
+      "input_summary": "Agentic RAG Architecture Patterns",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:versus"
+    },
+    {
+      "artifact_id": "27e65c9e-2316-4a6c-97fb-b595b570b369",
+      "agent_type": "tech_comparator",
+      "input_summary": "MLOps Pipeline Fundamentals: From Training to Production",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "418af017-cf44-4801-8882-14d0a3e61a6d",
+      "agent_type": "tech_comparator",
+      "input_summary": "Service Mesh Architecture",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "c2ff10df-24a7-4a02-bfbe-590476915d60",
+      "agent_type": "tech_comparator",
+      "input_summary": "OAuth2 and OpenID Connect: Modern Authentication",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "5f8d91f7-eaa9-417d-bcb4-f8182f985a79",
+      "agent_type": "tech_comparator",
+      "input_summary": "Flipkart: Flash Sale Architecture",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "e8e8188e-5968-43ed-ac80-b555346df6d8",
+      "agent_type": "tech_comparator",
+      "input_summary": "Bayesian A/B Testing for Data Science",
+      "quality_score": 0.425,
+      "criteria_scores": {
+        "completeness": 0.0,
+        "accuracy": 0.75,
+        "balance": 0.0,
+        "recommendation": 1.0
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "88d0cff6-ab20-4434-af25-65a4a14785a5",
+      "agent_type": "tech_comparator",
+      "input_summary": "Multi-Armed Bandits vs A/B Testing",
+      "quality_score": 0.625,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 0.75,
+        "balance": 0.5,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "4fa2e115-30f0-4508-8c39-917ce26def12",
+      "agent_type": "tech_comparator",
+      "input_summary": "API Security Best Practices: Defense in Depth",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:versus"
+    },
+    {
+      "artifact_id": "0f044693-a27c-4ecd-b775-42a722931012",
+      "agent_type": "tech_comparator",
+      "input_summary": "PostgreSQL Indexing Strategies for Performance",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "1d8a8abe-98d2-4c37-a77f-5c788c495178",
+      "agent_type": "tech_comparator",
+      "input_summary": "Time-Series Databases: Architecture and Use Cases",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "7df0d011-a8f0-4cae-853c-e1304eb9403c",
+      "agent_type": "tech_comparator",
+      "input_summary": "Databricks: Lakehouse Architecture",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "c88f8be7-4044-4d16-8ea1-f734cf88205b",
+      "agent_type": "tech_comparator",
+      "input_summary": "Zalando: Microservices at European Scale",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "60d0330c-ef01-4cf7-98bf-f4a54d5e1f29",
+      "agent_type": "tech_comparator",
+      "input_summary": "Vector Embeddings Guide",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "83f86c74-14b3-424a-8a52-c51efc9e708d",
+      "agent_type": "tech_comparator",
+      "input_summary": "pgvector: Vector Search in PostgreSQL",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: Found 1 signals: content:compared to"
+    },
+    {
+      "artifact_id": "b84b38f6-5a49-4937-b770-1ade5f3f8a81",
+      "agent_type": "tech_comparator",
+      "input_summary": "GraphQL Basics",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "51206864-fe8d-4ee3-9848-fe4ee560651c",
+      "agent_type": "tech_comparator",
+      "input_summary": "LinkedIn: Real-Time Analytics Platform",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "b0c9e90c-0772-4348-8013-18d2720e48c2",
+      "agent_type": "tech_comparator",
+      "input_summary": "RAG Survey - Naive, Advanced, and Modular Paradigms",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    },
+    {
+      "artifact_id": "59ffe8f3-8eb5-4527-b918-65fad1a92a96",
+      "agent_type": "tech_comparator",
+      "input_summary": "Chain-of-Thought Prompting",
+      "quality_score": 0.0,
+      "criteria_scores": {},
+      "error": "Content not suitable for tech_comparator: No signals found (need 2)"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "timestamp": "2025-12-16T21:22:28.364131+00:00",
+  "config": {
+    "agent_type": null,
+    "sample_size": 2,
+    "dry_run": false
+  },
+  "results": [
+    {
+      "example_id": "d9101c94-973e-4d7e-86b9-60420f327ae5",
+      "agent_type": "research_analyst",
+      "improvement_pct": 0.0,
+      "control_score": 0.395,
+      "treatment_score": 0.395
+    },
+    {
+      "example_id": "bdf7a167-75dd-4a5c-a054-aa6db8888a63",
+      "agent_type": "research_analyst",
+      "improvement_pct": -8.101265822784818,
+      "control_score": 0.395,
+      "treatment_score": 0.363
+    },
+    {
+      "example_id": "316257f2-6c2d-45be-842b-c4527b1588a0",
+      "agent_type": "implementation_planner",
+      "improvement_pct": 0.0,
+      "control_score": 0.366,
+      "treatment_score": 0.366
+    },
+    {
+      "example_id": "6712b9d2-72ce-46c1-997c-73243bf5ad2e",
+      "agent_type": "implementation_planner",
+      "improvement_pct": 0.0,
+      "control_score": 0.366,
+      "treatment_score": 0.366
+    },
+    {
+      "example_id": "e7b160a4-4c92-4c44-9cda-84dc127aeb72",
+      "agent_type": "code_reviewer",
+      "improvement_pct": 0.0,
+      "control_score": 0.395,
+      "treatment_score": 0.395
+    },
+    {
+      "example_id": "7d449c71-9523-4348-bb1d-f25e1be5d164",
+      "agent_type": "code_reviewer",
+      "improvement_pct": 0.0,
+      "control_score": 0.395,
+      "treatment_score": 0.395
+    },
+    {
+      "example_id": "140801f8-63fb-40dd-bcd1-7dd9a7890734",
+      "agent_type": "learning_path",
+      "improvement_pct": 0.0,
+      "control_score": 0.395,
+      "treatment_score": 0.395
+    },
+    {
+      "example_id": "dc54ce8e-5bcc-4c70-8f5a-1acda3e5fd99",
+      "agent_type": "learning_path",
+      "improvement_pct": 0.0,
+      "control_score": 0.395,
+      "treatment_score": 0.395
+    },
+    {
+      "example_id": "d8dab3b2-7867-4823-9b62-2767be39194e",
+      "agent_type": "performance_analyst",
+      "improvement_pct": 0.0,
+      "control_score": 0.43800000000000006,
+      "treatment_score": 0.43800000000000006
+    },
+    {
+      "example_id": "9d633dce-aff8-457b-bdf2-fa8d45a96ba1",
+      "agent_type": "performance_analyst",
+      "improvement_pct": 0.0,
+      "control_score": 0.43800000000000006,
+      "treatment_score": 0.43800000000000006
+    },
+    {
+      "example_id": "751b2c1f-e85c-4a79-bbfa-f56a2a25e81b",
+      "agent_type": "tech_comparator",
+      "improvement_pct": 0.0,
+      "control_score": 0.381,
+      "treatment_score": 0.381
+    },
+    {
+      "example_id": "3e64d7c8-0ef6-4223-8e33-1964f57e96d3",
+      "agent_type": "tech_comparator",
+      "improvement_pct": 0.0,
+      "control_score": 0.381,
+      "treatment_score": 0.381
+    },
+    {
+      "example_id": "b1bbf1aa-b067-4c08-86ab-c126bda107d4",
+      "agent_type": "security_auditor",
+      "improvement_pct": 0.0,
+      "control_score": 0.411,
+      "treatment_score": 0.411
+    },
+    {
+      "example_id": "1483c7ef-43dc-4039-ab57-dc415d2903fd",
+      "agent_type": "security_auditor",
+      "improvement_pct": 0.0,
+      "control_score": 0.411,
+      "treatment_score": 0.411
+    }
+  ]
+}

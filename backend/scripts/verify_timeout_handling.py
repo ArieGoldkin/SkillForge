@@ -20,12 +20,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from unittest.mock import MagicMock
 
-from app.workflows.tasks.agent_execution import execute_agents
+from app.domains.analysis.workflows.tasks.agent_execution import execute_agents
 
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
-from app.models.analysis import Analysis
-from app.workflows.agents.streaming import stream_agent_response
+from app.db.models.analysis import Analysis
+from app.domains.analysis.workflows.agents.streaming import stream_agent_response
 
 logger = get_logger(__name__)
 
@@ -108,8 +108,8 @@ async def test_aggregate_findings_timeout_handling():
 
     from unittest.mock import patch
 
-    from app.workflows.state import AnalysisState
-    from app.workflows.tasks.aggregate_findings import aggregate_findings
+    from app.domains.analysis.workflows.state import AnalysisState
+    from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 
     # Create sample state
     state = AnalysisState(

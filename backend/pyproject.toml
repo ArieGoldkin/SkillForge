@@ -28,6 +28,7 @@ langchain-community = "^0.4.1"
 langchain-openai = "^1.1.0"
 langchain-anthropic = "^1.2.0"
 langchain-google-genai = "^3.2.0"
+langchain-redis = {version = "^0.2.5", python = ">=3.13,<3.14"}
 langgraph-checkpoint = "^3.0.1"
 # MCP Integration (Sprint 9) - Issue #230
 langchain-mcp-adapters = "^0.1.0"
@@ -35,6 +36,8 @@ mcp = "^1.0.0"
 alembic = "^1.17.2"
 tiktoken = "^0.12.0"
 jinja2 = "^3.1.0"
+# PDF extraction for research papers (Issue #299-304)
+pypdf = "^5.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
@@ -43,13 +46,14 @@ pytest-cov = "^7.0.0"
 pytest-timeout = "^2.3.1"
 pytest-xdist = "^3.6.1"
 ruff = "^0.14.8"
-mypy = "^1.13.0"
+ty = "^0.0.2"
 isort = "^7.0.0"
 # langgraph-cli is installed separately via pip due to dependency conflict:
 # langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
 # Install with: poetry run pip install "langgraph-cli[inmem]"
 # Note: This will downgrade sse-starlette temporarily - use separate venv for Studio debugging
 jsonschema = "^4.25.1"
+playwright = "^1.57.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -126,6 +130,10 @@ ignore = [
 "app/workflows/tasks/aggregate_findings.py" = [
     "PLR0915",  # Too many statements - complex aggregation logic with multiple steps
 ]
+# Schema files use numeric constraints for validation - magic numbers are intentional
+"app/workflows/tasks/schemas/*.py" = [
+    "PLR2004",  # Magic values - field validators use numeric constraints (3-7 items, etc.)
+]
 # Evaluation framework - experimental benchmarking code with complex logic
 "app/evaluation/**/*.py" = [
     "PLR0912",  # Too many branches - evaluator logic requires multiple checks
@@ -156,42 +164,9 @@ indent-style = "space"
 line-ending = "auto"
 docstring-code-format = true
 
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-check_untyped_defs = true
-# Performance optimizations
-incremental = true
-cache_dir = ".mypy_cache"
-show_error_codes = true
-# Exclude test files and unnecessary directories for faster checks
-exclude = [
-    "tests/",
-    "alembic/",
-    "scripts/",
-    "app/evaluation/",  # Experimental evaluation framework with complex generic types
-    ".*/__pycache__/",
-    ".*\\.pyc$",
-]
-# Optimize import checking (follows imports but doesn't check their bodies if not needed)
-follow_imports = "normal"
-follow_imports_for_stubs = false
-[[tool.mypy.overrides]]
-module = "langgraph.checkpoint.postgres"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-    "openai",
-    "langchain.*",
-    "langchain_mcp_adapters.*",
-    "mcp.*",
-    "sse_starlette.*",
-    "tiktoken",
-]
-ignore_missing_imports = true
+[tool.ty]
+# ty type checker configuration (Astral's Rust-based type checker)
+# https://pypi.org/project/ty/
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -226,13 +201,19 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-# Measure code coverage but omit experimental and placeholder modules
+# Measure code coverage but omit experimental, CLI scripts, and unused modules
 omit = [
-    # Note: app/evaluation/* removed - now has proper tests (issue #252)
     # Note: app/workflows/nodes/agent_tools.py removed - now has full tests (issue #289)
     "app/workflows/studio_compat.py",  # LangGraph Studio compatibility placeholder
     "app/workflows/tutor/tasks/*",     # Tutor task placeholders
     "app/workflows/tutor/context.py",  # Tutor context placeholder
+    # Dead code - not imported anywhere (verified Dec 2024)
+    "app/shared/services/quality_scorer.py",      # Unused legacy scorer
+    "app/shared/services/search/coarse_to_fine.py",  # Unused search strategy
+    # CLI scripts - not unit-testable, tested via integration/smoke tests
+    "app/evaluation/generate_config.py",   # CLI config generator
+    "app/evaluation/llm_benchmark.py",     # Benchmark runner CLI
+    "app/evaluation/run_experiments.py",   # Experiment runner CLI
 ]
 
 [tool.coverage.report]

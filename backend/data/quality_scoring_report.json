@@ -1,0 +1,67 @@
+{
+  "generated_at": "2025-12-17T06:47:44.458029+00:00",
+  "summary": {
+    "total_examples": 2,
+    "scored_successfully": 2,
+    "errors": 0,
+    "avg_old_score": 0.95,
+    "avg_new_score": 0.4625,
+    "score_distribution": {
+      "0.0-0.5 (unusable)": 2
+    }
+  },
+  "low_quality_examples": [
+    {
+      "id": "8afabcc1-d0c5-4a49-a026-b41ed81faffc",
+      "agent_type": "tech_comparator",
+      "old_score": 0.95,
+      "new_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.0,
+        "recommendation": 0.5
+      }
+    },
+    {
+      "id": "07c91c8e-59ec-425f-bce6-4855ebc4ee93",
+      "agent_type": "tech_comparator",
+      "old_score": 0.95,
+      "new_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.0,
+        "recommendation": 0.5
+      }
+    }
+  ],
+  "all_results": [
+    {
+      "id": "8afabcc1-d0c5-4a49-a026-b41ed81faffc",
+      "agent_type": "tech_comparator",
+      "old_score": 0.95,
+      "new_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.0,
+        "recommendation": 0.5
+      },
+      "error": null
+    },
+    {
+      "id": "07c91c8e-59ec-425f-bce6-4855ebc4ee93",
+      "agent_type": "tech_comparator",
+      "old_score": 0.95,
+      "new_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.0,
+        "recommendation": 0.5
+      },
+      "error": null
+    }
+  ]
+}

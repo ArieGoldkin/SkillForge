@@ -7,11 +7,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.logging import get_logger
-from app.db.repositories.tutor_repository import ITutorRepository, get_tutor_repository
-from app.services.tutor.state_service import load_state_from_session
-from app.services.tutor.workflow_service import continue_workflow_after_message
-from app.workflows.tutor.schemas.api import SendMessageRequest
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.repositories import ITutorRepository, get_tutor_repository
+from app.domains.tutor.schemas.api import SendMessageRequest
+from app.domains.tutor.services.state_service import load_state_from_session
+from app.domains.tutor.services.workflow_service import continue_workflow_after_message
+from app.domains.tutor.workflows.state import TutorState
+from app.shared.types import TutorMessage
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -66,18 +67,17 @@ async def send_message(
     complete_state = await load_state_from_session(session, repo)
 
     # Update state with new user message
+    new_message: TutorMessage = {
+        "role": "user",
+        "content": request.content,
+        "created_at": message.created_at.isoformat(),  # type: ignore[union-attr]
+        "metadata": message.message_metadata,  # type: ignore[typeddict-item]
+    }
+    updated_history: list[TutorMessage] = [*complete_state["conversation_history"], new_message]
     updated_state: TutorState = {
         **complete_state,
         "last_user_message": request.content,
-        "conversation_history": complete_state["conversation_history"]
-        + [
-            {
-                "role": "user",
-                "content": request.content,
-                "created_at": message.created_at.isoformat(),
-                "metadata": message.message_metadata,
-            }
-        ],
+        "conversation_history": updated_history,
     }
 
     # Continue workflow: invoke assess_readiness node directly

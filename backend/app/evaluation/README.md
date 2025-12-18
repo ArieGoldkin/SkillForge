@@ -5,7 +5,7 @@ Multi-provider LLM benchmarking and retrieval evaluation system for SkillForge.
 ## Overview
 
 This module provides:
-1. **LLM Benchmarking** - A/B testing across GPT-4o-mini, Claude Sonnet 4, Gemini Flash, and Grok-3-mini
+1. **LLM Benchmarking** - A/B testing across GPT-4o-mini, Claude Sonnet 4, Gemini Flash, and DeepSeek V3
 2. **Retrieval Evaluation** - IR metrics (Recall@5, MRR, NDCG@5) with difficulty-based thresholds
 3. **Quality Gates** - CI/CD integration with pass/warn/fail status
 4. **Golden Datasets** - Curated examples for supervisor, agent, and synthesis tasks
@@ -66,7 +66,7 @@ benchmark = LLMBenchmark(project_name="skillforge-eval")
 comparison = await benchmark.compare_models(
     task_type="supervisor",
     model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-    dataset_name="supervisor_golden_v1",
+    dataset_name="golden/supervisor",
 )
 
 print(f"Winner by accuracy: {comparison.winner_by_metric['accuracy']}")
@@ -125,10 +125,11 @@ Tests aggregation of multiple agent findings.
 
 | Provider | Models | Token Tracking | Cost Estimation |
 |----------|--------|----------------|-----------------|
-| OpenAI   | gpt-4o-mini, gpt-4o | tiktoken | Per-token pricing |
-| Anthropic| claude-sonnet-4 | Anthropic API | Per-token pricing |
-| Google   | gemini-2.5-flash | Vertex API | Per-character pricing |
-| xAI      | grok-3-mini | tiktoken | Per-token pricing |
+| OpenAI   | gpt-4o-mini, gpt-4o, gpt-5-mini | tiktoken | Per-token pricing |
+| Anthropic| claude-sonnet-4, claude-haiku-4.5 | Anthropic API | Per-token pricing |
+| Google   | gemini-2.5-flash, gemini-3-flash | Vertex API | Per-character pricing |
+| xAI      | grok-4.1-fast, grok-3 | tiktoken | Per-token pricing |
+| DeepSeek | deepseek-v3 | tiktoken | Per-token pricing |
 
 ## CI/CD Integration
 
@@ -199,5 +200,5 @@ poetry run pytest tests/unit/evaluation/ -v
 poetry run python -m app.evaluation.run_experiments \
   --task supervisor \
   --models gemini-2.5-flash gpt-4o-mini \
-  --dataset supervisor_golden_v1
+  --dataset golden/supervisor
 ```

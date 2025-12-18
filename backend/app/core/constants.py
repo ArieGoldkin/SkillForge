@@ -65,6 +65,59 @@ SEARCH_TOP_K_MIN = 1  # Minimum number of search results
 SEARCH_TOP_K_MAX = 100  # Maximum number of search results
 SEARCH_QUERY_MAX_LENGTH = 1000  # Maximum search query length in characters
 
+# Hybrid Search Tuning (Issue #299-304 Quality Initiative)
+HYBRID_FETCH_MULTIPLIER = 3  # Fetch 3x candidates for RRF fusion (was 2x)
+SECTION_TITLE_BOOST_FACTOR = (
+    2.0  # Boost score when query terms match section title (increased from 1.5)
+)
+DOCUMENT_PATH_BOOST_FACTOR = 1.15  # Boost score when query matches document path
+TECHNICAL_KEYWORD_BOOST = 1.2  # Extra keyword weight for technical queries
+
+# Technical terms for query classification
+TECHNICAL_TERMS = frozenset(
+    {
+        "langgraph",
+        "langchain",
+        "langsmith",
+        "terraform",
+        "kubernetes",
+        "k8s",
+        "oauth",
+        "oauth2",
+        "jwt",
+        "graphql",
+        "grpc",
+        "mlops",
+        "cicd",
+        "ci/cd",
+        "hpa",
+        "ringpop",
+        "geospatial",
+        "h3",
+        "embeddings",
+        "vector",
+        "rag",
+        "fastapi",
+        "pydantic",
+        "sqlalchemy",
+        "postgresql",
+        "redis",
+        "docker",
+        "webhook",
+        "api",
+        "rest",
+        "async",
+        "await",
+        "coroutine",
+        "asyncio",
+        "streaming",
+        "sse",
+        "websocket",
+        "microservices",
+        "monorepo",
+    }
+)
+
 # Re-ranking Configuration
 RERANK_ALPHA = 0.3  # Weight for base retrieval score (RRF/semantic/keyword)
 RERANK_BETA = 0.5  # Weight for LLM relevance score

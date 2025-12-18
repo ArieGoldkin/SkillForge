@@ -24,8 +24,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
-from app.services.pii.patterns import PII_PATTERNS, SENSITIVITY_PATTERNS
-from app.services.pii.types import PIIType, SensitivityLevel
+from app.shared.services.pii.patterns import PII_PATTERNS, SENSITIVITY_PATTERNS
+from app.shared.services.pii.types import PIIType, SensitivityLevel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

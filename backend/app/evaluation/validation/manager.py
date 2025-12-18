@@ -14,7 +14,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from app.core.logging import get_logger
 from app.evaluation.validation.agreement import AgreementCalculator
@@ -294,7 +294,7 @@ class ValidationManager:
             results = [r for r in results if r.final_decision in ["include", "exclude"]]
 
         # Build export data
-        export_data = {
+        export_data: dict[str, Any] = {
             "version": "2.0.0",
             "metadata": {
                 "dataset_name": "human_validated_dataset",

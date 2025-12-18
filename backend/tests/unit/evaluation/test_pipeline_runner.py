@@ -18,6 +18,7 @@ from app.evaluation.pipeline.runner import (
 from app.evaluation.pipeline.thresholds import Difficulty, ThresholdStatus
 
 
+@pytest.mark.unit
 class TestEvaluationResult:
     """Tests for EvaluationResult dataclass."""
 

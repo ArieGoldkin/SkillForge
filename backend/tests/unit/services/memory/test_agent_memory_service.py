@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.models.agent_memory import MemoryType
-from app.services.memory import (
+from app.db.models.agent_memory import MemoryType
+from app.shared.services.memory import (
     AgentMemoryService,
     MemorySearchResult,
     MemorySnippet,
@@ -125,7 +125,7 @@ class TestAgentMemoryServiceInit:
         assert service.session == mock_session
         assert service._embedding_service == mock_embedding
 
-    @patch("app.services.memory.agent_memory_service.EmbeddingService")
+    @patch("app.shared.services.memory.agent_memory_service.EmbeddingService")
     def test_lazy_load_embedding_service(self, mock_embedding_class):
         """Test embedding service is lazy loaded on first access."""
         mock_session = MagicMock()

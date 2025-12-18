@@ -2,9 +2,10 @@
 
 import pytest
 
-from app.services.metrics.collectors import Counter, Histogram, LabeledCounter, Timer
+from app.shared.services.metrics.collectors import Counter, Histogram, LabeledCounter, Timer
 
 
+@pytest.mark.unit
 class TestCounter:
     """Tests for Counter class."""
 

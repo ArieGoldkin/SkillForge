@@ -1,4 +1,4 @@
-from app.services.mcp.exceptions import (
+from app.shared.services.mcp.exceptions import (
     MCPConfigurationError,
     MCPConnectionError,
     MCPError,

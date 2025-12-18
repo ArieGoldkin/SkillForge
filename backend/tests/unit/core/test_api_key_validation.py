@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.core.api_key_validation import (
     get_available_models_for_configured_providers,
     get_configured_providers,
@@ -10,6 +12,7 @@ from app.core.api_key_validation import (
 )
 
 
+@pytest.mark.unit
 class TestGetConfiguredProviders:
     """Tests for get_configured_providers function."""
 

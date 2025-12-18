@@ -98,8 +98,8 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 **Analysis Pipeline:**
 1. User submits URL
 2. Backend validates & extracts content (Jina AI / YouTube API / GitHub API)
-3. Supervisor agent analyzes content type → routes to specialized sub-agents
-4. Sub-agents run in parallel (8 specialists: Tech Comparator, Integration Feasibility, Security Auditor, etc.)
+3. Supervisor detects content signals (code, benchmarks, security) → routes to sub-agents
+4. Sub-agents run in parallel (minimum 3, up to 8 based on content signals)
 5. Aggregator synthesizes findings into coherent narrative
 6. Artifact Generator creates markdown file
 7. All data persisted to PGVector
@@ -887,7 +887,7 @@ logger.info(
 - [ ] **2.1.3** Implement dynamic routing with LangGraph `send()` API
   - Use `Send` from `langgraph.constants` for parallel execution
   - Map supervisor decisions to sub-agent nodes
-  - Handle cases where 0 agents or all 8 agents are selected
+  - Enforce minimum 3 agents; handle up to 8 based on content signals
 - [ ] **2.1.4** Create sub-agent registry
   - `app/workflows/agents/registry.py`
   - Maps agent names → node functions
@@ -1115,7 +1115,7 @@ logger.info(
   - Combine full-text search with PGVector semantic search
   - Ranking: 70% keyword relevance, 30% semantic similarity
 - [ ] **4.1.3** Create search endpoint
-  - `GET /api/v1/library?search=...&content_type=...&sort=...&limit=...&offset=...`
+  - `GET /api/v1/library?query=...&search_mode=hybrid&content_type=...&status=...&limit=...&offset=...`
   - Returns paginated results with total count
 - [ ] **4.1.4** Test search accuracy
   - Test queries: "React hooks", "LangGraph supervisor", "streaming SSR"

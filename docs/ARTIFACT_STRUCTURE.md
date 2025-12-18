@@ -249,7 +249,7 @@ sequenceDiagram
     
     Note over W,DB: Artifact stored in database
     
-    API->>DB: GET /artifacts/{id}/download
+    API->>DB: GET /api/v1/artifacts/{artifact_id}/download
     DB-->>API: Artifact with markdown_content
     API->>DB: Increment download_count
     API-->>Client: Markdown file download

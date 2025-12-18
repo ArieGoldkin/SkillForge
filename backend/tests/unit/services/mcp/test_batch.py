@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.mcp.batch import (
+from app.shared.services.mcp.batch import (
     MAX_BATCH_SIZE,
     ActionableError,
     BatchResult,

@@ -7,8 +7,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models.progress import AnalysisProgress
-from app.services.progress_persistence import persist_progress_event, persist_progress_event_async
+from app.db.models.progress import AnalysisProgress
+from app.shared.services.persistence.progress import (
+    persist_progress_event,
+    persist_progress_event_async,
+)
 
 
 @pytest.fixture
@@ -25,7 +28,7 @@ def sample_event_data():
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.AsyncSessionLocal")
+@patch("app.shared.services.persistence.progress.AsyncSessionLocal")
 async def test_persist_progress_event_success(mock_session_local, sample_event_data):
     """Test successful persistence of progress event to database."""
     # Mock database session
@@ -54,8 +57,8 @@ async def test_persist_progress_event_success(mock_session_local, sample_event_d
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.AsyncSessionLocal")
-@patch("app.services.progress_persistence.logger")
+@patch("app.shared.services.persistence.progress.AsyncSessionLocal")
+@patch("app.shared.services.persistence.progress.logger")
 async def test_persist_progress_event_handles_errors(
     mock_logger, mock_session_local, sample_event_data
 ):
@@ -81,11 +84,11 @@ async def test_persist_progress_event_handles_errors(
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.persist_progress_event")
+@patch("app.shared.services.persistence.progress.persist_progress_event")
 async def test_persist_progress_event_async_creates_task(mock_persist, sample_event_data):
     """Test that persist_progress_event_async creates background task."""
     # Clear any existing tasks
-    from app.services.progress_persistence import _progress_tasks
+    from app.shared.services.persistence.progress import _progress_tasks
 
     _progress_tasks.clear()
 
@@ -108,8 +111,8 @@ async def test_persist_progress_event_async_creates_task(mock_persist, sample_ev
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.persist_progress_event")
-@patch("app.services.progress_persistence.logger")
+@patch("app.shared.services.persistence.progress.persist_progress_event")
+@patch("app.shared.services.persistence.progress.logger")
 async def test_persist_progress_event_async_handles_task_errors(
     mock_logger, mock_persist, sample_event_data
 ):
@@ -118,7 +121,7 @@ async def test_persist_progress_event_async_handles_task_errors(
     mock_persist.side_effect = Exception("Persistence failed")
 
     # Clear tasks
-    from app.services.progress_persistence import _progress_tasks
+    from app.shared.services.persistence.progress import _progress_tasks
 
     _progress_tasks.clear()
 
@@ -147,14 +150,14 @@ async def test_persist_progress_event_async_handles_task_errors(
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.persist_progress_event")
-@patch("app.services.progress_persistence.logger")
+@patch("app.shared.services.persistence.progress.persist_progress_event")
+@patch("app.shared.services.persistence.progress.logger")
 async def test_persist_progress_event_async_skips_in_benchmark_mode(
     mock_logger, mock_persist, sample_event_data
 ):
     """Test that persistence is skipped when in benchmark mode."""
     from app.evaluation.llm_benchmark import benchmark_model_context
-    from app.services.progress_persistence import _progress_tasks
+    from app.shared.services.persistence.progress import _progress_tasks
 
     _progress_tasks.clear()
 
@@ -175,12 +178,12 @@ async def test_persist_progress_event_async_skips_in_benchmark_mode(
 
 
 @pytest.mark.asyncio
-@patch("app.services.progress_persistence.persist_progress_event")
+@patch("app.shared.services.persistence.progress.persist_progress_event")
 async def test_persist_progress_event_async_works_outside_benchmark_mode(
     mock_persist, sample_event_data
 ):
     """Test that persistence works normally outside benchmark mode."""
-    from app.services.progress_persistence import _progress_tasks
+    from app.shared.services.persistence.progress import _progress_tasks
 
     _progress_tasks.clear()
 

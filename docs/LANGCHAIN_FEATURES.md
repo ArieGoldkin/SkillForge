@@ -9,7 +9,7 @@ We've upgraded to and are utilizing the latest features from:
 - **langchain-openai 1.1.0** (from 1.0.3)
 - **langchain-anthropic 1.2.0** (from 0.1.4)
 - **langchain-google-genai 3.2.0** (from 1.0.4)
-- **langgraph 1.0.3** (already latest)
+- **langgraph 1.0.4** (pinned in backend)
 
 ## Implemented Features
 
