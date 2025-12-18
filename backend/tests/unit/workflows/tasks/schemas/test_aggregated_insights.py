@@ -11,7 +11,7 @@ Tests all Pydantic models with focus on:
 import pytest
 from pydantic import ValidationError
 
-from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import (
+from app.domains.analysis.schemas.tasks.aggregated_insights import (
     AggregatedInsights,
     AIAssistantPrompt,
     ConflictResolution,

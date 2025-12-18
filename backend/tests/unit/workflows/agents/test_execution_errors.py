@@ -21,15 +21,15 @@ async def test_run_agent_with_tracking_generatorexit_handling(
     mock_get_stage_name,
     mock_session,
 ):
-    """Test that GeneratorExit is properly handled and SSE events are emitted."""
+    """Test that GeneratorExit is properly handled, tracked, and re-raised for workflow cancellation."""
     analysis_id = str(uuid4())
 
     # Create mock agent that raises GeneratorExit during ainvoke
     mock_agent = AsyncMock()
     mock_agent.ainvoke = AsyncMock(side_effect=GeneratorExit("Stream closed externally"))
 
-    # GeneratorExit is converted to TimeoutError in execution.py
-    with pytest.raises(TimeoutError, match="exceeded timeout"):
+    # GeneratorExit should be caught, handled (cancellation tracked), and re-raised
+    with pytest.raises(GeneratorExit):
         await run_agent_with_tracking(
             agent=mock_agent,
             content="test",

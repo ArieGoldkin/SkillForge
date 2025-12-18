@@ -551,8 +551,8 @@ def test_get_chat_model_with_task_routing_g_eval(
 
     # Verify init_chat_model was called with Gemini model
     mock_init_chat_model.assert_called_once()
-    # First positional arg should be gemini-3-flash
-    assert mock_init_chat_model.call_args[0][0] == "gemini-3-flash"
+    # First positional arg should be gemini-3-flash-preview (API model ID resolved from gemini-3-flash)
+    assert mock_init_chat_model.call_args[0][0] == "gemini-3-flash-preview"
     call_kwargs = mock_init_chat_model.call_args[1]
     assert call_kwargs["model_provider"] == "google_genai"
     assert result == mock_model

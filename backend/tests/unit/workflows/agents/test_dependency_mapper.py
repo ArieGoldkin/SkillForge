@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.workflows.agents.dependency_mapper import run_dependency_mapper
-from app.domains.analysis.workflows.agents.schemas.dependency_mapper import Dependency, DependencyMapping
+from app.domains.analysis.schemas.agents.dependency_mapper import Dependency, DependencyMapping
 from app.domains.analysis.workflows.state import AnalysisState
 
 

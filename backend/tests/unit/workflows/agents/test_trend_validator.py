@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.analysis.workflows.agents.schemas.trend_validator import TrendAssessment, TrendValidation
+from app.domains.analysis.schemas.agents.trend_validator import TrendAssessment, TrendValidation
 from app.domains.analysis.workflows.agents.trend_validator import run_trend_validator
 from app.domains.analysis.workflows.state import AnalysisState
 

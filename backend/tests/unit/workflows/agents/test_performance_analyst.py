@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.workflows.agents.performance_analyst import run_performance_analyst
-from app.domains.analysis.workflows.agents.schemas.performance_analyst import PerformanceAnalysis, PerformanceMetric
+from app.domains.analysis.schemas.agents.performance_analyst import PerformanceAnalysis, PerformanceMetric
 from app.domains.analysis.workflows.state import AnalysisState
 
 

@@ -242,17 +242,17 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
     mock_get_stage_name,
     mock_session,
 ):
-    """Test that GeneratorExit from invoke_agent is converted to TimeoutError."""
+    """Test that GeneratorExit from invoke_agent is handled and re-raised for workflow cancellation."""
     from app.domains.analysis.workflows.agents.execution import _run_agent_with_tracking_impl
 
     mock_agent = MagicMock()
     mock_agent.astream = None  # Disable streaming to use ainvoke path
 
     with patch("app.domains.analysis.workflows.agents.execution.invoke_agent", new_callable=AsyncMock) as mock_invoke:
-        # Mock invoke_agent to raise GeneratorExit (simulating timeout cancellation)
-        mock_invoke.side_effect = GeneratorExit("Generator closed by timeout")
+        # Mock invoke_agent to raise GeneratorExit (simulating workflow cancellation)
+        mock_invoke.side_effect = GeneratorExit("Generator closed by cancellation")
 
-        # Should convert GeneratorExit to TimeoutError
+        # GeneratorExit should be caught, handled (cancellation tracking), and re-raised
         from app.domains.analysis.workflows.agents.execution import AgentExecutionConfig, AgentExecutionParams
 
         params = AgentExecutionParams(
@@ -264,7 +264,8 @@ async def test_agent_execution_converts_generatorexit_to_timeouterror(
         )
         config = AgentExecutionConfig(session=mock_session)
 
-        with pytest.raises(TimeoutError, match="execution"):
+        # GeneratorExit should be re-raised after handling
+        with pytest.raises(GeneratorExit):
             await _run_agent_with_tracking_impl(params=params, config=config)
 
 

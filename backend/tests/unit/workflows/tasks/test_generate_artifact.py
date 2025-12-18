@@ -1153,7 +1153,7 @@ class TestTemplateSectionNullSafety:
 
     def test_artifact_files_disclaimer_rendering(self):
         """Test that files disclaimer is rendered correctly (Issue #299-304)."""
-        from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
+        from app.domains.analysis.schemas.tasks.aggregated_insights import QuickReference
 
         quick_ref = QuickReference(
             primary_technology="Test Framework 1.0",
@@ -1196,7 +1196,7 @@ class TestTemplateSectionNullSafety:
 
     def test_artifact_files_section_hidden_when_empty(self):
         """Test that files section is not shown when files list is empty."""
-        from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
+        from app.domains.analysis.schemas.tasks.aggregated_insights import QuickReference
 
         quick_ref = QuickReference(
             primary_technology="Test Framework 1.0",

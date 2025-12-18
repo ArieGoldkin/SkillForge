@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.workflows.agents.implementation_planner import run_implementation_planner
-from app.domains.analysis.workflows.agents.schemas.implementation_planner import (
+from app.domains.analysis.schemas.agents.implementation_planner import (
     ImplementationPlan,
     ImplementationStep,
 )

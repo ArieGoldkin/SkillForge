@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.analysis.workflows.agents.schemas.security_auditor import SecurityAudit, SecurityRisk
+from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit, SecurityRisk
 from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
 from app.domains.analysis.workflows.state import AnalysisState
 

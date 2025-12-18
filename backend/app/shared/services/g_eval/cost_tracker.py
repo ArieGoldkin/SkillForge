@@ -9,17 +9,21 @@ Features:
 - Session-level and per-evaluation cost summaries
 - Singleton pattern for global tracking across evaluations
 
-Pricing (as of Dec 2024):
-- Gemini Flash 1.5: $0.075/1M input, $0.30/1M output, $0.01875/1M cached
-- Gemini Flash 2.0: $0.10/1M input, $0.40/1M output, $0.025/1M cached
-- Claude Sonnet 3.5: $3.00/1M input, $15.00/1M output
-- Claude Haiku 3.5: $1.00/1M input, $5.00/1M output
+Pricing (as of Dec 2025):
+- Gemini 3 Flash: $0.50/1M input, $3.00/1M output, $0.125/1M cached
+- Gemini 2.5 Flash: $0.30/1M input, $2.50/1M output, $0.075/1M cached
+- Gemini 2.0 Flash: $0.10/1M input, $0.40/1M output, $0.025/1M cached
+- Claude Sonnet 4: $3.00/1M input, $15.00/1M output, $0.30/1M cached
+- Claude Haiku 4.5: $1.00/1M input, $5.00/1M output, $0.10/1M cached
+- Claude Haiku 3.5: $0.80/1M input, $4.00/1M output, $0.08/1M cached
+- GPT-5 Mini: $0.25/1M input, $2.00/1M output
 - GPT-4o: $2.50/1M input, $10.00/1M output
 - GPT-4o-mini: $0.15/1M input, $0.60/1M output
+- DeepSeek V3: $0.14/1M input, $0.28/1M output, $0.014/1M cached
 
 Usage:
     tracker = GEvalCostTracker.get_instance()
-    tracker.record_usage("eval-1", "gemini-flash-1.5", 1000, 500, 200)
+    tracker.record_usage("eval-1", "gemini-2.0-flash", 1000, 500, 200)
     summary = tracker.get_session_summary()
 """
 
@@ -37,20 +41,22 @@ logger = get_logger(__name__)
 # Pricing Configuration
 # ============================================================================
 
-# Prices in USD per 1M tokens
+# Prices in USD per 1M tokens (as of Dec 2025)
 MODEL_PRICING = {
     # Google Gemini
-    "gemini-1.5-flash": {"input": 0.075, "output": 0.30, "cached": 0.01875},
+    "gemini-3-flash": {"input": 0.50, "output": 3.00, "cached": 0.125},
+    "gemini-2.5-flash": {"input": 0.30, "output": 2.50, "cached": 0.075},
     "gemini-2.0-flash": {"input": 0.10, "output": 0.40, "cached": 0.025},
-    "gemini-1.5-pro": {"input": 1.25, "output": 5.00, "cached": 0.3125},
     # Anthropic Claude
-    "claude-3-5-sonnet": {"input": 3.00, "output": 15.00, "cached": 0.30},
-    "claude-3-5-haiku": {"input": 1.00, "output": 5.00, "cached": 0.10},
-    "claude-3-haiku": {"input": 0.25, "output": 1.25, "cached": 0.025},
+    "claude-sonnet-4": {"input": 3.00, "output": 15.00, "cached": 0.30},
+    "claude-haiku-4.5": {"input": 1.00, "output": 5.00, "cached": 0.10},
+    "claude-haiku-3.5": {"input": 0.80, "output": 4.00, "cached": 0.08},
     # OpenAI GPT
+    "gpt-5-mini": {"input": 0.25, "output": 2.00, "cached": 0.0},
     "gpt-4o": {"input": 2.50, "output": 10.00, "cached": 0.0},
     "gpt-4o-mini": {"input": 0.15, "output": 0.60, "cached": 0.0},
-    "gpt-4-turbo": {"input": 10.00, "output": 30.00, "cached": 0.0},
+    # DeepSeek
+    "deepseek-v3": {"input": 0.14, "output": 0.28, "cached": 0.014},
     # Default fallback
     "default": {"input": 1.00, "output": 5.00, "cached": 0.10},
 }
@@ -60,10 +66,10 @@ def _normalize_model_name(model: str) -> str:
     """Normalize model name to match pricing keys.
 
     Args:
-        model: Raw model identifier (e.g., "gemini-1.5-flash-002")
+        model: Raw model identifier (e.g., "gemini-2.0-flash-002")
 
     Returns:
-        Normalized key for pricing lookup (e.g., "gemini-1.5-flash")
+        Normalized key for pricing lookup (e.g., "gemini-2.0-flash")
 
     """
     model_lower = model.lower().strip()
@@ -151,7 +157,7 @@ class GEvalCostTracker:
         # Record usage after LLM call
         tracker.record_usage(
             eval_id="eval-1",
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             input_tokens=1000,
             output_tokens=500,
             cached_tokens=200,

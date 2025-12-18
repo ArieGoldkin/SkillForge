@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
-from app.domains.analysis.workflows.agents.schemas.tech_comparator import TechComparison, TechComparisonEntry
+from app.domains.analysis.schemas.agents.tech_comparator import TechComparison, TechComparisonEntry
 from app.domains.analysis.workflows.agents.tech_comparator import run_tech_comparator
 from app.domains.analysis.workflows.state import AnalysisState
 

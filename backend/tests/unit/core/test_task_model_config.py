@@ -6,7 +6,6 @@ from app.core.task_model_config import (
     SELECTION_RATIONALE,
     SUPERVISOR_BENCHMARK_RESULTS,
     TASK_MODELS,
-    TASK_MODELS_LEGACY,
     TaskModelConfig,
     get_model_for_task,
     get_task_config,
@@ -126,23 +125,6 @@ class TestTaskModelsDict:
         assert supervisor.correctness is not None
         assert supervisor.cost_per_call is not None
         assert supervisor.latency_p50_ms is not None
-
-
-class TestLegacyFormat:
-    """Tests for TASK_MODELS_LEGACY compatibility dict."""
-
-    def test_legacy_format_structure(self):
-        """Test legacy dict has tuple values."""
-        for _task, value in TASK_MODELS_LEGACY.items():
-            assert isinstance(value, tuple)
-            assert len(value) == 2
-
-    def test_legacy_matches_primary(self):
-        """Test legacy primary matches new format."""
-        for task, (primary, fallback) in TASK_MODELS_LEGACY.items():
-            config = TASK_MODELS[task]
-            assert primary == config.primary
-            assert fallback == config.fallback
 
 
 class TestBenchmarkResults:

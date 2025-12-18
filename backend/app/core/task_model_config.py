@@ -75,11 +75,6 @@ TASK_MODELS: dict[str, TaskModelConfig] = {
     ),
 }
 
-# Legacy dict format for backwards compatibility
-TASK_MODELS_LEGACY = {
-    task: (config.primary, config.fallback) for task, config in TASK_MODELS.items()
-}
-
 
 def get_model_for_task(task_type: str, use_fallback: bool = False) -> str | None:
     """Get optimal model for a task type.

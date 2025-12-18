@@ -27,7 +27,6 @@ from app.domains.analysis.workflows.agents.result_processing import (
     process_agent_result,
 )
 from app.domains.analysis.workflows.agents.validation import score_agent_output
-from app.shared.workflows.utils.timeout_handling import handle_timeout_error
 
 logger = get_logger(__name__)
 
@@ -172,17 +171,17 @@ async def _run_agent_with_tracking_impl(
                     agent_type=params.agent_type,
                     timeout=config.timeout,
                 )
-            except (TimeoutError, GeneratorExit) as exc:
-                # GeneratorExit should not occur with RunnableConfig timeout,
-                # but kept as safety net for edge cases
-                raise handle_timeout_error(
-                    exc=exc,
+            except TimeoutError as exc:
+                # LangGraph's RunnableConfig timeout raises TimeoutError directly
+                logger.exception(
+                    "timeout_error",
                     context=f"Agent {params.agent_type} execution",
                     timeout=config.timeout,
-                    logger=logger,
                     agent_type=params.agent_type,
                     analysis_id=params.analysis_id,
-                ) from None
+                )
+                msg = f"Agent {params.agent_type} execution exceeded timeout of {config.timeout}s"
+                raise TimeoutError(msg) from exc
 
             # Extract structured response (validated Pydantic model)
             findings = extract_structured_response(final_result, params.agent_type)
@@ -236,8 +235,7 @@ async def _run_agent_with_tracking_impl(
         )
 
     except GeneratorExit:
-        # GeneratorExit should not occur with RunnableConfig timeout,
-        # but kept as safety net for edge cases
+        # Handle task cancellation (e.g., workflow interrupted)
         await handle_agent_cancellation(
             analysis_id=params.analysis_id,
             agent_type=params.agent_type,

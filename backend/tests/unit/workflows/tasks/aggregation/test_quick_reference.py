@@ -12,7 +12,7 @@ from app.domains.analysis.workflows.tasks.aggregation.quick_reference import (
     _extract_primary_technology,
     extract_quick_reference,
 )
-from app.domains.analysis.workflows.tasks.schemas.aggregated_insights import QuickReference
+from app.domains.analysis.schemas.tasks.aggregated_insights import QuickReference
 
 
 
