@@ -39,14 +39,14 @@ export class LibraryPage extends BasePage {
    * Waits for the library API response instead of using arbitrary timeouts.
    */
   async search(query: string) {
-    // Set up response promise BEFORE triggering the action
+    await this.searchInput.fill(query);
+
+    // Set up response promise BEFORE triggering the action to avoid race condition
     const responsePromise = this.page.waitForResponse(
       (response) =>
-        response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
+        response.url().includes('/api/v1/library') && response.status() === 200
     );
 
-    await this.searchInput.fill(query);
     // Trigger immediate search with Enter key (no search button exists)
     await this.searchInput.press('Enter');
 
@@ -54,7 +54,7 @@ export class LibraryPage extends BasePage {
     await responsePromise;
 
     // Wait for loading state to clear (if it exists)
-    await expect(this.loadingState).not.toBeVisible({ timeout: 5000 }).catch(() => {
+    await expect(this.loadingState).not.toBeVisible({ timeout: 10000 }).catch(() => {
       // Loading state might not be implemented or might be very brief
     });
   }

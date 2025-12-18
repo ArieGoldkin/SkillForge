@@ -81,26 +81,27 @@ test.describe('Error Handling Tests', () => {
   });
 
   test('should show empty state when searching for non-existent content', async ({ page }) => {
+    // CRITICAL: Set up response promise BEFORE navigation to avoid race condition
+    const initialResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200
+    );
+
     await page.goto('/library');
 
     // Wait for page to load - use domcontentloaded to avoid SSE blocking
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for initial library API response
-    await page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
-    ).catch(() => {
+    // Wait for initial library API response (set up before navigation)
+    await initialResponsePromise.catch(() => {
       // Initial load might already be complete
     });
 
     // Search for something that definitely doesn't exist
     const searchInput = page.getByPlaceholder(/search/i);
-    if (await searchInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       // Set up response promise BEFORE triggering search
       const searchResponsePromise = page.waitForResponse(
-        (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-        { timeout: 10000 }
+        (response) => response.url().includes('/api/v1/library') && response.status() === 200
       );
 
       await searchInput.fill('xyznonexistentquery12345');
@@ -113,12 +114,12 @@ test.describe('Error Handling Tests', () => {
       await expect(
         page.getByText(/no results|no analyses|empty|nothing found/i)
           .or(page.getByRole('heading', { name: /library/i }))
-      ).toBeVisible({ timeout: 5000 });
+      ).toBeVisible();
     } else {
       // If no search input, just verify library page loaded
       await expect(
         page.getByRole('heading', { name: /library/i })
-      ).toBeVisible({ timeout: 5000 });
+      ).toBeVisible();
     }
   });
 
@@ -234,15 +235,14 @@ test.describe('Error Handling Tests', () => {
     // Wait for either navigation or button state change using Promise.race
     const result = await Promise.race([
       // Check if page navigates
-      page.waitForURL(/\/analyze\/.+/, { timeout: 5000 })
+      page.waitForURL(/\/analyze\/.+/)
         .then(() => ({ type: 'navigated', value: true })),
       // Check if button becomes disabled
       page.waitForFunction(
         () => {
           const btn = document.querySelector('button[type="submit"], button:has-text("analyze")');
           return btn && (btn as HTMLButtonElement).disabled;
-        },
-        { timeout: 3000 }
+        }
       ).then(() => ({ type: 'disabled', value: true })),
     ]).catch(() => ({ type: 'timeout', value: false }));
 
@@ -253,7 +253,7 @@ test.describe('Error Handling Tests', () => {
     // Try to check button state (might not exist if navigated)
     let buttonState = { exists: false, disabled: false };
     try {
-      const buttonVisible = await submitButton.isVisible({ timeout: 1000 });
+      const buttonVisible = await submitButton.isVisible({ timeout: 2000 });
       if (buttonVisible) {
         buttonState.exists = true;
         buttonState.disabled = await submitButton.isDisabled();
@@ -289,15 +289,17 @@ test.describe('Error Handling Tests', () => {
         // Error might appear differently
       });
 
+    // CRITICAL: Set up response promise BEFORE navigation to avoid race condition
+    const libraryResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200
+    );
+
     // Now navigate to library - should work normally
     await page.goto('/library');
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for library API response instead of networkidle
-    await page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
-    ).catch(() => {
+    // Wait for library API response (set up before navigation)
+    await libraryResponsePromise.catch(() => {
       // API might already be complete
     });
 

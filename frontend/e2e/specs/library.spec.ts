@@ -82,17 +82,16 @@ test.describe('Library Page - Search and Filter', () => {
     // Check if filter button exists
     const filterButton = libraryPage.contentTypeFilter;
     if (await filterButton.isVisible()) {
-      // Set up response promise before clicking filter
-      const responsePromise = page.waitForResponse(
-        (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-        { timeout: 10000 }
-      );
-
       await filterButton.click();
 
       // Select video type
       const videoOption = page.getByRole('option', { name: /video/i });
       if (await videoOption.isVisible()) {
+        // Set up response promise BEFORE selecting to avoid race condition
+        const responsePromise = page.waitForResponse(
+          (response) => response.url().includes('/api/v1/library') && response.status() === 200
+        );
+
         await videoOption.click();
 
         // Wait for filtered results
@@ -169,17 +168,17 @@ test.describe('Library Page - Search and Filter', () => {
   });
 
   test('should show empty state when filtering by non-existent status', async ({ page }) => {
+    // CRITICAL: Set up response promise BEFORE navigation to avoid race condition
+    // The API call happens during page load, so we must listen before navigating
+    const responsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200
+    );
+
     // Navigate with a filter parameter that returns no results
     await page.goto('/library?status=nonexistent-status-filter');
 
-    // Wait for page to load properly
-    await page.waitForLoadState('domcontentloaded');
-
-    // Wait for API response to complete
-    await page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
-    );
+    // Wait for the API response we set up before navigation
+    await responsePromise;
 
     // Either shows empty state or page is functional with no data
     await expect(page.locator('body')).toBeVisible();
@@ -217,10 +216,9 @@ test.describe('Library Page - Search and Filter', () => {
     // Type a query
     await page.keyboard.type('React');
 
-    // Set up response promise before pressing Enter
+    // Set up response promise BEFORE pressing Enter to avoid race condition
     const responsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200,
-      { timeout: 10000 }
+      (response) => response.url().includes('/api/v1/library') && response.status() === 200
     );
 
     // Press Enter to search

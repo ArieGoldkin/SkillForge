@@ -75,6 +75,8 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
   test.setTimeout(300000); // 5 minutes for complete workflow
 
   test('should complete full analysis workflow with all 13 stages', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
+
     const sseEvents: SSEEvent[] = [];
     const stagesEncountered = new Set<string>();
 
@@ -359,6 +361,8 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
   });
 
   test('should handle rapid stage transitions correctly', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
+
     console.log('\n🧪 Testing rapid stage transition handling...\n');
 
     const homePage = new HomePage(page);
@@ -382,6 +386,8 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
   });
 
   test('should calculate progress correctly with dynamic stage count', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
+
     console.log('\n📐 Testing progress calculation with dynamic stages...\n');
 
     const homePage = new HomePage(page);
