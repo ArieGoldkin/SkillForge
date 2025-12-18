@@ -49,7 +49,7 @@ class TestInvokeAgent:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
-    async def test_ainvoke_with_langsmith_trace(self, mock_run_tree, mock_agent, input_messages):
+    async def test_ainvoke_with_langfuse_trace(self, mock_run_tree, mock_agent, input_messages):
         """Test invocation captures LangSmith trace ID."""
         run_tree = MagicMock()
         run_tree.id = uuid4()
@@ -66,7 +66,7 @@ class TestInvokeAgent:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
-    async def test_ainvoke_langsmith_unavailable(self, mock_run_tree, mock_agent, input_messages):
+    async def test_ainvoke_langfuse_unavailable(self, mock_run_tree, mock_agent, input_messages):
         """Test invocation continues when LangSmith is unavailable."""
         mock_run_tree.side_effect = Exception("LangSmith not available")
 
@@ -143,7 +143,7 @@ class TestInvokeAgent:
 
     @pytest.mark.asyncio
     @patch("app.domains.analysis.workflows.agents.invocation.get_current_run_tree")
-    async def test_langsmith_run_tree_without_id(self, mock_run_tree, mock_agent, input_messages):
+    async def test_langfuse_run_tree_without_id(self, mock_run_tree, mock_agent, input_messages):
         """Test handling of run tree without id attribute."""
         run_tree = MagicMock(spec=[])  # No id attribute
         mock_run_tree.return_value = run_tree

@@ -1,14 +1,13 @@
-"""Agent quality evaluator using LangSmith evaluation.
+"""Agent quality evaluator using Langfuse evaluation.
 
 This module implements the evaluator-optimizer pattern for continuous
-improvement of agent performance based on LangSmith evaluation results.
+improvement of agent performance based on Langfuse evaluation results.
 """
 
 from datetime import UTC, datetime
 
-from langsmith import Client
-
 from app.core.config import settings
+from app.core.langfuse_config import get_langfuse_client
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.domains.analysis.workflows.state import AnalysisState
@@ -30,7 +29,7 @@ logger = get_logger(__name__)
     },
 )
 async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
-    """Evaluate agent outputs and score quality using LangSmith.
+    """Evaluate agent outputs and score quality using Langfuse.
 
     This function implements the evaluator pattern, assessing the quality
     of each agent's findings and storing evaluation results in the state.
@@ -57,8 +56,8 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
     )
 
     try:
-        # LangSmith client available for future enhancements
-        _ = Client()
+        # Langfuse client available for future enhancements
+        _ = get_langfuse_client()
         evaluation_results: dict[str, object] = {}
 
         for finding in agent_findings:
@@ -68,7 +67,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
 
             # Evaluate finding quality
             # For now, use a simple heuristic - future enhancement can use
-            # LangSmith evaluation API for more sophisticated scoring
+            # Langfuse evaluation API for more sophisticated scoring
             quality_score = _calculate_quality_score(finding)
 
             findings_dict = finding.get("findings", {})
@@ -113,7 +112,7 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
 def _calculate_quality_score(finding: AgentFinding) -> float:
     """Calculate quality score for an agent finding.
 
-    Simple heuristic-based scoring. Future enhancement can use LangSmith
+    Simple heuristic-based scoring. Future enhancement can use Langfuse
     evaluation API for more sophisticated quality assessment.
 
     Args:
@@ -128,7 +127,7 @@ def _calculate_quality_score(finding: AgentFinding) -> float:
         return 0.5  # Default score if findings structure is unexpected
 
     # Simple heuristic: more keys = more comprehensive = higher score
-    # This is a placeholder - real implementation would use LangSmith evaluation
+    # This is a placeholder - real implementation would use Langfuse evaluation
     key_count = len(findings_dict)
     base_score = min(0.9, 0.5 + (key_count * 0.1))
 

@@ -119,7 +119,7 @@ def create_structured_agent(
 
     Note:
         ToolStrategy automatically validates output against response_schema.
-        Validation errors are automatically traced by LangSmith when they occur.
+        Validation errors are automatically traced by Langfuse when they occur.
         For Anthropic models, system prompts are automatically cached for cost savings.
 
     """
@@ -145,9 +145,9 @@ def create_structured_agent(
     )
 
     # Note: ToolStrategy already validates output against response_schema.
-    # Validation errors are automatically captured by LangChain and traced by LangSmith.
+    # Validation errors are automatically captured by LangChain and traced by Langfuse.
     # We don't need to wrap invoke here as ToolStrategy handles validation internally.
-    # The validation errors will appear in LangSmith traces automatically.
+    # The validation errors will appear in Langfuse traces automatically.
 
     return agent
 

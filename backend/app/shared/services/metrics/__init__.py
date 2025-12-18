@@ -6,7 +6,6 @@ observability through log aggregation tools (CloudWatch, Loki, Datadog).
 """
 
 from app.shared.services.metrics.collectors import Counter, Histogram
-from app.shared.services.metrics.langsmith import LangSmithMetricsService
 from app.shared.services.metrics.service import MetricsService, get_metrics_service
 from app.shared.services.metrics.technique_metrics import (
     MetricsCollector,
@@ -17,7 +16,6 @@ from app.shared.services.metrics.technique_metrics import (
 __all__ = [
     "Counter",
     "Histogram",
-    "LangSmithMetricsService",
     "MetricsCollector",
     "MetricsService",
     "TechniqueMetrics",

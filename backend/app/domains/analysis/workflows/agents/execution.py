@@ -91,7 +91,7 @@ async def _run_agent_with_tracking_impl(
     """Implement agent execution with tracking.
 
     This function contains the actual logic. The public `run_agent_with_tracking`
-    function wraps this with @traceable for LangSmith instrumentation.
+    function wraps this with @traceable for Langfuse instrumentation.
 
     Redis semantic caching is automatically enabled for all agents via the model
     factory (get_chat_model). No explicit cache management needed here.
@@ -268,7 +268,7 @@ async def run_agent_with_tracking(  # noqa: PLR0913
 
     Note: This function is NOT traced with @robust_traceable because the calling
     node (e.g., tech_comparator_node) is already traced. Adding tracing here would
-    create duplicate traces in LangSmith.
+    create duplicate traces in Langfuse.
 
     Note: This function accepts 9 parameters for backward compatibility with existing callers.
     Internally, parameters are grouped into AgentExecutionParams and AgentExecutionConfig

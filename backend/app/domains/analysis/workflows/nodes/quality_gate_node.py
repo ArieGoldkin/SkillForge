@@ -11,9 +11,8 @@ import asyncio
 import time
 from typing import Any
 
-from langsmith import get_current_run_tree
-
 from app.core.logging import get_logger
+from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import (
     get_aggregated_insights,
@@ -53,7 +52,7 @@ COVERAGE_ADJUSTED_MINIMUMS: dict[str, float] = {
 QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 
 
-async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0912, PLR0915
+async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915
     """Quality gate validation node.
 
     Evaluates synthesized insights using LLM-as-judge evaluators for:
@@ -65,7 +64,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     Quality scores are added to state for observability.
 
     Note: LangGraph automatically traces this node. We update runtime metadata
-    via get_current_run_tree() but don't add a separate tracing decorator.
+    via update_current_trace() but don't add a separate tracing decorator.
 
     Args:
         state: Current workflow state with aggregated_insights
@@ -92,20 +91,15 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation and update runtime metadata
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree:
-            if hasattr(run_tree, "id"):
-                trace_id = str(run_tree.id)
-            # Runtime metadata updates
-            run_tree.metadata["analysis_id"] = str(analysis_id)
-            run_tree.metadata["retry_count"] = retry_count
-            if run_tree.tags is not None:
-                run_tree.tags.append("quality-gate")
-    except Exception:  # noqa: BLE001 - LangSmith may not be available
-        pass
+    # Update Langfuse trace metadata
+    update_current_trace(
+        metadata={
+            "analysis_id": str(analysis_id),
+            "retry_count": retry_count,
+        },
+        tags=["quality-gate"],
+    )
+    trace_id = get_current_trace_id()
 
     logger.info(
         "quality_gate_started",
@@ -116,11 +110,11 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
 
     try:
         # Create mock Run and Example for evaluators
-        # The evaluators expect LangSmith Run/Example objects
+        # The evaluators expect Langfuse Run/Example objects
         from datetime import UTC, datetime
         from uuid import UUID, uuid4
 
-        from langsmith.schemas import Example, Run
+        from app.evaluation.types import Example, Run
 
         # Prepare input (original content) and output (synthesized insights)
         input_content = state.get("raw_content", "")
@@ -142,7 +136,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         trace_uuid = UUID(trace_id) if trace_id else uuid4()
 
         # Create mock Run object with all required fields
-        # LangSmith Run requires: id, name, start_time, run_type, trace_id
+        # Langfuse Run requires: id, name, start_time, run_type, trace_id
         mock_run = Run(
             id=run_uuid,
             name="synthesis",

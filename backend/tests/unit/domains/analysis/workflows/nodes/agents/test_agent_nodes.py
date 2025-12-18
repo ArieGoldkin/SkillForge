@@ -116,7 +116,7 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree"
     )
-    async def test_without_langsmith(
+    async def test_without_langfuse(
         self, mock_get_tree, mock_runner, mock_state, mock_agent_result
     ):
         """Test execution without LangSmith available."""
@@ -251,7 +251,7 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree"
     )
-    async def test_updates_langsmith_metadata(
+    async def test_updates_langfuse_metadata(
         self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
     ):
         """Test that LangSmith metadata is updated."""

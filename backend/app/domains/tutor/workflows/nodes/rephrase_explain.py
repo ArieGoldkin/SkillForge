@@ -3,12 +3,10 @@
 This node provides adaptive re-explanation with hints when user is not ready.
 """
 
-from langsmith import get_current_run_tree
-
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
-from app.core.tracing import robust_traceable
+from app.core.tracing import robust_traceable, update_current_trace
 from app.domains.tutor.repositories.message_repository import TutorMessageRepository
 from app.domains.tutor.workflows.config import TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
@@ -61,7 +59,7 @@ Return the rephrased explanation."""
         "component": "tutor_node",
     },
 )
-async def rephrase_explain(state: TutorState) -> dict[str, object]:  # noqa: PLR0915 - Tutor node with complex logic
+async def rephrase_explain(state: TutorState) -> dict[str, object]:
     """Rephrase explanation with hints when user is not ready.
 
     Provides simpler re-explanation with progressive hints based on
@@ -83,18 +81,15 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:  # noqa: PLR
     attempts = state.get("attempts_current_lesson", 0)
 
     # Thread grouping and runtime metadata
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree:
-            # Group all tutor messages in one thread
-            run_tree.metadata["thread_id"] = str(session_id)
-            run_tree.metadata["session_id"] = str(session_id)
-            run_tree.metadata["conversation_id"] = str(session_id)
-            # Phase-specific metadata
-            run_tree.metadata["tutor_phase"] = "rephrase_explanation"
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue
-        pass
+    # Thread grouping and runtime metadata for Langfuse
+    update_current_trace(
+        metadata={
+            "thread_id": str(session_id),
+            "conversation_id": str(session_id),
+            "tutor_phase": "rephrase_explanation",
+        },
+        session_id=str(session_id),
+    )
 
     # Emit SSE event: rephrase started
     await _emit_tutor_event(

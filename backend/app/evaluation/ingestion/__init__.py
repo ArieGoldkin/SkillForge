@@ -1,7 +1,7 @@
 """Ingestion utilities for evaluation datasets.
 
 This module provides tools for extracting evaluation examples from various sources:
-- LangSmith production traces
+- Langfuse production traces (via Langfuse API)
 - GitHub issues and discussions
 - Edge case generation
 - Adversarial example generation
@@ -39,10 +39,6 @@ from app.evaluation.ingestion.github_importer import (
     GitHubImporter,
     GitHubIssue,
 )
-from app.evaluation.ingestion.langsmith_extractor import (
-    LANGSMITH_AVAILABLE,
-    ExtractionConfig,
-)
 from app.evaluation.ingestion.pii_anonymizer import (
     AnonymizedResult,
     PIIAnonymizer,
@@ -53,71 +49,31 @@ from app.evaluation.ingestion.pii_anonymizer import (
 # Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
 ALL_CATEGORIES = EDGE_CASE_CATEGORIES
 
-# LangSmithExtractor requires langsmith package
-if LANGSMITH_AVAILABLE:
-    from app.evaluation.ingestion.langsmith_extractor import LangSmithExtractor
-
-    __all__ = [
-        # LangSmith
-        "ExtractionConfig",
-        "LangSmithExtractor",
-        "LANGSMITH_AVAILABLE",
-        # GitHub
-        "GitHubImporter",
-        "GitHubImportConfig",
-        "GitHubIssue",
-        # Edge Cases
-        "EdgeCaseGenerator",
-        "EdgeCaseConfig",
-        "EdgeCaseTemplates",
-        "ALL_CATEGORIES",
-        "EDGE_CASE_CATEGORIES",
-        # Adversarial Examples
-        "AdversarialGenerator",
-        "AdversarialConfig",
-        "AdversarialTemplates",
-        "ADVERSARIAL_CATEGORIES",
-        # Cutting-Edge Topics
-        "CuttingEdgeGenerator",
-        "CuttingEdgeConfig",
-        "Topic",
-        "ALL_TOPICS",
-        "generate_all_cutting_edge",
-        # PII Anonymization
-        "PIIAnonymizer",
-        "PIIReplacement",
-        "AnonymizedResult",
-        "get_anonymizer",
-    ]
-else:
-    __all__ = [
-        # LangSmith
-        "ExtractionConfig",
-        "LANGSMITH_AVAILABLE",
-        # GitHub
-        "GitHubImporter",
-        "GitHubImportConfig",
-        "GitHubIssue",
-        # Edge Cases
-        "EdgeCaseGenerator",
-        "EdgeCaseConfig",
-        "EdgeCaseTemplates",
-        "ALL_CATEGORIES",
-        "EDGE_CASE_CATEGORIES",
-        # Adversarial Examples
-        "AdversarialGenerator",
-        "AdversarialConfig",
-        "AdversarialTemplates",
-        "ADVERSARIAL_CATEGORIES",
-        # Cutting-Edge Topics
-        "CuttingEdgeGenerator",
-        "CuttingEdgeConfig",
-        "Topic",
-        "ALL_TOPICS",
-        "generate_all_cutting_edge",
-        # PII Anonymization
-        "PIIAnonymizer",
-        "PIIReplacement",
-        "AnonymizedResult",
-        "get_anonymizer",
-    ]
+__all__ = [
+    # GitHub
+    "GitHubImporter",
+    "GitHubImportConfig",
+    "GitHubIssue",
+    # Edge Cases
+    "EdgeCaseGenerator",
+    "EdgeCaseConfig",
+    "EdgeCaseTemplates",
+    "ALL_CATEGORIES",
+    "EDGE_CASE_CATEGORIES",
+    # Adversarial Examples
+    "AdversarialGenerator",
+    "AdversarialConfig",
+    "AdversarialTemplates",
+    "ADVERSARIAL_CATEGORIES",
+    # Cutting-Edge Topics
+    "CuttingEdgeGenerator",
+    "CuttingEdgeConfig",
+    "Topic",
+    "ALL_TOPICS",
+    "generate_all_cutting_edge",
+    # PII Anonymization
+    "PIIAnonymizer",
+    "PIIReplacement",
+    "AnonymizedResult",
+    "get_anonymizer",
+]

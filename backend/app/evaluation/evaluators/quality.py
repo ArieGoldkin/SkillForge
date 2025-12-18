@@ -6,7 +6,7 @@ This module provides evaluators that use an LLM to judge output quality:
 - Accuracy: How factually correct is the output?
 - Coherence: How well-structured and clear is the output?
 
-All evaluators are compatible with LangSmith's evaluate() method.
+All evaluators are compatible with Langfuse's evaluate() method.
 
 Issue #299-304: Fixed dict-to-string bug where outputs were converted via str()
 resulting in the LLM judge seeing "{'insights': '...'}" instead of actual content.
@@ -16,10 +16,10 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
-from langsmith.schemas import Example, Run
 
 from app.core.config import get_settings
 from app.core.model_factory import get_chat_model
+from app.evaluation.types import Example, Run
 
 # Issue #299-304: Increased from 8000 to 15000 to preserve analytical depth
 # Previous limit was too aggressive, causing G-Eval to see only shallow summaries,
@@ -196,7 +196,7 @@ def create_quality_evaluator(
         judge_model: Model to use as judge (default: settings.QUALITY_JUDGE_MODEL)
 
     Returns:
-        Evaluator function compatible with LangSmith
+        Evaluator function compatible with Langfuse
 
     Example:
         ```python
@@ -277,7 +277,7 @@ Respond with ONLY a number from 0-10.""",
         """Evaluate output quality using LLM-as-judge.
 
         Args:
-            run: LangSmith run with outputs
+            run: Langfuse run with outputs
             example: Golden example with inputs and reference outputs
 
         Returns:

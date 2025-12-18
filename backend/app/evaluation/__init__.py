@@ -1,7 +1,7 @@
 """LLM Evaluation Framework for SkillForge.
 
 This module provides tools for benchmarking LLM models across different tasks
-using golden datasets and automated evaluators integrated with LangSmith.
+using golden datasets and automated evaluators integrated with Langfuse.
 
 Key components:
 - Golden datasets: Curated examples with expected outputs for supervisor, agent, and synthesis tasks

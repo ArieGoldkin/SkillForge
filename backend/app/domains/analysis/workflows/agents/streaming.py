@@ -14,7 +14,8 @@ from contextlib import aclosing
 from typing import TYPE_CHECKING, cast, overload
 
 from langchain_core.runnables import Runnable
-from langsmith import get_current_run_tree
+
+from app.core.tracing import get_current_trace_id
 
 if TYPE_CHECKING:
     pass
@@ -60,7 +61,7 @@ def _process_chunk(
 # Removed _cleanup_stream - aclosing() context manager handles cleanup automatically
 
 
-async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming logic with multiple branches
+async def stream_agent_response(
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
@@ -103,15 +104,8 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
     last_event_time = 0.0
     last_event_chars = 0
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     # Create RunnableConfig (timeout handled by step_timeout on graph)
     config = create_runnable_config()
@@ -213,7 +207,7 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
         return {}  # Return empty dict instead of raising - allows graceful degradation
 
     # CRITICAL: Ensure no generator objects are returned in the result
-    # LangSmith cannot serialize generators, and LangGraph's state cannot contain them
+    # Langfuse cannot serialize generators, and LangGraph's state cannot contain them
     # This prevents GeneratorExit errors during LangGraph cleanup
     if isinstance(final_result, dict):
         # Check for generators in the result dict
@@ -229,7 +223,7 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
                     note=(
                         "Generator object found in agent result. "
                         "This should never happen - generators must be consumed before returning. "
-                        "Removing generator from result to prevent LangSmith serialization errors."
+                        "Removing generator from result to prevent Langfuse serialization errors."
                     ),
                 )
                 # Remove generator from result
@@ -284,7 +278,7 @@ def _check_for_generators_recursive(
         obj: Object to check (dict, list, or any other type)
         agent_type: Type of agent for logging
         analysis_id: UUID of the analysis
-        trace_id: LangSmith trace ID
+        trace_id: Langfuse trace ID
         path: Current path in nested structure (for logging)
 
     """

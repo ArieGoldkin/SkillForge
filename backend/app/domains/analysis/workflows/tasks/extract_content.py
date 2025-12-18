@@ -9,7 +9,6 @@ Issue #299-304: ArXiv PDF Extraction
 - Standard URLs still use Jina Reader for HTML extraction
 """
 
-from langsmith import get_current_run_tree
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -61,12 +60,10 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
 
     # Runtime metadata updates
     try:
-        run_tree = get_current_run_tree()
-        if run_tree:
-            run_tree.metadata["analysis_id"] = str(analysis_id)
-            run_tree.metadata["url"] = url
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue
+        from app.core.tracing import update_current_trace
+
+        update_current_trace(metadata={"analysis_id": str(analysis_id), "url": url})
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)

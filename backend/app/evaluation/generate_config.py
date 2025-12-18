@@ -1,13 +1,13 @@
 """Generate optimal model configuration from experiment results.
 
-This module analyzes experiment results from LangSmith and generates
+This module analyzes experiment results from Langfuse and generates
 an optimal model configuration for SkillForge's multi-task LLM pipeline.
 
 Usage:
     # From experiment results file
     python -m app.evaluation.generate_config --input results.json
 
-    # Fetch from LangSmith project
+    # Fetch from Langfuse project
     python -m app.evaluation.generate_config --project skillforge-eval
 
     # Use hypotheses (no experiments required)
@@ -331,7 +331,7 @@ def main():
     parser.add_argument(
         "--project",
         type=str,
-        help="LangSmith project name to fetch results from",
+        help="Langfuse project name to fetch results from",
     )
     parser.add_argument(
         "--hypotheses",
@@ -361,9 +361,9 @@ def main():
             results = json.load(f)
         configs = analyze_experiment_results(results)
     elif args.project:
-        print(f"Fetching results from LangSmith project: {args.project}")
-        # TODO: Implement LangSmith API fetch
-        print("ERROR: LangSmith fetch not yet implemented. Use --input with results JSON.")
+        print(f"Fetching results from Langfuse project: {args.project}")
+        # TODO: Implement Langfuse API fetch
+        print("ERROR: Langfuse fetch not yet implemented. Use --input with results JSON.")
         return
     else:
         parser.print_help()

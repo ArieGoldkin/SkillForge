@@ -54,7 +54,7 @@ def is_generator(obj: Any) -> bool:
     """Check if object is a generator or async generator.
 
     This utility function helps detect generator objects that should not
-    be stored in LangGraph state or serialized by LangSmith.
+    be stored in LangGraph state or serialized by Langfuse.
 
     Args:
         obj: Object to check

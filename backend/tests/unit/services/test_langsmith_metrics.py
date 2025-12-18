@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.shared.services.metrics.langsmith import LangSmithMetricsService
+from app.shared.services.metrics.langfuse import LangSmithMetricsService
 
 
 @pytest.fixture
@@ -52,7 +52,7 @@ async def test_get_agent_metrics_with_time_range(metrics_service: LangSmithMetri
 async def test_get_agent_metrics_no_client() -> None:
     """Test metrics service handles missing LangSmith client gracefully."""
     with patch(
-        "app.shared.services.metrics.langsmith.Client",
+        "app.shared.services.metrics.langfuse.Client",
         side_effect=ConnectionError("Client unavailable"),
     ):
         service = LangSmithMetricsService()
@@ -77,7 +77,7 @@ async def test_get_workflow_metrics(metrics_service: LangSmithMetricsService) ->
 async def test_get_workflow_metrics_no_client() -> None:
     """Test workflow metrics handles missing client gracefully."""
     with patch(
-        "app.shared.services.metrics.langsmith.Client",
+        "app.shared.services.metrics.langfuse.Client",
         side_effect=ConnectionError("Client unavailable"),
     ):
         service = LangSmithMetricsService()

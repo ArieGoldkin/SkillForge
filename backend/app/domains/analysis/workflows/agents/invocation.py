@@ -1,15 +1,11 @@
 """Agent invocation logic with fallback strategies.
 
 This module handles different agent invocation methods:
-- Async invoke (preferred - avoids GeneratorExit issues in LangSmith)
+- Async invoke (preferred)
 - Sync invoke in thread pool (last resort)
 
-Note: We intentionally use ainvoke instead of astream to avoid GeneratorExit
-false positives in LangSmith tracing. The astream method creates async generators
-that, when closed during cleanup, trigger GeneratorExit which LangSmith logs as
-errors even though the workflow completed successfully.
-
-See: https://github.com/langchain-ai/langchain/issues/24914
+Note: Langfuse handles async generators natively, but we continue using ainvoke
+for consistency and to avoid any potential generator cleanup issues.
 
 Issue #299-304: Added asyncio.timeout() wrapper for LLM calls.
 The LangGraph step_timeout only applies at graph node boundaries, but LLM API
@@ -25,10 +21,10 @@ import time
 from typing import cast
 
 from langchain_core.runnables import Runnable
-from langsmith import get_current_run_tree
 
 from app.core.logging import get_logger
 from app.core.timeout_config import AGENT_TIMEOUT, STEP_TIMEOUT, create_runnable_config
+from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
 
 logger = get_logger(__name__)
@@ -44,8 +40,8 @@ async def invoke_agent(
     """Invoke agent using ainvoke - timeout handled by LangGraph's step_timeout.
 
     Uses ainvoke instead of astream to avoid GeneratorExit false positives in
-    LangSmith tracing. The astream method creates async generators that trigger
-    GeneratorExit during cleanup, which LangSmith incorrectly logs as errors.
+    Langfuse tracing. The astream method creates async generators that trigger
+    GeneratorExit during cleanup, which Langfuse incorrectly logs as errors.
 
     Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
     This avoids nested timeout conflicts and PEP 789 violations.
@@ -67,21 +63,14 @@ async def invoke_agent(
     """
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     # Create RunnableConfig (timeout handled by step_timeout on graph)
     config = create_runnable_config()
 
     # Use ainvoke (preferred) - avoids GeneratorExit issues with astream
-    # astream creates async generators that trigger false error logs in LangSmith
+    # astream creates async generators that trigger false error logs in Langfuse
     if hasattr(agent, "ainvoke"):
         # Issue #299-304: Wrap with asyncio.timeout to prevent indefinite hanging
         # The timeout parameter is now actively used (not just for logging)

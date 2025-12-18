@@ -35,7 +35,7 @@ async def load_state_from_session(
     try:
         state_snapshot = await tutor_workflow.aget_state(config)
         current_state = state_snapshot.values if state_snapshot else {}
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
+    except Exception:  # noqa: BLE001 - Langfuse may not be available, catch all to continue
         current_state = {}
 
     # Load conversation history from database

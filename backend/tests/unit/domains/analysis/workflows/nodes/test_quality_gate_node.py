@@ -14,8 +14,8 @@ Tests cover:
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langsmith.schemas import Example, Run
 
+from app.evaluation.types import Example, Run
 from app.domains.analysis.workflows.nodes.quality_gate_node import (
     MAX_RETRY_ATTEMPTS,
     QUALITY_THRESHOLD,
@@ -88,11 +88,11 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         # Mock LangSmith run tree
         mock_run_tree.return_value = None
@@ -157,11 +157,11 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -211,10 +211,10 @@ async def test_quality_gate_partial_timeout(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -273,7 +273,7 @@ async def test_quality_gate_division_by_zero_protection(base_state: AnalysisStat
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
     ):
         mock_run_tree.return_value = None
@@ -302,11 +302,11 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -349,10 +349,10 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ) as mock_emit,
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -435,11 +435,11 @@ async def test_quality_gate_fail_open_on_exception(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -603,7 +603,7 @@ async def test_quality_gate_coverage_adjusted_threshold_passes(low_coverage_stat
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
@@ -648,7 +648,7 @@ async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"),
     ):
@@ -684,7 +684,7 @@ async def test_quality_gate_adjusted_aspect_minimums(low_coverage_state: Analysi
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"),
     ):
@@ -743,7 +743,7 @@ async def test_quality_gate_aspect_minimum_failure_with_adjusted():
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
@@ -795,7 +795,7 @@ async def test_quality_gate_logs_coverage_context(low_coverage_state: AnalysisSt
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):
@@ -843,7 +843,7 @@ async def test_quality_gate_default_coverage_score():
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
     ):

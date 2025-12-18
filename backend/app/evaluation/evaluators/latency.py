@@ -5,22 +5,22 @@ This module provides evaluators that measure response time metrics:
 - Total response time (end-to-end)
 - Percentile latencies (p50, p95, p99)
 
-All evaluators are compatible with LangSmith's evaluate() method.
+All evaluators are compatible with Langfuse's evaluate() method.
 """
 
 from typing import Any
 
-from langsmith.schemas import Example, Run
+from app.evaluation.types import Example, Run
 
 
 def latency_evaluator(run: Run, example: Example) -> dict[str, Any]:
     """Evaluate response latency.
 
-    Measures total execution time from the LangSmith run object.
+    Measures total execution time from the Langfuse run object.
     This captures end-to-end latency including all API calls, retries, and processing.
 
     Args:
-        run: LangSmith run with timing information
+        run: Langfuse run with timing information
         example: Golden example (not used for latency)
 
     Returns:
@@ -61,7 +61,7 @@ def ttft_evaluator(run: Run, example: Example) -> dict[str, Any]:
     This is important for perceived responsiveness in interactive applications.
 
     Args:
-        run: LangSmith run with streaming timing information
+        run: Langfuse run with streaming timing information
         example: Golden example (not used)
 
     Returns:

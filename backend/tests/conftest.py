@@ -23,20 +23,16 @@ if "DATABASE_URL" not in os.environ:
 if "OPENAI_API_KEY" not in os.environ:
     os.environ["OPENAI_API_KEY"] = "sk-test-placeholder-for-unit-tests"
 
-# CRITICAL: Disable LangSmith tracing for UNIT tests only
+# CRITICAL: Disable Langfuse tracing for UNIT tests only
 # Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
-# This must be set before importing any modules that use langsmith.traceable
-# Setting these env vars prevents LangSmith from initializing background threads for unit tests
-# Integration tests will override this in their conftest.py which runs AFTER this one
-# (pytest loads conftest.py files in order: root conftest, then subdirectory conftest)
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
-os.environ["LANGSMITH_TRACING"] = "false"
-# Also unset API key to prevent any initialization attempts in unit tests
-# Integration tests will restore it in their conftest.py
-if "LANGSMITH_API_KEY" in os.environ:
-    del os.environ["LANGSMITH_API_KEY"]
-if "LANGCHAIN_API_KEY" in os.environ:
-    del os.environ["LANGCHAIN_API_KEY"]
+# This must be set before importing any modules that use Langfuse
+# Setting these env vars prevents Langfuse from initializing background threads for unit tests
+os.environ["LANGFUSE_ENABLED"] = "false"
+# Also unset API keys to prevent any initialization attempts in unit tests
+if "LANGFUSE_PUBLIC_KEY" in os.environ:
+    del os.environ["LANGFUSE_PUBLIC_KEY"]
+if "LANGFUSE_SECRET_KEY" in os.environ:
+    del os.environ["LANGFUSE_SECRET_KEY"]
 
 import pytest
 import pytest_asyncio
@@ -50,11 +46,11 @@ from app.shared.services.messaging.broadcaster import broadcaster
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
 # to avoid DATABASE_URL validation errors in CI environments without database config
 
-# Suppress LangSmith background thread logging errors
+# Suppress Langfuse background thread logging errors
 # These loggers emit DEBUG messages during teardown that fail when stdout is closed
 for _logger_name in [
-    "langsmith._internal._background_thread",
-    "langsmith.client",
+    "langfuse",
+    "langfuse.task_manager",
     "urllib3.connectionpool",
 ]:
     logging.getLogger(_logger_name).setLevel(logging.WARNING)

@@ -342,14 +342,14 @@ LANGGRAPH_MULTIAGENT_TEMPLATES: list[TopicTemplate] = [
             "Trace multi-agent execution in LangGraph",
         ],
         "expected_topics": [
-            "LangSmith integration",
+            "Langfuse integration",
             "Tracing and logging",
             "Performance metrics",
             "Debugging tools",
         ],
         "keywords": [
             "observability",
-            "LangSmith",
+            "Langfuse",
             "tracing",
             "debugging",
             "monitoring",
