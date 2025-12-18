@@ -2033,7 +2033,7 @@
         {
           "id": "llm-agents-guide/intro",
           "title": "LLM Agents Overview",
-          "content": "LLM-powered agents are systems that use language models as reasoning engines to autonomously accomplish complex tasks. Unlike chatbots that respond to prompts, agents perceive their environment, make plans, execute actions using tools, and iterate until reaching goals. Key components include the LLM brain, memory systems, planning modules, and tool integration. Agents excel at tasks requiring multi-step reasoning, external knowledge, and adaptation to dynamic environments.",
+          "content": "LLM-powered agents (also known as AI agents or autonomous agents) are systems that use language models as reasoning engines to autonomously accomplish complex tasks through tool use. Unlike chatbots that respond to prompts, these AI agents perceive their environment, make plans, execute actions using tools, and iterate until reaching goals. Key components include the LLM brain, memory systems, planning modules, and tool integration for tool use capabilities. Agents excel at tasks requiring multi-step reasoning, external knowledge, and adaptation to dynamic environments.",
           "granularity": "coarse"
         },
         {
