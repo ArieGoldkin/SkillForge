@@ -5,7 +5,7 @@
 import { useMemo } from 'react'
 
 import { isProgressEvent, isCompleteEvent, isErrorEvent } from '@app-types/sse'
-import type { SSEEvent, SSEProgressEvent, AgentStageName } from '@app-types/sse'
+import type { SSEEvent, SSEProgressEvent, StageName } from '@app-types/sse'
 
 import type { AgentActivity } from '../components/activity/AgentActivityFeed'
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
@@ -73,7 +73,7 @@ interface ProcessedEvents {
   errorMessage?: string
   artifactId?: string
   expectedTotalStages?: number
-  stageStatuses: Map<AgentStageName, StageStatusEntry>
+  stageStatuses: Map<StageName, StageStatusEntry>
   skippedAgentsInfo?: { agents: string[]; selectedAgents?: string[] }
   analysisMetadata?: {
     title?: string
@@ -95,7 +95,7 @@ interface ProcessedEvents {
 /* eslint-disable max-lines-per-function, complexity -- Function processes multiple event types (progress, complete, error) with different extraction logic for metadata, skip reasons, success metrics, and error details */
 function processEvent(
   event: SSEEvent,
-  stageStatuses: Map<AgentStageName, StageStatusEntry>,
+  stageStatuses: Map<StageName, StageStatusEntry>,
   state: { isComplete: boolean; artifactId?: string; expectedTotalStages?: number }
 ): void {
   if (isProgressEvent(event) || isCompleteEvent(event)) {
@@ -182,7 +182,7 @@ function processEvent(
 
 /* eslint-disable max-lines-per-function, complexity -- Function processes all SSE events, extracts metadata, skip reasons, success metrics, and builds stage status map with complex conditional logic */
 function processEvents(events: SSEEvent[]): ProcessedEvents {
-  const stageStatuses = new Map<AgentStageName, StageStatusEntry>()
+  const stageStatuses = new Map<StageName, StageStatusEntry>()
   const state = {
     isComplete: false,
     artifactId: undefined as string | undefined,
@@ -312,7 +312,7 @@ function buildSteps(
   // Build reverse map: stage name -> agent type (for skip reasons lookup)
   // Use AGENT_TO_STAGE_MAP in reverse
   // Note: implementation_planning stage is used by BOTH implementation_planner AND integration_feasibility agents
-  const STAGE_TO_AGENT_MAP: Record<AgentStageName, string> = {
+  const STAGE_TO_AGENT_MAP: Record<StageName, string> = {
     tech_comparison: 'tech_comparator',
     security_audit: 'security_auditor',
     implementation_planning: 'implementation_planner', // Also used by integration_feasibility agent
@@ -335,8 +335,8 @@ function buildSteps(
   return Object.entries(STAGE_CONFIG)
     .sort(([, a], [, b]) => a.order - b.order)
     .map(([stageName, config]) => {
-      const stageData = stageStatuses.get(stageName as AgentStageName)
-      const agentStageName = stageName as AgentStageName
+      const stageData = stageStatuses.get(stageName as StageName)
+      const agentStageName = stageName as StageName
       const agentType = STAGE_TO_AGENT_MAP[agentStageName]
 
       // Get skip reason if stage is skipped
@@ -429,7 +429,7 @@ function calculateOverallProgress(
   // PHASE 1: Fix pending stage detection
   // True pending: stages in STAGE_CONFIG but not in stageStatuses
   // These are stages that haven't started yet (not skipped, not running, not complete, not failed)
-  const allStageNames = Object.keys(STAGE_CONFIG) as AgentStageName[]
+  const allStageNames = Object.keys(STAGE_CONFIG) as StageName[]
   const truePendingStages = allStageNames.filter((stage) => !stageStatuses.has(stage))
   const truePendingCount = truePendingStages.length
 
@@ -440,7 +440,7 @@ function calculateOverallProgress(
 
   if (skippedAgentsInfo?.selectedAgents) {
     // We have supervisor info - only count expected stages
-    const expectedStages = new Set<AgentStageName>()
+    const expectedStages = new Set<StageName>()
 
     // Always include fixed stages (extraction, embedding, supervisor_routing, aggregation, artifact_generation)
     expectedStages.add('extraction')
@@ -525,7 +525,7 @@ function calculateOverallProgress(
     // Some stages completed, show the last completed stage's UI stage
     const lastCompleted = steps.filter((s) => s.status === 'completed').pop()
     if (lastCompleted) {
-      currentUIStage = STAGE_CONFIG[lastCompleted.id as AgentStageName]?.uiStage || 'analyzing'
+      currentUIStage = STAGE_CONFIG[lastCompleted.id as StageName]?.uiStage || 'analyzing'
     }
   }
 

@@ -1,4 +1,4 @@
-import type { AgentStageName, SSEEvent } from '@app-types/sse'
+import type { StageName, SSEEvent } from '@app-types/sse'
 import { isCompleteEvent, isErrorEvent, isProgressEvent } from '@app-types/sse'
 
 import { createInitialStages, type StageState } from './constants'
@@ -7,11 +7,11 @@ import { normalizeSSEEvent } from './sseNormalizer'
 /** Handle progress event updates */
 function handleProgressEvent(
   event: SSEEvent,
-  stages: AgentStageName[],
+  stages: StageName[],
   stageStates: StageState[]
 ): void {
   if (!isProgressEvent(event)) return
-  if (!stages.includes(event.stage as AgentStageName)) return
+  if (!stages.includes(event.stage as StageName)) return
 
   const stageIndex = stageStates.findIndex((s) => s.name === event.stage)
   if (stageIndex === -1) return
@@ -32,7 +32,7 @@ function handleErrorEvent(
 ): void {
   if (!isErrorEvent(event)) return
 
-  const stageName = event.stage as AgentStageName
+  const stageName = event.stage as StageName
   const stageIndex = stageStates.findIndex((s) => s.name === stageName)
   if (stageIndex !== -1) {
     stageStates[stageIndex] = {
@@ -51,7 +51,7 @@ function handleErrorEvent(
  * Processes raw events to compute current state for each stage
  */
 export function deriveStageStates(
-  stages: AgentStageName[],
+  stages: StageName[],
   events: unknown[],
   onComplete?: (artifactId: string) => void,
   onError?: (error: string) => void

@@ -2,7 +2,7 @@
  * Stage helper functions - Transform stage data for UI display
  */
 /* eslint-disable max-lines -- File contains multiple helper functions for stage descriptions with rich detail extraction */
-import type { AgentStageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@app-types/sse'
 
 import type { AnalysisStepStatus } from '../components/steps/AnalysisStepList'
 
@@ -31,7 +31,7 @@ export function mapStageStatus(status: StageStatus): AnalysisStepStatus {
  */
 /* eslint-disable max-lines-per-function, complexity -- Function handles multiple status types (complete, running, failed, skipped) with rich details (success_metrics, findings_summary, insights_count, error details, skip_reasons) which requires multiple conditional branches */
 export function getStageDescription(
-  stage: AgentStageName,
+  stage: StageName,
   status: StageStatus,
   details?: Record<string, unknown>
 ): string {
@@ -123,7 +123,7 @@ export function getStageDescription(
 /**
  * Generate agent name from stage
  */
-export function getAgentName(stage: AgentStageName, details?: Record<string, unknown>): string {
+export function getAgentName(stage: StageName, details?: Record<string, unknown>): string {
   if (details?.agent && typeof details.agent === 'string') {
     // Format agent name: snake_case -> Title Case
     return details.agent
@@ -133,7 +133,7 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
   }
 
   // Default agent names based on stage
-  const agentNames: Record<AgentStageName, string> = {
+  const agentNames: Record<StageName, string> = {
     // Core workflow stages
     extraction: 'Content Extractor',
     embedding: 'Embedding Generator',
@@ -159,7 +159,7 @@ export function getAgentName(stage: AgentStageName, details?: Record<string, unk
   return agentNames[stage] || 'Agent'
 }
 
-const RUNNING_ACTIONS: Record<AgentStageName, string> = {
+const RUNNING_ACTIONS: Record<StageName, string> = {
   // Core workflow stages
   extraction: 'Extracting content from URL...',
   embedding: 'Generating embeddings...',
@@ -183,7 +183,7 @@ const RUNNING_ACTIONS: Record<AgentStageName, string> = {
 }
 
 /* eslint-disable complexity -- Function handles multiple stage types with different detail extraction logic */
-function getCompleteAction(stage: AgentStageName, details?: Record<string, unknown>): string {
+function getCompleteAction(stage: StageName, details?: Record<string, unknown>): string {
   if (stage === 'extraction' && details?.word_count) {
     return `Extracted ${details.word_count} words from content`
   }
@@ -206,7 +206,7 @@ function getCompleteAction(stage: AgentStageName, details?: Record<string, unkno
 /** Generate action description from event */
 /* eslint-disable complexity -- Function handles multiple status types with different detail extraction logic for each */
 export function getActionDescription(
-  stage: AgentStageName,
+  stage: StageName,
   status: StageStatus,
   details?: Record<string, unknown>
 ): string {

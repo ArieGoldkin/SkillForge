@@ -3,14 +3,14 @@
  * Shared stage configuration and helper functions
  */
 
-import type { AgentStageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@app-types/sse'
 
 /**
  * All available pipeline stages
  * Note: Agents are dynamically selected by supervisor (0-8 agents)
  * Total stages = 5 fixed + N agents (where 0 ≤ N ≤ 8)
  */
-export const ALL_STAGES: AgentStageName[] = [
+export const ALL_STAGES: StageName[] = [
   // Core workflow stages (always present)
   'extraction',
   'embedding',
@@ -37,12 +37,12 @@ export const ALL_STAGES: AgentStageName[] = [
 /**
  * Currently working stages (for testing with real backend)
  */
-export const WORKING_STAGES: AgentStageName[] = ['extraction', 'embedding', 'supervisor_routing']
+export const WORKING_STAGES: StageName[] = ['extraction', 'embedding', 'supervisor_routing']
 
 /**
  * Stage configuration with user-friendly labels
  */
-export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
+export const STAGE_CONFIG: Record<StageName, { label: string }> = {
   // Core workflow stages
   extraction: { label: 'Content Extraction' },
   embedding: { label: 'Embedding Generation' },
@@ -69,7 +69,7 @@ export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
  * Internal state for each stage
  */
 export interface StageState {
-  name: AgentStageName
+  name: StageName
   label: string
   status: StageStatus
   agent?: string
@@ -80,7 +80,7 @@ export interface StageState {
 /**
  * Create initial stage states from stage list
  */
-export function createInitialStages(stages: AgentStageName[]): StageState[] {
+export function createInitialStages(stages: StageName[]): StageState[] {
   return stages.map((name) => ({
     name,
     label: STAGE_CONFIG[name].label,

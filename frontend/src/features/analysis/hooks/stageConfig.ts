@@ -2,7 +2,7 @@
  * Stage configuration - Maps backend stages to UI representation
  */
 
-import type { AgentStageName, WorkflowStageName } from '@app-types/sse'
+import type { AgentStageName, StageName, WorkflowStageName } from '@app-types/sse'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 
@@ -19,7 +19,7 @@ export interface StageConfig {
  * Only includes stages that represent actual agent work
  * Note: implementation_planning is used by BOTH implementation_planner AND integration_feasibility agents
  */
-export const STAGE_CONFIG: Record<AgentStageName, StageConfig> = {
+export const STAGE_CONFIG: Record<StageName, StageConfig> = {
   // Core workflow stages (always present)
   extraction: { title: 'Content Extraction', order: 1, uiStage: 'extracting' },
   embedding: { title: 'Embedding Generation', order: 2, uiStage: 'processing' },
@@ -176,13 +176,13 @@ export function getStageNameFromAgentType(agentType: string): AgentStageName | n
  * Bug #165 fix: Shows skipped state instead of pending for non-selected agents
  */
 export function markSkippedAgents(
-  stageStatuses: Map<AgentStageName, StageStatusEntry>,
+  stageStatuses: Map<StageName, StageStatusEntry>,
   skippedAgentsInfo?: { agents: string[]; selectedAgents?: string[] }
 ): void {
   const supervisorStatus = stageStatuses.get('supervisor_routing')
   if (supervisorStatus?.status !== 'complete') return
 
-  const selectedAgentStages = new Set<AgentStageName>()
+  const selectedAgentStages = new Set<StageName>()
   if (skippedAgentsInfo?.selectedAgents) {
     for (const agentType of skippedAgentsInfo.selectedAgents) {
       const stageName = getStageNameFromAgentType(agentType)
