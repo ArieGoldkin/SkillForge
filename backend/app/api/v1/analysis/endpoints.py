@@ -123,7 +123,7 @@ async def create_analysis(
             error=str(e),
         )
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Invalid URL format: {e!s}",
         ) from e
 
@@ -138,7 +138,7 @@ async def create_analysis(
                 error=str(e),
             )
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Invalid analysis_id format: {e!s}",
             ) from e
     else:
