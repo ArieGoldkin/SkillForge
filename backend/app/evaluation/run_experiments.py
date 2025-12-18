@@ -427,7 +427,7 @@ Examples:
         help="Run locally without Langfuse dataset sync (default: True)",
     )
     parser.add_argument(
-        "--langsmith",
+        "--langfuse",
         action="store_true",
         help="Use Langfuse for dataset sync and evaluation (requires write permissions)",
     )
@@ -476,7 +476,7 @@ Examples:
         sys.exit(0 if passed else 1)
 
     # Determine local mode
-    local_mode = not args.langsmith
+    local_mode = not args.langfuse
 
     # Run experiments
     if args.all:

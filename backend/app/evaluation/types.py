@@ -1,12 +1,10 @@
 """Type definitions for evaluation framework.
 
-This module provides type aliases for evaluation data structures,
-replacing Langfuse-specific types with generic equivalents for
-Langfuse compatibility.
+This module provides type aliases for evaluation data structures
+used by the Langfuse-based evaluation system.
 
-The types are designed to be compatible with both:
-- Langfuse's evaluate() method (if langsmith is installed)
-- Langfuse's evaluation API
+The types are designed to be compatible with Langfuse's evaluation API
+and custom evaluators.
 """
 
 from dataclasses import dataclass, field
@@ -19,7 +17,7 @@ from uuid import UUID, uuid4
 class EvalExample:
     """Evaluation example containing input/output pairs.
 
-    This replaces langsmith.schemas.Example for Langfuse compatibility.
+    Used by Langfuse evaluation API and custom evaluators.
 
     Attributes:
         id: Unique identifier for the example
@@ -39,7 +37,7 @@ class EvalExample:
 class EvalRun:
     """Evaluation run containing execution results.
 
-    This replaces langsmith.schemas.Run for Langfuse compatibility.
+    Used by Langfuse evaluation API and custom evaluators.
 
     Attributes:
         id: Unique identifier for the run
