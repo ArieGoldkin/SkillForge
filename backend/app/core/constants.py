@@ -67,7 +67,9 @@ SEARCH_QUERY_MAX_LENGTH = 1000  # Maximum search query length in characters
 
 # Hybrid Search Tuning (Issue #299-304 Quality Initiative)
 HYBRID_FETCH_MULTIPLIER = 3  # Fetch 3x candidates for RRF fusion (was 2x)
-SECTION_TITLE_BOOST_FACTOR = 1.5  # Boost score when query terms match section title
+SECTION_TITLE_BOOST_FACTOR = (
+    2.0  # Boost score when query terms match section title (increased from 1.5)
+)
 DOCUMENT_PATH_BOOST_FACTOR = 1.15  # Boost score when query matches document path
 TECHNICAL_KEYWORD_BOOST = 1.2  # Extra keyword weight for technical queries
 

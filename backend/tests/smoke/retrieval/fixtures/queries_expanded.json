@@ -2299,7 +2299,7 @@
       "category": "specific",
       "difficulty": "easy",
       "expected_chunks": [
-        "terraform-infrastructure-as-code/terraform-workflow-and-state-management"
+        "terraform-infrastructure-as-code/terraform-core-concepts-and-workflow"
       ],
       "min_score": 0.6,
       "max_score": null,

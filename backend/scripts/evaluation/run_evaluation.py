@@ -151,7 +151,8 @@ async def run_evaluation(
     }
 
     # Determine fixtures directory and queries file
-    fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
+    # __file__ is scripts/evaluation/run_evaluation.py, so .parent.parent.parent is backend/
+    fixtures_dir = Path(__file__).parent.parent.parent / "tests/smoke/retrieval/fixtures"
     queries_file = "queries_expanded.json" if expanded else "queries.json"
     queries_path = fixtures_dir / queries_file
 

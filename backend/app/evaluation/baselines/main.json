@@ -1,30 +1,30 @@
 {
   "overall_status": "fail",
   "total_examples": 203,
-  "total_passed": 185,
-  "execution_time_seconds": 86.70792388916016,
-  "timestamp": "2025-12-18T13:31:07Z",
+  "total_passed": 186,
+  "execution_time_seconds": 92.62079787254333,
+  "timestamp": "2025-12-18T13:42:03Z",
   "results": {
     "trivial": {
       "difficulty": "trivial",
       "recall_at_5": 0.9583333333333334,
-      "mrr": 0.8368055555555555,
-      "ndcg_at_5": 0.8676444091161569,
+      "mrr": 0.84375,
+      "ndcg_at_5": 0.8730998155149677,
       "examples_evaluated": 24,
       "examples_passed": 23,
       "failed_example_ids": [
         "q-llm-agents-intro"
       ],
-      "execution_time_seconds": 11.033047914505005,
+      "execution_time_seconds": 11.886932849884033,
       "status": "fail"
     },
     "easy": {
       "difficulty": "easy",
-      "recall_at_5": 0.8767123287671232,
-      "mrr": 0.747716894977169,
-      "ndcg_at_5": 0.775360646711435,
+      "recall_at_5": 0.8904109589041096,
+      "mrr": 0.7625570776255708,
+      "ndcg_at_5": 0.7900089130391967,
       "examples_evaluated": 73,
-      "examples_passed": 65,
+      "examples_passed": 66,
       "failed_example_ids": [
         "q-tot-applications",
         "q-langgraph-supervisor",
@@ -32,11 +32,10 @@
         "q-mlops-best-practices",
         "q-uber-matching",
         "q-uber-surge",
-        "q-perplexity-retrieval",
-        "q-terraform-iac"
+        "q-perplexity-retrieval"
       ],
-      "execution_time_seconds": 30.331501007080078,
-      "status": "fail"
+      "execution_time_seconds": 37.76805400848389,
+      "status": "warn"
     },
     "medium": {
       "difficulty": "medium",
@@ -54,7 +53,7 @@
         "q-sem-paraphrase-retrieval",
         "q-sem-concept-matching"
       ],
-      "execution_time_seconds": 32.222097873687744,
+      "execution_time_seconds": 31.057317972183228,
       "status": "pass"
     },
     "hard": {
@@ -67,7 +66,7 @@
       "failed_example_ids": [
         "q-cross-agent-memory-rag"
       ],
-      "execution_time_seconds": 7.3523499965667725,
+      "execution_time_seconds": 6.9233269691467285,
       "status": "warn"
     },
     "adversarial": {
@@ -80,7 +79,7 @@
       "failed_example_ids": [
         "q-edge-very-long"
       ],
-      "execution_time_seconds": 5.768632888793945,
+      "execution_time_seconds": 4.984888792037964,
       "status": "fail"
     }
   }
