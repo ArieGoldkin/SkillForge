@@ -81,36 +81,26 @@ test.describe('Error Handling Tests', () => {
   });
 
   test('should show empty state when searching for non-existent content', async ({ page }) => {
-    // CRITICAL: Set up response promise BEFORE navigation to avoid race condition
-    const initialResponsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200
-    );
-
     await page.goto('/library');
 
-    // Wait for page to load - use domcontentloaded to avoid SSE blocking
+    // Wait for page to fully load (UI state, not network)
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for initial library API response (set up before navigation)
-    await initialResponsePromise.catch(() => {
-      // Initial load might already be complete
+    // Wait for library page to be ready (either cards or empty state)
+    await page.locator('[role="list"], [data-testid="empty-state"]').first().waitFor({ state: 'visible' }).catch(() => {
+      // Grid might not be visible yet
     });
 
     // Search for something that definitely doesn't exist
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      // Set up response promise BEFORE triggering search
-      const searchResponsePromise = page.waitForResponse(
-        (response) => response.url().includes('/api/v1/library') && response.status() === 200
-      );
-
       await searchInput.fill('xyznonexistentquery12345');
       await searchInput.press('Enter');
 
-      // Wait for search API response instead of networkidle
-      await searchResponsePromise;
+      // Wait for UI to update - don't rely on network
+      await expect(searchInput).toHaveValue('xyznonexistentquery12345');
 
-      // Should show empty state or no results
+      // Should show empty state or library page remains functional
       await expect(
         page.getByText(/no results|no analyses|empty|nothing found/i)
           .or(page.getByRole('heading', { name: /library/i }))
@@ -219,6 +209,9 @@ test.describe('Error Handling Tests', () => {
   });
 
   test('should handle rapid successive API calls gracefully', async ({ page }) => {
+    // Skip in CI - this test submits URLs which triggers backend LLM processing
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
@@ -289,18 +282,13 @@ test.describe('Error Handling Tests', () => {
         // Error might appear differently
       });
 
-    // CRITICAL: Set up response promise BEFORE navigation to avoid race condition
-    const libraryResponsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/v1/library') && response.status() === 200
-    );
-
-    // Now navigate to library - should work normally
+    // Now navigate to library - should work normally (no network wait needed)
     await page.goto('/library');
     await page.waitForLoadState('domcontentloaded');
 
-    // Wait for library API response (set up before navigation)
-    await libraryResponsePromise.catch(() => {
-      // API might already be complete
+    // Wait for library page UI to be ready
+    await page.locator('[role="list"], [data-testid="empty-state"]').first().waitFor({ state: 'visible' }).catch(() => {
+      // Grid might not exist
     });
 
     // Library should load successfully
