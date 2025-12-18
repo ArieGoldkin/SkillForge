@@ -272,6 +272,25 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             scores=quality_scores,
         )
 
+        # Submit quality scores to Langfuse for analytics
+        from app.core.langfuse_config import submit_langfuse_score
+
+        for aspect, score_data in quality_scores.items():
+            submit_langfuse_score(
+                trace_id=trace_id,
+                name=f"quality_{aspect}",
+                value=score_data["score"],
+                comment=score_data.get("comment"),
+            )
+
+        # Submit overall average score
+        submit_langfuse_score(
+            trace_id=trace_id,
+            name="quality_avg",
+            value=avg_score,
+            comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
+        )
+
         # Return quality scores and gate status
         return {
             "quality_scores": quality_scores,

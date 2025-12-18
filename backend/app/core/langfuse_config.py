@@ -144,3 +144,132 @@ def shutdown_langfuse() -> None:
             )
         finally:
             _langfuse_client = None
+
+
+def submit_langfuse_score(
+    *,
+    trace_id: str | None = None,
+    name: str,
+    value: float,
+    comment: str | None = None,
+) -> None:
+    """Submit a score to Langfuse for quality tracking.
+
+    Scores enable quality analytics in Langfuse UI including:
+    - Score distributions over time
+    - Filtering traces by score
+    - Correlation analysis between scores
+
+    Args:
+        trace_id: Trace ID to attach score to (uses current if not provided)
+        name: Score name (e.g., "relevance", "depth", "coherence")
+        value: Score value (typically 0.0 to 1.0)
+        comment: Optional comment explaining the score
+
+    Example:
+        >>> from app.core.langfuse_config import submit_langfuse_score
+        >>> submit_langfuse_score(name="relevance", value=0.85, comment="High relevance")
+
+    """
+    langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
+    if not langfuse_enabled:
+        return
+
+    client = get_langfuse_client()
+    if not client:
+        return
+
+    try:
+        # If no trace_id provided, try to get current trace
+        if trace_id is None:
+            trace_id = client.get_current_trace_id()
+
+        if trace_id is None:
+            logger.debug(
+                "langfuse_score_skipped_no_trace",
+                message="No trace context available for score submission",
+                score_name=name,
+            )
+            return
+
+        client.score(
+            trace_id=str(trace_id),
+            name=name,
+            value=value,
+            comment=comment,
+        )
+
+        logger.debug(
+            "langfuse_score_submitted",
+            trace_id=str(trace_id),
+            score_name=name,
+            score_value=value,
+        )
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        logger.warning(
+            "langfuse_score_failed",
+            error=str(e),
+            score_name=name,
+            exc_info=True,
+        )
+
+
+def get_langfuse_callback_handler() -> Any:
+    """Get Langfuse CallbackHandler for LangChain integration.
+
+    This callback handler captures LLM calls with token counts and costs,
+    enabling full observability in Langfuse including:
+    - Input/output tokens
+    - Cost tracking per model
+    - LLM generation spans with metadata
+
+    Note: Langfuse v3 CallbackHandler auto-configures from environment variables:
+    - LANGFUSE_PUBLIC_KEY
+    - LANGFUSE_SECRET_KEY
+    - LANGFUSE_HOST
+
+    Returns:
+        CallbackHandler instance, or None if Langfuse is disabled
+
+    Example:
+        >>> from app.core.langfuse_config import get_langfuse_callback_handler
+        >>> callbacks = [get_langfuse_callback_handler()] if get_langfuse_callback_handler() else []
+        >>> result = await chain.ainvoke(input, config={"callbacks": callbacks})
+
+    """
+    # Check if Langfuse is enabled
+    langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
+    if not langfuse_enabled:
+        return None
+
+    # Check for required credentials (CallbackHandler reads from env vars)
+    public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+    secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+
+    if not public_key or not secret_key:
+        return None
+
+    try:
+        from langfuse.langchain import CallbackHandler
+
+        # Langfuse v3 CallbackHandler auto-configures from environment variables
+        # No need to pass credentials explicitly
+        handler = CallbackHandler()
+
+        logger.debug(
+            "langfuse_callback_created",
+            message="Langfuse CallbackHandler created for LangChain integration",
+        )
+
+        return handler
+
+    except ImportError:
+        logger.warning(
+            "langfuse_callback_import_failed",
+            message="langfuse.langchain not available - install langfuse[langchain]",
+        )
+        return None
+    except Exception:
+        logger.exception("langfuse_callback_failed")
+        return None

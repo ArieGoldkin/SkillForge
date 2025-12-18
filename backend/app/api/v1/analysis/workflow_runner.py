@@ -315,7 +315,9 @@ async def run_workflow_task(
             "analysis_id": str(analysis_id),
             "url": url,
             "workflow_version": "1.0",
-        }
+        },
+        tags=["analysis", "workflow"],
+        session_id=f"analysis-{analysis_id}",  # Group all traces for this analysis
     )
 
     try:
