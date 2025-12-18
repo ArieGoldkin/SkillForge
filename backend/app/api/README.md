@@ -33,8 +33,9 @@ api/
 
 ### Artifacts
 
-- `GET /api/v1/analyze/{analysis_id}/artifact` - Get artifact metadata
-- `GET /api/v1/artifacts/{artifact_id}/download` - Download markdown
+- `GET /api/v1/analyze/{analysis_id}/artifact` - Get artifact metadata by analysis ID
+- `GET /api/v1/artifacts/{artifact_id}` - Get artifact metadata by artifact ID
+- `GET /api/v1/artifacts/{artifact_id}/download` - Download markdown file
 
 ### Library
 

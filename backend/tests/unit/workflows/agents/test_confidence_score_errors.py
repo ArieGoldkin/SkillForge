@@ -145,7 +145,7 @@ async def test_persistence_handles_null_gracefully():
     Even though schemas now require confidence_score, the database column accepts NULL
     for backward compatibility with old records.
     """
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     # Simulate old record with NULL confidence_score
     finding = AgentFinding(

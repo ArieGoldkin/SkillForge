@@ -167,8 +167,8 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR09
         # Save assistant message to database
         from uuid import UUID
 
-        from app.db.repositories.tutor_message_repository import TutorMessageRepository
         from app.db.session import get_session_factory
+        from app.domains.tutor.repositories.message_repository import TutorMessageRepository
 
         session_factory = get_session_factory()
         async with session_factory() as db_session:

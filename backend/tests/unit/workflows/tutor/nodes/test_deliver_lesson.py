@@ -58,7 +58,7 @@ async def test_deliver_lesson_generates_content(sample_tutor_state_with_syllabus
         patch("app.domains.tutor.workflows.nodes.deliver_lesson.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.db.repositories.tutor_message_repository.TutorMessageRepository"
+            "app.domains.tutor.repositories.message_repository.TutorMessageRepository"
         ) as mock_repo_class,
         patch("app.domains.tutor.workflows.nodes.deliver_lesson._emit_tutor_event", new_callable=AsyncMock),
     ):

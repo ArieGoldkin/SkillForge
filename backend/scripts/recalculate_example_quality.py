@@ -38,7 +38,7 @@ from sqlalchemy import select, update
 
 from app.core.logging import get_logger
 from app.db.session import get_session_factory
-from app.models.agent_example import AgentExample
+from app.db.models.agent_example import AgentExample
 from app.shared.services.g_eval import g_eval_score
 from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 

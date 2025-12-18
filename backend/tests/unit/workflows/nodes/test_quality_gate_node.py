@@ -467,14 +467,16 @@ def test_format_insights_for_evaluation():
     assert "Recommendations:" in result
     assert "Rec 1" in result
 
+    # Issue #299-304: Updated from 2000 to 8000 to preserve analytical depth
     # Verify length limit
-    assert len(result) <= 2000
+    assert len(result) <= 8000
 
 
 def test_format_insights_for_evaluation_empty():
     """Test _format_insights_for_evaluation handles empty insights."""
     result = _format_insights_for_evaluation({})
-    assert len(result) <= 2000
+    # Issue #299-304: Updated from 2000 to 8000 to preserve analytical depth
+    assert len(result) <= 8000
     assert result == "{}"
 
 

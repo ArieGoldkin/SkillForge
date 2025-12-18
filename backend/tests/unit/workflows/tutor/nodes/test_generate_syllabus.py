@@ -71,7 +71,7 @@ async def test_generate_syllabus_creates_syllabus(sample_tutor_state, mock_llm_r
         ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.db.repositories.tutor_session_repository.TutorSessionRepository"
+            "app.domains.tutor.repositories.session_repository.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
             "app.domains.tutor.services.analysis_service.get_analysis_summary", new_callable=AsyncMock
@@ -112,7 +112,7 @@ async def test_generate_syllabus_handles_parse_error(sample_tutor_state):
         ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.db.repositories.tutor_session_repository.TutorSessionRepository"
+            "app.domains.tutor.repositories.session_repository.TutorSessionRepository"
         ) as mock_repo_class,
         patch(
             "app.domains.tutor.services.analysis_service.get_analysis_summary", new_callable=AsyncMock

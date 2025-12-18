@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.repositories.chunk_repository import ChunkRepository
-from app.models.analysis_chunk import AnalysisChunk
 
 
 async def retrieve_coarse_to_fine(

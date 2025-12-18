@@ -16,7 +16,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import select, text
 
-from app.models.agent_example import AgentExample as AgentExampleModel
+from app.db.models.agent_example import AgentExample as AgentExampleModel
 from app.shared.services.agents.few_shot_factory import create_few_shot_agent
 from app.shared.services.embeddings.service import EmbeddingService
 from app.shared.services.examples import SemanticExampleSelector

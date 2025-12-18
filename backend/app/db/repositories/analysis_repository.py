@@ -13,8 +13,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.analysis import Analysis
 from app.db.session import get_db
-from app.models.analysis import Analysis
 
 # Embedding dimensions constant (OpenAI text-embedding-3-small)
 EMBEDDING_DIMENSIONS = 1536

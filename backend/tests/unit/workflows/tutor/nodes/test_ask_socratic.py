@@ -55,7 +55,7 @@ async def test_ask_socratic_generates_question(sample_tutor_state_with_message):
         patch("app.domains.tutor.workflows.nodes.ask_socratic.get_chat_model", return_value=mock_model),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.db.repositories.tutor_message_repository.TutorMessageRepository"
+            "app.domains.tutor.repositories.message_repository.TutorMessageRepository"
         ) as mock_repo_class,
         patch("app.domains.tutor.workflows.nodes.ask_socratic._emit_tutor_event", new_callable=AsyncMock),
     ):

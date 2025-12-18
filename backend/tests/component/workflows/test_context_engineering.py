@@ -16,7 +16,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.agent_memory import MemoryType
+from app.db.models.agent_memory import MemoryType
 from app.domains.analysis.services.context.compaction import CompactionConfig, SessionCompactor
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
 from app.shared.workflows.context_compiler import create_workflow_compiler

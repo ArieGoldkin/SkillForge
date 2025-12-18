@@ -74,6 +74,41 @@ version: 4.0.0
 - **Fix**: Increased `STEP_TIMEOUT` from 90s to 300s (5 minutes)
 - **Location**: `backend/app/core/timeout_config.py`
 
+### Redis Connection Keepalive (Fixed Dec 2024)
+- **Problem**: "Connection closed by server" errors, semantic cache completely broken
+- **Root Cause**: No socket keepalive configured - idle connections >5min dropped by OS/firewall
+- **Fix**: Added connection pooling with keepalive, timeouts, health checks, retry policy
+- **Location**: `backend/app/shared/services/cache/redis_connection.py` (NEW)
+- **Config**: `backend/app/core/config.py` (5 new REDIS_* settings)
+- **Tests**: `backend/tests/unit/shared/services/cache/test_redis_connection.py`
+
+### G-Eval Gemini Response Parsing (Fixed Dec 2024)
+- **Problem**: "Failed to parse judge response: [{'type': 'text', 'text': '10', ...}]"
+- **Root Cause**: Gemini (Dec 2024+) returns dict format, parser expected simple string
+- **Fix**: Added `_extract_text_from_llm_response()` to handle Gemini's dict format
+- **Location**: `backend/app/shared/services/g_eval/scorer.py:129-154`
+- **Tests**: `backend/tests/unit/evaluation/test_quality_evaluator.py::test_parse_gemini_dict_response`
+
+### Quality Truncation Limits (Fixed Dec 2024)
+- **Problem**: Depth scores 5/10 (AWFUL), content truncated before evaluation
+- **Root Cause**: Aggressive truncation (200-2000 chars) destroyed analytical depth
+- **Fix**: Increased limits: scorer 2000→8000, quality 8000→15000, compression 200→500
+- **Location**: Multiple files (scorer.py, quality.py, compress_findings.py, quality_gate_node.py)
+- **Docs**: `docs/QUALITY_INITIATIVE_FIXES.md` for full details
+
+### Artifact API Endpoint (Fixed Dec 2024)
+- **Problem**: GET /api/v1/artifacts/{id} returns 404
+- **Root Cause**: Endpoint never defined, only /download variant existed
+- **Fix**: Added `get_artifact_by_id()` route exposing existing repository method
+- **Location**: `backend/app/api/v1/artifacts.py`
+- **Tests**: `backend/tests/unit/api/v1/test_artifacts.py`
+
+### UI Status Contradiction (Fixed Dec 2024)
+- **Problem**: Green "Complete" badge shown despite failed stages
+- **Root Cause**: Status logic didn't account for partial failures
+- **Fix**: Show "Complete with Errors" (red) when failures exist, added error details display
+- **Location**: `frontend/src/features/analysis/components/steps/AnalysisProgressCard.tsx`
+
 
 ## 📋 Development Standards (MUST FOLLOW)
 

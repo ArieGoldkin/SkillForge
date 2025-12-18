@@ -29,7 +29,7 @@ from app.domains.analysis.workflows.agents.factories import (
     create_tech_comparator_agent_with_few_shot,
     create_trend_validator_agent_with_few_shot,
 )
-from app.models.agent_example import AgentExample
+from app.db.models.agent_example import AgentExample
 
 
 @pytest.fixture

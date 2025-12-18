@@ -15,8 +15,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.logging import get_logger
 from app.core.types import EventData
+from app.db.models.progress import AnalysisProgress
 from app.db.session import AsyncSessionLocal
-from app.models.progress import AnalysisProgress
 
 if TYPE_CHECKING:
     pass

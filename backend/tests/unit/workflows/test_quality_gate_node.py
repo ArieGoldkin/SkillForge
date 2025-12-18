@@ -76,14 +76,17 @@ class TestFormatInsightsForEvaluation:
         assert result == "Just a string"
 
     def test_format_truncates_long_output(self):
-        """Test that output is truncated to 2000 chars."""
+        """Test that output is truncated to 8000 chars.
+
+        Issue #299-304: Increased from 2000 to 8000 to preserve analytical depth.
+        """
         insights = {
-            "executive_summary": "A" * 3000,  # Long summary
+            "executive_summary": "A" * 10000,  # Long summary (exceeds 8000)
         }
 
         result = _format_insights_for_evaluation(insights)
 
-        assert len(result) <= 2000
+        assert len(result) <= 8000
 
 
 class TestShouldRetrySynthesis:

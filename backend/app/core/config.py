@@ -451,6 +451,26 @@ class Settings(BaseSettings):
             "0.08 means ~92% similarity required for cache hit."
         ),
     )
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for establishing Redis connection",
+    )
+    REDIS_SOCKET_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for Redis read/write operations",
+    )
+    REDIS_SOCKET_KEEPALIVE: bool = Field(
+        default=True,
+        description="Enable TCP keepalive for Redis connections",
+    )
+    REDIS_MAX_CONNECTIONS: int = Field(
+        default=20,
+        description="Maximum number of connections in the Redis pool",
+    )
+    REDIS_HEALTH_CHECK_INTERVAL: int = Field(
+        default=30,
+        description="Seconds between Redis connection health checks",
+    )
 
     # Anthropic Prompt Caching Configuration
     ANTHROPIC_PROMPT_CACHE_TTL: str = Field(

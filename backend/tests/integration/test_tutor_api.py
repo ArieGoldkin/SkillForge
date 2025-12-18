@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.db.repositories.tutor_repository import get_tutor_repository
+from app.domains.tutor.repositories import get_tutor_repository
 from app.main import app
 from app.shared.services.messaging.broadcaster import broadcaster
 

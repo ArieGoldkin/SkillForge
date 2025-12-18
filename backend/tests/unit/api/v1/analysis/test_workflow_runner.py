@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.api.v1.workflow_runner import (
+from app.api.v1.analysis.workflow_runner import (
 
     _persist_analysis_data,
     _validate_workflow_result,
@@ -25,9 +25,9 @@ def test_url():
     return "https://example.com/article"
 
 
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
 async def test_run_workflow_task_success(
     mock_logger,
     mock_workflow,
@@ -38,7 +38,7 @@ async def test_run_workflow_task_success(
     """Test successful workflow execution."""
     import uuid
 
-    from app.models.artifact import Artifact
+    from app.db.models.artifact import Artifact
 
     # Mock workflow to complete successfully with data to persist
     mock_workflow.ainvoke = AsyncMock(
@@ -133,9 +133,9 @@ async def test_run_workflow_task_success(
     assert complete_call.kwargs["artifact_id"] == str(artifact_id)
 
 
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
 async def test_run_workflow_task_workflow_error(
     mock_logger,
     mock_workflow,
@@ -174,9 +174,9 @@ async def test_run_workflow_task_workflow_error(
     assert len(error_calls) == 1
 
 
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
 async def test_run_workflow_task_status_update_fails(
     mock_logger,
     mock_workflow,
@@ -187,7 +187,7 @@ async def test_run_workflow_task_status_update_fails(
     """Test workflow execution when status update fails."""
     import uuid
 
-    from app.models.artifact import Artifact
+    from app.db.models.artifact import Artifact
 
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(
@@ -273,9 +273,9 @@ async def test_run_workflow_task_status_update_fails(
     assert len(error_logs) == 1
 
 
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
 async def test_run_workflow_task_analysis_not_found(
     mock_logger,
     mock_workflow,
@@ -312,9 +312,9 @@ async def test_run_workflow_task_analysis_not_found(
     mock_db_session.commit.assert_not_called()
 
 
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
 async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     mock_logger,
     mock_workflow,
@@ -325,7 +325,7 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     """Test workflow emits proper complete event with artifact_id per SSE_SCHEMA.md."""
     import uuid
 
-    from app.models.artifact import Artifact
+    from app.db.models.artifact import Artifact
 
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(
@@ -425,11 +425,11 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
 
 
 @pytest.mark.asyncio
-@patch("app.api.v1.workflow_runner.emit_streaming_event")
-@patch("app.api.v1.workflow_runner.analysis_workflow")
-@patch("app.api.v1.workflow_runner.logger")
-@patch("app.api.v1.workflow_runner._update_analysis_status")
-@patch("app.api.v1.workflow_runner._emit_workflow_error")
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
+@patch("app.api.v1.analysis.workflow_runner._update_analysis_status")
+@patch("app.api.v1.analysis.workflow_runner._emit_workflow_error")
 async def test_run_workflow_task_fails_without_artifact(
     mock_emit_error,
     mock_update_status,
@@ -717,16 +717,16 @@ async def test_handle_generator_exit_during_execution():
 
     Should call _update_analysis_status("failed"), emit error, and re-raise.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = GeneratorExit()
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(GeneratorExit):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
@@ -744,16 +744,16 @@ async def test_handle_generator_exit_during_cleanup():
 
     Should suppress exception, not call status update, and not raise.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = GeneratorExit()
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             # Should not raise exception
             await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
@@ -772,16 +772,16 @@ async def test_handle_converted_generator_exit_during_execution():
     Python's async runtime converts GeneratorExit to RuntimeError in async functions.
     Should treat same as GeneratorExit during execution.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = RuntimeError("coroutine ignored GeneratorExit")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(RuntimeError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
@@ -799,16 +799,16 @@ async def test_handle_converted_generator_exit_during_cleanup():
 
     Should suppress exception, not call status update, and not raise.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = RuntimeError("coroutine ignored GeneratorExit")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             # Should not raise exception
             await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
@@ -826,16 +826,16 @@ async def test_handle_other_runtime_error_during_execution():
 
     Should treat as regular exception (not converted GeneratorExit).
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = RuntimeError("Some other runtime error")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(RuntimeError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
@@ -853,16 +853,16 @@ async def test_handle_value_error_during_execution():
 
     Should call _update_analysis_status("failed"), emit error, and re-raise.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = ValueError("Invalid workflow state")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(ValueError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
@@ -880,16 +880,16 @@ async def test_handle_key_error_during_execution():
 
     Should call _update_analysis_status("failed"), emit error, and re-raise.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = KeyError("missing_field")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(KeyError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)
@@ -907,16 +907,16 @@ async def test_handle_exception_during_cleanup_is_not_suppressed():
 
     workflow_completed=True only suppresses GeneratorExit, not other exceptions.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = ValueError("Error during cleanup")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(ValueError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=True)
@@ -934,16 +934,16 @@ async def test_handle_partial_match_runtime_error():
 
     Only exact match 'coroutine ignored GeneratorExit' should be treated as converted.
     """
-    from app.api.v1.workflow_runner import _handle_workflow_exception
+    from app.api.v1.analysis.workflow_runner import _handle_workflow_exception
 
     analysis_id = uuid.uuid4()
     exc = RuntimeError("GeneratorExit was found")
 
     with patch(
-        "app.api.v1.workflow_runner._update_analysis_status", new_callable=AsyncMock
+        "app.api.v1.analysis.workflow_runner._update_analysis_status", new_callable=AsyncMock
     ) as mock_status:
         with patch(
-            "app.api.v1.workflow_runner._emit_workflow_error", new_callable=AsyncMock
+            "app.api.v1.analysis.workflow_runner._emit_workflow_error", new_callable=AsyncMock
         ) as mock_emit:
             with pytest.raises(RuntimeError):
                 await _handle_workflow_exception(exc, analysis_id, workflow_completed=False)

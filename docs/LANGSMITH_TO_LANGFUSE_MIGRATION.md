@@ -1,6 +1,7 @@
 # 🔄 LangSmith → Langfuse Migration Analysis
-**Date:** December 16, 2025  
+**Date:** December 18, 2025
 **Status:** Assessment & Planning
+**Last Updated:** December 18, 2025 (v2.0 - December 2025 Best Practices)
 
 ---
 
@@ -10,6 +11,7 @@
 ║          🔍 LANGSMITH USAGE AUDIT & LANGFUSE MIGRATION ROADMAP                ║
 ║                                                                              ║
 ║                    SkillForge Codebase Analysis                              ║
+║                    Updated for December 2025                                 ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -25,7 +27,7 @@
 │  │ Complexity Factors:                                                  │  │
 │  │  • 437+ usage points (decorators, get_current_run_tree)             │  │
 │  │  • Custom robust_traceable wrapper                                  │  │
-│  │  • Generator filtering workaround                                    │  │
+│  │  • Generator filtering workaround (can be removed!)                 │  │
 │  │  • Evaluation dataset extraction from traces                         │  │
 │  │  • Metrics service integration                                       │  │
 │  │  • Test suite with 100+ mocked LangSmith calls                      │  │
@@ -34,6 +36,13 @@
 │  Estimated Effort: 3-5 days                                                │
 │  Risk Level: Medium                                                        │
 │  Breaking Changes: Low (API compatible)                                   │
+│                                                                             │
+│  🆕 DECEMBER 2025 UPDATES:                                                  │
+│     • Langfuse v3 uses ClickHouse for OLAP (not just PostgreSQL)          │
+│     • Native MCP server at /api/public/mcp (no build required!)           │
+│     • Dataset Item Versioning (Dec 15, 2025)                              │
+│     • v2 Metrics API with cursor pagination (Dec 16, 2025)                │
+│     • SDK v3 uses @observe decorator and get_client() singleton           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -150,12 +159,60 @@
 
 ---
 
+## 🆕 December 2025 Langfuse Features
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  📅 LANGFUSE CHANGELOG - DECEMBER 2025                                       │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  Dec 16, 2025 │ v2 Metrics and Observations API (Beta)                     │
+│               │ • Cursor-based pagination                                  │
+│               │ • Selective field retrieval                                │
+│               │ • Optimized data architecture                              │
+│                                                                             │
+│  Dec 15, 2025 │ Dataset Item Versioning                                    │
+│               │ • Track changes over time                                  │
+│               │ • Automatic versioning on add/update/delete               │
+│                                                                             │
+│  Dec 12, 2025 │ OpenAI GPT-5.2 Support                                     │
+│               │ • Day-1 cost tracking                                      │
+│               │ • LLM playground support                                   │
+│                                                                             │
+│  Dec 11, 2025 │ Batch Add Observations to Datasets                         │
+│               │ • Select multiple observations                             │
+│               │ • Flexible field mapping                                   │
+│                                                                             │
+│  Dec 2, 2025  │ Pricing Tiers for Model Cost Tracking                      │
+│               │ • Context-dependent pricing support                         │
+│                                                                             │
+│  Nov 20, 2025 │ Native MCP Server (MAJOR UPDATE)                           │
+│               │ • Built into Langfuse at /api/public/mcp                  │
+│               │ • StreamableHttp transport                                 │
+│               │ • No build/install required                                │
+│               │ • Write capabilities (create/update prompts)              │
+│                                                                             │
+│  Nov 14, 2025 │ OpenAI GPT-5.1 Support                                     │
+│               │ • LLM-as-a-judge evaluations                               │
+│               │ • Comprehensive cost tracking                              │
+│                                                                             │
+│  Nov 5, 2025  │ Langfuse for Agents                                        │
+│               │ • Beautiful tool call rendering                            │
+│               │ • Agent Evals for performance analysis                     │
+│               │ • Perfect for SkillForge's 8 specialized agents!          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🔄 Migration Architecture Comparison
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  LANGSMITH (Current)                    LANGFUSE (Target)                  │
+│  LANGSMITH (Current)                    LANGFUSE v3 (Target - Dec 2025)    │
 │  ────────────────────────────────────────────────────────────────────────  │
 │                                                                             │
 │  ┌─────────────────────┐              ┌─────────────────────┐            │
@@ -166,31 +223,347 @@
 │           │                                      │                         │
 │           v                                      v                         │
 │  ┌─────────────────────┐              ┌─────────────────────┐            │
-│  │ get_current_run_   │              │ get_client()        │            │
-│  │ tree()             │    ────>     │ .update_current_    │            │
-│  │                    │              │  trace()            │            │
-│  │                    │              │ .update_current_    │            │
-│  │                    │              │  span()             │            │
+│  │ get_current_run_   │              │ langfuse.update_    │            │
+│  │ tree()             │    ────>     │ current_trace()     │            │
+│  │                    │              │ langfuse.update_    │            │
+│  │                    │              │ current_span()      │            │
 │  └─────────────────────┘              └─────────────────────┘            │
 │           │                                      │                         │
 │           │                                      │                         │
 │           v                                      v                         │
 │  ┌─────────────────────┐              ┌─────────────────────┐            │
-│  │ Client()            │              │ Langfuse()          │            │
-│  │ - hide_inputs       │    ────>     │ - public_key        │            │
-│  │ - hide_outputs      │              │ - secret_key        │            │
-│  │                     │              │ - base_url          │            │
+│  │ Client()            │              │ get_client()        │            │
+│  │ - hide_inputs       │    ────>     │ (singleton)         │            │
+│  │ - hide_outputs      │              │ - auto-configured   │            │
+│  │                     │              │ - no generator hack │            │
 │  └─────────────────────┘              └─────────────────────┘            │
 │           │                                      │                         │
 │           │                                      │                         │
 │           v                                      v                         │
 │  ┌─────────────────────┐              ┌─────────────────────┐            │
-│  │ schemas.Run        │              │ Trace/Span objects  │            │
-│  │ schemas.Example    │    ────>     │ (native Python)     │            │
-│  │                    │              │                     │            │
+│  │ schemas.Run        │              │ Native Python dicts │            │
+│  │ schemas.Example    │    ────>     │ (Trace, Span)       │            │
+│  │ (Pydantic v1)      │              │ (no Pydantic v1)    │            │
+│  └─────────────────────┘              └─────────────────────┘            │
+│                                                                             │
+│  ┌─────────────────────┐              ┌─────────────────────┐            │
+│  │ LangChain Callback │              │ CallbackHandler     │            │
+│  │ via traceable      │    ────>     │ from langfuse.      │            │
+│  │                    │              │ langchain           │            │
 │  └─────────────────────┘              └─────────────────────┘            │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🏠 Self-Hosted Architecture (December 2025 - Langfuse v3)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  🏗️  LANGFUSE v3 SELF-HOSTED ARCHITECTURE                                   │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ⚠️  CRITICAL: Langfuse v3 requires ClickHouse for analytics!              │
+│      PostgreSQL alone is NOT sufficient for production use.                │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                                                                     │  │
+│  │              ┌──────────────────┐                                  │  │
+│  │              │   User Browser   │                                  │  │
+│  │              │   (localhost:3000)│                                  │  │
+│  │              └────────┬─────────┘                                  │  │
+│  │                       │                                            │  │
+│  │                       ▼                                            │  │
+│  │              ┌──────────────────┐                                  │  │
+│  │              │  langfuse-web    │◄─── UI + REST API                │  │
+│  │              │   (Port 3000)    │                                  │  │
+│  │              └────────┬─────────┘                                  │  │
+│  │                       │                                            │  │
+│  │         ┌─────────────┼─────────────┐                              │  │
+│  │         │             │             │                              │  │
+│  │         ▼             ▼             ▼                              │  │
+│  │  ┌────────────┐ ┌────────────┐ ┌────────────┐                     │  │
+│  │  │ PostgreSQL │ │ClickHouse │ │   Redis    │                     │  │
+│  │  │(transact.) │ │  (OLAP)   │ │(queue/cache)│                     │  │
+│  │  └────────────┘ └────────────┘ └────────────┘                     │  │
+│  │         │             │             │                              │  │
+│  │         └─────────────┼─────────────┘                              │  │
+│  │                       │                                            │  │
+│  │                       ▼                                            │  │
+│  │              ┌──────────────────┐                                  │  │
+│  │              │ langfuse-worker  │◄─── Async event processing      │  │
+│  │              │   (Port 3030)    │                                  │  │
+│  │              └────────┬─────────┘                                  │  │
+│  │                       │                                            │  │
+│  │                       ▼                                            │  │
+│  │              ┌──────────────────┐                                  │  │
+│  │              │   MinIO (S3)     │◄─── Blob storage for events     │  │
+│  │              │   (Port 9000)    │     and multi-modal inputs      │  │
+│  │              └──────────────────┘                                  │  │
+│  │                                                                     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  WHY CLICKHOUSE? (December 2025)                                           │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  "The row-based storage model of PostgreSQL becomes increasingly           │
+│  inefficient when dealing with billions of rows of tracing data,          │
+│  leading to slow query times and high resource consumption."              │
+│                                                                             │
+│  Langfuse v3 adoption: 1000+ self-hosted deployments running ClickHouse   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🐳 Docker Compose Configuration (December 2025)
+
+Add the following to your `docker-compose.yml`:
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════
+# LANGFUSE v3 SELF-HOSTED STACK (December 2025)
+# ═══════════════════════════════════════════════════════════════════════════
+# Reference: https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
+#
+# Services:
+#   - langfuse-web: Main web application (UI + APIs) - Port 3000
+#   - langfuse-worker: Async event processing - Port 3030
+#   - langfuse-db: PostgreSQL for transactional data
+#   - clickhouse: ClickHouse for analytics/traces (REQUIRED for v3)
+#   - langfuse-redis: Redis for queue and cache
+#   - minio: S3-compatible blob storage
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # LANGFUSE WEB - Main Application
+  # ─────────────────────────────────────────────────────────────────────────
+  langfuse-web:
+    image: langfuse/langfuse:3
+    container_name: langfuse-web
+    ports:
+      - "3000:3000"
+    environment:
+      # Database connections
+      DATABASE_URL: postgresql://langfuse:langfuse-secret@langfuse-db:5432/langfuse
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-secret  # CHANGEME
+      REDIS_CONNECTION_STRING: redis://:redis-secret@langfuse-redis:6379
+
+      # S3/MinIO for blob storage
+      LANGFUSE_S3_EVENT_UPLOAD_ENABLED: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-access-key  # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-secret-key  # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+
+      # Security (CHANGEME - use long random strings!)
+      NEXTAUTH_SECRET: your-nextauth-secret-min-32-chars  # CHANGEME
+      SALT: your-salt-min-32-chars  # CHANGEME
+      ENCRYPTION_KEY: your-encryption-key-exactly-64-hex-chars  # CHANGEME
+      NEXTAUTH_URL: http://localhost:3000
+
+      # Optional: Initial setup (remove after first run)
+      # LANGFUSE_INIT_ORG_ID: my-org
+      # LANGFUSE_INIT_ORG_NAME: My Organization
+      # LANGFUSE_INIT_PROJECT_ID: skillforge
+      # LANGFUSE_INIT_PROJECT_NAME: SkillForge
+      # LANGFUSE_INIT_USER_EMAIL: admin@example.com
+      # LANGFUSE_INIT_USER_PASSWORD: changeme123  # CHANGEME
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # LANGFUSE WORKER - Async Event Processing
+  # ─────────────────────────────────────────────────────────────────────────
+  langfuse-worker:
+    image: langfuse/langfuse:3
+    container_name: langfuse-worker
+    command: ["node", "packages/worker/dist/index.js"]
+    ports:
+      - "3030:3030"
+    environment:
+      # Same database connections as langfuse-web
+      DATABASE_URL: postgresql://langfuse:langfuse-secret@langfuse-db:5432/langfuse
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-secret  # CHANGEME
+      REDIS_CONNECTION_STRING: redis://:redis-secret@langfuse-redis:6379
+
+      # S3/MinIO
+      LANGFUSE_S3_EVENT_UPLOAD_ENABLED: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: us-east-1
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-access-key  # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-secret-key  # CHANGEME
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+
+      # Security
+      NEXTAUTH_SECRET: your-nextauth-secret-min-32-chars  # CHANGEME
+      SALT: your-salt-min-32-chars  # CHANGEME
+      ENCRYPTION_KEY: your-encryption-key-exactly-64-hex-chars  # CHANGEME
+    depends_on:
+      langfuse-web:
+        condition: service_healthy
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # LANGFUSE DATABASE - PostgreSQL (Transactional Data)
+  # ─────────────────────────────────────────────────────────────────────────
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: langfuse-db
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse-secret  # CHANGEME
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # CLICKHOUSE - Analytics & Trace Storage (REQUIRED for v3!)
+  # ─────────────────────────────────────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: langfuse-clickhouse
+    environment:
+      CLICKHOUSE_DB: langfuse
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-secret  # CHANGEME
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # REDIS - Queue and Cache
+  # ─────────────────────────────────────────────────────────────────────────
+  langfuse-redis:
+    image: redis:7-alpine
+    container_name: langfuse-redis
+    command: redis-server --requirepass redis-secret  # CHANGEME
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis-secret", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # MINIO - S3-Compatible Blob Storage
+  # ─────────────────────────────────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: langfuse-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minio-access-key  # CHANGEME
+      MINIO_ROOT_PASSWORD: minio-secret-key  # CHANGEME (min 8 chars)
+    volumes:
+      - langfuse_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skillforge-network
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # MINIO SETUP - Create bucket on first run
+  # ─────────────────────────────────────────────────────────────────────────
+  minio-setup:
+    image: minio/mc:latest
+    container_name: langfuse-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://minio:9000 minio-access-key minio-secret-key;
+      mc mb minio/langfuse --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - skillforge-network
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════════════════════
+volumes:
+  langfuse_postgres_data:
+  langfuse_clickhouse_data:
+  langfuse_clickhouse_logs:
+  langfuse_redis_data:
+  langfuse_minio_data:
+
+# ═══════════════════════════════════════════════════════════════════════════
+# NETWORKS
+# ═══════════════════════════════════════════════════════════════════════════
+networks:
+  skillforge-network:
+    driver: bridge
+```
+
+### Quick Start Commands
+
+```bash
+# Start Langfuse stack
+docker-compose up -d langfuse-web langfuse-worker langfuse-db clickhouse langfuse-redis minio minio-setup
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f langfuse-web langfuse-worker
+
+# Verify health
+curl http://localhost:3000/api/public/health
+
+# Access UI
+open http://localhost:3000
 ```
 
 ---
@@ -221,42 +594,42 @@
 │  │     return traced_func(func)                                        │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │ from langfuse import observe                                       │  │
 │  │                                                                     │  │
+│  │ # Type mapping for run_type → as_type                              │  │
+│  │ RUN_TYPE_MAP = {                                                    │  │
+│  │     "chain": "span",        # Default span type                    │  │
+│  │     "tool": "span",         # Tool calls                           │  │
+│  │     "llm": "generation",    # LLM calls                            │  │
+│  │     "retriever": "span",    # Retrieval operations                 │  │
+│  │     "embedding": "span",    # Embedding operations                 │  │
+│  │ }                                                                   │  │
+│  │                                                                     │  │
 │  │ def robust_traceable(                                               │  │
 │  │     name: str | None = None,                                        │  │
-│  │     run_type: RunType = "chain",                                    │  │
+│  │     run_type: str = "chain",                                        │  │
 │  │     tags: list[str] | None = None,                                  │  │
-│  │     metadata: dict[str, str | int | float | bool] | None = None,    │  │
-│  │     **observe_kwargs: object,                                       │  │
+│  │     metadata: dict | None = None,                                   │  │
+│  │     **kwargs,                                                       │  │
 │  │ ) -> Callable:                                                      │  │
+│  │     """Wrapper for Langfuse @observe decorator."""                  │  │
 │  │     def decorator(func):                                            │  │
-│  │         # Map run_type to as_type                                   │  │
-│  │         as_type_map = {                                             │  │
-│  │             "chain": "chain",                                      │  │
-│  │             "tool": "tool",                                        │  │
-│  │             "llm": "generation",                                   │  │
-│  │             "retriever": "retriever",                              │  │
-│  │             "embedding": "embedding",                              │  │
-│  │         }                                                           │  │
-│  │         as_type = as_type_map.get(run_type, "chain")                │  │
-│  │                                                                     │  │
-│  │         observed_func = observe(                                    │  │
+│  │         as_type = RUN_TYPE_MAP.get(run_type, "span")                │  │
+│  │         return observe(                                             │  │
 │  │             name=name or func.__name__,                             │  │
 │  │             as_type=as_type,                                       │  │
-│  │             tags=tags or [],                                       │  │
-│  │             metadata=metadata or {},                               │  │
-│  │             **observe_kwargs,                                      │  │
-│  │         )                                                           │  │
-│  │         return observed_func(func)                                 │  │
+│  │             # Note: tags and metadata set via update_current_trace │  │
+│  │             **kwargs,                                               │  │
+│  │         )(func)                                                     │  │
 │  │     return decorator                                                │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  ⚠️  BREAKING CHANGES:                                                      │
+│  ⚠️  KEY CHANGES:                                                          │
 │     • run_type="llm" → as_type="generation"                                │
-│     • Metadata structure may differ slightly                               │
+│     • @observe doesn't take tags/metadata directly                        │
+│     • Use langfuse.update_current_trace() for runtime metadata            │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -275,26 +648,30 @@
 │  │ if run_tree:                                                        │  │
 │  │     run_tree.metadata["analysis_id"] = str(analysis_id)            │  │
 │  │     run_tree.tags.append("parallel-execution")                      │  │
+│  │     trace_id = str(run_tree.trace_id)                              │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │ from langfuse import get_client                                     │  │
 │  │                                                                     │  │
-│  │ langfuse = get_client()                                            │  │
+│  │ langfuse = get_client()  # Singleton - safe to call anywhere       │  │
 │  │ if langfuse:                                                        │  │
+│  │     # Update trace-level metadata                                  │  │
 │  │     langfuse.update_current_trace(                                  │  │
 │  │         metadata={"analysis_id": str(analysis_id)},                │  │
 │  │         tags=["parallel-execution"],                                │  │
 │  │     )                                                               │  │
-│  │     langfuse.update_current_span(                                  │  │
-│  │         metadata={"analysis_id": str(analysis_id)},                │  │
-│  │     )                                                               │  │
+│  │                                                                     │  │
+│  │     # Get trace ID (different API)                                 │  │
+│  │     current_trace = langfuse.get_current_trace()                   │  │
+│  │     trace_id = current_trace.id if current_trace else None         │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ⚠️  CHANGES:                                                               │
+│     • get_client() returns singleton (no need to pass around)             │
 │     • Separate trace vs span updates                                     │
-│     • Tags passed as list, not appended                                  │
+│     • Tags are replaced, not appended (pass full list)                    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -311,39 +688,110 @@
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │ from langsmith import Client                                        │  │
 │  │                                                                     │  │
+│  │ # Complex generator filtering workaround                           │  │
+│  │ def hide_inputs_with_generator_filter(inputs):                     │  │
+│  │     return {k: v if not inspect.isgenerator(v)                    │  │
+│  │             else "<generator_filtered>" for k, v in inputs.items()}│  │
+│  │                                                                     │  │
 │  │ _langsmith_client = Client(                                         │  │
 │  │     hide_inputs=hide_inputs_with_generator_filter,                 │  │
 │  │     hide_outputs=hide_outputs_with_generator_filter,                │  │
 │  │ )                                                                   │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langfuse import Langfuse                                       │  │
+│  │ from langfuse import Langfuse, get_client                          │  │
+│  │ import os                                                          │  │
 │  │                                                                     │  │
-│  │ _langfuse_client = Langfuse(                                       │  │
-│  │     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),                    │  │
-│  │     secret_key=os.getenv("LANGFUSE_SECRET_KEY"),                    │  │
-│  │     base_url=os.getenv("LANGFUSE_BASE_URL",                         │  │
-│  │                      "https://cloud.langfuse.com"),                 │  │
-│  │     environment=os.getenv("ENVIRONMENT", "development"),             │  │
-│  │     # Generator filtering handled automatically                     │  │
-│  │ )                                                                   │  │
+│  │ def configure_langfuse():                                           │  │
+│  │     """Configure Langfuse client.                                   │  │
+│  │                                                                     │  │
+│  │     Note: Langfuse handles generators automatically - no workaround│  │
+│  │     needed! The hide_inputs/hide_outputs code can be deleted.      │  │
+│  │     """                                                             │  │
+│  │     # Client auto-configures from environment variables            │  │
+│  │     # LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_BASE_URL │  │
+│  │     client = get_client()                                          │  │
+│  │                                                                     │  │
+│  │     # Optional: manual configuration                                │  │
+│  │     # client = Langfuse(                                           │  │
+│  │     #     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),            │  │
+│  │     #     secret_key=os.getenv("LANGFUSE_SECRET_KEY"),            │  │
+│  │     #     host=os.getenv("LANGFUSE_BASE_URL",                     │  │
+│  │     #                    "http://langfuse-web:3000"),             │  │
+│  │     # )                                                            │  │
+│  │                                                                     │  │
+│  │     return client                                                   │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ✅ IMPROVEMENTS:                                                           │
-│     • No need for generator filtering workaround                          │
+│     • No need for generator filtering workaround (DELETE THAT CODE!)      │
+│     • Automatic configuration from environment variables                  │
+│     • Singleton pattern via get_client()                                  │
 │     • Better environment/release tracking                                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 2: Evaluation System (Day 2)
+### Phase 2: LangChain/LangGraph Integration (Day 1-2)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  STEP 2.1: Replace LangSmithExtractor                                      │
+│  STEP 2.1: Update LangGraph Workflow Tracing                               │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  BEFORE (LangSmith - automatic via env vars):                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ # Just set environment variables:                                   │  │
+│  │ # LANGCHAIN_TRACING_V2=true                                        │  │
+│  │ # LANGCHAIN_API_KEY=...                                            │  │
+│  │                                                                     │  │
+│  │ # LangGraph auto-traces via langsmith                              │  │
+│  │ result = await graph.ainvoke(state, config)                        │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  AFTER (Langfuse v3 - December 2025):                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ from langfuse import get_client                                     │  │
+│  │ from langfuse.langchain import CallbackHandler                      │  │
+│  │                                                                     │  │
+│  │ # Create callback handler                                          │  │
+│  │ langfuse = get_client()                                            │  │
+│  │ langfuse_handler = CallbackHandler()                                │  │
+│  │                                                                     │  │
+│  │ # Pass callback to LangGraph invocation                            │  │
+│  │ result = await graph.ainvoke(                                       │  │
+│  │     state,                                                          │  │
+│  │     config={                                                        │  │
+│  │         "callbacks": [langfuse_handler],                           │  │
+│  │         # Optional: propagate session/user context                 │  │
+│  │         "configurable": {                                          │  │
+│  │             "session_id": session_id,                              │  │
+│  │             "user_id": user_id,                                    │  │
+│  │         },                                                         │  │
+│  │     },                                                              │  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ # IMPORTANT: Flush before exit in serverless/short-lived apps      │  │
+│  │ langfuse.flush()                                                   │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  📍 FILES TO UPDATE:                                                       │
+│     • backend/app/api/v1/workflow_runner.py                               │
+│     • backend/app/domains/analysis/workflows/graph.py                     │
+│     • backend/app/domains/tutor/workflows/graph.py                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Phase 3: Evaluation System (Day 2)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  STEP 3.1: Replace LangSmithExtractor                                      │
 │  ────────────────────────────────────────────────────────────────────────  │
 │                                                                             │
 │  File: backend/app/evaluation/ingestion/langsmith_extractor.py            │
@@ -362,30 +810,42 @@
 │  │ )                                                                   │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langfuse import Langfuse                                       │  │
+│  │ from langfuse import get_client                                     │  │
 │  │                                                                     │  │
-│  │ langfuse = Langfuse()                                              │  │
+│  │ langfuse = get_client()                                            │  │
 │  │                                                                     │  │
-│  │ # Query traces via API                                              │  │
-│  │ traces = langfuse.trace.get_many(                                   │  │
-│  │     name=config.agent_type,                                         │  │
+│  │ # Use get_traces() with cursor-based pagination (Dec 2025 v2 API)  │  │
+│  │ traces = langfuse.get_traces(                                       │  │
+│  │     name=config.agent_type,  # Filter by trace name                │  │
+│  │     tags=[config.agent_type],                                       │  │
 │  │     from_timestamp=config.date_start,                               │  │
 │  │     to_timestamp=config.date_end,                                    │  │
-│  │     tags=[config.agent_type],                                       │  │
-│  │     limit=config.limit,                                             │  │
+│  │     limit=100,                                                      │  │
 │  │ )                                                                   │  │
 │  │                                                                     │  │
-│  │ for trace in traces.data:                                           │  │
-│  │     # Extract example from trace                                    │  │
+│  │ # Iterate with cursor-based pagination                              │  │
+│  │ all_traces = []                                                     │  │
+│  │ while True:                                                         │  │
+│  │     all_traces.extend(traces.data)                                 │  │
+│  │     if not traces.meta.has_next:                                   │  │
+│  │         break                                                       │  │
+│  │     traces = langfuse.get_traces(                                   │  │
+│  │         cursor=traces.meta.next_cursor,                            │  │
+│  │         # ... same filters                                         │  │
+│  │     )                                                               │  │
+│  │                                                                     │  │
+│  │ # Convert traces to evaluation examples                             │  │
+│  │ for trace in all_traces:                                            │  │
 │  │     example = convert_trace_to_example(trace)                       │  │
+│  │     # trace.input, trace.output, trace.metadata, trace.tags         │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ⚠️  API DIFFERENCES:                                                       │
-│     • Different query syntax (get_many vs list_runs)                      │
+│     • Different query syntax (get_traces vs list_runs)                    │
+│     • Cursor-based pagination (v2 Metrics API - Dec 2025)                 │
 │     • Trace structure differs from Run structure                           │
-│     • Need to map trace fields to example format                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -393,96 +853,51 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  STEP 2.2: Replace Evaluator Schemas                                       │
+│  STEP 3.2: Update Dataset Management (Dec 2025 Versioning!)                │
 │  ────────────────────────────────────────────────────────────────────────  │
 │                                                                             │
-│  Files:                                                                    │
-│    • evaluation/evaluators/quality.py                                     │
-│    • evaluation/evaluators/cost.py                                         │
-│    • evaluation/evaluators/correctness.py                                 │
-│    • evaluation/evaluators/latency.py                                      │
+│  NEW FEATURE: Dataset Item Versioning (December 15, 2025)                  │
 │                                                                             │
-│  BEFORE (LangSmith):                                                       │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langsmith.schemas import Example, Run                           │  │
+│  │ from langfuse import get_client                                     │  │
 │  │                                                                     │  │
-│  │ def evaluate(run: Run, example: Example) -> float:                  │  │
-│  │     # Access run.outputs, run.inputs, etc.                          │  │
-│  │     return score                                                    │  │
+│  │ langfuse = get_client()                                            │  │
+│  │                                                                     │  │
+│  │ # Create dataset for evaluation                                     │  │
+│  │ langfuse.create_dataset(                                            │  │
+│  │     name="skillforge-golden-dataset",                               │  │
+│  │     description="Golden dataset for SkillForge evaluation",        │  │
+│  │     metadata={"version": "2.0", "created_by": "evaluation-pipeline"}│  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ # Add items - AUTOMATICALLY VERSIONED! (Dec 2025 feature)          │  │
+│  │ langfuse.create_dataset_item(                                       │  │
+│  │     dataset_name="skillforge-golden-dataset",                       │  │
+│  │     input={"url": "https://example.com/article"},                  │  │
+│  │     expected_output={                                               │  │
+│  │         "title": "Expected Title",                                  │  │
+│  │         "summary": "Expected Summary",                              │  │
+│  │     },                                                              │  │
+│  │     metadata={                                                      │  │
+│  │         "agent_type": "tech_comparator",                           │  │
+│  │         "difficulty": "intermediate",                               │  │
+│  │     },                                                              │  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ # Every add/update/delete creates a new version automatically!     │  │
+│  │ # View version history in Langfuse UI:                             │  │
+│  │ # Datasets > skillforge-golden-dataset > Items Tab                 │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langfuse import Trace, Span                                    │  │
-│  │                                                                     │  │
-│  │ def evaluate(trace: Trace, span: Span | None = None) -> float:      │  │
-│  │     # Access trace.input, trace.output, etc.                       │  │
-│  │     # Langfuse uses different field names                           │  │
-│  │     return score                                                    │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ⚠️  FIELD MAPPING:                                                         │
-│     • run.inputs → trace.input                                            │
-│     • run.outputs → trace.output                                          │
-│     • run.metadata → trace.metadata                                        │
-│     • run.tags → trace.tags                                               │
+│  ✅ BENEFITS FOR SKILLFORGE:                                                │
+│     • Track golden dataset evolution over time                            │
+│     • Audit trail for dataset changes                                     │
+│     • Roll back to previous versions if needed                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 3: Metrics Service (Day 2-3)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  STEP 3.1: Replace LangSmithMetricsService                                 │
-│  ────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  File: backend/app/services/metrics/langsmith.py                          │
-│  → langfuse_metrics.py                                                    │
-│                                                                             │
-│  BEFORE (LangSmith):                                                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langsmith import Client                                        │  │
-│  │                                                                     │  │
-│  │ client = Client()                                                   │  │
-│  │ runs = client.list_runs(                                             │  │
-│  │     project_name=project,                                           │  │
-│  │     start_time=start_time,                                          │  │
-│  │     end_time=end_time,                                              │  │
-│  │     filter=f"eq(tags, '{agent_type}')",                            │  │
-│  │ )                                                                   │  │
-│  │                                                                     │  │
-│  │ # Aggregate metrics from runs                                      │  │
-│  │ success_rate = sum(1 for r in runs if r.status == "success") / len │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  AFTER (Langfuse):                                                         │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ from langfuse import Langfuse                                       │  │
-│  │                                                                     │  │
-│  │ langfuse = Langfuse()                                              │  │
-│  │                                                                     │  │
-│  │ traces = langfuse.trace.get_many(                                   │  │
-│  │     tags=[agent_type],                                              │  │
-│  │     from_timestamp=start_time,                                      │  │
-│  │     to_timestamp=end_time,                                          │  │
-│  │ )                                                                   │  │
-│  │                                                                     │  │
-│  │ # Aggregate metrics from traces                                    │  │
-│  │ success_rate = sum(1 for t in traces.data                          │  │
-│  │                  if t.status == "COMPLETED") / len(traces.data)     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ⚠️  CHANGES:                                                               │
-│     • Different status values (COMPLETED vs success)                       │
-│     • Different pagination model                                           │
-│     • May need to use Langfuse Analytics API for aggregation              │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Phase 4: Quality Gate Node (Day 3)
+### Phase 4: Quality Gate & Scoring (Day 2-3)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -499,7 +914,6 @@
 │  │                                                                     │  │
 │  │ run_tree = get_current_run_tree()                                   │  │
 │  │ if run_tree:                                                        │  │
-│  │     # Create Example for evaluation                                 │  │
 │  │     example = Example(                                               │  │
 │  │         inputs={"content": content},                                │  │
 │  │         outputs={"artifact": artifact},                              │  │
@@ -512,36 +926,53 @@
 │  │     )                                                               │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │ from langfuse import get_client                                     │  │
 │  │                                                                     │  │
 │  │ langfuse = get_client()                                            │  │
-│  │ if langfuse:                                                        │  │
-│  │     # Create dataset item for evaluation                            │  │
-│  │     langfuse.create_dataset_item(                                   │  │
-│  │         dataset_name="quality-gate-eval",                            │  │
-│  │         input={"content": content},                                  │  │
-│  │         expected_output={"artifact": artifact},                      │  │
-│  │     )                                                               │  │
 │  │                                                                     │  │
-│  │     # Score current trace                                           │  │
-│  │     langfuse.score_trace(                                           │  │
-│  │         name="quality_score",                                       │  │
-│  │         value=score,                                                 │  │
-│  │         data_type="NUMERIC",                                         │  │
+│  │ # Score the current trace                                           │  │
+│  │ langfuse.score(                                                     │  │
+│  │     name="quality_score",                                           │  │
+│  │     value=quality_score,  # 0.0 - 1.0                               │  │
+│  │     data_type="NUMERIC",                                            │  │
+│  │     comment=f"Quality gate: {quality_assessment}",                  │  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ # Add more scores                                                   │  │
+│  │ langfuse.score(                                                     │  │
+│  │     name="completeness",                                            │  │
+│  │     value=completeness_score,                                       │  │
+│  │     data_type="NUMERIC",                                            │  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ langfuse.score(                                                     │  │
+│  │     name="passed_quality_gate",                                     │  │
+│  │     value=passed,  # True/False                                    │  │
+│  │     data_type="BOOLEAN",                                            │  │
+│  │ )                                                                   │  │
+│  │                                                                     │  │
+│  │ # Optionally add to dataset for future evaluation                  │  │
+│  │ if quality_score >= 0.85:  # High quality examples                  │  │
+│  │     langfuse.create_dataset_item(                                   │  │
+│  │         dataset_name="quality-gate-passed",                         │  │
+│  │         input={"content": content},                                 │  │
+│  │         expected_output={"artifact": artifact},                     │  │
+│  │         metadata={"quality_score": quality_score},                  │  │
 │  │     )                                                               │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ⚠️  CHANGES:                                                               │
-│     • No need to manually create Run/Example objects                      │
-│     • Use dataset items for evaluation examples                           │
-│     • Scoring API is different                                            │
+│     • No need to create Run/Example objects manually                       │
+│     • Use score() API for evaluation metrics                              │
+│     • Three data types: NUMERIC, BOOLEAN, CATEGORICAL                     │
+│     • Can link scores to dataset items for experiments                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 5: Test Suite Updates (Day 4)
+### Phase 5: Test Suite Updates (Day 3-4)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -563,31 +994,325 @@
 │  │ @patch("langsmith.schemas.Run")                                      │  │
 │  │ @patch("langsmith.schemas.Example")                                  │  │
 │  │ def test_something(mock_run_tree, mock_run, mock_example):          │  │
-│  │     mock_run_tree.return_value = Mock(...)                           │  │
+│  │     mock_run_tree.return_value = Mock(                               │  │
+│  │         trace_id=uuid4(),                                           │  │
+│  │         metadata={},                                                 │  │
+│  │         tags=[],                                                    │  │
+│  │     )                                                               │  │
 │  │     # Test code                                                      │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  AFTER (Langfuse):                                                         │
+│  AFTER (Langfuse v3 - December 2025):                                      │
 │  ┌─────────────────────────────────────────────────────────────────────┐  │
 │  │ @patch("langfuse.get_client")                                       │  │
-│  │ @patch("langfuse.Trace")                                             │  │
-│  │ @patch("langfuse.Span")                                              │  │
-│  │ def test_something(mock_client, mock_trace, mock_span):              │  │
-│  │     mock_client.return_value = Mock(...)                              │  │
+│  │ def test_something(mock_get_client):                                 │  │
+│  │     mock_langfuse = Mock()                                          │  │
+│  │     mock_get_client.return_value = mock_langfuse                    │  │
+│  │                                                                     │  │
+│  │     # Mock trace retrieval                                          │  │
+│  │     mock_langfuse.get_current_trace.return_value = Mock(            │  │
+│  │         id="trace-123",                                             │  │
+│  │         metadata={},                                                 │  │
+│  │         tags=[],                                                    │  │
+│  │     )                                                               │  │
+│  │                                                                     │  │
 │  │     # Test code                                                      │  │
+│  │                                                                     │  │
+│  │     # Verify Langfuse calls                                         │  │
+│  │     mock_langfuse.update_current_trace.assert_called_with(          │  │
+│  │         metadata={"analysis_id": "..."},                            │  │
+│  │     )                                                               │  │
 │  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  ⚠️  CHANGES:                                                               │
-│     • Update all @patch decorators                                        │
+│     • Update all @patch decorators from langsmith → langfuse              │
 │     • Update mock return values to match Langfuse API                     │
 │     • Update conftest.py to disable Langfuse tracing                      │
+│                                                                             │
+│  CONFTEST.PY UPDATE:                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ import os                                                          │  │
+│  │                                                                     │  │
+│  │ # Disable Langfuse tracing in tests                                │  │
+│  │ os.environ["LANGFUSE_ENABLED"] = "false"                           │  │
+│  │ os.environ.pop("LANGFUSE_PUBLIC_KEY", None)                        │  │
+│  │ os.environ.pop("LANGFUSE_SECRET_KEY", None)                        │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🎯 Key Differences & Challenges
+## 🔌 MCP Server Configuration (December 2025 - UPDATED!)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  🆕 NATIVE MCP SERVER (November 20, 2025)                                   │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ⚠️  MAJOR UPDATE: Langfuse now has a NATIVE MCP server built-in!          │
+│     No need to clone/build the mcp-server-langfuse repo anymore.          │
+│     The native server uses StreamableHttp and includes write operations.  │
+│                                                                             │
+│  ENDPOINT: /api/public/mcp (StreamableHttp transport)                      │
+│                                                                             │
+│  AVAILABLE MCP TOOLS:                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                                                                     │  │
+│  │  READ OPERATIONS:                                                   │  │
+│  │    • getPrompt - Retrieve and compile a specific prompt            │  │
+│  │    • listPrompts - List all available prompts (with pagination)     │  │
+│  │                                                                     │  │
+│  │  WRITE OPERATIONS (NEW in Nov 2025!):                               │  │
+│  │    • createTextPrompt - Create a new text prompt version           │  │
+│  │    • createChatPrompt - Create a new chat prompt version           │  │
+│  │    • updatePromptLabels - Manage labels across versions            │  │
+│  │                                                                     │  │
+│  │  Note: Only prompts marked with "production" label are returned     │  │
+│  │  by default. Configure allowlist for read-only access if needed.   │  │
+│  │                                                                     │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### MCP Server Setup for Different Clients
+
+#### Claude Code (CLI) - Recommended
+
+```bash
+# One-liner setup!
+claude mcp add \
+  --transport http \
+  langfuse \
+  http://localhost:3000/api/public/mcp \
+  --header "Authorization: Basic $(echo -n 'pk-lf-...:sk-lf-...' | base64)"
+```
+
+Or add to `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "langfuse": {
+      "transport": "http",
+      "url": "http://localhost:3000/api/public/mcp",
+      "headers": {
+        "Authorization": "Basic <base64-encoded-pk:sk>"
+      }
+    }
+  }
+}
+```
+
+#### Cursor IDE
+
+Add to Cursor settings (Settings > MCP Servers):
+
+```json
+{
+  "mcpServers": {
+    "langfuse": {
+      "command": "npx",
+      "args": ["@langfuse/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_BASEURL": "http://localhost:3000"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "langfuse": {
+      "command": "npx",
+      "args": ["@langfuse/mcp-server"],
+      "env": {
+        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
+        "LANGFUSE_SECRET_KEY": "sk-lf-...",
+        "LANGFUSE_BASEURL": "http://localhost:3000"
+      }
+    }
+  }
+}
+```
+
+#### Alternative: Native HTTP Transport (No npx required)
+
+For clients supporting HTTP transport:
+
+```json
+{
+  "mcpServers": {
+    "langfuse": {
+      "transportType": "http",
+      "url": "http://localhost:3000/api/public/mcp",
+      "headers": {
+        "Authorization": "Basic <base64-encoded-pk:sk>"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 📦 Dependency Changes
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  pyproject.toml Updates                                                     │
+│  ────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ADD:                                                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ # Langfuse SDK v3 (December 2025)                                   │  │
+│  │ langfuse = "^3.0.0"                                                 │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  KEEP (langsmith is transitive via langchain, not explicitly needed):      │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ # LangChain still includes langsmith as transitive dependency      │  │
+│  │ # but we won't use it directly anymore                              │  │
+│  │ langchain = "^1.1.2"                                                │  │
+│  │ langgraph = "^1.0.4"                                                │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ENVIRONMENT VARIABLES (Self-Hosted):                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │ # REMOVE (LangSmith)                                                │  │
+│  │ # LANGCHAIN_TRACING_V2=true                                        │  │
+│  │ # LANGSMITH_API_KEY=...                                            │  │
+│  │ # LANGCHAIN_API_KEY=...                                            │  │
+│  │                                                                     │  │
+│  │ # ADD (Langfuse - Self-Hosted)                                      │  │
+│  │ LANGFUSE_PUBLIC_KEY=pk-lf-...    # From Langfuse UI                │  │
+│  │ LANGFUSE_SECRET_KEY=sk-lf-...    # From Langfuse UI                │  │
+│  │ LANGFUSE_BASE_URL=http://langfuse-web:3000  # Docker internal      │  │
+│  │ LANGFUSE_ENABLED=true            # Enable tracing                  │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ✅ BENEFITS OF SELF-HOSTED:                                                │
+│     • FREE - No per-trace costs (LangSmith charges per trace)             │
+│     • Full data control - All traces stored locally                         │
+│     • No internet required - Works offline                                  │
+│     • Fast - No network latency to cloud                                   │
+│     • Privacy - Data never leaves your infrastructure                       │
+│     • Native MCP - Prompt management via MCP                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Migration Checklist (December 2025)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PHASE 0: INFRASTRUCTURE (NEW - Dec 2025 Architecture)                     │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Add Langfuse v3 services to docker-compose.yml                        │
+│      [ ] langfuse-web (port 3000)                                         │
+│      [ ] langfuse-worker (port 3030)                                      │
+│      [ ] langfuse-db (PostgreSQL)                                         │
+│      [ ] clickhouse (REQUIRED for v3!)                                    │
+│      [ ] langfuse-redis                                                   │
+│      [ ] minio (S3-compatible storage)                                    │
+│  [ ] Generate secure secrets (NEXTAUTH_SECRET, SALT, ENCRYPTION_KEY)      │
+│  [ ] Start Langfuse stack: docker-compose up -d langfuse-web ...         │
+│  [ ] Access UI: http://localhost:3000                                     │
+│  [ ] Create admin account (first user = admin)                            │
+│  [ ] Create project "skillforge"                                          │
+│  [ ] Generate API keys (Settings → API Keys)                               │
+│                                                                             │
+│  PHASE 1: DEPENDENCIES                                                     │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Add langfuse = "^3.0.0" to pyproject.toml                            │
+│  [ ] Run: poetry lock && poetry install                                   │
+│  [ ] Update backend/.env with Langfuse credentials                        │
+│  [ ] Create feature branch: issue/XXX-langfuse-migration                   │
+│                                                                             │
+│  PHASE 2: CORE INFRASTRUCTURE                                              │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Create langfuse_config.py (copy structure from langsmith_config.py)  │
+│  [ ] Update robust_traceable decorator (tracing.py)                       │
+│  [ ] Replace get_current_run_tree() → get_client() pattern               │
+│  [ ] DELETE generator filtering code (not needed!)                        │
+│  [ ] Update main.py startup initialization                                │
+│                                                                             │
+│  PHASE 3: LANGCHAIN/LANGGRAPH INTEGRATION                                  │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Import CallbackHandler from langfuse.langchain                       │
+│  [ ] Update workflow_runner.py to pass callbacks                          │
+│  [ ] Update analysis workflow graph.py                                    │
+│  [ ] Update tutor workflow graph.py                                       │
+│  [ ] Add langfuse.flush() for serverless environments                     │
+│                                                                             │
+│  PHASE 4: WORKFLOW NODES (50+ files)                                       │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Update 8 agent nodes (tech_comparator, security_auditor, etc.)       │
+│  [ ] Update 8 tutor nodes                                                  │
+│  [ ] Update quality_gate_node.py (scoring API)                            │
+│  [ ] Update agent invocation/streaming                                     │
+│                                                                             │
+│  PHASE 5: EVALUATION SYSTEM                                                │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Create langfuse_extractor.py (replace langsmith_extractor.py)        │
+│  [ ] Update evaluator schemas (quality, cost, correctness, latency)       │
+│  [ ] Update llm_benchmark.py                                               │
+│  [ ] Migrate golden dataset to Langfuse datasets                          │
+│  [ ] Enable dataset item versioning (Dec 2025 feature)                    │
+│                                                                             │
+│  PHASE 6: METRICS SERVICE                                                  │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Create langfuse_metrics.py (replace langsmith.py)                    │
+│  [ ] Update metrics aggregation logic                                       │
+│  [ ] Use v2 Metrics API with cursor pagination (Dec 2025)                 │
+│                                                                             │
+│  PHASE 7: TEST SUITE (100+ files)                                          │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Update test mocks (@patch decorators)                                │
+│  [ ] Update conftest.py (disable Langfuse tracing)                        │
+│  [ ] Run full test suite                                                   │
+│  [ ] Verify coverage ≥80%                                                 │
+│                                                                             │
+│  PHASE 8: VALIDATION                                                       │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Run integration tests                                                │
+│  [ ] Verify traces appear in Langfuse UI                                   │
+│  [ ] Test all 8 agent traces render with tool calls (Nov 2025 feature)   │
+│  [ ] Verify metrics aggregation                                            │
+│  [ ] Verify evaluation extraction works                                    │
+│  [ ] Test MCP prompt access (if configured)                               │
+│  [ ] Performance testing (no regressions)                                   │
+│                                                                             │
+│  PHASE 9: CLEANUP                                                          │
+│  ────────────────────────────────────────────────────────────────────────  │
+│  [ ] Remove LangSmith environment variables from .env                     │
+│  [ ] Delete langsmith_config.py                                           │
+│  [ ] Delete langsmith_extractor.py                                        │
+│  [ ] Delete langsmith.py (metrics service)                                │
+│  [ ] Update documentation                                                  │
+│  [ ] Create PR to dev                                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 Key Differences Summary (December 2025)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -600,47 +1325,59 @@
 │     │ LangSmith: @traceable(run_type="llm")                          │  │
 │     │ Langfuse:  @observe(as_type="generation")                      │  │
 │     │                                                                │  │
-│     │ ⚠️  Need to map run_type → as_type                            │  │
+│     │ Mapping: llm → generation, chain → span, tool → span          │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  2. METADATA UPDATES                                                       │
+│  2. CLIENT ACCESS                                                          │
+│     ┌─────────────────────────────────────────────────────────────────┐  │
+│     │ LangSmith: Client() or get_current_run_tree()                  │  │
+│     │ Langfuse:  get_client() singleton                              │  │
+│     │                                                                │  │
+│     │ Key: Langfuse uses singleton pattern - call get_client()       │  │
+│     │      anywhere, no need to pass client around                   │  │
+│     └─────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  3. METADATA UPDATES                                                       │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
 │     │ LangSmith: run_tree.metadata["key"] = value                    │  │
 │     │ Langfuse:  langfuse.update_current_trace(metadata={...})       │  │
 │     │                                                                │  │
-│     │ ⚠️  Different API pattern (setter vs method)                  │  │
+│     │ Key: Method call vs direct assignment                          │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  3. CLIENT INITIALIZATION                                                  │
-│     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ LangSmith: Client() (uses env vars)                            │  │
-│     │ Langfuse:  Langfuse(public_key=..., secret_key=...)            │  │
-│     │                                                                │  │
-│     │ ⚠️  Need to update environment variables                        │  │
-│     └─────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  4. TRACE QUERYING                                                         │
+│  4. TRACE QUERYING (v2 API - Dec 2025)                                     │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
 │     │ LangSmith: client.list_runs(filter="eq(tags, 'x')")             │  │
-│     │ Langfuse:  langfuse.trace.get_many(tags=["x"])                 │  │
+│     │ Langfuse:  langfuse.get_traces(tags=["x"])                     │  │
 │     │                                                                │  │
-│     │ ⚠️  Different query syntax                                      │  │
+│     │ Key: Cursor-based pagination, selective field retrieval        │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  5. SCHEMA OBJECTS                                                         │
-│     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ LangSmith: Run, Example (Pydantic models)                      │  │
-│     │ Langfuse:  Trace, Span (native Python dicts)                  │  │
-│     │                                                                │  │
-│     │ ⚠️  Different field names and structure                        │  │
-│     └─────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  6. GENERATOR FILTERING                                                    │
+│  5. GENERATOR FILTERING                                                    │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
 │     │ LangSmith: Required hide_inputs/hide_outputs workaround        │  │
 │     │ Langfuse:  Handles generators automatically                    │  │
 │     │                                                                │  │
-│     │ ✅ Can remove generator filtering code!                        │  │
+│     │ ✅ DELETE 50+ lines of generator filtering code!               │  │
+│     └─────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  6. SELF-HOSTING ARCHITECTURE                                              │
+│     ┌─────────────────────────────────────────────────────────────────┐  │
+│     │ LangSmith: PostgreSQL only (or Enterprise cloud)               │  │
+│     │ Langfuse:  PostgreSQL + ClickHouse + Redis + S3 (v3)          │  │
+│     │                                                                │  │
+│     │ Key: ClickHouse is REQUIRED for v3 - handles analytics at     │  │
+│     │      scale (1000+ deployments running it successfully)         │  │
+│     └─────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  7. MCP SUPPORT                                                            │
+│     ┌─────────────────────────────────────────────────────────────────┐  │
+│     │ LangSmith: Exposes agents as MCP tools                         │  │
+│     │ Langfuse:  Native MCP server for prompt management             │  │
+│     │            (/api/public/mcp - StreamableHttp)                  │  │
+│     │                                                                │  │
+│     │ Key: Langfuse MCP = access prompts from Claude/Cursor/etc.     │  │
+│     │      No build required - built into Langfuse!                  │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -653,213 +1390,45 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  🎁 ADVANTAGES OF LANGFUSE                                                  │
+│  🎁 ADVANTAGES OF LANGFUSE (December 2025)                                  │
 │  ────────────────────────────────────────────────────────────────────────  │
 │                                                                             │
-│  ✅ Open Source & Self-Hostable                                            │
+│  ✅ Open Source & Self-Hostable (FREE!)                                    │
+│     • No per-trace costs (LangSmith charges per trace)                    │
 │     • Full control over data and infrastructure                           │
-│     • No vendor lock-in                                                    │
+│     • 1000+ self-hosted deployments in production                          │
 │     • Can run on-premises or cloud                                         │
 │                                                                             │
 │  ✅ Better Generator Handling                                               │
 │     • No need for hide_inputs/hide_outputs workaround                     │
 │     • Automatic handling of async generators                               │
+│     • DELETE 50+ lines of generator filtering code!                        │
 │                                                                             │
-│  ✅ Modern API Design                                                       │
-│     • More intuitive decorator API (@observe)                              │
-│     • Better separation of trace vs span updates                           │
-│     • Native Python objects (no Pydantic overhead)                        │
+│  ✅ Agent Tracing (November 2025)                                           │
+│     • Beautiful tool call rendering                                        │
+│     • Agent Evals for performance analysis                                 │
+│     • PERFECT for SkillForge's 8 specialized agents!                      │
 │                                                                             │
-│  ✅ Enhanced Features                                                       │
-│     • Built-in prompt management                                           │
-│     • Better dataset management                                            │
-│     • Advanced scoring mechanisms                                          │
-│     • Media file support                                                   │
+│  ✅ Dataset Versioning (December 2025)                                      │
+│     • Track golden dataset changes over time                              │
+│     • Automatic versioning on add/update/delete                            │
+│     • Audit trail for dataset evolution                                    │
 │                                                                             │
-│  ✅ Native MCP Server for Prompts                                           │
-│     • Dedicated MCP server for accessing Langfuse prompts                  │
-│     • Automatic MCP tracing with context propagation                       │
-│     • Direct integration with Claude Desktop/Cursor/Windsurf                │
-│     • Works with existing MCP servers (context7, memory, etc.)            │
-│     • Note: LangSmith exposes agents as MCP tools, Langfuse provides      │
-│       MCP server for prompt access                                          │
+│  ✅ Native MCP Server (November 2025)                                       │
+│     • Built into Langfuse at /api/public/mcp                              │
+│     • No build/install required                                            │
+│     • Read AND write prompts via MCP                                      │
+│     • Works with Claude Desktop, Cursor, Claude Code                       │
 │                                                                             │
-│  ✅ Cost Savings                                                            │
-│     • Self-hosted = no per-trace costs                                     │
-│     • Open source = no licensing fees                                       │
+│  ✅ v2 Metrics API (December 2025)                                          │
+│     • Cursor-based pagination                                              │
+│     • Selective field retrieval                                            │
+│     • Optimized for large datasets                                         │
 │                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🏠 Local Self-Hosted Setup (FREE)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  🎯 SETUP: FREE LOCAL LANGFUSE INSTANCE                                      │
-│  ────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  We're using Langfuse self-hosted locally (FREE, no cloud costs!)         │
-│                                                                             │
-│  STEP 1: Add Langfuse to docker-compose.yml                                │
-│  ────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  Langfuse service has been added to docker-compose.yml with:               │
-│    • PostgreSQL database (separate from SkillForge DB)                    │
-│    • Web UI on http://localhost:3000                                       │
-│    • API on http://localhost:3000/api                                     │
-│    • Persistent volumes for data                                          │
-│                                                                             │
-│  STEP 2: Start Langfuse                                                    │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  ```bash                                                                   │
-│  # Start Langfuse service                                                  │
-│  docker-compose up -d langfuse                                            │
-│                                                                             │
-│  # Check logs                                                              │
-│  docker-compose logs -f langfuse                                          │
-│                                                                             │
-│  # Verify it's running                                                     │
-│  curl http://localhost:3000/api/public/health                             │
-│  ```                                                                        │
-│                                                                             │
-│  STEP 3: Initial Setup                                                     │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  1. Open http://localhost:3000 in browser                                 │
-│  2. Create admin account (first user becomes admin)                        │
-│  3. Create a project                                                       │
-│  4. Generate API keys (Settings → API Keys)                               │
-│  5. Copy public_key and secret_key                                        │
-│                                                                             │
-│  STEP 4: Update Environment Variables                                      │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  Add to backend/.env:                                                      │
-│  ```env                                                                    │
-│  # Langfuse (Local Self-Hosted)                                            │
-│  LANGFUSE_PUBLIC_KEY=pk-lf-...                                            │
-│  LANGFUSE_SECRET_KEY=sk-lf-...                                            │
-│  LANGFUSE_BASE_URL=http://langfuse:3000  # Internal Docker network        │
-│  LANGFUSE_TRACING_ENABLED=true                                            │
-│  ```                                                                        │
-│                                                                             │
-│  Note: Use http://langfuse:3000 for backend service (Docker network)        │
-│        Use http://localhost:3000 for browser access                       │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-## 📦 Dependency Changes
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  pyproject.toml Updates                                                     │
-│  ────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  REMOVE:                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ langsmith = "^1.0.0"  # Remove this                                 │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ADD:                                                                       │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ langfuse = "^3.0.0"  # Add Langfuse SDK v3                          │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ENVIRONMENT VARIABLES (Local Self-Hosted):                                 │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │ # Remove                                                             │  │
-│  │ LANGCHAIN_TRACING_V2=true                                            │  │
-│  │ LANGSMITH_API_KEY=...                                                │  │
-│  │                                                                       │  │
-│  │ # Add (Local Self-Hosted)                                            │  │
-│  │ LANGFUSE_PUBLIC_KEY=pk-lf-...  # From Langfuse UI                    │  │
-│  │ LANGFUSE_SECRET_KEY=sk-lf-...  # From Langfuse UI                    │  │
-│  │ LANGFUSE_BASE_URL=http://langfuse:3000  # Docker internal network    │  │
-│  │ LANGFUSE_TRACING_ENABLED=true                                        │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ✅ BENEFITS OF LOCAL SETUP:                                                │
-│     • FREE - No per-trace costs                                            │
-│     • Full data control - All traces stored locally                         │
-│     • No internet required - Works offline                                  │
-│     • Fast - No network latency                                            │
-│     • Privacy - Data never leaves your machine                              │
-│     • MCP Support - Native MCP server for prompts and tracing              │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🚀 Migration Checklist
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  PHASE 1: PREPARATION                                                      │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Set up Langfuse instance (local self-hosted via docker-compose)       │
-│  [ ] Create API keys (public_key, secret_key) from Langfuse UI            │
-│  [ ] Update environment variables                                         │
-│  [ ] Install langfuse package                                              │
-│  [ ] Clone Langfuse MCP server: git clone langfuse/mcp-server-langfuse    │
-│  [ ] Build MCP server: npm install && npm run build                       │
-│  [ ] Configure MCP server in .mcp.json (for prompt access from IDE)      │
-│  [ ] Create feature branch: issue/XXX-langfuse-migration                   │
-│                                                                             │
-│  PHASE 2: CORE INFRASTRUCTURE                                              │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Replace robust_traceable decorator                                    │
-│  [ ] Replace get_current_run_tree() calls                                 │
-│  [ ] Replace Client() initialization                                       │
-│  [ ] Remove generator filtering code                                        │
-│  [ ] Update langsmith_config.py → langfuse_config.py                       │
-│                                                                             │
-│  PHASE 3: WORKFLOW NODES                                                    │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Update 8 agent nodes                                                  │
-│  [ ] Update 8 tutor nodes                                                  │
-│  [ ] Update quality gate node                                              │
-│  [ ] Update agent invocation/streaming                                     │
-│                                                                             │
-│  PHASE 4: EVALUATION SYSTEM                                                │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Replace LangSmithExtractor → LangfuseExtractor                        │
-│  [ ] Update evaluator schemas (quality, cost, correctness, latency)       │
-│  [ ] Update llm_benchmark.py                                               │
-│                                                                             │
-│  PHASE 5: METRICS SERVICE                                                  │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Replace LangSmithMetricsService → LangfuseMetricsService              │
-│  [ ] Update metrics aggregation logic                                       │
-│                                                                             │
-│  PHASE 6: TEST SUITE                                                       │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Update test mocks (100+ files)                                        │
-│  [ ] Update conftest.py                                                   │
-│  [ ] Run full test suite                                                   │
-│  [ ] Verify coverage ≥80%                                                 │
-│                                                                             │
-│  PHASE 7: VALIDATION                                                       │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Run integration tests                                                │
-│  [ ] Verify traces appear in Langfuse UI                                   │
-│  [ ] Verify metrics are correct                                            │
-│  [ ] Verify evaluation extraction works                                    │
-│  [ ] Test MCP tracing (if using MCP tools)                                 │
-│  [ ] Verify MCP prompt server access (if configured)                       │
-│  [ ] Performance testing (no regressions)                                   │
-│                                                                             │
-│  PHASE 8: DEPLOYMENT                                                       │
-│  ────────────────────────────────────────────────────────────────────────  │
-│  [ ] Update documentation                                                  │
-│  [ ] Create migration guide for team                                       │
-│  [ ] Deploy to staging                                                     │
-│  [ ] Monitor for 24-48 hours                                               │
-│  [ ] Deploy to production                                                  │
+│  ✅ Modern Architecture                                                     │
+│     • ClickHouse for analytics (fast queries at scale)                    │
+│     • Event-driven processing                                              │
+│     • Queued trace ingestion                                               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -880,26 +1449,38 @@
 │     │ • Migrate one workflow at a time                                │  │
 │     │ • Keep LangSmith running in parallel during transition          │  │
 │     │ • Use feature flags to toggle between providers                  │  │
+│     │                                                                  │  │
+│     │ Example feature flag:                                            │  │
+│     │   USE_LANGFUSE = os.getenv("USE_LANGFUSE", "false") == "true"   │  │
+│     │   if USE_LANGFUSE:                                              │  │
+│     │       from langfuse import observe as traceable                 │  │
+│     │   else:                                                          │  │
+│     │       from langsmith import traceable                           │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 │  2. TESTING STRATEGY                                                        │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ • Run both LangSmith and Langfuse in parallel                   │  │
+│     │ • Run both LangSmith and Langfuse in parallel initially        │  │
 │     │ • Compare trace outputs for consistency                         │  │
 │     │ • Verify all test cases pass                                    │  │
 │     │ • Test with real workflows before full migration                │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  3. DATA MIGRATION                                                          │
+│  3. FLUSH IN SHORT-LIVED APPS                                               │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ • Export existing LangSmith traces (if needed)                  │  │
-│     │ • Import historical data to Langfuse (optional)                  │  │
-│     │ • Keep LangSmith data for historical reference                  │  │
+│     │ # IMPORTANT: Langfuse uses async processing                     │  │
+│     │ # Always flush before exit in serverless/CLI/tests              │  │
+│     │                                                                 │  │
+│     │ langfuse = get_client()                                        │  │
+│     │ try:                                                            │  │
+│     │     # Your code here                                            │  │
+│     │ finally:                                                        │  │
+│     │     langfuse.flush()  # Ensure traces are sent!                │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  4. MONITORING                                                              │
+│  4. MONITORING DURING MIGRATION                                             │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ • Monitor trace volume and latency                              │  │
+│     │ • Monitor trace volume in Langfuse UI                          │  │
 │     │ • Set up alerts for missing traces                              │  │
 │     │ • Track error rates during migration                            │  │
 │     │ • Verify cost tracking accuracy                                 │  │
@@ -907,324 +1488,11 @@
 │                                                                             │
 │  5. ROLLBACK PLAN                                                           │
 │     ┌─────────────────────────────────────────────────────────────────┐  │
-│     │ • Keep LangSmith code in feature branch                         │  │
+│     │ • Keep LangSmith code in feature branch until stable           │  │
 │     │ • Use feature flags for easy rollback                           │  │
 │     │ • Document rollback procedure                                    │  │
-│     │ • Test rollback process before production                       │  │
+│     │ • Test rollback process in staging                              │  │
 │     └─────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔌 Model Context Protocol (MCP) Integration
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│  🎯 MCP SUPPORT IN LANGFUSE - HOW TO UTILIZE IT                            │
-│  ────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  Both LangSmith and Langfuse support MCP (Model Context Protocol), but     │
-│  Langfuse offers a dedicated MCP server for prompt management.             │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                                                                     │  │
-│  │  WHAT IS MCP?                                                       │  │
-│  │  ────────────────────────────────────────────────────────────────  │  │
-│  │                                                                     │  │
-│  │  Model Context Protocol (MCP) is an open standard developed by    │  │
-│  │  Anthropic that enables AI agents to securely connect to external │  │
-│  │  data sources and tools. It standardizes how AI applications       │  │
-│  │  communicate with external services, making it easier to build    │  │
-│  │  context-aware AI agents.                                           │  │
-│  │                                                                     │  │
-│  │  Key Benefits:                                                      │  │
-│  │    • Standardized protocol for agent-tool communication            │  │
-│  │    • Secure connection to external data sources                     │  │
-│  │    • Works with Claude Desktop, Cursor, and other MCP clients      │  │
-│  │    • Enables AI agents to access prompts, traces, and datasets      │  │
-│  │                                                                     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                                                                     │  │
-│  │  LANGFUSE MCP FEATURES                                               │  │
-│  │  ────────────────────────────────────────────────────────────────  │  │
-│  │                                                                     │  │
-│  │  1. MCP SERVER FOR PROMPT MANAGEMENT                                │  │
-│  │     ┌───────────────────────────────────────────────────────────┐  │  │
-│  │     │ Langfuse provides an MCP server that enables AI agents  │  │
-│  │     │ to access and manage prompts directly from Claude Desktop,│  │
-│  │     │ Cursor, or other MCP clients.                             │  │
-│  │     │                                                             │  │
-│  │     │ AVAILABLE MCP TOOLS:                                       │  │
-│  │     │   • getPrompt(name, labels) - Fetch a specific prompt     │  │
-│  │     │     by name with optional label filtering                  │  │
-│  │     │   • listPrompts() - Browse all prompts in your project    │  │
-│  │     │   • createTextPrompt(name, prompt, config, labels) -      │  │
-│  │     │     Create a new text prompt version                      │  │
-│  │     │   • createChatPrompt(name, prompt, config, labels) -      │  │
-│  │     │     Create a new chat prompt version                      │  │
-│  │     │   • updatePromptLabels(name, labels) - Manage labels      │  │
-│  │     │     across prompt versions                                │  │
-│  │     │                                                             │  │
-│  │     │ EXAMPLE USAGE:                                             │  │
-│  │     │   Once MCP server is configured, tools are available      │  │
-│  │     │   in Claude chat. You can ask:                             │  │
-│  │     │   • "List all prompts in Langfuse"                        │  │
-│  │     │   • "Get the tech_comparator prompt"                      │  │
-│  │     │   • "Create a new prompt for security_auditor"            │  │
-│  │     │                                                             │  │
-│  │     │ Use Case for SkillForge:                                   │  │
-│  │     │   Our 8 specialized agents (tech_comparator,               │  │
-│  │     │   security_auditor, etc.) can access shared prompts        │  │
-│  │     │   directly from Langfuse via MCP, ensuring consistency     │  │
-│  │     │   and enabling prompt versioning across the team.          │  │
-│  │     │   Prompts can be managed in Langfuse UI and accessed      │  │
-│  │     │   by agents without code changes.                          │  │
-│  │     └───────────────────────────────────────────────────────────┘  │  │
-│  │                                                                     │  │
-│  │  2. MCP TRACING & OBSERVABILITY                                     │  │
-│  │     ┌───────────────────────────────────────────────────────────┐  │  │
-│  │     │ Langfuse supports tracing MCP applications, allowing     │  │
-│  │     │ you to monitor agent interactions with external tools     │  │
-│  │     │ and data sources.                                         │  │
-│  │     │                                                             │  │
-│  │     │ Features:                                                  │  │
-│  │     │   • Automatic tracing of MCP client and server operations│  │
-│  │     │   • Context propagation via MCP _meta field               │  │
-│  │     │   • Link client and server traces for full visibility     │  │
-│  │     │   • OpenTelemetry integration (W3C Trace Context)         │  │
-│  │     │                                                             │  │
-│  │     │ Use Case for SkillForge:                                   │  │
-│  │     │   When our agents use MCP tools (like context7 for        │  │
-│  │     │   documentation, postgres for database queries), we can   │  │
-│  │     │   trace these interactions in Langfuse, providing full    │  │
-│  │     │   observability of agent workflows.                        │  │
-│  │     └───────────────────────────────────────────────────────────┘  │  │
-│  │                                                                     │  │
-│  │  3. SETUP & CONFIGURATION                                            │  │
-│  │     ┌───────────────────────────────────────────────────────────┐  │  │
-│  │     │                                                             │  │
-│  │     │ STEP 1: Clone and Build Langfuse MCP Server               │  │
-│  │     │   ```bash                                                 │  │
-│  │     │   git clone https://github.com/langfuse/mcp-server-langfuse.git│  │
-│  │     │   cd mcp-server-langfuse                                   │  │
-│  │     │   npm install                                             │  │
-│  │     │   npm run build                                           │  │
-│  │     │   ```                                                     │  │
-│  │     │                                                             │  │
-│  │     │   Note: The built server will be at `build/index.js`      │  │
-│  │     │   You'll need the absolute path to this file for config.   │  │
-│  │     │                                                             │  │
-│  │     │ STEP 2: Configure for Cursor IDE                          │  │
-│  │     │   Add to `.mcp.json` or `mcp.json` (usually in project   │  │
-│  │     │   root or user config directory):                        │  │
-│  │     │   ```json                                                 │  │
-│  │     │   {                                                       │  │
-│  │     │     "mcpServers": {                                       │  │
-│  │     │       "langfuse-prompts": {                               │  │
-│  │     │         "command": "node",                                │  │
-│  │     │         "args": ["/absolute/path/to/mcp-server-langfuse/build/index.js"],│  │
-│  │     │         "env": {                                         │  │
-│  │     │           "LANGFUSE_PUBLIC_KEY": "pk-lf-...",            │  │
-│  │     │           "LANGFUSE_SECRET_KEY": "sk-lf-...",            │  │
-│  │     │           "LANGFUSE_BASEURL": "http://localhost:3000"    │  │
-│  │     │         }                                                 │  │
-│  │     │       }                                                   │  │
-│  │     │     }                                                     │  │
-│  │     │   }                                                       │  │
-│  │     │   ```                                                     │  │
-│  │     │   After saving, restart Cursor to load the MCP server.    │  │
-│  │     │   You can then use prompts via MCP tools in Claude chat. │  │
-│  │     │                                                             │  │
-│  │     │ STEP 3: Configure for Claude Desktop                      │  │
-│  │     │   Add to `claude_desktop_config.json`:                    │  │
-│  │     │   ```json                                                 │  │
-│  │     │   {                                                       │  │
-│  │     │     "mcpServers": {                                       │  │
-│  │     │       "langfuse": {                                      │  │
-│  │     │         "command": "node",                                │  │
-│  │     │         "args": ["<absolute-path>/build/index.js"],       │  │
-│  │     │         "env": {                                         │  │
-│     │           "LANGFUSE_PUBLIC_KEY": "your-public-key",        │  │
-│     │           "LANGFUSE_SECRET_KEY": "your-secret-key",        │  │
-│  │     │           "LANGFUSE_BASEURL": "http://localhost:3000"    │  │
-│  │     │         }                                                 │  │
-│  │     │       }                                                   │  │
-│  │     │     }                                                     │  │
-│  │     │   }                                                       │  │
-│  │     │   ```                                                     │  │
-│  │     │                                                             │  │
-│  │     │ STEP 4: Configure for Claude Code (CLI)                   │  │
-│  │     │   Option A - Using CLI:                                   │  │
-│  │     │   ```bash                                                 │  │
-│  │     │   claude mcp add \                                        │  │
-│  │     │     --transport http \                                    │  │
-│  │     │     langfuse-docs \                                       │  │
-│  │     │     https://langfuse.com/api/mcp \                        │  │
-│  │     │     --scope user                                          │  │
-│  │     │   ```                                                     │  │
-│  │     │                                                             │  │
-│  │     │   Option B - Manual JSON config:                           │  │
-│  │     │   ```json                                                 │  │
-│  │     │   {                                                       │  │
-│  │     │     "mcpServers": {                                       │  │
-│  │     │       "langfuse-docs": {                                  │  │
-│  │     │         "transportType": "http",                          │  │
-│  │     │         "url": "https://langfuse.com/api/mcp",            │  │
-│  │     │         "verifySsl": true                                 │  │
-│  │     │       }                                                   │  │
-│  │     │     }                                                     │  │
-│  │     │   }                                                       │  │
-│  │     │   ```                                                     │  │
-│  │     │   Note: This connects to Langfuse Docs MCP (read-only),  │  │
-│  │     │   not the prompt management server.                       │  │
-│  │     │                                                             │  │
-│  │     │ STEP 5: Configure for Windsurf                            │  │
-│  │     │   ```json                                                 │  │
-│  │     │   {                                                       │  │
-│  │     │     "mcpServers": {                                       │  │
-│  │     │       "langfuse-docs": {                                  │  │
-│  │     │         "command": "npx",                                 │  │
-│  │     │         "args": ["mcp-remote", "https://langfuse.com/api/mcp"]│  │
-│  │     │       }                                                   │  │
-│  │     │     }                                                     │  │
-│  │     │   }                                                       │  │
-│  │     │   ```                                                     │  │
-│  │     │   Note: Windsurf uses `mcp-remote` proxy for HTTP transport│  │
-│  │     │                                                             │  │
-│  │     │ HOW TO USE AFTER SETUP:                                    │  │
-│  │     │   Once configured, the MCP tools are available in your   │  │
-│  │     │   IDE's Claude chat. You can:                              │  │
-│  │     │   • Ask Claude to "list all prompts"                      │  │
-│  │     │   • Request "get the tech_comparator prompt"              │  │
-│  │     │   • Create new prompts via MCP tools                       │  │
-│  │     │   • Update prompt labels for versioning                   │  │
-│  │     │                                                             │  │
-│  │     │ Use Case for SkillForge:                                   │  │
-│  │     │   Developers can access Langfuse prompts directly from   │  │
-│  │     │   Cursor/Claude Desktop, making it easier to work with    │  │
-│  │     │   agent prompts during development. Prompts can be       │  │
-│  │     │   versioned, A/B tested, and managed collaboratively     │  │
-│  │     │   through Langfuse UI, then accessed by agents via MCP.   │  │
-│  │     └───────────────────────────────────────────────────────────┘  │  │
-│  │                                                                     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                                                                     │  │
-│  │  MCP TRACING IMPLEMENTATION FOR SKILLFORGE                           │  │
-│  │  ────────────────────────────────────────────────────────────────  │  │
-│  │                                                                     │  │
-│  │  SkillForge already uses MCP servers (context7, memory,            │  │
-│  │  sequential-thinking). With Langfuse, we can trace these MCP       │  │
-│  │  interactions automatically.                                      │  │
-│  │                                                                     │  │
-│  │  HOW MCP TRACING WORKS:                                             │  │
-│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
-│  │  │ • MCP client and server operations produce separate traces   │  │
-│  │  │   by default (helps establish service boundaries)            │  │
-│  │  │ • Context propagation via MCP _meta field:                   │  │
-│  │  │   1. Extract OpenTelemetry trace context on client side     │  │
-│  │  │   2. Inject into MCP _meta field in tool calls              │  │
-│  │  │   3. Extract and restore context on server side             │  │
-│  │  │   4. All server operations inherit client's trace context   │  │
-│  │  │ • Uses W3C Trace Context format for distributed tracing      │  │
-│  │  └─────────────────────────────────────────────────────────────┘  │  │
-│  │                                                                     │  │
-│  │  AFTER (Langfuse - Native MCP Support):                            │  │
-│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
-│  │  │ • Automatic MCP tracing via context propagation             │  │
-│  │  │ • Full visibility into agent-tool interactions               │  │
-│  │  │ • Linked traces for client and server operations            │  │
-│  │  │ • OpenTelemetry integration for distributed tracing          │  │
-│  │  └─────────────────────────────────────────────────────────────┘  │  │
-│  │                                                                     │  │
-│  │  Implementation Steps:                                             │  │
-│  │  1. Extract OpenTelemetry trace context on client side           │  │
-│  │     (when making MCP tool calls)                                 │  │
-│  │  2. Inject trace context into MCP _meta field in tool calls      │  │
-│  │  3. Extract and restore context on MCP server side               │  │
-│  │  4. All server operations inherit client's trace context          │  │
-│  │  5. Langfuse automatically links client and server traces        │  │
-│  │  6. View complete agent workflow in Langfuse UI                   │  │
-│  │                                                                     │  │
-│  │  BENEFIT FOR SKILLFORGE:                                           │  │
-│  │  When our agents use MCP tools (context7, postgres, memory),    │  │
-│  │  we get full trace visibility showing:                            │  │
-│  │  • Which MCP tools were called                                    │  │
-│  │  • Input/output for each tool call                                │  │
-│  │  • Latency and performance metrics                                │  │
-│  │  • Linked traces showing complete request flow                    │  │
-│  │                                                                     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                                                                     │  │
-│  │  MCP PROMPT SERVER BENEFITS                                         │  │
-│  │  ────────────────────────────────────────────────────────────────  │  │
-│  │                                                                     │  │
-│  │  SkillForge's 8 specialized agents can benefit from Langfuse's    │  │
-│  │  MCP Prompt Server:                                                │  │
-│  │                                                                     │  │
-│  │  • Centralized Prompt Management:                                  │  │
-│  │    All agent prompts stored in Langfuse, accessible via MCP       │  │
-│  │                                                                     │  │
-│  │  • Version Control:                                                 │  │
-│  │    Track prompt versions, A/B test different prompts              │  │
-│  │                                                                     │  │
-│  │  • Collaborative Editing:                                           │  │
-│  │    Team members can update prompts in Langfuse UI                  │  │
-│  │                                                                     │  │
-│  │  • Direct Agent Access:                                             │  │
-│  │    Agents fetch prompts directly via MCP, no code changes needed │  │
-│  │                                                                     │  │
-│  │  • Prompt Analytics:                                                │  │
-│  │    See which prompts perform best across different agents          │  │
-│  │                                                                     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │                                                                     │  │
-│  │  COMPARISON: LANGSMITH VS LANGFUSE MCP SUPPORT                      │  │
-│  │  ────────────────────────────────────────────────────────────────  │  │
-│  │                                                                     │  │
-│  │  LangSmith MCP Support:                                             │  │
-│  │    ✅ Exposes agents as MCP tools via Agent Server                 │  │
-│  │    ✅ MCP endpoint at /mcp (Streamable HTTP transport)            │  │
-│  │    ✅ Custom authentication middleware support                     │  │
-│  │    ✅ Works with MCP-compliant clients                            │  │
-│  │    ❌ No dedicated MCP server for prompt management               │  │
-│  │                                                                     │  │
-│  │  Langfuse MCP Support:                                              │  │
-│  │    ✅ Dedicated MCP server for prompt management                  │  │
-│  │    ✅ MCP tracing with context propagation                        │  │
-│  │    ✅ OpenTelemetry integration (W3C Trace Context)                │  │
-│  │    ✅ Direct integration with Claude Desktop/Cursor/Windsurf       │  │
-│  │    ✅ Works seamlessly with existing MCP servers                  │  │
-│  │                                                                     │  │
-│  │  KEY DIFFERENCES:                                                  │  │
-│  │    LangSmith:                                                      │  │
-│  │      • Exposes YOUR LangGraph agents as MCP tools                 │  │
-│  │      • Other MCP clients can call your agents via MCP            │  │
-│  │      • Requires Agent Server with /mcp endpoint                  │  │
-│  │      • Uses Streamable HTTP transport                            │  │
-│  │                                                                     │  │
-│  │    Langfuse:                                                       │  │
-│  │      • Provides MCP server to access ITS prompt management        │  │
-│  │      • Tools: getPrompt, listPrompts, createPrompt, etc.          │  │
-│  │      • Enables prompt versioning and management via MCP           │  │
-│  │      • Works with standard MCP clients (stdin/stdout)            │  │
-│  │                                                                     │  │
-│  │  COMPLEMENTARY USE CASES:                                          │  │
-│  │    • LangSmith MCP: Expose SkillForge agents to external tools   │  │
-│  │    • Langfuse MCP: Manage and access prompts for those agents     │  │
-│  │    • Both can be used together for complete observability         │  │
-│  │                                                                     │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1233,30 +1501,43 @@
 
 ## 🔗 References
 
+### Official Documentation
 - **Langfuse Python SDK v3 Docs:** https://langfuse.com/docs/sdk/python
-- **Langfuse Migration Guide:** https://langfuse.com/docs/sdk/python/sdk-v3#upgrade-from-v2
+- **Langfuse Self-Hosting:** https://langfuse.com/self-hosting
+- **Langfuse Docker Compose:** https://github.com/langfuse/langfuse/blob/main/docker-compose.yml
+- **Langfuse v2 to v3 Upgrade Guide:** https://langfuse.com/self-hosting/upgrade/upgrade-guides/upgrade-v2-to-v3
+- **Langfuse Changelog:** https://langfuse.com/changelog
+
+### LangChain/LangGraph Integration
+- **LangChain Tracing:** https://langfuse.com/docs/integrations/langchain/tracing
+- **@observe Decorator:** https://langfuse.com/docs/sdk/python/decorators
+
+### MCP Integration
+- **Native MCP Server (Nov 2025):** https://langfuse.com/changelog/2025-11-20-native-mcp-server
+- **MCP Server GitHub:** https://github.com/langfuse/mcp-server-langfuse
+- **MCP Prompts Docs:** https://langfuse.com/docs/prompt-management/features/mcp-server
+
+### December 2025 Features
+- **Dataset Item Versioning (Dec 15):** https://langfuse.com/changelog
+- **v2 Metrics API (Dec 16):** https://langfuse.com/changelog
+- **Agent Tracing (Nov 5):** https://langfuse.com/docs/tracing-features/agents
+
+### Comparison
 - **Langfuse vs LangSmith:** https://langfuse.com/faq/all/langsmith-alternative
-- **Langfuse Self-Hosting:** https://langfuse.com/docs/deployment/self-host
-- **Langfuse MCP Server:** https://langfuse.com/docs/prompts/features/mcp-server
-- **Langfuse MCP Server GitHub:** https://github.com/langfuse/mcp-server-langfuse
-- **Langfuse MCP Tracing:** https://langfuse.com/docs/observability/features/mcp-tracing
-- **Model Context Protocol:** https://modelcontextprotocol.io/
-- **LangSmith MCP Support:** https://docs.langchain.com/langsmith/server-mcp
-- **LangSmith MCP Support:** https://docs.langchain.com/langsmith/server-mcp
+- **LangWatch vs LangSmith vs Langfuse 2025:** https://langwatch.ai/blog/langwatch-vs-langsmith-vs-braintrust-vs-langfuse-choosing-the-best-llm-evaluation-monitoring-tool-in-2025
 
 ---
 
 ## 📝 Notes
 
-- **Generator Filtering:** Can be removed entirely (Langfuse handles this automatically)
+- **Generator Filtering:** Can be removed entirely (Langfuse handles this automatically) - DELETE 50+ lines!
 - **Test Coverage:** Ensure ≥80% coverage maintained after migration
 - **Breaking Changes:** Minimal - mostly API surface changes
-- **Performance:** Should be similar or better (less overhead from generator filtering)
-- **MCP Support:** Langfuse provides dedicated MCP server for prompt access (different from LangSmith's agent-as-MCP-tool approach)
-- **MCP Integration:** SkillForge can leverage Langfuse MCP server for prompt management and MCP tracing for agent-tool interactions
+- **Performance:** Should be better (no generator filtering overhead, ClickHouse for analytics)
+- **MCP Support:** Native server at /api/public/mcp - no build required!
+- **Architecture:** v3 requires ClickHouse - PostgreSQL alone is NOT sufficient
 
 ---
 
-**Last Updated:** December 16, 2025  
-**Next Steps:** Create feature branch and begin Phase 1 migration
-
+**Last Updated:** December 18, 2025 (v2.0 - December 2025 Best Practices)
+**Next Steps:** Create feature branch and begin Phase 0 infrastructure setup

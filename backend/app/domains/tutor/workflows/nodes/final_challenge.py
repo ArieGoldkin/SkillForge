@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
-from app.db.repositories.tutor_message_repository import TutorMessageRepository
+from app.domains.tutor.repositories.message_repository import TutorMessageRepository
 from app.domains.tutor.workflows.config import TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event

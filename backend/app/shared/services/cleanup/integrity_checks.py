@@ -14,8 +14,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.models.analysis import Analysis
-from app.models.analysis_chunk import AnalysisChunk
+from app.db.models.analysis import Analysis
+from app.db.models.analysis_chunk import AnalysisChunk
 
 logger = get_logger(__name__)
 

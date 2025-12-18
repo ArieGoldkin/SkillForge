@@ -606,7 +606,7 @@ async def create_test_analysis(db_session):
             )
             # Now you can use analysis_id with agents
     """
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     async def _create(
         analysis_id: str,

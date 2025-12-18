@@ -8,10 +8,10 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select
 
-from app.api.v1.workflow_runner import run_workflow_task
+from app.api.v1.analysis.workflow_runner import run_workflow_task
 from app.core.config import get_settings
 from app.db.session import AsyncSessionLocal, engine
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
@@ -385,7 +385,7 @@ async def test_workflow_persists_results_to_database(
     """
     from sqlalchemy import select
 
-    from app.api.v1.workflow_runner import run_workflow_task
+    from app.api.v1.analysis.workflow_runner import run_workflow_task
 
     # Use a simple test URL
     test_url = "https://react.dev"
@@ -511,7 +511,7 @@ async def test_workflow_persists_results_to_database(
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(150)
-@patch("app.api.v1.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 async def test_workflow_fails_when_required_fields_missing(
     mock_workflow,
     requires_database,

@@ -48,7 +48,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.analysis_chunk import AnalysisChunk
+from app.db.models.analysis_chunk import AnalysisChunk
 
 
 class ChunkRepository:

@@ -174,6 +174,18 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
               </>
             )}
           </div>
+
+          {/* Error preview (collapsed) - Show brief error message */}
+          {step.status === 'failed' && step.errorDetails && !isExpanded && (
+            <div className="mt-1 text-xs text-destructive truncate">{step.errorDetails.error}</div>
+          )}
+
+          {/* Skip reason preview (collapsed) */}
+          {step.status === 'skipped' && step.skipReason && !isExpanded && (
+            <div className="mt-1 text-xs text-muted-foreground italic truncate">
+              {step.skipReason}
+            </div>
+          )}
         </button>
 
         {/* Expandable description with rich details */}

@@ -226,6 +226,8 @@ export default function AnalyzeResult() {
           <ProgressColumn
             overallProgress={overallProgress}
             steps={steps}
+            hasFailedStages={hasFailedStages}
+            failedStagesCount={failedStagesCount}
             analysisMetadata={analysisMetadata}
           />
           {/* Show completion card only when artifact is ready (isComplete = true), regardless of failures */}

@@ -24,7 +24,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
-from app.models.agent_finding import AgentFinding
+from app.db.models.agent_finding import AgentFinding
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 logger = get_logger(__name__)
@@ -302,7 +302,7 @@ async def save_agent_finding(  # noqa: PLR0913
     # Verify Analysis exists before saving finding (prevents foreign key violations)
     from sqlalchemy import select
 
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     result = await session.execute(select(Analysis).where(Analysis.id == analysis_id))
     analysis = result.scalar_one_or_none()

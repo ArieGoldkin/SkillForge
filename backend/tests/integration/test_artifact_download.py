@@ -9,8 +9,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.main import app
-from app.models.analysis import Analysis
-from app.models.artifact import Artifact
+from app.db.models.analysis import Analysis
+from app.db.models.artifact import Artifact
 
 
 @pytest.mark.asyncio

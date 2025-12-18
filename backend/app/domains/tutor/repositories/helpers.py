@@ -5,7 +5,7 @@ Extracted to reduce file size and improve maintainability.
 
 from datetime import UTC, datetime
 
-from app.models.tutoring import TutoringSession
+from app.db.models.tutoring import TutoringSession
 
 
 def update_session_fields(  # noqa: PLR0913 - Repository method needs many optional parameters

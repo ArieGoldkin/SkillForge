@@ -19,7 +19,7 @@ def test_detect_python_imports():
     assert result2["has_imports"] is True
 
     # Nested import
-    content3 = "from app.models import User, Post"
+    content3 = "from app.db.models import User, Post"
     result3 = detect_code_patterns(content3)
     assert result3["has_imports"] is True
 

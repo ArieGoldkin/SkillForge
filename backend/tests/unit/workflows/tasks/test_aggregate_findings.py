@@ -955,7 +955,7 @@ class TestAgentMemoryTypeMap:
 
     def test_all_agents_have_memory_type(self):
         """Test that all analysis agents have memory type mappings."""
-        from app.models.agent_memory import MemoryType
+        from app.db.models.agent_memory import MemoryType
         from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         expected_agents = [
@@ -975,21 +975,21 @@ class TestAgentMemoryTypeMap:
 
     def test_security_auditor_maps_to_vulnerability_pattern(self):
         """Test security_auditor findings are stored as vulnerability patterns."""
-        from app.models.agent_memory import MemoryType
+        from app.db.models.agent_memory import MemoryType
         from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["security_auditor"] == MemoryType.VULNERABILITY_PATTERN
 
     def test_tech_comparator_maps_to_analysis_summary(self):
         """Test tech_comparator findings are stored as analysis summaries."""
-        from app.models.agent_memory import MemoryType
+        from app.db.models.agent_memory import MemoryType
         from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["tech_comparator"] == MemoryType.ANALYSIS_SUMMARY
 
     def test_implementation_planner_maps_to_best_practice(self):
         """Test implementation_planner findings are stored as best practices."""
-        from app.models.agent_memory import MemoryType
+        from app.db.models.agent_memory import MemoryType
         from app.domains.analysis.workflows.tasks.aggregate_findings import AGENT_MEMORY_TYPE_MAP
 
         assert AGENT_MEMORY_TYPE_MAP["implementation_planner"] == MemoryType.BEST_PRACTICE

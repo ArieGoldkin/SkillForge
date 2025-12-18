@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.api.v1.sse_handler import stream_analysis_progress
+from app.api.v1.analysis.sse_handler import stream_analysis_progress
 
 
 
@@ -23,8 +23,8 @@ def mock_request():
     return request
 
 
-@patch("app.api.v1.sse_handler.broadcaster")
-@patch("app.api.v1.sse_handler.logger")
+@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_success(
     mock_logger,
     mock_broadcaster,
@@ -58,8 +58,8 @@ async def test_stream_analysis_progress_success(
     assert len(events) >= 3
 
 
-@patch("app.api.v1.sse_handler.broadcaster")
-@patch("app.api.v1.sse_handler.logger")
+@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_client_disconnect(
     mock_logger,
     mock_broadcaster,
@@ -87,8 +87,8 @@ async def test_stream_analysis_progress_client_disconnect(
     assert response is not None
 
 
-@patch("app.api.v1.sse_handler.broadcaster")
-@patch("app.api.v1.sse_handler.logger")
+@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_error(
     mock_logger,
     mock_broadcaster,
@@ -118,8 +118,8 @@ async def test_stream_analysis_progress_error(
     assert response is not None
 
 
-@patch("app.api.v1.sse_handler.broadcaster")
-@patch("app.api.v1.sse_handler.logger")
+@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_complete_event(
     mock_logger,
     mock_broadcaster,
@@ -157,8 +157,8 @@ async def test_stream_analysis_progress_complete_event(
     assert len(events) >= 1
 
 
-@patch("app.api.v1.sse_handler.broadcaster")
-@patch("app.api.v1.sse_handler.logger")
+@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_cancelled(
     mock_logger,
     mock_broadcaster,

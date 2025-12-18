@@ -10,16 +10,16 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.db.repositories.tutor_message_repository import (
+from app.db.models.tutoring import TutoringMessage, TutoringSession
+from app.db.session import get_db
+from app.domains.tutor.repositories.message_repository import (
     ITutorMessageRepository,
     get_tutor_message_repository,
 )
-from app.db.repositories.tutor_session_repository import (
+from app.domains.tutor.repositories.session_repository import (
     ITutorSessionRepository,
     get_tutor_session_repository,
 )
-from app.db.session import get_db
-from app.models.tutoring import TutoringMessage, TutoringSession
 
 logger = get_logger(__name__)
 

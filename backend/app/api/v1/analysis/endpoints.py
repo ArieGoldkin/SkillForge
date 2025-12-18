@@ -7,8 +7,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.v1.sse_handler import stream_analysis_progress as stream_analysis_progress_handler
-from app.api.v1.workflow_runner import run_workflow_task
+from app.api.v1.analysis.sse_handler import (
+    stream_analysis_progress as stream_analysis_progress_handler,
+)
+from app.api.v1.analysis.workflow_runner import run_workflow_task
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid

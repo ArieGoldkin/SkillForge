@@ -14,9 +14,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.analysis import Analysis
 from app.domains.analysis.schemas.api import ArtifactRef, ArtifactSection, ContentSections
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
-from app.models.analysis import Analysis
 
 logger = get_logger(__name__)
 

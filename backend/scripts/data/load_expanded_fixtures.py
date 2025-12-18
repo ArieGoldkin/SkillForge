@@ -55,9 +55,9 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
     from app.core.config import get_settings
     from app.core.logging import get_logger
     from app.db.session import AsyncSessionLocal
-    from app.models.analysis import Analysis
-    from app.models.analysis_chunk import AnalysisChunk
-    from app.models.artifact import Artifact
+    from app.db.models.analysis import Analysis
+    from app.db.models.analysis_chunk import AnalysisChunk
+    from app.db.models.artifact import Artifact
     from app.services.embeddings import EmbeddingService
     from app.services.embeddings.deterministic import DeterministicEmbeddingService
 

@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repositories.library_repository import LibraryRepository
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.schemas.library import LibraryFilters
 
 @pytest.fixture

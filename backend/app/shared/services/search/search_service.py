@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import SEARCH_TOP_K_MAX, SEARCH_TOP_K_MIN
 from app.core.logging import get_logger
-from app.models.analysis_chunk import AnalysisChunk
+from app.db.models.analysis_chunk import AnalysisChunk
 from app.schemas.search import (
     ChunkMetadata,
     ReRankConfig,

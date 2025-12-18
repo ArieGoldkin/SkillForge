@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.workflows.agents import (
     run_implementation_planner,
     run_integration_feasibility,
@@ -84,7 +84,7 @@ async def test_tech_comparator_integration(
     # Verify confidence_score was saved to database
     from sqlalchemy import select
 
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     result_query = await db_session.execute(
         select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
@@ -165,7 +165,7 @@ async def test_integration_feasibility_integration(
     # Verify confidence_score was saved to database
     from sqlalchemy import select
 
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     result_query = await db_session.execute(
         select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
@@ -251,7 +251,7 @@ async def test_implementation_planner_integration(
     # Verify confidence_score was saved to database
     from sqlalchemy import select
 
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     result_query = await db_session.execute(
         select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
@@ -368,7 +368,7 @@ async def test_agents_parallel_execution_with_separate_sessions(
     from sqlalchemy import select
 
     from app.db.session import AsyncSessionLocal
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     async with AsyncSessionLocal() as session:
         result_query = await session.execute(
@@ -441,7 +441,7 @@ async def test_agent_returns_confidence_score_in_output(
     # The extraction code removes it from findings, but we can verify it was saved
     from sqlalchemy import select
 
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     result_query = await db_session.execute(
         select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))
@@ -509,7 +509,7 @@ async def test_confidence_score_range_enforced(
     # Verify confidence_score is in valid range
     from sqlalchemy import select
 
-    from app.models.agent_finding import AgentFinding
+    from app.db.models.agent_finding import AgentFinding
 
     result_query = await db_session.execute(
         select(AgentFinding).where(AgentFinding.analysis_id == UUID(analysis_id))

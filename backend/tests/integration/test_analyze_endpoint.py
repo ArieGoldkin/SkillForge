@@ -11,8 +11,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from app.main import app
-from app.models.analysis import Analysis
-from app.models.artifact import Artifact
+from app.db.models.analysis import Analysis
+from app.db.models.artifact import Artifact
 
 
 @pytest.mark.asyncio
@@ -25,8 +25,8 @@ async def test_post_analyze_creates_record(requires_database, reset_engine_conne
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
-        with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
@@ -60,8 +60,8 @@ async def test_post_analyze_workflow_executes(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
-        with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
@@ -84,8 +84,8 @@ async def test_post_analyze_sse_events(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
-        with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 # Create analysis
@@ -113,8 +113,8 @@ async def test_post_analyze_error_handling(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
-        with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
@@ -146,7 +146,7 @@ async def test_post_analyze_concurrent_requests(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Create multiple analyses concurrently
@@ -189,11 +189,11 @@ async def test_post_analyze_content_types(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             for url, expected_type in test_cases:
-                with patch("app.api.v1.analyze.uuid.uuid4", return_value=uuid.uuid4()):
+                with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=uuid.uuid4()):
                     response = await client.post(
                         "/api/v1/analyze",
                         json={"url": url},
@@ -256,7 +256,7 @@ async def test_workflow_status_updates_to_complete(
     requires_database, reset_engine_connections, db_session
 ):
     """Test that workflow status is updated to 'complete' after successful execution."""
-    from app.api.v1.workflow_runner import run_workflow_task
+    from app.api.v1.analysis.workflow_runner import run_workflow_task
     from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()
@@ -310,7 +310,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     requires_database, reset_engine_connections, db_session
 ):
     """Test that workflow status is updated to 'failed' when GeneratorExit occurs."""
-    from app.api.v1.workflow_runner import run_workflow_task
+    from app.api.v1.analysis.workflow_runner import run_workflow_task
     from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()

@@ -8,7 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 
 
 @pytest.fixture

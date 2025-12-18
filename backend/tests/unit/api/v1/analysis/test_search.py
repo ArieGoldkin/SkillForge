@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.db.repositories.analysis_repository import get_analysis_repository
 from app.main import app
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 
 
 client = TestClient(app)
@@ -30,7 +30,7 @@ def override_get_repo(mock_repo):
 async def test_search_similar_analyses_success(mock_repo, override_get_repo):
     """Test successful search request."""
     # Mock EmbeddingService
-    with patch("app.api.v1.search.EmbeddingService") as mock_embedding_service:
+    with patch("app.api.v1.analysis.search.EmbeddingService") as mock_embedding_service:
         mock_service_instance = mock_embedding_service.return_value
         mock_service_instance.generate_embedding = AsyncMock(return_value=[0.1] * 1536)
         mock_service_instance.close = AsyncMock()
@@ -69,7 +69,7 @@ async def test_search_similar_analyses_empty_query(mock_repo, override_get_repo)
 @pytest.mark.asyncio
 async def test_search_similar_analyses_service_error(mock_repo, override_get_repo):
     """Test error handling when embedding service fails."""
-    with patch("app.api.v1.search.EmbeddingService") as mock_embedding_service:
+    with patch("app.api.v1.analysis.search.EmbeddingService") as mock_embedding_service:
         mock_service_instance = mock_embedding_service.return_value
         mock_service_instance.generate_embedding = AsyncMock(side_effect=Exception("API Error"))
 

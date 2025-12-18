@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repositories.example_repository import ExampleRepository
-from app.models.agent_example import AgentExample
+from app.db.models.agent_example import AgentExample
 
 
 @pytest.mark.unit

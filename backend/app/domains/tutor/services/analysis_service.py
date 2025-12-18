@@ -8,8 +8,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.agent_finding import AgentFinding
-from app.models.analysis import Analysis
+from app.db.models.agent_finding import AgentFinding
+from app.db.models.analysis import Analysis
 
 
 async def get_analysis_summary(

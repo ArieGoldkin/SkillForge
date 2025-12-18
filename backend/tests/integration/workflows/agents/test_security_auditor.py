@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.workflows.agents import run_security_auditor
 
 # Note: requires_llm fixture is provided by backend/tests/conftest.py

@@ -9,8 +9,8 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.repositories.tutor_message_repository import TutorMessageRepository
-from app.db.repositories.tutor_session_repository import TutorSessionRepository
+from app.domains.tutor.repositories.message_repository import TutorMessageRepository
+from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 
 
 @pytest.mark.asyncio
@@ -36,7 +36,7 @@ async def test_create_session(db_session: AsyncSession):
 @pytest.mark.integration
 async def test_create_session_with_analysis_id(db_session: AsyncSession):
     """Test creating session with analysis_id."""
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     analysis = Analysis(
         url="https://example.com/article",

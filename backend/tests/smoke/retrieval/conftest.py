@@ -27,8 +27,8 @@ from tests.smoke.retrieval.metrics import MetricsCalculator
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from app.models.analysis import Analysis
-    from app.models.analysis_chunk import AnalysisChunk
+    from app.db.models.analysis import Analysis
+    from app.db.models.analysis_chunk import AnalysisChunk
     from app.shared.services.embeddings.deterministic import (
         DeterministicEmbeddingService as EmbeddingService,
     )
@@ -192,7 +192,7 @@ async def smoke_test_analysis(
     Creates a dedicated analysis record that will hold test chunks.
     Cleans up after tests complete.
     """
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     analysis_id = uuid4()
     analysis = Analysis(
@@ -235,7 +235,7 @@ async def seeded_chunks(
 
     Returns list of created chunks for verification.
     """
-    from app.models.analysis_chunk import AnalysisChunk
+    from app.db.models.analysis_chunk import AnalysisChunk
 
     chunks: list[AnalysisChunk] = []
     analysis_id = smoke_test_analysis.id

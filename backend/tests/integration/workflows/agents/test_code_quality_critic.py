@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.workflows.agents import run_code_quality_critic
 
 # Note: requires_llm fixture is provided by backend/tests/conftest.py

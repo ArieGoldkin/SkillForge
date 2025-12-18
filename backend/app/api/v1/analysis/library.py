@@ -17,9 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status as http_status
 
 from app.core.logging import get_logger
+from app.db.models.analysis import Analysis
 from app.db.repositories.library_repository import ILibraryRepository, get_library_repository
 from app.db.session import get_db
-from app.models.analysis import Analysis
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 from app.shared.services.embeddings.service import EmbeddingService
 

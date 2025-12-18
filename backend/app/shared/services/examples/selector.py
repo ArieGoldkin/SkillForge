@@ -155,7 +155,7 @@ class SemanticExampleSelector:
             )
 
         # Import AgentExample model (lazy import to avoid circular dependencies)
-        from app.models.agent_example import AgentExample as AgentExampleModel
+        from app.db.models.agent_example import AgentExample as AgentExampleModel
 
         # Build vector similarity query
         # Using cosine_distance for semantic similarity
@@ -269,7 +269,7 @@ class SemanticExampleSelector:
             Total count of matching examples
 
         """
-        from app.models.agent_example import AgentExample as AgentExampleModel
+        from app.db.models.agent_example import AgentExample as AgentExampleModel
 
         query = (
             select(func.count(AgentExampleModel.id))

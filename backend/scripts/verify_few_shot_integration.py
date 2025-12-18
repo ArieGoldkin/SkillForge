@@ -19,7 +19,7 @@ from sqlalchemy import select, text
 
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
-from app.models.agent_example import AgentExample as AgentExampleModel
+from app.db.models.agent_example import AgentExample as AgentExampleModel
 from app.shared.services.agents.few_shot_factory import (
     MAX_EXAMPLE_TOKENS,
     _estimate_token_count,

@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.models.agent_example import AgentExample
+from app.db.models.agent_example import AgentExample
 
 logger = get_logger(__name__)
 

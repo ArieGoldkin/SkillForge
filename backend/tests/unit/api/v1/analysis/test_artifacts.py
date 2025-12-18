@@ -8,9 +8,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.v1.artifacts import router
+from app.api.v1.analysis.artifacts import router
 from app.db.repositories.artifact_repository import get_artifact_repository
-
 
 
 @pytest.fixture
@@ -115,6 +114,68 @@ class TestGetArtifactByAnalysis:
         client.get(f"/api/v1/analyze/{analysis_id}/artifact")
 
         mock_repo.get_latest_artifact_by_analysis.assert_awaited_once_with(analysis_id)
+
+
+class TestGetArtifactById:
+    """Tests for GET /artifacts/{artifact_id} endpoint."""
+
+    def test_get_artifact_by_id_success(self, client, mock_repo, mock_artifact):
+        """Test successful artifact retrieval by ID returns proper response structure."""
+        mock_repo.get_artifact_by_id.return_value = mock_artifact
+
+        response = client.get(f"/api/v1/artifacts/{mock_artifact.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        # Verify all expected fields are present
+        assert data["artifact_id"] == str(mock_artifact.id)
+        assert data["analysis_id"] == str(mock_artifact.analysis_id)
+        assert data["markdown_content"] == mock_artifact.markdown_content
+        assert data["artifact_metadata"] == mock_artifact.artifact_metadata
+        assert "created_at" in data
+
+    def test_get_artifact_by_id_not_found(self, client, mock_repo):
+        """Test 404 when artifact not found by ID."""
+        mock_repo.get_artifact_by_id.return_value = None
+        artifact_id = uuid4()
+
+        response = client.get(f"/api/v1/artifacts/{artifact_id}")
+
+        assert response.status_code == 404
+        assert "Artifact" in response.json()["detail"]
+        assert str(artifact_id) in response.json()["detail"]
+
+    def test_get_artifact_by_id_null_content(self, client, mock_repo, mock_artifact):
+        """Test that null markdown content returns empty string, not null."""
+        mock_artifact.markdown_content = None
+        mock_repo.get_artifact_by_id.return_value = mock_artifact
+
+        response = client.get(f"/api/v1/artifacts/{mock_artifact.id}")
+
+        assert response.status_code == 200
+        # Null content should be converted to empty string per endpoint logic
+        assert response.json()["markdown_content"] == ""
+
+    def test_get_artifact_by_id_null_metadata(self, client, mock_repo, mock_artifact):
+        """Test handling of null artifact metadata."""
+        mock_artifact.artifact_metadata = None
+        mock_repo.get_artifact_by_id.return_value = mock_artifact
+
+        response = client.get(f"/api/v1/artifacts/{mock_artifact.id}")
+
+        assert response.status_code == 200
+        assert response.json()["artifact_metadata"] is None
+
+    def test_get_artifact_by_id_calls_repository_with_correct_id(
+        self, client, mock_repo, mock_artifact
+    ):
+        """Test that repository is called with the correct artifact ID."""
+        mock_repo.get_artifact_by_id.return_value = mock_artifact
+        artifact_id = mock_artifact.id
+
+        client.get(f"/api/v1/artifacts/{artifact_id}")
+
+        mock_repo.get_artifact_by_id.assert_awaited_once_with(artifact_id)
 
 
 class TestDownloadArtifact:

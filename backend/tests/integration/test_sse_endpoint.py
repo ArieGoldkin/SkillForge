@@ -9,8 +9,8 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sse_starlette.sse import EventSourceResponse
 
-from app.api.v1.analyze import router
-from app.api.v1.sse_handler import stream_analysis_progress
+from app.api.v1.analysis.endpoints import router
+from app.api.v1.analysis.sse_handler import stream_analysis_progress
 from app.main import app
 from app.shared.services.messaging.broadcaster import broadcaster
 

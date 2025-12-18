@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import (
+from app.db.models import (
     AgentFinding,
     Analysis,
     AnalysisProgress,

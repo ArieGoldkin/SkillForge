@@ -11,8 +11,8 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
+from app.db.models.agent_memory import MemoryType
 from app.db.session import get_session_factory
-from app.models.agent_memory import MemoryType
 from app.shared.services.memory import AgentMemoryService
 
 logger = get_logger(__name__)

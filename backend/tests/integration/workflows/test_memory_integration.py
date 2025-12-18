@@ -29,7 +29,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select, text
 
-from app.models.agent_memory import AgentMemory, MemoryType
+from app.db.models.agent_memory import AgentMemory, MemoryType
 from app.shared.services.embeddings import EmbeddingService
 from app.shared.services.memory.agent_memory_service import AgentMemoryService
 from app.shared.services.memory.proactive_recall import (

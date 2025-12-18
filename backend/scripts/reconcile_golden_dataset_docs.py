@@ -98,9 +98,9 @@ async def main() -> int:
     """Insert any missing fixture documents into the database."""
     from app.core.logging import get_logger
     from app.db.session import AsyncSessionLocal
-    from app.models.analysis import Analysis
-    from app.models.analysis_chunk import AnalysisChunk
-    from app.models.artifact import Artifact
+    from app.db.models.analysis import Analysis
+    from app.db.models.analysis_chunk import AnalysisChunk
+    from app.db.models.artifact import Artifact
     from app.services.embeddings import EmbeddingService
 
     logger = get_logger(__name__)

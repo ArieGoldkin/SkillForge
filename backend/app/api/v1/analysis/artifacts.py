@@ -40,6 +40,43 @@ async def get_artifact_by_analysis(
     )
 
 
+@router.get("/artifacts/{artifact_id}")
+async def get_artifact_by_id(
+    artifact_id: uuid.UUID,
+    repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
+) -> ArtifactMetadataResponse:
+    """Retrieve artifact metadata by artifact ID.
+
+    Args:
+        artifact_id: UUID of the artifact to retrieve
+        repo: Artifact repository dependency
+
+    Returns:
+        Artifact metadata including markdown content
+
+    Raises:
+        HTTPException: 404 if artifact not found
+
+    """
+    artifact = await repo.get_artifact_by_id(artifact_id)
+
+    if not artifact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact {artifact_id} not found",
+        )
+
+    return ArtifactMetadataResponse(
+        artifact_id=str(artifact.id),
+        analysis_id=str(artifact.analysis_id),
+        markdown_content=str(cast(str | None, artifact.markdown_content) or ""),
+        artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
+        if artifact.artifact_metadata
+        else None,
+        created_at=artifact.created_at.isoformat() if artifact.created_at else "",
+    )
+
+
 @router.get("/artifacts/{artifact_id}/download")
 async def download_artifact(
     artifact_id: uuid.UUID,

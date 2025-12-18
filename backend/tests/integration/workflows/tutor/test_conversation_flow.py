@@ -33,7 +33,7 @@ async def test_create_session_endpoint(client):
 @pytest.mark.asyncio
 async def test_get_session_endpoint(client, db_session):
     """Test getting a session (for resume)."""
-    from app.db.repositories.tutor_session_repository import TutorSessionRepository
+    from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 
     session_repo = TutorSessionRepository(session=db_session)
     session = await session_repo.create_session(user_level="beginner")
@@ -51,7 +51,7 @@ async def test_get_session_endpoint(client, db_session):
 @pytest.mark.asyncio
 async def test_update_session_status(client, db_session):
     """Test updating session status (for exit)."""
-    from app.db.repositories.tutor_session_repository import TutorSessionRepository
+    from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 
     session_repo = TutorSessionRepository(session=db_session)
     session = await session_repo.create_session()
@@ -70,7 +70,7 @@ async def test_update_session_status(client, db_session):
 @pytest.mark.asyncio
 async def test_send_message_endpoint(client, db_session):
     """Test sending a message in a session."""
-    from app.db.repositories.tutor_session_repository import TutorSessionRepository
+    from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 
     session_repo = TutorSessionRepository(session=db_session)
     session = await session_repo.create_session()

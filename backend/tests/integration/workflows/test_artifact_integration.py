@@ -14,7 +14,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.schemas.api import ArtifactSection
 from app.domains.analysis.services.context.artifact_store import (
     ArtifactNotFoundError,

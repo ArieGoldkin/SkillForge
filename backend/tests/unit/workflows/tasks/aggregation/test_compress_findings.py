@@ -107,9 +107,10 @@ class TestFormatValue:
 
     def test_format_long_string(self):
         """Test truncation of long strings."""
-        value = "x" * 300
+        value = "x" * 600
         result = _format_value(value)
-        assert len(result) == 200  # 197 chars + "..."
+        # Issue #299-304: Updated from 200 to 500 to preserve analytical depth
+        assert len(result) == 500  # 497 chars + "..."
         assert result.endswith("...")
 
 

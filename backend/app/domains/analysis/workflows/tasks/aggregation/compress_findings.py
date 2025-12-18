@@ -19,10 +19,13 @@ from app.core.model_factory import get_chat_model
 logger = get_logger(__name__)
 settings = get_settings()
 
-# Constants
+# Issue #299-304: Increased limits to preserve analytical depth for synthesis
+# Previous limits (200 chars) were too aggressive, causing findings to be
+# over-compressed, which resulted in shallow synthesis and low depth scores.
+# These limits apply during finding compression before synthesis.
 MAX_LIST_ITEMS = 10
-MAX_STRING_LENGTH = 200
-MAX_VALUE_LENGTH = 200
+MAX_STRING_LENGTH = 500  # Increased from 200 to preserve detail
+MAX_VALUE_LENGTH = 500  # Increased from 200 to preserve detail
 
 
 class CompressedFinding(BaseModel):

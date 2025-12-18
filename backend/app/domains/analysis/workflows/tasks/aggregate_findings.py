@@ -12,6 +12,7 @@ from uuid import UUID
 
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
+from app.db.models.agent_memory import MemoryType
 from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import (
@@ -42,7 +43,6 @@ from app.domains.analysis.workflows.tasks.aggregation_helpers import (
 from app.domains.analysis.workflows.tasks.aggregation_postprocessing import (
     validate_and_format_aggregated_insights,
 )
-from app.models.agent_memory import MemoryType
 from app.shared.services.memory.agent_memory_service import AgentMemoryService
 
 logger = get_logger(__name__)

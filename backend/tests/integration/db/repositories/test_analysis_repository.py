@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repositories.analysis_repository import AnalysisRepository
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 
 
 @pytest.fixture

@@ -80,6 +80,45 @@ class TestQualityEvaluatorParsing:
     @pytest.mark.asyncio
     @patch("app.evaluation.evaluators.quality.get_chat_model")
     @patch("app.core.config.settings")
+    async def test_parse_gemini_dict_response(self, mock_settings, mock_get_chat_model):
+        """Evaluator correctly parses Gemini's new dict format response.
+
+        Issue: Gemini (Dec 2024+) returns responses in format:
+        [{'type': 'text', 'text': '8', 'extras': {'signature': '...'}}]
+        instead of just "8" or ["8"].
+        """
+        mock_settings.LLM_MODEL = "gemini-3-flash"
+
+        # Mock model that returns Gemini's new dict format
+        mock_model = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = [
+            {
+                "type": "text",
+                "text": "9",
+                "extras": {"signature": "abc123"},
+            }
+        ]
+        mock_model.ainvoke = AsyncMock(return_value=mock_response)
+        mock_get_chat_model.return_value = mock_model
+
+        evaluator = create_quality_evaluator(aspect="depth")
+
+        mock_run = MagicMock()
+        mock_run.outputs = {"result": "Detailed analysis output"}
+        mock_example = MagicMock()
+        mock_example.inputs = {"content": "Input"}
+        mock_example.outputs = {}
+
+        result = await evaluator(mock_run, mock_example)
+
+        assert result["key"] == "quality_depth"
+        assert result["score"] == 0.9  # 9/10 normalized
+        assert "9" in result.get("comment", "") and "/10" in result.get("comment", "")
+
+    @pytest.mark.asyncio
+    @patch("app.evaluation.evaluators.quality.get_chat_model")
+    @patch("app.core.config.settings")
     async def test_parse_invalid_response(self, mock_settings, mock_get_chat_model):
         """Evaluator handles unparseable response gracefully."""
         mock_settings.LLM_MODEL = "gpt-4o-mini"
@@ -173,9 +212,10 @@ class TestExtractEvaluableContent:
 
     def test_extract_from_string_truncates_long_content(self):
         """Truncates very long strings."""
-        long_string = "x" * 10000
+        long_string = "x" * 20000
         result = _extract_evaluable_content(long_string)
-        assert len(result) == 8000  # MAX_CONTENT_LENGTH
+        # Issue #299-304: Updated from 8000 to 15000 to preserve analytical depth
+        assert len(result) == 15000  # MAX_CONTENT_LENGTH
 
     def test_extract_insights_from_dict(self):
         """Extracts insights key from dictionary."""

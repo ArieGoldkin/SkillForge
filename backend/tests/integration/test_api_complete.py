@@ -19,7 +19,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.main import app
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 
@@ -145,7 +145,7 @@ async def test_full_workflow_e2e(reset_engine_connections, db_session):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow_with_db),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow_with_db),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -246,7 +246,7 @@ async def test_api_accepts_non_uuid_analysis_id(reset_engine_connections):
         """Mock workflow that does nothing."""
         pass
 
-    with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow):
+    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
@@ -277,7 +277,7 @@ async def test_api_content_type_detection_article(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -302,7 +302,7 @@ async def test_api_content_type_detection_video(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -327,7 +327,7 @@ async def test_api_content_type_detection_repo(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -353,7 +353,7 @@ async def test_api_concurrent_requests(reset_engine_connections, db_session):
         """Mock workflow that does nothing."""
         pass
 
-    with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow):
+    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Create multiple concurrent requests with unique URLs
@@ -483,7 +483,7 @@ async def test_api_request_id_header(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_workflow),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_workflow),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

@@ -16,7 +16,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.agent_memory import MemoryType
+from app.db.models.agent_memory import MemoryType
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
 from app.shared.services.embeddings import EmbeddingService
 from app.shared.services.memory.agent_memory_service import AgentMemoryService

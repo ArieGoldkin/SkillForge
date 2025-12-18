@@ -11,8 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.tutoring import TutoringMessage, TutoringSession
 from app.db.session import get_db
-from app.models.tutoring import TutoringMessage, TutoringSession
 
 logger = get_logger(__name__)
 

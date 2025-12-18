@@ -43,8 +43,8 @@ async def _update_analysis_status(analysis_id: uuid.UUID, status: str) -> None:
     try:
         from sqlalchemy import select
 
+        from app.db.models.analysis import Analysis
         from app.db.session import AsyncSessionLocal
-        from app.models.analysis import Analysis
 
         async with AsyncSessionLocal() as db_session:
             result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_id))
@@ -86,8 +86,8 @@ async def _persist_analysis_data(analysis_id: uuid.UUID, workflow_result: dict) 
     try:
         from sqlalchemy import select
 
+        from app.db.models.analysis import Analysis
         from app.db.session import AsyncSessionLocal
-        from app.models.analysis import Analysis
 
         async with AsyncSessionLocal() as db_session:
             result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_id))

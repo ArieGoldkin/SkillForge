@@ -87,7 +87,7 @@ async def test_api_response_matches_schema(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -299,7 +299,7 @@ async def test_content_type_values_match_schema(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Test all content types
@@ -332,7 +332,7 @@ async def test_sse_endpoint_path_format(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -363,7 +363,7 @@ async def test_uuid_format_in_responses(reset_engine_connections):
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
-        patch("app.api.v1.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
+        patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task),
     ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:

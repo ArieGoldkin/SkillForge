@@ -11,8 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.db.models.tutoring import TutoringSession
 from app.db.session import get_db
-from app.models.tutoring import TutoringSession
 
 logger = get_logger(__name__)
 
@@ -105,7 +105,7 @@ class TutorSessionRepository:
         status: str | None = None,
     ) -> TutoringSession:
         """Update session state fields."""
-        from app.db.repositories.tutor_helpers import update_session_fields
+        from app.domains.tutor.repositories.helpers import update_session_fields
 
         session = await self.get_session(session_id)
         if not session:

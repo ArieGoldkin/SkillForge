@@ -25,9 +25,9 @@ from sqlalchemy import delete, select, update
 
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
-from app.models.analysis import Analysis
-from app.models.analysis_chunk import AnalysisChunk
-from app.models.artifact import Artifact
+from app.db.models.analysis import Analysis
+from app.db.models.analysis_chunk import AnalysisChunk
+from app.db.models.artifact import Artifact
 from app.services.extraction import JinaReader
 from app.domains.analysis.workflows.analysis import analysis_workflow
 

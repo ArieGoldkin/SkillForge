@@ -47,15 +47,15 @@ class TestCreateAnalysis:
     """Test cases for POST /api/v1/analyze endpoint."""
 
     @pytest.mark.asyncio
-    @patch("app.api.v1.analyze.asyncio.create_task")
-    @patch("app.api.v1.analyze.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
     async def test_create_analysis_success(
         self,
         mock_detect_type,
         mock_create_task,
     ):
         """Test successful analysis creation by calling endpoint directly."""
-        from app.api.v1.analyze import create_analysis
+        from app.api.v1.analysis.endpoints import create_analysis
         from app.domains.analysis.schemas.api import AnalyzeRequest
 
         # Setup mocks
@@ -71,7 +71,7 @@ class TestCreateAnalysis:
         request = AnalyzeRequest(url="https://example.com/article")
 
         # Mock UUID generation
-        with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
             # Call endpoint directly with mocked database session
             response = await create_analysis(request, analysis_repo=mock_repo)
 
@@ -95,7 +95,7 @@ class TestCreateAnalysis:
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
-    @patch("app.api.v1.analyze.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
     def test_create_analysis_content_type_detection_fails(
         self, mock_detect_type, client: TestClient
     ):
@@ -113,9 +113,9 @@ class TestCreateAnalysis:
         assert "Invalid URL format" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    @patch("app.api.v1.analyze.asyncio.create_task")
-    @patch("app.api.v1.analyze.detect_content_type")
-    @patch("app.api.v1.analyze.normalize_analysis_id_to_uuid")
+    @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.normalize_analysis_id_to_uuid")
     async def test_create_analysis_custom_id(
         self,
         mock_normalize_id,
@@ -123,7 +123,7 @@ class TestCreateAnalysis:
         mock_create_task,
     ):
         """Test that custom analysis_id in request is used."""
-        from app.api.v1.analyze import create_analysis
+        from app.api.v1.analysis.endpoints import create_analysis
         from app.domains.analysis.schemas.api import AnalyzeRequest
 
         analysis_uuid = uuid.uuid4()
@@ -144,8 +144,8 @@ class TestCreateAnalysis:
         mock_normalize_id.assert_called_once_with("custom-id-123")
         assert response.analysis_id == str(analysis_uuid)
 
-    @patch("app.api.v1.analyze.detect_content_type")
-    @patch("app.api.v1.analyze.normalize_analysis_id_to_uuid")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.normalize_analysis_id_to_uuid")
     def test_create_analysis_invalid_custom_id(
         self,
         mock_normalize_id,
@@ -168,11 +168,11 @@ class TestCreateAnalysis:
         assert "Invalid analysis_id format" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    @patch("app.api.v1.analyze.asyncio.create_task")
-    @patch("app.api.v1.analyze.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
     async def test_create_analysis_content_type_detection(self, mock_detect_type, mock_create_task):
         """Test content type detection for different URL types."""
-        from app.api.v1.analyze import create_analysis
+        from app.api.v1.analysis.endpoints import create_analysis
         from app.domains.analysis.schemas.api import AnalyzeRequest
 
         mock_create_task.return_value = create_mock_task()
@@ -189,19 +189,19 @@ class TestCreateAnalysis:
         for url, expected_type in test_cases:
             # Generate unique UUID for each test case
             test_uuid = uuid.uuid4()
-            with patch("app.api.v1.analyze.uuid.uuid4", return_value=test_uuid):
+            with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=test_uuid):
                 mock_detect_type.return_value = expected_type
                 request = AnalyzeRequest(url=url)
                 response = await create_analysis(request, analysis_repo=mock_repo)
                 assert response.content_type == expected_type
 
     @pytest.mark.asyncio
-    @patch("app.api.v1.analyze.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
     async def test_create_analysis_database_error(self, mock_detect_type):
         """Test that database errors are handled gracefully."""
         from fastapi import HTTPException
 
-        from app.api.v1.analyze import create_analysis
+        from app.api.v1.analysis.endpoints import create_analysis
         from app.domains.analysis.schemas.api import AnalyzeRequest
 
         mock_detect_type.return_value = "article"
@@ -222,15 +222,15 @@ class TestCreateAnalysis:
         assert "Failed to create analysis record" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
-    @patch("app.api.v1.analyze.asyncio.create_task")
-    @patch("app.api.v1.analyze.detect_content_type")
+    @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
+    @patch("app.api.v1.analysis.endpoints.detect_content_type")
     async def test_create_analysis_sse_endpoint_format(
         self,
         mock_detect_type,
         mock_create_task,
     ):
         """Test that SSE endpoint URL is in correct format."""
-        from app.api.v1.analyze import create_analysis
+        from app.api.v1.analysis.endpoints import create_analysis
         from app.domains.analysis.schemas.api import AnalyzeRequest
 
         analysis_uuid = uuid.uuid4()
@@ -242,7 +242,7 @@ class TestCreateAnalysis:
 
         request = AnalyzeRequest(url="https://example.com/article")
 
-        with patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid):
+        with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
             response = await create_analysis(request, analysis_repo=mock_repo)
 
         assert response.sse_endpoint.startswith("/api/v1/analyze/")

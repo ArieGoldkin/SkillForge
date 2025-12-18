@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sse_starlette.sse import EventSourceResponse
 
-from app.api.v1.sse_handler import stream_analysis_progress
+from app.api.v1.analysis.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.shared.services.messaging.broadcaster import broadcaster
@@ -237,7 +237,7 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
     from uuid import UUID
 
     from app.db.session import AsyncSessionLocal
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     analysis_id = str(uuid.uuid4())
 

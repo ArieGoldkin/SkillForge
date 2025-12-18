@@ -41,6 +41,8 @@ export function CompletedAnalysisView({
         <ProgressColumn
           overallProgress={overallProgress}
           steps={steps}
+          hasFailedStages={hasFailedStages}
+          failedStagesCount={failedStagesCount}
           analysisMetadata={analysisMetadata}
         />
         <AnalysisCompleteCard

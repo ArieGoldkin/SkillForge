@@ -74,7 +74,7 @@ async def test_get_db_commits_on_success(
     requires_database, reset_engine_connections, check_database_available
 ):
     """Test get_db commits session on successful operation."""
-    from app.models import Analysis
+    from app.db.models import Analysis
 
     # Use get_db generator properly - consume it fully so commit happens
     gen = get_db()
@@ -111,7 +111,7 @@ async def test_get_db_rolls_back_on_exception(
     requires_database, reset_engine_connections, check_database_available
 ):
     """Test get_db rolls back session on exception."""
-    from app.models import Analysis
+    from app.db.models import Analysis
 
     try:
         async for session in get_db():
@@ -187,7 +187,7 @@ async def test_session_expire_on_commit_false(
     requires_database, reset_engine_connections, check_database_available
 ):
     """Test session expire_on_commit is False (objects don't expire after commit)."""
-    from app.models import Analysis
+    from app.db.models import Analysis
 
     async with AsyncSessionLocal() as session:
         analysis = Analysis(url="https://test-expire.com", content_type="article", status="pending")

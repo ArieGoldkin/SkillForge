@@ -71,7 +71,7 @@ from app.domains.analysis.workflows.agents.security_auditor import SECURITY_AUDI
 
 # Import prompts
 from app.domains.analysis.workflows.agents.tech_comparator import TECH_COMPARATOR_PROMPT
-from app.models.agent_example import AgentExample
+from app.db.models.agent_example import AgentExample
 from app.shared.services.g_eval import g_eval_score
 from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 

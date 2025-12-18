@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.models.agent_memory import AgentMemory, MemoryType
+from app.db.models.agent_memory import AgentMemory, MemoryType
 from app.shared.services.embeddings.service import EmbeddingService
 
 if TYPE_CHECKING:

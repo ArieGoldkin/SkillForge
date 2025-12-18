@@ -42,7 +42,7 @@ load_dotenv()
 
 from app.core.logging import get_logger  # noqa: E402
 from app.db.session import AsyncSessionLocal  # noqa: E402
-from app.models.analysis import Analysis  # noqa: E402
+from app.db.models.analysis import Analysis  # noqa: E402
 from app.domains.analysis.workflows.analysis import analysis_workflow  # noqa: E402
 
 logger = get_logger(__name__)

@@ -47,10 +47,10 @@ from uuid import uuid4
 from dotenv import load_dotenv
 
 # Import status update helper from workflow runner
-from app.api.v1.workflow_runner import _update_analysis_status
+from app.api.v1.analysis.workflow_runner import _update_analysis_status
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)

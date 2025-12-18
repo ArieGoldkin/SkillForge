@@ -352,10 +352,14 @@ def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> 
         parts.append(f"\nRecommendations:\n{recs_text}")
 
     if not parts:
+        # Issue #299-304: Increased from 2000 to 8000 to preserve depth for evaluation
         # Fallback: convert entire dict to string
-        return str(aggregated_insights)[:2000]
+        return str(aggregated_insights)[:8000]
 
-    return "\n".join(parts)[:2000]  # Limit to 2000 chars
+    # Issue #299-304: Increased limit from 2000 to 8000 chars to preserve analytical depth
+    # The G-Eval evaluator needs sufficient content to properly assess depth and coherence.
+    # Previous 2000 char limit was causing over-truncation, resulting in low depth scores.
+    return "\n".join(parts)[:8000]
 
 
 def should_retry_synthesis(state: AnalysisState) -> str:

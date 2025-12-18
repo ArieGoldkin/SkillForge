@@ -24,6 +24,8 @@ export type AnalysisStage = 'extracting' | 'processing' | 'analyzing' | 'generat
  * @property estimatedTimeRemaining - Optional time estimate (e.g., "2-3 minutes")
  * @property contentType - Optional content type (article, video, repo)
  * @property wordCount - Optional word count
+ * @property hasFailedStages - Whether any stages have failed
+ * @property failedStagesCount - Number of failed stages
  */
 export interface AnalysisProgressCardProps {
   stage: AnalysisStage
@@ -34,18 +36,23 @@ export interface AnalysisProgressCardProps {
   estimatedTimeRemaining?: string
   contentType?: 'article' | 'video' | 'repo'
   wordCount?: number
+  hasFailedStages?: boolean
+  failedStagesCount?: number
   className?: string
 }
 
 /**
  * Get badge variant and label for each analysis stage
+ * @param stage - Analysis stage
+ * @param hasFailures - Whether there are any failed stages
  */
 const getStageConfig = (
-  stage: AnalysisStage
-): { variant: 'default' | 'success' | 'warning' | 'info'; label: string } => {
+  stage: AnalysisStage,
+  hasFailures: boolean = false
+): { variant: 'default' | 'success' | 'warning' | 'info' | 'destructive'; label: string } => {
   const configs: Record<
     AnalysisStage,
-    { variant: 'default' | 'success' | 'warning' | 'info'; label: string }
+    { variant: 'default' | 'success' | 'warning' | 'info' | 'destructive'; label: string }
   > = {
     extracting: { variant: 'info', label: 'Extracting' },
     processing: { variant: 'warning', label: 'Processing' },
@@ -53,6 +60,12 @@ const getStageConfig = (
     generating: { variant: 'info', label: 'Generating' },
     complete: { variant: 'success', label: 'Complete' },
   }
+
+  // Override complete status if there are failures
+  if (stage === 'complete' && hasFailures) {
+    return { variant: 'destructive', label: 'Complete with Errors' }
+  }
+
   return configs[stage]
 }
 
@@ -74,7 +87,7 @@ const getStageConfig = (
  * />
  * ```
  */
-/* eslint-disable max-lines-per-function -- Main component requires complete JSX layout for progress card (header with spinner, progress bar, step info, time estimate, completion message). Already well-structured. */
+/* eslint-disable max-lines-per-function, complexity -- Main component requires complete JSX layout for progress card (header with spinner, progress bar, step info, time estimate, completion message, error summary). Multiple conditional branches for content type, completion states, and error handling. Already well-structured. */
 const CONTENT_TYPE_CONFIG = {
   article: {
     icon: FileText,
@@ -102,9 +115,11 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
   estimatedTimeRemaining,
   contentType,
   wordCount,
+  hasFailedStages = false,
+  failedStagesCount = 0,
   className,
 }) => {
-  const stageConfig = getStageConfig(stage)
+  const stageConfig = getStageConfig(stage, hasFailedStages)
   const isComplete = stage === 'complete'
   const isActive = !isComplete
   const contentTypeConfig = contentType ? CONTENT_TYPE_CONFIG[contentType] : null
@@ -174,10 +189,26 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
         )}
 
         {/* Completion Message */}
-        {isComplete && (
+        {isComplete && !hasFailedStages && (
           <p className="text-sm text-muted-foreground">
             Analysis complete! Review your results below.
           </p>
+        )}
+
+        {/* Error Summary */}
+        {isComplete && hasFailedStages && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">
+                  {failedStagesCount} {failedStagesCount === 1 ? 'stage' : 'stages'} failed
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  The analysis completed but encountered errors. Check the stages below for details.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

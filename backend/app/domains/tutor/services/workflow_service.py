@@ -6,7 +6,7 @@ Extracts workflow continuation logic from API endpoints.
 import uuid
 
 from app.core.logging import get_logger
-from app.db.repositories.tutor_repository import ITutorRepository
+from app.domains.tutor.repositories import ITutorRepository
 from app.domains.tutor.workflows.state import TutorState
 
 logger = get_logger(__name__)

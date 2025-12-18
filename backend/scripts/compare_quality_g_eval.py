@@ -48,7 +48,7 @@ from app.domains.analysis.workflows.agents.schemas.security_auditor import (  # 
 from app.domains.analysis.workflows.agents.schemas.tech_comparator import (  # noqa: E402
     TechComparison,
 )
-from app.models.agent_example import AgentExample  # noqa: E402
+from app.db.models.agent_example import AgentExample  # noqa: E402
 from app.shared.services.g_eval import GEvalCostTracker, g_eval_score  # noqa: E402
 from app.shared.services.prompts.chain_of_thought import get_cot_prompt  # noqa: E402
 

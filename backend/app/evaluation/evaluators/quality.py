@@ -21,8 +21,11 @@ from langsmith.schemas import Example, Run
 from app.core.config import get_settings
 from app.core.model_factory import get_chat_model
 
-# Maximum length for content sent to LLM judge (prevents token overflow)
-MAX_CONTENT_LENGTH = 8000
+# Issue #299-304: Increased from 8000 to 15000 to preserve analytical depth
+# Previous limit was too aggressive, causing G-Eval to see only shallow summaries,
+# resulting in low depth scores (5/10). The evaluator needs sufficient context
+# to properly assess depth and coherence of analysis.
+MAX_CONTENT_LENGTH = 15000
 
 
 def _extract_evaluable_content(data: dict[str, Any] | str | None) -> str:
@@ -332,11 +335,17 @@ Respond with ONLY a number from 0-10.""",
             response = await judge.ainvoke(prompt.format(**prompt_vars))
 
             # Parse score - handle both string and list responses
+            # Gemini returns: [{'type': 'text', 'text': '10', 'extras': {...}}]
             try:
                 content = response.content
-                # Handle case where content is a list (multi-part response)
-                if isinstance(content, list):
-                    content = str(content[0]) if content else ""
+                # Handle Gemini's new multi-part dict format
+                if isinstance(content, list) and content:
+                    first_item = content[0]
+                    if isinstance(first_item, dict):
+                        # Gemini format: {'type': 'text', 'text': '10', ...}
+                        content = str(first_item.get("text", first_item))
+                    else:
+                        content = str(first_item)
                 raw_score = float(str(content).strip())
                 # Normalize to 0-1
                 normalized_score = raw_score / 10.0

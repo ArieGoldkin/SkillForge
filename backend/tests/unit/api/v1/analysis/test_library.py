@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from app.db.repositories.library_repository import get_library_repository
 from app.main import app
-from app.models.analysis import Analysis
+from app.db.models.analysis import Analysis
 
 
 client = TestClient(app)
@@ -55,7 +55,7 @@ class TestHybridSearch:
     async def test_hybrid_search_success(self, mock_repo, override_get_repo, sample_analysis):
         """Test hybrid search successfully combines FTS and vector search."""
         # Mock EmbeddingService
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -96,7 +96,7 @@ class TestHybridSearch:
         self, mock_repo, override_get_repo, sample_analysis
     ):
         """Test hybrid mode uses RRF to combine results."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -125,7 +125,7 @@ class TestHybridSearch:
         self, mock_repo, override_get_repo, sample_analysis
     ):
         """Test hybrid search generates snippets for results."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -149,7 +149,7 @@ class TestHybridSearch:
         self, mock_repo, override_get_repo, sample_analysis
     ):
         """Test hybrid search continues when snippet generation fails."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -174,7 +174,7 @@ class TestHybridSearch:
         self, mock_repo, override_get_repo, sample_analysis
     ):
         """Test hybrid search falls back to fulltext when embedding fails."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             # Embedding generation fails
             mock_service.generate_embedding.side_effect = Exception("Embedding API error")
@@ -228,7 +228,7 @@ class TestFulltextSearch:
         mock_repo.search_by_text.return_value = [(sample_analysis, 0.9)]
         mock_repo.get_search_snippet.return_value = None
 
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             response = client.get(
                 "/api/v1/library",
                 params={"query": "test", "search_mode": "fulltext"},
@@ -245,7 +245,7 @@ class TestSemanticSearch:
     @pytest.mark.asyncio
     async def test_semantic_search_success(self, mock_repo, override_get_repo, sample_analysis):
         """Test semantic search uses vector embeddings."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.2] * 1536
             mock_service.close = AsyncMock()
@@ -270,7 +270,7 @@ class TestSemanticSearch:
     @pytest.mark.asyncio
     async def test_semantic_search_no_snippet(self, mock_repo, override_get_repo, sample_analysis):
         """Test semantic search does not generate snippets."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -293,7 +293,7 @@ class TestSemanticSearch:
     @pytest.mark.asyncio
     async def test_semantic_search_pagination_offset(self, mock_repo, override_get_repo):
         """Test semantic search applies offset in application layer."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()
@@ -335,7 +335,7 @@ class TestSemanticSearch:
         self, mock_repo, override_get_repo
     ):
         """Test semantic-only search returns 500 when embedding fails."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.side_effect = Exception("Embedding error")
             mock_service.close = AsyncMock()
@@ -654,7 +654,7 @@ class TestDefaultValues:
         self, mock_repo, override_get_repo, sample_analysis
     ):
         """Test default search_mode is hybrid when not specified."""
-        with patch("app.api.v1.library.EmbeddingService") as mock_embedding_cls:
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
             mock_service = AsyncMock()
             mock_service.generate_embedding.return_value = [0.1] * 1536
             mock_service.close = AsyncMock()

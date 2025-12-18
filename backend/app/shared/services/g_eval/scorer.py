@@ -126,6 +126,34 @@ Evaluate the {criterion} of this output using the rubric provided. Follow the re
 # ============================================================================
 
 
+def _extract_text_from_llm_response(content: str | list) -> str:
+    """Extract text from LLM response, handling various formats.
+
+    Handles:
+    - Simple string responses
+    - Gemini's list format: [{'type': 'text', 'text': '...', 'extras': {...}}]
+    - Other multi-part responses
+
+    Args:
+        content: Raw response content from LLM
+
+    Returns:
+        Extracted text string
+
+    """
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list) and content:
+        first_item = content[0]
+        # Handle Gemini's dict format with 'text' key
+        if isinstance(first_item, dict):
+            return str(first_item.get("text", first_item))
+        return str(first_item)
+
+    return str(content)
+
+
 def _parse_g_eval_response(response: str, criterion: str) -> CriterionScore:
     """Parse G-Eval LLM response to extract structured score.
 
@@ -221,8 +249,11 @@ async def _score_criterion(
     )
 
     user_prompt = G_EVAL_USER_PROMPT.format(
-        input_content=input_content[:2000],  # Truncate for context limits
-        output=output[:3000],
+        # Issue #299-304: Increased limits to preserve analytical depth
+        # Previous limits (2000/3000) were too aggressive, causing G-Eval
+        # to see only shallow summaries, resulting in low depth scores (5/10)
+        input_content=input_content[:8000],
+        output=output[:12000],
         criterion=criterion,
     )
 
@@ -233,8 +264,8 @@ async def _score_criterion(
 
     try:
         response = await model.ainvoke(messages)
-        # Ensure content is a string (handle LangChain's str | list type)
-        content = response.content if isinstance(response.content, str) else str(response.content)
+        # Extract text from response (handles Gemini's new dict format)
+        content = _extract_text_from_llm_response(response.content)
         result = _parse_g_eval_response(content, criterion)
 
         # Store in L1 file-based cache for future exact matches

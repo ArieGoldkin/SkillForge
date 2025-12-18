@@ -164,7 +164,7 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PL
         async with session_factory() as db_session:
             from uuid import UUID
 
-            from app.db.repositories.tutor_session_repository import TutorSessionRepository
+            from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 
             repo = TutorSessionRepository(session=db_session)
             await repo.update_session_state(
