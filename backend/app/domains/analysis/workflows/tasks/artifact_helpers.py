@@ -60,11 +60,11 @@ def extract_artifact_metadata(
 
     # Calculate complexity based on agent count and confidence
     agent_count = len(agent_findings)
-    confidence_scores = [
-        f.get("confidence_score", 0.0) or 0.0
-        for f in agent_findings
-        if isinstance(f, dict) and f.get("confidence_score") is not None
-    ]
+    confidence_scores: list[float] = []
+    for f in agent_findings:
+        if isinstance(f, dict) and f.get("confidence_score") is not None:
+            score = f.get("confidence_score", 0.0) or 0.0
+            confidence_scores.append(float(score) if isinstance(score, (int, float, str)) else 0.0)
     avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.0
 
     # Complexity logic:
@@ -144,7 +144,7 @@ def build_claude_code_prompt(
     exec_summary = aggregated_insights.get("executive_summary", "")
     key_findings = aggregated_insights.get("key_findings", [])
     # ty can't chain .get() calls properly on TypedDict
-    synthesis = aggregated_insights.get("synthesis", {})
+    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})  # type: ignore[assignment]
     implementation = (
         synthesis.get("implementation_guidance", "") if isinstance(synthesis, dict) else ""
     )  # type: ignore[union-attr]

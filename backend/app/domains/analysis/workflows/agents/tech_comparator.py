@@ -133,8 +133,8 @@ async def run_tech_comparator(
     expectation = state.get("agent_expectation")
 
     # Issue #299-304: Get content signals for comparison-aware thresholds
-    content_signals_dict = state.get("content_signals", {})
-    has_comparisons = content_signals_dict.get("has_comparisons", False)
+    content_signals_dict: dict[str, object] = state.get("content_signals", {})  # type: ignore[assignment]
+    has_comparisons = bool(content_signals_dict.get("has_comparisons", False))
 
     specificity_threshold = get_threshold_for_expectation(
         expectation_str=str(expectation) if expectation is not None else None,

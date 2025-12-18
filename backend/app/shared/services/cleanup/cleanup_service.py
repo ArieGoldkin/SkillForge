@@ -124,10 +124,13 @@ class CleanupService:
         # 4. Calculate summary
         orphan_total: int = 0
         if include_orphans and report["orphan_cleanup"]:
-            if dry_run:
-                orphan_total = int(report["orphan_cleanup"]["counts"].get("total", 0))
-            else:
-                orphan_total = int(report["orphan_cleanup"]["stats"].get("total_deleted", 0))
+            orphan_cleanup = report["orphan_cleanup"]
+            if dry_run and isinstance(orphan_cleanup, dict):
+                counts = orphan_cleanup.get("counts", {})
+                orphan_total = int(counts.get("total", 0)) if isinstance(counts, dict) else 0
+            elif isinstance(orphan_cleanup, dict):
+                stats = orphan_cleanup.get("stats", {})
+                orphan_total = int(stats.get("total_deleted", 0)) if isinstance(stats, dict) else 0
 
         ttl_cleanup = report.get("ttl_cleanup", {})
         expired_total = 0

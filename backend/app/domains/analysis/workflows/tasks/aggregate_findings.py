@@ -455,7 +455,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         )
 
         # Add memory storage and synthesis status metadata to insights
-        metadata: dict[str, object] = dict(aggregated_insights_dict.get("metadata", {}))  # type: ignore[arg-type]
+        metadata: dict[str, object] = dict(aggregated_insights_dict.get("metadata", {}))  # type: ignore[call-overload]
         metadata["memories_stored"] = stored_memories
         # Issue #299-304: Track synthesis status for debugging
         if "synthesis_status" not in metadata:

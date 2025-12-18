@@ -68,7 +68,7 @@ def extract_quick_reference(agent_findings: list[AgentFinding]) -> QuickReferenc
             agent_type = finding.get("agent_type", "")
             # Try "findings" first (actual structure), fall back to "result" for compatibility
             result = finding.get("findings") or finding.get("result", {})
-            if agent_type and result:
+            if agent_type and result and isinstance(result, dict):
                 findings_by_type[agent_type] = result
 
         # Extract primary technology

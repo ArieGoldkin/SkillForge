@@ -69,8 +69,11 @@ def validate_and_parse_findings(
             # This prevents "No findings available for this agent" from appearing
             continue
 
-        validated_findings.append(finding)
+        validated_findings.append(dict(finding))
         agent_types.append(agent_type)
-        confidence_scores[agent_type] = finding.get("confidence_score", 0.0) or 0.0
+        score = finding.get("confidence_score", 0.0) or 0.0
+        confidence_scores[agent_type] = (
+            float(score) if isinstance(score, (int, float, str)) else 0.0
+        )
 
     return validated_findings, agent_types, confidence_scores

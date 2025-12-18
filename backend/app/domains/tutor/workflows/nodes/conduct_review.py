@@ -125,7 +125,9 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
         lessons = section.get("lessons", [])
         if not isinstance(lessons, list):
             lessons = []
-        concepts = [lesson.get("concept", "") for lesson in lessons if isinstance(lesson, dict)]
+        concepts = [
+            str(lesson.get("concept", "")) for lesson in lessons if isinstance(lesson, dict)
+        ]
 
         # Build prompt
         prompt = SECTION_REVIEW_PROMPT.format(

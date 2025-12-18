@@ -28,7 +28,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY
@@ -189,7 +189,7 @@ def run_preflight_checks(verbose: bool = True) -> tuple[bool, dict[str, Any]]:
 
 async def run_task_experiments(
     benchmark: LLMBenchmark,
-    task_type: str,
+    task_type: Literal["supervisor", "agent", "synthesis"],
     model_ids: list[str] | None = None,
     dry_run: bool = False,
     local_mode: bool = True,
@@ -295,7 +295,7 @@ async def run_all_experiments(
     """
     benchmark = LLMBenchmark(project_name="skillforge-eval", local_mode=local_mode)
 
-    results = {
+    results: dict[str, Any] = {
         "timestamp": datetime.now().isoformat(),
         "mode": "dry_run" if dry_run else "live",
         "tasks": {},
@@ -303,7 +303,12 @@ async def run_all_experiments(
     }
 
     # Run experiments for each task type
-    for task_type in ["supervisor", "agent", "synthesis"]:
+    task_types: list[Literal["supervisor", "agent", "synthesis"]] = [
+        "supervisor",
+        "agent",
+        "synthesis",
+    ]
+    for task_type in task_types:
         print(f"\n{'=' * 60}")
         print(f"Running experiments for: {task_type.upper()}")
         print("=" * 60)
@@ -325,9 +330,10 @@ async def run_all_experiments(
         print("EXPERIMENT SUMMARY")
         print("=" * 60)
 
-        for task_type, task_results in results["tasks"].items():
+        tasks_dict = results.get("tasks", {})
+        for task_name, task_results in tasks_dict.items() if isinstance(tasks_dict, dict) else []:
             if task_results.get("status") == "completed":
-                print(f"\n{task_type.upper()}:")
+                print(f"\n{task_name.upper()}:")
                 print(f"  Recommendation: {task_results.get('recommendation')}")
                 print("  Winners by metric:")
                 for metric, winner in task_results.get("winner_by_metric", {}).items():

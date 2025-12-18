@@ -9,6 +9,7 @@ Issue #301: Add quality validation gate to ensure high-quality artifacts.
 
 import asyncio
 import time
+from typing import Any
 
 from langsmith import get_current_run_tree
 
@@ -339,7 +340,7 @@ def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> 
         parts.append(f"\nKey Findings:\n{findings_text}")
 
     # Extract synthesis sections
-    synthesis = aggregated_insights.get("synthesis", {})
+    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})  # type: ignore[assignment]
     if synthesis and isinstance(synthesis, dict):
         for section, content in list(synthesis.items())[:5]:
             if content:

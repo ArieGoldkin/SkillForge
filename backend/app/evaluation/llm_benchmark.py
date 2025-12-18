@@ -757,7 +757,7 @@ class LLMBenchmark:
                 "skill_level": "intermediate",
                 "raw_content": content,
                 "extraction_metadata": {},
-                "supervisor_decision": {"agents": [agent_type]},
+                "supervisor_decision": {"agents": [agent_type]},  # type: ignore[typeddict-unknown-key]
             }
 
             # Use thread-safe context variable instead of mutating global settings

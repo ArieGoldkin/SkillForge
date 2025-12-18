@@ -125,7 +125,7 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:  # noqa: PLR
                     if isinstance(lessons, list) and current_lesson < len(lessons):
                         lesson = lessons[current_lesson]
                         if isinstance(lesson, dict):
-                            concept = lesson.get("concept", concept)
+                            concept = str(lesson.get("concept", concept))
 
         # Build prompt
         prompt = REPHRASE_EXPLANATION_PROMPT.format(
