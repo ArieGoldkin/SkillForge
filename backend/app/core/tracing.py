@@ -24,7 +24,8 @@ R = TypeVar("R")  # Captures return type
 
 # Span types supported by Langfuse @observe decorator
 # Maps from Langfuse run_type to Langfuse as_type
-SpanType = Literal["span", "generation", "event"]
+# Valid types: generation, embedding, span, agent, tool
+SpanType = Literal["span", "generation"]
 
 # Mapping from Langfuse run_type to Langfuse as_type
 RUN_TYPE_TO_SPAN_TYPE: dict[str, SpanType] = {

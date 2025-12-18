@@ -43,20 +43,26 @@ class EvalRun:
 
     Attributes:
         id: Unique identifier for the run
+        name: Name of the run/span for tracing
+        run_type: Type of run (chain, llm, tool, etc.)
         inputs: Input data that was passed to the model
         outputs: Output data produced by the model
         start_time: When the run started
         end_time: When the run ended (optional)
         error: Error message if the run failed (optional)
+        trace_id: ID of the parent trace for linking
         metadata: Additional metadata about the run
 
     """
 
     inputs: dict[str, Any]
     outputs: dict[str, Any]
+    name: str = "run"
+    run_type: str = "chain"
     start_time: datetime = field(default_factory=datetime.utcnow)
     end_time: datetime | None = None
     error: str | None = None
+    trace_id: UUID | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     id: UUID = field(default_factory=uuid4)
 

@@ -1,6 +1,5 @@
 """Embedding generation task for workflow."""
 
-
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
 from app.core.logging import get_logger

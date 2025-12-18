@@ -9,7 +9,6 @@ Issue #299-304: ArXiv PDF Extraction
 - Standard URLs still use Jina Reader for HTML extraction
 """
 
-
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable

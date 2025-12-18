@@ -62,7 +62,7 @@ def get_langfuse_client() -> Any:
             secret_key=secret_key,
             host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
             release=os.getenv("LANGFUSE_RELEASE"),
-            enabled=True,
+            tracing_enabled=True,
         )
 
         logger.info(
