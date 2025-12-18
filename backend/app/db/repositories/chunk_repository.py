@@ -161,8 +161,16 @@ class ChunkRepository:
             - Scores are normalized by document length
 
         """
-        # Create tsquery from plain text
-        tsquery = func.plainto_tsquery("english", query_text)
+        # Use websearch_to_tsquery for natural query parsing with implicit AND
+        # - Handles web-search-like syntax (quotes for phrases, - for negation)
+        # - Safe for user input (never raises syntax errors)
+        # - Uses implicit AND between terms (good precision)
+        # - ts_rank_cd prefers documents with more term coverage
+        #
+        # Note: We tried explicit OR logic but it was too broad for RRF fusion.
+        # The natural AND behavior combined with semantic search provides
+        # the right recall/precision balance.
+        tsquery = func.websearch_to_tsquery("english", query_text)
 
         # Build query with ts_rank_cd scoring
         # Use pre-indexed content_tsvector column (populated by database trigger)

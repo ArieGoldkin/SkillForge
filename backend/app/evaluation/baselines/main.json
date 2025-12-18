@@ -1,47 +1,48 @@
 {
   "overall_status": "fail",
   "total_examples": 203,
-  "total_passed": 186,
-  "execution_time_seconds": 85.62824892997742,
-  "timestamp": "2025-12-18T13:03:05Z",
+  "total_passed": 185,
+  "execution_time_seconds": 86.70792388916016,
+  "timestamp": "2025-12-18T13:31:07Z",
   "results": {
     "trivial": {
       "difficulty": "trivial",
       "recall_at_5": 0.9583333333333334,
-      "mrr": 0.8333333333333334,
-      "ndcg_at_5": 0.8647559323692149,
+      "mrr": 0.8368055555555555,
+      "ndcg_at_5": 0.8676444091161569,
       "examples_evaluated": 24,
       "examples_passed": 23,
       "failed_example_ids": [
         "q-llm-agents-intro"
       ],
-      "execution_time_seconds": 9.419161081314087,
+      "execution_time_seconds": 11.033047914505005,
       "status": "fail"
     },
     "easy": {
       "difficulty": "easy",
-      "recall_at_5": 0.8904109589041096,
-      "mrr": 0.7926940639269406,
-      "ndcg_at_5": 0.8126380202792712,
+      "recall_at_5": 0.8767123287671232,
+      "mrr": 0.747716894977169,
+      "ndcg_at_5": 0.775360646711435,
       "examples_evaluated": 73,
-      "examples_passed": 66,
+      "examples_passed": 65,
       "failed_example_ids": [
         "q-tot-applications",
         "q-langgraph-supervisor",
+        "q-langsmith-metrics",
         "q-mlops-best-practices",
         "q-uber-matching",
         "q-uber-surge",
         "q-perplexity-retrieval",
         "q-terraform-iac"
       ],
-      "execution_time_seconds": 34.3254029750824,
-      "status": "warn"
+      "execution_time_seconds": 30.331501007080078,
+      "status": "fail"
     },
     "medium": {
       "difficulty": "medium",
       "recall_at_5": 0.8506493506493507,
-      "mrr": 0.7244588744588745,
-      "ndcg_at_5": 0.7371601462161069,
+      "mrr": 0.7385281385281386,
+      "ndcg_at_5": 0.7483570069463269,
       "examples_evaluated": 77,
       "examples_passed": 70,
       "failed_example_ids": [
@@ -53,34 +54,34 @@
         "q-sem-paraphrase-retrieval",
         "q-sem-concept-matching"
       ],
-      "execution_time_seconds": 30.69838833808899,
+      "execution_time_seconds": 32.222097873687744,
       "status": "pass"
     },
     "hard": {
       "difficulty": "hard",
       "recall_at_5": 0.6862745098039216,
-      "mrr": 0.6862745098039216,
-      "ndcg_at_5": 0.6082480345147274,
+      "mrr": 0.6470588235294118,
+      "ndcg_at_5": 0.5886336812096672,
       "examples_evaluated": 17,
       "examples_passed": 16,
       "failed_example_ids": [
         "q-cross-agent-memory-rag"
       ],
-      "execution_time_seconds": 6.15860390663147,
+      "execution_time_seconds": 7.3523499965667725,
       "status": "warn"
     },
     "adversarial": {
       "difficulty": "adversarial",
       "recall_at_5": 0.9166666666666666,
-      "mrr": 0.40277777777777773,
-      "ndcg_at_5": 0.8494522003014392,
+      "mrr": 0.3194444444444445,
+      "ndcg_at_5": 0.7879404925633487,
       "examples_evaluated": 12,
       "examples_passed": 11,
       "failed_example_ids": [
         "q-edge-very-long"
       ],
-      "execution_time_seconds": 5.026384115219116,
-      "status": "warn"
+      "execution_time_seconds": 5.768632888793945,
+      "status": "fail"
     }
   }
 }
