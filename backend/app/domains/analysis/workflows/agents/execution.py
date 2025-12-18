@@ -96,6 +96,9 @@ async def _run_agent_with_tracking_impl(
     Redis semantic caching is automatically enabled for all agents via the model
     factory (get_chat_model). No explicit cache management needed here.
 
+    Redis semantic caching is automatically enabled for all agents via the model
+    factory (get_chat_model). No explicit cache management needed here.
+
     Args:
         params: Agent execution parameters
         config: Agent execution configuration

@@ -25,6 +25,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should submit URL and navigate to analysis page', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Submit a real URL that the backend will process
     await homePage.submitUrl('https://example.com/article');
 
@@ -49,6 +51,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should show loading state during submission', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Fill the URL input
     await homePage.urlInput.fill('https://example.com/article');
 
@@ -70,6 +74,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should handle YouTube video URL', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Submit a YouTube URL
     await homePage.submitUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
@@ -81,6 +87,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should handle GitHub repo URL', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     // Submit a GitHub repository URL
     await homePage.submitUrl('https://github.com/facebook/react');
 
@@ -92,6 +100,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should clear input after successful submission', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     const testUrl = 'https://example.com/article';
 
     // Submit URL
@@ -110,6 +120,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should successfully create analysis via backend API', async ({ page, request }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     const testUrl = 'https://example.com/test-integration';
 
     // Submit the URL through the UI
@@ -133,6 +145,8 @@ test.describe('Home Page - URL Submission', () => {
   });
 
   test('should handle multiple URL submissions', async ({ page }) => {
+    test.skip(!!process.env.CI, 'Requires backend LLM processing');
+
     const urls = [
       'https://example.com/article-1',
       'https://example.com/article-2',
