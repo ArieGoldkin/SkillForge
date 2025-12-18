@@ -1,72 +1,64 @@
 {
   "overall_status": "fail",
   "total_examples": 203,
-  "total_passed": 186,
-  "execution_time_seconds": 92.62079787254333,
-  "timestamp": "2025-12-18T13:42:03Z",
+  "total_passed": 193,
+  "execution_time_seconds": 88.38501501083374,
+  "timestamp": "2025-12-18T14:00:09Z",
   "results": {
     "trivial": {
       "difficulty": "trivial",
-      "recall_at_5": 0.9583333333333334,
-      "mrr": 0.84375,
-      "ndcg_at_5": 0.8730998155149677,
+      "recall_at_5": 1.0,
+      "mrr": 0.8854166666666666,
+      "ndcg_at_5": 0.9147664821816344,
       "examples_evaluated": 24,
-      "examples_passed": 23,
-      "failed_example_ids": [
-        "q-llm-agents-intro"
-      ],
-      "execution_time_seconds": 11.886932849884033,
-      "status": "fail"
+      "examples_passed": 24,
+      "failed_example_ids": [],
+      "execution_time_seconds": 12.213074922561646,
+      "status": "warn"
     },
     "easy": {
       "difficulty": "easy",
-      "recall_at_5": 0.8904109589041096,
-      "mrr": 0.7625570776255708,
-      "ndcg_at_5": 0.7900089130391967,
+      "recall_at_5": 0.9178082191780822,
+      "mrr": 0.7899543378995434,
+      "ndcg_at_5": 0.8174061733131693,
       "examples_evaluated": 73,
-      "examples_passed": 66,
+      "examples_passed": 68,
       "failed_example_ids": [
         "q-tot-applications",
         "q-langgraph-supervisor",
         "q-langsmith-metrics",
         "q-mlops-best-practices",
-        "q-uber-matching",
-        "q-uber-surge",
         "q-perplexity-retrieval"
       ],
-      "execution_time_seconds": 37.76805400848389,
+      "execution_time_seconds": 31.990703105926514,
       "status": "warn"
     },
     "medium": {
       "difficulty": "medium",
-      "recall_at_5": 0.8506493506493507,
-      "mrr": 0.7385281385281386,
-      "ndcg_at_5": 0.7483570069463269,
+      "recall_at_5": 0.9025974025974026,
+      "mrr": 0.7904761904761904,
+      "ndcg_at_5": 0.8003050588943789,
       "examples_evaluated": 77,
-      "examples_passed": 70,
+      "examples_passed": 74,
       "failed_example_ids": [
         "q-langgraph-production",
-        "q-rag-groundedness",
-        "q-rag-answer-relevance",
-        "q-uber-ringpop",
-        "q-uber-geospatial",
         "q-sem-paraphrase-retrieval",
         "q-sem-concept-matching"
       ],
-      "execution_time_seconds": 31.057317972183228,
+      "execution_time_seconds": 30.612144947052002,
       "status": "pass"
     },
     "hard": {
       "difficulty": "hard",
-      "recall_at_5": 0.6862745098039216,
+      "recall_at_5": 0.7058823529411765,
       "mrr": 0.6470588235294118,
-      "ndcg_at_5": 0.5886336812096672,
+      "ndcg_at_5": 0.6024359966809247,
       "examples_evaluated": 17,
       "examples_passed": 16,
       "failed_example_ids": [
         "q-cross-agent-memory-rag"
       ],
-      "execution_time_seconds": 6.9233269691467285,
+      "execution_time_seconds": 8.257884740829468,
       "status": "warn"
     },
     "adversarial": {
@@ -79,7 +71,7 @@
       "failed_example_ids": [
         "q-edge-very-long"
       ],
-      "execution_time_seconds": 4.984888792037964,
+      "execution_time_seconds": 5.310923099517822,
       "status": "fail"
     }
   }

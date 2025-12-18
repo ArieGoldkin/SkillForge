@@ -203,13 +203,19 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-# Measure code coverage but omit experimental and placeholder modules
+# Measure code coverage but omit experimental, CLI scripts, and unused modules
 omit = [
-    # Note: app/evaluation/* removed - now has proper tests (issue #252)
     # Note: app/workflows/nodes/agent_tools.py removed - now has full tests (issue #289)
     "app/workflows/studio_compat.py",  # LangGraph Studio compatibility placeholder
     "app/workflows/tutor/tasks/*",     # Tutor task placeholders
     "app/workflows/tutor/context.py",  # Tutor context placeholder
+    # Dead code - not imported anywhere (verified Dec 2024)
+    "app/shared/services/quality_scorer.py",      # Unused legacy scorer
+    "app/shared/services/search/coarse_to_fine.py",  # Unused search strategy
+    # CLI scripts - not unit-testable, tested via integration/smoke tests
+    "app/evaluation/generate_config.py",   # CLI config generator
+    "app/evaluation/llm_benchmark.py",     # Benchmark runner CLI
+    "app/evaluation/run_experiments.py",   # Experiment runner CLI
 ]
 
 [tool.coverage.report]

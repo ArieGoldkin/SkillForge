@@ -1,0 +1,38 @@
+# Dependencies - must be installed fresh in container for correct platform binaries
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Test outputs
+test-results/
+playwright-report/
+coverage/
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
