@@ -32,7 +32,14 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import SEARCH_TOP_K_MAX, SEARCH_TOP_K_MIN
+from app.core.constants import (
+    DOCUMENT_PATH_BOOST_FACTOR,
+    SEARCH_TOP_K_MAX,
+    SEARCH_TOP_K_MIN,
+    SECTION_TITLE_BOOST_FACTOR,
+    TECHNICAL_KEYWORD_BOOST,
+    TECHNICAL_TERMS,
+)
 from app.core.logging import get_logger
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.schemas.search import (
@@ -364,7 +371,15 @@ class SearchService:
         ]
 
         # Convert to SearchResult
-        return [self._chunk_to_result(chunk, score, query) for chunk, score in normalized_results]
+        results = [
+            self._chunk_to_result(chunk, score, query) for chunk, score in normalized_results
+        ]
+
+        # Apply metadata-based boosts for improved ranking
+        # This boosts results where query terms match section titles or document paths
+        results = self._apply_metadata_boosts(results, query)
+
+        return results
 
     def _generate_snippet(
         self,
@@ -555,3 +570,119 @@ class SearchService:
         # and can be added in a future iteration
 
         return result
+
+    def _is_technical_query(self, query: str) -> bool:
+        """Detect if query contains technical terms warranting keyword boost.
+
+        Technical queries benefit from stronger keyword matching because
+        technical terms (langgraph, kubernetes, oauth) have precise meanings
+        that semantic search may conflate with similar concepts.
+
+        Args:
+            query: Search query string
+
+        Returns:
+            True if query contains any recognized technical terms
+
+        """
+        query_lower = query.lower()
+        query_terms = set(re.findall(r"\b\w+\b", query_lower))
+        return bool(query_terms & TECHNICAL_TERMS)
+
+    def _apply_metadata_boosts(
+        self,
+        results: list[SearchResult],
+        query: str,
+    ) -> list[SearchResult]:
+        """Apply metadata-based score boosts for improved ranking.
+
+        Boosts are applied for:
+        1. Section title matches - 1.5x when query terms appear in section title
+        2. Document path matches - 1.15x when query terms appear in document path
+        3. Technical queries - Additional keyword weight for technical terms
+
+        Args:
+            results: List of SearchResult from initial retrieval
+            query: Original query for term matching
+
+        Returns:
+            Results with boosted scores, re-sorted by boosted score
+
+        Note:
+            Boosts are multiplicative and capped at reasonable limits to
+            prevent score explosion while still meaningfully affecting rank.
+
+        """
+        if not results:
+            return results
+
+        query_terms = set(re.findall(r"\b\w+\b", query.lower()))
+        is_technical = self._is_technical_query(query)
+
+        boosted_results = []
+        for result in results:
+            boost_factor = 1.0
+
+            # Section title boost (1.5x) - when query terms match section title
+            section = result.metadata.section
+            if section:
+                section_terms = set(re.findall(r"\b\w+\b", section.lower()))
+                if query_terms & section_terms:
+                    boost_factor *= SECTION_TITLE_BOOST_FACTOR
+                    logger.debug(
+                        "section_title_boost_applied",
+                        chunk_id=result.chunk_id,
+                        section=section,
+                        boost=SECTION_TITLE_BOOST_FACTOR,
+                    )
+
+            # Document path boost (1.15x) - when query terms match path components
+            path = result.metadata.path
+            if path:
+                path_text = " ".join(path).lower()
+                path_terms = set(re.findall(r"\b\w+\b", path_text))
+                if query_terms & path_terms:
+                    boost_factor *= DOCUMENT_PATH_BOOST_FACTOR
+                    logger.debug(
+                        "document_path_boost_applied",
+                        chunk_id=result.chunk_id,
+                        path=path,
+                        boost=DOCUMENT_PATH_BOOST_FACTOR,
+                    )
+
+            # Technical keyword boost (1.2x) - for technical queries
+            if is_technical and result.metadata.chunk_type == "code_block":
+                boost_factor *= TECHNICAL_KEYWORD_BOOST
+                logger.debug(
+                    "technical_keyword_boost_applied",
+                    chunk_id=result.chunk_id,
+                    boost=TECHNICAL_KEYWORD_BOOST,
+                )
+
+            # Apply boost to score (capped at 1.0 for normalized scores)
+            boosted_score = min(result.score * boost_factor, 1.0)
+
+            # Create new result with boosted score
+            boosted_result = SearchResult(
+                chunk_id=result.chunk_id,
+                analysis_id=result.analysis_id,
+                content=result.content,
+                snippet=result.snippet,
+                score=boosted_score,
+                metadata=result.metadata,
+                created_at=result.created_at,
+            )
+            boosted_results.append(boosted_result)
+
+        # Re-sort by boosted score
+        boosted_results.sort(key=lambda r: r.score, reverse=True)
+
+        if any(r.score != orig.score for r, orig in zip(boosted_results, results, strict=False)):
+            logger.info(
+                "metadata_boosts_applied",
+                original_top_score=results[0].score if results else 0,
+                boosted_top_score=boosted_results[0].score if boosted_results else 0,
+                is_technical_query=is_technical,
+            )
+
+        return boosted_results

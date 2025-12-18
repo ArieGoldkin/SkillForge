@@ -346,10 +346,13 @@ class EvaluationRunner:
             min_score = query.get("min_score")
 
             try:
-                # Run retrieval
+                # Run retrieval with dynamic top_k
+                # Use at least 5, but increase if query expects more chunks
+                # This ensures we don't artificially cap recall for multi-target queries
+                dynamic_top_k = max(5, len(expected_chunks))
                 results = await self.search_service.search(
                     query=query_text,
-                    top_k=5,
+                    top_k=dynamic_top_k,
                     mode=SearchMode.HYBRID,
                 )
 
