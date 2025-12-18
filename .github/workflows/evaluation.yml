@@ -4,10 +4,10 @@ on:
   pull_request:
     branches: [main, dev]
     paths:
-      # Run on changes to agent code
-      - "backend/app/agents/**"
-      - "backend/app/workflows/**"
-      - "backend/app/services/**"
+      # Run on changes to agent code (moved to domains/*/workflows/agents/)
+      - "backend/app/domains/**/workflows/agents/**"
+      - "backend/app/domains/**/workflows/**"
+      - "backend/app/shared/services/**"
       # Run on changes to evaluation infrastructure
       - "backend/app/evaluation/**"
       - "backend/tests/smoke/retrieval/**"
@@ -48,9 +48,9 @@ jobs:
         with:
           filters: |
             evaluation:
-              - "backend/app/agents/**"
-              - "backend/app/workflows/**"
-              - "backend/app/services/**"
+              - "backend/app/domains/**/workflows/agents/**"
+              - "backend/app/domains/**/workflows/**"
+              - "backend/app/shared/services/**"
               - "backend/app/evaluation/**"
               - "backend/tests/smoke/retrieval/**"
               - ".github/workflows/evaluation.yml"

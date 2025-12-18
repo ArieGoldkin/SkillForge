@@ -1,6 +1,5 @@
 """Tests for specificity scorer."""
 
-
 from app.domains.analysis.workflows.agents.validation.specificity_scorer import (
     SpecificityScorer,
     score_agent_output,

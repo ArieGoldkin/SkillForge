@@ -69,6 +69,47 @@ def test_get_content_for_supervisor_very_large():
 
 
 @pytest.mark.asyncio
+async def test_supervisor_uses_strict_structured_output():
+    """Test supervisor uses strict=True for with_structured_output (LangChain 1.2.x).
+
+    Issue #299-304: Strict mode ensures supervisor routing returns valid agent
+    selection, preventing pipeline failures from malformed LLM responses.
+    """
+    mock_selection = AgentSelection(
+        agents=["tech_comparator", "implementation_planner", "security_auditor"],
+        reasoning="Test routing",
+        confidence=0.9,
+    )
+
+    # Mock the structured model
+    mock_structured_model = MagicMock()
+    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+
+    # Mock the base model to capture with_structured_output call
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+
+    with (
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+            return_value=mock_model,
+        ),
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+            new_callable=AsyncMock,
+        ),
+    ):
+        await supervisor_route(
+            content="Test content",
+            content_type="article",
+            analysis_id="test-analysis-id",
+        )
+
+        # Verify with_structured_output was called with strict=True
+        mock_model.with_structured_output.assert_called_once_with(AgentSelection, strict=True)
+
+
+@pytest.mark.asyncio
 async def test_supervisor_route_success(mock_agent_selection):
     """Test supervisor_route with successful agent selection."""
     # Mock the structured model that with_structured_output returns

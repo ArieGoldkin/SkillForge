@@ -277,8 +277,9 @@ async def compress_all_findings(
 
     try:
         llm = get_chat_model(config={"configurable": {"model": compression_model}})
-        # Bind structured output schema
-        llm_with_structure = llm.with_structured_output(CompressedFinding)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        # Compressed findings feed into synthesis - invalid compression breaks pipeline
+        llm_with_structure = llm.with_structured_output(CompressedFinding, strict=True)
     except Exception as e:  # noqa: BLE001 - Must catch all model initialization errors
         # If gemini-2.0-flash-lite fails, fall back to the settings fallback model
         logger.warning(
@@ -289,7 +290,8 @@ async def compress_all_findings(
             error=str(e),
         )
         llm = get_chat_model(config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}})
-        llm_with_structure = llm.with_structured_output(CompressedFinding)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        llm_with_structure = llm.with_structured_output(CompressedFinding, strict=True)
 
     # Create compression tasks for all agents
     tasks = []

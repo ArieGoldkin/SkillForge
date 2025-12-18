@@ -122,11 +122,11 @@ async def main(replace: bool = False) -> int:
     from sqlalchemy import text
 
     from app.core.logging import get_logger
-    from app.db.session import AsyncSessionLocal
     from app.db.models.analysis import Analysis
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
-    from app.services.embeddings import EmbeddingService
+    from app.db.session import AsyncSessionLocal
+    from app.shared.services.embeddings import EmbeddingService
 
     logger = get_logger(__name__)
 

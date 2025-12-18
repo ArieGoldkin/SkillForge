@@ -58,8 +58,8 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
     from app.db.models.analysis import Analysis
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
-    from app.services.embeddings import EmbeddingService
-    from app.services.embeddings.deterministic import DeterministicEmbeddingService
+    from app.shared.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 
     logger = get_logger(__name__)
 

@@ -295,11 +295,14 @@ async def _synthesize_core(
             response_schema=CoreSynthesisSchema,
         )
 
-        # Create fallback model
+        # Create fallback model with strict output (LangChain 1.2.x)
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        fallback_with_structure = fallback_model.with_structured_output(CoreSynthesisSchema)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        fallback_with_structure = fallback_model.with_structured_output(
+            CoreSynthesisSchema, strict=True
+        )
 
         # Attach fallback chain
         synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(
@@ -387,11 +390,14 @@ async def _synthesize_learning(
             response_schema=LearningSynthesisSchema,
         )
 
-        # Create fallback model
+        # Create fallback model with strict output (LangChain 1.2.x)
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        fallback_with_structure = fallback_model.with_structured_output(LearningSynthesisSchema)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        fallback_with_structure = fallback_model.with_structured_output(
+            LearningSynthesisSchema, strict=True
+        )
 
         # Attach fallback chain
         synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(
@@ -484,11 +490,14 @@ async def _synthesize_docs(
             response_schema=DocsSynthesisSchema,
         )
 
-        # Create fallback model
+        # Create fallback model with strict output (LangChain 1.2.x)
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        fallback_with_structure = fallback_model.with_structured_output(DocsSynthesisSchema)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        fallback_with_structure = fallback_model.with_structured_output(
+            DocsSynthesisSchema, strict=True
+        )
 
         # Attach fallback chain
         synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(

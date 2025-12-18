@@ -11,6 +11,8 @@ Designed for use in:
 - Health check endpoints
 """
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -55,7 +57,7 @@ class CleanupService:
         include_superseded: bool = False,
         hard_delete: bool = False,
         dry_run: bool = False,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Run comprehensive cleanup operation.
 
         Args:
@@ -87,7 +89,7 @@ class CleanupService:
             dry_run=dry_run,
         )
 
-        report: dict[str, object] = {
+        report: dict[str, Any] = {
             "orphan_cleanup": {},
             "ttl_cleanup": {},
             "integrity_checks": {},
@@ -125,21 +127,19 @@ class CleanupService:
         orphan_total: int = 0
         if include_orphans and report["orphan_cleanup"]:
             orphan_cleanup = report["orphan_cleanup"]
-            if dry_run and isinstance(orphan_cleanup, dict):
-                counts = orphan_cleanup.get("counts", {})
+            if dry_run:
+                counts = orphan_cleanup.get("counts") or {}
                 orphan_total = int(counts.get("total", 0)) if isinstance(counts, dict) else 0
-            elif isinstance(orphan_cleanup, dict):
-                stats = orphan_cleanup.get("stats", {})
+            else:
+                stats = orphan_cleanup.get("stats") or {}
                 orphan_total = int(stats.get("total_deleted", 0)) if isinstance(stats, dict) else 0
 
         ttl_cleanup = report.get("ttl_cleanup", {})
         expired_total = 0
-        if isinstance(ttl_cleanup, dict):
-            val = ttl_cleanup.get("analyses_to_delete", 0)  # type: ignore[call-overload]
-            expired_total = int(val) if isinstance(val, (int, float, str)) else 0
+        if ttl_cleanup:
+            expired_total = int(ttl_cleanup.get("analyses_to_delete", 0))
             if not dry_run:
-                val = ttl_cleanup.get("analyses_deleted", 0)  # type: ignore[call-overload]
-                expired_total = int(val) if isinstance(val, (int, float, str)) else 0
+                expired_total = int(ttl_cleanup.get("analyses_deleted", 0))
 
         integrity_issues = sum(
             len(v) if isinstance(v, list) else 0 for v in integrity_report.values()

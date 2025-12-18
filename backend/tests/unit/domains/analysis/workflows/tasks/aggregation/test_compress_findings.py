@@ -341,6 +341,43 @@ class TestCompressSingleFinding:
 class TestCompressAllFindings:
     """Test compress_all_findings function."""
 
+    async def test_compress_uses_strict_structured_output(self):
+        """Test compression uses strict=True for with_structured_output (LangChain 1.2.x).
+
+        Issue #299-304: Strict mode ensures compressed findings match schema exactly,
+        preventing malformed data from corrupting multi-phase synthesis pipeline.
+        """
+        agent_findings = {
+            "security_auditor": {
+                "findings": {"security_risks": ["SQL injection"]},
+                "confidence_score": 0.9,
+            },
+        }
+        analysis_id = "test-analysis-123"
+
+        # Mock get_chat_model to capture with_structured_output call
+        mock_llm = MagicMock()
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model",
+                return_value=mock_llm,
+            ),
+            patch(
+                "app.domains.analysis.workflows.tasks.aggregation.compress_findings.compress_single_finding",
+                return_value=CompressedFinding(
+                    agent_name="security_auditor",
+                    key_insights=["insight"],
+                    confidence=0.9,
+                    data_quality="high",
+                ),
+            ),
+        ):
+            await compress_all_findings(agent_findings, analysis_id)
+
+        # Verify with_structured_output was called with strict=True
+        mock_llm.with_structured_output.assert_called_once_with(CompressedFinding, strict=True)
+
     async def test_compress_all_findings_success(self):
         """Test successful compression of all findings."""
         agent_findings = {

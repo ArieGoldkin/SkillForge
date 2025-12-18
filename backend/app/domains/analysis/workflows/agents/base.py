@@ -125,11 +125,18 @@ def create_structured_agent(
     """
     model = get_chat_model(task_type=task_type)
     # Prevent multiple parallel tool calls; we expect exactly one structured response
-    bound_model: Runnable = model.bind_tools(tools or [], parallel_tool_calls=False)
+    # LangChain 1.2.x: Added tool_choice for explicit provider control
+    bound_model: Runnable = model.bind_tools(
+        tools or [],
+        parallel_tool_calls=False,
+        tool_choice="auto",  # Explicit tool selection mode
+    )
 
     # Create system message with prompt caching support
     system_message = _create_system_message_with_cache_control(system_prompt)
 
+    # Note: ToolStrategy handles schema validation internally
+    # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths
     agent = create_agent(
         cast(BaseChatModel, bound_model),
         tools=tools or [],
@@ -257,13 +264,18 @@ def create_tool_enabled_agent(
 
     model = get_chat_model(task_type=task_type)
     # Enable parallel tool calls for MCP tools (efficiency)
+    # LangChain 1.2.x: Added tool_choice for explicit provider control
     bound_model: Runnable = model.bind_tools(
-        list(tools), parallel_tool_calls=config.parallel_tool_calls
+        list(tools),
+        parallel_tool_calls=config.parallel_tool_calls,
+        tool_choice="auto",  # Explicit tool selection mode
     )
 
     # Create system message with prompt caching support
     system_message = _create_system_message_with_cache_control(enhanced_prompt)
 
+    # Note: ToolStrategy handles schema validation internally
+    # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths
     agent = create_agent(
         cast(BaseChatModel, bound_model),
         tools=list(tools),

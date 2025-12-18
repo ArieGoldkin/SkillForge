@@ -324,7 +324,7 @@ async def restore_dataset(replace: bool = False) -> int:
 
     from app.core.logging import get_logger
     from app.db.session import AsyncSessionLocal
-    from app.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings import EmbeddingService
 
     logger = get_logger(__name__)
 

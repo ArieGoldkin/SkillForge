@@ -348,7 +348,9 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         # Only apply task routing if no explicit model_id is provided
         task_type_to_use = None if model_id else "supervisor"
         model = get_chat_model(config=model_config, task_type=task_type_to_use)
-        structured_model = model.with_structured_output(AgentSelection)
+        # LangChain 1.2.x: Use strict mode for exact schema compliance
+        # Supervisor routing is critical path - must always return valid agent selection
+        structured_model = model.with_structured_output(AgentSelection, strict=True)
 
         # Invoke with progressive timeout retry
         selection = await _invoke_supervisor_with_retry(

@@ -62,6 +62,53 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
 
 @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
 @patch("app.domains.analysis.workflows.agents.base.create_agent")
+@patch("app.domains.analysis.workflows.agents.base.ToolStrategy")
+def test_create_structured_agent_uses_tool_strategy(
+    mock_tool_strategy, mock_create_agent, mock_get_model
+):
+    """Test creating agent uses ToolStrategy for response validation.
+
+    Note: ToolStrategy handles schema validation internally. LangChain 1.2.x
+    strict mode is applied via with_structured_output() in non-agent paths
+    (supervisor, synthesis, compression).
+    """
+    mock_model = MagicMock()
+    mock_get_model.return_value = mock_model
+    mock_create_agent.return_value = MagicMock()
+
+    create_structured_agent(
+        system_prompt="Test prompt",
+        response_schema=MockAgentSchema,
+    )
+
+    # Verify ToolStrategy was called with the schema
+    mock_tool_strategy.assert_called_once_with(MockAgentSchema)
+
+
+@patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+@patch("app.domains.analysis.workflows.agents.base.create_agent")
+def test_create_structured_agent_uses_tool_choice_auto(mock_create_agent, mock_get_model):
+    """Test creating agent uses tool_choice='auto' (LangChain 1.2.x).
+
+    Issue #299-304: Explicit tool_choice provides consistent behavior across
+    different LLM providers (Anthropic, OpenAI, Gemini).
+    """
+    mock_model = MagicMock()
+    mock_get_model.return_value = mock_model
+    mock_create_agent.return_value = MagicMock()
+
+    create_structured_agent(
+        system_prompt="Test prompt",
+        response_schema=MockAgentSchema,
+    )
+
+    # Verify bind_tools was called with tool_choice="auto"
+    bind_tools_call = mock_model.bind_tools.call_args
+    assert bind_tools_call.kwargs.get("tool_choice") == "auto"
+
+
+@patch("app.domains.analysis.workflows.agents.base.get_chat_model")
+@patch("app.domains.analysis.workflows.agents.base.create_agent")
 def test_create_structured_agent_with_task_type(mock_create_agent, mock_get_model):
     """Test creating agent with task_type for model routing."""
     mock_model = MagicMock()
