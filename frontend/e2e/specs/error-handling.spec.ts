@@ -101,9 +101,10 @@ test.describe('Error Handling Tests', () => {
       await expect(searchInput).toHaveValue('xyznonexistentquery12345');
 
       // Should show empty state or library page remains functional
+      // Use .first() on heading to avoid strict mode violation (multiple headings match)
       await expect(
         page.getByText(/no results|no analyses|empty|nothing found/i)
-          .or(page.getByRole('heading', { name: /library/i }))
+          .or(page.getByRole('heading', { name: /library/i }).first())
       ).toBeVisible();
     } else {
       // If no search input, just verify library page loaded
