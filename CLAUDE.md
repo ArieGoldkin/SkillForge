@@ -109,6 +109,21 @@ version: 4.0.0
 - **Fix**: Show "Complete with Errors" (red) when failures exist, added error details display
 - **Location**: `frontend/src/features/analysis/components/steps/AnalysisProgressCard.tsx`
 
+### Retrieval Ranking Quality (Improved Dec 2024)
+- **Problem**: Expected chunks ranked 6-10 instead of top-5 (91.1% pass rate)
+- **Root Cause**: Query-time tsvector (5-10x slower), low fetch multiplier, no metadata boosting
+- **Fix**:
+  1. Use pre-indexed `content_tsvector` column (5-10x faster)
+  2. Increase `HYBRID_FETCH_MULTIPLIER` from 2x to 3x for better RRF coverage
+  3. Add section title boosting (1.5x) when query matches section
+  4. Add document path boosting (1.15x) when query matches path
+  5. Add technical query detection for code_block boosting (1.2x)
+  6. Dynamic `top_k` in evaluation based on expected chunks count
+- **Location**: `backend/app/db/repositories/chunk_repository.py`, `backend/app/shared/services/search/search_service.py`
+- **Constants**: `backend/app/core/constants.py` (HYBRID_FETCH_MULTIPLIER, SECTION_TITLE_BOOST_FACTOR, etc.)
+- **Tests**: `backend/tests/unit/services/search/test_search_service.py` (20 tests)
+- **Results**: 185/203 → 186/203 (+0.5%), Hard MRR 0.647 → 0.686 (+6%)
+
 
 ## 📋 Development Standards (MUST FOLLOW)
 
