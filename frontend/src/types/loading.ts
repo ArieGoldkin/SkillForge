@@ -5,7 +5,7 @@
  * derived from SSE events and connection state using zustand-computed.
  */
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from './sse'
 
 /**
  * Analysis phase during loading states

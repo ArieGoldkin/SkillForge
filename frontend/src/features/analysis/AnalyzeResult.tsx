@@ -35,10 +35,8 @@ const selectConnect = (state: SSEStore) => state.connect
 const selectDisconnect = (state: SSEStore) => state.disconnect
 const selectReset = (state: SSEStore) => state.reset
 
-// New computed loading state selectors (Issue #399)
-const selectLoadingState = (state: SSEStore) => state.loadingState
-const selectShowTimeoutWarning = (state: SSEStore) => state.showTimeoutWarning
-const selectShouldShowProgress = (state: SSEStore) => state.shouldShowProgress
+// New computed loading state hooks (Issue #399)
+import { useLoadingState, useShowTimeoutWarning, useShouldShowProgress } from '@stores/sseStore'
 
 const useSSELifecycle = ({
   analysisId,
@@ -189,9 +187,9 @@ export default function AnalyzeResult() {
   const reset = useSSEStore(selectReset)
 
   // New computed loading states (Issue #399)
-  const loadingState = useSSEStore(selectLoadingState)
-  const showTimeoutWarning = useSSEStore(selectShowTimeoutWarning)
-  const shouldShowProgress = useSSEStore(selectShouldShowProgress)
+  const loadingState = useLoadingState()
+  const showTimeoutWarning = useShowTimeoutWarning()
+  const shouldShowProgress = useShouldShowProgress()
 
   // Timeout warning dismissal state (Issue #399)
   const [timeoutWarningDismissed, setTimeoutWarningDismissed] = useState(false)

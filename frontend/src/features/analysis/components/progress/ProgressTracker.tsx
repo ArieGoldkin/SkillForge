@@ -2,7 +2,7 @@ import type * as React from 'react'
 import { useMemo } from 'react'
 
 import type { AgentStageName } from '@app-types/sse'
-import { useSSEStore } from '@stores/sseStore'
+import { useSSEStore, useLoadingState, useShouldShowProgress } from '@stores/sseStore'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -47,7 +47,9 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   onError,
 }) => {
   // Use computed loading states (Issue #399)
-  const { events, error, isComplete, loadingState, shouldShowProgress } = useSSEStore()
+  const { events, error, isComplete } = useSSEStore()
+  const loadingState = useLoadingState()
+  const shouldShowProgress = useShouldShowProgress()
 
   const stageStates = useMemo(
     () => deriveStageStates(stages, events, onComplete, onError),

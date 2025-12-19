@@ -10,7 +10,7 @@ import type { SSEStore } from '@stores/sseStoreHelpers'
 
 import { ALL_STAGES, isWorkflowStage, getStageOrder } from '@features/analysis/config/stageRegistry'
 
-import type { ComputedLoadingStates, LoadingState } from '@types/loading'
+import type { ComputedLoadingStates, LoadingState } from '@/types/loading'
 
 /**
  * Check if we're in a disconnected state

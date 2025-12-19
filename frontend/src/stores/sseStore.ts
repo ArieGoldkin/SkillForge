@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 import { createComputed } from 'zustand-computed'
 
-import type { LoadingState, AnalysisPhase } from '@types/loading'
+import type { LoadingState, AnalysisPhase } from '@/types/loading'
 
 import {
   deriveLoadingState,
@@ -74,13 +74,6 @@ export interface SSEStoreState {
   connectionState: ConnectionState
   connectionStartTime: number | null // timestamp when connection started
   lastActivityTime: number | null // timestamp of last event/activity
-
-  // Computed loading states (Issue #399 - Missing Loading States)
-  loadingState: LoadingState
-  connectionMessage: string
-  showTimeoutWarning: boolean
-  analysisPhase: AnalysisPhase
-  shouldShowProgress: boolean
 
   // Analysis metadata (Issue #396 - Eliminates prop drilling)
   // These are derived from SSE events in useAnalysisProgress and synced here
@@ -246,38 +239,8 @@ const baseStore = create<SSEStore>((set, get) => ({
   },
 }))
 
-// Apply computed middleware for loading states (Issue #399)
-export const useSSEStore = createComputed(
-  baseStore,
-  (
-    state: SSEStore
-  ): Pick<
-    SSEStore,
-    | 'loadingState'
-    | 'connectionMessage'
-    | 'showTimeoutWarning'
-    | 'analysisPhase'
-    | 'shouldShowProgress'
-  > => ({
-    loadingState: deriveLoadingState(state),
-    connectionMessage: getConnectionMessage(state),
-    showTimeoutWarning: shouldShowTimeoutWarning(state),
-    analysisPhase: getAnalysisPhase(state),
-    shouldShowProgress: shouldShowProgress(state),
-  }),
-  {
-    keys: [
-      'events',
-      'latestEvent',
-      'isConnected',
-      'isComplete',
-      'error',
-      'activeAnalysisId',
-      'connectionStartTime',
-      'lastActivityTime',
-    ],
-  }
-)
+// Export the base store with computed properties added via selectors
+export const useSSEStore = baseStore
 
 // ============================================================================
 // Selectors (Issue #396 - Granular subscriptions to prevent unnecessary re-renders)
@@ -307,6 +270,40 @@ export const selectAnalysisMetadata = (state: SSEStore) => state.analysisMetadat
 
 /** Select setAnalysisMetadata action */
 export const selectSetAnalysisMetadata = (state: SSEStore) => state.setAnalysisMetadata
+
+// ============================================================================
+// Computed Loading State Hooks (Issue #399 - Missing Loading States)
+// ============================================================================
+
+/**
+ * Hook to get the current loading state
+ * Recomputes only when relevant state changes
+ */
+export const useLoadingState = () => useSSEStore(deriveLoadingState)
+
+/**
+ * Hook to get the connection message
+ * Recomputes only when relevant state changes
+ */
+export const useConnectionMessage = () => useSSEStore(getConnectionMessage)
+
+/**
+ * Hook to get timeout warning state
+ * Recomputes only when relevant state changes
+ */
+export const useShowTimeoutWarning = () => useSSEStore(shouldShowTimeoutWarning)
+
+/**
+ * Hook to get current analysis phase
+ * Recomputes only when relevant state changes
+ */
+export const useAnalysisPhase = () => useSSEStore(getAnalysisPhase)
+
+/**
+ * Hook to get progress visibility
+ * Recomputes only when relevant state changes
+ */
+export const useShouldShowProgress = () => useSSEStore(shouldShowProgress)
 
 // ============================================================================
 // Composite Selectors (use useShallow for object/array selections)
