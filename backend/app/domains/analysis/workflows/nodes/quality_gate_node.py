@@ -282,21 +282,38 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         # Submit quality scores to Langfuse for analytics
         from app.core.langfuse_config import submit_langfuse_score
 
-        for aspect, score_data in quality_scores.items():
+        if trace_id:
+            for aspect, score_data in quality_scores.items():
+                submit_langfuse_score(
+                    trace_id=trace_id,
+                    name=f"quality_{aspect}",
+                    value=score_data["score"],
+                    comment=score_data.get("comment"),
+                )
+
+            # Submit overall average score
             submit_langfuse_score(
                 trace_id=trace_id,
-                name=f"quality_{aspect}",
-                value=score_data["score"],
-                comment=score_data.get("comment"),
+                name="quality_avg",
+                value=avg_score,
+                comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
             )
 
-        # Submit overall average score
-        submit_langfuse_score(
-            trace_id=trace_id,
-            name="quality_avg",
-            value=avg_score,
-            comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
-        )
+            logger.debug(
+                "quality_scores_submitted_to_langfuse",
+                analysis_id=analysis_id,
+                trace_id=trace_id,
+                aspect_count=len(quality_scores),
+                avg_score=avg_score,
+            )
+        else:
+            logger.warning(
+                "quality_scores_not_submitted_no_trace",
+                analysis_id=analysis_id,
+                message="No trace_id available - quality scores not submitted to Langfuse",
+                quality_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
+                avg_score=avg_score,
+            )
 
         # Issue #413: Quality-based auto-tagging for trace classification
         # Tag traces with quality tier for filtering/analytics in Langfuse
@@ -327,26 +344,51 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         # Queue for human review if quality is below threshold or gate failed
         if not gate_passed or avg_score < ANNOTATION_QUEUE_THRESHOLD:
             try:
-                from app.core.annotation_service import queue_low_quality_artifact
+                from uuid import UUID
 
-                # Queue for review with quality context
-                await queue_low_quality_artifact(
-                    artifact_id=None,  # Will be set when artifact is created
-                    analysis_id=analysis_id,
-                    trace_id=trace_id,
-                    quality_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
-                    average_score=avg_score,
-                    threshold=effective_threshold,
-                    failed_aspects=failed_aspects,
-                )
+                from app.core.annotation_service import AnnotationService
+                from app.db.session import get_session_factory
 
-                logger.info(
-                    "quality_gate_queued_for_review",
-                    analysis_id=analysis_id,
-                    avg_score=avg_score,
-                    gate_passed=gate_passed,
-                    trace_id=trace_id,
-                )
+                # Convert analysis_id (str) to UUID
+                # The annotation service expects artifact_id as UUID
+                try:
+                    artifact_uuid = (
+                        UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
+                    )
+                except (ValueError, TypeError):
+                    logger.warning(
+                        "quality_gate_invalid_analysis_id_for_queue",
+                        analysis_id=analysis_id,
+                        message="Cannot convert analysis_id to UUID, skipping queue",
+                    )
+                    # Skip queueing if we can't convert to UUID
+                    artifact_uuid = None
+
+                if artifact_uuid:
+                    # Get database session and create annotation service
+                    session_factory = get_session_factory()
+                    async with session_factory() as db_session:
+                        annotation_service = AnnotationService(session=db_session)
+
+                        # Queue for review with quality context
+                        await annotation_service.queue_low_quality_artifact(
+                            artifact_id=artifact_uuid,
+                            trace_id=trace_id,
+                            quality_scores={
+                                aspect: s["score"] for aspect, s in quality_scores.items()
+                            },
+                            threshold=effective_threshold,
+                        )
+
+                        await db_session.commit()
+
+                    logger.info(
+                        "quality_gate_queued_for_review",
+                        analysis_id=analysis_id,
+                        avg_score=avg_score,
+                        gate_passed=gate_passed,
+                        trace_id=trace_id,
+                    )
             except Exception as queue_error:  # noqa: BLE001
                 # Don't fail the workflow if queuing fails - intentionally broad catch
                 logger.warning(

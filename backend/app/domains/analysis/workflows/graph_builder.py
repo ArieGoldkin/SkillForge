@@ -5,6 +5,7 @@ parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
+import uuid
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -375,11 +376,15 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
         analysis_uuid = state.get("analysis_id")
 
         if analysis_uuid and quality_scores_flat:
+            # Convert analysis_id string to UUID for annotation service
+            artifact_id = (
+                uuid.UUID(analysis_uuid) if isinstance(analysis_uuid, str) else analysis_uuid
+            )
             session_factory = get_session_factory()
             async with session_factory() as db_session:
                 annotation_service = AnnotationService(session=db_session)
                 queue_result = await annotation_service.queue_low_quality_artifact(
-                    artifact_id=analysis_uuid,  # Use analysis_id as artifact proxy (artifact not created yet)
+                    artifact_id=artifact_id,  # Use analysis_id as artifact proxy (artifact not created yet)
                     trace_id=trace_id,
                     quality_scores=quality_scores_flat,
                     threshold=0.6,

@@ -207,13 +207,13 @@ class TestUploadDataset:
         # Verify dataset creation
         assert mock_langfuse.create_dataset.called
         dataset_call = mock_langfuse.create_dataset.call_args
-        assert dataset_call.kwargs["name"] == "supervisor_routing_golden"
+        assert dataset_call.kwargs["name"] == "supervisor_routing_golden_v1_prod"
         assert "description" in dataset_call.kwargs
 
         # Verify item creation
         assert mock_langfuse.create_dataset_item.called
         item_call = mock_langfuse.create_dataset_item.call_args
-        assert item_call.kwargs["dataset_name"] == "supervisor_routing_golden"
+        assert item_call.kwargs["dataset_name"] == "supervisor_routing_golden_v1_prod"
         assert "input" in item_call.kwargs
         assert "expected_output" in item_call.kwargs
 
