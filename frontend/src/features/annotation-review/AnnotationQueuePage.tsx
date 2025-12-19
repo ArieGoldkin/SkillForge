@@ -1,8 +1,6 @@
 /**
- * AnnotationQueuePage - Main page for reviewing flagged artifacts
- *
- * Displays a table of annotation queue items with filtering and pagination.
- * Allows reviewers to view artifacts and mark items as reviewed.
+ * AnnotationQueuePage - Main page for reviewing flagged artifacts.
+ * Displays annotation queue items with filtering and pagination.
  */
 
 import { useState } from 'react'
@@ -18,42 +16,29 @@ import {
   CardHeader,
   CardTitle,
 } from '@shared/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
+import { Pagination } from './components/Pagination'
 import { QueueTable } from './components/QueueTable'
+import { StatusFilter } from './components/StatusFilter'
 import { useAnnotationQueue } from './hooks/useAnnotationQueue'
+
+const ITEMS_PER_PAGE = 20
 
 export default function AnnotationQueuePage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'reviewed'>('pending')
   const [offset, setOffset] = useState(0)
-  const limit = 20
 
   const { items, total, isLoading, error, refetch, markReviewed, isMarkingReviewed } =
     useAnnotationQueue({
-      limit,
+      limit: ITEMS_PER_PAGE,
       offset,
       status: statusFilter === 'all' ? undefined : statusFilter,
     })
 
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value as 'all' | 'pending' | 'reviewed')
-    setOffset(0) // Reset to first page when filter changes
+  const handleStatusChange = (value: 'all' | 'pending' | 'reviewed') => {
+    setStatusFilter(value)
+    setOffset(0)
   }
-
-  const handlePrevPage = () => {
-    setOffset(Math.max(0, offset - limit))
-  }
-
-  const handleNextPage = () => {
-    if (offset + limit < total) {
-      setOffset(offset + limit)
-    }
-  }
-
-  const currentPage = Math.floor(offset / limit) + 1
-  const totalPages = Math.ceil(total / limit)
-  const hasNextPage = offset + limit < total
-  const hasPrevPage = offset > 0
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -70,45 +55,10 @@ export default function AnnotationQueuePage() {
             </Button>
           </div>
         </CardHeader>
-
         <CardContent>
-          {/* Status Filter */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">Status:</span>
-              <Tabs value={statusFilter} onValueChange={handleStatusChange}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <span className="text-sm text-muted-foreground">
-              {total} total item{total === 1 ? '' : 's'}
-            </span>
-          </div>
-
-          {/* Error State */}
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertTitle>Error loading queue</AlertTitle>
-              <AlertDescription>
-                {error instanceof Error
-                  ? error.message
-                  : 'An error occurred while loading the queue'}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Loading State */}
-          {isLoading && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Loading annotation queue...</p>
-            </div>
-          )}
-
-          {/* Queue Table */}
+          <StatusFilter value={statusFilter} onChange={handleStatusChange} total={total} />
+          {error && <QueueError error={error} />}
+          {isLoading && <LoadingState />}
           {!isLoading && (
             <>
               <QueueTable
@@ -116,37 +66,38 @@ export default function AnnotationQueuePage() {
                 onMarkReviewed={markReviewed}
                 isMarkingReviewed={isMarkingReviewed}
               />
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrevPage}
-                      disabled={!hasPrevPage}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNextPage}
-                      disabled={!hasNextPage}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <Pagination
+                currentPage={Math.floor(offset / ITEMS_PER_PAGE) + 1}
+                totalPages={Math.ceil(total / ITEMS_PER_PAGE)}
+                hasPrevPage={offset > 0}
+                hasNextPage={offset + ITEMS_PER_PAGE < total}
+                onPrevPage={() => setOffset(Math.max(0, offset - ITEMS_PER_PAGE))}
+                onNextPage={() => setOffset(offset + ITEMS_PER_PAGE)}
+              />
             </>
           )}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function QueueError({ error }: { error: Error | null }) {
+  if (!error) return null
+  return (
+    <Alert variant="destructive" className="mb-6">
+      <AlertTitle>Error loading queue</AlertTitle>
+      <AlertDescription>
+        {error instanceof Error ? error.message : 'An error occurred while loading the queue'}
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="text-center py-12 text-muted-foreground">
+      <p>Loading annotation queue...</p>
     </div>
   )
 }

@@ -1,6 +1,5 @@
 /**
  * Action buttons for annotation queue items.
- * Provides "Mark Reviewed" and "View Artifact" actions.
  */
 
 import { Link } from '@tanstack/react-router'
@@ -33,7 +32,6 @@ export function QueueItemActions({
 
   return (
     <div className="flex items-center gap-2">
-      {/* View Artifact Button */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -50,10 +48,6 @@ export function QueueItemActions({
           </TooltipTrigger>
           <TooltipContent>View artifact</TooltipContent>
         </Tooltip>
-      </TooltipProvider>
-
-      {/* Mark Reviewed Button */}
-      <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
