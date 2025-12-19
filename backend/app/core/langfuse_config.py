@@ -199,6 +199,10 @@ def submit_langfuse_score(
             comment=comment,
         )
 
+        # Flush immediately to ensure score is sent to Langfuse
+        # Without flush, scores stay in buffer and may not appear in UI
+        client.flush()
+
         logger.debug(
             "langfuse_score_submitted",
             trace_id=str(trace_id),

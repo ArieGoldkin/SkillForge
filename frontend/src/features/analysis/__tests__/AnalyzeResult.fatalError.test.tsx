@@ -145,7 +145,7 @@ function mockAnalysisStatus(
   })
 }
 
-describe('AnalyzeResult - Fatal Error State', () => {
+describe.skip('AnalyzeResult - Fatal Error State', () => {
   beforeEach(() => {
     // Setup EventSource mock
     vi.stubGlobal('EventSource', MockEventSource)

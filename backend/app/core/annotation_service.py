@@ -433,49 +433,15 @@ class AnnotationService:
             True if successfully added to Langfuse queue, False otherwise
 
         """
-        # Check if Langfuse queue is configured
+        # Validate all preconditions before attempting submission
+        if not self._validate_langfuse_queue_config(artifact_id, trace_id):
+            return False
+
+        # Get validated configuration
         queue_id = settings.LANGFUSE_ANNOTATION_QUEUE_ID
-        if not queue_id:
-            logger.debug(
-                "langfuse_queue_not_configured",
-                message="LANGFUSE_ANNOTATION_QUEUE_ID not set, skipping Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
-
-        # Check if Langfuse is enabled
-        langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
-        if not langfuse_enabled:
-            logger.debug(
-                "langfuse_not_enabled",
-                message="LANGFUSE_ENABLED not set, skipping Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
-
-        # Get Langfuse credentials
         public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
         secret_key = os.getenv("LANGFUSE_SECRET_KEY")
         host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
-
-        if not public_key or not secret_key:
-            logger.debug(
-                "langfuse_credentials_missing",
-                message="Langfuse credentials not set, skipping Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
-
-        # Prepare queue item payload
-        # Langfuse requires objectType to be TRACE, OBSERVATION, or SESSION
-        # We use TRACE to link annotation reviews to the analysis trace
-        if not trace_id:
-            logger.debug(
-                "langfuse_queue_skipped_no_trace",
-                message="No trace_id available, cannot add to Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
 
         # Langfuse Annotation Queue API only accepts objectId and objectType
         # Metadata is stored locally in the annotation_queue table
@@ -505,7 +471,7 @@ class AnnotationService:
 
                 return True
 
-        except httpx.HTTPError as e:
+        except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
             # Graceful degradation - log warning but don't fail the operation
             logger.warning(
                 "langfuse_queue_submission_failed",
@@ -517,17 +483,65 @@ class AnnotationService:
             )
             return False
 
-        except Exception as e:  # noqa: BLE001 - Graceful degradation
-            # Catch any unexpected errors
-            logger.warning(
-                "langfuse_queue_submission_error",
+    def _validate_langfuse_queue_config(
+        self,
+        artifact_id: uuid.UUID,
+        trace_id: str | None,
+    ) -> bool:
+        """Validate Langfuse queue configuration preconditions.
+
+        Args:
+            artifact_id: ID of the artifact (for logging)
+            trace_id: Langfuse trace ID to validate
+
+        Returns:
+            True if validation passes (proceed with submission),
+            False if validation fails (skip queue submission)
+
+        """
+        # Check if Langfuse queue is configured
+        queue_id = settings.LANGFUSE_ANNOTATION_QUEUE_ID
+        if not queue_id:
+            logger.debug(
+                "langfuse_queue_not_configured",
+                message="LANGFUSE_ANNOTATION_QUEUE_ID not set, skipping Langfuse queue",
                 artifact_id=str(artifact_id),
-                queue_id=queue_id,
-                error=str(e),
-                error_type=type(e).__name__,
-                exc_info=True,
             )
             return False
+
+        # Check if Langfuse is enabled
+        langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
+        if not langfuse_enabled:
+            logger.debug(
+                "langfuse_not_enabled",
+                message="LANGFUSE_ENABLED not set, skipping Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Get Langfuse credentials
+        public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+        secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+
+        if not public_key or not secret_key:
+            logger.debug(
+                "langfuse_credentials_missing",
+                message="Langfuse credentials not set, skipping Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Langfuse requires trace_id to link to TRACE objectType
+        if not trace_id:
+            logger.debug(
+                "langfuse_queue_skipped_no_trace",
+                message="No trace_id available, cannot add to Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # All validations passed
+        return True
 
 
 def get_annotation_service(
