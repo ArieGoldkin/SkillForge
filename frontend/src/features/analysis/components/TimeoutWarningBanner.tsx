@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 
 import { AlertTriangle, X } from 'lucide-react'
 
@@ -24,17 +24,17 @@ export const TimeoutWarningBanner = memo<TimeoutWarningBannerProps>(function Tim
   showTimeoutWarning,
   onDismiss,
 }) {
-  const dismissButtonRef = React.useRef<HTMLButtonElement>(null)
+  const dismissButtonRef = useRef<HTMLButtonElement>(null)
 
   // Focus management - auto-focus dismiss button when banner appears
-  React.useEffect(() => {
+  useEffect(() => {
     if (showTimeoutWarning && dismissButtonRef.current) {
       dismissButtonRef.current.focus()
     }
   }, [showTimeoutWarning])
 
   // Keyboard navigation - allow ESC to dismiss
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showTimeoutWarning) {
         onDismiss()
