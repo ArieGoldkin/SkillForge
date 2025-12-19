@@ -24,6 +24,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.shared.services.g_eval.cache import get_cache
 from app.shared.services.g_eval.rubrics import (
     format_rubric_for_prompt,
@@ -263,7 +264,8 @@ async def _score_criterion(
     ]
 
     try:
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         # Extract text from response (handles Gemini's new dict format)
         content = _extract_text_from_llm_response(response.content)
         result = _parse_g_eval_response(content, criterion)

@@ -38,6 +38,7 @@ from app.core.constants import (
 )
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.schemas.search import ReRankConfig, SearchResult
 from app.shared.services.metrics import get_metrics_service
 from app.shared.services.search.structural_priors import StructuralPriorScorer
@@ -288,7 +289,8 @@ class ReRanker:
             HumanMessage(content=prompt),
         ]
 
-        response = await self.model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await self.model.ainvoke(messages, config=config)
         content = response.content if isinstance(response.content, str) else str(response.content)
 
         # Parse scores from response

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 
 logger = get_logger(__name__)
 
@@ -217,7 +218,8 @@ Provide a concise summary (2-3 sentences) that captures essential context."""
             HumanMessage(content=prompt),
         ]
 
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         summary_text: str
         if hasattr(response, "content"):
             content = response.content
