@@ -25,14 +25,23 @@ class TestRubricValidation:
         assert errors == {}, f"Found validation errors: {errors}"
 
     def test_all_agent_types_have_rubrics(self) -> None:
-        """All agent types from CoT prompts should have rubrics."""
+        """All agent types from CoT prompts should have rubrics.
+
+        Note: artifact_generator is a special case - it's not a CoT agent,
+        but a rubric for evaluating the final generated artifact.
+        """
         cot_agents = set(get_all_cot_agent_types())
         rubric_agents = set(get_all_agent_types())
 
-        assert cot_agents == rubric_agents, (
-            f"Mismatch between CoT agents and rubric agents.\n"
-            f"Only in CoT: {cot_agents - rubric_agents}\n"
-            f"Only in Rubrics: {rubric_agents - cot_agents}"
+        # All CoT agents should have rubrics
+        missing_rubrics = cot_agents - rubric_agents
+        assert not missing_rubrics, f"CoT agents missing rubrics: {missing_rubrics}"
+
+        # Allow non-CoT agents like artifact_generator
+        extra_rubrics = rubric_agents - cot_agents
+        allowed_extra = {"artifact_generator"}
+        assert extra_rubrics.issubset(allowed_extra), (
+            f"Unexpected rubric agents (not in CoT or allowed list): {extra_rubrics - allowed_extra}"
         )
 
     def test_rubric_coverage_is_complete(self) -> None:
@@ -40,8 +49,9 @@ class TestRubricValidation:
         coverage = get_rubric_coverage()
 
         assert coverage["is_valid"], f"Validation errors found: {coverage['validation_errors']}"
-        assert coverage["total_agents"] == 7, f"Expected 7 agents, got {coverage['total_agents']}"
-        assert len(coverage["agents"]) == 7
+        # 7 CoT agents + 1 artifact_generator = 8 total
+        assert coverage["total_agents"] == 8, f"Expected 8 agents, got {coverage['total_agents']}"
+        assert len(coverage["agents"]) == 8
 
     def test_each_rubric_has_five_scores(self) -> None:
         """Each rubric criterion should have scores 1-5."""
@@ -158,9 +168,11 @@ class TestRubricAPI:
         agents = get_all_agent_types()
 
         assert isinstance(agents, list)
-        assert len(agents) == 7
+        # 7 CoT agents + 1 artifact_generator = 8 total
+        assert len(agents) == 8
         assert "tech_comparator" in agents
         assert "learning_path" in agents
+        assert "artifact_generator" in agents
 
 
 class TestRubricContent:

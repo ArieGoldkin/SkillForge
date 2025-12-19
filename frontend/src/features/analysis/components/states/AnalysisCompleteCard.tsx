@@ -7,6 +7,7 @@ import { CompleteCardContent } from './internal'
 interface AnalysisCompleteCardProps {
   artifactId: string | null | undefined
   analysisId?: string
+  traceId?: string
   variant?: 'default' | 'column'
   sourceUrl?: string
   hasFailedStages?: boolean
@@ -17,6 +18,7 @@ export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
   const {
     artifactId,
     analysisId,
+    traceId,
     variant = 'default',
     sourceUrl,
     hasFailedStages = false,
@@ -33,6 +35,7 @@ export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
         <CompleteCardContent
           artifactId={artifactId}
           analysisId={analysisId}
+          traceId={traceId}
           isColumn={isColumn}
           onPreview={preview.openPreview}
           hasFailedStages={hasFailedStages}

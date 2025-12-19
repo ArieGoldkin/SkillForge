@@ -31,6 +31,85 @@ from app.shared.services.utils.markdown import sanitize_markdown
 logger = get_logger(__name__)
 
 
+async def _submit_artifact_quality_scores(
+    artifact_content: str,
+    aggregated_insights: dict,
+    analysis_id: str,
+) -> None:
+    """Submit G-Eval quality scores for the generated artifact to Langfuse.
+
+    This function runs after artifact storage to provide detailed quality
+    assessment without blocking the user. Scores appear in Langfuse UI for
+    quality analytics and trend analysis.
+
+    Args:
+        artifact_content: The generated markdown artifact content
+        aggregated_insights: The aggregated insights used to generate the artifact
+        analysis_id: The analysis ID for logging context
+
+    """
+    try:
+        from app.core.tracing import get_current_trace_id
+        from app.shared.services.g_eval import g_eval_score
+
+        # Get current trace ID to link scores to this artifact generation
+        trace_id = get_current_trace_id()
+
+        if not trace_id:
+            logger.debug(
+                "artifact_g_eval_skipped_no_trace",
+                analysis_id=analysis_id,
+                message="No trace context available for G-Eval scoring",
+            )
+            return
+
+        # Prepare input content for G-Eval (what was used to create the artifact)
+        # Use the aggregated insights summary as the "input" that generated this "output"
+        input_summary = aggregated_insights.get("summary", "")
+        if not input_summary:
+            # Fallback to a generic description if summary is missing
+            input_summary = "Generate a comprehensive technical implementation guide from the aggregated agent findings."
+
+        logger.info(
+            "artifact_g_eval_scoring_started",
+            analysis_id=analysis_id,
+            trace_id=trace_id,
+            artifact_length=len(artifact_content),
+        )
+
+        # Score the artifact using G-Eval with artifact-specific criteria
+        # Use agent_type="artifact_generator" for artifact-specific rubrics
+        g_eval_result = await g_eval_score(
+            input_content=input_summary,
+            output=artifact_content,
+            agent_type="artifact_generator",
+            trace_id=trace_id,
+            use_cache=True,
+        )
+
+        logger.info(
+            "artifact_g_eval_scoring_complete",
+            analysis_id=analysis_id,
+            trace_id=trace_id,
+            overall_score=g_eval_result.overall,
+            completeness=g_eval_result.completeness,
+            accuracy=g_eval_result.accuracy,
+            coherence=g_eval_result.coherence,
+            depth=g_eval_result.depth,
+            confidence=g_eval_result.confidence,
+        )
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for quality scoring
+        # Don't fail artifact generation if G-Eval scoring fails
+        logger.warning(
+            "artifact_g_eval_scoring_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True,
+        )
+
+
 @robust_traceable(
     name="generate_artifact",
     run_type="chain",
@@ -186,6 +265,14 @@ async def generate_artifact(
             status="complete",
             artifact_id=artifact_id,
             markdown_length=len(markdown_content),
+        )
+
+        # Issue #378-385: Submit G-Eval scores to Langfuse for artifact quality
+        # This happens after artifact is stored, so it doesn't block user display
+        await _submit_artifact_quality_scores(
+            artifact_content=markdown_content,
+            aggregated_insights=aggregated_insights,
+            analysis_id=analysis_id,
         )
 
         # Return only updated fields, not entire state

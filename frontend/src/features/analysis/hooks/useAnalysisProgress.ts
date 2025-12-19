@@ -48,6 +48,7 @@ export interface AnalysisProgressData {
   hasError: boolean
   errorMessage?: string
   artifactId?: string
+  traceId?: string // Langfuse trace ID for feedback submission
   hasFailedStages: boolean // NEW: Indicates if any stages failed
   failedStagesCount: number // NEW: Count of failed stages
   analysisMetadata?: {
@@ -72,6 +73,7 @@ interface ProcessedEvents {
   hasError: boolean
   errorMessage?: string
   artifactId?: string
+  traceId?: string
   expectedTotalStages?: number
   stageStatuses: Map<StageName, StageStatusEntry>
   skippedAgentsInfo?: { agents: string[]; selectedAgents?: string[] }
@@ -96,7 +98,12 @@ interface ProcessedEvents {
 function processEvent(
   event: SSEEvent,
   stageStatuses: Map<StageName, StageStatusEntry>,
-  state: { isComplete: boolean; artifactId?: string; expectedTotalStages?: number }
+  state: {
+    isComplete: boolean
+    artifactId?: string
+    traceId?: string
+    expectedTotalStages?: number
+  }
 ): void {
   if (isProgressEvent(event) || isCompleteEvent(event)) {
     const normalizedStage = normalizeStageNameFromBackend(event.stage)
@@ -156,6 +163,11 @@ function processEvent(
       if (artifactId) {
         state.artifactId = artifactId
       }
+      // Capture trace_id from complete event for Langfuse feedback tracking
+      const traceId = isCompleteEvent(event) ? event.trace_id : undefined
+      if (traceId) {
+        state.traceId = traceId
+      }
     }
   }
 
@@ -186,6 +198,7 @@ function processEvents(events: SSEEvent[]): ProcessedEvents {
   const state = {
     isComplete: false,
     artifactId: undefined as string | undefined,
+    traceId: undefined as string | undefined,
     expectedTotalStages: undefined as number | undefined,
   }
   let hasError = false
@@ -606,6 +619,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       hasError,
       errorMessage,
       artifactId,
+      traceId,
       expectedTotalStages,
       stageStatuses,
       skippedAgentsInfo: processedSkippedAgentsInfo,
@@ -637,6 +651,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       hasError,
       errorMessage,
       artifactId,
+      traceId,
       hasFailedStages,
       failedStagesCount,
       analysisMetadata,

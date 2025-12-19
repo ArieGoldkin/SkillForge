@@ -8,15 +8,22 @@ import { cn } from '@lib/utils'
 interface GuideButtonProps {
   artifactId: string
   analysisId?: string
+  traceId?: string
   isCompact?: boolean
 }
 
-export function GuideButton({ artifactId, analysisId, isCompact = false }: GuideButtonProps) {
+export function GuideButton({
+  artifactId,
+  analysisId,
+  traceId,
+  isCompact = false,
+}: GuideButtonProps) {
   return (
     <Link
       to="/artifact/$artifactId"
       params={{ artifactId }}
       search={{ analysisId: analysisId || undefined }}
+      state={{ traceId }}
     >
       <Button size={isCompact ? 'default' : 'lg'} className="gap-2">
         <FileText className={cn(isCompact ? 'h-4 w-4' : 'h-5 w-5')} />

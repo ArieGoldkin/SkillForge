@@ -7,6 +7,7 @@ import { ActionButtons } from './ActionButtons'
 interface CompleteCardContentProps {
   artifactId: string | null | undefined
   analysisId?: string
+  traceId?: string
   isColumn: boolean
   onPreview: () => void
   hasFailedStages?: boolean
@@ -17,6 +18,7 @@ export function CompleteCardContent(props: CompleteCardContentProps) {
   const {
     artifactId,
     analysisId,
+    traceId,
     isColumn,
     onPreview,
     hasFailedStages = false,
@@ -49,6 +51,7 @@ export function CompleteCardContent(props: CompleteCardContentProps) {
         <ActionButtons
           artifactId={artifactId}
           analysisId={analysisId}
+          traceId={traceId}
           isCompact={isColumn}
           onPreview={onPreview}
         />

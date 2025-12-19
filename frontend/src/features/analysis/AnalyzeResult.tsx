@@ -138,6 +138,7 @@ export default function AnalyzeResult() {
     hasError,
     errorMessage,
     artifactId,
+    traceId,
     hasFailedStages,
     failedStagesCount,
     analysisMetadata,
@@ -176,6 +177,7 @@ export default function AnalyzeResult() {
       <CompletedAnalysisView
         analysisId={id}
         artifactId={urlArtifactId}
+        traceId={traceId}
         overallProgress={overallProgress}
         steps={steps}
         hasFailedStages={hasFailedStages}
@@ -190,6 +192,7 @@ export default function AnalyzeResult() {
       <CompletedAnalysisView
         analysisId={id}
         artifactId={resolvedArtifactId}
+        traceId={traceId}
         overallProgress={overallProgress}
         steps={steps}
         hasFailedStages={hasFailedStages}
@@ -236,6 +239,7 @@ export default function AnalyzeResult() {
             <AnalysisCompleteCard
               artifactId={resolvedArtifactId || artifactId}
               analysisId={id}
+              traceId={traceId}
               variant="column"
               hasFailedStages={hasFailedStages}
               failedStagesCount={failedStagesCount}

@@ -14,6 +14,7 @@ import { TeachMeButton } from './TeachMeButton'
 interface ActionButtonsProps {
   artifactId: string
   analysisId?: string
+  traceId?: string
   analysisTitle?: string
   isCompact: boolean
   onPreview: () => void
@@ -22,6 +23,7 @@ interface ActionButtonsProps {
 export function ActionButtons({
   artifactId,
   analysisId,
+  traceId,
   analysisTitle,
   isCompact,
   onPreview,
@@ -44,7 +46,12 @@ export function ActionButtons({
           isCompact={isCompact}
         />
       )}
-      <GuideButton artifactId={artifactId} analysisId={analysisId} isCompact={isCompact} />
+      <GuideButton
+        artifactId={artifactId}
+        analysisId={analysisId}
+        traceId={traceId}
+        isCompact={isCompact}
+      />
     </div>
   )
 }

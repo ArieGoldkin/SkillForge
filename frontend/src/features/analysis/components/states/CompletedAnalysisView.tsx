@@ -7,6 +7,7 @@ import { AnalysisCompleteCard } from './AnalysisCompleteCard'
 interface CompletedAnalysisViewProps {
   analysisId?: string
   artifactId: string
+  traceId?: string
   overallProgress: OverallProgress
   steps: ProgressStep[]
   hasFailedStages: boolean
@@ -22,6 +23,7 @@ interface CompletedAnalysisViewProps {
 export function CompletedAnalysisView({
   analysisId,
   artifactId,
+  traceId,
   overallProgress,
   steps,
   hasFailedStages,
@@ -48,6 +50,7 @@ export function CompletedAnalysisView({
         <AnalysisCompleteCard
           artifactId={artifactId}
           analysisId={analysisId}
+          traceId={traceId}
           variant="column"
           hasFailedStages={hasFailedStages}
           failedStagesCount={failedStagesCount}

@@ -4,7 +4,7 @@
  * Route: /artifact/:artifactId?analysisId=xxx
  */
 
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, useLocation } from '@tanstack/react-router'
 
 import { FeedbackButtons, MarkdownPreview, TableOfContents } from './components'
 import {
@@ -21,6 +21,8 @@ export default function ArtifactPage() {
 
   const { artifactId } = routeApi.useParams()
   const { analysisId } = routeApi.useSearch()
+  const location = useLocation()
+  const traceId = (location.state as { traceId?: string } | undefined)?.traceId
   const { content, isLoading, error, download } = useArtifact(artifactId)
 
   return (
@@ -49,7 +51,7 @@ export default function ArtifactPage() {
                 {/* Feedback section at the bottom of the artifact */}
                 {artifactId && (
                   <div className="mt-8 pt-6 border-t border-border">
-                    <FeedbackButtons artifactId={artifactId} traceId={null} />
+                    <FeedbackButtons artifactId={artifactId} traceId={traceId ?? null} />
                   </div>
                 )}
               </main>
