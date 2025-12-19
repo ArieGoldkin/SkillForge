@@ -56,11 +56,6 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
     [stages, events, onComplete, onError]
   )
 
-  // Only show progress UI when we should (avoids showing empty progress during connection)
-  if (!shouldShowProgress) {
-    return null
-  }
-
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>
       <CardHeader>
@@ -71,15 +66,17 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       </CardHeader>
       <CardContent>
         {error && <ErrorAlert message={error.message} />}
-        <div
-          className="space-y-0 max-h-[500px] overflow-y-auto"
-          role="list"
-          aria-label="Analysis stages"
-        >
-          {stageStates.map((stage, index) => (
-            <StageItem key={stage.name} stage={stage} isLast={index === stageStates.length - 1} />
-          ))}
-        </div>
+        {shouldShowProgress && (
+          <div
+            className="space-y-0 max-h-[500px] overflow-y-auto"
+            role="list"
+            aria-label="Analysis stages"
+          >
+            {stageStates.map((stage, index) => (
+              <StageItem key={stage.name} stage={stage} isLast={index === stageStates.length - 1} />
+            ))}
+          </div>
+        )}
         {isComplete && <CompletionMessage />}
       </CardContent>
     </Card>

@@ -1,9 +1,6 @@
 import type { SSEEvent } from '@app-types/sse'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
-import { createComputed } from 'zustand-computed'
-
-import type { LoadingState, AnalysisPhase } from '@/types/loading'
 
 import {
   deriveLoadingState,

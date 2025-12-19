@@ -31,7 +31,6 @@ import {
   STAGE_REGISTRY,
   STAGE_TO_AGENT_MAP,
   type StageCategory,
-  type StageRegistryEntry,
   TOTAL_STAGES,
   VALID_STAGES,
   WORKING_STAGES,

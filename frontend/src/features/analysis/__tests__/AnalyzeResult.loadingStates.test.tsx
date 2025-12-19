@@ -7,10 +7,10 @@
  * - ConnectionStatus (via ProgressTracker)
  */
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { useSSEStore } from '@stores/sseStore'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
-import { useSSEStore } from '@stores/sseStore'
 import type { LoadingState } from '@types/loading'
 
 import AnalyzeResult from '../AnalyzeResult'
@@ -77,7 +77,7 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
 }))
 
 describe('AnalyzeResult Loading States Integration', () => {
-  let mockStoreState: any
+  let mockStoreState: Record<string, unknown>
 
   beforeEach(() => {
     mockStoreState = {
@@ -144,7 +144,7 @@ describe('AnalyzeResult Loading States Integration', () => {
       } as LoadingState
       mockStoreState.showTimeoutWarning = true
 
-      const { rerender } = render(<AnalyzeResult />)
+      const { _rerender } = render(<AnalyzeResult />)
 
       // Click dismiss button
       const dismissButton = screen.getByRole('button', { name: /dismiss timeout warning/i })

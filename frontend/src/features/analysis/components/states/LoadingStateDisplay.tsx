@@ -2,9 +2,8 @@ import type * as React from 'react'
 
 import { FileText, Loader2 } from 'lucide-react'
 
+import { cn } from '../../../../lib/utils'
 import type { LoadingState } from '../../../../types/loading'
-
-import { cn } from '@lib/utils'
 
 interface LoadingStateDisplayProps {
   loadingState: LoadingState

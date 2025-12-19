@@ -8,10 +8,10 @@
  * - Computed properties update efficiently
  */
 
+import type { SSEEvent } from '@app-types/sse'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { useSSEStore } from '../sseStore'
-import type { SSEEvent } from '@app-types/sse'
 
 // Mock EventSource to prevent real connections
 global.EventSource = vi.fn().mockImplementation(() => ({

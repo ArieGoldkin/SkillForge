@@ -9,7 +9,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import UUID, ForeignKey, Index, Text
+from sqlalchemy import UUID, DateTime, ForeignKey, Index, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -79,13 +79,15 @@ class AnnotationQueue(Base):
         comment="Additional context: quality_scores, user_id, comments",
     )
 
-    # Timestamps
+    # Timestamps (timezone-aware for PostgreSQL TIMESTAMP WITH TIME ZONE)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
     reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
         nullable=True,
     )
 

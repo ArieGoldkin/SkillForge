@@ -2,7 +2,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
-import { useSSEStore } from '@stores/sseStore'
+import {
+  useSSEStore,
+  useLoadingState,
+  useShowTimeoutWarning,
+  useShouldShowProgress,
+} from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
 import { ErrorBoundary } from '@shared/components'
@@ -21,6 +26,8 @@ import { CompletedAnalysisView } from './components/states/CompletedAnalysisView
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'
 import { useAnalysisStatus } from './hooks/useAnalysisStatus'
 
+// New computed loading state hooks (Issue #399)
+
 const routeApi = getRouteApi('/analyze/$id')
 
 /**
@@ -34,9 +41,6 @@ const selectError = (state: SSEStore) => state.error
 const selectConnect = (state: SSEStore) => state.connect
 const selectDisconnect = (state: SSEStore) => state.disconnect
 const selectReset = (state: SSEStore) => state.reset
-
-// New computed loading state hooks (Issue #399)
-import { useLoadingState, useShowTimeoutWarning, useShouldShowProgress } from '@stores/sseStore'
 
 const useSSELifecycle = ({
   analysisId,

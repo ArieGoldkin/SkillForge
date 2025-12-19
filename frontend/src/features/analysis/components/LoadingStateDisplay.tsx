@@ -2,8 +2,9 @@ import type * as React from 'react'
 
 import { FileText, Loader2 } from 'lucide-react'
 
+import type { LoadingState } from '@/types/loading'
+
 import { cn } from '@lib/utils'
-import type { LoadingState } from '@types/loading'
 
 interface LoadingStateDisplayProps {
   loadingState: LoadingState
@@ -17,57 +18,75 @@ interface LoadingStateDisplayProps {
  *
  * Issue #399: Replaces generic "Loading" with specific, contextual messages
  */
+const getWaitingDisplay = (): { icon: React.ReactNode; text: string; subtitle: string } => ({
+  icon: <Loader2 className="h-4 w-4 animate-spin" />,
+  text: 'Preparing analysis...',
+  subtitle: 'Setting up your content analysis',
+})
+
+const getExtractingDisplay = (
+  wordCount?: number
+): { icon: React.ReactNode; text: string; subtitle: string } => ({
+  icon: <FileText className="h-4 w-4" />,
+  text: 'Extracting content...',
+  subtitle: wordCount
+    ? `Processing ${wordCount.toLocaleString()} words`
+    : 'Reading and analyzing your content',
+})
+
+const getAnalyzingDisplay = (
+  progress: number
+): { icon: React.ReactNode; text: string; subtitle: string } => ({
+  icon: <Loader2 className="h-4 w-4 animate-spin" />,
+  text: 'Analyzing content...',
+  subtitle: `Running AI analysis (${progress}%)`,
+})
+
+const getGeneratingDisplay = (): { icon: React.ReactNode; text: string; subtitle: string } => ({
+  icon: <Loader2 className="h-4 w-4 animate-spin" />,
+  text: 'Generating report...',
+  subtitle: 'Compiling your analysis results',
+})
+
+const getCompleteDisplay = (): { text: string; subtitle: string } => ({
+  text: 'Analysis complete',
+  subtitle: 'Your results are ready to view',
+})
+
+const getErrorDisplay = (error: string): { text: string; subtitle: string } => ({
+  text: 'Analysis failed',
+  subtitle: error,
+})
+
+const getDefaultDisplay = (): { icon: React.ReactNode; text: string; subtitle: string } => ({
+  icon: <Loader2 className="h-4 w-4 animate-spin" />,
+  text: 'Loading...',
+  subtitle: 'Please wait',
+})
+
 export const LoadingStateDisplay: React.FC<LoadingStateDisplayProps> = ({ loadingState }) => {
   const getDisplayContent = (): { icon?: React.ReactNode; text: string; subtitle?: string } => {
     switch (loadingState.type) {
       case 'waiting_for_events':
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Preparing analysis...',
-          subtitle: 'Setting up your content analysis',
-        }
+        return getWaitingDisplay()
 
       case 'extracting':
-        return {
-          icon: <FileText className="h-4 w-4" />,
-          text: 'Extracting content...',
-          subtitle: loadingState.wordCount
-            ? `Processing ${loadingState.wordCount.toLocaleString()} words`
-            : 'Reading and analyzing your content',
-        }
+        return getExtractingDisplay(loadingState.wordCount)
 
       case 'analyzing':
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Analyzing content...',
-          subtitle: `Running AI analysis (${loadingState.progress}%)`,
-        }
+        return getAnalyzingDisplay(loadingState.progress)
 
       case 'generating':
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Generating report...',
-          subtitle: 'Compiling your analysis results',
-        }
+        return getGeneratingDisplay()
 
       case 'complete':
-        return {
-          text: 'Analysis complete',
-          subtitle: 'Your results are ready to view',
-        }
+        return getCompleteDisplay()
 
       case 'error':
-        return {
-          text: 'Analysis failed',
-          subtitle: loadingState.error,
-        }
+        return getErrorDisplay(loadingState.error)
 
       default:
-        return {
-          icon: <Loader2 className="h-4 w-4 animate-spin" />,
-          text: 'Loading...',
-          subtitle: 'Please wait',
-        }
+        return getDefaultDisplay()
     }
   }
 

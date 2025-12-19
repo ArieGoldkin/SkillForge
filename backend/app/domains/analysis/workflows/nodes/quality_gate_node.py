@@ -54,7 +54,6 @@ QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 # Issue #413: Quality tier thresholds for auto-tagging
 QUALITY_TIER_HIGH_THRESHOLD = 0.8  # avg_score >= this -> "quality:high"
 QUALITY_TIER_MEDIUM_THRESHOLD = 0.6  # avg_score >= this -> "quality:medium", else "quality:low"
-ANNOTATION_QUEUE_THRESHOLD = 0.6  # avg_score < this -> auto-queue for review
 
 
 async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0912, PLR0915
@@ -339,63 +338,6 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             tags=quality_tags,
             trace_id=trace_id,
         )
-
-        # Issue #419: Auto-queue low quality analyses for annotation review
-        # Queue for human review if quality is below threshold or gate failed
-        if not gate_passed or avg_score < ANNOTATION_QUEUE_THRESHOLD:
-            try:
-                from uuid import UUID
-
-                from app.core.annotation_service import AnnotationService
-                from app.db.session import get_session_factory
-
-                # Convert analysis_id (str) to UUID
-                # The annotation service expects artifact_id as UUID
-                try:
-                    artifact_uuid = (
-                        UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
-                    )
-                except (ValueError, TypeError):
-                    logger.warning(
-                        "quality_gate_invalid_analysis_id_for_queue",
-                        analysis_id=analysis_id,
-                        message="Cannot convert analysis_id to UUID, skipping queue",
-                    )
-                    # Skip queueing if we can't convert to UUID
-                    artifact_uuid = None
-
-                if artifact_uuid:
-                    # Get database session and create annotation service
-                    session_factory = get_session_factory()
-                    async with session_factory() as db_session:
-                        annotation_service = AnnotationService(session=db_session)
-
-                        # Queue for review with quality context
-                        await annotation_service.queue_low_quality_artifact(
-                            artifact_id=artifact_uuid,
-                            trace_id=trace_id,
-                            quality_scores={
-                                aspect: s["score"] for aspect, s in quality_scores.items()
-                            },
-                            threshold=effective_threshold,
-                        )
-
-                        await db_session.commit()
-
-                    logger.info(
-                        "quality_gate_queued_for_review",
-                        analysis_id=analysis_id,
-                        avg_score=avg_score,
-                        gate_passed=gate_passed,
-                        trace_id=trace_id,
-                    )
-            except Exception as queue_error:  # noqa: BLE001
-                # Don't fail the workflow if queuing fails - intentionally broad catch
-                logger.warning(
-                    "quality_gate_queue_failed",
-                    analysis_id=analysis_id,
-                    error=str(queue_error),
-                )
 
         # Return quality scores and gate status
         return {

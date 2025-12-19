@@ -5,7 +5,6 @@ parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
-import uuid
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -333,10 +332,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     Issue #299-304: Changed from FAIL-CLOSED to FAIL-OPEN behavior.
     Users prefer getting a low-quality artifact over nothing at all.
     The quality warning is logged and can be shown in the UI.
-
-    Issue #419: Queues low-quality artifacts for human review in Langfuse Annotation Queue.
     """
-    from app.core.annotation_service import AnnotationService
     from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
     analysis_id = str(state.get("analysis_id", ""))
@@ -366,45 +362,6 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
         quality_scores=quality_scores_flat,
         message="Quality gate failed but continuing to artifact generation (fail-open)",
     )
-
-    # Issue #419: Queue artifact for human review via Langfuse Annotation Queue
-    # This enables reviewers to check why quality is low and improve prompts/agents
-    try:
-        from app.core.tracing import get_current_trace_id
-
-        trace_id = get_current_trace_id()
-        analysis_uuid = state.get("analysis_id")
-
-        if analysis_uuid and quality_scores_flat:
-            # Convert analysis_id string to UUID for annotation service
-            artifact_id = (
-                uuid.UUID(analysis_uuid) if isinstance(analysis_uuid, str) else analysis_uuid
-            )
-            session_factory = get_session_factory()
-            async with session_factory() as db_session:
-                annotation_service = AnnotationService(session=db_session)
-                queue_result = await annotation_service.queue_low_quality_artifact(
-                    artifact_id=artifact_id,  # Use analysis_id as artifact proxy (artifact not created yet)
-                    trace_id=trace_id,
-                    quality_scores=quality_scores_flat,
-                    threshold=0.6,
-                )
-
-                if queue_result.get("queued"):
-                    logger.info(
-                        "low_quality_artifact_queued_for_review",
-                        analysis_id=analysis_id,
-                        avg_score=avg_score,
-                        trace_id=trace_id,
-                    )
-    except Exception as e:  # noqa: BLE001 - Graceful degradation for annotation queue
-        logger.warning(
-            "annotation_queue_failed",
-            analysis_id=analysis_id,
-            error=str(e),
-            error_type=type(e).__name__,
-            message="Failed to queue for annotation, continuing with artifact generation",
-        )
 
     # Emit SSE warning event (not error - we're continuing)
     await emit_streaming_event(

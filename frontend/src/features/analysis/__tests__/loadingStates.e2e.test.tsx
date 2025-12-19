@@ -7,11 +7,10 @@
  * - Edge cases (timeouts, rapid transitions)
  */
 
+import type { SSEEvent } from '@app-types/sse'
+import { useSSEStore } from '@stores/sseStore'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-
-import { useSSEStore } from '@stores/sseStore'
-import type { SSEEvent } from '@app-types/sse'
 
 import AnalyzeResult from '../AnalyzeResult'
 

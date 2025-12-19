@@ -8,6 +8,7 @@ import time
 import uuid
 
 from app.core.agent_config import get_stage_name
+from app.core.annotation_service import AnnotationService
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
@@ -29,6 +30,115 @@ from app.shared.services.messaging.sse_helpers import emit_streaming_event
 from app.shared.services.utils.markdown import sanitize_markdown
 
 logger = get_logger(__name__)
+
+# Threshold for queuing artifacts for annotation review (more lenient than quality gate)
+ANNOTATION_QUALITY_THRESHOLD = 0.6
+
+
+async def _queue_low_quality_artifact_for_review(
+    artifact_id: uuid.UUID,
+    state: AnalysisState,
+    trace_id: str | None,
+    analysis_id: str,
+) -> None:
+    """Queue low-quality artifacts for annotation review.
+
+    Checks if quality gate failed or average score is below threshold (0.6),
+    and queues the artifact for human review if quality is insufficient.
+
+    Args:
+        artifact_id: Real UUID of the created artifact (NOT analysis_id)
+        state: Current workflow state containing quality scores
+        trace_id: Optional Langfuse trace ID for linking
+        analysis_id: Analysis ID for logging context only
+
+    Note:
+        This function uses graceful degradation - if queuing fails,
+        it logs the error but doesn't fail artifact generation.
+
+    """
+    try:
+        # Check if quality gate failed or score is below threshold
+        quality_gate_passed = state.get("quality_gate_passed", True)
+        avg_score = state.get("quality_gate_avg_score", 1.0)
+
+        # Skip queuing if quality is acceptable
+        if quality_gate_passed and avg_score >= ANNOTATION_QUALITY_THRESHOLD:
+            logger.debug(
+                "artifact_quality_acceptable_skip_queuing",
+                analysis_id=analysis_id,
+                artifact_id=str(artifact_id),
+                quality_gate_passed=quality_gate_passed,
+                avg_score=avg_score,
+            )
+            return
+
+        # Get quality scores from state and flatten to {aspect: score} format
+        quality_scores_raw = state.get("quality_scores", {})
+        quality_scores_flat: dict[str, float] = {}
+
+        if quality_scores_raw:
+            for aspect, value in quality_scores_raw.items():
+                # Type narrowing: check if value is dict with "score" key
+                if isinstance(value, dict):
+                    # Type checker limitation: state dict has unknown types
+                    score_val = value.get("score")  # type: ignore[arg-type]
+                    if isinstance(score_val, (int, float)):
+                        quality_scores_flat[aspect] = float(score_val)
+                elif isinstance(value, (int, float)):
+                    quality_scores_flat[aspect] = float(value)
+
+        # If no valid scores found, use average score as fallback
+        if not quality_scores_flat:
+            quality_scores_flat = {"average": avg_score}
+
+        logger.info(
+            "queueing_low_quality_artifact",
+            analysis_id=analysis_id,
+            artifact_id=str(artifact_id),
+            quality_gate_passed=quality_gate_passed,
+            avg_score=avg_score,
+            quality_scores=quality_scores_flat,
+        )
+
+        # Queue artifact for review using AnnotationService
+        session_factory = get_session_factory()
+        async with session_factory() as db_session:
+            annotation_service = AnnotationService(session=db_session)
+            result = await annotation_service.queue_low_quality_artifact(
+                artifact_id=artifact_id,
+                trace_id=trace_id,
+                quality_scores=quality_scores_flat,
+                threshold=ANNOTATION_QUALITY_THRESHOLD,
+            )
+
+            if result.get("success") and result.get("queued"):
+                logger.info(
+                    "artifact_queued_for_review",
+                    analysis_id=analysis_id,
+                    artifact_id=str(artifact_id),
+                    average_score=result.get("average_score"),
+                    below_threshold=result.get("below_threshold"),
+                )
+            else:
+                logger.warning(
+                    "artifact_not_queued",
+                    analysis_id=analysis_id,
+                    artifact_id=str(artifact_id),
+                    reason=result.get("error") or "Unknown reason",
+                    result=result,
+                )
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation
+        # Don't fail artifact generation if queuing fails
+        logger.warning(
+            "artifact_queuing_failed",
+            analysis_id=analysis_id,
+            artifact_id=str(artifact_id),
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True,
+        )
 
 
 async def _submit_artifact_quality_scores(
@@ -278,6 +388,16 @@ async def generate_artifact(
         await _submit_artifact_quality_scores(
             artifact_content=markdown_content,
             aggregated_insights=aggregated_insights,
+            analysis_id=analysis_id,
+        )
+
+        # Issue #419: Queue low-quality artifacts for annotation review
+        # MUST happen AFTER artifact is created (uses real artifact.id, not analysis_id)
+        # Type cast: artifact.id is Column[UUID] but runtime value is uuid.UUID
+        await _queue_low_quality_artifact_for_review(
+            artifact_id=uuid.UUID(str(artifact.id)),
+            state=state,
+            trace_id=trace_id,
             analysis_id=analysis_id,
         )
 

@@ -8,9 +8,9 @@
 import type { StageName } from '@app-types/sse'
 import type { SSEStore } from '@stores/sseStoreHelpers'
 
-import { ALL_STAGES, isWorkflowStage, getStageOrder } from '@features/analysis/config/stageRegistry'
-
 import type { ComputedLoadingStates, LoadingState } from '@/types/loading'
+
+import { ALL_STAGES, isWorkflowStage, getStageOrder } from '@features/analysis/config/stageRegistry'
 
 /**
  * Check if we're in a disconnected state

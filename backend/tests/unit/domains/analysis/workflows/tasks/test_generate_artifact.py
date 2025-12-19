@@ -1434,3 +1434,243 @@ class TestArtifactGEvalScoring:
 
             # Verify g_eval_score was attempted
             mock_g_eval.assert_called_once()
+
+
+class TestQueueLowQualityArtifact:
+    """Tests for queueing low-quality artifacts for annotation review."""
+
+    async def test_queues_artifact_when_quality_gate_failed(self):
+        """Artifact should be queued when quality_gate_passed is False."""
+        from app.domains.analysis.workflows.tasks.generate_artifact import (
+            _queue_low_quality_artifact_for_review,
+        )
+
+        artifact_id = uuid.uuid4()
+        analysis_id = str(uuid.uuid4())
+        trace_id = "trace-123"
+
+        state: AnalysisState = {
+            "analysis_id": analysis_id,
+            "quality_gate_passed": False,
+            "quality_gate_avg_score": 0.5,
+            "quality_scores": {
+                "relevance": {"score": 0.4, "comment": "Low relevance"},
+                "depth": {"score": 0.6, "comment": "Moderate depth"},
+            },
+        }  # type: ignore[typeddict-item]
+
+        with patch(
+            "app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory"
+        ) as mock_factory:
+            mock_session = AsyncMock()
+            mock_service = AsyncMock()
+            mock_service.queue_low_quality_artifact.return_value = {
+                "success": True,
+                "queued": True,
+                "average_score": 0.5,
+                "below_threshold": True,
+            }
+
+            mock_factory.return_value.__aenter__.return_value = mock_session
+            mock_session_ctx = MagicMock()
+            mock_session_ctx.__aenter__.return_value = mock_session
+
+            with patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.AnnotationService",
+                return_value=mock_service,
+            ):
+                await _queue_low_quality_artifact_for_review(
+                    artifact_id=artifact_id,
+                    state=state,
+                    trace_id=trace_id,
+                    analysis_id=analysis_id,
+                )
+
+                # Verify service was called with correct parameters
+                mock_service.queue_low_quality_artifact.assert_called_once_with(
+                    artifact_id=artifact_id,
+                    trace_id=trace_id,
+                    quality_scores={"relevance": 0.4, "depth": 0.6},
+                    threshold=0.6,
+                )
+
+    async def test_queues_artifact_when_avg_score_below_threshold(self):
+        """Artifact should be queued when average score < 0.6 even if gate passed."""
+        from app.domains.analysis.workflows.tasks.generate_artifact import (
+            _queue_low_quality_artifact_for_review,
+        )
+
+        artifact_id = uuid.uuid4()
+        analysis_id = str(uuid.uuid4())
+        trace_id = "trace-456"
+
+        state: AnalysisState = {
+            "analysis_id": analysis_id,
+            "quality_gate_passed": True,
+            "quality_gate_avg_score": 0.55,
+            "quality_scores": {
+                "relevance": {"score": 0.5, "comment": "Borderline"},
+                "depth": {"score": 0.6, "comment": "OK"},
+            },
+        }  # type: ignore[typeddict-item]
+
+        with patch(
+            "app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory"
+        ) as mock_factory:
+            mock_session = AsyncMock()
+            mock_service = AsyncMock()
+            mock_service.queue_low_quality_artifact.return_value = {
+                "success": True,
+                "queued": True,
+                "average_score": 0.55,
+                "below_threshold": True,
+            }
+
+            mock_factory.return_value.__aenter__.return_value = mock_session
+
+            with patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.AnnotationService",
+                return_value=mock_service,
+            ):
+                await _queue_low_quality_artifact_for_review(
+                    artifact_id=artifact_id,
+                    state=state,
+                    trace_id=trace_id,
+                    analysis_id=analysis_id,
+                )
+
+                # Verify service was called
+                mock_service.queue_low_quality_artifact.assert_called_once()
+
+    async def test_skips_queuing_when_quality_acceptable(self):
+        """Should skip queuing when quality gate passed and score >= 0.6."""
+        from app.domains.analysis.workflows.tasks.generate_artifact import (
+            _queue_low_quality_artifact_for_review,
+        )
+
+        artifact_id = uuid.uuid4()
+        analysis_id = str(uuid.uuid4())
+        trace_id = "trace-789"
+
+        state: AnalysisState = {
+            "analysis_id": analysis_id,
+            "quality_gate_passed": True,
+            "quality_gate_avg_score": 0.75,
+            "quality_scores": {
+                "relevance": {"score": 0.7, "comment": "Good"},
+                "depth": {"score": 0.8, "comment": "Very good"},
+            },
+        }  # type: ignore[typeddict-item]
+
+        with patch(
+            "app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory"
+        ) as mock_factory:
+            mock_session = AsyncMock()
+            mock_service = AsyncMock()
+
+            mock_factory.return_value.__aenter__.return_value = mock_session
+
+            with patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.AnnotationService",
+                return_value=mock_service,
+            ):
+                await _queue_low_quality_artifact_for_review(
+                    artifact_id=artifact_id,
+                    state=state,
+                    trace_id=trace_id,
+                    analysis_id=analysis_id,
+                )
+
+                # Verify service was NOT called
+                mock_service.queue_low_quality_artifact.assert_not_called()
+
+    async def test_handles_missing_quality_scores_gracefully(self):
+        """Should use average score as fallback when quality_scores is missing."""
+        from app.domains.analysis.workflows.tasks.generate_artifact import (
+            _queue_low_quality_artifact_for_review,
+        )
+
+        artifact_id = uuid.uuid4()
+        analysis_id = str(uuid.uuid4())
+        trace_id = "trace-999"
+
+        state: AnalysisState = {
+            "analysis_id": analysis_id,
+            "quality_gate_passed": False,
+            "quality_gate_avg_score": 0.45,
+            # quality_scores missing
+        }  # type: ignore[typeddict-item]
+
+        with patch(
+            "app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory"
+        ) as mock_factory:
+            mock_session = AsyncMock()
+            mock_service = AsyncMock()
+            mock_service.queue_low_quality_artifact.return_value = {
+                "success": True,
+                "queued": True,
+                "average_score": 0.45,
+                "below_threshold": True,
+            }
+
+            mock_factory.return_value.__aenter__.return_value = mock_session
+
+            with patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.AnnotationService",
+                return_value=mock_service,
+            ):
+                await _queue_low_quality_artifact_for_review(
+                    artifact_id=artifact_id,
+                    state=state,
+                    trace_id=trace_id,
+                    analysis_id=analysis_id,
+                )
+
+                # Verify service was called with fallback score
+                mock_service.queue_low_quality_artifact.assert_called_once_with(
+                    artifact_id=artifact_id,
+                    trace_id=trace_id,
+                    quality_scores={"average": 0.45},
+                    threshold=0.6,
+                )
+
+    async def test_graceful_degradation_on_service_failure(self):
+        """Should not raise exception when annotation service fails."""
+        from app.domains.analysis.workflows.tasks.generate_artifact import (
+            _queue_low_quality_artifact_for_review,
+        )
+
+        artifact_id = uuid.uuid4()
+        analysis_id = str(uuid.uuid4())
+        trace_id = "trace-error"
+
+        state: AnalysisState = {
+            "analysis_id": analysis_id,
+            "quality_gate_passed": False,
+            "quality_gate_avg_score": 0.4,
+            "quality_scores": {"relevance": {"score": 0.4, "comment": "Poor"}},
+        }  # type: ignore[typeddict-item]
+
+        with patch(
+            "app.domains.analysis.workflows.tasks.generate_artifact.get_session_factory"
+        ) as mock_factory:
+            mock_session = AsyncMock()
+            mock_service = AsyncMock()
+            mock_service.queue_low_quality_artifact.side_effect = Exception("Database error")
+
+            mock_factory.return_value.__aenter__.return_value = mock_session
+
+            with patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.AnnotationService",
+                return_value=mock_service,
+            ):
+                # Should not raise exception - graceful degradation
+                await _queue_low_quality_artifact_for_review(
+                    artifact_id=artifact_id,
+                    state=state,
+                    trace_id=trace_id,
+                    analysis_id=analysis_id,
+                )
+
+                # Verify service was attempted
+                mock_service.queue_low_quality_artifact.assert_called_once()
