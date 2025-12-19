@@ -64,10 +64,28 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
 
 // Modern Hook-Based Testing Architecture
 // Each hook is independently mocked for clean, focused testing
+// useSSEStore must also be mocked to prevent real Zustand store from triggering infinite updates
 vi.mock('@stores/sseStore', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@stores/sseStore')>()
   return {
     ...actual,
+    // Mock the main store hook to prevent real connection/state management
+    useSSEStore: vi.fn((selector) => {
+      // Return mock data based on what the selector is requesting
+      const mockState = {
+        events: [],
+        latestEvent: null,
+        isConnected: false,
+        isComplete: false,
+        error: null,
+        activeAnalysisId: null,
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        reset: vi.fn(),
+        setAnalysisMetadata: vi.fn(),
+      }
+      return selector(mockState)
+    }),
     useLoadingState: vi.fn(),
     useConnectionMessage: vi.fn(),
     useShowTimeoutWarning: vi.fn(),
