@@ -1,9 +1,36 @@
-"""Configuration constants for supervisor agent."""
+"""Configuration constants for supervisor agent.
+
+Issue #379: Migrated to Langfuse Prompt Management with hardcoded fallback.
+"""
 
 from app.core.agent_config import AGENT_REGISTRY
 
 # Workflow stage agent types (excluded from analysis agent list)
 WORKFLOW_STAGES = {"supervisor", "extraction", "embedding", "aggregation", "artifact_generation"}
+
+
+def build_agent_list_variable() -> str:
+    """Build agent list variable for supervisor prompt.
+
+    Returns the agent list formatted as:
+    - agent_type: description
+
+    This is used as a variable in the Langfuse-managed prompt.
+
+    Returns:
+        Formatted agent list string
+
+    """
+    # Filter to analysis agents only (exclude workflow stages)
+    analysis_agents = [
+        config for config in AGENT_REGISTRY.values() if config.agent_type not in WORKFLOW_STAGES
+    ]
+
+    # Sort by agent_type for consistent ordering
+    sorted_agents = sorted(analysis_agents, key=lambda x: x.agent_type)
+
+    # Build agent list from registry
+    return "\n".join(f"- {config.agent_type}: {config.description}" for config in sorted_agents)
 
 
 def build_supervisor_prompt() -> str:

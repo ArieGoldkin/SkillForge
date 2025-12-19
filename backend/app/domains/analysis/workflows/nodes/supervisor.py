@@ -25,10 +25,14 @@ from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
-from app.domains.analysis.workflows.nodes.supervisor_config import SUPERVISOR_PROMPT
+from app.domains.analysis.workflows.nodes.supervisor_config import (
+    SUPERVISOR_PROMPT,
+    build_agent_list_variable,
+)
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
 from app.shared.services.cache import get_exact_cache
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.prompts import get_prompt_manager
 from app.shared.workflows.utils.content_signals import (
     detect_content_signals,
     should_skip_agent,
@@ -344,9 +348,52 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         # Get dynamically sized content for supervisor
         sized_content = _get_content_for_supervisor(content, content_type)
 
+        # Issue #379: Fetch prompt from Langfuse with fallback to hardcoded
+        # Get PromptManager instance
+        prompt_manager = get_prompt_manager()
+
+        # Build agent list variable for prompt
+        agent_list = build_agent_list_variable()
+
+        # Fetch and compile prompt (uses L1/L2 cache, Langfuse API, or hardcoded fallback)
+        try:
+            supervisor_prompt = await prompt_manager.get_prompt(
+                name="analysis-supervisor-routing",
+                variables={"agent_list": agent_list},
+                label="production",
+            )
+
+            # Get metadata for trace attribution
+            prompt_metadata = await prompt_manager.get_prompt_metadata(
+                name="analysis-supervisor-routing",
+                label="production",
+            )
+
+            logger.debug(
+                "supervisor_prompt_fetched",
+                analysis_id=analysis_id,
+                prompt_source=prompt_metadata.get("prompt_source"),
+                prompt_version=prompt_metadata.get("prompt_version"),
+            )
+
+        except Exception as e:  # noqa: BLE001 - Graceful degradation for prompt fetching
+            # Fallback to hardcoded SUPERVISOR_PROMPT constant
+            logger.warning(
+                "supervisor_prompt_fetch_failed",
+                analysis_id=analysis_id,
+                error=str(e),
+                message="Falling back to hardcoded SUPERVISOR_PROMPT",
+                exc_info=True,
+            )
+            supervisor_prompt = SUPERVISOR_PROMPT
+            prompt_metadata = {
+                "prompt_source": "hardcoded_constant",
+                "prompt_version": "fallback",
+            }
+
         # Build prompt using prompt builder
         user_prompt = build_supervisor_user_prompt(
-            system_prompt=SUPERVISOR_PROMPT,
+            system_prompt=supervisor_prompt,
             content=sized_content,
             content_type=content_type,
         )

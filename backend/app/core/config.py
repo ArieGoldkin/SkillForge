@@ -478,6 +478,27 @@ class Settings(BaseSettings):
         description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
     )
 
+    # Langfuse Prompt Management Configuration (Issue #379)
+    LANGFUSE_PROMPTS_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable Langfuse Prompt Management. When disabled, uses hardcoded prompts. "
+            "Gradual rollout: Start with False, test in staging, enable in production."
+        ),
+    )
+    LANGFUSE_PROMPTS_L1_TTL: int = Field(
+        default=300,
+        description="L1 in-memory cache TTL in seconds (default: 5 minutes)",
+    )
+    LANGFUSE_PROMPTS_L2_TTL: int = Field(
+        default=900,
+        description="L2 Redis cache TTL in seconds (default: 15 minutes)",
+    )
+    LANGFUSE_PROMPTS_REDIS_ENABLED: bool = Field(
+        default=True,
+        description="Enable Redis L2 cache for prompts (shared across workers)",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
