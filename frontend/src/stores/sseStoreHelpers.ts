@@ -246,6 +246,41 @@ function cleanupEventListeners(source: EventSource, refs: ListenerRefs): void {
 }
 
 /**
+ * Network recovery handler for SSE connections
+ * Automatically clears network errors when connection is restored
+ */
+function setupNetworkRecovery(analysisId: string, store: StoreAPI): () => void {
+  const handleOnline = () => {
+    // Only retry if we have a network-related error
+    const error = store.getState().error
+    if (
+      error &&
+      (error.message.includes('network') ||
+        error.message.includes('fetch') ||
+        error.message.includes('connection lost'))
+    ) {
+      console.log('[SSE] Network recovered, clearing error state')
+      store.setState({ error: null })
+      // The UI will handle reconnection automatically
+    }
+  }
+
+  const handleOffline = () => {
+    store.setState({
+      error: new Error('Network connection lost. Will retry when connection is restored.'),
+    })
+  }
+
+  window.addEventListener('online', handleOnline)
+  window.addEventListener('offline', handleOffline)
+
+  return () => {
+    window.removeEventListener('online', handleOnline)
+    window.removeEventListener('offline', handleOffline)
+  }
+}
+
+/**
  * Create SSE connection
  * All state managed through Zustand store (no module-level variables)
  */
@@ -290,6 +325,10 @@ export function createConnection(analysisId: string, store: StoreAPI): void {
       activeAnalysisId: analysisId,
       error: null,
     })
+
+    // Set up network recovery for automatic reconnection
+    const cleanupNetworkRecovery = setupNetworkRecovery(analysisId, store)
+    store.setState({ _cleanupNetworkRecovery: cleanupNetworkRecovery })
   } catch (error) {
     console.error('[SSE] Failed to create connection:', error)
     store.setState({
@@ -309,6 +348,11 @@ export function closeConnection(store: StoreAPI): void {
   // Clear any pending reconnect timeout
   if (state._reconnectTimeoutId) {
     clearTimeout(state._reconnectTimeoutId)
+  }
+
+  // Clean up network recovery listeners
+  if (state._cleanupNetworkRecovery) {
+    state._cleanupNetworkRecovery()
   }
 
   // Remove listeners before closing (prevents memory leaks from closures)

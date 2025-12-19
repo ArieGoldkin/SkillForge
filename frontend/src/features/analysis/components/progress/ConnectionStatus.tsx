@@ -28,7 +28,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ loadingState
         return {
           icon: <Wifi className="h-3.5 w-3.5" />,
           text: 'Connected',
-          className: 'text-[oklch(0.6959_0.1491_162.4796)]',
+          className: 'text-status-success',
         }
 
       case 'reconnecting':

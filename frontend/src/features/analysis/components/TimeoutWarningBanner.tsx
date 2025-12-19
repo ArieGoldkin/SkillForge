@@ -24,6 +24,29 @@ export const TimeoutWarningBanner: React.FC<TimeoutWarningBannerProps> = ({
   showTimeoutWarning,
   onDismiss,
 }) => {
+  const dismissButtonRef = React.useRef<HTMLButtonElement>(null)
+
+  // Focus management - auto-focus dismiss button when banner appears
+  React.useEffect(() => {
+    if (showTimeoutWarning && dismissButtonRef.current) {
+      dismissButtonRef.current.focus()
+    }
+  }, [showTimeoutWarning])
+
+  // Keyboard navigation - allow ESC to dismiss
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showTimeoutWarning) {
+        onDismiss()
+      }
+    }
+
+    if (showTimeoutWarning) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showTimeoutWarning, onDismiss])
+
   if (!showTimeoutWarning) {
     return null
   }
@@ -37,6 +60,7 @@ export const TimeoutWarningBanner: React.FC<TimeoutWarningBannerProps> = ({
           Please continue waiting - results will appear soon.
         </span>
         <Button
+          ref={dismissButtonRef}
           variant="ghost"
           size="sm"
           onClick={onDismiss}

@@ -88,6 +88,7 @@ export interface SSEStoreState {
   _reconnectTimeoutId: ReturnType<typeof setTimeout> | null
   _permanentlyFailed: boolean
   _listenerRefs: ListenerRefs | null
+  _cleanupNetworkRecovery: (() => void) | null
 }
 
 export interface SSEStoreActions {
@@ -151,6 +152,7 @@ const baseStore = create<SSEStore>((set, get) => ({
   _reconnectTimeoutId: null,
   _permanentlyFailed: false,
   _listenerRefs: null,
+  _cleanupNetworkRecovery: null,
 
   connect: (analysisId: string) => {
     // Track connection start time for timeout warnings (Issue #399)
@@ -188,6 +190,7 @@ const baseStore = create<SSEStore>((set, get) => ({
       _reconnectTimeoutId: null,
       _permanentlyFailed: false,
       _listenerRefs: null,
+      _cleanupNetworkRecovery: null,
     })
   },
 

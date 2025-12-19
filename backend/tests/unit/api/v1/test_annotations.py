@@ -19,6 +19,7 @@ from app.api.v1.annotations import router
 from app.core.annotation_service import get_annotation_service
 from app.db.models.annotation_queue import AnnotationQueue
 from app.db.repositories.annotation_repository import get_annotation_repository
+from app.db.repositories.artifact_repository import get_artifact_repository
 
 
 @pytest.fixture
@@ -42,10 +43,17 @@ def mock_repository():
 
 
 @pytest.fixture
-def client(app, mock_service, mock_repository):
+def mock_artifact_repository():
+    """Create mock artifact repository for trace_id lookup."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def client(app, mock_service, mock_repository, mock_artifact_repository):
     """Create test client with mocked dependencies."""
     app.dependency_overrides[get_annotation_service] = lambda: mock_service
     app.dependency_overrides[get_annotation_repository] = lambda: mock_repository
+    app.dependency_overrides[get_artifact_repository] = lambda: mock_artifact_repository
     return TestClient(app)
 
 
@@ -177,9 +185,49 @@ class TestSubmitFeedback:
         assert response.status_code == 500
         assert "Failed to submit feedback" in response.json()["detail"]
 
-    def test_submit_feedback_without_trace_id(self, client, mock_service):
-        """Test feedback submission without trace_id (optional field)."""
+    def test_submit_feedback_without_trace_id_looks_up_artifact(
+        self, client, mock_service, mock_artifact_repository
+    ):
+        """Test feedback submission looks up artifact's trace_id when not provided."""
         artifact_id = uuid4()
+        artifact_trace_id = "trace-from-artifact-abc123"
+
+        # Mock artifact with trace_id
+        mock_artifact = MagicMock()
+        mock_artifact.trace_id = artifact_trace_id
+        mock_artifact_repository.get_artifact_by_id.return_value = mock_artifact
+
+        mock_service.submit_feedback.return_value = {
+            "status": "success",
+            "message": "Feedback submitted successfully",
+            "langfuse_submitted": True,
+        }
+
+        response = client.post(
+            "/api/v1/annotations/feedback",
+            json={
+                "artifact_id": str(artifact_id),
+                "feedback": "thumbs_up",
+            },
+        )
+
+        assert response.status_code == 200
+
+        # Verify artifact repository was called to lookup trace_id
+        mock_artifact_repository.get_artifact_by_id.assert_called_once_with(artifact_id)
+
+        # Verify service received the artifact's trace_id
+        call_kwargs = mock_service.submit_feedback.call_args.kwargs
+        assert call_kwargs["trace_id"] == artifact_trace_id
+
+    def test_submit_feedback_without_trace_id_artifact_not_found(
+        self, client, mock_service, mock_artifact_repository
+    ):
+        """Test feedback submission when artifact not found uses None for trace_id."""
+        artifact_id = uuid4()
+
+        # Mock artifact not found
+        mock_artifact_repository.get_artifact_by_id.return_value = None
 
         mock_service.submit_feedback.return_value = {
             "status": "success",
@@ -196,9 +244,44 @@ class TestSubmitFeedback:
         )
 
         assert response.status_code == 200
-        # trace_id should be None
+
+        # Verify artifact repository was called
+        mock_artifact_repository.get_artifact_by_id.assert_called_once_with(artifact_id)
+
+        # Verify service received None for trace_id
         call_kwargs = mock_service.submit_feedback.call_args.kwargs
         assert call_kwargs["trace_id"] is None
+
+    def test_submit_feedback_with_explicit_trace_id_skips_lookup(
+        self, client, mock_service, mock_artifact_repository
+    ):
+        """Test feedback submission with explicit trace_id skips artifact lookup."""
+        artifact_id = uuid4()
+        explicit_trace_id = "explicit-trace-xyz"
+
+        mock_service.submit_feedback.return_value = {
+            "status": "success",
+            "message": "Feedback submitted successfully",
+            "langfuse_submitted": True,
+        }
+
+        response = client.post(
+            "/api/v1/annotations/feedback",
+            json={
+                "artifact_id": str(artifact_id),
+                "trace_id": explicit_trace_id,
+                "feedback": "thumbs_down",
+            },
+        )
+
+        assert response.status_code == 200
+
+        # Verify artifact repository was NOT called (explicit trace_id provided)
+        mock_artifact_repository.get_artifact_by_id.assert_not_called()
+
+        # Verify service received the explicit trace_id
+        call_kwargs = mock_service.submit_feedback.call_args.kwargs
+        assert call_kwargs["trace_id"] == explicit_trace_id
 
 
 @pytest.mark.unit

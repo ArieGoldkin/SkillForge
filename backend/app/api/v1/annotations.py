@@ -16,6 +16,10 @@ from app.db.repositories.annotation_repository import (
     AnnotationRepository,
     get_annotation_repository,
 )
+from app.db.repositories.artifact_repository import (
+    ArtifactRepository,
+    get_artifact_repository,
+)
 from app.schemas.annotations import (
     AnnotationQueueItemResponse,
     AnnotationQueueListResponse,
@@ -33,6 +37,7 @@ logger = get_logger(__name__)
 async def submit_feedback(
     request: SubmitFeedbackRequest,
     service: Annotated[AnnotationService, Depends(get_annotation_service)],
+    artifact_repository: Annotated[ArtifactRepository, Depends(get_artifact_repository)],
 ) -> SubmitFeedbackResponse:
     """Submit user feedback (thumbs up/down) on an artifact.
 
@@ -44,6 +49,7 @@ async def submit_feedback(
     Args:
         request: Feedback submission data including artifact_id, feedback type, and optional comment
         service: Annotation service dependency
+        artifact_repository: Repository for looking up artifact trace_id
 
     Returns:
         Submission status and confirmation
@@ -53,9 +59,16 @@ async def submit_feedback(
 
     """
     try:
+        # Look up artifact's trace_id if not provided in request
+        trace_id = request.trace_id
+        if not trace_id:
+            artifact = await artifact_repository.get_artifact_by_id(request.artifact_id)
+            if artifact:
+                trace_id = artifact.trace_id
+
         result = await service.submit_feedback(
             artifact_id=request.artifact_id,
-            trace_id=request.trace_id,
+            trace_id=trace_id,
             feedback=request.feedback.value,
             comment=request.comment,
         )

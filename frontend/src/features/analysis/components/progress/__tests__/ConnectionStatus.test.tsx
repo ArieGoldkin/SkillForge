@@ -60,7 +60,7 @@ describe('ConnectionStatus', () => {
     renderComponent({ type: 'connected' })
 
     const container = screen.getByText('Connected').parentElement
-    expect(container).toHaveClass('text-[oklch(0.6959_0.1491_162.4796)]') // green color
+    expect(container).toHaveClass('text-status-success') // semantic status color
   })
 
   it('applies correct styling for timeout warning', () => {

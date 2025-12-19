@@ -68,7 +68,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         {error && <ErrorAlert message={error.message} />}
         {shouldShowProgress && (
           <div
-            className="space-y-0 max-h-[500px] overflow-y-auto"
+            className="space-y-0 max-h-[31.25rem] overflow-y-auto"
             role="list"
             aria-label="Analysis stages"
           >

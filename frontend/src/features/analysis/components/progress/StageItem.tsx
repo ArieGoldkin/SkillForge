@@ -18,13 +18,11 @@ const getStatusIcon = (status: StageStatus): React.ReactNode => {
 
   switch (status) {
     case 'complete':
-      return <CheckCircle2 className={cn(iconClasses, 'text-[oklch(0.6959_0.1491_162.4796)]')} />
+      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} />
     case 'running':
-      return (
-        <Loader2 className={cn(iconClasses, 'animate-spin text-[oklch(0.7686_0.1647_70.0804)]')} />
-      )
+      return <Loader2 className={cn(iconClasses, 'animate-spin text-status-warning')} />
     case 'failed':
-      return <XCircle className={cn(iconClasses, 'text-destructive')} />
+      return <XCircle className={cn(iconClasses, 'text-status-error')} />
     case 'pending':
       return <Circle className={cn(iconClasses, 'text-muted-foreground')} />
   }
@@ -65,7 +63,7 @@ export const StageItem = memo(function StageItem({ stage, isLast }: StageItemPro
         <div
           className={cn(
             'absolute left-[9px] top-6 bottom-0 w-0.5',
-            stage.status === 'complete' ? 'bg-[oklch(0.6959_0.1491_162.4796)]/30' : 'bg-border'
+            stage.status === 'complete' ? 'bg-green-50' : 'bg-border'
           )}
           aria-hidden="true"
         />

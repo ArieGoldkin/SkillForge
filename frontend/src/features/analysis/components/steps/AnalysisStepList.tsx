@@ -89,11 +89,9 @@ const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
 
   switch (status) {
     case 'completed':
-      return <CheckCircle2 className={cn(iconClasses, 'text-[oklch(0.6959_0.1491_162.4796)]')} />
+      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} />
     case 'in-progress':
-      return (
-        <Loader2 className={cn(iconClasses, 'animate-spin text-[oklch(0.7686_0.1647_70.0804)]')} />
-      )
+      return <Loader2 className={cn(iconClasses, 'animate-spin text-status-warning')} />
     case 'failed':
       return <XCircle className={cn(iconClasses, 'text-destructive')} />
     case 'skipped':
@@ -140,7 +138,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
         <div
           className={cn(
             'absolute left-[9px] top-6 bottom-0 w-0.5',
-            step.status === 'completed' ? 'bg-[oklch(0.6959_0.1491_162.4796)]/30' : 'bg-border'
+            step.status === 'completed' ? 'bg-status-success/30' : 'bg-border'
           )}
         />
       )}

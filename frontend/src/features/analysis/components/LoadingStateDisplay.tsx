@@ -92,22 +92,60 @@ export const LoadingStateDisplay: React.FC<LoadingStateDisplayProps> = ({ loadin
 
   const { icon, text, subtitle } = getDisplayContent()
 
+  // Generate screen reader announcement for loading state changes
+  const getScreenReaderText = (): string => {
+    switch (loadingState.type) {
+      case 'waiting_for_events':
+        return 'Preparing analysis. Setting up your content analysis.'
+      case 'extracting':
+        return `Extracting content. ${loadingState.wordCount ? `Processing ${loadingState.wordCount.toLocaleString()} words.` : 'Reading and analyzing your content.'}`
+      case 'analyzing':
+        return `Analyzing content. Running AI analysis at ${loadingState.progress}% completion.`
+      case 'generating':
+        return 'Generating report. Compiling your analysis results.'
+      case 'complete':
+        return 'Analysis complete. Your results are ready to view.'
+      case 'error':
+        return `Analysis failed. ${loadingState.error}`
+      default:
+        return 'Loading analysis. Please wait.'
+    }
+  }
+
   return (
-    <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-      {icon && <div className="flex-shrink-0">{icon}</div>}
-      <div className="flex-1 min-w-0">
-        <p
-          className={cn(
-            'text-sm font-medium',
-            loadingState.type === 'error' && 'text-destructive',
-            loadingState.type === 'complete' && 'text-green-700'
-          )}
-        >
-          {text}
-        </p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+    <>
+      {/* Screen reader live region for dynamic content */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" role="status">
+        {getScreenReaderText()}
       </div>
-    </div>
+
+      {/* Visual loading state display */}
+      <div
+        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg"
+        role="status"
+        aria-label={`Loading state: ${text}`}
+      >
+        {icon && (
+          <div className="flex-shrink-0" aria-hidden="true">
+            {icon}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p
+            className={cn(
+              'text-sm sm:text-base font-medium',
+              loadingState.type === 'error' && 'text-status-error',
+              loadingState.type === 'complete' && 'text-status-success'
+            )}
+          >
+            {text}
+          </p>
+          {subtitle && (
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{subtitle}</p>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 
