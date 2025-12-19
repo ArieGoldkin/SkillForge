@@ -248,3 +248,161 @@ def test_get_current_trace_id_converts_uuid_to_string(mock_get_client):
 
     assert result == str(mock_uuid)
     assert isinstance(result, str)
+
+
+# ============================================================================
+# Issue #378: Session/User Tracking Tests
+# ============================================================================
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_with_session_id(mock_get_client):
+    """Test that update_current_trace passes session_id correctly.
+
+    Issue #378: Session tracking enables grouping traces by analysis session.
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    # Call with session_id (pattern used in workflow_runner.py)
+    analysis_id = "dff652c1-9ca3-49c2-a8be-8db528447e54"
+    update_current_trace(session_id=f"analysis-{analysis_id}")
+
+    # Verify client.update_current_trace was called with session_id
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
+    assert call_kwargs["session_id"] == f"analysis-{analysis_id}"
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_with_user_id(mock_get_client):
+    """Test that update_current_trace passes user_id correctly.
+
+    Issue #378: User tracking enables filtering traces by user.
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    # Call with user_id
+    update_current_trace(user_id="user_123")
+
+    # Verify client.update_current_trace was called with user_id
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
+    assert call_kwargs["user_id"] == "user_123"
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_with_session_and_user(mock_get_client):
+    """Test update_current_trace with both session_id and user_id.
+
+    Issue #378: Combined session/user tracking for full trace context.
+    This is the pattern used in workflow_runner.py (lines 310-322).
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    # Call with all parameters (matches workflow_runner.py pattern)
+    analysis_id = "abc123"
+    update_current_trace(
+        metadata={
+            "analysis_id": analysis_id,
+            "url": "https://example.com/article",
+            "workflow_version": "1.0",
+        },
+        tags=["analysis", "workflow"],
+        session_id=f"analysis-{analysis_id}",
+        user_id="anonymous",  # Placeholder until auth is implemented
+    )
+
+    # Verify all parameters were passed
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
+    assert call_kwargs["session_id"] == "analysis-abc123"
+    assert call_kwargs["user_id"] == "anonymous"
+    assert call_kwargs["tags"] == ["analysis", "workflow"]
+    assert call_kwargs["metadata"]["analysis_id"] == "abc123"
+    assert call_kwargs["metadata"]["url"] == "https://example.com/article"
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_handles_langfuse_exception(mock_get_client):
+    """Test that update_current_trace handles Langfuse errors gracefully.
+
+    Issue #378: Trace updates should not crash the workflow.
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client that raises exception
+    mock_client = MagicMock()
+    mock_client.update_current_trace.side_effect = Exception("Langfuse connection error")
+    mock_get_client.return_value = mock_client
+
+    # Should not raise - graceful degradation
+    update_current_trace(
+        session_id="analysis-123",
+        user_id="anonymous",
+    )
+
+    # Verify the call was attempted
+    mock_client.update_current_trace.assert_called_once()
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_skips_none_values(mock_get_client):
+    """Test that update_current_trace only passes non-None values.
+
+    Issue #378: Empty/None parameters should not be sent to Langfuse.
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    # Call with only session_id (user_id=None, tags=None, metadata=None)
+    update_current_trace(session_id="analysis-123")
+
+    # Verify only session_id was passed
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
+    assert "session_id" in call_kwargs
+    assert call_kwargs["session_id"] == "analysis-123"
+    # None values should not be in kwargs
+    assert "user_id" not in call_kwargs
+    assert "tags" not in call_kwargs
+    assert "metadata" not in call_kwargs
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_update_current_trace_empty_call_no_op(mock_get_client):
+    """Test that update_current_trace with no args is a no-op.
+
+    Issue #378: Calling with no parameters should not call Langfuse.
+    """
+    from app.core.tracing import update_current_trace
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    # Call with no parameters
+    update_current_trace()
+
+    # Should not call Langfuse when all params are None
+    mock_client.update_current_trace.assert_not_called()
