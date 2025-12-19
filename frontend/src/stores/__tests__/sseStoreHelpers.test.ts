@@ -8,8 +8,8 @@
 import type { SSEErrorEvent, SSEProgressEvent } from '@app-types/sse'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SSEStore } from '../sseStoreHelpers'
-import { closeConnection, createConnection } from '../sseStoreHelpers'
+import type { SSEStore } from '../sseStore'
+import { closeConnection, createConnection, type ListenerRefs } from '../sseStoreHelpers'
 
 // Valid UUIDs for testing
 const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
@@ -98,6 +98,9 @@ function getMockEventSource(): MockEventSource | null {
 
 /**
  * Create a mock StoreAPI for testing
+ *
+ * The mock includes all internal state fields that were moved from module-level
+ * to the Zustand store for proper memory management.
  */
 function createMockStore(): {
   store: {
@@ -107,15 +110,27 @@ function createMockStore(): {
   state: SSEStore
 } {
   const state: SSEStore = {
+    // Public state
     events: [],
     latestEvent: null,
     error: null,
     isConnected: false,
     isComplete: false,
     activeAnalysisId: null,
+
+    // Internal state (moved from module-level for memory safety)
+    _eventSource: null,
+    _reconnectAttempts: 0,
+    _reconnectTimeoutId: null,
+    _permanentlyFailed: false,
+    _listenerRefs: null as ListenerRefs | null,
+
+    // Actions
     connect: vi.fn(),
     disconnect: vi.fn(),
     reset: vi.fn(),
+    _addEvent: vi.fn(),
+    _setInternalState: vi.fn(),
   }
 
   const store = {
@@ -128,6 +143,12 @@ function createMockStore(): {
       }
     },
   }
+
+  // Wire up _addEvent to actually add events (for tests that check events array)
+  state._addEvent = vi.fn((event) => {
+    state.events = [...state.events, event]
+    state.latestEvent = event
+  })
 
   return { store, state }
 }

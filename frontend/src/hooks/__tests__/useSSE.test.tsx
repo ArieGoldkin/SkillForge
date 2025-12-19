@@ -7,7 +7,7 @@ import { useSSE } from '../useSSE'
 
 // Valid UUIDs for testing
 const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
-const TEST_ANALYSIS_ID_2 = 'a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6'
+const _TEST_ANALYSIS_ID_2 = 'a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6'
 
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
