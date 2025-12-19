@@ -1,3 +1,11 @@
+/**
+ * CompletedAnalysisView - Full page view for completed analysis
+ *
+ * Issue #396: Simplified props - AnalysisCompleteCard now gets data
+ * from Zustand store instead of prop drilling.
+ *
+ * Wrapped with React.memo - only re-renders when props change.
+ */
 import { memo } from 'react'
 
 import type { OverallProgress, ProgressStep } from '../../hooks/useAnalysisProgress'
@@ -7,9 +15,8 @@ import { AnalysisHeader } from '../steps/AnalysisHeader'
 import { AnalysisCompleteCard } from './AnalysisCompleteCard'
 
 interface CompletedAnalysisViewProps {
+  /** Used for header URL display only */
   analysisId?: string
-  artifactId: string
-  traceId?: string
   overallProgress: OverallProgress
   steps: ProgressStep[]
   hasFailedStages: boolean
@@ -22,15 +29,8 @@ interface CompletedAnalysisViewProps {
   }
 }
 
-/**
- * CompletedAnalysisView - Full page view for completed analysis
- *
- * Wrapped with React.memo - only re-renders when props change.
- */
 export const CompletedAnalysisView = memo(function CompletedAnalysisView({
   analysisId,
-  artifactId,
-  traceId,
   overallProgress,
   steps,
   hasFailedStages,
@@ -54,14 +54,8 @@ export const CompletedAnalysisView = memo(function CompletedAnalysisView({
           failedStagesCount={failedStagesCount}
           analysisMetadata={analysisMetadata}
         />
-        <AnalysisCompleteCard
-          artifactId={artifactId}
-          analysisId={analysisId}
-          traceId={traceId}
-          variant="column"
-          hasFailedStages={hasFailedStages}
-          failedStagesCount={failedStagesCount}
-        />
+        {/* Issue #396: AnalysisCompleteCard gets data from store */}
+        <AnalysisCompleteCard variant="column" />
       </div>
     </div>
   )

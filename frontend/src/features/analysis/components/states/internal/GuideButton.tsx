@@ -1,3 +1,10 @@
+/**
+ * GuideButton - Navigate to artifact view
+ *
+ * Gets artifact/analysis/trace IDs from Zustand store (Issue #396)
+ * instead of props, eliminating 4-level prop drilling.
+ */
+import { selectAnalysisId, selectArtifactId, selectTraceId, useSSEStore } from '@stores/sseStore'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, FileText } from 'lucide-react'
 
@@ -6,18 +13,19 @@ import { Button } from '@shared/components/ui/button'
 import { cn } from '@lib/utils'
 
 interface GuideButtonProps {
-  artifactId: string
-  analysisId?: string
-  traceId?: string
+  /** UI-only prop - controls button size */
   isCompact?: boolean
 }
 
-export function GuideButton({
-  artifactId,
-  analysisId,
-  traceId,
-  isCompact = false,
-}: GuideButtonProps) {
+export function GuideButton({ isCompact = false }: GuideButtonProps) {
+  // Get IDs from store instead of props (Issue #396)
+  const artifactId = useSSEStore(selectArtifactId)
+  const analysisId = useSSEStore(selectAnalysisId)
+  const traceId = useSSEStore(selectTraceId)
+
+  // Don't render if no artifact available
+  if (!artifactId) return null
+
   return (
     <Link
       to="/artifact/$artifactId"

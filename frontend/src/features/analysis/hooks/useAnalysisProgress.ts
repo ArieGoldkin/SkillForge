@@ -13,10 +13,11 @@
  *
  * @module hooks/useAnalysisProgress
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { isErrorEvent } from '@app-types/sse'
 import type { SSEEvent } from '@app-types/sse'
+import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'
@@ -104,6 +105,7 @@ export interface AnalysisProgressData {
  * )
  * ```
  */
+// eslint-disable-next-line max-lines-per-function -- Orchestrator hook composing 5 sub-hooks + store sync
 export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // ========================================================================
   // 1. Stage Status Processing - Core event processing
@@ -168,6 +170,32 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     ).length
     return { hasFailedStages: failedCount > 0, failedStagesCount: failedCount }
   }, [stageStatuses])
+
+  // ========================================================================
+  // 8. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
+  // ========================================================================
+  // This enables leaf components (GuideButton, TeachMeButton, etc.) to access
+  // derived data directly via selectors instead of through prop chains
+  const setAnalysisMetadata = useSSEStore(selectSetAnalysisMetadata)
+
+  useEffect(() => {
+    setAnalysisMetadata({
+      artifactId: artifactId ?? null,
+      traceId: traceId ?? null,
+      overallProgress,
+      hasFailedStages,
+      failedStagesCount,
+      analysisMetadata: analysisMetadata ?? null,
+    })
+  }, [
+    artifactId,
+    traceId,
+    overallProgress,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+    setAnalysisMetadata,
+  ])
 
   // ========================================================================
   // Return Comprehensive Progress Data

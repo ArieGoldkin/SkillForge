@@ -184,6 +184,7 @@ export default function AnalyzeResult() {
 
   // Focus management for accessibility
   const completionRef = useCompletionFocus(isComplete)
+  // Issue #396: traceId no longer needed here - leaf components get it from store
   const {
     overallProgress,
     steps,
@@ -191,7 +192,6 @@ export default function AnalyzeResult() {
     hasError,
     errorMessage,
     artifactId,
-    traceId,
     hasFailedStages,
     failedStagesCount,
     analysisMetadata,
@@ -225,12 +225,12 @@ export default function AnalyzeResult() {
       hasFailedStages,
     })
 
+  // Issue #396: CompletedAnalysisView no longer needs artifactId/traceId props
+  // - those are now accessed from Zustand store by AnalysisCompleteCard
   if (completed && urlArtifactId) {
     return (
       <CompletedAnalysisView
         analysisId={id}
-        artifactId={urlArtifactId}
-        traceId={traceId}
         overallProgress={overallProgress}
         steps={steps}
         hasFailedStages={hasFailedStages}
@@ -244,8 +244,6 @@ export default function AnalyzeResult() {
     return (
       <CompletedAnalysisView
         analysisId={id}
-        artifactId={resolvedArtifactId}
-        traceId={traceId}
         overallProgress={overallProgress}
         steps={steps}
         hasFailedStages={hasFailedStages}
@@ -305,6 +303,7 @@ export default function AnalyzeResult() {
             fallback={(props) => <AnalysisErrorFallback {...props} section="Activity" />}
             name="ActivityColumn"
           >
+            {/* Issue #396: AnalysisCompleteCard gets data from Zustand store */}
             {isComplete && (resolvedArtifactId || artifactId) ? (
               <div
                 ref={completionRef}
@@ -312,14 +311,7 @@ export default function AnalyzeResult() {
                 aria-label={hasFailedStages ? 'Analysis complete with errors' : 'Analysis complete'}
                 className="outline-none"
               >
-                <AnalysisCompleteCard
-                  artifactId={resolvedArtifactId || artifactId}
-                  analysisId={id}
-                  traceId={traceId}
-                  variant="column"
-                  hasFailedStages={hasFailedStages}
-                  failedStagesCount={failedStagesCount}
-                />
+                <AnalysisCompleteCard variant="column" />
               </div>
             ) : (
               <ActivityColumn activities={activities} isLive={isConnected} />

@@ -1,3 +1,15 @@
+/**
+ * CompleteCardContent - Completion message and action buttons
+ *
+ * Issue #396: Gets IDs and failure state from Zustand store
+ * instead of prop drilling.
+ */
+import {
+  selectArtifactId,
+  selectFailedStagesCount,
+  selectHasFailedStages,
+  useSSEStore,
+} from '@stores/sseStore'
 import { AlertTriangle, CheckCircle } from 'lucide-react'
 
 import { cn } from '@lib/utils'
@@ -5,25 +17,17 @@ import { cn } from '@lib/utils'
 import { ActionButtons } from './ActionButtons'
 
 interface CompleteCardContentProps {
-  artifactId: string | null | undefined
-  analysisId?: string
-  traceId?: string
+  /** UI-only props */
   isColumn: boolean
   onPreview: () => void
-  hasFailedStages?: boolean
-  failedStagesCount?: number
 }
 
-export function CompleteCardContent(props: CompleteCardContentProps) {
-  const {
-    artifactId,
-    analysisId,
-    traceId,
-    isColumn,
-    onPreview,
-    hasFailedStages = false,
-    failedStagesCount = 0,
-  } = props
+export function CompleteCardContent({ isColumn, onPreview }: CompleteCardContentProps) {
+  // Get data from store instead of props (Issue #396)
+  const artifactId = useSSEStore(selectArtifactId)
+  const hasFailedStages = useSSEStore(selectHasFailedStages)
+  const failedStagesCount = useSSEStore(selectFailedStagesCount)
+
   const iconSize = isColumn ? 'h-6 w-6' : 'h-8 w-8'
   const iconWrapSize = isColumn ? 'h-12 w-12 mb-3' : 'h-16 w-16 mb-4'
 
@@ -48,13 +52,7 @@ export function CompleteCardContent(props: CompleteCardContentProps) {
         {message}
       </p>
       {artifactId ? (
-        <ActionButtons
-          artifactId={artifactId}
-          analysisId={analysisId}
-          traceId={traceId}
-          isCompact={isColumn}
-          onPreview={onPreview}
-        />
+        <ActionButtons isCompact={isColumn} onPreview={onPreview} />
       ) : (
         <p className="text-sm text-muted-foreground py-4">No guide available.</p>
       )}
