@@ -275,6 +275,16 @@ class Settings(BaseSettings):
             "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
+    EVALUATOR_BACKEND: str = Field(
+        default="local",
+        description=(
+            "Evaluation backend selection: 'local', 'langfuse', or 'both'. "
+            "local: Local G-Eval only (default, self-contained, fast). "
+            "langfuse: Langfuse LLM-as-Judge with fallback to local (observability, cost tracking). "
+            "both: Run both evaluators for comparison (validation, A/B testing). "
+            "Issue #381: Langfuse LLM-as-Judge Evaluators."
+        ),
+    )
 
     # Embedding Configuration
     EMBEDDING_DIMENSIONS: int = Field(
@@ -478,6 +488,27 @@ class Settings(BaseSettings):
         description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
     )
 
+    # Langfuse Prompt Management Configuration (Issue #379)
+    LANGFUSE_PROMPTS_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable Langfuse Prompt Management. When disabled, uses hardcoded prompts. "
+            "Gradual rollout: Start with False, test in staging, enable in production."
+        ),
+    )
+    LANGFUSE_PROMPTS_L1_TTL: int = Field(
+        default=300,
+        description="L1 in-memory cache TTL in seconds (default: 5 minutes)",
+    )
+    LANGFUSE_PROMPTS_L2_TTL: int = Field(
+        default=900,
+        description="L2 Redis cache TTL in seconds (default: 15 minutes)",
+    )
+    LANGFUSE_PROMPTS_REDIS_ENABLED: bool = Field(
+        default=True,
+        description="Enable Redis L2 cache for prompts (shared across workers)",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
@@ -507,6 +538,16 @@ class Settings(BaseSettings):
             msg = "LLM_MODEL cannot be empty"
             raise ValueError(msg)
         return v.strip()
+
+    @field_validator("EVALUATOR_BACKEND")
+    @classmethod
+    def validate_evaluator_backend(cls, v: str) -> str:
+        """Validate evaluator backend is one of allowed values."""
+        allowed = {"local", "langfuse", "both"}
+        if v not in allowed:
+            msg = f"EVALUATOR_BACKEND must be one of {allowed}"
+            raise ValueError(msg)
+        return v
 
     @model_validator(mode="after")
     def validate_production_requirements(self) -> "Settings":

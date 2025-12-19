@@ -19,9 +19,6 @@ from app.domains.analysis.workflows.state_accessors import (
     get_quality_scores,
 )
 from app.domains.analysis.workflows.state_types import AggregatedInsights
-from app.evaluation.evaluators.quality import (
-    create_quality_evaluator,
-)
 
 logger = get_logger(__name__)
 
@@ -157,14 +154,28 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Run evaluators for each aspect
+        # Issue #381: Use hybrid evaluator for configurable backend selection
+        from app.core.config import get_settings
+        from app.evaluation.evaluators.hybrid_evaluator import create_hybrid_evaluator
+
+        settings = get_settings()
+        evaluator_backend = settings.EVALUATOR_BACKEND
+
+        logger.info(
+            "quality_gate_using_evaluator_backend",
+            analysis_id=analysis_id,
+            backend=evaluator_backend,
+        )
+
         quality_scores = {}
         for aspect in QUALITY_ASPECTS:
-            evaluator = create_quality_evaluator(aspect=aspect)
+            # Create hybrid evaluator with configured backend
+            evaluator = create_hybrid_evaluator(aspect=aspect, backend=evaluator_backend)
 
             # Wrap evaluator call with timeout protection to prevent hanging
             try:
                 async with asyncio.timeout(30):
-                    result = await evaluator(mock_run, mock_example)
+                    result = await evaluator.evaluate(mock_run, mock_example)
                     score = result.get("score", 0.0)
                     quality_scores[aspect] = {
                         "score": score,
