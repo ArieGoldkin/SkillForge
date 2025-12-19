@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
 import { useSSEStore } from '@stores/sseStore'
+import { trackComponentPerformance, trackInteraction } from '@services/performance/webVitals'
 
 /**
  * Zustand Selectors - Defined at module level for stable references
@@ -46,14 +47,30 @@ export function useSSE(analysisId: string) {
   const disconnect = useSSEStore(selectDisconnect)
 
   useEffect(() => {
+    const connectStartTime = performance.now()
+
     // Only connect if not already connected to this analysis
     if (activeAnalysisId !== analysisId) {
+      console.log(`🔗 SSE: Connecting to analysis ${analysisId}`)
       connect(analysisId)
+
+      // Track connection performance
+      const connectEndTime = performance.now()
+      const connectDuration = connectEndTime - connectStartTime
+      trackComponentPerformance('sse-connection', connectDuration)
+
+      console.log(`⚡ SSE: Connection established in ${connectDuration.toFixed(2)}ms`)
+    }
+
+    // Track SSE event processing performance
+    const eventCount = events.length
+    if (eventCount > 0) {
+      trackComponentPerformance('sse-event-processing', eventCount)
     }
 
     // Note: We don't disconnect on unmount by default because other components
     // might still be using the connection. Call disconnect() explicitly when needed.
-  }, [analysisId, activeAnalysisId, connect])
+  }, [analysisId, activeAnalysisId, connect, events.length])
 
   // Memoize return object to prevent new reference on each render
   // This helps consumers avoid unnecessary re-renders when their parent re-renders

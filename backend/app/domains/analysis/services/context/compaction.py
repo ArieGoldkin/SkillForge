@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
+from app.core.tracing import robust_traceable
 
 logger = get_logger(__name__)
 
@@ -119,6 +120,12 @@ class SessionCompactor:
         """
         self.config = config or CompactionConfig()
 
+    @robust_traceable(
+        name="session_compact",
+        run_type="chain",
+        tags=["compaction", "session", "context"],
+        metadata={"service": "session_compactor"},
+    )
     async def compact(self, full_history: list[dict[str, Any]]) -> CompiledContext:
         """Compact conversation history while keeping recent turns verbatim.
 
@@ -187,6 +194,12 @@ class SessionCompactor:
             summary=summary,
         )
 
+    @robust_traceable(
+        name="session_summarize_turns",
+        run_type="llm",
+        tags=["compaction", "summarization", "llm_call"],
+        metadata={"service": "session_compactor"},
+    )
     async def _summarize_turns(self, turns: list[dict[str, Any]]) -> str:
         """Summarize older conversation turns using LLM.
 

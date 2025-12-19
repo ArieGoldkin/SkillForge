@@ -25,6 +25,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
+from app.core.tracing import robust_traceable
 from app.shared.services.g_eval.cache import get_cache
 from app.shared.services.g_eval.rubrics import (
     format_rubric_for_prompt,
@@ -255,6 +256,12 @@ def _submit_g_eval_scores_to_langfuse(
         )
 
 
+@robust_traceable(
+    name="g_eval_score_criterion",
+    run_type="llm",
+    tags=["g_eval", "criterion", "llm_call"],
+    metadata={"service": "g_eval"},
+)
 async def _score_criterion(
     input_content: str,
     output: str,
@@ -361,6 +368,12 @@ async def _score_criterion(
         )
 
 
+@robust_traceable(
+    name="g_eval_score",
+    run_type="chain",
+    tags=["g_eval", "quality", "llm_judge"],
+    metadata={"service": "g_eval"},
+)
 async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
     input_content: str,
     output: dict[str, Any] | str,

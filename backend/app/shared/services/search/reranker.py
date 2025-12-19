@@ -39,6 +39,7 @@ from app.core.constants import (
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
+from app.core.tracing import robust_traceable
 from app.schemas.search import ReRankConfig, SearchResult
 from app.shared.services.metrics import get_metrics_service
 from app.shared.services.search.structural_priors import StructuralPriorScorer
@@ -105,6 +106,12 @@ class ReRanker:
             self._model = get_chat_model({"configurable": {"model": RERANK_MODEL}})
         return self._model
 
+    @robust_traceable(
+        name="rerank_search_results",
+        run_type="chain",
+        tags=["reranker", "search", "hybrid"],
+        metadata={"service": "search_reranker"},
+    )
     async def rerank(
         self,
         query: str,
@@ -265,6 +272,12 @@ class ReRanker:
 
         return scores
 
+    @robust_traceable(
+        name="rerank_llm_score",
+        run_type="llm",
+        tags=["reranker", "llm_score"],
+        metadata={"service": "search_reranker"},
+    )
     async def _batch_llm_score(
         self,
         query: str,

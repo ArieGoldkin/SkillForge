@@ -2,10 +2,18 @@
 
 This script creates Score Configs in Langfuse for tracking quality metrics:
 - user_feedback: BOOLEAN (0 or 1) - human annotation feedback
-- quality_relevance: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score
-- quality_depth: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score
-- quality_coherence: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score
-- quality_avg: NUMERIC (0.0 to 1.0) - Average of G-Eval scores
+- quality_relevance: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
+- quality_depth: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
+- quality_coherence: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
+- quality_avg: NUMERIC (0.0 to 1.0) - Average of G-Eval scores (legacy)
+- g_eval_relevance: NUMERIC (0.0 to 1.0) - G-Eval criterion score for relevance
+- g_eval_depth: NUMERIC (0.0 to 1.0) - G-Eval criterion score for depth
+- g_eval_coherence: NUMERIC (0.0 to 1.0) - G-Eval criterion score for coherence
+- g_eval_actionability: NUMERIC (0.0 to 1.0) - G-Eval criterion score for actionability
+- g_eval_completeness: NUMERIC (0.0 to 1.0) - G-Eval criterion score for completeness
+- g_eval_overall: NUMERIC (0.0 to 1.0) - G-Eval weighted average score
+- latency_seconds: NUMERIC - Execution latency in seconds
+- cache_hit: BOOLEAN - Whether result was served from cache
 
 Score Configs enable:
 - Validation in the Langfuse UI (type checking, range validation)
@@ -88,6 +96,61 @@ SCORE_CONFIGS = [
         "description": "Average of all G-Eval quality scores (0.0 to 1.0)",
         "minValue": 0.0,
         "maxValue": 1.0,
+    },
+    # G-Eval criterion scores (per-criterion detailed tracking)
+    {
+        "name": "g_eval_relevance",
+        "dataType": "NUMERIC",
+        "description": "G-Eval LLM-as-a-Judge score for content relevance (0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_depth",
+        "dataType": "NUMERIC",
+        "description": "G-Eval LLM-as-a-Judge score for analytical depth (0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_coherence",
+        "dataType": "NUMERIC",
+        "description": "G-Eval LLM-as-a-Judge score for logical coherence (0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_actionability",
+        "dataType": "NUMERIC",
+        "description": "G-Eval LLM-as-a-Judge score for practical actionability (0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_completeness",
+        "dataType": "NUMERIC",
+        "description": "G-Eval LLM-as-a-Judge score for content completeness (0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_overall",
+        "dataType": "NUMERIC",
+        "description": "G-Eval overall quality score (weighted average, 0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    # Performance metrics
+    {
+        "name": "latency_seconds",
+        "dataType": "NUMERIC",
+        "description": "Execution latency in seconds",
+        "minValue": 0.0,
+    },
+    {
+        "name": "cache_hit",
+        "dataType": "BOOLEAN",
+        "description": "Whether the result was served from cache (1=hit, 0=miss)",
     },
 ]
 
@@ -401,11 +464,24 @@ Environment Variables:
     LANGFUSE_HOST: Langfuse host URL (optional, defaults to http://localhost:3000)
 
 Score Configs:
+    Legacy Quality Scores:
     - user_feedback: BOOLEAN (0 or 1) - human annotation feedback
-    - quality_relevance: NUMERIC (0.0 to 1.0) - G-Eval score for relevance
-    - quality_depth: NUMERIC (0.0 to 1.0) - G-Eval score for depth
-    - quality_coherence: NUMERIC (0.0 to 1.0) - G-Eval score for coherence
-    - quality_avg: NUMERIC (0.0 to 1.0) - average of all G-Eval scores
+    - quality_relevance: NUMERIC (0.0 to 1.0) - G-Eval score for relevance (legacy)
+    - quality_depth: NUMERIC (0.0 to 1.0) - G-Eval score for depth (legacy)
+    - quality_coherence: NUMERIC (0.0 to 1.0) - G-Eval score for coherence (legacy)
+    - quality_avg: NUMERIC (0.0 to 1.0) - average of all G-Eval scores (legacy)
+
+    G-Eval Criterion Scores (per-criterion detailed tracking):
+    - g_eval_relevance: NUMERIC (0.0 to 1.0) - content relevance
+    - g_eval_depth: NUMERIC (0.0 to 1.0) - analytical depth
+    - g_eval_coherence: NUMERIC (0.0 to 1.0) - logical coherence
+    - g_eval_actionability: NUMERIC (0.0 to 1.0) - practical actionability
+    - g_eval_completeness: NUMERIC (0.0 to 1.0) - content completeness
+    - g_eval_overall: NUMERIC (0.0 to 1.0) - weighted average
+
+    Performance Metrics:
+    - latency_seconds: NUMERIC - execution latency in seconds
+    - cache_hit: BOOLEAN - whether result was served from cache
         """,
     )
 

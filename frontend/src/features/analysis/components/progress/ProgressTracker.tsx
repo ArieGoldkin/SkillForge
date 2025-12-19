@@ -9,6 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/
 import { cn } from '@lib/utils'
 
 import { CompletionMessage } from './CompletionMessage'
+import { ConnectionStatus } from './ConnectionStatus'
+import { ALL_STAGES } from './constants'
+import { deriveStageStates } from './deriveStageStates'
+import { ErrorAlert } from './ErrorAlert'
+import { StageItem } from './StageItem'
 
 /**
  * Check if an error is a network/connection error (not a stage validation error)
@@ -28,11 +33,6 @@ function isNetworkError(error: Error): boolean {
   const errorMessage = error.message.toLowerCase()
   return networkErrorPatterns.some((pattern) => errorMessage.includes(pattern))
 }
-import { ConnectionStatus } from './ConnectionStatus'
-import { ALL_STAGES } from './constants'
-import { deriveStageStates } from './deriveStageStates'
-import { ErrorAlert } from './ErrorAlert'
-import { StageItem } from './StageItem'
 
 /**
  * Props for ProgressTracker component

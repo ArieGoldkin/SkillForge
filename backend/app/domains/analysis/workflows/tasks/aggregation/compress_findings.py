@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.tracing import robust_traceable
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -152,6 +153,12 @@ def _format_value(value: Any) -> str:
     return value_str
 
 
+@robust_traceable(
+    name="compress_single_finding",
+    run_type="llm",
+    tags=["compression", "finding", "llm_call"],
+    metadata={"service": "finding_compression"},
+)
 async def compress_single_finding(
     agent_name: str,
     finding: dict[str, Any],
@@ -240,6 +247,12 @@ async def compress_single_finding(
     return compressed
 
 
+@robust_traceable(
+    name="compress_all_findings",
+    run_type="chain",
+    tags=["compression", "aggregation", "parallel"],
+    metadata={"service": "finding_compression"},
+)
 async def compress_all_findings(
     agent_findings: dict[str, dict[str, Any]],
     analysis_id: str,

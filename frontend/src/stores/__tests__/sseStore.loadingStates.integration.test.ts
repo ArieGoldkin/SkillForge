@@ -11,8 +11,8 @@
 import type { SSEEvent } from '@app-types/sse'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
-import { useSSEStore } from '../sseStore'
 import { deriveLoadingState, getConnectionMessage } from '../computed/loadingStates'
+import { useSSEStore } from '../sseStore'
 
 // Helper function for testing loading state computation
 function getLoadingState() {

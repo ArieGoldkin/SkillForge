@@ -10,6 +10,9 @@ import { FeaturesSection } from './components/FeaturesSection'
 import { HeroSection } from './components/HeroSection'
 import { HowItWorksSection } from './components/HowItWorksSection'
 
+// React Scan test component (development only)
+import { ReactScanTest } from '@components/ReactScanTest'
+
 type ContentType = 'article' | 'video' | 'repository'
 
 export default function Home() {
@@ -54,6 +57,13 @@ export default function Home() {
       />
       <FeaturesSection />
       <HowItWorksSection />
+
+      {/* React Scan Performance Test (development only) */}
+      {import.meta.env.DEV && (
+        <div className="container mx-auto px-4 py-8">
+          <ReactScanTest />
+        </div>
+      )}
     </div>
   )
 }

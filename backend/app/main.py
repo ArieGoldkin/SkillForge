@@ -161,9 +161,30 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("application_shutdown")
 
-    # Flush and shutdown Langfuse
-    flush_langfuse()
-    shutdown_langfuse()
+    # Flush and shutdown Langfuse with timeout protection
+    try:
+        # Give Langfuse 10 seconds to flush remaining events
+        await asyncio.wait_for(
+            asyncio.to_thread(flush_langfuse),
+            timeout=10.0,
+        )
+    except TimeoutError:
+        logger.warning(
+            "langfuse_flush_timeout",
+            message="Langfuse flush timed out after 10 seconds",
+        )
+
+    try:
+        # Give Langfuse 10 seconds to complete shutdown
+        await asyncio.wait_for(
+            asyncio.to_thread(shutdown_langfuse),
+            timeout=10.0,
+        )
+    except TimeoutError:
+        logger.warning(
+            "langfuse_shutdown_timeout",
+            message="Langfuse shutdown timed out after 10 seconds",
+        )
 
     # Remove global exception handler on shutdown
     try:

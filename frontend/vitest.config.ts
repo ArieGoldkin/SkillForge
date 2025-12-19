@@ -19,6 +19,13 @@ export default defineConfig({
       reportsDirectory: './coverage',
       exclude: ['node_modules/', 'src/**/*.d.ts', 'src/**/*.test.{ts,tsx}'],
     },
+    // Performance monitoring setup
+    performance: {
+      // Enable performance monitoring in tests
+      enabled: true,
+      // Report performance regressions
+      reportOnFailure: true,
+    },
   },
   resolve: {
     alias: {
@@ -31,6 +38,8 @@ export default defineConfig({
       '@lib': path.resolve(__dirname, './src/lib'),
       '@services': path.resolve(__dirname, './src/services'),
       '@router': path.resolve(__dirname, './src/router'),
+      '@test-utils': path.resolve(__dirname, './src/test-utils'),
+      '@components': path.resolve(__dirname, './src/components'),
     },
   },
 })
