@@ -2,6 +2,8 @@
  * Tests for QueueTable component - Displays annotation queue items in a table
  */
 
+import type { ReactNode } from 'react'
+
 import type { AnnotationQueueItem } from '@app-types/annotations'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +12,17 @@ import { QueueTable } from '../components/QueueTable'
 
 // Mock TanStack Router Link component
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ to, params, children, className }: any) => (
+  Link: ({
+    to,
+    params,
+    children,
+    className,
+  }: {
+    to: string
+    params: { artifactId: string }
+    children: ReactNode
+    className?: string
+  }) => (
     <a href={`${to.replace('$artifactId', params.artifactId)}`} className={className}>
       {children}
     </a>

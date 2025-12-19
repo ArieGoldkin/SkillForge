@@ -23,7 +23,7 @@ import AnalyzeResult from '../AnalyzeResult'
 
 // Mock CompletedAnalysisView to avoid React Query dependencies in unit tests
 vi.mock('../components/states/CompletedAnalysisView', () => ({
-  CompletedAnalysisView: ({ analysisId }: any) => (
+  CompletedAnalysisView: ({ analysisId: _analysisId }: { analysisId: string }) => (
     <div data-testid="completed-analysis-view">
       <p>Analysis complete</p>
       <p>Your results are ready to view</p>

@@ -5,11 +5,12 @@
  * using Vitest React Profiler and custom performance metrics.
  */
 
-import { withProfiler } from 'vitest-react-profiler'
-import type { ProfiledComponent } from 'vitest-react-profiler'
 import type { ComponentType } from 'react'
+
+import type { ProfiledComponent } from 'vitest-react-profiler'
+import { withProfiler } from 'vitest-react-profiler'
+
 import {
-  renderCustomMetric,
   trackComponentPerformance,
   trackInteraction,
 } from '@services/performance/webVitals.service'
@@ -17,7 +18,7 @@ import {
 /**
  * Wrap a component with performance profiling
  */
-export function withPerformanceProfiler<T extends ComponentType<any>>(
+export function withPerformanceProfiler<T extends ComponentType<Record<string, unknown>>>(
   Component: T,
   displayName?: string
 ): ProfiledComponent<T> {
@@ -47,7 +48,11 @@ export const performanceUtils = {
   /**
    * Assert component meets render budget
    */
-  assertRenderBudget(component: ProfiledComponent<any>, budget: number, componentName?: string) {
+  assertRenderBudget(
+    component: ProfiledComponent<ComponentType<Record<string, unknown>>>,
+    budget: number,
+    componentName?: string
+  ) {
     const renderCount = component.getRenderCount()
     const componentLabel = componentName || component.displayName || 'Component'
 
@@ -64,7 +69,7 @@ export const performanceUtils = {
    * Check for performance regression
    */
   checkPerformanceRegression(
-    component: ProfiledComponent<any>,
+    component: ProfiledComponent<ComponentType<Record<string, unknown>>>,
     baseline: number,
     componentName?: string
   ) {
@@ -117,15 +122,21 @@ export const performanceHooks = {
    */
   useRenderPerformanceTest(componentName: string) {
     return {
-      assertBudget: (component: ProfiledComponent<any>, budget: number) => {
+      assertBudget: (
+        component: ProfiledComponent<ComponentType<Record<string, unknown>>>,
+        budget: number
+      ) => {
         performanceUtils.assertRenderBudget(component, budget, componentName)
       },
 
-      checkRegression: (component: ProfiledComponent<any>, baseline: number) => {
+      checkRegression: (
+        component: ProfiledComponent<ComponentType<Record<string, unknown>>>,
+        baseline: number
+      ) => {
         return performanceUtils.checkPerformanceRegression(component, baseline, componentName)
       },
 
-      logPerformance: (component: ProfiledComponent<any>) => {
+      logPerformance: (component: ProfiledComponent<ComponentType<Record<string, unknown>>>) => {
         const renders = component.getRenderCount()
         const history = component.getRenderHistory()
         console.log(`📊 ${componentName} performance:`, { renders, history })

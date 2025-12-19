@@ -1,13 +1,4 @@
-/**
- * Performance Analysis Utilities for Issue #395
- *
- * Analyzes and measures re-render patterns in analysis components
- * to identify optimization opportunities and track improvements.
- */
-
-import type { ComponentType } from 'react'
-
-// Component render tracking for analysis
+/** Performance Analysis Utilities for Issue #395 - Analyzes re-render patterns to identify optimizations. */
 export interface ComponentRenderStats {
   componentName: string
   renderCount: number
@@ -15,28 +6,33 @@ export interface ComponentRenderStats {
   propsChanged: boolean
   stateChanged: boolean
 }
-
 export interface PerformanceAnalysisResult {
   totalRenders: number
   componentStats: ComponentRenderStats[]
-  renderFrequency: number // renders per second
+  renderFrequency: number
   memoryUsage: number
   executionTime: number
 }
-
-// Global render tracking (development only)
 const renderStats = new Map<string, ComponentRenderStats>()
-
 if (import.meta.env.DEV) {
-  // Monkey patch React to track renders (development only)
   const React = await import('react')
   const originalCreateElement = React.createElement
-
-  React.createElement = function (type: any, props: any, ...children: any[]) {
-    if (typeof type === 'function' && type.displayName) {
+  type ComponentType =
+    | string
+    | ((...args: unknown[]) => unknown)
+    | { new (...args: unknown[]): unknown }
+  React.createElement = function (
+    type: ComponentType,
+    props: Record<string, unknown> | null,
+    ...children: unknown[]
+  ) {
+    if (
+      typeof type === 'function' &&
+      'displayName' in type &&
+      typeof type.displayName === 'string'
+    ) {
       const componentName = type.displayName
       const existing = renderStats.get(componentName)
-
       if (existing) {
         existing.renderCount++
         existing.lastRenderTime = Date.now()
@@ -50,18 +46,13 @@ if (import.meta.env.DEV) {
         })
       }
     }
-
     return originalCreateElement.call(this, type, props, ...children)
   }
 }
-
-/**
- * Analyze component re-render patterns
- */
+/** Analyze component re-render patterns */
 export function analyzeComponentRenders(componentNames: string[]): PerformanceAnalysisResult {
   const componentStats: ComponentRenderStats[] = []
   let totalRenders = 0
-
   componentNames.forEach((name) => {
     const stats = renderStats.get(name)
     if (stats) {
@@ -69,36 +60,34 @@ export function analyzeComponentRenders(componentNames: string[]): PerformanceAn
       totalRenders += stats.renderCount
     }
   })
-
+  const memoryUsage =
+    'memory' in performance &&
+    typeof performance.memory === 'object' &&
+    performance.memory !== null &&
+    'usedJSHeapSize' in performance.memory
+      ? (performance.memory as { usedJSHeapSize: number }).usedJSHeapSize
+      : 0
   return {
     totalRenders,
     componentStats,
     renderFrequency:
       totalRenders /
       ((Date.now() - Math.min(...componentStats.map((s) => s.lastRenderTime))) / 1000),
-    memoryUsage: (performance as any).memory?.usedJSHeapSize || 0,
+    memoryUsage,
     executionTime: performance.now(),
   }
 }
-
-/**
- * Identify components that re-render too frequently
- */
+/** Identify components that re-render too frequently */
 export function identifyReRenderHotspots(threshold: number = 10): string[] {
   const hotspots: string[] = []
-
   renderStats.forEach((stats, componentName) => {
     if (stats.renderCount > threshold) {
       hotspots.push(`${componentName}: ${stats.renderCount} renders`)
     }
   })
-
   return hotspots
 }
-
-/**
- * Performance baseline for analysis components
- */
+/** Performance baseline for analysis components */
 export const ANALYSIS_COMPONENT_BASELINE = {
   components: [
     'AnalyzeResult',
@@ -114,75 +103,47 @@ export const ANALYSIS_COMPONENT_BASELINE = {
     'ErrorAlert',
     'AnalysisErrorFallback',
   ],
-  expectedMaxRenders: 100, // Target for 50 SSE events
-  expectedMaxExecutionTime: 500, // ms
+  expectedMaxRenders: 100,
+  expectedMaxExecutionTime: 500,
 }
-
-/**
- * Validate performance against baseline
- */
-export function validatePerformanceBaseline(): {
-  passed: boolean
-  issues: string[]
-  recommendations: string[]
-} {
+/** Validate performance against baseline */
+export function validatePerformanceBaseline() {
   const analysis = analyzeComponentRenders(ANALYSIS_COMPONENT_BASELINE.components)
   const issues: string[] = []
   const recommendations: string[] = []
-
-  // Check total renders
-  if (analysis.totalRenders > ANALYSIS_COMPONENT_BASELINE.expectedMaxRenders) {
-    issues.push(
-      `Total renders (${analysis.totalRenders}) exceeds baseline (${ANALYSIS_COMPONENT_BASELINE.expectedMaxRenders})`
-    )
+  const { totalRenders, executionTime, renderFrequency } = analysis
+  const { expectedMaxRenders, expectedMaxExecutionTime } = ANALYSIS_COMPONENT_BASELINE
+  if (totalRenders > expectedMaxRenders) {
+    issues.push(`Total renders (${totalRenders}) exceeds baseline (${expectedMaxRenders})`)
     recommendations.push('Apply React.memo to high-render components')
   }
-
-  // Check execution time
-  if (analysis.executionTime > ANALYSIS_COMPONENT_BASELINE.expectedMaxExecutionTime) {
+  if (executionTime > expectedMaxExecutionTime) {
     issues.push(
-      `Execution time (${analysis.executionTime}ms) exceeds baseline (${ANALYSIS_COMPONENT_BASELINE.expectedMaxExecutionTime}ms)`
+      `Execution time (${executionTime}ms) exceeds baseline (${expectedMaxExecutionTime}ms)`
     )
     recommendations.push('Add useMemo for expensive computations')
   }
-
-  // Check render frequency
-  if (analysis.renderFrequency > 5) {
-    // More than 5 renders per second sustained
-    issues.push(`Render frequency (${analysis.renderFrequency.toFixed(1)}/s) is too high`)
+  if (renderFrequency > 5) {
+    issues.push(`Render frequency (${renderFrequency.toFixed(1)}/s) is too high`)
     recommendations.push('Optimize Zustand subscriptions')
   }
-
-  // Check individual component hotspots
-  const hotspots = identifyReRenderHotspots(20) // Components with >20 renders
+  const hotspots = identifyReRenderHotspots(20)
   if (hotspots.length > 0) {
     issues.push(`Found ${hotspots.length} component re-render hotspots`)
     recommendations.push('Apply React.memo to: ' + hotspots.slice(0, 3).join(', '))
   }
-
-  return {
-    passed: issues.length === 0,
-    issues,
-    recommendations,
-  }
+  return { passed: issues.length === 0, issues, recommendations }
 }
-
-/**
- * Performance improvement tracking
- */
+/** Performance improvement tracking */
 export interface PerformanceImprovement {
   component: string
   beforeRenders: number
   afterRenders: number
-  improvement: number // percentage
+  improvement: number
   optimization: string
 }
-
 export const performanceImprovements: PerformanceImprovement[] = []
-
-/**
- * Track performance improvement
- */
+/** Track performance improvement */
 export function trackPerformanceImprovement(
   component: string,
   beforeRenders: number,
@@ -190,7 +151,6 @@ export function trackPerformanceImprovement(
   optimization: string
 ) {
   const improvement = ((beforeRenders - afterRenders) / beforeRenders) * 100
-
   performanceImprovements.push({
     component,
     beforeRenders,
@@ -198,67 +158,47 @@ export function trackPerformanceImprovement(
     improvement,
     optimization,
   })
-
-  console.log(`🚀 Performance Improvement: ${component}`)
-  console.log(`   Before: ${beforeRenders} renders`)
-  console.log(`   After: ${afterRenders} renders`)
-  console.log(`   Improvement: ${improvement.toFixed(1)}%`)
-  console.log(`   Optimization: ${optimization}`)
+  console.log(
+    `🚀 ${component}: ${beforeRenders}→${afterRenders} renders (${improvement.toFixed(1)}% improvement) - ${optimization}`
+  )
 }
-
-/**
- * Generate performance report
- */
+/** Generate performance report */
 export function generatePerformanceReport(): string {
   const analysis = analyzeComponentRenders(ANALYSIS_COMPONENT_BASELINE.components)
   const validation = validatePerformanceBaseline()
-
-  let report = '# Performance Analysis Report - Issue #395\n\n'
-
-  report += `## Current Metrics\n`
-  report += `- Total renders: ${analysis.totalRenders}\n`
-  report += `- Render frequency: ${analysis.renderFrequency.toFixed(1)}/s\n`
-  report += `- Memory usage: ${(analysis.memoryUsage / 1024 / 1024).toFixed(1)}MB\n`
-  report += `- Execution time: ${analysis.executionTime.toFixed(1)}ms\n\n`
-
-  report += `## Baseline Validation\n`
-  report += `- Status: ${validation.passed ? '✅ PASSED' : '❌ FAILED'}\n\n`
-
+  const parts = [
+    '# Performance Analysis Report - Issue #395\n',
+    '\n## Current Metrics\n',
+    `- Total renders: ${analysis.totalRenders}\n`,
+    `- Render frequency: ${analysis.renderFrequency.toFixed(1)}/s\n`,
+    `- Memory usage: ${(analysis.memoryUsage / 1024 / 1024).toFixed(1)}MB\n`,
+    `- Execution time: ${analysis.executionTime.toFixed(1)}ms\n\n`,
+    `## Baseline Validation\n- Status: ${validation.passed ? '✅ PASSED' : '❌ FAILED'}\n\n`,
+  ]
   if (validation.issues.length > 0) {
-    report += `### Issues Found\n`
-    validation.issues.forEach((issue) => {
-      report += `- ${issue}\n`
-    })
-    report += '\n'
+    parts.push('### Issues Found\n', ...validation.issues.map((i) => `- ${i}\n`), '\n')
   }
-
   if (validation.recommendations.length > 0) {
-    report += `### Recommendations\n`
-    validation.recommendations.forEach((rec) => {
-      report += `- ${rec}\n`
-    })
-    report += '\n'
+    parts.push('### Recommendations\n', ...validation.recommendations.map((r) => `- ${r}\n`), '\n')
   }
-
   if (performanceImprovements.length > 0) {
-    report += `## Performance Improvements\n`
-    report += `| Component | Before | After | Improvement | Optimization |\n`
-    report += `|-----------|--------|-------|-------------|--------------|\n`
-
-    performanceImprovements.forEach((imp) => {
-      report += `| ${imp.component} | ${imp.beforeRenders} | ${imp.afterRenders} | ${imp.improvement.toFixed(1)}% | ${imp.optimization} |\n`
-    })
-
-    const avgImprovement =
+    const avg =
       performanceImprovements.reduce((sum, imp) => sum + imp.improvement, 0) /
       performanceImprovements.length
-    report += `\n**Average Improvement: ${avgImprovement.toFixed(1)}%**\n\n`
+    parts.push(
+      '## Performance Improvements\n',
+      '| Component | Before | After | Improvement | Optimization |\n',
+      '|-----------|--------|-------|-------------|--------------|\n',
+      ...performanceImprovements.map(
+        (i) =>
+          `| ${i.component} | ${i.beforeRenders} | ${i.afterRenders} | ${i.improvement.toFixed(1)}% | ${i.optimization} |\n`
+      ),
+      `\n**Average Improvement: ${avg.toFixed(1)}%**\n\n`
+    )
   }
-
-  report += `## Component Render Stats\n`
-  analysis.componentStats.forEach((stat) => {
-    report += `- ${stat.componentName}: ${stat.renderCount} renders\n`
-  })
-
-  return report
+  parts.push(
+    '## Component Render Stats\n',
+    ...analysis.componentStats.map((s) => `- ${s.componentName}: ${s.renderCount} renders\n`)
+  )
+  return parts.join('')
 }

@@ -65,61 +65,56 @@ const getDefaultDisplay = (): { icon: React.ReactNode; text: string; subtitle: s
   subtitle: 'Please wait',
 })
 
+const getDisplayContent = (
+  loadingState: LoadingState
+): { icon?: React.ReactNode; text: string; subtitle?: string } => {
+  switch (loadingState.type) {
+    case 'waiting_for_events':
+      return getWaitingDisplay()
+    case 'extracting':
+      return getExtractingDisplay(loadingState.wordCount)
+    case 'analyzing':
+      return getAnalyzingDisplay(loadingState.progress)
+    case 'generating':
+      return getGeneratingDisplay()
+    case 'complete':
+      return getCompleteDisplay()
+    case 'error':
+      return getErrorDisplay(loadingState.error)
+    default:
+      return getDefaultDisplay()
+  }
+}
+
+const getScreenReaderText = (loadingState: LoadingState): string => {
+  switch (loadingState.type) {
+    case 'waiting_for_events':
+      return 'Preparing analysis. Setting up your content analysis.'
+    case 'extracting':
+      return `Extracting content. ${loadingState.wordCount ? `Processing ${loadingState.wordCount.toLocaleString()} words.` : 'Reading and analyzing your content.'}`
+    case 'analyzing':
+      return `Analyzing content. Running AI analysis at ${loadingState.progress}% completion.`
+    case 'generating':
+      return 'Generating report. Compiling your analysis results.'
+    case 'complete':
+      return 'Analysis complete. Your results are ready to view.'
+    case 'error':
+      return `Analysis failed. ${loadingState.error}`
+    default:
+      return 'Loading analysis. Please wait.'
+  }
+}
+
 export const LoadingStateDisplay = memo<LoadingStateDisplayProps>(function LoadingStateDisplay({
   loadingState,
 }) {
-  const getDisplayContent = (): { icon?: React.ReactNode; text: string; subtitle?: string } => {
-    switch (loadingState.type) {
-      case 'waiting_for_events':
-        return getWaitingDisplay()
-
-      case 'extracting':
-        return getExtractingDisplay(loadingState.wordCount)
-
-      case 'analyzing':
-        return getAnalyzingDisplay(loadingState.progress)
-
-      case 'generating':
-        return getGeneratingDisplay()
-
-      case 'complete':
-        return getCompleteDisplay()
-
-      case 'error':
-        return getErrorDisplay(loadingState.error)
-
-      default:
-        return getDefaultDisplay()
-    }
-  }
-
-  const { icon, text, subtitle } = getDisplayContent()
-
-  // Generate screen reader announcement for loading state changes
-  const getScreenReaderText = (): string => {
-    switch (loadingState.type) {
-      case 'waiting_for_events':
-        return 'Preparing analysis. Setting up your content analysis.'
-      case 'extracting':
-        return `Extracting content. ${loadingState.wordCount ? `Processing ${loadingState.wordCount.toLocaleString()} words.` : 'Reading and analyzing your content.'}`
-      case 'analyzing':
-        return `Analyzing content. Running AI analysis at ${loadingState.progress}% completion.`
-      case 'generating':
-        return 'Generating report. Compiling your analysis results.'
-      case 'complete':
-        return 'Analysis complete. Your results are ready to view.'
-      case 'error':
-        return `Analysis failed. ${loadingState.error}`
-      default:
-        return 'Loading analysis. Please wait.'
-    }
-  }
+  const { icon, text, subtitle } = getDisplayContent(loadingState)
 
   return (
     <>
       {/* Screen reader live region for dynamic content */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" role="status">
-        {getScreenReaderText()}
+        {getScreenReaderText(loadingState)}
       </div>
 
       {/* Visual loading state display */}

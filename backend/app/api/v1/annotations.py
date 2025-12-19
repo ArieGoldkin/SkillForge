@@ -64,7 +64,8 @@ async def submit_feedback(
         if not trace_id:
             artifact = await artifact_repository.get_artifact_by_id(request.artifact_id)
             if artifact:
-                trace_id = artifact.trace_id
+                # Cast to str | None to satisfy type checker (SQLAlchemy Column attribute)
+                trace_id = str(artifact.trace_id) if artifact.trace_id else None
 
         result = await service.submit_feedback(
             artifact_id=request.artifact_id,

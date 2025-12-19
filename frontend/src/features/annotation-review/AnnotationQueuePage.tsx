@@ -24,6 +24,23 @@ import { useAnnotationQueue } from './hooks/useAnnotationQueue'
 
 const ITEMS_PER_PAGE = 20
 
+function QueueCardHeader({ isLoading, onRefresh }: { isLoading: boolean; onRefresh: () => void }) {
+  return (
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <div>
+          <CardTitle>Annotation Review Queue</CardTitle>
+          <CardDescription>Review flagged artifacts and mark them as reviewed</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+    </CardHeader>
+  )
+}
+
 export default function AnnotationQueuePage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'reviewed'>('pending')
   const [offset, setOffset] = useState(0)
@@ -43,18 +60,7 @@ export default function AnnotationQueuePage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Annotation Review Queue</CardTitle>
-              <CardDescription>Review flagged artifacts and mark them as reviewed</CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
+        <QueueCardHeader isLoading={isLoading} onRefresh={() => refetch()} />
         <CardContent>
           <StatusFilter value={statusFilter} onChange={handleStatusChange} total={total} />
           {error && <QueueError error={error} />}

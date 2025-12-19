@@ -443,6 +443,11 @@ class AnnotationService:
         secret_key = os.getenv("LANGFUSE_SECRET_KEY")
         host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
 
+        # Type guard: Validation ensures these are not None
+        # (checked in _validate_langfuse_queue_config)
+        assert public_key is not None, "public_key validated in precondition check"
+        assert secret_key is not None, "secret_key validated in precondition check"
+
         # Langfuse Annotation Queue API only accepts objectId and objectType
         # Metadata is stored locally in the annotation_queue table
         item_data: dict[str, Any] = {

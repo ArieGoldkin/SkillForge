@@ -41,22 +41,39 @@ function sendToGoogleAnalytics(metric: Metric): void {
       metric_rating: metric.rating,
       // Attribution data for debugging
       ...(metric.name === 'CLS' &&
-        (metric as any).attribution && {
-          debug_target: (metric as any).attribution.largestShiftTarget,
-          debug_time: (metric as any).attribution.largestShiftTime,
-          debug_value: (metric as any).attribution.largestShiftValue,
+        (metric as unknown as { attribution?: unknown }).attribution && {
+          debug_target: (metric as unknown as { attribution: { largestShiftTarget?: string } })
+            .attribution.largestShiftTarget,
+          debug_time: (metric as unknown as { attribution: { largestShiftTime?: number } })
+            .attribution.largestShiftTime,
+          debug_value: (metric as unknown as { attribution: { largestShiftValue?: number } })
+            .attribution.largestShiftValue,
         }),
       ...(metric.name === 'LCP' &&
-        (metric as any).attribution && {
-          element_tag: (metric as any).attribution.element?.tagName,
-          element_url: (metric as any).attribution.url,
-          time_to_first_byte: (metric as any).attribution.timeToFirstByte,
+        (metric as unknown as { attribution?: unknown }).attribution && {
+          element_tag: (
+            metric as unknown as {
+              attribution: { element?: { tagName?: string } }
+            }
+          ).attribution.element?.tagName,
+          element_url: (metric as unknown as { attribution: { url?: string } }).attribution.url,
+          time_to_first_byte: (metric as unknown as { attribution: { timeToFirstByte?: number } })
+            .attribution.timeToFirstByte,
         }),
       ...(metric.name === 'INP' &&
-        (metric as any).attribution && {
-          interaction_target: (metric as any).attribution.interactionTarget,
-          interaction_type: (metric as any).attribution.interactionType,
-          input_delay: (metric as any).attribution.inputDelay,
+        (metric as unknown as { attribution?: unknown }).attribution && {
+          interaction_target: (
+            metric as unknown as {
+              attribution: { interactionTarget?: string }
+            }
+          ).attribution.interactionTarget,
+          interaction_type: (
+            metric as unknown as {
+              attribution: { interactionType?: string }
+            }
+          ).attribution.interactionType,
+          input_delay: (metric as unknown as { attribution: { inputDelay?: number } }).attribution
+            .inputDelay,
         }),
     })
   }
@@ -84,7 +101,7 @@ function sendToCustomAnalytics(metric: Metric): void {
       delta: metric.delta,
       rating: metric.rating,
       id: metric.id,
-      attribution: (metric as any).attribution,
+      attribution: (metric as unknown as { attribution?: unknown }).attribution,
       userAgent: navigator.userAgent,
       url: window.location.href,
     }),
@@ -187,9 +204,9 @@ export function initWebVitals(): void {
 export function reportCustomMetric(
   name: string,
   value: number,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ): void {
-  const customMetric: Partial<Metric> = {
+  const _customMetric: Partial<Metric> = {
     name,
     value,
     delta: value, // For custom metrics, delta equals value

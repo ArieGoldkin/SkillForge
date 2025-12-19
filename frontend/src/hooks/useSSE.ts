@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
 import { useSSEStore } from '@stores/sseStore'
-import { trackComponentPerformance, trackInteraction } from '@services/performance/webVitals'
+
+import { trackComponentPerformance } from '@services/performance/webVitals'
 
 /**
  * Zustand Selectors - Defined at module level for stable references

@@ -3,13 +3,13 @@ import { StrictMode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
-
 // Prism.js syntax highlighting theme
 import 'prismjs/themes/prism-tomorrow.css'
-import './design-system/prism-custom.css'
 
+import './design-system/prism-custom.css'
 import './index.css'
 import { router } from './router'
+import { initWebVitals } from './services/performance/webVitals.service'
 
 // Performance monitoring initialization
 if (import.meta.env.DEV) {
@@ -33,7 +33,6 @@ if (import.meta.env.DEV) {
 }
 
 // Web Vitals for production RUM analytics (works in both dev and prod)
-import { initWebVitals } from './services/performance/webVitals.service'
 initWebVitals()
 
 // Create QueryClient instance

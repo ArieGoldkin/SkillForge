@@ -2,6 +2,8 @@
  * Tests for QueueItemActions component - Action buttons for queue items
  */
 
+import type { ReactNode } from 'react'
+
 import { render, screen } from '@testing-library/react'
 import { userEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +12,17 @@ import { QueueItemActions } from '../components/QueueItemActions'
 
 // Mock TanStack Router Link component
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ to, params, children, className }: any) => (
+  Link: ({
+    to,
+    params,
+    children,
+    className,
+  }: {
+    to: string
+    params: { artifactId: string }
+    children: ReactNode
+    className?: string
+  }) => (
     <a href={`${to.replace('$artifactId', params.artifactId)}`} className={className}>
       {children}
     </a>

@@ -9,15 +9,16 @@
  */
 
 import type { SSEEvent } from '@app-types/sse'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 
 import { deriveLoadingState, getConnectionMessage } from '../computed/loadingStates'
 import { useSSEStore } from '../sseStore'
+import type { SSEStore } from '../sseStore'
 
 // Helper function for testing loading state computation
 function getLoadingState() {
   const state = useSSEStore.getState()
-  return deriveLoadingState(state as any) // Cast to match SSEStore type
+  return deriveLoadingState(state as SSEStore) // Cast to match SSEStore type
 }
 
 // Mock EventSource for realistic SSE simulation
@@ -27,7 +28,7 @@ class MockEventSource {
   onopen?: (event: Event) => void
   onmessage?: (event: MessageEvent) => void
   onerror?: (event: Event) => void
-  private listeners = new Map<string, Function>()
+  private listeners = new Map<string, (...args: unknown[]) => unknown>()
   private intervalId?: NodeJS.Timeout
 
   constructor(url: string) {
@@ -53,7 +54,7 @@ class MockEventSource {
     }, 100)
   }
 
-  addEventListener(type: string, listener: Function) {
+  addEventListener(type: string, listener: (...args: unknown[]) => unknown) {
     this.listeners.set(type, listener)
   }
 
@@ -69,7 +70,7 @@ class MockEventSource {
   }
 }
 
-global.EventSource = MockEventSource as any
+global.EventSource = MockEventSource as typeof EventSource
 
 describe('SSE Store Loading States Integration', () => {
   beforeEach(() => {

@@ -2,8 +2,9 @@
  * Basic test to verify performance monitoring setup
  */
 
-import { describe, expect, it } from 'vitest'
 import { render } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+
 import { withPerformanceProfiler, performanceUtils, RENDER_BUDGETS } from './performance'
 
 // Simple test component

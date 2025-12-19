@@ -179,5 +179,13 @@ export default tseslint.config(
     rules: {
       'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
     },
+  },
+
+  // Relaxed rules for main store files (Zustand stores with state + actions + selectors)
+  {
+    files: ['**/stores/*Store.ts'],
+    rules: {
+      'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
+    },
   }
 )

@@ -11,9 +11,7 @@ import {
 } from './computed/loadingStates'
 import { closeConnection, createConnection, MAX_EVENTS, type ListenerRefs } from './sseStoreHelpers'
 
-// ============================================================================
 // Analysis Metadata Types (Issue #396 - Eliminate Prop Drilling)
-// ============================================================================
 
 /**
  * Analysis stage type representing the current processing state
@@ -242,14 +240,11 @@ const baseStore = create<SSEStore>((set, get) => ({
 // Export the base store with computed properties added via selectors
 export const useSSEStore = baseStore
 
-// ============================================================================
 // Selectors (Issue #396 - Granular subscriptions to prevent unnecessary re-renders)
-// ============================================================================
 // Module-level selectors for stable references - use these instead of inline selectors
 
 /** Select artifact ID for navigation to artifact page */
 export const selectArtifactId = (state: SSEStore) => state.artifactId
-
 /** Select trace ID for Langfuse feedback submission */
 export const selectTraceId = (state: SSEStore) => state.traceId
 
@@ -271,9 +266,7 @@ export const selectAnalysisMetadata = (state: SSEStore) => state.analysisMetadat
 /** Select setAnalysisMetadata action */
 export const selectSetAnalysisMetadata = (state: SSEStore) => state.setAnalysisMetadata
 
-// ============================================================================
 // Computed Loading State Hooks (Issue #399 - Missing Loading States)
-// ============================================================================
 
 /**
  * Hook to get the current loading state
@@ -305,9 +298,7 @@ export const useAnalysisPhase = () => useSSEStore(getAnalysisPhase)
  */
 export const useShouldShowProgress = () => useSSEStore(shouldShowProgress)
 
-// ============================================================================
 // Composite Selectors (use useShallow for object/array selections)
-// ============================================================================
 
 /**
  * Hook to get all artifact-related IDs in one call with shallow comparison

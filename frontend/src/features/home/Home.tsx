@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ReactScanTest } from '@components/ReactScanTest'
 import { useNavigate } from '@tanstack/react-router'
 
 import type { SkillLevel } from '@shared/SkillLevelSelector'
@@ -9,9 +10,6 @@ import { analyzeAPI } from '@services/api.service'
 import { FeaturesSection } from './components/FeaturesSection'
 import { HeroSection } from './components/HeroSection'
 import { HowItWorksSection } from './components/HowItWorksSection'
-
-// React Scan test component (development only)
-import { ReactScanTest } from '@components/ReactScanTest'
 
 type ContentType = 'article' | 'video' | 'repository'
 

@@ -10,12 +10,9 @@ import {
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
-import { ErrorBoundary } from '@shared/components'
-
 import {
   ActivityColumn,
   AnalysisCompleteCard,
-  AnalysisErrorFallback,
   AnalysisHeader,
   ErrorAlert,
   LoadingStateDisplay,
@@ -84,27 +81,24 @@ const useSSELifecycle = ({
   }, [analysisId, shouldConnect, connect, disconnect, reset])
 }
 
-// Check if status indicates completion (both 'complete' from SSE and 'completed' from backend)
+// Check if status indicates completion
 const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
 
-// Check if we're still waiting for SSE events to start
-const checkWaitingForFirstEvent = (params: {
-  isResolvedComplete: boolean
-  isFailed: boolean
-  eventsLength: number
-  error: Error | null
-  isComplete: boolean
-  statusLoading: boolean
+// Check if truly complete (all stages passed, 100% progress)
+const checkIsTrulyComplete = (params: {
+  hasFailedStages: boolean
+  completed?: boolean
+  urlArtifactId?: string
   resolvedStatus?: string
+  isComplete: boolean
+  overallProgress: { stage: string; progress: number }
 }) =>
-  !params.isResolvedComplete &&
-  !params.isFailed &&
-  params.eventsLength === 0 &&
-  !params.error &&
-  !params.isComplete &&
-  (params.statusLoading || !params.resolvedStatus)
-
-// useDerivedState logic inlined into useMemo above for React Compiler compatibility
+  !params.hasFailedStages &&
+  ((params.completed && Boolean(params.urlArtifactId)) ||
+    isStatusComplete(params.resolvedStatus) ||
+    (params.isComplete &&
+      params.overallProgress.stage === 'complete' &&
+      params.overallProgress.progress === 100))
 
 /**
  * Custom hook for managing focus when analysis completes
@@ -132,7 +126,180 @@ const useCompletionFocus = (isComplete: boolean) => {
   return completionRef
 }
 
-// eslint-disable-next-line complexity -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic
+// Component for rendering analysis in progress state
+function AnalysisInProgress({
+  analysisMetadata,
+  showTimeoutWarning,
+  timeoutWarningDismissed,
+  onDismissTimeout,
+  loadingState,
+  shouldShowProgress,
+  overallProgress,
+  steps,
+  hasFailedStages,
+  failedStagesCount,
+}: {
+  analysisMetadata: { title?: string; url?: string; contentType?: string; wordCount?: number }
+  showTimeoutWarning: boolean
+  timeoutWarningDismissed: boolean
+  onDismissTimeout: () => void
+  loadingState: ReturnType<typeof useLoadingState>
+  shouldShowProgress: boolean
+  overallProgress: ReturnType<typeof useAnalysisProgress>['overallProgress']
+  steps: ReturnType<typeof useAnalysisProgress>['steps']
+  hasFailedStages: boolean
+  failedStagesCount: number
+}) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <AnalysisHeader
+        title={analysisMetadata?.title || 'Content Analysis'}
+        url={analysisMetadata?.url || ''}
+        contentType={analysisMetadata?.contentType}
+        wordCount={analysisMetadata?.wordCount}
+      />
+      <TimeoutWarningBanner
+        showTimeoutWarning={showTimeoutWarning && !timeoutWarningDismissed}
+        onDismiss={onDismissTimeout}
+      />
+      <LoadingStateDisplay loadingState={loadingState} />
+      {shouldShowProgress && (
+        <ProgressColumn
+          overallProgress={overallProgress}
+          steps={steps}
+          hasFailedStages={hasFailedStages}
+          failedStagesCount={failedStagesCount}
+          analysisMetadata={analysisMetadata}
+        />
+      )}
+    </div>
+  )
+}
+
+// Right column - shows completion card or activity feed
+function ActivityOrCompletionColumn({
+  isComplete,
+  resolvedArtifactId,
+  artifactId,
+  hasFailedStages,
+  completionRef,
+  activities,
+  isConnected,
+}: {
+  isComplete: boolean
+  resolvedArtifactId: string | undefined
+  artifactId: string | undefined
+  hasFailedStages: boolean
+  completionRef: React.RefObject<HTMLDivElement>
+  activities: ReturnType<typeof useAnalysisProgress>['activities']
+  isConnected: boolean
+}) {
+  if (isComplete && (resolvedArtifactId || artifactId)) {
+    return (
+      <div
+        ref={completionRef}
+        tabIndex={-1}
+        aria-label={hasFailedStages ? 'Analysis complete with errors' : 'Analysis complete'}
+        className="outline-none"
+      >
+        <AnalysisCompleteCard variant="column" />
+      </div>
+    )
+  }
+  return <ActivityColumn activities={activities} isLive={isConnected} />
+}
+
+/**
+ * Active analysis view - shows progress, activity feed, and optional completion card
+ * Includes error handling, accessibility announcements, and responsive layout
+ */
+// eslint-disable-next-line max-lines-per-function -- Component includes accessibility features, error states, and responsive layout which require multiple JSX elements
+function ActiveAnalysisView({
+  id,
+  analysisMetadata,
+  isComplete,
+  hasFailedStages,
+  error,
+  hasError,
+  statusError,
+  isFailed,
+  effectiveError,
+  isFatalError,
+  overallProgress,
+  steps,
+  failedStagesCount,
+  resolvedArtifactId,
+  artifactId,
+  activities,
+  isConnected,
+  completionRef,
+}: {
+  id: string
+  analysisMetadata: { title?: string; url?: string; contentType?: string; wordCount?: number }
+  isComplete: boolean
+  hasFailedStages: boolean
+  error: Error | null
+  hasError: boolean
+  statusError: string | null
+  isFailed: boolean
+  effectiveError: string
+  isFatalError: boolean
+  overallProgress: ReturnType<typeof useAnalysisProgress>['overallProgress']
+  steps: ReturnType<typeof useAnalysisProgress>['steps']
+  failedStagesCount: number
+  resolvedArtifactId: string | undefined
+  artifactId: string | undefined
+  activities: ReturnType<typeof useAnalysisProgress>['activities']
+  isConnected: boolean
+  completionRef: React.RefObject<HTMLDivElement>
+}) {
+  const hasErrors = error || hasError || statusError || isFailed
+  const ariaMessage = hasFailedStages
+    ? 'Analysis complete with errors. Some stages failed. Review your results below.'
+    : 'Analysis complete. Review your results below.'
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isComplete && ariaMessage}
+      </div>
+      <AnalysisHeader
+        title={analysisMetadata?.title || 'Content Analysis'}
+        url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
+        contentType={analysisMetadata?.contentType}
+        wordCount={analysisMetadata?.wordCount}
+      />
+      {hasErrors && <ErrorAlert message={effectiveError} />}
+      {!isFatalError && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ProgressColumn
+            overallProgress={overallProgress}
+            steps={steps}
+            hasFailedStages={hasFailedStages}
+            failedStagesCount={failedStagesCount}
+            analysisMetadata={analysisMetadata}
+          />
+          <ActivityOrCompletionColumn
+            isComplete={isComplete}
+            resolvedArtifactId={resolvedArtifactId}
+            artifactId={artifactId}
+            hasFailedStages={hasFailedStages}
+            completionRef={completionRef}
+            activities={activities}
+            isConnected={isConnected}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Main analysis result component
+ * Orchestrates SSE connection, status polling, and view state management
+ * Delegates rendering to specialized view components
+ */
+// eslint-disable-next-line complexity, max-lines-per-function -- Component orchestrates SSE lifecycle, status polling, and view routing which requires extensive setup and state management. Rendering logic is extracted to separate components.
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
@@ -184,20 +351,17 @@ export default function AnalyzeResult() {
   })
 
   const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useMemo(() => {
-    // Inline the useDerivedState logic to avoid React Compiler memoization issues
     const resolvedArtifactId = artifactId || statusState.resolvedArtifactId || urlArtifactId
     const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'completed' : undefined)
 
-    // CRITICAL: Only consider analysis truly complete if:
-    // 1. Artifact generation completed (isComplete = true)
-    // 2. No failed stages (overallProgress.stage === 'complete', not just 'analyzing' or 'generating')
-    // 3. Progress is 100% (not 99% which indicates failures or pending stages)
-    // 4. No failed stages (hasFailedStages = false) - CRITICAL: Never show as truly complete if there are failed stages
-    const isTrulyComplete =
-      !hasFailedStages &&
-      ((completed && Boolean(urlArtifactId)) ||
-        isStatusComplete(resolvedStatus) ||
-        (isComplete && overallProgress.stage === 'complete' && overallProgress.progress === 100))
+    const isTrulyComplete = checkIsTrulyComplete({
+      hasFailedStages,
+      completed,
+      urlArtifactId,
+      resolvedStatus,
+      isComplete,
+      overallProgress,
+    })
 
     const isResolvedComplete = isTrulyComplete
     const isFailed = resolvedStatus === 'failed' || hasError
@@ -206,21 +370,11 @@ export default function AnalyzeResult() {
       errorMessage ||
       error?.message ||
       'An error occurred during analysis'
-    const waitingForFirstEvent = checkWaitingForFirstEvent({
-      isResolvedComplete,
-      isFailed,
-      eventsLength: events.length,
-      error,
-      isComplete,
-      statusLoading: statusState.loading,
-      resolvedStatus: statusState.resolvedStatus,
-    })
 
     return {
       resolvedArtifactId,
       isResolvedComplete,
       isFailed,
-      waitingForFirstEvent,
       effectiveError,
     }
   }, [
@@ -228,7 +382,6 @@ export default function AnalyzeResult() {
     urlArtifactId,
     statusState,
     isComplete,
-    events,
     hasError,
     error,
     errorMessage,
@@ -275,38 +428,23 @@ export default function AnalyzeResult() {
   // Show loading state during analysis phases
   if (shouldShowLoadingState) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <AnalysisHeader
-          title={analysisMetadata?.title || 'Content Analysis'}
-          url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
-          contentType={analysisMetadata?.contentType}
-          wordCount={analysisMetadata?.wordCount}
-        />
-
-        {/* Timeout warning banner (Issue #399) */}
-        <TimeoutWarningBanner
-          showTimeoutWarning={showTimeoutWarning && !timeoutWarningDismissed}
-          onDismiss={handleTimeoutWarningDismiss}
-        />
-
-        <LoadingStateDisplay loadingState={loadingState} />
-
-        {/* Show progress during analysis phases */}
-        {shouldShowProgress && (
-          <ErrorBoundary
-            fallback={(props) => <AnalysisErrorFallback {...props} section="Progress" />}
-            name="ProgressColumn"
-          >
-            <ProgressColumn
-              overallProgress={overallProgress}
-              steps={steps}
-              hasFailedStages={hasFailedStages}
-              failedStagesCount={failedStagesCount}
-              analysisMetadata={analysisMetadata}
-            />
-          </ErrorBoundary>
-        )}
-      </div>
+      <AnalysisInProgress
+        analysisMetadata={{
+          title: analysisMetadata?.title,
+          url: analysisMetadata?.url || (id ? `Analysis ID: ${id}` : ''),
+          contentType: analysisMetadata?.contentType,
+          wordCount: analysisMetadata?.wordCount,
+        }}
+        showTimeoutWarning={showTimeoutWarning}
+        timeoutWarningDismissed={timeoutWarningDismissed}
+        onDismissTimeout={handleTimeoutWarningDismiss}
+        loadingState={loadingState}
+        shouldShowProgress={shouldShowProgress}
+        overallProgress={overallProgress}
+        steps={steps}
+        hasFailedStages={hasFailedStages}
+        failedStagesCount={failedStagesCount}
+      />
     )
   }
 
@@ -320,7 +458,6 @@ export default function AnalyzeResult() {
           contentType={analysisMetadata?.contentType}
           wordCount={analysisMetadata?.wordCount}
         />
-
         <LoadingStateDisplay loadingState={loadingState} />
       </div>
     )
@@ -340,68 +477,29 @@ export default function AnalyzeResult() {
     )
   }
 
-  // Determine if this is a fatal error (no events received and connection failed)
   const isFatalError =
     (error || statusState.statusError || isFailed) && events.length === 0 && !isConnected
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Live region for screen reader announcements */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {isComplete &&
-          (hasFailedStages
-            ? 'Analysis complete with errors. Some stages failed. Review your results below.'
-            : 'Analysis complete. Review your results below.')}
-      </div>
-
-      <AnalysisHeader
-        title={analysisMetadata?.title || 'Content Analysis'}
-        url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
-        contentType={analysisMetadata?.contentType}
-        wordCount={analysisMetadata?.wordCount}
-      />
-
-      {(error || hasError || statusState.statusError || isFailed) && (
-        <ErrorAlert message={effectiveError} />
-      )}
-
-      {/* Only show progress UI if not a fatal error (i.e., we have some data or connection) */}
-      {!isFatalError && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ErrorBoundary
-            fallback={(props) => <AnalysisErrorFallback {...props} section="Progress" />}
-            name="ProgressColumn"
-          >
-            <ProgressColumn
-              overallProgress={overallProgress}
-              steps={steps}
-              hasFailedStages={hasFailedStages}
-              failedStagesCount={failedStagesCount}
-              analysisMetadata={analysisMetadata}
-            />
-          </ErrorBoundary>
-          {/* Show completion card only when artifact is ready (isComplete = true), regardless of failures */}
-          {/* The card itself will show appropriate message based on hasFailedStages */}
-          <ErrorBoundary
-            fallback={(props) => <AnalysisErrorFallback {...props} section="Activity" />}
-            name="ActivityColumn"
-          >
-            {/* Issue #396: AnalysisCompleteCard gets data from Zustand store */}
-            {isComplete && (resolvedArtifactId || artifactId) ? (
-              <div
-                ref={completionRef}
-                tabIndex={-1}
-                aria-label={hasFailedStages ? 'Analysis complete with errors' : 'Analysis complete'}
-                className="outline-none"
-              >
-                <AnalysisCompleteCard variant="column" />
-              </div>
-            ) : (
-              <ActivityColumn activities={activities} isLive={isConnected} />
-            )}
-          </ErrorBoundary>
-        </div>
-      )}
-    </div>
+    <ActiveAnalysisView
+      id={id}
+      analysisMetadata={analysisMetadata}
+      isComplete={isComplete}
+      hasFailedStages={hasFailedStages}
+      error={error}
+      hasError={hasError}
+      statusError={statusState.statusError}
+      isFailed={isFailed}
+      effectiveError={effectiveError}
+      isFatalError={isFatalError}
+      overallProgress={overallProgress}
+      steps={steps}
+      failedStagesCount={failedStagesCount}
+      resolvedArtifactId={resolvedArtifactId}
+      artifactId={artifactId}
+      activities={activities}
+      isConnected={isConnected}
+      completionRef={completionRef}
+    />
   )
 }
