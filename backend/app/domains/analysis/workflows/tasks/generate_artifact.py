@@ -231,6 +231,11 @@ async def generate_artifact(
         # Extract metadata (topics, complexity)
         artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
 
+        # Get current trace ID for Langfuse feedback linking
+        from app.core.tracing import get_current_trace_id
+
+        trace_id = get_current_trace_id()
+
         # Store artifact in database using repository pattern
         session_factory = get_session_factory()
         async with session_factory() as db_session:
@@ -243,6 +248,7 @@ async def generate_artifact(
                     "version": 1,
                     "artifact_metadata": artifact_metadata,
                     "download_count": 0,
+                    "trace_id": trace_id,
                 }
             )
             artifact_id = str(artifact.id)

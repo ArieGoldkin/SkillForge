@@ -90,6 +90,7 @@ export interface ArtifactMetadataResponse {
   artifact_id: string
   markdown_content?: string | null
   metadata?: Record<string, unknown>
+  trace_id?: string | null
   download_count?: number
   created_at?: string
 }

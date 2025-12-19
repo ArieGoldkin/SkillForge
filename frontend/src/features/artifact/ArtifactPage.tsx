@@ -22,8 +22,11 @@ export default function ArtifactPage() {
   const { artifactId } = routeApi.useParams()
   const { analysisId } = routeApi.useSearch()
   const location = useLocation()
-  const traceId = (location.state as { traceId?: string } | undefined)?.traceId
-  const { content, isLoading, error, download } = useArtifact(artifactId)
+  const locationStateTraceId = (location.state as { traceId?: string } | undefined)?.traceId
+  const { content, traceId: apiTraceId, isLoading, error, download } = useArtifact(artifactId)
+
+  // Use API trace_id if available, fallback to location.state for SSE flows
+  const traceId = apiTraceId ?? locationStateTraceId ?? null
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,7 +54,7 @@ export default function ArtifactPage() {
                 {/* Feedback section at the bottom of the artifact */}
                 {artifactId && (
                   <div className="mt-8 pt-6 border-t border-border">
-                    <FeedbackButtons artifactId={artifactId} traceId={traceId ?? null} />
+                    <FeedbackButtons artifactId={artifactId} traceId={traceId} />
                   </div>
                 )}
               </main>

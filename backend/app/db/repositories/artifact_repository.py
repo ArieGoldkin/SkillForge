@@ -68,6 +68,7 @@ class ArtifactRepository:
         """Create a new artifact in the database."""
         version_value = artifact_data.get("version", 1)
         download_count_value = artifact_data.get("download_count", 0)
+        trace_id_value = artifact_data.get("trace_id")
         artifact = Artifact(
             id=artifact_data.get("id", uuid.uuid4()),
             analysis_id=uuid.UUID(str(artifact_data["analysis_id"])),
@@ -77,6 +78,7 @@ class ArtifactRepository:
             download_count=(
                 int(download_count_value) if isinstance(download_count_value, (int, str)) else 0
             ),
+            trace_id=str(trace_id_value) if trace_id_value else None,
         )
         self.session.add(artifact)
         await self.session.commit()
@@ -86,6 +88,7 @@ class ArtifactRepository:
             "artifact_created",
             artifact_id=str(artifact.id),
             analysis_id=str(artifact.analysis_id),
+            trace_id=artifact.trace_id,
         )
 
         return artifact

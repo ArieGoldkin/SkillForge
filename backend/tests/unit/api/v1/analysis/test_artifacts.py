@@ -41,6 +41,7 @@ def mock_artifact():
     artifact.analysis_id = uuid4()
     artifact.markdown_content = "# Test Artifact\n\nContent here"
     artifact.artifact_metadata = {"title": "Test", "topics": ["python"]}
+    artifact.trace_id = "test-trace-id-123"
     artifact.created_at = datetime.now(UTC)
     artifact.download_count = 5
     return artifact
@@ -71,6 +72,7 @@ class TestGetArtifactByAnalysis:
         assert data["analysis_id"] == str(mock_artifact.analysis_id)
         assert data["markdown_content"] == mock_artifact.markdown_content
         assert data["artifact_metadata"] == mock_artifact.artifact_metadata
+        assert data["trace_id"] == mock_artifact.trace_id
         assert "created_at" in data
 
     def test_get_artifact_not_found(self, client, mock_repo):
@@ -115,6 +117,16 @@ class TestGetArtifactByAnalysis:
 
         mock_repo.get_latest_artifact_by_analysis.assert_awaited_once_with(analysis_id)
 
+    def test_get_artifact_null_trace_id(self, client, mock_repo, mock_artifact):
+        """Test handling of null trace_id for old artifacts."""
+        mock_artifact.trace_id = None
+        mock_repo.get_latest_artifact_by_analysis.return_value = mock_artifact
+
+        response = client.get(f"/api/v1/analyze/{mock_artifact.analysis_id}/artifact")
+
+        assert response.status_code == 200
+        assert response.json()["trace_id"] is None
+
 
 class TestGetArtifactById:
     """Tests for GET /artifacts/{artifact_id} endpoint."""
@@ -132,6 +144,7 @@ class TestGetArtifactById:
         assert data["analysis_id"] == str(mock_artifact.analysis_id)
         assert data["markdown_content"] == mock_artifact.markdown_content
         assert data["artifact_metadata"] == mock_artifact.artifact_metadata
+        assert data["trace_id"] == mock_artifact.trace_id
         assert "created_at" in data
 
     def test_get_artifact_by_id_not_found(self, client, mock_repo):
@@ -176,6 +189,16 @@ class TestGetArtifactById:
         client.get(f"/api/v1/artifacts/{artifact_id}")
 
         mock_repo.get_artifact_by_id.assert_awaited_once_with(artifact_id)
+
+    def test_get_artifact_by_id_null_trace_id(self, client, mock_repo, mock_artifact):
+        """Test handling of null trace_id for old artifacts."""
+        mock_artifact.trace_id = None
+        mock_repo.get_artifact_by_id.return_value = mock_artifact
+
+        response = client.get(f"/api/v1/artifacts/{mock_artifact.id}")
+
+        assert response.status_code == 200
+        assert response.json()["trace_id"] is None
 
 
 class TestDownloadArtifact:
