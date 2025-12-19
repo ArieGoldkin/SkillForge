@@ -51,8 +51,13 @@ COVERAGE_ADJUSTED_MINIMUMS: dict[str, float] = {
 # Aspects to evaluate
 QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 
+# Issue #413: Quality tier thresholds for auto-tagging
+QUALITY_TIER_HIGH_THRESHOLD = 0.8  # avg_score >= this -> "quality:high"
+QUALITY_TIER_MEDIUM_THRESHOLD = 0.6  # avg_score >= this -> "quality:medium", else "quality:low"
+ANNOTATION_QUEUE_THRESHOLD = 0.6  # avg_score < this -> auto-queue for review
 
-async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915
+
+async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0912, PLR0915
     """Quality gate validation node.
 
     Evaluates synthesized insights using LLM-as-judge evaluators for:
@@ -292,6 +297,63 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             value=avg_score,
             comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
         )
+
+        # Issue #413: Quality-based auto-tagging for trace classification
+        # Tag traces with quality tier for filtering/analytics in Langfuse
+        quality_tier = (
+            "quality:high"
+            if avg_score >= QUALITY_TIER_HIGH_THRESHOLD
+            else "quality:medium"
+            if avg_score >= QUALITY_TIER_MEDIUM_THRESHOLD
+            else "quality:low"
+        )
+        quality_tags = [quality_tier, f"gate:{'passed' if gate_passed else 'failed'}"]
+        if use_adjusted_thresholds:
+            quality_tags.append("coverage:limited")
+        if failed_aspects:
+            quality_tags.append("aspects:failed")
+
+        update_current_trace(tags=quality_tags)
+
+        logger.info(
+            "quality_gate_auto_tagged",
+            analysis_id=analysis_id,
+            quality_tier=quality_tier,
+            tags=quality_tags,
+            trace_id=trace_id,
+        )
+
+        # Issue #419: Auto-queue low quality analyses for annotation review
+        # Queue for human review if quality is below threshold or gate failed
+        if not gate_passed or avg_score < ANNOTATION_QUEUE_THRESHOLD:
+            try:
+                from app.core.annotation_service import queue_low_quality_artifact
+
+                # Queue for review with quality context
+                await queue_low_quality_artifact(
+                    artifact_id=None,  # Will be set when artifact is created
+                    analysis_id=analysis_id,
+                    trace_id=trace_id,
+                    quality_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
+                    average_score=avg_score,
+                    threshold=effective_threshold,
+                    failed_aspects=failed_aspects,
+                )
+
+                logger.info(
+                    "quality_gate_queued_for_review",
+                    analysis_id=analysis_id,
+                    avg_score=avg_score,
+                    gate_passed=gate_passed,
+                    trace_id=trace_id,
+                )
+            except Exception as queue_error:  # noqa: BLE001
+                # Don't fail the workflow if queuing fails - intentionally broad catch
+                logger.warning(
+                    "quality_gate_queue_failed",
+                    analysis_id=analysis_id,
+                    error=str(queue_error),
+                )
 
         # Return quality scores and gate status
         return {

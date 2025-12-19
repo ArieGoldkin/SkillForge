@@ -50,7 +50,9 @@ from app.core.logging import get_logger  # noqa: E402
 logger = get_logger(__name__)
 
 # Dataset configuration
+# Issue #410: Semantic versioning for dataset changes
 DATASET_NAME = "skillforge_golden_analyses_v1_prod"
+DATASET_VERSION = "2.1.0"  # Major.Minor.Patch - increment on schema/content changes
 DATASET_DESCRIPTION = """Golden dataset of 98 completed analyses from SkillForge.
 
 Contains real-world technical content analyses (articles, tutorials, research papers)
@@ -58,6 +60,10 @@ with canonical URLs for reproducibility. Topics include RAG, LangGraph, API desi
 prompt engineering, and ML infrastructure.
 
 Source: golden_dataset_backup.json (v2.0 format)
+
+Version History:
+- 2.1.0 (Dec 2025): Added Langfuse sync with semantic versioning
+- 2.0.0 (Dec 2025): Initial golden dataset with 98 analyses
 """
 
 # Path to golden dataset backup
@@ -151,11 +157,13 @@ def format_analysis_item(
         "status": "completed",
     }
 
+    # Issue #410: Include dataset version in item metadata for traceability
     metadata = {
         "analysis_id": analysis.get("id", ""),
         "created_at": analysis.get("created_at", ""),
         "source": "golden_dataset_backup",
-        "version": "v2.0",
+        "source_format_version": "v2.0",
+        "dataset_version": DATASET_VERSION,
     }
 
     return input_data, expected_output, metadata
@@ -212,15 +220,18 @@ def sync_to_langfuse(
         return {"status": "error", "message": "Langfuse client not initialized"}
 
     # Create or get existing dataset
-    print(f"\nCreating/updating Langfuse dataset: {DATASET_NAME}")
+    # Issue #410: Include semantic version in dataset metadata
+    print(f"\nCreating/updating Langfuse dataset: {DATASET_NAME} (v{DATASET_VERSION})")
     try:
         langfuse.create_dataset(
             name=DATASET_NAME,
             description=DATASET_DESCRIPTION,
             metadata={
+                "dataset_version": DATASET_VERSION,
                 "source_version": version,
                 "synced_at": datetime.now(UTC).isoformat(),
                 "analysis_count": len(analyses),
+                "schema": "golden_analysis_v2",
             },
         )
         print(f"  Dataset created/found: {DATASET_NAME}")

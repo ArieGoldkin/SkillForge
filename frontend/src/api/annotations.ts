@@ -80,6 +80,19 @@ export const annotationsAPI = {
 
     return apiFetch<AnnotationQueueListResponse>(endpoint)
   },
+
+  /**
+   * Mark annotation queue item as reviewed
+   * PATCH /api/v1/annotations/queue/{id}/reviewed
+   */
+  markReviewed: async (queueId: number): Promise<{ status: string; message: string }> => {
+    return apiFetch<{ status: string; message: string }>(
+      `/api/v1/annotations/queue/${queueId}/reviewed`,
+      {
+        method: 'PATCH',
+      }
+    )
+  },
 }
 
 export default annotationsAPI

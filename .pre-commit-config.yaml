@@ -77,6 +77,18 @@ repos:
       - id: shellcheck
         files: \.(sh|bash)$
 
+  # Issue #411: Golden Dataset Validation for Langfuse Integration
+  # Ensures dataset integrity before commits that modify golden dataset
+  - repo: local
+    hooks:
+      - id: validate-golden-dataset
+        name: Validate Golden Dataset
+        entry: python3 backend/scripts/validate_golden_dataset_precommit.py
+        language: system
+        files: ^backend/data/golden_dataset_backup\.json$
+        pass_filenames: false
+        description: Validates golden dataset backup integrity for Langfuse sync
+
 # Exclude patterns
 exclude: |
   (?x)^(

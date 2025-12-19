@@ -2,6 +2,8 @@
 
 This agent analyzes research papers, technical articles, and documentation
 to extract key findings, methodology, limitations, and practical implications.
+
+Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,9 +15,13 @@ from app.domains.analysis.workflows.agents.execution import run_agent_with_track
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
-# System prompt for research analyst agent
+# Prompt is fetched from Langfuse via PromptManager (with hardcoded fallback)
+PROMPT_NAME = "analysis-agent-research-analyst"
+
+# Fallback prompt (used when Langfuse unavailable)
 RESEARCH_ANALYST_PROMPT = """You are a Research Analysis Specialist. Your task is to:
 1. Identify the main research question or problem being addressed
 2. Summarize the methodology and approach used
@@ -104,8 +110,13 @@ async def run_research_analyst(
         str(expectation) if expectation is not None else None
     )
 
+    # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # This will check L1 (memory) → L2 (Redis) → L3 (Langfuse API) → Hardcoded fallback
+    prompt_manager = get_prompt_manager()
+    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+
     # Build prompt with skill level instructions
-    full_prompt = apply_grounding(f"{RESEARCH_ANALYST_PROMPT}\n\n{skill_instructions}")
+    full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent
     agent = create_structured_agent(

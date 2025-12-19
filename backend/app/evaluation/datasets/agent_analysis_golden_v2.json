@@ -1,0 +1,71 @@
+{
+  "version": "2.0",
+  "generated_from": "canonical_backup",
+  "generated_at": "2025-12-19T13:09:43.097814+00:00",
+  "description": "Golden dataset examples for agent analysis evaluation",
+  "examples": [
+    {
+      "id": "63fc5a1c-0b37-4dab-bd91-2f5bea5a79d3",
+      "url": "https://arxiv.org/abs/2308.11432",
+      "title": "LLM Agent Architectures and Patterns",
+      "content_type": "article",
+      "status": "completed"
+    },
+    {
+      "id": "497d4466-e0fe-4b5d-8779-d81647512564",
+      "url": "https://arxiv.org/abs/2310.08560",
+      "title": "Agent Memory Systems and Architectures",
+      "content_type": "article",
+      "status": "completed"
+    },
+    {
+      "id": "4be432f3-dd15-4821-8223-7a56466b0d1c",
+      "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+      "title": "API Security Best Practices: Defense in Depth",
+      "content_type": "article",
+      "status": "completed"
+    },
+    {
+      "id": "83d4c363-5488-4e39-b0b2-0b8109d6af3f",
+      "url": "https://docs.github.com/en/actions/get-started",
+      "title": "CI/CD with GitHub Actions: Automated Software Delivery",
+      "content_type": "tutorial",
+      "status": "completed"
+    },
+    {
+      "id": "9b739311-92f0-4110-855e-440974ab5a4a",
+      "url": "https://graphql.org/learn/",
+      "title": "GraphQL Basics",
+      "content_type": "tutorial",
+      "status": "completed"
+    },
+    {
+      "id": "d9a9cb3d-2d7a-4327-9649-85a7df67f31c",
+      "url": "https://grpc.io/docs/what-is-grpc/introduction/",
+      "title": "gRPC Introduction",
+      "content_type": "tutorial",
+      "status": "completed"
+    },
+    {
+      "id": "1fb4f7ec-b0f0-4b61-adb3-0501d7deb89a",
+      "url": "https://arxiv.org/abs/2312.10997",
+      "title": "RAG Survey - Naive, Advanced, and Modular Paradigms",
+      "content_type": "research_paper",
+      "status": "completed"
+    },
+    {
+      "id": "4d683371-f850-4248-8562-b8b444017fd3",
+      "url": "https://arxiv.org/abs/2512.08296",
+      "title": "Towards a Science of Scaling Agent Systems",
+      "content_type": "research_paper",
+      "status": "completed"
+    },
+    {
+      "id": "81733019-2187-4258-8263-0e9c97c1c7de",
+      "url": "https://arxiv.org/abs/2512.07921",
+      "title": "DeepCode: Open Agentic Coding",
+      "content_type": "research_paper",
+      "status": "completed"
+    }
+  ]
+}

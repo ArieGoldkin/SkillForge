@@ -57,6 +57,16 @@ export function NavigationLinks() {
           Showcase
           <span className="ml-1 text-xs align-super opacity-60">DEV</span>
         </Link>
+        <Link
+          to="/annotation-queue"
+          className="relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1"
+          activeProps={{
+            className: 'text-primary',
+          }}
+        >
+          Review Queue
+          <span className="ml-1 text-xs align-super opacity-60">ADMIN</span>
+        </Link>
       </div>
     </div>
   )
