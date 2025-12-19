@@ -7,7 +7,13 @@
  * - ConnectionStatus (via ProgressTracker)
  */
 
-import { useSSEStore } from '@stores/sseStore'
+import {
+  useLoadingState,
+  useConnectionMessage,
+  useShowTimeoutWarning,
+  useAnalysisPhase,
+  useShouldShowProgress,
+} from '@stores/sseStore'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
@@ -15,15 +21,17 @@ import type { LoadingState } from '@types/loading'
 
 import AnalyzeResult from '../AnalyzeResult'
 
-// Mock React Router
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router')
-  return {
-    ...actual,
+// Mock TanStack Router
+vi.mock('@tanstack/react-router', () => ({
+  getRouteApi: () => ({
     useParams: () => ({ id: 'test-analysis-id' }),
-    useSearch: () => ({ completed: false }),
-  }
-})
+    useSearch: () => ({ completed: false, artifactId: undefined }),
+  }),
+  useNavigate: () => vi.fn(),
+  useRouter: () => ({
+    navigate: vi.fn(),
+  }),
+}))
 
 // Mock analysis hooks
 vi.mock('../hooks/useAnalysisProgress', () => ({
@@ -44,23 +52,36 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
   }),
 }))
 
-// Mock the SSE store
-const mockUseSSEStore = vi.mocked(useSSEStore)
-
-// Mock React Router
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual('react-router')
+// Mock individual SSE store hooks (modern pattern)
+vi.mock('@stores/sseStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@stores/sseStore')>()
   return {
     ...actual,
-    useParams: () => ({ id: 'test-analysis-id' }),
-    useSearch: () => ({ completed: false }),
+    useLoadingState: vi.fn(),
+    useConnectionMessage: vi.fn(),
+    useShowTimeoutWarning: vi.fn(),
+    useAnalysisPhase: vi.fn(),
+    useShouldShowProgress: vi.fn(),
   }
 })
+
+const mockUseLoadingState = vi.mocked(useLoadingState)
+const mockUseConnectionMessage = vi.mocked(useConnectionMessage)
+const mockUseShowTimeoutWarning = vi.mocked(useShowTimeoutWarning)
+const mockUseAnalysisPhase = vi.mocked(useAnalysisPhase)
+const mockUseShouldShowProgress = vi.mocked(useShouldShowProgress)
 
 // Mock analysis hooks to prevent complex setup
 vi.mock('../hooks/useAnalysisProgress', () => ({
   useAnalysisProgress: () => ({
-    overallProgress: null,
+    overallProgress: {
+      stage: 'extracting',
+      progress: 0,
+      currentStep: 1,
+      totalSteps: 8,
+      completedSteps: 0,
+      estimatedTimeRemaining: null,
+    },
     steps: [],
     hasFailedStages: false,
     failedStagesCount: 0,
@@ -80,6 +101,14 @@ describe('AnalyzeResult Loading States Integration', () => {
   let mockStoreState: Record<string, unknown>
 
   beforeEach(() => {
+    // Reset all mocks to default values
+    mockUseLoadingState.mockReturnValue({ type: 'disconnected' } as LoadingState)
+    mockUseConnectionMessage.mockReturnValue('Disconnected')
+    mockUseShowTimeoutWarning.mockReturnValue(false)
+    mockUseAnalysisPhase.mockReturnValue(null)
+    mockUseShouldShowProgress.mockReturnValue(false)
+
+    // Initialize mockStoreState with defaults (keeping for compatibility)
     mockStoreState = {
       events: [],
       latestEvent: null,
@@ -98,13 +127,6 @@ describe('AnalyzeResult Loading States Integration', () => {
       disconnect: vi.fn(),
       reset: vi.fn(),
     }
-
-    mockUseSSEStore.mockImplementation((selector) => {
-      if (typeof selector === 'function') {
-        return selector(mockStoreState)
-      }
-      return mockStoreState[selector as keyof typeof mockStoreState]
-    })
   })
 
   afterEach(() => {
@@ -117,6 +139,7 @@ describe('AnalyzeResult Loading States Integration', () => {
         type: 'waiting_for_events',
         connectedAt: Date.now(),
       } as LoadingState
+      mockUseLoadingState.mockReturnValue(mockStoreState.loadingState)
 
       render(<AnalyzeResult />)
 
@@ -130,6 +153,8 @@ describe('AnalyzeResult Loading States Integration', () => {
         connectedAt: Date.now(),
       } as LoadingState
       mockStoreState.showTimeoutWarning = true
+      mockUseLoadingState.mockReturnValue(mockStoreState.loadingState)
+      mockUseShowTimeoutWarning.mockReturnValue(mockStoreState.showTimeoutWarning)
 
       render(<AnalyzeResult />)
 
@@ -142,7 +167,9 @@ describe('AnalyzeResult Loading States Integration', () => {
         type: 'waiting_for_events',
         connectedAt: Date.now(),
       } as LoadingState
-      mockStoreState.showTimeoutWarning = true
+      mockStoreState.showTimeoutWarning = false
+      mockUseLoadingState.mockReturnValue(mockStoreState.loadingState)
+      mockUseShowTimeoutWarning.mockReturnValue(mockStoreState.showTimeoutWarning)
 
       const { _rerender } = render(<AnalyzeResult />)
 
@@ -311,10 +338,10 @@ describe('AnalyzeResult Loading States Integration', () => {
     })
 
     it('includes accessibility features', () => {
-      mockStoreState.loadingState = {
+      mockUseLoadingState.mockReturnValue({
         type: 'waiting_for_events',
         connectedAt: Date.now(),
-      } as LoadingState
+      } as LoadingState)
 
       render(<AnalyzeResult />)
 

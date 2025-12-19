@@ -251,17 +251,18 @@ describe('ProgressTracker Component', () => {
 
       mockUseShouldShowProgress.mockReturnValue(true)
       mockUseLoadingState.mockReturnValue({
-        type: 'error',
-        error: 'Failed to extract content',
+        type: 'analyzing',
+        progress: 50,
       } as LoadingState)
       mockUseSSEStore.mockReturnValue({
         events: [errorEvent],
-        error: new Error('Failed to extract content'),
+        error: null, // No global error for stage validation errors
         isComplete: false,
       })
 
       render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
 
+      // Should show stage-specific error, not global error
       expect(screen.getByText(/Failed to extract content/)).toBeInTheDocument()
     })
 

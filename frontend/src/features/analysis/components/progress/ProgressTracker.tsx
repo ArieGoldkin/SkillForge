@@ -9,6 +9,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/
 import { cn } from '@lib/utils'
 
 import { CompletionMessage } from './CompletionMessage'
+
+/**
+ * Check if an error is a network/connection error (not a stage validation error)
+ * ErrorAlert should only show network errors, StageItem shows stage errors
+ */
+function isNetworkError(error: Error): boolean {
+  const networkErrorPatterns = [
+    'network',
+    'connection',
+    'fetch',
+    'timeout',
+    'server',
+    'unavailable',
+    'disconnected',
+  ]
+
+  const errorMessage = error.message.toLowerCase()
+  return networkErrorPatterns.some((pattern) => errorMessage.includes(pattern))
+}
 import { ConnectionStatus } from './ConnectionStatus'
 import { ALL_STAGES } from './constants'
 import { deriveStageStates } from './deriveStageStates'
@@ -65,7 +84,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        {error && <ErrorAlert message={error.message} />}
+        {error && isNetworkError(error) && <ErrorAlert message={error.message} />}
         {shouldShowProgress && (
           <div
             className="space-y-0 max-h-[31.25rem] overflow-y-auto"

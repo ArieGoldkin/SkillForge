@@ -467,20 +467,22 @@ class AnnotationService:
             return False
 
         # Prepare queue item payload
+        # Langfuse requires objectType to be TRACE, OBSERVATION, or SESSION
+        # We use TRACE to link annotation reviews to the analysis trace
+        if not trace_id:
+            logger.debug(
+                "langfuse_queue_skipped_no_trace",
+                message="No trace_id available, cannot add to Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Langfuse Annotation Queue API only accepts objectId and objectType
+        # Metadata is stored locally in the annotation_queue table
         item_data: dict[str, Any] = {
-            "objectId": str(artifact_id),
-            "objectType": "artifact",  # Custom object type for SkillForge
+            "objectId": trace_id,  # Link to the Langfuse trace
+            "objectType": "TRACE",  # Required: TRACE, OBSERVATION, or SESSION
         }
-
-        # Add trace_id if available
-        if trace_id:
-            item_data["traceId"] = trace_id
-
-        # Add metadata with reason
-        item_metadata = metadata.copy() if metadata else {}
-        item_metadata["reason"] = reason
-        item_metadata["queued_at"] = datetime.now(UTC).isoformat()
-        item_data["data"] = item_metadata
 
         try:
             # Submit to Langfuse Annotation Queue API

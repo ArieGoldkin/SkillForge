@@ -637,13 +637,14 @@ class TestLangfuseQueueIntegration:
             mock_response.raise_for_status = MagicMock()
 
             async def mock_post(*args, **kwargs):
-                # Verify request payload
+                # Verify request payload follows Langfuse Annotation Queue API
                 json_data = kwargs.get("json")
-                assert json_data["objectId"] == str(artifact_id)
-                assert json_data["objectType"] == "artifact"
-                assert json_data["traceId"] == trace_id
-                assert json_data["data"]["reason"] == "low_quality"
-                assert "queued_at" in json_data["data"]
+                # objectId is the trace_id (Langfuse links to traces)
+                assert json_data["objectId"] == trace_id
+                # objectType must be TRACE, OBSERVATION, or SESSION
+                assert json_data["objectType"] == "TRACE"
+                # Langfuse API only accepts objectId and objectType, no data field
+                assert "data" not in json_data
                 return mock_response
 
             mock_client = AsyncMock()
@@ -661,6 +662,31 @@ class TestLangfuseQueueIntegration:
 
         # Should succeed
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_no_trace_id(self, service, monkeypatch):
+        """_add_to_langfuse_queue() returns False when trace_id is None."""
+        artifact_id = uuid.uuid4()
+        queue_id = "aq_test_queue_123"
+
+        # Mock environment and settings
+        monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
+
+            # Call without trace_id - cannot add to Langfuse queue
+            result = await service._add_to_langfuse_queue(
+                artifact_id=artifact_id,
+                trace_id=None,  # No trace_id
+                reason="low_quality",
+                metadata=None,
+            )
+
+        # Should return False because Langfuse requires trace_id for TRACE objectType
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_add_to_langfuse_queue_no_queue_id(self, service, monkeypatch):
