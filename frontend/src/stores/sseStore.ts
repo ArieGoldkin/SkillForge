@@ -14,6 +14,16 @@ import { closeConnection, createConnection, MAX_EVENTS, type ListenerRefs } from
 export type AnalysisStage = 'extracting' | 'processing' | 'analyzing' | 'generating' | 'complete'
 
 /**
+ * Granular connection states for detailed loading status (Issue #399)
+ */
+export type ConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected'
+  | 'timeout_warning'
+
+/**
  * Overall progress state for UI display
  */
 export interface OverallProgress {
@@ -49,6 +59,11 @@ export interface SSEStoreState {
   isConnected: boolean
   isComplete: boolean
   activeAnalysisId: string | null
+
+  // Granular connection state (Issue #399 - Missing Loading States)
+  connectionState: ConnectionState
+  connectionStartTime: number | null // timestamp when connection started
+  lastActivityTime: number | null // timestamp of last event/activity
 
   // Analysis metadata (Issue #396 - Eliminates prop drilling)
   // These are derived from SSE events in useAnalysisProgress and synced here

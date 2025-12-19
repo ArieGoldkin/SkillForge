@@ -268,13 +268,7 @@ class TestSanitizeUtf8EdgeCases:
     def test_sanitize_utf8_whitespace_preservation(self) -> None:
         """Test that whitespace (including newlines, tabs) is preserved."""
         # Arrange
-        text_with_whitespace = (
-            "Line 1\x00\n"
-            "Line 2\t\tTab\n"
-            "Line 3   Spaces\n"
-            "\n"
-            "Line 5"
-        )
+        text_with_whitespace = "Line 1\x00\nLine 2\t\tTab\nLine 3   Spaces\n\nLine 5"
 
         # Act
         result = sanitize_utf8(text_with_whitespace)

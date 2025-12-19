@@ -54,9 +54,7 @@ class TestArxivPDFExtractorUtf8Sanitization:
         assert "Textwithnullbytes" in result
         assert any("pdf_null_bytes_detected" in record.message for record in caplog.records)
 
-    def test_clean_pdf_content_preserves_valid_content(
-        self, extractor: ArxivPDFExtractor
-    ) -> None:
+    def test_clean_pdf_content_preserves_valid_content(self, extractor: ArxivPDFExtractor) -> None:
         """Test that _clean_pdf_content preserves normal text."""
         # Arrange - clean content without null bytes
         clean_content = (
@@ -101,9 +99,7 @@ class TestArxivPDFExtractorUtf8Sanitization:
     ) -> None:
         """Test that excessive newlines are reduced."""
         # Arrange
-        content_with_whitespace = (
-            "Section 1\n\n\n\n\nSection 2\n\n\n\n\n\nSection 3"
-        )
+        content_with_whitespace = "Section 1\n\n\n\n\nSection 2\n\n\n\n\n\nSection 3"
 
         # Act
         result = extractor._clean_pdf_content(content_with_whitespace)
@@ -116,9 +112,7 @@ class TestArxivPDFExtractorUtf8Sanitization:
     def test_clean_pdf_content_fixes_hyphenation(self, extractor: ArxivPDFExtractor) -> None:
         """Test that line-break hyphenation is fixed."""
         # Arrange - words broken across lines with hyphens
-        content_with_hyphens = (
-            "This is an exam-\nple of hyphen-\nation at line\nbreaks."
-        )
+        content_with_hyphens = "This is an exam-\nple of hyphen-\nation at line\nbreaks."
 
         # Act
         result = extractor._clean_pdf_content(content_with_hyphens)
@@ -129,9 +123,7 @@ class TestArxivPDFExtractorUtf8Sanitization:
         assert "exam-\nple" not in result
         assert "hyphen-\nation" not in result
 
-    def test_clean_pdf_content_combined_artifacts(
-        self, extractor: ArxivPDFExtractor
-    ) -> None:
+    def test_clean_pdf_content_combined_artifacts(self, extractor: ArxivPDFExtractor) -> None:
         """Test cleaning with multiple PDF artifacts combined."""
         # Arrange - realistic PDF content with multiple issues
         # Note: Using ff/fi/fl ligatures which are actually replaced by the code
@@ -179,8 +171,7 @@ class TestArxivPDFExtractorIntegration:
         # Arrange - mock PdfReader to return content with null bytes
         mock_page = Mock()
         mock_page.extract_text.return_value = (
-            "Page content\x00 with null bytes\n"
-            "And some\x00 more text."
+            "Page content\x00 with null bytes\nAnd some\x00 more text."
         )
 
         mock_reader = Mock(spec=PdfReader)
@@ -190,7 +181,9 @@ class TestArxivPDFExtractorIntegration:
         # Act
         with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
             MockPdfReader.return_value = mock_reader
-            content, title, page_count = extractor._extract_pdf_text(b"fake pdf bytes", "2512.08296")
+            content, title, page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
 
         # Assert
         assert "\x00" not in content  # Null bytes should be removed
@@ -204,9 +197,7 @@ class TestArxivPDFExtractorIntegration:
         # Arrange - mock PdfReader with Unicode content
         mock_page = Mock()
         mock_page.extract_text.return_value = (
-            "RAG retrieval 🚀\n"
-            "检索增强生成 (Retrieval-Augmented Generation)\n"
-            "Key findings: 💡\n"
+            "RAG retrieval 🚀\n检索增强生成 (Retrieval-Augmented Generation)\nKey findings: 💡\n"
         )
 
         mock_reader = Mock(spec=PdfReader)
@@ -216,7 +207,9 @@ class TestArxivPDFExtractorIntegration:
         # Act
         with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
             MockPdfReader.return_value = mock_reader
-            content, title, page_count = extractor._extract_pdf_text(b"fake pdf bytes", "2512.08296")
+            content, title, page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
 
         # Assert
         assert "🚀" in content
@@ -224,9 +217,7 @@ class TestArxivPDFExtractorIntegration:
         assert "💡" in content
         assert title == "RAG Paper"
 
-    def test_extract_pdf_text_handles_multiple_pages(
-        self, extractor: ArxivPDFExtractor
-    ) -> None:
+    def test_extract_pdf_text_handles_multiple_pages(self, extractor: ArxivPDFExtractor) -> None:
         """Test extraction across multiple pages with sanitization."""
         # Arrange - mock multi-page PDF with null bytes
         mock_page1 = Mock()
@@ -245,7 +236,9 @@ class TestArxivPDFExtractorIntegration:
         # Act
         with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
             MockPdfReader.return_value = mock_reader
-            content, title, page_count = extractor._extract_pdf_text(b"fake pdf bytes", "2512.08296")
+            content, title, page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
 
         # Assert
         assert "\x00" not in content  # All null bytes removed

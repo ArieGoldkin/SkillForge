@@ -177,9 +177,7 @@ class TestJinaReaderSanitization:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.text = (
-            "# Article Title\n\n"
-            "Content with\x00 null bytes.\n"
-            "More content" + chr(0xFFFE) + ".\n"
+            "# Article Title\n\nContent with\x00 null bytes.\nMore content" + chr(0xFFFE) + ".\n"
         )
 
         # Act

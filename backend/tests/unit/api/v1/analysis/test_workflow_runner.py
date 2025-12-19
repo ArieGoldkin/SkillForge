@@ -1074,12 +1074,14 @@ async def test_langfuse_callback_passed_to_workflow(
 
     # Verify callbacks are present in config (Issue #384)
     assert "callbacks" in config, "Config should contain 'callbacks' key for graph visualization"
-    assert config["callbacks"] == [
-        mock_callback_handler
-    ], "Callbacks should contain Langfuse handler"
+    assert config["callbacks"] == [mock_callback_handler], (
+        "Callbacks should contain Langfuse handler"
+    )
 
     # Verify debug log was called with callbacks_enabled=True
     debug_calls = [
-        call for call in mock_logger.debug.call_args_list if "langfuse_callback_enabled" in str(call)
+        call
+        for call in mock_logger.debug.call_args_list
+        if "langfuse_callback_enabled" in str(call)
     ]
     assert len(debug_calls) == 1, "Should log that Langfuse callback is enabled"

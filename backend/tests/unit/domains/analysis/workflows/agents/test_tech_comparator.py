@@ -85,7 +85,9 @@ def mock_state():
     "app.domains.analysis.workflows.agents.tech_comparator.create_tech_comparator_agent_with_few_shot"
 )
 @patch("app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.tech_comparator.get_prompt_manager")
 async def test_run_tech_comparator_success(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_agent,
@@ -93,6 +95,13 @@ async def test_run_tech_comparator_success(
     mock_state,
 ):
     """Test successful tech comparator execution."""
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a tech comparator agent. Compare technologies."
+    )
+    mock_get_pm.return_value = mock_pm
+
     analysis_id = str(uuid4())
     content = "This article discusses React hooks and best practices."
     content_type = "article"
@@ -122,13 +131,22 @@ async def test_run_tech_comparator_success(
     "app.domains.analysis.workflows.agents.tech_comparator.create_tech_comparator_agent_with_few_shot"
 )
 @patch("app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.tech_comparator.get_prompt_manager")
 async def test_run_tech_comparator_error_handling(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_session,
     mock_state,
 ):
     """Test error handling in tech comparator."""
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a tech comparator agent. Compare technologies."
+    )
+    mock_get_pm.return_value = mock_pm
+
     analysis_id = str(uuid4())
     content = "Test content"
     content_type = "article"

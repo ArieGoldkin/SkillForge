@@ -78,13 +78,22 @@ def mock_state():
 @pytest.mark.asyncio
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.create_structured_agent")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.integration_feasibility.get_prompt_manager")
 async def test_run_integration_feasibility_success(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_session,
     mock_state,
 ):
     """Test successful integration feasibility execution."""
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are an integration feasibility agent. Analyze feasibility."
+    )
+    mock_get_pm.return_value = mock_pm
+
     analysis_id = str(uuid4())
     content = "This article discusses integrating a new library with Next.js."
     content_type = "article"
@@ -115,13 +124,21 @@ async def test_run_integration_feasibility_success(
 @pytest.mark.asyncio
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.create_structured_agent")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.integration_feasibility.get_prompt_manager")
 async def test_integration_feasibility_error_handling(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_session,
     mock_state,
 ):
     """Test error handling in integration feasibility."""
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are an integration feasibility agent. Analyze feasibility."
+    )
+    mock_get_pm.return_value = mock_pm
     analysis_id = str(uuid4())
     content = "Test content"
     content_type = "article"
