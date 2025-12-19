@@ -249,7 +249,7 @@ class PromptCacheWrapper:
     ) -> float:
         """Calculate cost in USD.
 
-        Pricing (Claude Sonnet 4 - Dec 2024):
+        Pricing (Claude Sonnet 4 - Dec 2025):
         - Input: $3/MTok
         - Output: $15/MTok
         - Cache write: $3.75/MTok (1.25x input)

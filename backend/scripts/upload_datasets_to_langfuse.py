@@ -32,6 +32,8 @@ Environment variables required:
 """
 
 import argparse
+import hashlib
+import json
 import os
 import sys
 from datetime import UTC, datetime
@@ -51,18 +53,18 @@ logger = get_logger(__name__)
 DATASET_MAPPING = {
     "supervisor": {
         "file_path": "golden/supervisor",
-        "langfuse_name": "supervisor_routing_golden",
-        "description": "Golden dataset for supervisor routing decisions. Contains examples of content that should route to specific agent combinations.",
+        "langfuse_name": "supervisor_routing_golden_v1_prod",
+        "description": "Golden dataset for supervisor routing decisions (v1, production). Contains examples of content that should route to specific agent combinations.",
     },
     "agent_analysis": {
         "file_path": "golden/agent_analysis",
-        "langfuse_name": "agent_analysis_golden",
-        "description": "Golden dataset for agent analysis quality evaluation. Contains examples of high-quality agent analysis outputs.",
+        "langfuse_name": "agent_analysis_golden_v1_prod",
+        "description": "Golden dataset for agent analysis evaluation (v1, production). Contains examples of high-quality agent analysis outputs.",
     },
     "synthesis": {
         "file_path": "golden/synthesis",
-        "langfuse_name": "synthesis_golden",
-        "description": "Golden dataset for synthesis quality evaluation. Contains examples of high-quality synthesis outputs.",
+        "langfuse_name": "synthesis_golden_v1_prod",
+        "description": "Golden dataset for synthesis quality evaluation (v1, production). Contains examples of high-quality synthesis outputs.",
     },
 }
 
@@ -199,6 +201,27 @@ FORMATTERS = {
 }
 
 
+def _compute_item_hash(input_data: dict[str, Any], expected_output: dict[str, Any]) -> str:
+    """Compute deterministic hash for dataset item deduplication.
+
+    The hash is based on the (input, expected_output) pair to detect exact duplicates.
+    This enables idempotent uploads - running the script multiple times will not
+    create duplicate items in Langfuse.
+
+    Args:
+        input_data: The input dictionary for the dataset item
+        expected_output: The expected output dictionary for the dataset item
+
+    Returns:
+        16-character hex hash string for fast comparison
+
+    """
+    input_str = json.dumps(input_data, sort_keys=True)
+    output_str = json.dumps(expected_output, sort_keys=True)
+    combined = f"{input_str}||{output_str}"
+    return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
+
 def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
     dataset_name: str,
     *,
@@ -279,29 +302,45 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
         )
         return False
 
-    # Check if dataset exists
+    # Check if dataset exists and fetch existing item hashes for deduplication
     dataset_exists = False
+    existing_hashes = set()
     try:
-        _ = client.get_dataset(langfuse_name)
+        existing_dataset = client.get_dataset(langfuse_name)
         dataset_exists = True
-        logger.info(
-            "dataset_exists",
-            langfuse_name=langfuse_name,
-            replace=replace,
-        )
+
+        if not replace:
+            # Fetch existing items and compute their hashes for deduplication
+            logger.info(
+                "dataset_exists",
+                langfuse_name=langfuse_name,
+                replace=replace,
+                message="Fetching existing items for deduplication",
+            )
+
+            formatter = FORMATTERS[dataset_name]
+            for item in existing_dataset.items:
+                # Reformat the existing item to match our hash format
+                # Note: We use item.input and item.expected_output directly
+                item_hash = _compute_item_hash(item.input, item.expected_output or {})
+                existing_hashes.add(item_hash)
+
+            logger.info(
+                "existing_hashes_computed",
+                count=len(existing_hashes),
+                dataset_name=dataset_name,
+            )
+        else:
+            logger.warning(
+                "replace_mode_enabled",
+                message="Replace mode enabled but Langfuse SDK does not support dataset deletion. Items will be added to existing dataset.",
+                langfuse_name=langfuse_name,
+            )
     except Exception:
         logger.debug(
-            "dataset_not_found",
+            "dataset_not_found_creating_new",
             langfuse_name=langfuse_name,
             message="Dataset does not exist, will create new",
-        )
-
-    # Handle replacement
-    if dataset_exists and replace:
-        logger.warning(
-            "dataset_replacement_not_supported",
-            message="Langfuse SDK does not support dataset deletion. Skipping dataset creation. Items will be added to existing dataset.",
-            langfuse_name=langfuse_name,
         )
 
     # Create dataset if it doesn't exist
@@ -341,15 +380,31 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
             )
             return False
 
-    # Upload dataset items
+    # Upload dataset items with deduplication
     formatter = FORMATTERS[dataset_name]
     uploaded_count = 0
+    skipped_count = 0
     failed_count = 0
 
     for idx, example in enumerate(examples, 1):
         try:
             input_data, expected_output, metadata = formatter(example)
 
+            # Compute hash for this item
+            item_hash = _compute_item_hash(input_data, expected_output)
+
+            # Skip if already exists (deduplication)
+            if item_hash in existing_hashes:
+                skipped_count += 1
+                logger.debug(
+                    "skipping_duplicate",
+                    dataset_name=dataset_name,
+                    item_id=example.get("id"),
+                    item_hash=item_hash,
+                )
+                continue
+
+            # Upload new item
             client.create_dataset_item(
                 dataset_name=langfuse_name,
                 input=input_data,
@@ -357,6 +412,8 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
                 metadata=metadata,
             )
 
+            # Track uploaded hash to prevent duplicates within this batch
+            existing_hashes.add(item_hash)
             uploaded_count += 1
 
             if uploaded_count % 10 == 0:
@@ -364,6 +421,7 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
                     "upload_progress",
                     dataset_name=dataset_name,
                     uploaded=uploaded_count,
+                    skipped=skipped_count,
                     total=len(examples),
                     progress_pct=round((uploaded_count / len(examples)) * 100, 1),
                 )
@@ -393,6 +451,7 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
         dataset_name=dataset_name,
         langfuse_name=langfuse_name,
         uploaded=uploaded_count,
+        skipped=skipped_count,
         failed=failed_count,
         total=len(examples),
         success_rate=round((uploaded_count / len(examples)) * 100, 1) if examples else 0,

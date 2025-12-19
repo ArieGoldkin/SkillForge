@@ -293,39 +293,75 @@ class PromptManager:
         return None
 
     async def _get_from_l2_cache(self, name: str, label: str) -> str | None:
-        """Get prompt from L2 Redis cache.
+        """Get prompt from L2 Redis cache with retry logic.
+
+        Implements exponential backoff retry (3 attempts) for Redis connection errors.
+        Retry delays: 100ms, 200ms, 400ms.
 
         Args:
             name: Prompt name
             label: Prompt label
 
         Returns:
-            Cached prompt or None if miss
+            Cached prompt or None if miss/error
 
         """
         if not self.redis_client:
             return None
 
+        import asyncio
+
+        import redis
+
         key = self._build_cache_key(name, label)
+        max_retries = 3
+        base_delay = 0.1  # 100ms
 
-        try:
-            cached = self.redis_client.get(key)
-            if cached:
-                logger.debug("prompt_cache_l2_hit", name=name, label=label)
-                return cached.decode("utf-8")
+        for attempt in range(max_retries):
+            try:
+                cached = self.redis_client.get(key)
+                if cached:
+                    logger.debug("prompt_cache_l2_hit", name=name, label=label)
+                    return cached.decode("utf-8")
 
-            logger.debug("prompt_cache_l2_miss", name=name, label=label)
-            return None
+                logger.debug("prompt_cache_l2_miss", name=name, label=label)
+                return None
 
-        except Exception as e:  # noqa: BLE001 - Graceful degradation for cache
-            logger.warning(
-                "prompt_cache_l2_error",
-                name=name,
-                label=label,
-                error=str(e),
-                exc_info=True,
-            )
-            return None
+            except redis.ConnectionError as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)  # Exponential backoff
+                    logger.warning(
+                        "prompt_cache_l2_connection_error_retry",
+                        name=name,
+                        label=label,
+                        attempt=attempt + 1,
+                        max_retries=max_retries,
+                        delay_seconds=delay,
+                        error=str(e),
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(
+                        "prompt_cache_l2_connection_error_exhausted",
+                        name=name,
+                        label=label,
+                        error=str(e),
+                        exc_info=True,
+                    )
+                    return None  # Graceful degradation to L3
+
+            except Exception as e:  # noqa: BLE001 - Graceful degradation for cache
+                logger.warning(
+                    "prompt_cache_l2_error",
+                    name=name,
+                    label=label,
+                    error=str(e),
+                    exc_info=True,
+                )
+                return None
+
+        # All retries exhausted without success
+        return None
 
     async def _fetch_from_langfuse(self, name: str, label: str) -> dict[str, Any] | None:
         """Fetch prompt from Langfuse API.

@@ -28,6 +28,18 @@
         "@playwright/mcp@latest"
       ]
     },
+    "langfuse": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@langfuse/mcp-server"
+      ],
+      "env": {
+        "LANGFUSE_HOST": "${LANGFUSE_HOST}",
+        "LANGFUSE_PUBLIC_KEY": "${LANGFUSE_PUBLIC_KEY}",
+        "LANGFUSE_SECRET_KEY": "${LANGFUSE_SECRET_KEY}"
+      }
+    },
     "langsmith": {
       "command": "/opt/homebrew/bin/uvx",
       "args": [

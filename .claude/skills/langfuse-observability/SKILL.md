@@ -21,7 +21,7 @@ tags: [langfuse, llm, observability, tracing, evaluation, prompts, 2025]
 - Migrating from LangSmith to Langfuse
 
 **SkillForge Integration:**
-- **Status**: ✅ Migrated from LangSmith (Dec 2024)
+- **Status**: ✅ Migrated from LangSmith (Dec 2025)
 - **Location**: `backend/app/shared/services/langfuse/`
 - **MCP Server**: `skillforge-langfuse` (optional)
 
