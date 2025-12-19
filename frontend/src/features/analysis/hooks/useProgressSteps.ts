@@ -162,7 +162,7 @@ export function useProgressSteps(
           try {
             const timestamp = new Date(stageData.timestamp)
             // Check if timestamp is valid
-            parsedTimestamp = !isNaN(timestamp.getTime()) ? timestamp : undefined
+            parsedTimestamp = !Number.isNaN(timestamp.getTime()) ? timestamp : undefined
           } catch {
             parsedTimestamp = undefined
           }

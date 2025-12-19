@@ -86,7 +86,9 @@ describe('ErrorBoundary', () => {
           fallback={({ error, resetError }) => (
             <div>
               <span data-testid="error-message">{error.message}</span>
-              <button onClick={resetError}>Custom Reset</button>
+              <button type="button" onClick={resetError}>
+                Custom Reset
+              </button>
             </div>
           )}
         >
@@ -114,6 +116,7 @@ describe('ErrorBoundary', () => {
         <ErrorBoundary
           fallback={({ resetError }) => (
             <button
+              type="button"
               onClick={() => {
                 shouldThrow = false
                 resetError()
@@ -136,6 +139,7 @@ describe('ErrorBoundary', () => {
         <ErrorBoundary
           fallback={({ resetError }) => (
             <button
+              type="button"
               onClick={() => {
                 shouldThrow = false
                 resetError()

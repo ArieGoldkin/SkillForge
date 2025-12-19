@@ -492,28 +492,28 @@ describe('Agent Mapping', () => {
 
     it('should handle multi-agent stages correctly', () => {
       // implementation_planning maps to BOTH implementation_planner AND integration_feasibility
-      expect(AGENT_TO_STAGE_MAP['implementation_planner']).toBe('implementation_planning')
-      expect(AGENT_TO_STAGE_MAP['integration_feasibility']).toBe('implementation_planning')
+      expect(AGENT_TO_STAGE_MAP.implementation_planner).toBe('implementation_planning')
+      expect(AGENT_TO_STAGE_MAP.integration_feasibility).toBe('implementation_planning')
 
       // performance_audit maps to BOTH performance_auditor AND performance_analyst
-      expect(AGENT_TO_STAGE_MAP['performance_auditor']).toBe('performance_audit')
-      expect(AGENT_TO_STAGE_MAP['performance_analyst']).toBe('performance_audit')
+      expect(AGENT_TO_STAGE_MAP.performance_auditor).toBe('performance_audit')
+      expect(AGENT_TO_STAGE_MAP.performance_analyst).toBe('performance_audit')
 
       // code_quality_audit maps to BOTH code_quality_reviewer AND code_quality_critic
-      expect(AGENT_TO_STAGE_MAP['code_quality_reviewer']).toBe('code_quality_audit')
-      expect(AGENT_TO_STAGE_MAP['code_quality_critic']).toBe('code_quality_audit')
+      expect(AGENT_TO_STAGE_MAP.code_quality_reviewer).toBe('code_quality_audit')
+      expect(AGENT_TO_STAGE_MAP.code_quality_critic).toBe('code_quality_audit')
 
       // trends_analysis maps to BOTH trends_analyst AND trend_validator
-      expect(AGENT_TO_STAGE_MAP['trends_analyst']).toBe('trends_analysis')
-      expect(AGENT_TO_STAGE_MAP['trend_validator']).toBe('trends_analysis')
+      expect(AGENT_TO_STAGE_MAP.trends_analyst).toBe('trends_analysis')
+      expect(AGENT_TO_STAGE_MAP.trend_validator).toBe('trends_analysis')
 
       // dependencies_analysis maps to BOTH dependencies_analyzer AND dependency_mapper
-      expect(AGENT_TO_STAGE_MAP['dependencies_analyzer']).toBe('dependencies_analysis')
-      expect(AGENT_TO_STAGE_MAP['dependency_mapper']).toBe('dependencies_analysis')
+      expect(AGENT_TO_STAGE_MAP.dependencies_analyzer).toBe('dependencies_analysis')
+      expect(AGENT_TO_STAGE_MAP.dependency_mapper).toBe('dependencies_analysis')
 
       // supervisor_routing maps to BOTH supervisor AND supervisor_route
-      expect(AGENT_TO_STAGE_MAP['supervisor']).toBe('supervisor_routing')
-      expect(AGENT_TO_STAGE_MAP['supervisor_route']).toBe('supervisor_routing')
+      expect(AGENT_TO_STAGE_MAP.supervisor).toBe('supervisor_routing')
+      expect(AGENT_TO_STAGE_MAP.supervisor_route).toBe('supervisor_routing')
     })
 
     it('should have at least 20 agent type mappings', () => {
@@ -996,7 +996,7 @@ describe('Integration Tests', () => {
   describe('Backward Compatibility', () => {
     it('should support legacy STAGE_CONFIG format', () => {
       // Legacy code expects this structure
-      const legacyConfig = STAGE_CONFIG['extraction']
+      const legacyConfig = STAGE_CONFIG.extraction
       expect(legacyConfig).toEqual({
         title: 'Content Extraction',
         order: 1,
@@ -1005,10 +1005,10 @@ describe('Integration Tests', () => {
     })
 
     it('should support legacy optional flag', () => {
-      const optionalConfig = STAGE_CONFIG['tech_comparison']
+      const optionalConfig = STAGE_CONFIG.tech_comparison
       expect(optionalConfig.optional).toBe(true)
 
-      const requiredConfig = STAGE_CONFIG['extraction']
+      const requiredConfig = STAGE_CONFIG.extraction
       expect('optional' in requiredConfig).toBe(false)
     })
   })

@@ -350,7 +350,9 @@ describe('SSE Store Loading States Integration', () => {
       ]
 
       // Add events one by one
-      completedStages.forEach((event) => _addEvent(event))
+      for (const event of completedStages) {
+        _addEvent(event)
+      }
 
       // Start analyzing
       const analyzingEvent: SSEEvent = {

@@ -54,7 +54,7 @@ export function useActivityFeed(events: SSEEvent[]): AgentActivity[] {
 
         // Guard against invalid timestamps
         const timestamp = event.timestamp ? new Date(event.timestamp) : new Date()
-        const isValidDate = timestamp instanceof Date && !isNaN(timestamp.getTime())
+        const isValidDate = timestamp instanceof Date && !Number.isNaN(timestamp.getTime())
 
         return {
           id: `${event.stage ?? 'unknown'}-${index}`,

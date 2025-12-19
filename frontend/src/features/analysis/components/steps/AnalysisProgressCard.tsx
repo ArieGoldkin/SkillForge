@@ -1,5 +1,4 @@
 import { memo } from 'react'
-import type * as React from 'react'
 
 import { FileText, Github, Loader2, Video } from 'lucide-react'
 

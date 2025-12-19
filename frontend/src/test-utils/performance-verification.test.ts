@@ -31,8 +31,8 @@ describe('Performance Verification - Issue #395', () => {
   })
 
   it('should verify Zustand selector consolidation code exists', async () => {
-    const fs = await import('fs')
-    const path = await import('path')
+    const fs = await import('node:fs')
+    const path = await import('node:path')
 
     const analyzeResultPath = path.join(__dirname, '../features/analysis/AnalyzeResult.tsx')
     const fileContent = fs.readFileSync(analyzeResultPath, 'utf-8')
@@ -50,8 +50,8 @@ describe('Performance Verification - Issue #395', () => {
 
   it('should verify useMemo and useCallback optimizations are in place', async () => {
     // This is a structural test - we verify the code has the right patterns
-    const fs = await import('fs')
-    const path = await import('path')
+    const fs = await import('node:fs')
+    const path = await import('node:path')
 
     const analyzeResultPath = path.join(__dirname, '../features/analysis/AnalyzeResult.tsx')
     const fileContent = fs.readFileSync(analyzeResultPath, 'utf-8')

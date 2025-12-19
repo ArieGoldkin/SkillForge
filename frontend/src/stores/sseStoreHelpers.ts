@@ -249,7 +249,7 @@ function cleanupEventListeners(source: EventSource, refs: ListenerRefs): void {
  * Network recovery handler for SSE connections
  * Automatically clears network errors when connection is restored
  */
-function setupNetworkRecovery(analysisId: string, store: StoreAPI): () => void {
+function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void {
   const handleOnline = () => {
     // Only retry if we have a network-related error
     const error = store.getState().error

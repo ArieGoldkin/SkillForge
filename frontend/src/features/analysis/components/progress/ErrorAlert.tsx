@@ -1,5 +1,4 @@
 import { memo } from 'react'
-import type * as React from 'react'
 
 import { XCircle } from 'lucide-react'
 

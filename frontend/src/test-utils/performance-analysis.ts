@@ -130,7 +130,7 @@ export function validatePerformanceBaseline() {
   const hotspots = identifyReRenderHotspots(20)
   if (hotspots.length > 0) {
     issues.push(`Found ${hotspots.length} component re-render hotspots`)
-    recommendations.push('Apply React.memo to: ' + hotspots.slice(0, 3).join(', '))
+    recommendations.push(`Apply React.memo to: ${hotspots.slice(0, 3).join(', ')}`)
   }
   return { passed: issues.length === 0, issues, recommendations }
 }

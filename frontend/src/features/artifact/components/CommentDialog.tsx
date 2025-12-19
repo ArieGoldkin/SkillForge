@@ -8,7 +8,7 @@
  * - Keyboard navigation (Enter to submit, Esc to cancel)
  */
 
-import { useState, KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 
 import { Button } from '@shared/components/ui/button'
 import {

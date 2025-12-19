@@ -2,7 +2,7 @@
  * NavLink - Reusable navigation link with consistent styling.
  */
 
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { Link } from '@tanstack/react-router'
 
