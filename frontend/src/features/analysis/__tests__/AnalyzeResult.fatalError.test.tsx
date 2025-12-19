@@ -25,6 +25,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AnalyzeResult from '../AnalyzeResult'
 import * as useAnalysisStatusModule from '../hooks/useAnalysisStatus'
 
+// Valid UUID for testing
+const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
+
 /**
  * Mock EventSource for SSE tests
  */
@@ -168,7 +171,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: null,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -230,7 +233,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: null,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -258,7 +261,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       const events: SSEEvent[] = [
         {
           type: 'progress',
-          analysis_id: 'test-123',
+          analysis_id: TEST_ANALYSIS_ID,
           stage: 'extraction',
           status: 'complete',
           timestamp: new Date().toISOString(),
@@ -271,7 +274,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: events[0],
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -355,7 +358,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       const events: SSEEvent[] = [
         {
           type: 'progress',
-          analysis_id: 'test-123',
+          analysis_id: TEST_ANALYSIS_ID,
           stage: 'extraction',
           status: 'running',
           timestamp: new Date().toISOString(),
@@ -394,7 +397,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       const events: SSEEvent[] = [
         {
           type: 'complete',
-          analysis_id: 'test-123',
+          analysis_id: TEST_ANALYSIS_ID,
           stage: 'artifact_generation',
           status: 'complete',
           timestamp: new Date().toISOString(),
@@ -414,7 +417,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: true, // SSE says complete
         latestEvent: events[0],
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       const router = createTestRouter('/analyze/test-123')
@@ -440,7 +443,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: null,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -463,7 +466,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       const events: SSEEvent[] = [
         {
           type: 'error',
-          analysis_id: 'test-123',
+          analysis_id: TEST_ANALYSIS_ID,
           stage: 'extraction',
           status: 'failed',
           timestamp: new Date().toISOString(),
@@ -477,7 +480,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: events[0],
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -502,7 +505,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: null,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -594,7 +597,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: null,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({
@@ -646,7 +649,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
       const events: SSEEvent[] = [
         {
           type: 'progress',
-          analysis_id: 'test-123',
+          analysis_id: TEST_ANALYSIS_ID,
           stage: 'extraction',
           status: 'complete',
           timestamp: new Date().toISOString(),
@@ -659,7 +662,7 @@ describe('AnalyzeResult - Fatal Error State', () => {
         isConnected: false,
         isComplete: false,
         latestEvent: events[0],
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       mockAnalysisStatus({

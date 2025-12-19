@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSSEStore } from '../sseStore'
 
+// Valid UUIDs for testing
+const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
+const TEST_ARTIFACT_ID = '987fcdeb-51a2-43d7-8f9e-123456789abc'
+
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
  */
@@ -66,7 +70,7 @@ describe('SSE Store', () => {
   })
 
   it('connects to SSE endpoint successfully', async () => {
-    const analysisId = 'test-123'
+    const analysisId = TEST_ANALYSIS_ID
     useSSEStore.getState().connect(analysisId)
 
     await vi.waitFor(() => {
@@ -80,12 +84,12 @@ describe('SSE Store', () => {
   })
 
   it('accumulates progress events', async () => {
-    useSSEStore.getState().connect('test-123')
+    useSSEStore.getState().connect(TEST_ANALYSIS_ID)
     await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
     const event: SSEProgressEvent = {
       type: 'progress',
-      analysis_id: 'test-123',
+      analysis_id: TEST_ANALYSIS_ID,
       stage: 'extraction',
       status: 'running',
       timestamp: new Date().toISOString(),
@@ -98,16 +102,16 @@ describe('SSE Store', () => {
   })
 
   it('handles complete event and disconnects', async () => {
-    useSSEStore.getState().connect('test-123')
+    useSSEStore.getState().connect(TEST_ANALYSIS_ID)
     await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
     const event: SSECompleteEvent = {
       type: 'complete',
-      analysis_id: 'test-123',
+      analysis_id: TEST_ANALYSIS_ID,
       stage: 'artifact_generation',
       status: 'complete',
       timestamp: new Date().toISOString(),
-      artifact_id: 'artifact-123',
+      artifact_id: TEST_ARTIFACT_ID,
     }
 
     getMockEventSource()?.simulateEvent('complete', event)
@@ -117,12 +121,12 @@ describe('SSE Store', () => {
   })
 
   it('handles error events', async () => {
-    useSSEStore.getState().connect('test-123')
+    useSSEStore.getState().connect(TEST_ANALYSIS_ID)
     await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
     const event: SSEErrorEvent = {
       type: 'error',
-      analysis_id: 'test-123',
+      analysis_id: TEST_ANALYSIS_ID,
       stage: 'extraction',
       status: 'failed',
       timestamp: new Date().toISOString(),
@@ -137,7 +141,7 @@ describe('SSE Store', () => {
   })
 
   it('disconnects properly', async () => {
-    useSSEStore.getState().connect('test-123')
+    useSSEStore.getState().connect(TEST_ANALYSIS_ID)
     await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
     useSSEStore.getState().disconnect()
@@ -148,7 +152,7 @@ describe('SSE Store', () => {
   })
 
   it('resets state correctly', async () => {
-    useSSEStore.getState().connect('test-123')
+    useSSEStore.getState().connect(TEST_ANALYSIS_ID)
     await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
     useSSEStore.getState().reset()

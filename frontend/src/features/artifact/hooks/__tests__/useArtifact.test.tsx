@@ -13,6 +13,10 @@ import { analyzeAPI } from '@services/api.service'
 import { downloadMarkdown } from '../downloadMarkdown'
 import { useArtifact } from '../useArtifact'
 
+// Valid UUIDs for testing
+const TEST_ARTIFACT_ID = '987fcdeb-51a2-43d7-8f9e-123456789abc'
+const TEST_ARTIFACT_ID_2 = 'a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6'
+
 // Mock the API service
 vi.mock('@services/api.service', () => ({
   analyzeAPI: {
@@ -59,7 +63,7 @@ describe('useArtifact', () => {
     const mockContent = '# Test Guide\n\nContent here.'
     vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
 
-    const { result } = renderHook(() => useArtifact('artifact-123'), {
+    const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID), {
       wrapper: createWrapper(),
     })
 
@@ -76,7 +80,7 @@ describe('useArtifact', () => {
   it('returns error when fetch fails', async () => {
     vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(null)
 
-    const { result } = renderHook(() => useArtifact('artifact-123'), {
+    const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID), {
       wrapper: createWrapper(),
     })
 
@@ -92,7 +96,7 @@ describe('useArtifact', () => {
     const mockContent = '# Guide Content'
     vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
 
-    const { result } = renderHook(() => useArtifact('artifact-456'), {
+    const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID_2), {
       wrapper: createWrapper(),
     })
 
@@ -104,7 +108,7 @@ describe('useArtifact', () => {
 
     expect(downloadMarkdown).toHaveBeenCalledWith(
       mockContent,
-      'implementation-guide-artifact-456.md'
+      `implementation-guide-${TEST_ARTIFACT_ID_2}.md`
     )
   })
 

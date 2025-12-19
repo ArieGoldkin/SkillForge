@@ -168,23 +168,47 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
 /**
  * Type-safe type guard for progress events
  * Uses full schema validation for runtime safety
+ * Pre-checks type field to avoid Zod v4 discriminated union issues
  */
 export function isProgressEvent(event: unknown): event is SSEProgressEvent {
+  // Pre-check type field before schema validation (Zod v4 workaround)
+  if (typeof event !== 'object' || event === null || !('type' in event)) {
+    return false
+  }
+  if ((event as { type?: unknown }).type !== 'progress') {
+    return false
+  }
   return SSEProgressEventSchema.safeParse(event).success
 }
 
 /**
  * Type-safe type guard for complete events
  * Uses full schema validation for runtime safety
+ * Pre-checks type field to avoid Zod v4 discriminated union issues
  */
 export function isCompleteEvent(event: unknown): event is SSECompleteEvent {
+  // Pre-check type field before schema validation (Zod v4 workaround)
+  if (typeof event !== 'object' || event === null || !('type' in event)) {
+    return false
+  }
+  if ((event as { type?: unknown }).type !== 'complete') {
+    return false
+  }
   return SSECompleteEventSchema.safeParse(event).success
 }
 
 /**
  * Type-safe type guard for error events
  * Uses full schema validation for runtime safety
+ * Pre-checks type field to avoid Zod v4 discriminated union issues
  */
 export function isErrorEvent(event: unknown): event is SSEErrorEvent {
+  // Pre-check type field before schema validation (Zod v4 workaround)
+  if (typeof event !== 'object' || event === null || !('type' in event)) {
+    return false
+  }
+  if ((event as { type?: unknown }).type !== 'error') {
+    return false
+  }
   return SSEErrorEventSchema.safeParse(event).success
 }
