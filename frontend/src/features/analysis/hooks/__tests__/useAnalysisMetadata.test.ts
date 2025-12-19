@@ -12,6 +12,8 @@ import type { SSEEvent } from '@app-types/sse'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+import { createTestSSEProgressEvent } from '@/test-utils/factories'
+
 import { useAnalysisMetadata } from '../useAnalysisMetadata'
 
 // Valid UUIDs for testing
@@ -209,18 +211,17 @@ describe('useAnalysisMetadata', () => {
 
     it('handles skipped_agents at top level (not nested in details)', () => {
       const events: SSEEvent[] = [
-        {
-          type: 'progress',
-          analysis_id: TEST_ANALYSIS_ID,
-          stage: 'supervisor_routing',
-          status: 'complete',
-          timestamp: '2024-01-01T00:00:00Z',
-          // TypeScript doesn't allow this type-safely, but test runtime behavior
-          ...({
+        createTestSSEProgressEvent(
+          {
+            stage: 'supervisor_routing',
+            status: 'complete',
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+          {
             skipped_agents: ['trends_analyst'],
             selected_agents: ['tech_comparator'],
-          } as unknown as object),
-        },
+          }
+        ),
       ]
 
       const { result } = renderHook(() => useAnalysisMetadata(events))
@@ -251,20 +252,19 @@ describe('useAnalysisMetadata', () => {
   describe('supervisor routing - skip reasons', () => {
     it('extracts skipReasons from supervisor event', () => {
       const events: SSEEvent[] = [
-        {
-          type: 'progress',
-          analysis_id: TEST_ANALYSIS_ID,
-          stage: 'supervisor_routing',
-          status: 'complete',
-          timestamp: '2024-01-01T00:00:00Z',
-          // TypeScript doesn't allow skip_reasons at top level, but test runtime
-          ...({
+        createTestSSEProgressEvent(
+          {
+            stage: 'supervisor_routing',
+            status: 'complete',
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+          {
             skip_reasons: {
               tech_comparator: 'No technology comparisons needed',
               performance_analyst: 'Content does not contain performance metrics',
             },
-          } as unknown as object),
-        },
+          }
+        ),
       ]
 
       const { result } = renderHook(() => useAnalysisMetadata(events))
@@ -318,21 +318,20 @@ describe('useAnalysisMetadata', () => {
   describe('success metrics from agent completion', () => {
     it('extracts stageSuccessMetrics from agent completion events', () => {
       const events: SSEEvent[] = [
-        {
-          type: 'progress',
-          analysis_id: TEST_ANALYSIS_ID,
-          stage: 'tech_comparison',
-          status: 'complete',
-          timestamp: '2024-01-01T00:00:00Z',
-          // TypeScript doesn't allow success_metrics at top level, test runtime
-          ...({
+        createTestSSEProgressEvent(
+          {
+            stage: 'tech_comparison',
+            status: 'complete',
+            timestamp: '2024-01-01T00:00:00Z',
+          },
+          {
             success_metrics: {
               findings_quality: 'high',
               coverage: 'comprehensive',
               key_insights: ['React has better performance', 'Vue has simpler learning curve'],
             },
-          } as unknown as object),
-        },
+          }
+        ),
       ]
 
       const { result } = renderHook(() => useAnalysisMetadata(events))

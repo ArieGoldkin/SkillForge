@@ -1,8 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { LibraryListResponse } from '@app-types/library'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+import { createMockInfiniteQueryResult } from '@/test-utils/factories'
 
 import { LibraryErrorAlert } from '../components/LibraryErrorAlert'
 import { useLibrarySearchInfinite } from '../hooks'
@@ -100,38 +102,42 @@ describe('Library Component - Error Handling', () => {
 
   it('shows LibraryErrorAlert when isError is true', () => {
     const mockError = new Error('Failed to fetch library data')
-    const mockRefetch = vi.fn().mockResolvedValue({} as any)
+    const mockRefetch = vi
+      .fn()
+      .mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>())
 
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      isPending: false,
-      isSuccess: false,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: mockError,
-      isError: true,
-      refetch: mockRefetch,
-      status: 'error',
-      fetchStatus: 'idle',
-      isPlaceholderData: false,
-      isRefetching: false,
-      isStale: false,
-      isPaused: false,
-      failureCount: 1,
-      failureReason: mockError,
-      errorUpdateCount: 1,
-      errorUpdatedAt: Date.now(),
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        isPending: false,
+        isSuccess: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: mockError,
+        isError: true,
+        refetch: mockRefetch,
+        status: 'error',
+        fetchStatus: 'idle',
+        isPlaceholderData: false,
+        isRefetching: false,
+        isStale: false,
+        isPaused: false,
+        failureCount: 1,
+        failureReason: mockError,
+        errorUpdateCount: 1,
+        errorUpdatedAt: Date.now(),
+      })
+    )
 
     renderWithProviders()
 
@@ -140,36 +146,38 @@ describe('Library Component - Error Handling', () => {
   })
 
   it('hides error alert when isError is false', () => {
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: { pages: [{ items: [], total: 0, limit: 20, offset: 0 }], pageParams: [0] },
-      isLoading: false,
-      isFetching: false,
-      isPending: false,
-      isSuccess: true,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: null,
-      isError: false,
-      refetch: vi.fn().mockResolvedValue({} as any),
-      status: 'success',
-      fetchStatus: 'idle',
-      isPlaceholderData: false,
-      isRefetching: false,
-      isStale: false,
-      isPaused: false,
-      failureCount: 0,
-      failureReason: null,
-      errorUpdateCount: 0,
-      errorUpdatedAt: 0,
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: { pages: [{ items: [], total: 0, limit: 20, offset: 0 }], pageParams: [0] },
+        isLoading: false,
+        isFetching: false,
+        isPending: false,
+        isSuccess: true,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: null,
+        isError: false,
+        refetch: vi.fn().mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>()),
+        status: 'success',
+        fetchStatus: 'idle',
+        isPlaceholderData: false,
+        isRefetching: false,
+        isStale: false,
+        isPaused: false,
+        failureCount: 0,
+        failureReason: null,
+        errorUpdateCount: 0,
+        errorUpdatedAt: 0,
+      })
+    )
 
     renderWithProviders()
 
@@ -179,38 +187,42 @@ describe('Library Component - Error Handling', () => {
   it('passes refetch function to LibraryErrorAlert', async () => {
     const user = userEvent.setup()
     const mockError = new Error('API error')
-    const mockRefetch = vi.fn().mockResolvedValue({} as any)
+    const mockRefetch = vi
+      .fn()
+      .mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>())
 
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      isPending: false,
-      isSuccess: false,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: mockError,
-      isError: true,
-      refetch: mockRefetch,
-      status: 'error',
-      fetchStatus: 'idle',
-      isPlaceholderData: false,
-      isRefetching: false,
-      isStale: false,
-      isPaused: false,
-      failureCount: 1,
-      failureReason: mockError,
-      errorUpdateCount: 1,
-      errorUpdatedAt: Date.now(),
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        isPending: false,
+        isSuccess: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: mockError,
+        isError: true,
+        refetch: mockRefetch,
+        status: 'error',
+        fetchStatus: 'idle',
+        isPlaceholderData: false,
+        isRefetching: false,
+        isStale: false,
+        isPaused: false,
+        failureCount: 1,
+        failureReason: mockError,
+        errorUpdateCount: 1,
+        errorUpdatedAt: Date.now(),
+      })
+    )
 
     renderWithProviders()
 
@@ -222,38 +234,42 @@ describe('Library Component - Error Handling', () => {
 
   it('shows retrying state when isFetching is true after error', () => {
     const mockError = new Error('API error')
-    const mockRefetch = vi.fn().mockResolvedValue({} as any)
+    const mockRefetch = vi
+      .fn()
+      .mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>())
 
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: true,
-      isPending: false,
-      isSuccess: false,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: mockError,
-      isError: true,
-      refetch: mockRefetch,
-      status: 'error',
-      fetchStatus: 'fetching',
-      isPlaceholderData: false,
-      isRefetching: true,
-      isStale: false,
-      isPaused: false,
-      failureCount: 1,
-      failureReason: mockError,
-      errorUpdateCount: 1,
-      errorUpdatedAt: Date.now(),
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: undefined,
+        isLoading: false,
+        isFetching: true,
+        isPending: false,
+        isSuccess: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: mockError,
+        isError: true,
+        refetch: mockRefetch,
+        status: 'error',
+        fetchStatus: 'fetching',
+        isPlaceholderData: false,
+        isRefetching: true,
+        isStale: false,
+        isPaused: false,
+        failureCount: 1,
+        failureReason: mockError,
+        errorUpdateCount: 1,
+        errorUpdatedAt: Date.now(),
+      })
+    )
 
     renderWithProviders()
 
@@ -267,38 +283,42 @@ describe('Library Component - Error Handling', () => {
 
   it('handles error with custom error message', () => {
     const mockError = new Error('Server returned 500 Internal Server Error')
-    const mockRefetch = vi.fn().mockResolvedValue({} as any)
+    const mockRefetch = vi
+      .fn()
+      .mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>())
 
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: false,
-      isPending: false,
-      isSuccess: false,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: mockError,
-      isError: true,
-      refetch: mockRefetch,
-      status: 'error',
-      fetchStatus: 'idle',
-      isPlaceholderData: false,
-      isRefetching: false,
-      isStale: false,
-      isPaused: false,
-      failureCount: 1,
-      failureReason: mockError,
-      errorUpdateCount: 1,
-      errorUpdatedAt: Date.now(),
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: undefined,
+        isLoading: false,
+        isFetching: false,
+        isPending: false,
+        isSuccess: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: mockError,
+        isError: true,
+        refetch: mockRefetch,
+        status: 'error',
+        fetchStatus: 'idle',
+        isPlaceholderData: false,
+        isRefetching: false,
+        isStale: false,
+        isPaused: false,
+        failureCount: 1,
+        failureReason: mockError,
+        errorUpdateCount: 1,
+        errorUpdatedAt: Date.now(),
+      })
+    )
 
     renderWithProviders()
 
@@ -308,60 +328,61 @@ describe('Library Component - Error Handling', () => {
 
   it('shows error alert even when there is partial data', () => {
     const mockError = new Error('Failed to load more results')
-    const _mockRefetch = vi.fn().mockResolvedValue({} as any)
 
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: {
-        pages: [
-          {
-            items: [
-              {
-                analysis_id: '1',
-                title: 'Test Analysis',
-                content_type: 'article',
-                status: 'complete',
-                created_at: '2025-01-01T00:00:00Z',
-                url: 'https://example.com',
-                tags: [],
-                snippet: 'test snippet',
-                rank: 1,
-              },
-            ],
-            total: 1,
-            limit: 20,
-            offset: 0,
-          },
-        ],
-        pageParams: [0],
-      },
-      isLoading: false,
-      isFetching: false,
-      isPending: false,
-      isSuccess: false,
-      isLoadingError: false,
-      isRefetchError: false,
-      isFetchNextPageError: false,
-      isFetchPreviousPageError: false,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      fetchNextPage: vi.fn(),
-      fetchPreviousPage: vi.fn(),
-      isFetchingNextPage: false,
-      isFetchingPreviousPage: false,
-      error: mockError,
-      isError: true,
-      refetch: vi.fn().mockResolvedValue({} as any),
-      status: 'error',
-      fetchStatus: 'idle',
-      isPlaceholderData: false,
-      isRefetching: false,
-      isStale: false,
-      isPaused: false,
-      failureCount: 1,
-      failureReason: mockError,
-      errorUpdateCount: 1,
-      errorUpdatedAt: Date.now(),
-    } as any)
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
+        data: {
+          pages: [
+            {
+              items: [
+                {
+                  analysis_id: '1',
+                  title: 'Test Analysis',
+                  content_type: 'article',
+                  status: 'complete',
+                  created_at: '2025-01-01T00:00:00Z',
+                  url: 'https://example.com',
+                  tags: [],
+                  snippet: 'test snippet',
+                  rank: 1,
+                },
+              ],
+              total: 1,
+              limit: 20,
+              offset: 0,
+            },
+          ],
+          pageParams: [0],
+        },
+        isLoading: false,
+        isFetching: false,
+        isPending: false,
+        isSuccess: false,
+        isLoadingError: false,
+        isRefetchError: false,
+        isFetchNextPageError: false,
+        isFetchPreviousPageError: false,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        fetchNextPage: vi.fn(),
+        fetchPreviousPage: vi.fn(),
+        isFetchingNextPage: false,
+        isFetchingPreviousPage: false,
+        error: mockError,
+        isError: true,
+        refetch: vi.fn().mockResolvedValue(createMockInfiniteQueryResult<LibraryListResponse>()),
+        status: 'error',
+        fetchStatus: 'idle',
+        isPlaceholderData: false,
+        isRefetching: false,
+        isStale: false,
+        isPaused: false,
+        failureCount: 1,
+        failureReason: mockError,
+        errorUpdateCount: 1,
+        errorUpdatedAt: Date.now(),
+      })
+    )
 
     renderWithProviders()
 
@@ -380,10 +401,26 @@ describe('Library Component - Error Handling', () => {
     const mockRefetch = vi.fn(() => {
       isFetchingState = true
       // Update the mock to reflect the new state
-      mockedUseLibrarySearchInfinite.mockReturnValue({
+      mockedUseLibrarySearchInfinite.mockReturnValue(
+        createMockInfiniteQueryResult<LibraryListResponse>({
+          data: undefined,
+          isLoading: false,
+          isFetching: true,
+          hasNextPage: false,
+          fetchNextPage: vi.fn(),
+          isFetchingNextPage: false,
+          error: mockError,
+          isError: true,
+          refetch: mockRefetch,
+        })
+      )
+    })
+
+    mockedUseLibrarySearchInfinite.mockReturnValue(
+      createMockInfiniteQueryResult<LibraryListResponse>({
         data: undefined,
         isLoading: false,
-        isFetching: true,
+        isFetching: isFetchingState,
         hasNextPage: false,
         fetchNextPage: vi.fn(),
         isFetchingNextPage: false,
@@ -391,19 +428,7 @@ describe('Library Component - Error Handling', () => {
         isError: true,
         refetch: mockRefetch,
       })
-    })
-
-    mockedUseLibrarySearchInfinite.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isFetching: isFetchingState,
-      hasNextPage: false,
-      fetchNextPage: vi.fn(),
-      isFetchingNextPage: false,
-      error: mockError,
-      isError: true,
-      refetch: mockRefetch,
-    })
+    )
 
     const { rerender } = renderWithProviders()
 

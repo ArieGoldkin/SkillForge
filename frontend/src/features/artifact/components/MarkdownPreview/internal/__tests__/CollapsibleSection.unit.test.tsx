@@ -131,7 +131,7 @@ describe('DetailsRenderer', () => {
     it('filters out node prop and does not spread it', () => {
       // The node prop comes from react-markdown and should be filtered out
       render(
-        <DetailsRenderer node={{ type: 'element' } as unknown}>
+        <DetailsRenderer node={{ type: 'element' }}>
           <SummaryRenderer>Title</SummaryRenderer>
         </DetailsRenderer>
       )
@@ -323,7 +323,7 @@ describe('SummaryRenderer', () => {
     it('filters out node prop and does not spread it', () => {
       render(
         <details>
-          <SummaryRenderer node={{ type: 'element' } as unknown}>Title</SummaryRenderer>
+          <SummaryRenderer node={{ type: 'element' }}>Title</SummaryRenderer>
         </details>
       )
 
