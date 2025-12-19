@@ -456,7 +456,8 @@ class TestIntegration:
 
         # Verify lifecycle
         mock_client.create_score.assert_called_once()
-        assert mock_client.flush.call_count == 2  # Once from flush, once from shutdown
+        # Flush is called 3 times: once from submit_score, once from flush_langfuse, once from shutdown
+        assert mock_client.flush.call_count == 3
         mock_client.shutdown.assert_called_once()
         assert config_module._langfuse_client is None
 
