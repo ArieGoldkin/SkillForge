@@ -51,11 +51,18 @@ export function useActivityFeed(events: SSEEvent[]): AgentActivity[] {
       .map((event, index) => {
         const stage = normalizeStageNameFromBackend(event.stage)
         const isAgent = stage && isAgentStage(stage)
+
+        // Guard against invalid timestamps
+        const timestamp = event.timestamp ? new Date(event.timestamp) : new Date()
+        const isValidDate = timestamp instanceof Date && !isNaN(timestamp.getTime())
+
         return {
-          id: `${event.stage}-${index}`,
-          agentName: isAgent ? getAgentName(stage, event.details) : event.stage,
-          action: isAgent ? getActionDescription(stage, event.status, event.details) : event.status,
-          timestamp: new Date(event.timestamp),
+          id: `${event.stage ?? 'unknown'}-${index}`,
+          agentName: isAgent ? getAgentName(stage, event.details) : (event.stage ?? 'Unknown'),
+          action: isAgent
+            ? getActionDescription(stage, event.status, event.details)
+            : (event.status ?? 'Processing'),
+          timestamp: isValidDate ? timestamp : new Date(),
         }
       })
       .reverse()

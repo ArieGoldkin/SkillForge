@@ -47,3 +47,6 @@ export {
 
 // States Components
 export { AnalysisCompleteCard, ErrorAlert, LoadingState, NotFoundState } from './states'
+
+// Error Handling
+export { AnalysisErrorFallback } from './AnalysisErrorFallback'

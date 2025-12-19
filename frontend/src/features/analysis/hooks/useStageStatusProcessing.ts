@@ -117,7 +117,7 @@ function processEvent(
       // Merge details from event (including new fields like findings_summary, insights_count, error details, success_metrics)
       const eventDetails = isProgressEvent(event)
         ? {
-            ...event.details,
+            ...(event.details ?? {}),
             findings_summary: event.findings_summary ?? event.details?.findings_summary,
             insights_count: event.insights_count ?? event.details?.insights_count,
             confidence_score: event.confidence_score ?? event.details?.confidence_score,
@@ -128,7 +128,7 @@ function processEvent(
             // Extract success_metrics for completed events
             success_metrics: event.success_metrics ?? event.details?.success_metrics,
           }
-        : event.details
+        : (event.details ?? {})
       stageStatuses.set(normalizedStage, {
         status: event.status,
         timestamp: event.timestamp,
@@ -182,7 +182,7 @@ function processEvent(
           details: {
             error: event.error ?? event.details?.error,
             error_code: event.details?.error_code,
-            ...event.details,
+            ...(event.details ?? {}),
           },
         })
       }
@@ -231,7 +231,7 @@ function processEvents(events: SSEEvent[]): ProcessedEventsResult {
     // Capture analysis metadata from extraction event
     if (isProgressEvent(event) && event.stage === 'extraction' && event.status === 'complete') {
       const metadata = event.analysis_metadata || event.details?.analysis_metadata
-      if (metadata) {
+      if (metadata && typeof metadata === 'object') {
         analysisMetadata = {
           title: metadata.title,
           contentType: metadata.content_type,
@@ -257,14 +257,14 @@ function processEvents(events: SSEEvent[]): ProcessedEventsResult {
       if (skippedAgents && Array.isArray(skippedAgents)) {
         skippedAgentsInfo = {
           agents: skippedAgents,
-          selectedAgents: selectedAgents as string[] | undefined,
+          selectedAgents: Array.isArray(selectedAgents) ? selectedAgents : undefined,
         }
       }
       // Capture skip reasons
       const reasons =
         (event as SSEProgressEvent & { skip_reasons?: Record<string, string> }).skip_reasons ||
         event.details?.skip_reasons
-      if (reasons && typeof reasons === 'object') {
+      if (reasons && typeof reasons === 'object' && !Array.isArray(reasons)) {
         skipReasons = reasons as Record<string, string>
       }
     }
@@ -289,13 +289,13 @@ function processEvents(events: SSEEvent[]): ProcessedEventsResult {
             }
           }
         ).success_metrics || event.details?.success_metrics
-      if (metrics && typeof metrics === 'object') {
+      if (metrics && typeof metrics === 'object' && !Array.isArray(metrics)) {
         const normalizedStage = normalizeStageNameFromBackend(event.stage)
         if (normalizedStage) {
           stageSuccessMetrics.set(normalizedStage, {
             findingsQuality: metrics.findings_quality,
             coverage: metrics.coverage,
-            keyInsights: metrics.key_insights,
+            keyInsights: Array.isArray(metrics.key_insights) ? metrics.key_insights : undefined,
           })
         }
       }

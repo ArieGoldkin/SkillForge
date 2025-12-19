@@ -134,10 +134,11 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, 0, undefined)
       )
 
-      // Should handle 0 gracefully (avoid division by zero)
-      expect(result.current.totalSteps).toBe(0)
-      // With 0 total stages, division results in NaN, should handle gracefully
-      expect(Number.isNaN(result.current.progress) || result.current.progress >= 0).toBe(true)
+      // With defensive guards, 0 is now clamped to 1 to prevent division by zero
+      // This is the correct behavior - ensures valid progress calculations
+      expect(result.current.totalSteps).toBe(1)
+      // Progress should be a valid number (0) with the defensive guard in place
+      expect(result.current.progress).toBe(0)
     })
   })
 

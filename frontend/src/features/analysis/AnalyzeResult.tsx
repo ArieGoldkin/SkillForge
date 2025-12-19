@@ -4,9 +4,12 @@ import { useEffect, useMemo } from 'react'
 import { useSSEStore } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
+import { ErrorBoundary } from '@shared/components'
+
 import {
   ActivityColumn,
   AnalysisCompleteCard,
+  AnalysisErrorFallback,
   AnalysisHeader,
   ErrorAlert,
   LoadingState,
@@ -226,27 +229,37 @@ export default function AnalyzeResult() {
       {/* Only show progress UI if not a fatal error (i.e., we have some data or connection) */}
       {!isFatalError && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ProgressColumn
-            overallProgress={overallProgress}
-            steps={steps}
-            hasFailedStages={hasFailedStages}
-            failedStagesCount={failedStagesCount}
-            analysisMetadata={analysisMetadata}
-          />
-          {/* Show completion card only when artifact is ready (isComplete = true), regardless of failures */}
-          {/* The card itself will show appropriate message based on hasFailedStages */}
-          {isComplete && (resolvedArtifactId || artifactId) ? (
-            <AnalysisCompleteCard
-              artifactId={resolvedArtifactId || artifactId}
-              analysisId={id}
-              traceId={traceId}
-              variant="column"
+          <ErrorBoundary
+            fallback={(props) => <AnalysisErrorFallback {...props} section="Progress" />}
+            name="ProgressColumn"
+          >
+            <ProgressColumn
+              overallProgress={overallProgress}
+              steps={steps}
               hasFailedStages={hasFailedStages}
               failedStagesCount={failedStagesCount}
+              analysisMetadata={analysisMetadata}
             />
-          ) : (
-            <ActivityColumn activities={activities} isLive={isConnected} />
-          )}
+          </ErrorBoundary>
+          {/* Show completion card only when artifact is ready (isComplete = true), regardless of failures */}
+          {/* The card itself will show appropriate message based on hasFailedStages */}
+          <ErrorBoundary
+            fallback={(props) => <AnalysisErrorFallback {...props} section="Activity" />}
+            name="ActivityColumn"
+          >
+            {isComplete && (resolvedArtifactId || artifactId) ? (
+              <AnalysisCompleteCard
+                artifactId={resolvedArtifactId || artifactId}
+                analysisId={id}
+                traceId={traceId}
+                variant="column"
+                hasFailedStages={hasFailedStages}
+                failedStagesCount={failedStagesCount}
+              />
+            ) : (
+              <ActivityColumn activities={activities} isLive={isConnected} />
+            )}
+          </ErrorBoundary>
         </div>
       )}
     </div>

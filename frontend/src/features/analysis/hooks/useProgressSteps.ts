@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- Complex step transformation with comprehensive null guards requires extended logic */
 /**
  * useProgressSteps - Build UI-friendly progress steps from stage statuses
  *
@@ -144,7 +145,7 @@ export function useProgressSteps(
 
         // Extract error details if stage failed
         const errorDetails =
-          stageData?.status === 'failed' && stageData.details
+          stageData?.status === 'failed' && stageData?.details
             ? {
                 error:
                   (stageData.details.error as string) ||
@@ -155,6 +156,18 @@ export function useProgressSteps(
               }
             : undefined
 
+        // Guard against invalid timestamps
+        let parsedTimestamp: Date | undefined
+        if (stageData?.timestamp) {
+          try {
+            const timestamp = new Date(stageData.timestamp)
+            // Check if timestamp is valid
+            parsedTimestamp = !isNaN(timestamp.getTime()) ? timestamp : undefined
+          } catch {
+            parsedTimestamp = undefined
+          }
+        }
+
         return {
           id: stageName,
           title: config.title,
@@ -162,7 +175,7 @@ export function useProgressSteps(
           description: stageData
             ? getStageDescription(agentStageName, stageData.status, stageData.details)
             : 'Waiting...',
-          timestamp: stageData ? new Date(stageData.timestamp) : undefined,
+          timestamp: parsedTimestamp,
           successMetrics,
           skipReason,
           errorDetails,

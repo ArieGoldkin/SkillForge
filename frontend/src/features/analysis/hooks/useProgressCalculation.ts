@@ -103,23 +103,20 @@ export function useProgressCalculation(
     // ========================================================================
     // Only count stages that have actually been processed (exist in stageStatuses map)
 
-    const completedStages = Array.from(stageStatuses.values()).filter(
-      (s) => s.status === 'complete'
-    ).length
+    // Guard: Ensure stageStatuses is a Map and has values
+    const stageStatusArray = stageStatuses ? Array.from(stageStatuses.values()) : []
 
-    const skippedStages = Array.from(stageStatuses.values()).filter(
-      (s) => s.status === 'skipped'
-    ).length
+    const completedStages = stageStatusArray.filter((s) => s?.status === 'complete').length
 
-    const failedStages = Array.from(stageStatuses.values()).filter(
-      (s) => s.status === 'failed'
-    ).length
+    const skippedStages = stageStatusArray.filter((s) => s?.status === 'skipped').length
 
-    const runningStages = Array.from(stageStatuses.values()).filter(
-      (s) => s.status === 'running'
-    ).length
+    const failedStages = stageStatusArray.filter((s) => s?.status === 'failed').length
 
-    const runningStage = Array.from(stageStatuses.entries()).find(([, s]) => s.status === 'running')
+    const runningStages = stageStatusArray.filter((s) => s?.status === 'running').length
+
+    const runningStage = stageStatuses
+      ? Array.from(stageStatuses.entries()).find(([, s]) => s?.status === 'running')
+      : undefined
 
     // ========================================================================
     // PHASE 2: Determine total stages
@@ -127,7 +124,8 @@ export function useProgressCalculation(
     // Use expected_total_stages from backend (single source of truth)
     // Fallback to TOTAL_STAGES constant if not provided
 
-    const progressTotalStages = expectedTotalStages ?? TOTAL_STAGES
+    // Guard: Ensure progressTotalStages is a positive number (prevent division by zero)
+    const progressTotalStages = Math.max(1, expectedTotalStages ?? TOTAL_STAGES)
 
     // ========================================================================
     // PHASE 3: Calculate "true pending" stages
@@ -136,7 +134,8 @@ export function useProgressCalculation(
     // These are stages that haven't started yet (not skipped, not running, not complete, not failed)
 
     const allStageNames = Object.keys(STAGE_CONFIG) as StageName[]
-    const truePendingStages = allStageNames.filter((stage) => !stageStatuses.has(stage))
+    // Guard: Ensure stageStatuses exists before calling .has()
+    const truePendingStages = allStageNames.filter((stage) => !stageStatuses?.has(stage))
     const truePendingCount = truePendingStages.length
 
     // ========================================================================
@@ -169,12 +168,15 @@ export function useProgressCalculation(
       }
 
       // Count only expected stages that have finished
-      const expectedCompletedStages = Array.from(stageStatuses.entries()).filter(
-        ([stage, status]) => expectedStages.has(stage) && status.status === 'complete'
+      // Guard: Ensure stageStatuses exists
+      const stageStatusEntries = stageStatuses ? Array.from(stageStatuses.entries()) : []
+
+      const expectedCompletedStages = stageStatusEntries.filter(
+        ([stage, status]) => expectedStages.has(stage) && status?.status === 'complete'
       ).length
 
-      const expectedFailedStages = Array.from(stageStatuses.entries()).filter(
-        ([stage, status]) => expectedStages.has(stage) && status.status === 'failed'
+      const expectedFailedStages = stageStatusEntries.filter(
+        ([stage, status]) => expectedStages.has(stage) && status?.status === 'failed'
       ).length
 
       // Only count EXPECTED stages that have FINISHED (complete, failed)
@@ -212,7 +214,13 @@ export function useProgressCalculation(
       progress = 100
     } else {
       // Calculate actual progress: finished stages / expected_total_stages
-      progress = Math.round((finishedStages / progressTotalStages) * 100)
+      // Guard: Ensure division is safe (progressTotalStages guaranteed >= 1 from Phase 2)
+      // Guard: Ensure finishedStages is a number (could be NaN from failed calculations)
+      const safeFinishedStages = Number.isFinite(finishedStages) ? finishedStages : 0
+      progress = Math.round((safeFinishedStages / progressTotalStages) * 100)
+
+      // Guard: Ensure progress is within valid bounds (0-100)
+      progress = Math.max(0, Math.min(100, progress))
 
       // Cap at 99% if there are failures, running, or unfinished expected stages
       if (failedStages > 0 || hasUnfinishedExpectedStages) {
@@ -239,11 +247,13 @@ export function useProgressCalculation(
       currentUIStage = 'complete'
     } else if (runningStage) {
       // Currently running a stage
+      // Guard: Ensure runningStage exists and has valid structure
       currentUIStage = STAGE_CONFIG[runningStage[0]]?.uiStage || 'analyzing'
     } else if (completedStages > 0) {
       // Some stages completed, show the last completed stage's UI stage
-      const lastCompleted = steps.filter((s) => s.status === 'completed').pop()
-      if (lastCompleted) {
+      // Guard: Ensure steps array exists and has elements
+      const lastCompleted = steps?.filter((s) => s?.status === 'completed').pop()
+      if (lastCompleted?.id) {
         currentUIStage = STAGE_CONFIG[lastCompleted.id as StageName]?.uiStage || 'analyzing'
       }
     }
@@ -256,16 +266,20 @@ export function useProgressCalculation(
 
     let currentStepNumber: number
 
+    // Guard: Ensure finishedStages is a valid number
+    const safeFinishedStages = Number.isFinite(finishedStages) ? finishedStages : 0
+
     if (runningStage) {
-      currentStepNumber = finishedStages + 1 // Currently running a stage
+      currentStepNumber = safeFinishedStages + 1 // Currently running a stage
     } else if (isComplete && failedStages === 0 && !hasUnfinishedExpectedStages) {
       currentStepNumber = progressTotalStages // Fully complete - show expected total
     } else {
-      currentStepNumber = finishedStages + 1 // Next step to be processed
+      currentStepNumber = safeFinishedStages + 1 // Next step to be processed
     }
 
     // CRITICAL: Cap at progressTotalStages (not displayTotalStages) to fix "Step 10 of 9" issue
-    currentStepNumber = Math.min(currentStepNumber, progressTotalStages)
+    // Guard: Ensure currentStepNumber is within valid bounds (1 to progressTotalStages)
+    currentStepNumber = Math.max(1, Math.min(currentStepNumber, progressTotalStages))
 
     // ========================================================================
     // PHASE 8: Build status message
@@ -323,7 +337,8 @@ export function useProgressCalculation(
       currentStep: currentStepName,
       totalSteps: progressTotalStages, // Use expected_total_stages for "Step X of Y" display
       completedSteps: currentStepNumber, // Current step number for "Step X of Y" display
-      estimatedTimeRemaining: isComplete ? undefined : estimateTimeRemaining(finishedStages),
+      // Guard: Pass safeFinishedStages to estimateTimeRemaining to prevent issues
+      estimatedTimeRemaining: isComplete ? undefined : estimateTimeRemaining(safeFinishedStages),
     }
   }, [stageStatuses, steps, isComplete, expectedTotalStages, skippedAgentsInfo])
 }

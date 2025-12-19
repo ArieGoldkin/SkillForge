@@ -10,6 +10,8 @@
  * @module features/analysis/hooks
  */
 
+/* eslint-disable max-lines -- Additional lines required for defensive null guards to prevent crashes */
+
 import { useMemo } from 'react'
 
 import { isProgressEvent } from '@app-types/sse'
@@ -72,8 +74,12 @@ export interface AnalysisMetadataResult {
 function extractAnalysisMetadata(
   event: SSEProgressEvent
 ): AnalysisMetadataResult['analysisMetadata'] | undefined {
+  if (!event || typeof event !== 'object') {
+    return undefined
+  }
+
   const metadata = event.analysis_metadata || event.details?.analysis_metadata
-  if (!metadata) {
+  if (!metadata || typeof metadata !== 'object') {
     return undefined
   }
 
@@ -95,6 +101,10 @@ function extractAnalysisMetadata(
  * @returns Skipped agents info, or undefined if not available
  */
 function extractSkippedAgentsInfo(event: SSEProgressEvent): SkippedAgentsInfo | undefined {
+  if (!event || typeof event !== 'object') {
+    return undefined
+  }
+
   // Access fields that may be at top level or in details (SSE event structure)
   const skippedAgents =
     event.details?.skipped_agents ||
@@ -109,7 +119,7 @@ function extractSkippedAgentsInfo(event: SSEProgressEvent): SkippedAgentsInfo | 
 
   return {
     agents: skippedAgents,
-    selectedAgents: selectedAgents as string[] | undefined,
+    selectedAgents: Array.isArray(selectedAgents) ? selectedAgents : undefined,
   }
 }
 
@@ -122,11 +132,15 @@ function extractSkippedAgentsInfo(event: SSEProgressEvent): SkippedAgentsInfo | 
  * @returns Skip reasons map, or undefined if not available
  */
 function extractSkipReasons(event: SSEProgressEvent): Record<string, string> | undefined {
+  if (!event || typeof event !== 'object') {
+    return undefined
+  }
+
   const reasons =
     (event as SSEProgressEvent & { skip_reasons?: Record<string, string> }).skip_reasons ||
     event.details?.skip_reasons
 
-  if (!reasons || typeof reasons !== 'object') {
+  if (!reasons || typeof reasons !== 'object' || Array.isArray(reasons)) {
     return undefined
   }
 
@@ -143,6 +157,10 @@ function extractSkipReasons(event: SSEProgressEvent): Record<string, string> | u
  * @returns Success metrics with snake_case to camelCase conversion, or undefined
  */
 function extractSuccessMetrics(event: SSEProgressEvent): SuccessMetrics | undefined {
+  if (!event || typeof event !== 'object') {
+    return undefined
+  }
+
   const metrics =
     (
       event as SSEProgressEvent & {
@@ -154,14 +172,14 @@ function extractSuccessMetrics(event: SSEProgressEvent): SuccessMetrics | undefi
       }
     ).success_metrics || event.details?.success_metrics
 
-  if (!metrics || typeof metrics !== 'object') {
+  if (!metrics || typeof metrics !== 'object' || Array.isArray(metrics)) {
     return undefined
   }
 
   return {
     findings_quality: metrics.findings_quality,
     coverage: metrics.coverage,
-    key_insights: metrics.key_insights,
+    key_insights: Array.isArray(metrics.key_insights) ? metrics.key_insights : undefined,
   }
 }
 
@@ -175,6 +193,10 @@ function extractSuccessMetrics(event: SSEProgressEvent): SuccessMetrics | undefi
  * @returns True if stage is an agent stage
  */
 function isAgentStage(stageName: string): boolean {
+  if (!stageName || typeof stageName !== 'string') {
+    return false
+  }
+
   const infrastructureStages = [
     'extraction',
     'embedding',
@@ -235,7 +257,22 @@ export function useAnalysisMetadata(events: SSEEvent[]): AnalysisMetadataResult 
       }
     >()
 
+    // Guard against undefined or non-array events
+    if (!events || !Array.isArray(events)) {
+      return {
+        analysisMetadata,
+        skipReasons,
+        skippedAgentsInfo,
+        stageSuccessMetrics,
+      }
+    }
+
     for (const event of events) {
+      // Guard against null/undefined events in array
+      if (!event || typeof event !== 'object') {
+        continue
+      }
+
       // Extract analysis metadata from extraction stage
       if (isProgressEvent(event) && event.stage === 'extraction' && event.status === 'complete') {
         const metadata = extractAnalysisMetadata(event)
@@ -262,7 +299,12 @@ export function useAnalysisMetadata(events: SSEEvent[]): AnalysisMetadataResult 
       }
 
       // Extract success metrics from agent completion events
-      if (isProgressEvent(event) && event.status === 'complete' && isAgentStage(event.stage)) {
+      if (
+        isProgressEvent(event) &&
+        event.status === 'complete' &&
+        event.stage &&
+        isAgentStage(event.stage)
+      ) {
         const metrics = extractSuccessMetrics(event)
         if (metrics) {
           const normalizedStage = normalizeStageNameFromBackend(event.stage)
