@@ -2,7 +2,7 @@ import type * as React from 'react'
 import { useMemo } from 'react'
 
 import type { AgentStageName } from '@app-types/sse'
-import { useSSE } from '@hooks/useSSE'
+import { useSSEStore } from '@stores/sseStore'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -13,7 +13,6 @@ import { ConnectionStatus } from './ConnectionStatus'
 import { ALL_STAGES } from './constants'
 import { deriveStageStates } from './deriveStageStates'
 import { ErrorAlert } from './ErrorAlert'
-import { ReconnectingMessage } from './ReconnectingMessage'
 import { StageItem } from './StageItem'
 
 /**
@@ -42,32 +41,34 @@ export interface ProgressTrackerProps {
  * ```
  */
 export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
-  analysisId,
   className,
   stages = ALL_STAGES,
   onComplete,
   onError,
 }) => {
-  const { events, error, isConnected, isComplete } = useSSE(analysisId)
+  // Use computed loading states (Issue #399)
+  const { events, error, isComplete, loadingState, shouldShowProgress } = useSSEStore()
 
   const stageStates = useMemo(
     () => deriveStageStates(stages, events, onComplete, onError),
     [stages, events, onComplete, onError]
   )
 
-  const showReconnecting = !isConnected && !isComplete && !error
+  // Only show progress UI when we should (avoids showing empty progress during connection)
+  if (!shouldShowProgress) {
+    return null
+  }
 
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">Analysis Progress</CardTitle>
-          <ConnectionStatus isConnected={isConnected} />
+          <ConnectionStatus loadingState={loadingState} />
         </div>
       </CardHeader>
       <CardContent>
         {error && <ErrorAlert message={error.message} />}
-        {showReconnecting && <ReconnectingMessage />}
         <div
           className="space-y-0 max-h-[500px] overflow-y-auto"
           role="list"

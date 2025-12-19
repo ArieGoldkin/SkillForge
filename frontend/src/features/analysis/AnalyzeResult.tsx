@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
 import { useSSEStore } from '@stores/sseStore'
@@ -13,8 +13,9 @@ import {
   AnalysisErrorFallback,
   AnalysisHeader,
   ErrorAlert,
-  LoadingState,
+  LoadingStateDisplay,
   ProgressColumn,
+  TimeoutWarningBanner,
 } from './components'
 import { CompletedAnalysisView } from './components/states/CompletedAnalysisView'
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'
@@ -33,6 +34,11 @@ const selectError = (state: SSEStore) => state.error
 const selectConnect = (state: SSEStore) => state.connect
 const selectDisconnect = (state: SSEStore) => state.disconnect
 const selectReset = (state: SSEStore) => state.reset
+
+// New computed loading state selectors (Issue #399)
+const selectLoadingState = (state: SSEStore) => state.loadingState
+const selectShowTimeoutWarning = (state: SSEStore) => state.showTimeoutWarning
+const selectShouldShowProgress = (state: SSEStore) => state.shouldShowProgress
 
 const useSSELifecycle = ({
   analysisId,
@@ -182,6 +188,14 @@ export default function AnalyzeResult() {
   const disconnect = useSSEStore(selectDisconnect)
   const reset = useSSEStore(selectReset)
 
+  // New computed loading states (Issue #399)
+  const loadingState = useSSEStore(selectLoadingState)
+  const showTimeoutWarning = useSSEStore(selectShowTimeoutWarning)
+  const shouldShowProgress = useSSEStore(selectShouldShowProgress)
+
+  // Timeout warning dismissal state (Issue #399)
+  const [timeoutWarningDismissed, setTimeoutWarningDismissed] = useState(false)
+
   // Focus management for accessibility
   const completionRef = useCompletionFocus(isComplete)
   // Issue #396: traceId no longer needed here - leaf components get it from store
@@ -210,20 +224,19 @@ export default function AnalyzeResult() {
     reset,
   })
 
-  const { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError } =
-    useDerivedState({
-      artifactId,
-      urlArtifactId,
-      statusState,
-      isComplete,
-      events,
-      hasError,
-      error,
-      errorMessage,
-      completed,
-      overallProgress,
-      hasFailedStages,
-    })
+  const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useDerivedState({
+    artifactId,
+    urlArtifactId,
+    statusState,
+    isComplete,
+    events,
+    hasError,
+    error,
+    errorMessage,
+    completed,
+    overallProgress,
+    hasFailedStages,
+  })
 
   // Issue #396: CompletedAnalysisView no longer needs artifactId/traceId props
   // - those are now accessed from Zustand store by AnalysisCompleteCard
@@ -253,8 +266,79 @@ export default function AnalyzeResult() {
     )
   }
 
-  if (waitingForFirstEvent) {
-    return <LoadingState />
+  // Use computed loading states for simplified rendering (Issue #399)
+  const shouldShowLoadingState =
+    loadingState.type === 'waiting_for_events' ||
+    loadingState.type === 'extracting' ||
+    loadingState.type === 'analyzing' ||
+    loadingState.type === 'generating'
+
+  // Show loading state during analysis phases
+  if (shouldShowLoadingState) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <AnalysisHeader
+          title={analysisMetadata?.title || 'Content Analysis'}
+          url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
+          contentType={analysisMetadata?.contentType}
+          wordCount={analysisMetadata?.wordCount}
+        />
+
+        {/* Timeout warning banner (Issue #399) */}
+        <TimeoutWarningBanner
+          showTimeoutWarning={showTimeoutWarning && !timeoutWarningDismissed}
+          onDismiss={() => setTimeoutWarningDismissed(true)}
+        />
+
+        <LoadingStateDisplay loadingState={loadingState} />
+
+        {/* Show progress during analysis phases */}
+        {shouldShowProgress && (
+          <ErrorBoundary
+            fallback={(props) => <AnalysisErrorFallback {...props} section="Progress" />}
+            name="ProgressColumn"
+          >
+            <ProgressColumn
+              overallProgress={overallProgress}
+              steps={steps}
+              hasFailedStages={hasFailedStages}
+              failedStagesCount={failedStagesCount}
+              analysisMetadata={analysisMetadata}
+            />
+          </ErrorBoundary>
+        )}
+      </div>
+    )
+  }
+
+  // Handle error states
+  if (loadingState.type === 'error') {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <AnalysisHeader
+          title={analysisMetadata?.title || 'Content Analysis'}
+          url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
+          contentType={analysisMetadata?.contentType}
+          wordCount={analysisMetadata?.wordCount}
+        />
+
+        <LoadingStateDisplay loadingState={loadingState} />
+      </div>
+    )
+  }
+
+  // Handle completion states
+  if (loadingState.type === 'complete') {
+    return (
+      <CompletedAnalysisView
+        analysisId={id}
+        overallProgress={overallProgress}
+        steps={steps}
+        hasFailedStages={hasFailedStages}
+        failedStagesCount={failedStagesCount}
+        analysisMetadata={analysisMetadata}
+      />
+    )
   }
 
   // Determine if this is a fatal error (no events received and connection failed)
