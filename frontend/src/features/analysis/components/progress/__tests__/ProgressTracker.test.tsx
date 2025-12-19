@@ -77,16 +77,16 @@ describe('ProgressTracker Component', () => {
 
       expect(screen.getByText('Analysis Progress')).toBeInTheDocument()
       expect(screen.getByText('Content Extraction')).toBeInTheDocument()
-      expect(screen.getByText('Agent Routing')).toBeInTheDocument()
-      expect(screen.getByText('Technology Comparison')).toBeInTheDocument()
+      expect(screen.getByText('Routing to Agents')).toBeInTheDocument()
+      expect(screen.getByText('Tech Comparison')).toBeInTheDocument()
     })
 
     it('renders with only WORKING_STAGES when specified', () => {
       render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
 
       expect(screen.getByText('Content Extraction')).toBeInTheDocument()
-      expect(screen.getByText('Agent Routing')).toBeInTheDocument()
-      expect(screen.queryByText('Technology Comparison')).not.toBeInTheDocument()
+      expect(screen.getByText('Routing to Agents')).toBeInTheDocument()
+      expect(screen.queryByText('Tech Comparison')).not.toBeInTheDocument()
     })
 
     it('shows all stages as pending initially', () => {

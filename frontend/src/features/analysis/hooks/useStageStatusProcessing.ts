@@ -15,7 +15,6 @@ import type { SSEEvent, SSEProgressEvent, StageName } from '@app-types/sse'
 
 import {
   normalizeStageNameFromBackend,
-  isAgentStage,
   markSkippedAgents,
   type StageStatusEntry,
 } from './stageConfig'
@@ -105,7 +104,8 @@ function processEvent(
 ): void {
   if (isProgressEvent(event) || isCompleteEvent(event)) {
     const normalizedStage = normalizeStageNameFromBackend(event.stage)
-    if (normalizedStage && isAgentStage(normalizedStage)) {
+    // Process ALL valid stages, not just agent stages
+    if (normalizedStage) {
       const existingStatus = stageStatuses.get(normalizedStage)
 
       // Don't overwrite failed status with later events (e.g., complete events)
@@ -172,7 +172,8 @@ function processEvent(
   // Handle error events to capture failed status
   if (isErrorEvent(event)) {
     const normalizedStage = normalizeStageNameFromBackend(event.stage)
-    if (normalizedStage && isAgentStage(normalizedStage)) {
+    // Process ALL valid stages, not just agent stages
+    if (normalizedStage) {
       // Only update if status is not already set (preserve failed status)
       const existingStatus = stageStatuses.get(normalizedStage)
       if (!existingStatus || existingStatus.status !== 'failed') {

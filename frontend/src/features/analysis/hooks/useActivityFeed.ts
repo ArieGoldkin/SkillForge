@@ -12,7 +12,7 @@ import { useMemo } from 'react'
 import { isProgressEvent, isCompleteEvent } from '@/schemas/sse'
 import type { SSEEvent } from '@/schemas/sse'
 
-import { normalizeStageNameFromBackend, isAgentStage } from './stageConfig'
+import { normalizeStageNameFromBackend } from './stageConfig'
 import { getAgentName, getActionDescription } from './stageHelpers'
 
 /**
@@ -50,7 +50,7 @@ export function useActivityFeed(events: SSEEvent[]): AgentActivity[] {
       .filter((e) => isProgressEvent(e) || isCompleteEvent(e))
       .map((event, index) => {
         const stage = normalizeStageNameFromBackend(event.stage)
-        const isAgent = stage && isAgentStage(stage)
+        const isValidStage = stage !== null
 
         // Guard against invalid timestamps
         const timestamp = event.timestamp ? new Date(event.timestamp) : new Date()
@@ -58,8 +58,9 @@ export function useActivityFeed(events: SSEEvent[]): AgentActivity[] {
 
         return {
           id: `${event.stage ?? 'unknown'}-${index}`,
-          agentName: isAgent ? getAgentName(stage, event.details) : (event.stage ?? 'Unknown'),
-          action: isAgent
+          // Use helper functions for all valid stages (including workflow stages)
+          agentName: isValidStage ? getAgentName(stage, event.details) : (event.stage ?? 'Unknown'),
+          action: isValidStage
             ? getActionDescription(stage, event.status, event.details)
             : (event.status ?? 'Processing'),
           timestamp: isValidDate ? timestamp : new Date(),
