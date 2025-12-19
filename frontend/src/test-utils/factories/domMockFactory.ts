@@ -32,7 +32,7 @@ import { vi } from 'vitest'
  * @param overrides - Partial anchor element properties to override defaults
  * @returns Fully typed mock HTMLAnchorElement
  */
-// eslint-disable-next-line max-lines-per-function -- Factory needs all properties for type safety
+
 export function createMockAnchorElement(
   overrides: Partial<HTMLAnchorElement> = {}
 ): HTMLAnchorElement {

@@ -177,6 +177,15 @@ export default tseslint.config(
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',
+      'no-console': 'off', // Test utilities need console for debugging/reporting
+    },
+  },
+
+  // Relaxed rules for performance monitoring (needs console.log for metrics)
+  {
+    files: ['**/services/performance/**/*.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 
@@ -185,6 +194,23 @@ export default tseslint.config(
     files: ['**/stores/*StoreHelpers.ts'],
     rules: {
       'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+      'no-console': 'off', // Store helpers need console for debugging connection issues
+    },
+  },
+
+  // Relaxed rules for SSE hooks (need console for connection debugging)
+  {
+    files: ['**/hooks/useSSE.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Relaxed rules for app entry point (dev-only initialization logging)
+  {
+    files: ['**/main.tsx'],
+    rules: {
+      'no-console': 'off',
     },
   },
 
