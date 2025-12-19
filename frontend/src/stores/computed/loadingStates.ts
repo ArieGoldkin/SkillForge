@@ -5,8 +5,8 @@
  * without external middleware dependencies.
  */
 
-import type { StageName } from '@app-types/sse'
-import type { SSEStore } from '@stores/sseStoreHelpers'
+import type { StageName, SSEEvent } from '@app-types/sse'
+import type { SSEStore } from '@stores/sseStore'
 
 import type { ComputedLoadingStates, LoadingState } from '@/types/loading'
 
@@ -100,7 +100,9 @@ export function calculateAnalysisProgress(state: SSEStore): number {
   if (!state.latestEvent) return 0
 
   // Find completed stages
-  const completedCount = state.events.filter((event) => event.status === 'complete').length
+  const completedCount = state.events.filter(
+    (event: SSEEvent) => event.status === 'complete'
+  ).length
 
   const totalStages = ALL_STAGES.length
 
@@ -137,18 +139,18 @@ function getAnalysisLoadingState(state: SSEStore): LoadingState | null {
   if (isExtractingState(state)) {
     return {
       type: 'extracting',
-      stage: state.latestEvent!.stage,
-      wordCount: state.latestEvent!.details?.word_count,
+      stage: state.latestEvent!.stage as StageName,
+      wordCount: state.latestEvent!.details?.word_count as number | undefined,
     }
   }
 
   if (isAnalyzingState(state)) {
     const progress = calculateAnalysisProgress(state)
-    return { type: 'analyzing', stage: state.latestEvent!.stage, progress }
+    return { type: 'analyzing', stage: state.latestEvent!.stage as StageName, progress }
   }
 
   if (isGeneratingState(state)) {
-    return { type: 'generating', stage: state.latestEvent!.stage }
+    return { type: 'generating', stage: state.latestEvent!.stage as StageName }
   }
 
   return null
@@ -162,7 +164,7 @@ function getTerminalLoadingState(state: SSEStore): LoadingState | null {
     return {
       type: 'complete',
       artifactId: state.artifactId!,
-      traceId: state.traceId,
+      traceId: state.traceId ?? undefined,
     }
   }
 
@@ -170,7 +172,7 @@ function getTerminalLoadingState(state: SSEStore): LoadingState | null {
     return {
       type: 'error',
       error: state.error!.message,
-      stage: state.latestEvent?.stage,
+      stage: state.latestEvent?.stage as StageName | undefined,
     }
   }
 

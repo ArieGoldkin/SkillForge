@@ -14,6 +14,8 @@ import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
 import { parseSSEEvent } from '@/schemas/sse'
 
+import type { SSEStore, SSEStoreState } from './sseStore'
+
 // Configuration constants
 const MAX_RECONNECT_ATTEMPTS = 3
 const INITIAL_RECONNECT_DELAY = 1000 // 1s

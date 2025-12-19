@@ -14,6 +14,11 @@
 
 import { onCLS, onINP, onLCP, onFCP, onTTFB, type Metric } from 'web-vitals'
 
+// Google Analytics gtag types
+declare global {
+  function gtag(command: 'event', eventName: string, eventParams?: Record<string, unknown>): void
+}
+
 // Google Analytics measurement ID (configure per environment)
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXXX'
 
@@ -21,6 +26,52 @@ const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-XXXXXXXXX
 const metricsQueue: Metric[] = []
 const MAX_QUEUE_SIZE = 10
 const FLUSH_INTERVAL = 30000 // 30 seconds
+
+/**
+ * Build attribution data for debugging based on metric type
+ */
+function buildAttributionData(metric: Metric): Record<string, unknown> {
+  const attribution = (metric as unknown as { attribution?: unknown }).attribution
+  if (!attribution) return {}
+
+  if (metric.name === 'CLS') {
+    const clsAttr = attribution as {
+      largestShiftTarget?: string
+      largestShiftTime?: number
+      largestShiftValue?: number
+    }
+    return {
+      debug_target: clsAttr.largestShiftTarget,
+      debug_time: clsAttr.largestShiftTime,
+      debug_value: clsAttr.largestShiftValue,
+    }
+  }
+  if (metric.name === 'LCP') {
+    const lcpAttr = attribution as {
+      element?: { tagName?: string }
+      url?: string
+      timeToFirstByte?: number
+    }
+    return {
+      element_tag: lcpAttr.element?.tagName,
+      element_url: lcpAttr.url,
+      time_to_first_byte: lcpAttr.timeToFirstByte,
+    }
+  }
+  if (metric.name === 'INP') {
+    const inpAttr = attribution as {
+      interactionTarget?: string
+      interactionType?: string
+      inputDelay?: number
+    }
+    return {
+      interaction_target: inpAttr.interactionTarget,
+      interaction_type: inpAttr.interactionType,
+      input_delay: inpAttr.inputDelay,
+    }
+  }
+  return {}
+}
 
 /**
  * Send metric to Google Analytics 4
@@ -31,7 +82,6 @@ function sendToGoogleAnalytics(metric: Metric): void {
     return
   }
 
-  // Send to Google Analytics
   if (typeof gtag !== 'undefined') {
     gtag('event', metric.name, {
       value: metric.delta,
@@ -39,42 +89,7 @@ function sendToGoogleAnalytics(metric: Metric): void {
       metric_value: metric.value,
       metric_delta: metric.delta,
       metric_rating: metric.rating,
-      // Attribution data for debugging
-      ...(metric.name === 'CLS' &&
-        (metric as unknown as { attribution?: unknown }).attribution && {
-          debug_target: (metric as unknown as { attribution: { largestShiftTarget?: string } })
-            .attribution.largestShiftTarget,
-          debug_time: (metric as unknown as { attribution: { largestShiftTime?: number } })
-            .attribution.largestShiftTime,
-          debug_value: (metric as unknown as { attribution: { largestShiftValue?: number } })
-            .attribution.largestShiftValue,
-        }),
-      ...(metric.name === 'LCP' &&
-        (metric as unknown as { attribution?: unknown }).attribution && {
-          element_tag: (
-            metric as unknown as {
-              attribution: { element?: { tagName?: string } }
-            }
-          ).attribution.element?.tagName,
-          element_url: (metric as unknown as { attribution: { url?: string } }).attribution.url,
-          time_to_first_byte: (metric as unknown as { attribution: { timeToFirstByte?: number } })
-            .attribution.timeToFirstByte,
-        }),
-      ...(metric.name === 'INP' &&
-        (metric as unknown as { attribution?: unknown }).attribution && {
-          interaction_target: (
-            metric as unknown as {
-              attribution: { interactionTarget?: string }
-            }
-          ).attribution.interactionTarget,
-          interaction_type: (
-            metric as unknown as {
-              attribution: { interactionType?: string }
-            }
-          ).attribution.interactionType,
-          input_delay: (metric as unknown as { attribution: { inputDelay?: number } }).attribution
-            .inputDelay,
-        }),
+      ...buildAttributionData(metric),
     })
   }
 }
@@ -157,22 +172,26 @@ export function initWebVitals(): void {
 
   // Track all Core Web Vitals metrics
   onCLS((metric) => {
-    console.log(`📏 CLS: ${metric.value.toFixed(3)} (${metric.rating})`, metric.attribution)
+    const attribution = (metric as unknown as { attribution?: unknown }).attribution
+    console.log(`📏 CLS: ${metric.value.toFixed(3)} (${metric.rating})`, attribution)
     queueMetric(metric)
   })
 
   onINP((metric) => {
-    console.log(`⚡ INP: ${metric.value}ms (${metric.rating})`, metric.attribution)
+    const attribution = (metric as unknown as { attribution?: unknown }).attribution
+    console.log(`⚡ INP: ${metric.value}ms (${metric.rating})`, attribution)
     queueMetric(metric)
   })
 
   onLCP((metric) => {
-    console.log(`🎨 LCP: ${metric.value}ms (${metric.rating})`, metric.attribution)
+    const attribution = (metric as unknown as { attribution?: unknown }).attribution
+    console.log(`🎨 LCP: ${metric.value}ms (${metric.rating})`, attribution)
     queueMetric(metric)
   })
 
   onFCP((metric) => {
-    console.log(`🖌️ FCP: ${metric.value}ms (${metric.rating})`, metric.attribution)
+    const attribution = (metric as unknown as { attribution?: unknown }).attribution
+    console.log(`🖌️ FCP: ${metric.value}ms (${metric.rating})`, attribution)
     queueMetric(metric)
   })
 
@@ -206,14 +225,6 @@ export function reportCustomMetric(
   value: number,
   context?: Record<string, unknown>
 ): void {
-  const _customMetric: Partial<Metric> = {
-    name,
-    value,
-    delta: value, // For custom metrics, delta equals value
-    id: `custom-${name}-${Date.now()}`,
-    rating: 'good', // Custom metrics don't have ratings
-  }
-
   console.log(`📊 Custom metric: ${name} = ${value}`, context)
 
   if (typeof gtag !== 'undefined') {

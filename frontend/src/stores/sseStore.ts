@@ -136,6 +136,11 @@ const baseStore = create<SSEStore>((set, get) => ({
   isComplete: false,
   activeAnalysisId: null,
 
+  // Granular connection state (Issue #399 - Missing Loading States)
+  connectionState: 'disconnected' as ConnectionState,
+  connectionStartTime: null,
+  lastActivityTime: null,
+
   // Analysis metadata (Issue #396 - synced from useAnalysisProgress)
   artifactId: null,
   traceId: null,
@@ -180,6 +185,7 @@ const baseStore = create<SSEStore>((set, get) => ({
       failedStagesCount: 0,
       analysisMetadata: null,
       // Connection lifecycle tracking - clear on reset (Issue #399)
+      connectionState: 'disconnected' as ConnectionState,
       connectionStartTime: null,
       lastActivityTime: null,
       // Internal state - ensure clean slate

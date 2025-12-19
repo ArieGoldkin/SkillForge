@@ -52,14 +52,15 @@ export function createTestSSEProgressEvent(
   const defaultAnalysisId = '00000000-0000-0000-0000-000000000000'
 
   // Filter out undefined values from base to avoid overriding defaults
-  const filteredBase = Object.entries(base).reduce(
+  const filteredBase = Object.entries(base).reduce<Partial<SSEProgressEvent>>(
     (acc, [key, value]) => {
       if (value !== undefined) {
-        acc[key as keyof SSEProgressEvent] = value
+        // Type assertion needed because Object.entries loses type info
+        ;(acc as Record<string, unknown>)[key] = value
       }
       return acc
     },
-    {} as Partial<SSEProgressEvent>
+    {}
   )
 
   // Core required fields with defaults
@@ -74,4 +75,38 @@ export function createTestSSEProgressEvent(
 
   // Merge with extras if provided
   return extras ? { ...coreEvent, ...extras } : coreEvent
+}
+
+/**
+ * Factory builder for SSE events with .build() method
+ * Used in performance tests for easy event generation
+ */
+export const sseEventFactory = {
+  build: (overrides?: Partial<SSEProgressEvent>): SSEProgressEvent => {
+    return createTestSSEProgressEvent(overrides ?? {})
+  },
+}
+
+/**
+ * Factory builder for SSE store state
+ * Used in performance tests for resetting store state
+ */
+export const sseStoreStateFactory = {
+  build: () => ({
+    events: [] as SSEProgressEvent[],
+    latestEvent: null as SSEProgressEvent | null,
+    isConnected: false,
+    isComplete: false,
+    error: null as Error | null,
+    activeAnalysisId: null as string | null,
+    connectionState: 'disconnected' as const,
+    connectionStartTime: null as number | null,
+    lastActivityTime: null as number | null,
+    artifactId: null as string | null,
+    traceId: null as string | null,
+    overallProgress: null,
+    hasFailedStages: false,
+    failedStagesCount: 0,
+    analysisMetadata: null,
+  }),
 }

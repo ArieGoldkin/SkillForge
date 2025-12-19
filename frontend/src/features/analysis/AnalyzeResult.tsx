@@ -127,6 +127,7 @@ const useCompletionFocus = (isComplete: boolean) => {
 }
 
 // Component for rendering analysis in progress state
+// eslint-disable-next-line max-lines-per-function -- Component renders progress header, timeout warning, loading state, and progress columns which require JSX structure
 function AnalysisInProgress({
   analysisMetadata,
   showTimeoutWarning,
@@ -139,7 +140,12 @@ function AnalysisInProgress({
   hasFailedStages,
   failedStagesCount,
 }: {
-  analysisMetadata: { title?: string; url?: string; contentType?: string; wordCount?: number }
+  analysisMetadata?: {
+    title?: string
+    url?: string
+    contentType?: 'article' | 'video' | 'repo'
+    wordCount?: number
+  }
   showTimeoutWarning: boolean
   timeoutWarningDismissed: boolean
   onDismissTimeout: () => void
@@ -190,7 +196,7 @@ function ActivityOrCompletionColumn({
   resolvedArtifactId: string | undefined
   artifactId: string | undefined
   hasFailedStages: boolean
-  completionRef: React.RefObject<HTMLDivElement>
+  completionRef: React.RefObject<HTMLDivElement | null>
   activities: ReturnType<typeof useAnalysisProgress>['activities']
   isConnected: boolean
 }) {
@@ -235,12 +241,17 @@ function ActiveAnalysisView({
   completionRef,
 }: {
   id: string
-  analysisMetadata: { title?: string; url?: string; contentType?: string; wordCount?: number }
+  analysisMetadata?: {
+    title?: string
+    url?: string
+    contentType?: 'article' | 'video' | 'repo'
+    wordCount?: number
+  }
   isComplete: boolean
   hasFailedStages: boolean
   error: Error | null
   hasError: boolean
-  statusError: string | null
+  statusError: string | null | undefined
   isFailed: boolean
   effectiveError: string
   isFatalError: boolean
@@ -251,7 +262,7 @@ function ActiveAnalysisView({
   artifactId: string | undefined
   activities: ReturnType<typeof useAnalysisProgress>['activities']
   isConnected: boolean
-  completionRef: React.RefObject<HTMLDivElement>
+  completionRef: React.RefObject<HTMLDivElement | null>
 }) {
   const hasErrors = error || hasError || statusError || isFailed
   const ariaMessage = hasFailedStages
@@ -477,8 +488,9 @@ export default function AnalyzeResult() {
     )
   }
 
-  const isFatalError =
+  const isFatalError = Boolean(
     (error || statusState.statusError || isFailed) && events.length === 0 && !isConnected
+  )
 
   return (
     <ActiveAnalysisView

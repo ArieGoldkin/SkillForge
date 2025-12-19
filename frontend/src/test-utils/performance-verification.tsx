@@ -8,11 +8,12 @@
 import * as React from 'react'
 
 import { useSSEStore } from '@stores/sseStore'
-import { sseEventFactory, sseStoreStateFactory } from '@test-utils/factories/sseEventFactory'
 import { act, render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AnalyzeResult from '../features/analysis/AnalyzeResult'
+
+import { sseEventFactory, sseStoreStateFactory } from './factories/sseEventFactory'
 
 // Mock child components to isolate AnalyzeResult performance
 vi.mock('../features/analysis/components', () => ({

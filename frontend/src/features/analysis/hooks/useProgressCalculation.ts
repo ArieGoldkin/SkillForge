@@ -43,7 +43,8 @@ export interface StageStatusEntry {
 export interface ProgressStep {
   id: string
   title: string
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'
+  // Accepts both 'running' (from SSE) and 'in-progress' (UI display)
+  status: 'pending' | 'running' | 'in-progress' | 'completed' | 'failed' | 'skipped'
   description: string
   timestamp?: Date
   successMetrics?: {

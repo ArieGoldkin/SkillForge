@@ -17,21 +17,17 @@ const renderStats = new Map<string, ComponentRenderStats>()
 if (import.meta.env.DEV) {
   const React = await import('react')
   const originalCreateElement = React.createElement
-  type ComponentType =
-    | string
-    | ((...args: unknown[]) => unknown)
-    | { new (...args: unknown[]): unknown }
-  React.createElement = function (
-    type: ComponentType,
-    props: Record<string, unknown> | null,
-    ...children: unknown[]
-  ) {
+
+  // Wrap createElement to track render stats in development
+  // Using 'as any' to bypass strict type checking for monkey-patching
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(React as any).createElement = function (type: unknown, props: unknown, ...children: unknown[]) {
     if (
       typeof type === 'function' &&
-      'displayName' in type &&
-      typeof type.displayName === 'string'
+      'displayName' in (type as unknown as Record<string, unknown>) &&
+      typeof (type as unknown as Record<string, unknown>).displayName === 'string'
     ) {
-      const componentName = type.displayName
+      const componentName = (type as unknown as { displayName: string }).displayName
       const existing = renderStats.get(componentName)
       if (existing) {
         existing.renderCount++
@@ -46,7 +42,8 @@ if (import.meta.env.DEV) {
         })
       }
     }
-    return originalCreateElement.call(this, type, props, ...children)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (originalCreateElement as any).call(this, type, props, ...children)
   }
 }
 /** Analyze component re-render patterns */

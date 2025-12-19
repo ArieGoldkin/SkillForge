@@ -96,7 +96,7 @@ export const SSECompleteEventSchema = z.object({
   timestamp: z.string(),
   trace_id: z.string().optional(), // Langfuse trace ID for feedback submission
   artifact_id: z.string().uuid().optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
 })
 
 /**

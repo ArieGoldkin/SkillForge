@@ -1,7 +1,8 @@
 import { useState } from 'react'
 
-import { ReactScanTest } from '@components/ReactScanTest'
 import { useNavigate } from '@tanstack/react-router'
+
+import { ReactScanTest } from '@/components/ReactScanTest'
 
 import type { SkillLevel } from '@shared/SkillLevelSelector'
 

@@ -18,8 +18,8 @@ import {
 /**
  * Wrap a component with performance profiling
  */
-export function withPerformanceProfiler<T extends ComponentType<Record<string, unknown>>>(
-  Component: T,
+export function withPerformanceProfiler<T extends Record<string, unknown>>(
+  Component: ComponentType<T>,
   displayName?: string
 ): ProfiledComponent<T> {
   return withProfiler(Component, displayName || Component.displayName || Component.name)
@@ -197,7 +197,7 @@ export const ciUtils = {
     }
 
     // In CI, this could be written to a file or sent to analytics
-    if (process.env.CI) {
+    if (import.meta.env.CI) {
       console.log('📊 Performance Report:', JSON.stringify(report, null, 2))
     }
 
