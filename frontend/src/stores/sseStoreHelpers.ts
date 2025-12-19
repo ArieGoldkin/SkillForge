@@ -6,6 +6,8 @@
 import type { SSEEvent } from '@app-types/sse'
 import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
+import { parseSSEEvent } from '@/schemas/sse'
+
 // Connection management (shared state)
 let eventSource: EventSource | null = null
 let reconnectAttempts = 0
@@ -56,10 +58,20 @@ function handleOpen(store: StoreAPI): () => void {
 function handleProgressEvent(store: StoreAPI): (event: MessageEvent) => void {
   return (event: MessageEvent) => {
     try {
-      const data: SSEEvent = JSON.parse(event.data)
+      const rawData = JSON.parse(event.data)
+      const validatedData = parseSSEEvent(rawData)
+
+      if (!validatedData) {
+        console.error('[SSE] Progress event validation failed')
+        store.setState({
+          error: new Error('Received invalid progress event from server'),
+        })
+        return
+      }
+
       store.setState((state) => ({
-        events: [...state.events, data],
-        latestEvent: data,
+        events: [...state.events, validatedData],
+        latestEvent: validatedData,
       }))
     } catch (error) {
       console.error('[SSE] Failed to parse progress event:', error)
@@ -76,14 +88,24 @@ function handleProgressEvent(store: StoreAPI): (event: MessageEvent) => void {
 function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
   return (event: MessageEvent) => {
     try {
-      const data: SSEEvent = JSON.parse(event.data)
+      const rawData = JSON.parse(event.data)
+      const validatedData = parseSSEEvent(rawData)
+
+      if (!validatedData) {
+        console.error('[SSE] Complete event validation failed')
+        store.setState({
+          error: new Error('Received invalid complete event from server'),
+        })
+        return
+      }
+
       store.setState((state) => ({
-        events: [...state.events, data],
-        latestEvent: data,
+        events: [...state.events, validatedData],
+        latestEvent: validatedData,
         isComplete: true,
       }))
 
-      if (isCompleteEvent(data)) {
+      if (isCompleteEvent(validatedData)) {
         store.getState().disconnect()
       }
     } catch (error) {
@@ -108,20 +130,30 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
     }
 
     try {
-      const data: SSEEvent = JSON.parse(event.data)
-      console.error('[SSE] Server error event:', data)
+      const rawData = JSON.parse(event.data)
+      const validatedData = parseSSEEvent(rawData)
+
+      if (!validatedData) {
+        console.error('[SSE] Error event validation failed')
+        store.setState({
+          error: new Error('Received invalid error event from server'),
+        })
+        return
+      }
+
+      console.error('[SSE] Server error event:', validatedData)
 
       store.setState((state) => ({
-        events: [...state.events, data],
-        latestEvent: data,
+        events: [...state.events, validatedData],
+        latestEvent: validatedData,
         error: new Error(
-          isErrorEvent(data)
-            ? (data.error ?? data.details?.error ?? 'Analysis failed')
+          isErrorEvent(validatedData)
+            ? (validatedData.error ?? validatedData.details?.error ?? 'Analysis failed')
             : 'Analysis failed'
         ),
       }))
 
-      if (isErrorEvent(data)) {
+      if (isErrorEvent(validatedData)) {
         store.getState().disconnect()
       }
     } catch (error) {

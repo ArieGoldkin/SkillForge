@@ -171,5 +171,13 @@ export default tseslint.config(
       'max-lines': 'off',
       'max-lines-per-function': 'off',
     },
+  },
+
+  // Relaxed rules for store helper files (complex state management utilities)
+  {
+    files: ['**/stores/*StoreHelpers.ts'],
+    rules: {
+      'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+    },
   }
 )
