@@ -1,7 +1,7 @@
 ---
 name: claude-main
 description: AI Agent Hub - Modular Intelligence System
-version: 4.0.0
+version: 4.1.0
 ---
 
 # 🚀 AI Agent Hub - Intelligent Orchestration
@@ -369,27 +369,33 @@ NEW WAY (semantic discovery):
 
 ## 📚 Claude Code Skills
 
-**18 specialized knowledge modules** installed in `.claude/skills/` directory:
+**23 specialized knowledge modules** installed in `.claude/skills/` directory:
 
 | Skill | Use When |
 |-------|----------|
 | **ai-native-development** | Building RAG pipelines, embeddings, vector DBs, LLM integration |
 | **api-design-framework** | Designing REST/GraphQL/gRPC APIs |
 | **architecture-decision-record** | Documenting architectural decisions (ADRs) |
+| **brainstorming** | Refining rough ideas through Socratic questioning (expanded Dec 2024) |
 | **code-review-playbook** | Conducting code reviews with conventional comments |
 | **database-schema-designer** | Designing SQL/NoSQL schemas and migrations |
 | **design-system-starter** | Creating design systems, tokens, components |
+| **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (expanded Dec 2024) |
 | **edge-computing-patterns** | Deploying to Cloudflare Workers, Vercel Edge, Deno Deploy |
 | **evidence-verification** | Collecting quality evidence (v3.5.0) |
+| **golden-dataset-management** | Backup/restore for test datasets, data validation (new Dec 2024) |
+| **langfuse-observability** | Self-hosted LLM observability, replaces LangSmith (new Dec 2024) |
+| **langgraph-workflows** | Multi-agent workflow orchestration with LangGraph (new Dec 2024) |
+| **llm-caching-patterns** | Multi-level caching for 70-95% LLM cost reduction (new Dec 2024) |
+| **observability-monitoring** | Logging, metrics, tracing, alerting (expanded Dec 2024) |
+| **performance-optimization** | Database queries, bundle size, Core Web Vitals, caching (expanded Dec 2024) |
+| **pgvector-search** | Hybrid search with PGVector HNSW + BM25 RRF fusion (new Dec 2024) |
 | **quality-gates** | Complexity assessment and gate validation (v3.5.0) |
 | **react-server-components-framework** | Next.js 15 App Router, RSC, Server Actions |
 | **security-checklist** | Security audits, OWASP Top 10 compliance |
 | **streaming-api-patterns** | SSE, WebSockets, ReadableStream, real-time APIs |
 | **testing-strategy-builder** | Building test plans and coverage strategies |
 | **type-safety-validation** | End-to-end type safety with Zod, tRPC, Prisma |
-| **performance-optimization** | Database queries, bundle size, Core Web Vitals, caching (v3.7.0) |
-| **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (v3.7.0) |
-| **observability-monitoring** | Logging, metrics, tracing, alerting (v3.7.0) |
 
 **How to use skills (v4.0 - Progressive Loading):**
 1. **FIRST**: Read `.claude/skills/<skill-name>/capabilities.json` (~100 tokens)
@@ -428,7 +434,7 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 - **Blocking**: Critical vulnerabilities block approval
 - **Fix commands**: Actionable remediation guidance
 
-## 📁 Project Structure (v4.0.0 - Dynamic MCP)
+## 📁 Project Structure (v4.1.0 - Expanded Skills)
 
 ```
 .claude/
@@ -437,7 +443,7 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 ├── instructions/          # Orchestration & context rules
 │   ├── orchestration.md   # 🔄 Updated with MCP integration (v2.0)
 │   └── ...                # Core instructions
-├── skills/                # 18 specialized knowledge modules
+├── skills/                # 23 specialized knowledge modules
 │   └── */capabilities.json # 🆕 Progressive loading indexes (v4.0)
 ├── workflows/             # 🆕 Pre-composed multi-skill workflows (v4.0)
 │   ├── secure-api-endpoint.md
@@ -517,5 +523,7 @@ poetry run python scripts/backup_golden_dataset.py restore
 
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
+
+*📦 v4.1.0 (Dec 2024): Expanded skills ecosystem - 5 new skills (LLM caching, Langfuse observability, LangGraph workflows, PGVector search, golden dataset management) + 4 major skill expansions (brainstorming, performance, devops, observability).*
 
 *📦 v4.0.0: Dynamic MCP architecture with semantic discovery, progressive loading, and workflow composition.*

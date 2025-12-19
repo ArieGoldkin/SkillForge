@@ -1,0 +1,97 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "llm-caching-patterns",
+  "version": "1.0.0",
+  "description": "Multi-level caching strategies for LLM applications - semantic caching (Redis), prompt caching (Claude native), cache hierarchies, and cost optimization",
+
+  "capabilities": {
+    "semantic-cache": {
+      "keywords": ["semantic cache", "redis cache", "vector cache", "similarity cache", "redisvl"],
+      "solves": [
+        "How do I cache LLM responses by similarity?",
+        "Set up Redis semantic caching",
+        "Reduce LLM costs with caching"
+      ],
+      "reference_file": "references/redis-setup.md",
+      "token_cost": 200
+    },
+    "prompt-cache": {
+      "keywords": ["prompt caching", "claude cache", "cache breakpoint", "prefix caching"],
+      "solves": [
+        "How do I use Claude prompt caching?",
+        "Where to place cache breakpoints?",
+        "Reduce token costs with caching"
+      ],
+      "reference_file": "references/prompt-caching.md",
+      "token_cost": 150
+    },
+    "cache-hierarchy": {
+      "keywords": ["multi-level cache", "cache hierarchy", "l1 l2 l3", "double caching"],
+      "solves": [
+        "How do I implement multi-level caching?",
+        "Design cache hierarchy for LLMs",
+        "Combine semantic and prompt caching"
+      ],
+      "reference_file": "references/cache-hierarchy.md",
+      "token_cost": 250
+    },
+    "similarity-threshold": {
+      "keywords": ["similarity threshold", "cosine similarity", "cache hit rate", "false positive"],
+      "solves": [
+        "How do I tune similarity threshold?",
+        "Balance precision and recall in cache",
+        "Reduce false positives"
+      ],
+      "reference_file": "references/threshold-tuning.md",
+      "token_cost": 150
+    },
+    "cache-warming": {
+      "keywords": ["cache warming", "pre-populate", "golden dataset", "initial hit rate"],
+      "solves": [
+        "How do I warm the cache?",
+        "Pre-populate cache from historical data",
+        "Improve initial hit rates"
+      ],
+      "reference_file": "references/cache-warming.md",
+      "token_cost": 120
+    },
+    "cost-optimization": {
+      "keywords": ["llm cost", "token savings", "cache roi", "cost reduction"],
+      "solves": [
+        "How much can I save with caching?",
+        "Calculate caching ROI",
+        "Optimize LLM costs"
+      ],
+      "reference_file": "references/cost-optimization.md",
+      "token_cost": 180
+    },
+    "cache-observability": {
+      "keywords": ["cache metrics", "hit rate", "redisinsight", "monitoring"],
+      "solves": [
+        "How do I monitor cache performance?",
+        "Track cache hit rates",
+        "Visualize cache metrics"
+      ],
+      "reference_file": "references/observability.md",
+      "token_cost": 150
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["semantic.*cache", "prompt.*cach", "llm.*cost", "redis.*cache"],
+    "medium_confidence": ["cache.*llm", "reduce.*token", "optimize.*cost"]
+  },
+
+  "integrates_with": ["ai-native-development", "performance-optimization", "observability-monitoring"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 800, "sections": ["overview", "core-concepts", "double-caching"] },
+    "tier_3_specific": { "files": "references/*.md", "tokens": "150-250 each" },
+    "tier_4_generate": { "files": "templates/*.py", "tokens": "200-400 each" }
+  },
+
+  "mcp_tools": {
+    "documentation": { "tool": "context7", "library_ids": ["/redis/redis-py", "/redisvl/redisvl"] }
+  }
+}

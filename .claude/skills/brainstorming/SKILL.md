@@ -21,6 +21,22 @@ Activate this skill when:
 - Requirements are vague or high-level
 - Multiple approaches might work
 - Before writing any code or implementation plans
+- User needs to explore trade-offs between different solutions
+
+## When NOT to Use This Skill
+
+**Skip brainstorming when:**
+- Requirements are crystal clear and specific
+- Only one obvious approach exists
+- User has already designed the solution (just needs implementation)
+- Time-sensitive bug fix or urgent production issue
+- User explicitly says "just implement it" without questions
+
+**Examples of clear requirements (no brainstorming needed):**
+- "Add a print button to this page"
+- "Fix this TypeError on line 42"
+- "Update the copyright year to 2025"
+- "Change the button color to #FF5733"
 
 ## The Three-Phase Process
 
@@ -145,6 +161,197 @@ Consider these optional next steps:
 
 Use templates in `assets/design-doc-template.md` and `assets/decision-matrix-template.md` for structured documentation.
 
+## Socratic Questioning Templates
+
+### Purpose Discovery Questions
+
+**Goal:** Understand the "why" behind the feature.
+
+- "What problem does this solve for your users?"
+- "What happens if we don't build this?"
+- "How will success be measured?"
+- "Who is the primary user of this feature?"
+- "What's the most important outcome?"
+
+### Constraint Identification Questions
+
+**Goal:** Uncover limitations and requirements.
+
+- "Are there performance requirements? (e.g., must load in < 2s)"
+- "What's the expected scale? (users, data volume, requests/sec)"
+- "Are there compliance requirements? (GDPR, HIPAA, SOC2)"
+- "What's the timeline/budget constraint?"
+- "What existing systems must this integrate with?"
+
+### Trade-Off Exploration Questions
+
+**Goal:** Make implicit preferences explicit.
+
+- "Would you prefer faster development or better performance?"
+- "Is flexibility more important than simplicity?"
+- "Should this be user-friendly or developer-friendly?"
+- "Optimize for: initial build speed, maintainability, or scalability?"
+- "What's more critical: feature completeness or time-to-market?"
+
+### Alternative Exploration Questions
+
+**Goal:** Ensure we consider all viable approaches.
+
+- "What if we didn't build this at all? What's the workaround?"
+- "How would [competitor/similar product] solve this?"
+- "Could we start with a simpler version? What's the MVP?"
+- "What if we had unlimited time/budget? What would we add?"
+- "What approaches have you already considered and rejected? Why?"
+
+---
+
+## Common Pitfalls to Avoid
+
+### Pitfall 1: Asking Too Many Questions Upfront
+
+```
+❌ BAD:
+"Before we start, I need to know:
+1. What's your tech stack?
+2. How many users?
+3. What's the budget?
+4. What's the timeline?
+5. Who's the target audience?
+..."
+
+✅ GOOD:
+"What problem does this solve for your users?"
+[Wait for answer, then ask next most important question]
+```
+
+**Why:** Information overload prevents conversation flow. Ask one at a time.
+
+### Pitfall 2: Proposing Only One Approach
+
+```
+❌ BAD:
+"Here's the solution: Use Redis for caching..."
+
+✅ GOOD:
+"I see three approaches:
+1. Redis (fast, but adds infrastructure)
+2. In-memory (simple, but doesn't scale)
+3. Database query cache (integrated, but slower)
+Which trade-offs matter most?"
+```
+
+**Why:** Single approach suggests you haven't explored alternatives.
+
+### Pitfall 3: Over-Engineering from the Start
+
+```
+❌ BAD:
+"Let's use microservices, Kubernetes, Redis, Kafka,
+message queues, and a service mesh..."
+
+✅ GOOD:
+"For 100 users/day, a monolith with PostgreSQL
+is sufficient. We can split services later if needed."
+```
+
+**Why:** YAGNI (You Aren't Gonna Need It). Start simple, scale when necessary.
+
+### Pitfall 4: Ignoring Existing Code/Patterns
+
+```
+❌ BAD:
+"Let's rebuild this with a completely different architecture..."
+
+✅ GOOD:
+[Read existing code first]
+"I see you're using Express + PostgreSQL. Let's extend
+that pattern with a new route handler..."
+```
+
+**Why:** Consistency > novelty. Use existing patterns unless there's a compelling reason to change.
+
+---
+
+## Integration with Other Skills
+
+**After brainstorming completes, consider:**
+
+- **architecture-decision-record**: Document key architectural decisions made during brainstorming
+- **design-system-starter**: Create design tokens and components if building UI
+- **api-design-framework**: Define API contracts if building backend services
+- **testing-strategy-builder**: Plan testing approach for the designed system
+- **security-checklist**: Review security implications of design choices
+
+**Example flow:**
+1. Brainstorming → Design approach selected
+2. Architecture Decision Record → Document "Why we chose approach X"
+3. API Design → Define endpoints and contracts
+4. Testing Strategy → Plan how to test the implementation
+
+---
+
+## Real-World Brainstorming Examples
+
+### Example 1: SkillForge Content Analysis Pipeline
+
+**Phase 1 - Understanding:**
+- Q: "What problem does this solve?" → A: "Analyze technical content at scale"
+- Q: "How many articles/day?" → A: "100-1000"
+- Q: "What kind of analysis?" → A: "Security, performance, code examples"
+
+**Phase 2 - Exploration:**
+- Approach 1: Single LLM call (fast, shallow analysis)
+- Approach 2: Multiple specialist LLMs (slow, deep analysis) ← CHOSEN
+- Approach 3: Hybrid (fast first pass, deep on-demand)
+
+**Phase 3 - Design:**
+- Supervisor-worker pattern with 8 specialist agents
+- LangGraph for workflow orchestration
+- PostgreSQL for state persistence
+- Quality gate before output
+
+**Result:** SkillForge's current 8-agent analysis workflow
+
+### Example 2: Caching Strategy
+
+**Phase 1 - Understanding:**
+- Q: "What are you caching?" → A: "LLM responses (expensive)"
+- Q: "How similar are queries?" → A: "Many near-duplicates"
+- Q: "Acceptable staleness?" → A: "5 minutes fine"
+
+**Phase 2 - Exploration:**
+- Approach 1: Redis semantic cache (complex, high hit rate)
+- Approach 2: HTTP cache headers (simple, low hit rate)
+- Approach 3: Prompt caching (Claude native, 90% cost savings) ← CHOSEN
+
+**Phase 3 - Design:**
+- Multi-level: Prompt cache (L1) + Redis semantic cache (L2)
+- 5-minute TTL
+- Cache warming with golden queries
+
+**Result:** 70-95% cost reduction strategy
+
+### Example 3: Real-Time Dashboard Updates
+
+**Phase 1 - Understanding:**
+- Q: "What data updates in real-time?" → A: "Analysis progress"
+- Q: "How often?" → A: "Every 2-5 seconds"
+- Q: "How many concurrent users?" → A: "< 50"
+
+**Phase 2 - Exploration:**
+- Approach 1: SSE (simple, server → client only) ← CHOSEN
+- Approach 2: WebSockets (complex, bidirectional)
+- Approach 3: Polling (wasteful, high latency)
+
+**Phase 3 - Design:**
+- Server-Sent Events for progress updates
+- Event broadcaster pattern (pub/sub)
+- Automatic reconnection on disconnect
+
+**Result:** SkillForge's SSE-based progress streaming
+
+---
+
 ## Examples
 
 **Complete brainstorming sessions:**
@@ -154,3 +361,21 @@ Use templates in `assets/design-doc-template.md` and `assets/decision-matrix-tem
 **Output templates:**
 - `assets/design-doc-template.md` - Structured design document format
 - `assets/decision-matrix-template.md` - Weighted decision comparison format
+
+---
+
+## Tips for Effective Brainstorming
+
+1. **Read the codebase first** - Don't propose changes without understanding existing patterns
+2. **One question at a time** - Conversation flow > information dump
+3. **Always propose 2-3 alternatives** - Shows you've explored options
+4. **Make trade-offs explicit** - "Fast but complex" vs "Slow but simple"
+5. **Validate incrementally** - Don't present 10-page design at once
+6. **Be ready to backtrack** - Non-linear is fine when new info emerges
+7. **Start simple, scale later** - YAGNI ruthlessly
+8. **Document decisions** - Use ADRs for key architectural choices
+
+---
+
+**Version:** 1.0.0 (December 2025)
+**Status:** Production patterns from SkillForge brainstorming sessions

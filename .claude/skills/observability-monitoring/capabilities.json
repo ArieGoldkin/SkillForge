@@ -71,7 +71,7 @@
   },
 
   "mcp_tools": {
-    "tracing": { "tool": "skillforge-langsmith", "use_when": "LLM observability needed" },
+    "tracing": { "tool": "skillforge-langfuse", "use_when": "LLM observability needed" },
     "documentation": { "tool": "context7", "library_ids": ["/open-telemetry/opentelemetry-js"] }
   }
 }

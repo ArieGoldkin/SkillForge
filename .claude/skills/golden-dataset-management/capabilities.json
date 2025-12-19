@@ -1,0 +1,83 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "golden-dataset-management",
+  "version": "1.0.0",
+  "description": "Backup, restore, and validate golden datasets for AI/ML systems",
+
+  "capabilities": {
+    "backup": {
+      "keywords": ["golden dataset backup", "export analyses", "data backup", "json backup"],
+      "solves": [
+        "How do I backup the golden dataset?",
+        "Export analyses to JSON",
+        "Version control test data",
+        "Protect critical test datasets"
+      ],
+      "reference_file": "references/backup-restore.md",
+      "token_cost": 150
+    },
+
+    "restore": {
+      "keywords": ["restore dataset", "import analyses", "regenerate embeddings", "disaster recovery"],
+      "solves": [
+        "How do I restore from backup?",
+        "Import golden dataset",
+        "Regenerate embeddings after restore",
+        "Setup new dev environment with test data"
+      ],
+      "reference_file": "references/backup-restore.md",
+      "token_cost": 150
+    },
+
+    "validation": {
+      "keywords": ["verify dataset", "url contract", "data integrity", "validate backup"],
+      "solves": [
+        "How do I validate the dataset?",
+        "Check URL contracts",
+        "Verify data integrity",
+        "Detect placeholder URLs"
+      ],
+      "reference_file": "references/validation-contracts.md",
+      "token_cost": 120
+    }
+  },
+
+  "triggers": {
+    "high_confidence": [
+      "backup golden dataset",
+      "restore test data",
+      "validate dataset integrity",
+      "export analyses"
+    ],
+    "medium_confidence": [
+      "protect test data",
+      "disaster recovery",
+      "data backup strategy",
+      "regenerate embeddings"
+    ]
+  },
+
+  "integrates_with": [
+    "pgvector-search",
+    "ai-native-development",
+    "devops-deployment"
+  ],
+
+  "used_by_agents": [
+    "backend-system-architect"
+  ],
+
+  "progressive_loading": {
+    "tier1_discovery": "capabilities.json (100 tokens)",
+    "tier2_overview": "SKILL.md (400 tokens)",
+    "tier3_specific": "references/*.md (120-150 tokens each)",
+    "tier4_templates": "templates/*.py (complete implementation)"
+  },
+
+  "mcp_tools": {
+    "database": {
+      "tool": "skillforge-postgres-dev",
+      "use_when": "Backup/restore operations"
+    }
+  }
+}
