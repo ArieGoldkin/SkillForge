@@ -15,24 +15,18 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # CRITICAL: Load .env and override system env vars BEFORE any LangChain imports
-# This prevents system env vars (like LANGSMITH_PROJECT=reporter-accuracy from ~/.zshrc)
-# from interfering with SkillForge's Langfuse project configuration
+# This ensures SkillForge uses the correct Langfuse project configuration
 load_dotenv(override=True)
 
 # Force override system environment variables from .env file
-# This ensures SkillForge always uses skillforge-backend, not reporter-accuracy
 env_file = Path(__file__).parent.parent / ".env"
 if env_file.exists():
     env_values = dotenv_values(env_file)
     # Get project from .env file (this takes absolute precedence)
-    project_from_env = env_values.get("LANGCHAIN_PROJECT") or env_values.get("LANGSMITH_PROJECT")
+    project_from_env = env_values.get("LANGCHAIN_PROJECT")
     if project_from_env:
         # Force override - this happens BEFORE any LangChain imports
         os.environ["LANGCHAIN_PROJECT"] = project_from_env
-        os.environ["LANGSMITH_PROJECT"] = project_from_env
-        # Also set for LangChain's internal use
-        os.environ.pop("LANGSMITH_PROJECT", None)  # Remove old value first
-        os.environ["LANGSMITH_PROJECT"] = project_from_env
 
 from app.api.v1 import health  # noqa: E402
 from app.api.v1.analysis import router as analysis_router  # noqa: E402

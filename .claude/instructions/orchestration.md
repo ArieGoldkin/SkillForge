@@ -118,7 +118,7 @@ For complex multi-tool workflows, compose them:
 // Instead of 3 separate MCP tool calls:
 const composed = await mcp__MCP_DOCKER__code_mode({
   name: "full-stack-test",
-  servers: ["playwright", "skillforge-postgres-dev", "skillforge-langsmith"]
+  servers: ["playwright", "skillforge-postgres-dev", "langfuse"]
 });
 // Single tool that orchestrates all three
 ```

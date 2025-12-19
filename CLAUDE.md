@@ -65,9 +65,10 @@ version: 4.0.0
 
 ### Quality Gate ValidationError (Fixed Dec 2024)
 - **Problem**: `pydantic.v1.error_wrappers.ValidationError: 3 validation errors for Run`
-- **Root Cause**: LangSmith `Run` schema requires `start_time` and `trace_id` fields
+- **Root Cause**: LangSmith `Run` schema required `start_time` and `trace_id` fields (pre-Langfuse migration)
 - **Fix**: Added `start_time=datetime.now(UTC)` and `trace_id=uuid4()` to mock Run object
 - **Location**: `backend/app/workflows/nodes/quality_gate_node.py` lines 102-129
+- **Note**: Now using Langfuse for observability (Dec 2024 migration)
 
 ### Workflow Timeout (Configured Dec 2024)
 - **Problem**: Workflow times out during multi-agent execution
@@ -305,7 +306,7 @@ This project uses specialized instruction files to optimize tokens while maintai
 **ALWAYS use MCP tools during development:**
 - `context7` → Fetch current library documentation before implementing
 - `mcp-find` → Discover additional tools as needed
-- `skillforge-langsmith` → For AI/LLM observability
+- `langfuse` → For AI/LLM observability (self-hosted, free)
 
 ### Step 5: Load Context Protocol
 **WHEN agent is activated** → Read `.claude/instructions/orchestration.md` (v2.0 with MCP awareness)

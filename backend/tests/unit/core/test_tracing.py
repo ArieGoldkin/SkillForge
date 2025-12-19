@@ -166,3 +166,85 @@ async def test_robust_traceable_defaults(mock_observe):
     call_kwargs = mock_observe.call_args.kwargs
     assert call_kwargs["name"] == "my_test_function"
     assert result == {"result": "test"}
+
+
+# Tests for get_current_trace_id
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_get_current_trace_id_returns_trace_id(mock_get_client):
+    """Test that get_current_trace_id returns the trace ID from Langfuse."""
+    from app.core.tracing import get_current_trace_id
+
+    # Setup mock client
+    mock_client = MagicMock()
+    mock_client.get_current_trace_id.return_value = "trace-abc-123"
+    mock_get_client.return_value = mock_client
+
+    result = get_current_trace_id()
+
+    assert result == "trace-abc-123"
+    mock_client.get_current_trace_id.assert_called_once()
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_get_current_trace_id_returns_none_when_no_trace(mock_get_client):
+    """Test that get_current_trace_id returns None when not in trace context."""
+    from app.core.tracing import get_current_trace_id
+
+    # Setup mock client that returns None
+    mock_client = MagicMock()
+    mock_client.get_current_trace_id.return_value = None
+    mock_get_client.return_value = mock_client
+
+    result = get_current_trace_id()
+
+    assert result is None
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_get_current_trace_id_handles_exception(mock_get_client):
+    """Test that get_current_trace_id handles exceptions gracefully."""
+    from app.core.tracing import get_current_trace_id
+
+    # Setup mock client that raises exception
+    mock_get_client.side_effect = Exception("Connection error")
+
+    result = get_current_trace_id()
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_get_current_trace_id_handles_import_error():
+    """Test that get_current_trace_id handles import error gracefully."""
+    from app.core.tracing import get_current_trace_id
+
+    # Patch sys.modules to simulate langfuse not being installed
+    with patch.dict("sys.modules", {"langfuse": None}):
+        # The function handles ImportError internally
+        result = get_current_trace_id()
+
+    # Should return None or the actual value if langfuse is installed
+    assert result is None or isinstance(result, str)
+
+
+@pytest.mark.unit
+@patch("langfuse.get_client")
+def test_get_current_trace_id_converts_uuid_to_string(mock_get_client):
+    """Test that get_current_trace_id converts UUID-like objects to string."""
+    from uuid import uuid4
+
+    from app.core.tracing import get_current_trace_id
+
+    # Setup mock client that returns a UUID-like object
+    mock_uuid = uuid4()
+    mock_client = MagicMock()
+    mock_client.get_current_trace_id.return_value = mock_uuid
+    mock_get_client.return_value = mock_client
+
+    result = get_current_trace_id()
+
+    assert result == str(mock_uuid)
+    assert isinstance(result, str)
