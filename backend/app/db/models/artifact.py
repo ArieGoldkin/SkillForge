@@ -2,13 +2,17 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.annotation_queue import AnnotationQueue
 
 
 class Artifact(Base):
@@ -33,5 +37,10 @@ class Artifact(Base):
     download_count = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
-    # Relationship
+    # Relationships
     analysis = relationship("Analysis", backref="artifacts")
+    annotation_queues: Mapped[list["AnnotationQueue"]] = relationship(
+        "AnnotationQueue",
+        back_populates="artifact",
+        cascade="all, delete-orphan",
+    )

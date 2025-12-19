@@ -28,7 +28,7 @@ if env_file.exists():
         # Force override - this happens BEFORE any LangChain imports
         os.environ["LANGCHAIN_PROJECT"] = project_from_env
 
-from app.api.v1 import health  # noqa: E402
+from app.api.v1 import annotations, health  # noqa: E402
 from app.api.v1.analysis import router as analysis_router  # noqa: E402
 from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.api_key_validation import log_api_key_configuration  # noqa: E402
@@ -318,6 +318,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis_router, prefix=settings.API_V1_PREFIX)
 app.include_router(tutor_router, prefix=settings.API_V1_PREFIX)
+app.include_router(annotations.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

@@ -10,3 +10,5 @@ export {
   type ArtifactPreviewModalProps,
 } from './ArtifactPreviewModal'
 export { TableOfContents, type TableOfContentsProps } from './TableOfContents'
+export { FeedbackButtons } from './FeedbackButtons'
+export { CommentDialog } from './CommentDialog'
