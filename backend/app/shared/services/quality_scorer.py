@@ -573,6 +573,7 @@ async def score_output_quality_g_eval(
         >>> print(f"Reasoning: {score.reasoning.get('completeness')}")
 
     """
+    from app.core.tracing import get_current_trace_id
     from app.shared.services.g_eval import g_eval_score
 
     # Use default config if not provided
@@ -588,11 +589,15 @@ async def score_output_quality_g_eval(
             schema_class=config.schema_class,
         )
 
+        # Get current trace ID for Langfuse score submission
+        trace_id = get_current_trace_id()
+
         # Deep path: G-Eval LLM scoring
         g_eval_result = await g_eval_score(
             input_content=input_content,
             output=output,
             agent_type=agent_type,
+            trace_id=trace_id,
         )
 
         # Blend scores

@@ -202,6 +202,7 @@ def _submit_g_eval_scores_to_langfuse(
     criteria_scores: dict[str, CriterionScore],
     overall: float,
     agent_type: str,
+    trace_id: str | None = None,
 ) -> None:
     """Submit G-Eval scores to Langfuse for quality analytics.
 
@@ -214,6 +215,7 @@ def _submit_g_eval_scores_to_langfuse(
         criteria_scores: Dictionary of criterion name to CriterionScore
         overall: Overall weighted average score (0.0-1.0)
         agent_type: Agent type for score categorization
+        trace_id: Langfuse trace ID to attach scores to
 
     """
     try:
@@ -222,6 +224,7 @@ def _submit_g_eval_scores_to_langfuse(
         # Submit each criterion score individually for detailed analytics
         for criterion, score_obj in criteria_scores.items():
             submit_langfuse_score(
+                trace_id=trace_id,
                 name=f"g_eval_{criterion}",
                 value=score_obj.normalized,
                 comment=f"{agent_type}: {score_obj.reasoning[:200]}",  # Truncate reasoning
@@ -229,6 +232,7 @@ def _submit_g_eval_scores_to_langfuse(
 
         # Submit overall G-Eval score
         submit_langfuse_score(
+            trace_id=trace_id,
             name="g_eval_overall",
             value=overall,
             comment=f"{agent_type}: Weighted average across {len(criteria_scores)} criteria",
@@ -239,6 +243,7 @@ def _submit_g_eval_scores_to_langfuse(
             agent_type=agent_type,
             criteria_count=len(criteria_scores),
             overall_score=overall,
+            trace_id=trace_id,
         )
 
     except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
@@ -364,6 +369,7 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
     use_cache: bool = True,
     use_self_consistency: bool = False,
     n_samples: int = 3,
+    trace_id: str | None = None,
 ) -> GEvalResult:
     """Score output quality using G-Eval LLM-as-Judge.
 
@@ -375,6 +381,7 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
         use_cache: Whether to use caching (default True)
         use_self_consistency: Enable self-consistency voting for 15-25% accuracy boost
         n_samples: Number of samples for self-consistency voting (default=3)
+        trace_id: Langfuse trace ID to attach scores to (optional)
 
     Returns:
         GEvalResult with overall score and per-criterion breakdown.
@@ -468,6 +475,7 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
             criteria_scores=criteria_scores,
             overall=overall,
             agent_type=agent_type,
+            trace_id=trace_id,
         )
 
         return GEvalResult(
@@ -523,6 +531,7 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
         criteria_scores=criteria_scores,
         overall=overall,
         agent_type=agent_type,
+        trace_id=trace_id,
     )
 
     return GEvalResult(

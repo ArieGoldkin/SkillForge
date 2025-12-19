@@ -42,7 +42,7 @@ class TestSubmitFeedback:
 
         # Mock Langfuse client
         mock_client = MagicMock()
-        mock_client.score = MagicMock()
+        mock_client.create_score = MagicMock()
         mock_client.flush = MagicMock()
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
@@ -61,8 +61,8 @@ class TestSubmitFeedback:
         assert not mock_session.add.called
 
         # Should submit Langfuse score with value 1.0
-        mock_client.score.assert_called_once()
-        call_kwargs = mock_client.score.call_args.kwargs
+        mock_client.create_score.assert_called_once()
+        call_kwargs = mock_client.create_score.call_args.kwargs
         assert call_kwargs["trace_id"] == trace_id
         assert call_kwargs["name"] == "user_feedback"
         assert call_kwargs["value"] == 1.0
@@ -76,7 +76,7 @@ class TestSubmitFeedback:
         trace_id = "trace-456"
 
         mock_client = MagicMock()
-        mock_client.score = MagicMock()
+        mock_client.create_score = MagicMock()
         mock_client.flush = MagicMock()
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
@@ -94,8 +94,8 @@ class TestSubmitFeedback:
         assert not mock_session.add.called
 
         # Should submit score with value 0.0
-        mock_client.score.assert_called_once()
-        call_kwargs = mock_client.score.call_args.kwargs
+        mock_client.create_score.assert_called_once()
+        call_kwargs = mock_client.create_score.call_args.kwargs
         assert call_kwargs["value"] == 0.0
 
     @pytest.mark.asyncio
@@ -109,7 +109,7 @@ class TestSubmitFeedback:
 
         # Mock Langfuse client
         mock_client = MagicMock()
-        mock_client.score = MagicMock()
+        mock_client.create_score = MagicMock()
         mock_client.flush = MagicMock()
 
         # Mock existing queue check (not queued)
@@ -149,7 +149,7 @@ class TestSubmitFeedback:
         comment = "Great content!"
 
         mock_client = MagicMock()
-        mock_client.score = MagicMock()
+        mock_client.create_score = MagicMock()
         mock_client.flush = MagicMock()
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
@@ -164,7 +164,7 @@ class TestSubmitFeedback:
         assert result["langfuse_submitted"] is True
 
         # Verify Langfuse API calls
-        mock_client.score.assert_called_once_with(
+        mock_client.create_score.assert_called_once_with(
             trace_id=trace_id,
             name="user_feedback",
             value=1.0,
@@ -198,7 +198,7 @@ class TestSubmitFeedback:
 
         # Mock Langfuse client that raises exception
         mock_client = MagicMock()
-        mock_client.score.side_effect = Exception("Langfuse API error")
+        mock_client.create_score.side_effect = Exception("Langfuse API error")
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
             result = await service.submit_feedback(
@@ -442,7 +442,7 @@ class TestInternalMethods:
     async def test_submit_langfuse_score_success(self, service):
         """_submit_langfuse_score() submits score successfully."""
         mock_client = MagicMock()
-        mock_client.score = MagicMock()
+        mock_client.create_score = MagicMock()
         mock_client.flush = MagicMock()
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
@@ -454,7 +454,7 @@ class TestInternalMethods:
             )
 
         assert result is True
-        mock_client.score.assert_called_once_with(
+        mock_client.create_score.assert_called_once_with(
             trace_id="trace-success",
             name="quality",
             value=0.9,
@@ -466,7 +466,7 @@ class TestInternalMethods:
     async def test_submit_langfuse_score_handles_exception(self, service):
         """_submit_langfuse_score() handles exceptions gracefully."""
         mock_client = MagicMock()
-        mock_client.score.side_effect = Exception("API error")
+        mock_client.create_score.side_effect = Exception("API error")
 
         with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
             result = await service._submit_langfuse_score(
@@ -570,8 +570,8 @@ class TestIntegration:
         assert result["langfuse_submitted"] is True
 
         # Verify Langfuse score submitted
-        mock_client.score.assert_called_once()
-        assert mock_client.score.call_args.kwargs["value"] == 0.0
+        mock_client.create_score.assert_called_once()
+        assert mock_client.create_score.call_args.kwargs["value"] == 0.0
 
         # Verify artifact queued
         assert mock_session.add.called
@@ -609,3 +609,193 @@ class TestIntegration:
         assert mock_session.add.called
         added_annotation = mock_session.add.call_args[0][0]
         assert added_annotation.reason == "low_quality"
+
+
+@pytest.mark.unit
+class TestLangfuseQueueIntegration:
+    """Tests for Langfuse Annotation Queue integration."""
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_success(self, service, monkeypatch):
+        """_add_to_langfuse_queue() successfully adds item to Langfuse queue."""
+        artifact_id = uuid.uuid4()
+        trace_id = "trace-langfuse-123"
+        queue_id = "aq_test_queue_123"
+
+        # Mock environment variables
+        monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+        monkeypatch.setenv("LANGFUSE_HOST", "http://localhost:3000")
+
+        # Mock settings to return queue_id
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
+
+            # Mock httpx AsyncClient
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+
+            async def mock_post(*args, **kwargs):
+                # Verify request payload
+                json_data = kwargs.get("json")
+                assert json_data["objectId"] == str(artifact_id)
+                assert json_data["objectType"] == "artifact"
+                assert json_data["traceId"] == trace_id
+                assert json_data["data"]["reason"] == "low_quality"
+                assert "queued_at" in json_data["data"]
+                return mock_response
+
+            mock_client = AsyncMock()
+            mock_client.post = mock_post
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+
+            with patch("httpx.AsyncClient", return_value=mock_client):
+                result = await service._add_to_langfuse_queue(
+                    artifact_id=artifact_id,
+                    trace_id=trace_id,
+                    reason="low_quality",
+                    metadata={"quality_scores": {"relevance": 0.5}},
+                )
+
+        # Should succeed
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_no_queue_id(self, service, monkeypatch):
+        """_add_to_langfuse_queue() returns False when queue_id not configured."""
+        artifact_id = uuid.uuid4()
+
+        # Mock settings without queue_id
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = None
+
+            result = await service._add_to_langfuse_queue(
+                artifact_id=artifact_id,
+                trace_id="trace-123",
+                reason="low_quality",
+                metadata=None,
+            )
+
+        # Should return False gracefully
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_langfuse_disabled(self, service, monkeypatch):
+        """_add_to_langfuse_queue() returns False when Langfuse is disabled."""
+        artifact_id = uuid.uuid4()
+        queue_id = "aq_test_queue_123"
+
+        # Mock Langfuse disabled
+        monkeypatch.setenv("LANGFUSE_ENABLED", "false")
+
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
+
+            result = await service._add_to_langfuse_queue(
+                artifact_id=artifact_id,
+                trace_id="trace-123",
+                reason="low_quality",
+                metadata=None,
+            )
+
+        # Should return False gracefully
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_missing_credentials(self, service, monkeypatch):
+        """_add_to_langfuse_queue() returns False when credentials are missing."""
+        artifact_id = uuid.uuid4()
+        queue_id = "aq_test_queue_123"
+
+        # Mock enabled but no credentials
+        monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+        monkeypatch.delenv("LANGFUSE_PUBLIC_KEY", raising=False)
+        monkeypatch.delenv("LANGFUSE_SECRET_KEY", raising=False)
+
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
+
+            result = await service._add_to_langfuse_queue(
+                artifact_id=artifact_id,
+                trace_id="trace-123",
+                reason="low_quality",
+                metadata=None,
+            )
+
+        # Should return False gracefully
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_add_to_langfuse_queue_api_error(self, service, monkeypatch):
+        """_add_to_langfuse_queue() returns False on HTTP error (graceful degradation)."""
+        artifact_id = uuid.uuid4()
+        queue_id = "aq_test_queue_123"
+
+        # Mock environment
+        monkeypatch.setenv("LANGFUSE_ENABLED", "true")
+        monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-test")
+        monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-test")
+
+        with patch("app.core.annotation_service.settings") as mock_settings:
+            mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
+
+            # Mock HTTP error
+            import httpx
+
+            async def mock_post_error(*args, **kwargs):
+                raise httpx.HTTPStatusError(
+                    "Queue not found", request=MagicMock(), response=MagicMock()
+                )
+
+            mock_client = AsyncMock()
+            mock_client.post = mock_post_error
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+
+            with patch("httpx.AsyncClient", return_value=mock_client):
+                result = await service._add_to_langfuse_queue(
+                    artifact_id=artifact_id,
+                    trace_id="trace-123",
+                    reason="low_quality",
+                    metadata=None,
+                )
+
+        # Should return False (graceful degradation, no exception)
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_queue_artifact_calls_langfuse_integration(self, service, mock_session):
+        """_queue_artifact() calls _add_to_langfuse_queue() after local queuing."""
+        artifact_id = uuid.uuid4()
+        trace_id = "trace-integration-123"
+
+        # Mock existing query to return None (no existing queue)
+        mock_result = AsyncMock()
+        mock_result.scalar_one_or_none = MagicMock(return_value=None)
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        mock_session.add = MagicMock()
+        mock_session.commit = AsyncMock()
+        mock_session.refresh = AsyncMock()
+
+        # Mock _add_to_langfuse_queue
+        with patch.object(service, "_add_to_langfuse_queue", new=AsyncMock()) as mock_langfuse:
+            await service._queue_artifact(
+                artifact_id=artifact_id,
+                trace_id=trace_id,
+                reason="negative_feedback",
+                metadata={"comment": "Not helpful"},
+            )
+
+        # Should add to local database
+        assert mock_session.add.called
+        assert mock_session.commit.called
+
+        # Should also call Langfuse integration
+        mock_langfuse.assert_called_once_with(
+            artifact_id=artifact_id,
+            trace_id=trace_id,
+            reason="negative_feedback",
+            metadata={"comment": "Not helpful"},
+        )

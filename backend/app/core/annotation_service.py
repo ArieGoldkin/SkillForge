@@ -3,22 +3,27 @@
 This service handles:
 1. User feedback submission (thumbs up/down) with Langfuse score tracking
 2. Automatic queuing of low-quality artifacts for human review
-3. Graceful degradation when Langfuse is unavailable
+3. Integration with Langfuse Annotation Queue for UI-based review
+4. Graceful degradation when Langfuse is unavailable
 
 Architecture:
 - Uses dependency injection for repository
 - Langfuse integration for observability (optional)
+- Dual queuing: Local database + Langfuse Annotation Queue
 - Structured logging for debugging
 """
 
+import os
 import uuid
 from datetime import UTC, datetime
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
+import httpx
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.langfuse_config import get_langfuse_client
 from app.core.logging import get_logger
 from app.db.models.annotation_queue import AnnotationQueue
@@ -310,7 +315,7 @@ class AnnotationService:
             return False
 
         try:
-            client.score(
+            client.create_score(
                 trace_id=trace_id,
                 name=score_name,
                 value=score_value,
@@ -348,6 +353,10 @@ class AnnotationService:
     ) -> None:
         """Add an artifact to the annotation queue.
 
+        Queues artifact in both:
+        1. Local database (annotation_queue table) - for API access
+        2. Langfuse Annotation Queue (if configured) - for UI-based review
+
         Args:
             artifact_id: ID of the artifact to queue
             trace_id: Optional Langfuse trace ID
@@ -375,7 +384,7 @@ class AnnotationService:
             )
             return
 
-        # Create new queue entry
+        # Create new queue entry in local database
         queue_entry = AnnotationQueue(
             artifact_id=artifact_id,
             trace_id=trace_id,
@@ -389,11 +398,134 @@ class AnnotationService:
         await self.session.refresh(queue_entry)
 
         logger.info(
-            "artifact_queued",
+            "artifact_queued_locally",
             queue_id=queue_entry.id,
             artifact_id=str(artifact_id),
             reason=reason,
         )
+
+        # Also add to Langfuse Annotation Queue (optional, graceful degradation)
+        await self._add_to_langfuse_queue(
+            artifact_id=artifact_id,
+            trace_id=trace_id,
+            reason=reason,
+            metadata=metadata,
+        )
+
+    async def _add_to_langfuse_queue(
+        self,
+        artifact_id: uuid.UUID,
+        trace_id: str | None,
+        reason: QueueReason,
+        metadata: dict[str, object] | None = None,
+    ) -> bool:
+        """Add item to Langfuse Annotation Queue for UI-based review.
+
+        This enables reviewers to use the Langfuse UI for annotation workflows.
+
+        Args:
+            artifact_id: ID of the artifact to queue
+            trace_id: Optional Langfuse trace ID
+            reason: Reason for queuing
+            metadata: Additional context for reviewers
+
+        Returns:
+            True if successfully added to Langfuse queue, False otherwise
+
+        """
+        # Check if Langfuse queue is configured
+        queue_id = settings.LANGFUSE_ANNOTATION_QUEUE_ID
+        if not queue_id:
+            logger.debug(
+                "langfuse_queue_not_configured",
+                message="LANGFUSE_ANNOTATION_QUEUE_ID not set, skipping Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Check if Langfuse is enabled
+        langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
+        if not langfuse_enabled:
+            logger.debug(
+                "langfuse_not_enabled",
+                message="LANGFUSE_ENABLED not set, skipping Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Get Langfuse credentials
+        public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+        secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+        host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
+
+        if not public_key or not secret_key:
+            logger.debug(
+                "langfuse_credentials_missing",
+                message="Langfuse credentials not set, skipping Langfuse queue",
+                artifact_id=str(artifact_id),
+            )
+            return False
+
+        # Prepare queue item payload
+        item_data: dict[str, Any] = {
+            "objectId": str(artifact_id),
+            "objectType": "artifact",  # Custom object type for SkillForge
+        }
+
+        # Add trace_id if available
+        if trace_id:
+            item_data["traceId"] = trace_id
+
+        # Add metadata with reason
+        item_metadata = metadata.copy() if metadata else {}
+        item_metadata["reason"] = reason
+        item_metadata["queued_at"] = datetime.now(UTC).isoformat()
+        item_data["data"] = item_metadata
+
+        try:
+            # Submit to Langfuse Annotation Queue API
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{host}/api/public/annotation-queues/{queue_id}/items",
+                    json=item_data,
+                    auth=(public_key, secret_key),
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+
+                logger.info(
+                    "artifact_added_to_langfuse_queue",
+                    artifact_id=str(artifact_id),
+                    queue_id=queue_id,
+                    trace_id=trace_id,
+                    reason=reason,
+                )
+
+                return True
+
+        except httpx.HTTPError as e:
+            # Graceful degradation - log warning but don't fail the operation
+            logger.warning(
+                "langfuse_queue_submission_failed",
+                artifact_id=str(artifact_id),
+                queue_id=queue_id,
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
+            )
+            return False
+
+        except Exception as e:  # noqa: BLE001 - Graceful degradation
+            # Catch any unexpected errors
+            logger.warning(
+                "langfuse_queue_submission_error",
+                artifact_id=str(artifact_id),
+                queue_id=queue_id,
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True,
+            )
+            return False
 
 
 def get_annotation_service(

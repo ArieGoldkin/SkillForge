@@ -499,6 +499,17 @@ class Settings(BaseSettings):
         description="Enable Redis L2 cache for prompts (shared across workers)",
     )
 
+    # Langfuse Annotation Queue Configuration (Issue #382)
+    LANGFUSE_ANNOTATION_QUEUE_ID: str | None = Field(
+        default=None,
+        description=(
+            "Langfuse Annotation Queue ID for human review workflow. "
+            "When set, low-quality artifacts and negative feedback are added to "
+            "this queue for manual review. Get the ID from Langfuse UI Settings → "
+            "Annotation Queues or run: poetry run python scripts/setup_langfuse_annotation_queue.py"
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

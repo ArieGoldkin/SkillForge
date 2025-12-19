@@ -192,7 +192,7 @@ def submit_langfuse_score(
             )
             return
 
-        client.score(
+        client.create_score(
             trace_id=str(trace_id),
             name=name,
             value=value,
