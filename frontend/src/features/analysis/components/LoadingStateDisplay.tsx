@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type * as React from 'react'
 
 import { FileText, Loader2 } from 'lucide-react'
@@ -64,7 +65,9 @@ const getDefaultDisplay = (): { icon: React.ReactNode; text: string; subtitle: s
   subtitle: 'Please wait',
 })
 
-export const LoadingStateDisplay: React.FC<LoadingStateDisplayProps> = ({ loadingState }) => {
+export const LoadingStateDisplay = memo<LoadingStateDisplayProps>(function LoadingStateDisplay({
+  loadingState,
+}) {
   const getDisplayContent = (): { icon?: React.ReactNode; text: string; subtitle?: string } => {
     switch (loadingState.type) {
       case 'waiting_for_events':
@@ -147,6 +150,6 @@ export const LoadingStateDisplay: React.FC<LoadingStateDisplayProps> = ({ loadin
       </div>
     </>
   )
-}
+})
 
 LoadingStateDisplay.displayName = 'LoadingStateDisplay'

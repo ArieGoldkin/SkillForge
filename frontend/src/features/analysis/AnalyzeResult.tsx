@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
 import {
@@ -31,16 +31,34 @@ import { useAnalysisStatus } from './hooks/useAnalysisStatus'
 const routeApi = getRouteApi('/analyze/$id')
 
 /**
- * Zustand Selectors - Stable references for optimized subscriptions
- * Each selector only triggers re-render when its specific slice changes
+ * Zustand Selectors - Optimized consolidated subscriptions
+ * Reduces from 7 individual subscriptions to 3 consolidated ones
+ */
+
+/**
+ * High-frequency events selector (keep separate to avoid unnecessary re-renders)
  */
 const selectEvents = (state: SSEStore) => state.events
-const selectIsConnected = (state: SSEStore) => state.isConnected
-const selectIsComplete = (state: SSEStore) => state.isComplete
-const selectError = (state: SSEStore) => state.error
-const selectConnect = (state: SSEStore) => state.connect
-const selectDisconnect = (state: SSEStore) => state.disconnect
-const selectReset = (state: SSEStore) => state.reset
+
+/**
+ * Connection state selector - consolidates connection-related state and actions
+ */
+const selectConnectionState = (state: SSEStore) => ({
+  isConnected: state.isConnected,
+  connect: state.connect,
+  disconnect: state.disconnect,
+})
+
+/**
+ * Analysis state selector - consolidates analysis completion, errors, and reset
+ */
+const selectAnalysisState = (state: SSEStore) => ({
+  isComplete: state.isComplete,
+  error: state.error,
+  reset: state.reset,
+})
+
+// Legacy selectors removed - now using consolidated selectors
 
 const useSSELifecycle = ({
   analysisId,
@@ -86,69 +104,7 @@ const checkWaitingForFirstEvent = (params: {
   !params.isComplete &&
   (params.statusLoading || !params.resolvedStatus)
 
-/* eslint-disable max-lines-per-function -- Function handles complex state derivation with multiple conditions for completion, failures, and error states */
-const useDerivedState = ({
-  artifactId,
-  urlArtifactId,
-  statusState,
-  isComplete,
-  events,
-  hasError,
-  error,
-  errorMessage,
-  completed,
-  overallProgress,
-  hasFailedStages,
-}: {
-  artifactId?: string
-  urlArtifactId?: string
-  statusState: ReturnType<typeof useAnalysisStatus>
-  isComplete: boolean
-  events: unknown[]
-  hasError: boolean
-  error: Error | null
-  errorMessage?: string | null
-  completed?: boolean
-  overallProgress: { stage: string; progress: number }
-  hasFailedStages: boolean
-}) => {
-  const resolvedArtifactId = useMemo(
-    () => artifactId || statusState.resolvedArtifactId || urlArtifactId,
-    [artifactId, statusState.resolvedArtifactId, urlArtifactId]
-  )
-
-  const resolvedStatus = useMemo(
-    () => statusState.resolvedStatus || (isComplete ? 'completed' : undefined),
-    [isComplete, statusState.resolvedStatus]
-  )
-
-  // CRITICAL: Only consider analysis truly complete if:
-  // 1. Artifact generation completed (isComplete = true)
-  // 2. No failed stages (overallProgress.stage === 'complete', not just 'analyzing' or 'generating')
-  // 3. Progress is 100% (not 99% which indicates failures or pending stages)
-  // 4. No failed stages (hasFailedStages = false) - CRITICAL: Never show as truly complete if there are failed stages
-  const isTrulyComplete =
-    !hasFailedStages &&
-    ((completed && Boolean(urlArtifactId)) ||
-      isStatusComplete(resolvedStatus) ||
-      (isComplete && overallProgress.stage === 'complete' && overallProgress.progress === 100))
-
-  const isResolvedComplete = isTrulyComplete
-  const isFailed = resolvedStatus === 'failed' || hasError
-  const effectiveError =
-    statusState.statusError || errorMessage || error?.message || 'An error occurred during analysis'
-  const waitingForFirstEvent = checkWaitingForFirstEvent({
-    isResolvedComplete,
-    isFailed,
-    eventsLength: events.length,
-    error,
-    isComplete,
-    statusLoading: statusState.loading,
-    resolvedStatus: statusState.resolvedStatus,
-  })
-
-  return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
-}
+// useDerivedState logic inlined into useMemo above for React Compiler compatibility
 
 /**
  * Custom hook for managing focus when analysis completes
@@ -181,14 +137,10 @@ export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
 
-  // Individual selectors - only re-render when specific state changes
+  // Consolidated selectors for optimal performance (3 instead of 7 subscriptions)
   const events = useSSEStore(selectEvents)
-  const isConnected = useSSEStore(selectIsConnected)
-  const isComplete = useSSEStore(selectIsComplete)
-  const error = useSSEStore(selectError)
-  const connect = useSSEStore(selectConnect)
-  const disconnect = useSSEStore(selectDisconnect)
-  const reset = useSSEStore(selectReset)
+  const { isConnected, connect, disconnect } = useSSEStore(selectConnectionState)
+  const { isComplete, error, reset } = useSSEStore(selectAnalysisState)
 
   // New computed loading states (Issue #399)
   const loadingState = useLoadingState()
@@ -197,6 +149,11 @@ export default function AnalyzeResult() {
 
   // Timeout warning dismissal state (Issue #399)
   const [timeoutWarningDismissed, setTimeoutWarningDismissed] = useState(false)
+
+  // Memoized event handler to prevent unnecessary re-renders
+  const handleTimeoutWarningDismiss = useCallback(() => {
+    setTimeoutWarningDismissed(true)
+  }, [])
 
   // Focus management for accessibility
   const completionRef = useCompletionFocus(isComplete)
@@ -226,7 +183,47 @@ export default function AnalyzeResult() {
     reset,
   })
 
-  const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useDerivedState({
+  const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useMemo(() => {
+    // Inline the useDerivedState logic to avoid React Compiler memoization issues
+    const resolvedArtifactId = artifactId || statusState.resolvedArtifactId || urlArtifactId
+    const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'completed' : undefined)
+
+    // CRITICAL: Only consider analysis truly complete if:
+    // 1. Artifact generation completed (isComplete = true)
+    // 2. No failed stages (overallProgress.stage === 'complete', not just 'analyzing' or 'generating')
+    // 3. Progress is 100% (not 99% which indicates failures or pending stages)
+    // 4. No failed stages (hasFailedStages = false) - CRITICAL: Never show as truly complete if there are failed stages
+    const isTrulyComplete =
+      !hasFailedStages &&
+      ((completed && Boolean(urlArtifactId)) ||
+        isStatusComplete(resolvedStatus) ||
+        (isComplete && overallProgress.stage === 'complete' && overallProgress.progress === 100))
+
+    const isResolvedComplete = isTrulyComplete
+    const isFailed = resolvedStatus === 'failed' || hasError
+    const effectiveError =
+      statusState.statusError ||
+      errorMessage ||
+      error?.message ||
+      'An error occurred during analysis'
+    const waitingForFirstEvent = checkWaitingForFirstEvent({
+      isResolvedComplete,
+      isFailed,
+      eventsLength: events.length,
+      error,
+      isComplete,
+      statusLoading: statusState.loading,
+      resolvedStatus: statusState.resolvedStatus,
+    })
+
+    return {
+      resolvedArtifactId,
+      isResolvedComplete,
+      isFailed,
+      waitingForFirstEvent,
+      effectiveError,
+    }
+  }, [
     artifactId,
     urlArtifactId,
     statusState,
@@ -238,7 +235,7 @@ export default function AnalyzeResult() {
     completed,
     overallProgress,
     hasFailedStages,
-  })
+  ])
 
   // Issue #396: CompletedAnalysisView no longer needs artifactId/traceId props
   // - those are now accessed from Zustand store by AnalysisCompleteCard
@@ -289,7 +286,7 @@ export default function AnalyzeResult() {
         {/* Timeout warning banner (Issue #399) */}
         <TimeoutWarningBanner
           showTimeoutWarning={showTimeoutWarning && !timeoutWarningDismissed}
-          onDismiss={() => setTimeoutWarningDismissed(true)}
+          onDismiss={handleTimeoutWarningDismiss}
         />
 
         <LoadingStateDisplay loadingState={loadingState} />

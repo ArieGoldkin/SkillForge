@@ -1,4 +1,4 @@
-import React from 'react'
+import { memo } from 'react'
 
 import { AlertTriangle, X } from 'lucide-react'
 
@@ -20,10 +20,10 @@ interface TimeoutWarningBannerProps {
  *
  * Issue #399: Prevents user confusion during long analysis setup times
  */
-export const TimeoutWarningBanner: React.FC<TimeoutWarningBannerProps> = ({
+export const TimeoutWarningBanner = memo<TimeoutWarningBannerProps>(function TimeoutWarningBanner({
   showTimeoutWarning,
   onDismiss,
-}) => {
+}) {
   const dismissButtonRef = React.useRef<HTMLButtonElement>(null)
 
   // Focus management - auto-focus dismiss button when banner appears
@@ -72,6 +72,6 @@ export const TimeoutWarningBanner: React.FC<TimeoutWarningBannerProps> = ({
       </AlertDescription>
     </Alert>
   )
-}
+})
 
 TimeoutWarningBanner.displayName = 'TimeoutWarningBanner'
