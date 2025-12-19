@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type * as React from 'react'
 
 import type { StageStatus } from '@app-types/sse'
@@ -41,9 +42,11 @@ interface StageItemProps {
  * - Uses role="listitem" for semantic structure
  * - aria-label describes stage and status
  * - Icon marked aria-hidden (decorative, status conveyed by badge)
+ *
+ * Wrapped with React.memo to prevent re-renders when stage/isLast unchanged.
  */
 /* eslint-disable-next-line max-lines-per-function -- Accessibility attributes add necessary complexity */
-export const StageItem: React.FC<StageItemProps> = ({ stage, isLast }) => {
+export const StageItem = memo(function StageItem({ stage, isLast }: StageItemProps) {
   const stageId = `stage-${stage.name}`
 
   return (
@@ -108,6 +111,4 @@ export const StageItem: React.FC<StageItemProps> = ({ stage, isLast }) => {
       </div>
     </div>
   )
-}
-
-StageItem.displayName = 'StageItem'
+})

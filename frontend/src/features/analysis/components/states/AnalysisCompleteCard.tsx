@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import { ArtifactPreviewModal, useArtifactPreview } from '@features/artifact'
 
 import { cn } from '@lib/utils'
@@ -14,7 +16,14 @@ interface AnalysisCompleteCardProps {
   failedStagesCount?: number
 }
 
-export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
+/**
+ * AnalysisCompleteCard - Displays completion state with preview modal
+ *
+ * Wrapped with React.memo - only re-renders when props change.
+ */
+export const AnalysisCompleteCard = memo(function AnalysisCompleteCard(
+  props: AnalysisCompleteCardProps
+) {
   const {
     artifactId,
     analysisId,
@@ -54,4 +63,4 @@ export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
       />
     </div>
   )
-}
+})

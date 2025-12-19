@@ -1,6 +1,7 @@
 /* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
 import { useEffect, useMemo, useRef } from 'react'
 
+import type { SSEStore } from '@stores/sseStore'
 import { useSSEStore } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
@@ -20,6 +21,18 @@ import { useAnalysisProgress } from './hooks/useAnalysisProgress'
 import { useAnalysisStatus } from './hooks/useAnalysisStatus'
 
 const routeApi = getRouteApi('/analyze/$id')
+
+/**
+ * Zustand Selectors - Stable references for optimized subscriptions
+ * Each selector only triggers re-render when its specific slice changes
+ */
+const selectEvents = (state: SSEStore) => state.events
+const selectIsConnected = (state: SSEStore) => state.isConnected
+const selectIsComplete = (state: SSEStore) => state.isComplete
+const selectError = (state: SSEStore) => state.error
+const selectConnect = (state: SSEStore) => state.connect
+const selectDisconnect = (state: SSEStore) => state.disconnect
+const selectReset = (state: SSEStore) => state.reset
 
 const useSSELifecycle = ({
   analysisId,
@@ -159,7 +172,15 @@ const useCompletionFocus = (isComplete: boolean) => {
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
-  const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
+
+  // Individual selectors - only re-render when specific state changes
+  const events = useSSEStore(selectEvents)
+  const isConnected = useSSEStore(selectIsConnected)
+  const isComplete = useSSEStore(selectIsComplete)
+  const error = useSSEStore(selectError)
+  const connect = useSSEStore(selectConnect)
+  const disconnect = useSSEStore(selectDisconnect)
+  const reset = useSSEStore(selectReset)
 
   // Focus management for accessibility
   const completionRef = useCompletionFocus(isComplete)

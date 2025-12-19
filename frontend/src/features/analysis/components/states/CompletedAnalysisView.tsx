@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import type { OverallProgress, ProgressStep } from '../../hooks/useAnalysisProgress'
 import { ProgressColumn } from '../progress/ProgressColumn'
 import { AnalysisHeader } from '../steps/AnalysisHeader'
@@ -20,7 +22,12 @@ interface CompletedAnalysisViewProps {
   }
 }
 
-export function CompletedAnalysisView({
+/**
+ * CompletedAnalysisView - Full page view for completed analysis
+ *
+ * Wrapped with React.memo - only re-renders when props change.
+ */
+export const CompletedAnalysisView = memo(function CompletedAnalysisView({
   analysisId,
   artifactId,
   traceId,
@@ -58,4 +65,4 @@ export function CompletedAnalysisView({
       </div>
     </div>
   )
-}
+})
