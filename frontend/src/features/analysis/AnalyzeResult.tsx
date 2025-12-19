@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { useSSEStore } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
@@ -129,11 +129,40 @@ const useDerivedState = ({
   return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
 }
 
+/**
+ * Custom hook for managing focus when analysis completes
+ * WCAG 2.4.3: Focus Order - Moves focus to completion card for screen readers
+ */
+const useCompletionFocus = (isComplete: boolean) => {
+  const completionRef = useRef<HTMLDivElement>(null)
+  const hasAnnouncedRef = useRef(false)
+
+  useEffect(() => {
+    if (isComplete && completionRef.current && !hasAnnouncedRef.current) {
+      // Focus the completion card for screen reader users
+      completionRef.current.focus()
+      hasAnnouncedRef.current = true
+    }
+  }, [isComplete])
+
+  // Reset announcement flag when not complete
+  useEffect(() => {
+    if (!isComplete) {
+      hasAnnouncedRef.current = false
+    }
+  }, [isComplete])
+
+  return completionRef
+}
+
 // eslint-disable-next-line complexity -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
   const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
+
+  // Focus management for accessibility
+  const completionRef = useCompletionFocus(isComplete)
   const {
     overallProgress,
     steps,
@@ -215,6 +244,14 @@ export default function AnalyzeResult() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {/* Live region for screen reader announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {isComplete &&
+          (hasFailedStages
+            ? 'Analysis complete with errors. Some stages failed. Review your results below.'
+            : 'Analysis complete. Review your results below.')}
+      </div>
+
       <AnalysisHeader
         title={analysisMetadata?.title || 'Content Analysis'}
         url={analysisMetadata?.url || (id ? `Analysis ID: ${id}` : '')}
@@ -248,14 +285,21 @@ export default function AnalyzeResult() {
             name="ActivityColumn"
           >
             {isComplete && (resolvedArtifactId || artifactId) ? (
-              <AnalysisCompleteCard
-                artifactId={resolvedArtifactId || artifactId}
-                analysisId={id}
-                traceId={traceId}
-                variant="column"
-                hasFailedStages={hasFailedStages}
-                failedStagesCount={failedStagesCount}
-              />
+              <div
+                ref={completionRef}
+                tabIndex={-1}
+                aria-label={hasFailedStages ? 'Analysis complete with errors' : 'Analysis complete'}
+                className="outline-none"
+              >
+                <AnalysisCompleteCard
+                  artifactId={resolvedArtifactId || artifactId}
+                  analysisId={id}
+                  traceId={traceId}
+                  variant="column"
+                  hasFailedStages={hasFailedStages}
+                  failedStagesCount={failedStagesCount}
+                />
+              </div>
             ) : (
               <ActivityColumn activities={activities} isLive={isConnected} />
             )}

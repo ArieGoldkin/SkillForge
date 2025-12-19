@@ -169,7 +169,8 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
           <Progress
             value={progress}
             className="h-2"
-            aria-label={`Analysis progress: ${progress}%`}
+            aria-label="Analysis progress"
+            aria-valuetext={`${progress}% complete - ${currentStep}`}
           />
         </div>
 

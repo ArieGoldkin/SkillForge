@@ -68,7 +68,11 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       <CardContent>
         {error && <ErrorAlert message={error.message} />}
         {showReconnecting && <ReconnectingMessage />}
-        <div className="space-y-0 max-h-[500px] overflow-y-auto">
+        <div
+          className="space-y-0 max-h-[500px] overflow-y-auto"
+          role="list"
+          aria-label="Analysis stages"
+        >
           {stageStates.map((stage, index) => (
             <StageItem key={stage.name} stage={stage} isLast={index === stageStates.length - 1} />
           ))}
