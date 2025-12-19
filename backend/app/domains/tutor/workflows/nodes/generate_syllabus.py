@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
 from app.db.session import get_session_factory
 from app.domains.tutor.workflows.config import SYLLABUS_GENERATION_PROMPT
@@ -55,6 +56,7 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PL
             "tutor_phase": "syllabus_generation",
         },
         session_id=str(session_id),
+        user_id="anonymous",
     )
 
     # Emit SSE event: syllabus generation started
@@ -106,7 +108,8 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PL
             HumanMessage(content=prompt),
         ]
 
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 
         syllabus_text = extract_string_content(response)

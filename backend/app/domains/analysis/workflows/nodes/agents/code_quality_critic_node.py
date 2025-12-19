@@ -67,8 +67,11 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
         metadata={
             "analysis_id": str(analysis_id),
             "content_type": content_type,
+            "agent_name": "code_quality_critic",
         },
         tags=["parallel-execution"],
+        session_id=f"analysis-{analysis_id}",
+        user_id="anonymous",
     )
     trace_id = get_current_trace_id()
 

@@ -98,6 +98,8 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             "retry_count": retry_count,
         },
         tags=["quality-gate"],
+        session_id=f"analysis-{analysis_id}",
+        user_id="anonymous",
     )
     trace_id = get_current_trace_id()
 

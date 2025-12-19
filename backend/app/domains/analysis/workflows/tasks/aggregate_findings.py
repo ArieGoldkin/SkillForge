@@ -313,6 +313,18 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
     agent_findings = get_agent_findings(state)
     start_time = time.time()
 
+    # Runtime metadata updates for Langfuse
+    try:
+        from app.core.tracing import update_current_trace
+
+        update_current_trace(
+            metadata={"analysis_id": str(analysis_id)},
+            session_id=f"analysis-{analysis_id}",
+            user_id="anonymous",
+        )
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
+        pass
+
     # Emit SSE event: aggregation started
     await emit_aggregation_started(analysis_id, len(agent_findings))
 

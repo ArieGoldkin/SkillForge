@@ -11,6 +11,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
 from app.db.session import get_session_factory
 from app.domains.tutor.repositories.session_repository import TutorSessionRepository
@@ -77,6 +78,7 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
             "tutor_phase": "readiness_assessment",
         },
         session_id=str(session_id),
+        user_id="anonymous",
     )
 
     # Emit SSE event: readiness assessment started
@@ -133,7 +135,8 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
             injected_memory=None,  # Future RAG integration point
         )
 
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         response_text = extract_string_content(response)
 
         # Parse JSON response

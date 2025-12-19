@@ -224,6 +224,18 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
     """
     start_time = time.time()
 
+    # Runtime metadata updates for Langfuse
+    try:
+        from app.core.tracing import update_current_trace
+
+        update_current_trace(
+            metadata={"analysis_id": str(analysis_id), "content_type": content_type},
+            session_id=f"analysis-{analysis_id}",
+            user_id="anonymous",
+        )
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
+        pass
+
     # Emit SSE event: supervisor started
     await emit_streaming_event(
         "progress",

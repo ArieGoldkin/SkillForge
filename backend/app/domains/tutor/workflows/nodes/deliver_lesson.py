@@ -8,6 +8,7 @@ import json
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
 from app.domains.tutor.workflows.config import LESSON_DELIVERY_PROMPT, TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
@@ -72,6 +73,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR09
             "tutor_phase": "lesson_delivery",
         },
         session_id=str(session_id),
+        user_id="anonymous",
     )
 
     # Emit SSE event: lesson delivery started
@@ -144,7 +146,8 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR09
             injected_memory=None,  # Future RAG integration point
         )
 
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         lesson_content = extract_string_content(response)
 
         # Stream lesson content via SSE (chunked)

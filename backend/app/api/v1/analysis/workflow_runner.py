@@ -284,7 +284,7 @@ async def _handle_workflow_exception(
         "workflow_type": "analysis",
     },
 )
-async def run_workflow_task(
+async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with validation/persistence logic
     analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
 ) -> None:
     """Run analysis workflow in background task.
@@ -318,6 +318,7 @@ async def run_workflow_task(
         },
         tags=["analysis", "workflow"],
         session_id=f"analysis-{analysis_id}",  # Group all traces for this analysis
+        user_id="anonymous",  # Will be dynamic after auth implementation
     )
 
     try:
@@ -331,18 +332,35 @@ async def run_workflow_task(
         # Note: Workflow-level timeout is handled by step_timeout on graph
         config = create_runnable_config(thread_id=str(analysis_id))
 
+        # Issue #384: Verify Langfuse callback handler is present for graph visualization
+        # The callback handler enables automatic graph structure inference in Langfuse UI
+        callbacks_enabled = bool(config.get("callbacks"))
+        if callbacks_enabled:
+            logger.debug(
+                "langfuse_callback_enabled",
+                analysis_id=str(analysis_id),
+                message="Langfuse CallbackHandler present - graph visualization enabled",
+            )
+        else:
+            logger.debug(
+                "langfuse_callback_disabled",
+                analysis_id=str(analysis_id),
+                message="Langfuse disabled or not configured - graph visualization unavailable",
+            )
+
         input_state: dict[str, str] = {
             "url": url,
             "analysis_id": str(analysis_id),
             "skill_level": skill_level,
         }
 
-        # Execute workflow
+        # Execute workflow with callbacks (Issue #384: enables graph visualization)
         logger.debug(
             "workflow_execution_starting",
             analysis_id=str(analysis_id),
             url=url,
             thread_id=str(analysis_id),
+            callbacks_enabled=callbacks_enabled,
         )
         result = await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
         workflow_completed = True  # Mark as completed successfully

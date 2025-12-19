@@ -50,7 +50,11 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
     try:
         from app.core.tracing import update_current_trace
 
-        update_current_trace(metadata={"analysis_id": str(analysis_id)})
+        update_current_trace(
+            metadata={"analysis_id": str(analysis_id)},
+            session_id=f"analysis-{analysis_id}",
+            user_id="anonymous",
+        )
     except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
@@ -114,7 +118,11 @@ async def generate_embeddings_batch(
     try:
         from app.core.tracing import update_current_trace
 
-        update_current_trace(metadata={"analysis_id": str(analysis_id)})
+        update_current_trace(
+            metadata={"analysis_id": str(analysis_id)},
+            session_id=f"analysis-{analysis_id}",
+            user_id="anonymous",
+        )
     except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
