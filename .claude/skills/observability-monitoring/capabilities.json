@@ -12,7 +12,7 @@
         "JSON logging best practices",
         "Log levels and formatting"
       ],
-      "reference_file": "SKILL.md#structured-logging",
+      "reference_file": "references/structured-logging.md",
       "token_cost": 150
     },
     "metrics": {
@@ -22,7 +22,7 @@
         "Prometheus metrics setup",
         "Application metrics best practices"
       ],
-      "reference_file": "SKILL.md#metrics-collection",
+      "reference_file": "references/metrics-collection.md",
       "token_cost": 180
     },
     "tracing": {
@@ -32,7 +32,7 @@
         "OpenTelemetry setup",
         "Trace context propagation"
       ],
-      "reference_file": "SKILL.md#distributed-tracing",
+      "reference_file": "references/distributed-tracing.md",
       "token_cost": 200
     },
     "alerting": {
@@ -42,7 +42,7 @@
         "Alert threshold strategies",
         "On-call notification patterns"
       ],
-      "reference_file": "SKILL.md#alerting-strategies",
+      "reference_file": "references/alerting-strategies.md",
       "token_cost": 140
     },
     "dashboards": {
@@ -52,7 +52,7 @@
         "SLO/SLI definition",
         "Grafana dashboard patterns"
       ],
-      "reference_file": "SKILL.md#dashboards",
+      "reference_file": "references/dashboards.md",
       "token_cost": 150
     }
   },

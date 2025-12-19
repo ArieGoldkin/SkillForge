@@ -12,7 +12,7 @@
         "Set up Langfuse tracing",
         "Debug slow LLM responses"
       ],
-      "reference_file": "SKILL.md#distributed-tracing",
+      "reference_file": "references/tracing-setup.md",
       "token_cost": 200
     },
     "cost-tracking": {
@@ -22,7 +22,7 @@
         "Monitor token usage",
         "Calculate per-user costs"
       ],
-      "reference_file": "SKILL.md#token-cost-tracking",
+      "reference_file": "references/cost-tracking.md",
       "token_cost": 150
     },
     "prompt-management": {
@@ -32,7 +32,7 @@
         "Manage prompts in production",
         "A/B test prompts"
       ],
-      "reference_file": "SKILL.md#prompt-management",
+      "reference_file": "references/prompt-management.md",
       "token_cost": 180
     },
     "evaluation": {
@@ -42,7 +42,7 @@
         "Score LLM responses",
         "Track quality metrics"
       ],
-      "reference_file": "SKILL.md#llm-evaluation",
+      "reference_file": "references/evaluation-scores.md",
       "token_cost": 150
     },
     "session-tracking": {
@@ -52,24 +52,14 @@
         "Track user sessions",
         "Analyze conversation flows"
       ],
-      "reference_file": "SKILL.md#session-tracking",
+      "reference_file": "references/session-tracking.md",
       "token_cost": 120
-    },
-    "langsmith-migration": {
-      "keywords": ["langsmith to langfuse", "migration guide", "replace langsmith"],
-      "solves": [
-        "How do I migrate from LangSmith?",
-        "Replace LangSmith with Langfuse",
-        "Langfuse vs LangSmith"
-      ],
-      "reference_file": "references/langsmith-migration.md",
-      "token_cost": 200
     }
   },
 
   "triggers": {
-    "high_confidence": ["langfuse.*trace", "observe.*decorator", "llm.*cost.*track"],
-    "medium_confidence": ["llm.*monitor", "prompt.*version", "trace.*debug"]
+    "high_confidence": ["langfuse.*trace", "observe.*decorator", "llm.*cost.*track", "callback.*handler"],
+    "medium_confidence": ["llm.*monitor", "prompt.*version", "trace.*debug", "session.*track"]
   },
 
   "integrates_with": ["ai-native-development", "observability-monitoring"],

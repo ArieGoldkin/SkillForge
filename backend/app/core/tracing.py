@@ -25,17 +25,20 @@ R = TypeVar("R")  # Captures return type
 # Span types supported by Langfuse @observe decorator
 # Maps from Langfuse run_type to Langfuse as_type
 # Valid types: generation, embedding, span, agent, tool
-SpanType = Literal["span", "generation"]
+# Issue #384: Added "agent" and "tool" for Agent Graph Visualization
+SpanType = Literal["span", "generation", "agent", "tool"]
 
 # Mapping from Langfuse run_type to Langfuse as_type
+# Issue #384: Updated to support agent graph visualization in Langfuse
 RUN_TYPE_TO_SPAN_TYPE: dict[str, SpanType] = {
     "chain": "span",  # Workflow steps, chains
-    "tool": "span",  # Tool invocations
+    "tool": "tool",  # Tool invocations - enables tool nesting in graphs
     "llm": "generation",  # LLM calls
     "retriever": "span",  # RAG retrieval
     "embedding": "span",  # Embedding calls
     "prompt": "span",  # Prompt templates
     "parser": "span",  # Output parsers
+    "agent": "agent",  # Agent nodes - enables agent graph visualization
 }
 
 

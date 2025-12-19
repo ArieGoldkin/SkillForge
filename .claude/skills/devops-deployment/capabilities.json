@@ -12,7 +12,7 @@
         "GitHub Actions workflow",
         "Pipeline best practices"
       ],
-      "reference_file": "SKILL.md#ci-cd-pipelines",
+      "reference_file": "references/ci-cd-pipelines.md",
       "token_cost": 200
     },
     "docker": {
@@ -22,7 +22,7 @@
         "Dockerfile best practices",
         "Docker Compose setup"
       ],
-      "reference_file": "SKILL.md#containerization",
+      "reference_file": "references/containerization.md",
       "token_cost": 180
     },
     "kubernetes": {
@@ -32,7 +32,7 @@
         "K8s manifest patterns",
         "Helm chart creation"
       ],
-      "reference_file": "SKILL.md#kubernetes",
+      "reference_file": "references/kubernetes.md",
       "token_cost": 250
     },
     "infrastructure-as-code": {
@@ -42,7 +42,7 @@
         "Terraform patterns",
         "Cloud resource provisioning"
       ],
-      "reference_file": "SKILL.md#infrastructure-as-code",
+      "reference_file": "references/infrastructure-as-code.md",
       "token_cost": 200
     },
     "deployment-strategies": {
@@ -52,7 +52,7 @@
         "Blue-green deployment setup",
         "Canary release patterns"
       ],
-      "reference_file": "SKILL.md#deployment-strategies",
+      "reference_file": "references/deployment-strategies.md",
       "token_cost": 160
     }
   },
