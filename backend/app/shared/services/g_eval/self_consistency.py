@@ -133,7 +133,19 @@ async def _score_criterion_with_temperature(  # noqa: PLR0913 - Function needs a
         response = await model.ainvoke(messages, config=config)
         # Ensure content is a string (handle LangChain's str | list type)
         content = response.content if isinstance(response.content, str) else str(response.content)
-        return _parse_g_eval_response(content, criterion)
+        result = _parse_g_eval_response(content, criterion)
+
+        # Submit token usage and cost metrics to Langfuse
+        # Import here to avoid circular dependency
+        from app.shared.services.g_eval.scorer import _submit_token_metrics_to_langfuse
+
+        _submit_token_metrics_to_langfuse(
+            response=response,
+            criterion=f"{criterion}_sc_sample",  # Mark as self-consistency sample
+            agent_type=agent_type,
+        )
+
+        return result
     except Exception as e:
         logger.exception(
             "self_consistency_sample_error",

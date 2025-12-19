@@ -199,6 +199,136 @@ def _parse_g_eval_response(response: str, criterion: str) -> CriterionScore:
 # ============================================================================
 
 
+def _submit_token_metrics_to_langfuse(
+    response: Any,
+    criterion: str,
+    agent_type: str,
+) -> None:
+    """Submit token usage and cost metrics to Langfuse for cost tracking.
+
+    Extracts token counts from LLM response and calculates cost based on
+    model pricing. Submits individual metrics for:
+    - Input token count
+    - Output token count
+    - Total token count
+    - Estimated cost in USD
+
+    Args:
+        response: LLM response object (AIMessage) with usage_metadata
+        criterion: The criterion being evaluated
+        agent_type: Agent type for metric categorization
+
+    """
+    try:
+        from app.core.langfuse_config import submit_langfuse_score
+        from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
+
+        # Extract token usage from response
+        # LangChain AIMessage has usage_metadata field (optional)
+        usage = getattr(response, "usage_metadata", None)
+
+        if not usage:
+            logger.debug(
+                "token_metrics_no_usage_data",
+                criterion=criterion,
+                agent_type=agent_type,
+                message="No usage_metadata in response - skipping token metrics",
+            )
+            return
+
+        # Extract token counts (handle both dict and object attribute access)
+        input_tokens = (
+            usage.get("input_tokens", 0)
+            if isinstance(usage, dict)
+            else getattr(usage, "input_tokens", 0)
+        )
+        output_tokens = (
+            usage.get("output_tokens", 0)
+            if isinstance(usage, dict)
+            else getattr(usage, "output_tokens", 0)
+        )
+        total_tokens = (
+            usage.get("total_tokens", 0)
+            if isinstance(usage, dict)
+            else getattr(usage, "total_tokens", 0)
+        )
+
+        # If total not provided, calculate it
+        if total_tokens == 0 and (input_tokens > 0 or output_tokens > 0):
+            total_tokens = input_tokens + output_tokens
+
+        # Submit token metrics to Langfuse
+        submit_langfuse_score(
+            name="token_count_input",
+            value=float(input_tokens),
+            comment=f"G-Eval {criterion}: Input tokens for {agent_type}",
+        )
+        submit_langfuse_score(
+            name="token_count_output",
+            value=float(output_tokens),
+            comment=f"G-Eval {criterion}: Output tokens for {agent_type}",
+        )
+        submit_langfuse_score(
+            name="token_count_total",
+            value=float(total_tokens),
+            comment=f"G-Eval {criterion}: Total tokens for {agent_type}",
+        )
+
+        # Record usage in cost tracker for session-level analytics
+        cost_tracker = GEvalCostTracker.get_instance()
+        eval_id = f"g_eval_{criterion}_{agent_type}"
+
+        # Extract model name from response metadata
+        response_metadata = getattr(response, "response_metadata", {})
+        model_name = response_metadata.get(
+            "model_name", "gemini-3-flash"
+        )  # Default to g_eval model
+
+        # Cached tokens (if available) - Anthropic/Gemini provide this
+        cached_tokens = (
+            usage.get("cache_read_input_tokens", 0)
+            if isinstance(usage, dict)
+            else getattr(usage, "cache_read_input_tokens", 0)
+        )
+
+        cost = cost_tracker.record_usage(
+            eval_id=eval_id,
+            model=model_name,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cached_tokens=cached_tokens,
+            variant=agent_type,
+        )
+
+        # Submit cost metric to Langfuse
+        submit_langfuse_score(
+            name="cost_usd",
+            value=cost.total_cost,
+            comment=f"G-Eval {criterion}: ${cost.total_cost:.6f} for {agent_type} ({model_name})",
+        )
+
+        logger.debug(
+            "token_metrics_submitted_to_langfuse",
+            criterion=criterion,
+            agent_type=agent_type,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            cached_tokens=cached_tokens,
+            cost_usd=cost.total_cost,
+            model=model_name,
+        )
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Don't fail scoring if metric submission fails
+        logger.warning(
+            "token_metrics_submission_failed",
+            criterion=criterion,
+            agent_type=agent_type,
+            error=str(e),
+        )
+
+
 def _submit_g_eval_scores_to_langfuse(
     criteria_scores: dict[str, CriterionScore],
     overall: float,
@@ -293,6 +423,18 @@ async def _score_criterion(
                 criterion=criterion,
                 agent_type=agent_type,
             )
+            # Submit cache hit metric to Langfuse
+            try:
+                from app.core.langfuse_config import submit_langfuse_score
+
+                submit_langfuse_score(
+                    name="g_eval_cache_hit",
+                    value=1,
+                    comment=f"G-Eval file cache hit: {criterion}",
+                )
+            except Exception as e:  # noqa: BLE001 - Graceful degradation
+                logger.warning("g_eval_cache_hit_score_submission_failed", error=str(e))
+
             return CriterionScore(
                 criterion=criterion,
                 score=cached.score,
@@ -304,6 +446,20 @@ async def _score_criterion(
     # L1 miss - call LLM with task routing for cost optimization
     # L2 Redis semantic cache is automatically integrated at model level via get_chat_model()
     # This provides semantic matching for similar (but not identical) evaluations
+
+    # Submit cache miss metric to Langfuse (only if cache was enabled)
+    if use_cache:
+        try:
+            from app.core.langfuse_config import submit_langfuse_score
+
+            submit_langfuse_score(
+                name="g_eval_cache_hit",
+                value=0,
+                comment=f"G-Eval file cache miss: {criterion}",
+            )
+        except Exception as e:  # noqa: BLE001 - Graceful degradation
+            logger.warning("g_eval_cache_miss_score_submission_failed", error=str(e))
+
     model = get_chat_model(task_type="g_eval")
 
     # Get agent-specific rubric
@@ -334,6 +490,13 @@ async def _score_criterion(
         # Extract text from response (handles Gemini's new dict format)
         content = _extract_text_from_llm_response(response.content)
         result = _parse_g_eval_response(content, criterion)
+
+        # Submit token usage and cost metrics to Langfuse
+        _submit_token_metrics_to_langfuse(
+            response=response,
+            criterion=criterion,
+            agent_type=agent_type,
+        )
 
         # Store in L1 file-based cache for future exact matches
         # L2 Redis semantic cache is automatically managed by LangChain at the model level

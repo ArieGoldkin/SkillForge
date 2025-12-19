@@ -81,19 +81,30 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
 
+    # Start timing at the very beginning
+    start_time = time.time()
+
     if not aggregated_insights:
         logger.warning(
             "quality_gate_skipped_no_insights",
             analysis_id=analysis_id,
         )
         # No insights to validate - skip gate
+        # Still submit latency for skipped evaluation
+        from app.core.langfuse_config import submit_langfuse_score
+
+        latency_seconds = time.time() - start_time
+        submit_langfuse_score(
+            name="latency_seconds",
+            value=latency_seconds,
+            comment=f"Quality gate skipped (no insights) in {latency_seconds:.2f}s",
+        )
+
         return {
             "quality_scores": {},
             "quality_gate_retry_count": retry_count,
             "quality_gate_passed": True,
         }
-
-    start_time = time.time()
 
     # Update Langfuse trace metadata
     update_current_trace(
@@ -339,6 +350,22 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             trace_id=trace_id,
         )
 
+        # Submit latency metric to Langfuse
+        latency_seconds = time.time() - start_time
+        submit_langfuse_score(
+            trace_id=trace_id,
+            name="latency_seconds",
+            value=latency_seconds,
+            comment=f"Quality gate evaluation took {latency_seconds:.2f}s",
+        )
+
+        logger.debug(
+            "quality_gate_latency_submitted",
+            analysis_id=analysis_id,
+            latency_seconds=latency_seconds,
+            trace_id=trace_id,
+        )
+
         # Return quality scores and gate status
         return {
             "quality_scores": quality_scores,
@@ -358,6 +385,16 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             duration_seconds=duration,
             trace_id=trace_id,
             exc_info=True,
+        )
+
+        # Submit latency metric even on error
+        from app.core.langfuse_config import submit_langfuse_score
+
+        submit_langfuse_score(
+            trace_id=trace_id,
+            name="latency_seconds",
+            value=duration,
+            comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
         )
 
         # On error, pass the gate (fail open) to avoid blocking workflow

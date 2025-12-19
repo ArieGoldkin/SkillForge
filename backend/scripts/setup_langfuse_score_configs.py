@@ -1,19 +1,31 @@
 """Set up Langfuse Score Configs via the API.
 
-This script creates Score Configs in Langfuse for tracking quality metrics:
+This script creates Score Configs in Langfuse for tracking quality and performance metrics:
+
+Legacy Quality Scores:
 - user_feedback: BOOLEAN (0 or 1) - human annotation feedback
 - quality_relevance: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
 - quality_depth: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
 - quality_coherence: NUMERIC (0.0 to 1.0) - G-Eval LLM-as-a-Judge score (legacy)
 - quality_avg: NUMERIC (0.0 to 1.0) - Average of G-Eval scores (legacy)
+
+G-Eval Criterion Scores:
 - g_eval_relevance: NUMERIC (0.0 to 1.0) - G-Eval criterion score for relevance
 - g_eval_depth: NUMERIC (0.0 to 1.0) - G-Eval criterion score for depth
 - g_eval_coherence: NUMERIC (0.0 to 1.0) - G-Eval criterion score for coherence
 - g_eval_actionability: NUMERIC (0.0 to 1.0) - G-Eval criterion score for actionability
 - g_eval_completeness: NUMERIC (0.0 to 1.0) - G-Eval criterion score for completeness
 - g_eval_overall: NUMERIC (0.0 to 1.0) - G-Eval weighted average score
+
+Performance Metrics:
 - latency_seconds: NUMERIC - Execution latency in seconds
 - cache_hit: BOOLEAN - Whether result was served from cache
+
+Token & Cost Tracking (auto-captured by Langfuse CallbackHandler):
+- token_count_input: NUMERIC - Input token count for LLM calls
+- token_count_output: NUMERIC - Output token count for LLM calls
+- token_count_total: NUMERIC - Total token count (input + output)
+- cost_usd: NUMERIC - Estimated cost in USD for LLM calls
 
 Score Configs enable:
 - Validation in the Langfuse UI (type checking, range validation)
@@ -151,6 +163,32 @@ SCORE_CONFIGS = [
         "name": "cache_hit",
         "dataType": "BOOLEAN",
         "description": "Whether the result was served from cache (1=hit, 0=miss)",
+    },
+    # Token tracking (captured by Langfuse CallbackHandler)
+    {
+        "name": "token_count_input",
+        "dataType": "NUMERIC",
+        "description": "Input token count for LLM calls",
+        "minValue": 0,
+    },
+    {
+        "name": "token_count_output",
+        "dataType": "NUMERIC",
+        "description": "Output token count for LLM calls",
+        "minValue": 0,
+    },
+    {
+        "name": "token_count_total",
+        "dataType": "NUMERIC",
+        "description": "Total token count (input + output)",
+        "minValue": 0,
+    },
+    # Cost tracking (captured by Langfuse CallbackHandler)
+    {
+        "name": "cost_usd",
+        "dataType": "NUMERIC",
+        "description": "Estimated cost in USD for LLM calls",
+        "minValue": 0.0,
     },
 ]
 
@@ -482,6 +520,12 @@ Score Configs:
     Performance Metrics:
     - latency_seconds: NUMERIC - execution latency in seconds
     - cache_hit: BOOLEAN - whether result was served from cache
+
+    Token & Cost Tracking (auto-captured by Langfuse CallbackHandler):
+    - token_count_input: NUMERIC - input token count for LLM calls
+    - token_count_output: NUMERIC - output token count for LLM calls
+    - token_count_total: NUMERIC - total token count (input + output)
+    - cost_usd: NUMERIC - estimated cost in USD for LLM calls
         """,
     )
 
