@@ -13,7 +13,7 @@ Dataset naming convention (no more _v1/_v2 suffixes):
 - adversarial/adversarial.json
 - edge_cases/edge_cases.json
 
-Datasets are designed for use with LangSmith experiments.
+Datasets are designed for use with Langfuse experiments.
 """
 
 import json

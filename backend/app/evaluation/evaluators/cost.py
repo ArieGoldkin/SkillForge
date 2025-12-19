@@ -5,14 +5,13 @@ This module provides evaluators that measure API cost metrics:
 - Estimated cost based on model pricing
 - Cost per correct answer (cost-effectiveness)
 
-All evaluators are compatible with LangSmith's evaluate() method.
+All evaluators are compatible with Langfuse's evaluate() method.
 """
 
 from typing import Any
 
-from langsmith.schemas import Example, Run
-
 from app.core.model_registry import get_model_info
+from app.evaluation.types import Example, Run
 
 
 def cost_evaluator(run: Run, example: Example) -> dict[str, Any]:
@@ -22,7 +21,7 @@ def cost_evaluator(run: Run, example: Example) -> dict[str, Any]:
     and model pricing from the model registry.
 
     Args:
-        run: LangSmith run with token usage information
+        run: Langfuse run with token usage information
         example: Golden example (not used for cost)
 
     Returns:
@@ -33,7 +32,7 @@ def cost_evaluator(run: Run, example: Example) -> dict[str, Any]:
 
     """
     # Extract token usage from run
-    # LangSmith tracks usage in run.outputs or run.extra
+    # Langfuse tracks usage in run.outputs or run.extra
     usage = {}
     if hasattr(run, "outputs") and run.outputs:
         usage = run.outputs.get("usage", {})
@@ -84,7 +83,7 @@ def cost_per_correct_evaluator(run: Run, example: Example) -> dict[str, Any]:
     Lower cost per correct answer is better.
 
     Args:
-        run: LangSmith run with cost and correctness data
+        run: Langfuse run with cost and correctness data
         example: Golden example for correctness evaluation
 
     Returns:

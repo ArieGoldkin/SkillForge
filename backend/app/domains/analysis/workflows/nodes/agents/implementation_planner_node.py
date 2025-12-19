@@ -2,8 +2,8 @@
 
 Note: This node does NOT use @robust_traceable decorator because LangGraph
 automatically traces all node executions. Adding @robust_traceable would
-create duplicate spans in LangSmith. Runtime metadata is still updated
-via get_current_run_tree().
+create duplicate spans in Langfuse. Runtime metadata is still updated
+via update_current_trace().
 
 Issue #244: Uses Handle Pattern - content loaded via content_ref (ArtifactStore)
 with fallback to raw_content for backward compatibility.
@@ -11,10 +11,9 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
-from langsmith import get_current_run_tree
-
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.workflows.agents.base import emit_agent_progress
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
@@ -38,7 +37,7 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
     3. Falls back to raw_content if artifact loading fails
 
     Note: LangGraph automatically traces this node. We update runtime metadata
-    via get_current_run_tree() but don't add a separate tracing decorator.
+    via update_current_trace() but don't add a separate tracing decorator.
 
     Args:
         state: Current workflow state with content_ref or raw_content
@@ -63,21 +62,15 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation and update runtime metadata
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree:
-            if hasattr(run_tree, "id"):
-                trace_id = str(run_tree.id)
-            # Runtime metadata updates
-            run_tree.metadata["analysis_id"] = str(analysis_id)
-            run_tree.metadata["content_type"] = content_type
-            if run_tree.tags is not None:
-                run_tree.tags.append("parallel-execution")
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation and update runtime metadata
+    update_current_trace(
+        metadata={
+            "analysis_id": str(analysis_id),
+            "content_type": content_type,
+        },
+        tags=["parallel-execution"],
+    )
+    trace_id = get_current_trace_id()
 
     logger.info(
         "agent_node_started",

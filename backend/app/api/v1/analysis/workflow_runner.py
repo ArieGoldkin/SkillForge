@@ -284,7 +284,7 @@ async def _handle_workflow_exception(
         "workflow_type": "analysis",
     },
 )
-async def run_workflow_task(  # noqa: PLR0915
+async def run_workflow_task(
     analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
 ) -> None:
     """Run analysis workflow in background task.
@@ -293,7 +293,7 @@ async def run_workflow_task(  # noqa: PLR0915
     It runs the workflow and handles errors, updating the Analysis status.
 
     The robust_traceable decorator ensures LangGraph's internal node/LLM traces
-    nest properly under this outer trace in LangSmith.
+    nest properly under this outer trace in Langfuse.
 
     Exception handling is done at the application boundary (this function) where
     we have context (analysis_id, status updates). GeneratorExit exceptions are
@@ -307,18 +307,18 @@ async def run_workflow_task(  # noqa: PLR0915
     """
     workflow_completed = False  # Track completion status for GeneratorExit handling
 
-    # Runtime metadata updates
-    try:
-        from langsmith import get_current_run_tree
+    # Runtime metadata updates for Langfuse
+    from app.core.tracing import update_current_trace
 
-        run_tree = get_current_run_tree()
-        if run_tree:
-            run_tree.metadata["analysis_id"] = str(analysis_id)
-            run_tree.metadata["url"] = url
-            run_tree.metadata["workflow_version"] = "1.0"
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue
-        pass
+    update_current_trace(
+        metadata={
+            "analysis_id": str(analysis_id),
+            "url": url,
+            "workflow_version": "1.0",
+        },
+        tags=["analysis", "workflow"],
+        session_id=f"analysis-{analysis_id}",  # Group all traces for this analysis
+    )
 
     try:
         logger.info(
@@ -418,7 +418,7 @@ async def run_workflow_task(  # noqa: PLR0915
 
         # Emit completion event with artifact_id per SSE_SCHEMA.md
         # Reuse artifact from validation check above (already queried)
-        # Also attach artifact info to LangSmith trace for visibility
+        # Also attach artifact info to Langfuse trace for visibility
         try:
             # Re-query artifact for SSE event (artifact variable from validation is out of scope)
             async with AsyncSessionLocal() as db_session:

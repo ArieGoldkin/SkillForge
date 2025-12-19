@@ -1,7 +1,7 @@
 """PII Anonymizer for evaluation dataset ingestion.
 
 This module provides PII anonymization capabilities for text content
-extracted from LangSmith traces and GitHub issues. It builds on the
+extracted from Langfuse traces and GitHub issues. It builds on the
 existing PII detection patterns while adding replacement functionality.
 
 SECURITY:

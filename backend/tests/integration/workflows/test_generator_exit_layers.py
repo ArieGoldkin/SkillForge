@@ -196,10 +196,10 @@ class TestLayer3WorkflowHandling:
 class TestLayer4LangSmithQueries:
     """Test LangSmith query filtering utilities."""
 
-    @patch("tools.langsmith.queries.Client")
+    @patch("tools.langfuse.queries.Client")
     def test_list_runs_without_generator_exit_filter(self, mock_client_class) -> None:
         """Test that query filters out GeneratorExit errors."""
-        from tools.langsmith.queries import list_runs_without_generator_exit
+        from tools.langfuse.queries import list_runs_without_generator_exit
 
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
@@ -213,10 +213,10 @@ class TestLayer4LangSmithQueries:
         filter_expr = call_args.kwargs.get("filter", "")
         assert "GeneratorExit" in filter_expr or "not(has(error" in filter_expr
 
-    @patch("tools.langsmith.queries.Client")
+    @patch("tools.langfuse.queries.Client")
     def test_get_generator_exit_count(self, mock_client_class) -> None:
         """Test GeneratorExit count utility."""
-        from tools.langsmith.queries import get_generator_exit_count
+        from tools.langfuse.queries import get_generator_exit_count
 
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client

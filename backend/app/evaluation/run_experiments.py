@@ -287,7 +287,7 @@ async def run_all_experiments(
     Args:
         dry_run: If True, validate setup without making API calls
         output_path: Optional path to save results JSON
-        local_mode: If True, run locally without LangSmith dataset sync
+        local_mode: If True, run locally without Langfuse dataset sync
 
     Returns:
         Dictionary with all results and recommendations
@@ -424,12 +424,12 @@ Examples:
         "--local",
         action="store_true",
         default=True,
-        help="Run locally without LangSmith dataset sync (default: True)",
+        help="Run locally without Langfuse dataset sync (default: True)",
     )
     parser.add_argument(
-        "--langsmith",
+        "--langfuse",
         action="store_true",
-        help="Use LangSmith for dataset sync and evaluation (requires write permissions)",
+        help="Use Langfuse for dataset sync and evaluation (requires write permissions)",
     )
     parser.add_argument(
         "--output",
@@ -476,7 +476,7 @@ Examples:
         sys.exit(0 if passed else 1)
 
     # Determine local mode
-    local_mode = not args.langsmith
+    local_mode = not args.langfuse
 
     # Run experiments
     if args.all:

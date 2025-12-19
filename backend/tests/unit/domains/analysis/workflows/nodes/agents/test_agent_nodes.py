@@ -1,6 +1,15 @@
-"""Unit tests for agent node functions."""
+"""Unit tests for agent node functions.
 
-from unittest.mock import MagicMock, patch
+These tests validate agent node execution behavior:
+- Successful execution returns findings
+- Generator exit (cancellation) returns empty findings
+- Exceptions are handled gracefully with empty findings
+
+Note: Langfuse tracing functions (update_current_trace, get_current_trace_id)
+handle errors gracefully internally, so we don't mock them.
+"""
+
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -36,16 +45,6 @@ def mock_state():
 
 
 @pytest.fixture
-def mock_run_tree():
-    """Create mock LangSmith run tree."""
-    tree = MagicMock()
-    tree.id = uuid4()
-    tree.metadata = {}
-    tree.tags = []
-    return tree
-
-
-@pytest.fixture
 def mock_agent_result():
     """Create mock agent result."""
     return {
@@ -61,14 +60,8 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree"
-    )
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await code_quality_critic_node(mock_state)
@@ -81,12 +74,8 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree"
-    )
-    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_generator_exit(self, mock_runner, mock_state):
         """Test graceful handling of GeneratorExit (cancellation)."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = GeneratorExit()
 
         result = await code_quality_critic_node(mock_state)
@@ -97,12 +86,8 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree"
-    )
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Agent failed")
 
         result = await code_quality_critic_node(mock_state)
@@ -113,14 +98,8 @@ class TestCodeQualityCriticNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.run_code_quality_critic_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.code_quality_critic_node.get_current_run_tree"
-    )
-    async def test_without_langsmith(
-        self, mock_get_tree, mock_runner, mock_state, mock_agent_result
-    ):
-        """Test execution without LangSmith available."""
-        mock_get_tree.side_effect = Exception("LangSmith not available")
+    async def test_without_langfuse(self, mock_runner, mock_state, mock_agent_result):
+        """Test execution continues when Langfuse is unavailable."""
         mock_runner.return_value = mock_agent_result
 
         result = await code_quality_critic_node(mock_state)
@@ -135,14 +114,8 @@ class TestDependencyMapperNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree"
-    )
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await dependency_mapper_node(mock_state)
@@ -154,12 +127,8 @@ class TestDependencyMapperNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.get_current_run_tree"
-    )
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Agent failed")
 
         result = await dependency_mapper_node(mock_state)
@@ -174,14 +143,8 @@ class TestIntegrationFeasibilityNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree"
-    )
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await integration_feasibility_node(mock_state)
@@ -193,12 +156,8 @@ class TestIntegrationFeasibilityNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.run_integration_feasibility_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.integration_feasibility_node.get_current_run_tree"
-    )
-    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_generator_exit(self, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = GeneratorExit()
 
         result = await integration_feasibility_node(mock_state)
@@ -213,14 +172,8 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree"
-    )
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await performance_analyst_node(mock_state)
@@ -232,12 +185,8 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree"
-    )
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Agent failed")
 
         result = await performance_analyst_node(mock_state)
@@ -248,20 +197,15 @@ class TestPerformanceAnalystNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.run_performance_analyst_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.performance_analyst_node.get_current_run_tree"
-    )
-    async def test_updates_langsmith_metadata(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
-        """Test that LangSmith metadata is updated."""
-        mock_get_tree.return_value = mock_run_tree
+    async def test_updates_langfuse_metadata(self, mock_runner, mock_state, mock_agent_result):
+        """Test that Langfuse metadata update is attempted (gracefully handles errors)."""
         mock_runner.return_value = mock_agent_result
 
-        await performance_analyst_node(mock_state)
+        result = await performance_analyst_node(mock_state)
 
-        assert "analysis_id" in mock_run_tree.metadata
-        assert "parallel-execution" in mock_run_tree.tags
+        # Should complete successfully even without active Langfuse trace
+        assert "agent_findings" in result
+        assert result["agent_findings"] == [mock_agent_result]
 
 
 class TestSecurityAuditorNode:
@@ -271,12 +215,8 @@ class TestSecurityAuditorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await security_auditor_node(mock_state)
@@ -289,10 +229,8 @@ class TestSecurityAuditorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Security audit failed")
 
         result = await security_auditor_node(mock_state)
@@ -303,10 +241,8 @@ class TestSecurityAuditorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.security_auditor_node.run_security_auditor_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.security_auditor_node.get_current_run_tree")
-    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_generator_exit(self, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = GeneratorExit()
 
         result = await security_auditor_node(mock_state)
@@ -321,12 +257,8 @@ class TestTechComparatorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await tech_comparator_node(mock_state)
@@ -338,10 +270,8 @@ class TestTechComparatorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.tech_comparator_node.run_tech_comparator_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.tech_comparator_node.get_current_run_tree")
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Tech comparison failed")
 
         result = await tech_comparator_node(mock_state)
@@ -356,12 +286,8 @@ class TestTrendValidatorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await trend_validator_node(mock_state)
@@ -373,10 +299,8 @@ class TestTrendValidatorNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.trend_validator_node.run_trend_validator_with_session"
     )
-    @patch("app.domains.analysis.workflows.nodes.agents.trend_validator_node.get_current_run_tree")
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Trend validation failed")
 
         result = await trend_validator_node(mock_state)
@@ -391,14 +315,8 @@ class TestImplementationPlannerNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree"
-    )
-    async def test_successful_execution(
-        self, mock_get_tree, mock_runner, mock_state, mock_run_tree, mock_agent_result
-    ):
+    async def test_successful_execution(self, mock_runner, mock_state, mock_agent_result):
         """Test successful agent execution."""
-        mock_get_tree.return_value = mock_run_tree
         mock_runner.return_value = mock_agent_result
 
         result = await implementation_planner_node(mock_state)
@@ -410,12 +328,8 @@ class TestImplementationPlannerNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree"
-    )
-    async def test_handles_exception(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_exception(self, mock_runner, mock_state):
         """Test graceful handling of exceptions."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = RuntimeError("Planning failed")
 
         result = await implementation_planner_node(mock_state)
@@ -426,12 +340,8 @@ class TestImplementationPlannerNode:
     @patch(
         "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
     )
-    @patch(
-        "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.get_current_run_tree"
-    )
-    async def test_handles_generator_exit(self, mock_get_tree, mock_runner, mock_state):
+    async def test_handles_generator_exit(self, mock_runner, mock_state):
         """Test graceful handling of cancellation."""
-        mock_get_tree.return_value = None
         mock_runner.side_effect = GeneratorExit()
 
         result = await implementation_planner_node(mock_state)

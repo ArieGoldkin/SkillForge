@@ -7,8 +7,6 @@ comprehensive markdown document from aggregated agent findings.
 import time
 import uuid
 
-from langsmith import get_current_run_tree
-
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -88,11 +86,10 @@ async def generate_artifact(
 
     # Runtime metadata updates
     try:
-        run_tree = get_current_run_tree()
-        if run_tree:
-            run_tree.metadata["analysis_id"] = str(analysis_id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue
+        from app.core.tracing import update_current_trace
+
+        update_current_trace(metadata={"analysis_id": str(analysis_id)})
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     logger.info(

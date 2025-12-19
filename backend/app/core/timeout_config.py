@@ -91,18 +91,29 @@ def create_runnable_config(
     Timeout handling is managed by `step_timeout` on the compiled graph.
     This is the recommended approach per LangGraph best practices.
 
+    This function also integrates Langfuse CallbackHandler for LLM observability,
+    enabling token count tracking and cost visibility in the Langfuse dashboard.
+
     Args:
         thread_id: Optional thread ID for checkpointing
 
     Returns:
-        RunnableConfig with thread_id if provided
+        RunnableConfig with thread_id and Langfuse callbacks if enabled
 
     Example:
         >>> config = create_runnable_config(thread_id="abc-123")
         >>> config["configurable"]["thread_id"]  # "abc-123"
+        >>> # If Langfuse enabled, config["callbacks"] contains CallbackHandler
 
     """
+    from app.core.langfuse_config import get_langfuse_callback_handler
+
     config: RunnableConfig = {}
+
+    # Add Langfuse callback for LLM token/cost tracking
+    callback = get_langfuse_callback_handler()
+    if callback:
+        config["callbacks"] = [callback]
 
     if thread_id:
         config["configurable"] = {"thread_id": thread_id}

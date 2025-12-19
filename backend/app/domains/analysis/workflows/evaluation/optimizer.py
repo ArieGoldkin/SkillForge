@@ -48,7 +48,7 @@ async def optimize_agent_strategy(
 
     # Analyze evaluation history
     # For now, return placeholder - future enhancement can use
-    # LangSmith evaluation API and LLM-based optimization
+    # Langfuse evaluation API and LLM-based optimization
     scores: list[float] = []
     for e in evaluation_history:
         score = e.get("quality_score", 0.5)

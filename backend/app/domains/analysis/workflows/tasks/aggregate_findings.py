@@ -524,7 +524,7 @@ async def aggregate_findings(
     """Aggregate agent findings into coherent results using LLM synthesis.
 
     GeneratorExit handling is managed by the robust_traceable wrapper,
-    which intercepts cleanup exceptions before LangSmith captures them.
+    which intercepts cleanup exceptions before Langfuse captures them.
 
     Args:
         state: Current workflow state with agent_findings populated

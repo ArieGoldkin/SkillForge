@@ -9,8 +9,8 @@ Issue #ARTIFACT-QUALITY: Quality gate now enforces minimum thresholds per aspect
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langsmith.schemas import Example, Run
 
+from app.evaluation.types import Example, Run
 from app.domains.analysis.workflows.nodes.quality_gate_node import (
     ASPECT_MINIMUMS,
     MAX_RETRY_ATTEMPTS,
@@ -52,10 +52,10 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -109,10 +109,10 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -160,10 +160,10 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -207,10 +207,10 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -254,11 +254,11 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()
@@ -365,11 +365,11 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_run_tree"
+            "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("langsmith.schemas.Run") as mock_run_class,
-        patch("langsmith.schemas.Example") as mock_example_class,
+        patch("app.evaluation.types.Run") as mock_run_class,
+        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
         mock_run_class.return_value = MagicMock()

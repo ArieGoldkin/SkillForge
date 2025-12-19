@@ -49,7 +49,9 @@ services:
       PORT: 8500
       CORS_ORIGINS: '["http://localhost:5173","http://localhost:5175"]'
       REDIS_URL: redis://redis:6379
-      # Note: DATABASE_URL is overridden above for container-internal connection
+      # Langfuse: Override localhost with Docker network hostname
+      LANGFUSE_HOST: http://langfuse-web:3000
+      # Note: DATABASE_URL and LANGFUSE_HOST are overridden above for container-internal connections
       # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
     ports:
       - "8500:8500"
@@ -100,6 +102,190 @@ services:
       retries: 10
       start_period: 30s
 
+  # =============================================================================
+  # LANGFUSE v3 OBSERVABILITY STACK (Self-Hosted - FREE)
+  # =============================================================================
+  # Replaces LangSmith cloud with local observability.
+  # All services are open source and run locally.
+  # =============================================================================
+
+  langfuse-web:
+    image: langfuse/langfuse:3
+    container_name: skillforge-langfuse-web
+    ports:
+      - "3000:3000"
+    environment:
+      # Database connections
+      DATABASE_URL: postgresql://langfuse:langfuse-dev@langfuse-db:5432/langfuse
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://default:clickhouse-dev@langfuse-clickhouse:9000/langfuse
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-dev
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      # Redis configuration
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: redis-dev
+
+      # S3/MinIO for blob storage (local - FREE)
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-dev-access
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-dev-secret-key
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+
+      # Security (development values - change in production!)
+      NEXTAUTH_SECRET: skillforge-dev-nextauth-secret-32chars
+      SALT: skillforge-dev-salt-minimum-32-chars
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      NEXTAUTH_URL: http://localhost:3000
+
+      # Optional: Auto-create project on first run
+      LANGFUSE_INIT_ORG_ID: skillforge-org
+      LANGFUSE_INIT_ORG_NAME: SkillForge
+      LANGFUSE_INIT_PROJECT_ID: skillforge
+      LANGFUSE_INIT_PROJECT_NAME: SkillForge Backend
+      LANGFUSE_INIT_USER_EMAIL: dev@skillforge.local
+      LANGFUSE_INIT_USER_PASSWORD: skillforge-dev-password
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_healthy
+      langfuse-redis:
+        condition: service_healthy
+      langfuse-minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- --timeout=5 http://langfuse-web:3000/api/public/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - default
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    container_name: skillforge-langfuse-worker
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse-dev@langfuse-db:5432/langfuse
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://default:clickhouse-dev@langfuse-clickhouse:9000/langfuse
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-dev
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      # Redis configuration (worker uses individual vars, not connection string)
+      REDIS_HOST: langfuse-redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: redis-dev
+      # S3/MinIO configuration
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio-dev-access
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: minio-dev-secret-key
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://langfuse-minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      # Security
+      SALT: skillforge-dev-salt-minimum-32-chars
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    depends_on:
+      langfuse-web:
+        condition: service_healthy
+    networks:
+      - default
+
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: skillforge-langfuse-db
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse-dev
+    volumes:
+      - langfuse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  langfuse-clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: skillforge-langfuse-clickhouse
+    environment:
+      CLICKHOUSE_DB: langfuse
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse-dev
+    volumes:
+      - langfuse-clickhouse-data:/var/lib/clickhouse
+      - langfuse-clickhouse-logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - default
+
+  langfuse-redis:
+    image: redis:7-alpine
+    container_name: skillforge-langfuse-redis
+    command: redis-server --requirepass redis-dev
+    volumes:
+      - langfuse-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis-dev", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  langfuse-minio:
+    image: minio/minio:latest
+    container_name: skillforge-langfuse-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO Console
+    environment:
+      MINIO_ROOT_USER: minio-dev-access
+      MINIO_ROOT_PASSWORD: minio-dev-secret-key
+    volumes:
+      - langfuse-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  langfuse-minio-setup:
+    image: minio/mc:latest
+    container_name: skillforge-langfuse-minio-setup
+    depends_on:
+      langfuse-minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set minio http://langfuse-minio:9000 minio-dev-access minio-dev-secret-key;
+      mc mb minio/langfuse --ignore-existing;
+      exit 0;
+      "
+    networks:
+      - default
+
 volumes:
   postgres-dev-data:
   redis-dev-data:
+  langfuse-postgres-data:
+  langfuse-clickhouse-data:
+  langfuse-clickhouse-logs:
+  langfuse-redis-data:
+  langfuse-minio-data:

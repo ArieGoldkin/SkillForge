@@ -17,11 +17,11 @@ for backward compatibility.
 import time
 
 from langchain_core.tools import BaseTool
-from langsmith import get_current_run_tree
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.api import ArtifactSection
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
@@ -196,15 +196,8 @@ async def run_tech_comparator_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -261,15 +254,8 @@ async def run_integration_feasibility_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -325,15 +311,8 @@ async def run_implementation_planner_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -389,15 +368,8 @@ async def run_security_auditor_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     # Load MCP tools for security auditor if enabled
     tools: list[BaseTool] = []
@@ -481,15 +453,8 @@ async def run_performance_analyst_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -545,15 +510,8 @@ async def run_code_quality_critic_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -609,15 +567,8 @@ async def run_trend_validator_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     try:
         async with AsyncSessionLocal() as session:
@@ -682,15 +633,8 @@ async def run_dependency_mapper_with_session(
 
     start_time = time.time()
 
-    # Get LangSmith trace ID for correlation if available
-    trace_id: str | None = None
-    try:
-        run_tree = get_current_run_tree()
-        if run_tree and hasattr(run_tree, "id"):
-            trace_id = str(run_tree.id)
-    except Exception:  # noqa: BLE001 - LangSmith may not be available, catch all to continue
-        # LangSmith not available or not in trace context - continue without trace_id
-        pass
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
 
     # Load MCP tools for dependency mapper if enabled
     tools: list[BaseTool] = []

@@ -6,8 +6,8 @@ Gemini Flash, DeepSeek V3) across three task types:
 2. Agent analysis - generating structured analysis outputs
 3. Synthesis - aggregating multiple agent findings
 
-The benchmark uses LangSmith's evaluate() method to run experiments on golden datasets
-and compare model performance across accuracy, latency, and cost metrics.
+The benchmark uses Langfuse for observability and runs experiments on golden datasets
+to compare model performance across accuracy, latency, and cost metrics.
 
 Example:
     ```python
@@ -59,9 +59,9 @@ from datetime import datetime
 from typing import Any, Literal
 
 import tiktoken
-from langsmith import Client
 
 from app.core.config import settings
+from app.core.langfuse_config import get_langfuse_client
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
@@ -171,7 +171,7 @@ class ExperimentResults:
     """Results from a single experiment run.
 
     Attributes:
-        experiment_id: LangSmith experiment ID
+        experiment_id: Langfuse experiment ID
         model_id: Model identifier used in experiment
         task_type: Type of task (supervisor, agent, synthesis)
         metrics: Dictionary of metric_name -> value (accuracy, latency_p50, cost_total, etc.)
@@ -220,13 +220,13 @@ class ComparisonResults:
 class LLMBenchmark:
     """Benchmark runner for comparing LLM models across tasks.
 
-    This class integrates with LangSmith to run evaluation experiments
+    This class integrates with Langfuse to run evaluation experiments
     on golden datasets and compare model performance.
 
     Attributes:
-        client: LangSmith client for running experiments
-        project_name: LangSmith project name for tracking experiments
-        local_mode: If True, run evaluations locally without LangSmith dataset sync
+        client: Langfuse client for running experiments
+        project_name: Langfuse project name for tracking experiments
+        local_mode: If True, run evaluations locally without Langfuse dataset sync
 
     """
 
@@ -234,20 +234,20 @@ class LLMBenchmark:
         """Initialize benchmark runner.
 
         Args:
-            project_name: LangSmith project name for experiment tracking
-            local_mode: If True, run evaluations locally without LangSmith dataset sync
+            project_name: Langfuse project name for experiment tracking
+            local_mode: If True, run evaluations locally without Langfuse dataset sync
 
         """
         self.local_mode = local_mode
         self.project_name = project_name
 
-        # Initialize LangSmith client with graceful fallback
+        # Initialize Langfuse client with graceful fallback
         if not local_mode:
             try:
-                self.client = Client()
+                self.client = get_langfuse_client()
             except Exception as e:
                 logger.warning(
-                    "langsmith_client_init_failed",
+                    "langfuse_client_init_failed",
                     error=str(e),
                     message="Falling back to local mode",
                 )
@@ -446,7 +446,7 @@ class LLMBenchmark:
         start_time = time.time()
 
         if self.local_mode:
-            # Local mode: run evaluations without LangSmith dataset sync
+            # Local mode: run evaluations without Langfuse dataset sync
             metrics = await self._run_local_experiment(
                 target_fn=target_fn,
                 dataset=dataset,
@@ -456,9 +456,9 @@ class LLMBenchmark:
                 task_type=task_type,
             )
         else:
-            # LangSmith mode: sync dataset and run via evaluate()
+            # Langfuse mode: sync dataset and run via evaluate()
             try:
-                # Create dataset in LangSmith if it doesn't exist
+                # Create dataset in Langfuse if it doesn't exist
                 ls_dataset_name = f"{dataset_name}_{task_type}"
                 try:
                     ls_dataset = self.client.read_dataset(dataset_name=ls_dataset_name)
@@ -881,7 +881,7 @@ class LLMBenchmark:
         return evaluators
 
     def _extract_metrics(self, experiment_results: Any) -> dict[str, float]:
-        """Extract metrics from LangSmith experiment results.
+        """Extract metrics from Langfuse experiment results.
 
         Args:
             experiment_results: Results object from client.evaluate()
@@ -892,8 +892,8 @@ class LLMBenchmark:
         """
         metrics: dict[str, float] = {}
 
-        # LangSmith returns aggregate statistics
-        # Extract key metrics (exact structure depends on LangSmith version)
+        # Langfuse returns aggregate statistics
+        # Extract key metrics (exact structure depends on Langfuse version)
         try:
             # Get aggregate scores if available
             if hasattr(experiment_results, "aggregate_scores"):
@@ -935,7 +935,7 @@ class LLMBenchmark:
         model_info: Any,
         task_type: str,
     ) -> dict[str, float]:
-        """Run experiment locally without LangSmith dataset sync.
+        """Run experiment locally without Langfuse dataset sync.
 
         This mode runs the target function on each example and collects
         metrics using simplified evaluators.
@@ -954,8 +954,8 @@ class LLMBenchmark:
         """
         from uuid import uuid4
 
-        from langsmith.schemas import Example as LSExample
-        from langsmith.schemas import Run as LSRun
+        from app.evaluation.types import Example as LSExample
+        from app.evaluation.types import Run as LSRun
 
         all_scores: dict[str, list[float]] = {}
         latencies: list[float] = []
@@ -1030,7 +1030,7 @@ class LLMBenchmark:
                     params = list(sig.parameters.keys())
 
                     if "run" in params and "example" in params:
-                        # LangSmith-style evaluator
+                        # Langfuse-style evaluator
                         result = evaluator(mock_run, mock_example)
                     elif len(params) >= 3:
                         # Simple (inputs, outputs, reference_outputs) style
