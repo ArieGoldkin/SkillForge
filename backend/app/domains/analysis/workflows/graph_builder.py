@@ -516,6 +516,37 @@ def build_analysis_graph():
     # This prevents any single node from running indefinitely
     compiled_graph.step_timeout = STEP_TIMEOUT
 
+    # Issue #384: Log graph structure metadata for Langfuse visualization
+    # This helps Langfuse infer the graph structure from observation timings
+    try:
+        from app.core.tracing import update_current_trace
+
+        # Extract node names from compiled graph
+        # LangGraph's compiled graph has a nodes attribute with node names
+        node_names = list(compiled_graph.nodes.keys()) if hasattr(compiled_graph, "nodes") else []
+
+        # Log graph metadata for Langfuse
+        update_current_trace(
+            metadata={
+                "graph_nodes": node_names,
+                "graph_node_count": len(node_names),
+                "graph_type": "analysis_workflow",
+            }
+        )
+
+        logger.info(
+            "workflow_graph_compiled_with_metadata",
+            step_timeout=STEP_TIMEOUT,
+            node_count=len(node_names),
+            message="Graph structure metadata logged for Langfuse visualization",
+        )
+    except Exception as e:  # noqa: BLE001 - Graceful fallback, visualization is non-critical
+        logger.debug(
+            "workflow_graph_metadata_logging_failed",
+            error=str(e),
+            message="Graph metadata logging failed, continuing without it",
+        )
+
     logger.info(
         "workflow_graph_compiled_with_timeout",
         step_timeout=STEP_TIMEOUT,
