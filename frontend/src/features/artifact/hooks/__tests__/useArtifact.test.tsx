@@ -17,10 +17,10 @@ import { useArtifact } from '../useArtifact'
 const TEST_ARTIFACT_ID = '987fcdeb-51a2-43d7-8f9e-123456789abc'
 const TEST_ARTIFACT_ID_2 = 'a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6'
 
-// Mock the API service
+// Mock the API service - must match what useArtifact.ts actually calls
 vi.mock('@services/api.service', () => ({
   analyzeAPI: {
-    downloadArtifact: vi.fn(),
+    getArtifactById: vi.fn(),
   },
 }))
 
@@ -61,7 +61,12 @@ describe('useArtifact', () => {
 
   it('fetches artifact content successfully', async () => {
     const mockContent = '# Test Guide\n\nContent here.'
-    vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
+    vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce({
+      analysis_id: 'test-analysis-id',
+      artifact_id: TEST_ARTIFACT_ID,
+      markdown_content: mockContent,
+      trace_id: 'test-trace-id',
+    })
 
     const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID), {
       wrapper: createWrapper(),
@@ -78,7 +83,7 @@ describe('useArtifact', () => {
   })
 
   it('returns error when fetch fails', async () => {
-    vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(null)
+    vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce(null)
 
     const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID), {
       wrapper: createWrapper(),
@@ -88,13 +93,18 @@ describe('useArtifact', () => {
       expect(result.current.isLoading).toBe(false)
     })
 
-    expect(result.current.error?.message).toBe('Failed to load artifact content')
+    expect(result.current.error?.message).toBe('Failed to load artifact metadata')
     expect(result.current.content).toBe(null)
   })
 
   it('download callback calls downloadMarkdown with correct parameters', async () => {
     const mockContent = '# Guide Content'
-    vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
+    vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce({
+      analysis_id: 'test-analysis-id',
+      artifact_id: TEST_ARTIFACT_ID_2,
+      markdown_content: mockContent,
+      trace_id: 'test-trace-id',
+    })
 
     const { result } = renderHook(() => useArtifact(TEST_ARTIFACT_ID_2), {
       wrapper: createWrapper(),
