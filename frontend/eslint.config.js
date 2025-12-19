@@ -164,9 +164,16 @@ export default tseslint.config(
     },
   },
 
-  // Relaxed rules for test files
+  // Relaxed rules for test files and test utilities
   {
-    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    files: [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/__tests__/**/*.ts',
+      '**/__tests__/**/*.tsx',
+      '**/test-utils/**/*.ts',
+      '**/test-utils/**/*.tsx',
+    ],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',
