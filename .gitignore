@@ -376,6 +376,8 @@ site/
 !.env.example
 !backend/.env.example
 !frontend/.env.example
+!.mcp.json.example
+!.mcp.env.example
 
 # Keep README files
 !README.md

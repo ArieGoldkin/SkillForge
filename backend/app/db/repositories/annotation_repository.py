@@ -41,7 +41,7 @@ class IAnnotationRepository(Protocol):
         """Get pending annotation queue items."""
         ...
 
-    async def mark_as_reviewed(self, queue_id: int) -> None:
+    async def mark_as_reviewed(self, queue_id: int) -> AnnotationQueue | None:
         """Mark an annotation queue item as reviewed."""
         ...
 
@@ -128,11 +128,14 @@ class AnnotationRepository:
         )
         return list(result.scalars().all())
 
-    async def mark_as_reviewed(self, queue_id: int) -> None:
+    async def mark_as_reviewed(self, queue_id: int) -> AnnotationQueue | None:
         """Mark an annotation queue item as reviewed.
 
         Args:
             queue_id: ID of the queue item to mark as reviewed
+
+        Returns:
+            Updated annotation queue entry, or None if not found
 
         """
         await self.session.execute(
@@ -142,7 +145,15 @@ class AnnotationRepository:
         )
         await self.session.commit()
 
+        # Fetch and return updated entry
+        result = await self.session.execute(
+            select(AnnotationQueue).where(AnnotationQueue.id == queue_id)
+        )
+        updated_annotation = result.scalar_one_or_none()
+
         logger.info("annotation_reviewed", queue_id=queue_id)
+
+        return updated_annotation
 
     async def check_if_queued(self, artifact_id: uuid.UUID) -> bool:
         """Check if an artifact is already in the pending queue.

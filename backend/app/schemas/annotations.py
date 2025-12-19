@@ -78,11 +78,13 @@ class AnnotationQueueItemResponse(BaseModel):
     trace_id: str | None = Field(None, description="Langfuse trace ID")
     reason: str = Field(..., description="Reason for queuing")
     status: str = Field(..., description="Queue status")
-    metadata: dict | None = Field(None, description="Additional metadata")
+    metadata: dict | None = Field(
+        None, description="Additional metadata", validation_alias="queue_metadata"
+    )
     created_at: datetime = Field(..., description="Queue entry creation time")
     reviewed_at: datetime | None = Field(None, description="Review completion time")
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 
 class AnnotationQueueListResponse(BaseModel):
