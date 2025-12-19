@@ -24,6 +24,7 @@ def test_url():
     return "https://example.com/article"
 
 
+@patch("app.api.v1.analysis.workflow_runner.get_current_trace_id")
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
 @patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 @patch("app.api.v1.analysis.workflow_runner.logger")
@@ -31,6 +32,7 @@ async def test_run_workflow_task_success(
     mock_logger,
     mock_workflow,
     mock_emit_event,
+    mock_get_trace_id,
     mock_analysis_id,
     test_url,
 ):
@@ -38,6 +40,9 @@ async def test_run_workflow_task_success(
     import uuid
 
     from app.db.models.artifact import Artifact
+
+    # Mock trace_id retrieval (Issue #385)
+    mock_get_trace_id.return_value = "test-trace-id-123"
 
     # Mock workflow to complete successfully with data to persist
     mock_workflow.ainvoke = AsyncMock(
@@ -124,12 +129,13 @@ async def test_run_workflow_task_success(
     assert mock_analysis.status == "complete"
     mock_db_session_status.commit.assert_called_once()
 
-    # Verify complete event was emitted with artifact_id
+    # Verify complete event was emitted with artifact_id and trace_id
     complete_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "complete"]
     assert len(complete_calls) == 1, "Complete event should be emitted exactly once"
     complete_call = complete_calls[0]
     assert "artifact_id" in complete_call.kwargs
     assert complete_call.kwargs["artifact_id"] == str(artifact_id)
+    assert "trace_id" in complete_call.kwargs  # Issue #385
 
 
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
@@ -311,6 +317,7 @@ async def test_run_workflow_task_analysis_not_found(
     mock_db_session.commit.assert_not_called()
 
 
+@patch("app.api.v1.analysis.workflow_runner.get_current_trace_id")
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
 @patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 @patch("app.api.v1.analysis.workflow_runner.logger")
@@ -318,6 +325,7 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     mock_logger,
     mock_workflow,
     mock_emit_event,
+    mock_get_trace_id,
     mock_analysis_id,
     test_url,
 ):
@@ -325,6 +333,9 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     import uuid
 
     from app.db.models.artifact import Artifact
+
+    # Mock trace_id retrieval (Issue #385)
+    mock_get_trace_id.return_value = "test-trace-id-456"
 
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(
@@ -421,6 +432,8 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     assert call_kwargs["artifact_id"] == str(artifact_id), (
         f"artifact_id should match artifact.id, got {call_kwargs.get('artifact_id')}"
     )
+    # Verify trace_id is included in kwargs (Issue #385)
+    assert "trace_id" in call_kwargs, f"trace_id should be in event kwargs, got {call_kwargs}"
 
 
 @pytest.mark.asyncio

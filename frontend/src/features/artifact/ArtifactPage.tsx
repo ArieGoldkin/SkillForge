@@ -6,7 +6,7 @@
 
 import { getRouteApi } from '@tanstack/react-router'
 
-import { MarkdownPreview, TableOfContents } from './components'
+import { FeedbackButtons, MarkdownPreview, TableOfContents } from './components'
 import {
   ArtifactEmptyState,
   ArtifactErrorState,
@@ -46,6 +46,12 @@ export default function ArtifactPage() {
               {/* Main Content */}
               <main className="min-w-0">
                 <MarkdownPreview content={content} showMetadata={false} />
+                {/* Feedback section at the bottom of the artifact */}
+                {artifactId && (
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <FeedbackButtons artifactId={artifactId} traceId={null} />
+                  </div>
+                )}
               </main>
             </div>
           )}

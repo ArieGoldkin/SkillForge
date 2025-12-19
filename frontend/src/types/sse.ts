@@ -102,6 +102,7 @@ export interface SSECompleteEvent {
   stage: 'artifact_generation' | 'workflow'
   status: 'complete'
   timestamp: string
+  trace_id?: string // Langfuse trace ID for feedback submission
   artifact_id?: string
   details?: Record<string, unknown>
 }

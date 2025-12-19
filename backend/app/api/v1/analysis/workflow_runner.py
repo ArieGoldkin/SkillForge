@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.constants import DEFAULT_TITLE
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
-from app.core.tracing import robust_traceable
+from app.core.tracing import get_current_trace_id, robust_traceable
 from app.domains.analysis.workflows.analysis import analysis_workflow
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
@@ -438,6 +438,9 @@ async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with valid
         # Reuse artifact from validation check above (already queried)
         # Also attach artifact info to Langfuse trace for visibility
         try:
+            # Get trace_id for frontend feedback submission (Issue #385)
+            trace_id = get_current_trace_id()
+
             # Re-query artifact for SSE event (artifact variable from validation is out of scope)
             async with AsyncSessionLocal() as db_session:
                 repository = ArtifactRepository(session=db_session)
@@ -450,11 +453,13 @@ async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with valid
                         stage=get_stage_name("artifact_generation"),
                         status="complete",
                         artifact_id=str(artifact.id),
+                        trace_id=trace_id,  # Include trace_id for feedback workflow
                     )
                     logger.info(
                         "workflow_complete_event_emitted",
                         analysis_id=str(analysis_id),
                         artifact_id=str(artifact.id),
+                        trace_id=trace_id,
                     )
                 else:
                     # Artifact not found - log warning but still emit complete event
@@ -468,6 +473,7 @@ async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with valid
                         analysis_id=str(analysis_id),
                         stage=get_stage_name("artifact_generation"),
                         status="complete",
+                        trace_id=trace_id,  # Include trace_id even without artifact
                     )
         except Exception as event_error:
             logger.error(

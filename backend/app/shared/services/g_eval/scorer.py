@@ -119,7 +119,8 @@ G_EVAL_USER_PROMPT = """## Task/Input:
 ## Generated Output to Evaluate:
 {output}
 
-Evaluate the {criterion} of this output using the rubric provided. Follow the response format exactly."""
+Evaluate the {criterion} of this output using the rubric provided.
+Follow the response format exactly."""
 
 
 # ============================================================================
@@ -195,6 +196,58 @@ def _parse_g_eval_response(response: str, criterion: str) -> CriterionScore:
 # ============================================================================
 # Core Scoring Functions
 # ============================================================================
+
+
+def _submit_g_eval_scores_to_langfuse(
+    criteria_scores: dict[str, CriterionScore],
+    overall: float,
+    agent_type: str,
+) -> None:
+    """Submit G-Eval scores to Langfuse for quality analytics.
+
+    This enables quality dashboards in Langfuse UI showing:
+    - Score distributions over time
+    - Per-criterion quality trends
+    - Agent-specific quality patterns
+
+    Args:
+        criteria_scores: Dictionary of criterion name to CriterionScore
+        overall: Overall weighted average score (0.0-1.0)
+        agent_type: Agent type for score categorization
+
+    """
+    try:
+        from app.core.langfuse_config import submit_langfuse_score
+
+        # Submit each criterion score individually for detailed analytics
+        for criterion, score_obj in criteria_scores.items():
+            submit_langfuse_score(
+                name=f"g_eval_{criterion}",
+                value=score_obj.normalized,
+                comment=f"{agent_type}: {score_obj.reasoning[:200]}",  # Truncate reasoning
+            )
+
+        # Submit overall G-Eval score
+        submit_langfuse_score(
+            name="g_eval_overall",
+            value=overall,
+            comment=f"{agent_type}: Weighted average across {len(criteria_scores)} criteria",
+        )
+
+        logger.debug(
+            "g_eval_scores_submitted_to_langfuse",
+            agent_type=agent_type,
+            criteria_count=len(criteria_scores),
+            overall_score=overall,
+        )
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Don't fail scoring if Langfuse submission fails
+        logger.warning(
+            "g_eval_langfuse_submission_failed",
+            agent_type=agent_type,
+            error=str(e),
+        )
 
 
 async def _score_criterion(
@@ -410,6 +463,13 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
             voting_distributions=voting_dist,
         )
 
+        # Submit G-Eval scores to Langfuse for quality analytics
+        _submit_g_eval_scores_to_langfuse(
+            criteria_scores=criteria_scores,
+            overall=overall,
+            agent_type=agent_type,
+        )
+
         return GEvalResult(
             overall=overall,
             criteria_scores=criteria_scores,
@@ -456,6 +516,13 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
         overall=overall,
         confidence=avg_confidence,
         scores={c: r.score for c, r in criteria_scores.items()},
+    )
+
+    # Submit G-Eval scores to Langfuse for quality analytics
+    _submit_g_eval_scores_to_langfuse(
+        criteria_scores=criteria_scores,
+        overall=overall,
+        agent_type=agent_type,
     )
 
     return GEvalResult(

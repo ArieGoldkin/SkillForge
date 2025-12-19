@@ -47,6 +47,7 @@ export function AnalysisCompleteCard(props: AnalysisCompleteCardProps) {
         error={preview.error}
         onDownload={preview.download}
         sourceUrl={sourceUrl}
+        artifactId={artifactId}
       />
     </div>
   )
