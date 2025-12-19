@@ -1,7 +1,17 @@
 import type { SSEEvent } from '@app-types/sse'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
+import { createComputed } from 'zustand-computed'
 
+import type { LoadingState, AnalysisPhase } from '@types/loading'
+
+import {
+  deriveLoadingState,
+  getConnectionMessage,
+  shouldShowTimeoutWarning,
+  getAnalysisPhase,
+  shouldShowProgress,
+} from './computed/loadingStates'
 import { closeConnection, createConnection, MAX_EVENTS, type ListenerRefs } from './sseStoreHelpers'
 
 // ============================================================================
@@ -65,6 +75,13 @@ export interface SSEStoreState {
   connectionStartTime: number | null // timestamp when connection started
   lastActivityTime: number | null // timestamp of last event/activity
 
+  // Computed loading states (Issue #399 - Missing Loading States)
+  loadingState: LoadingState
+  connectionMessage: string
+  showTimeoutWarning: boolean
+  analysisPhase: AnalysisPhase
+  shouldShowProgress: boolean
+
   // Analysis metadata (Issue #396 - Eliminates prop drilling)
   // These are derived from SSE events in useAnalysisProgress and synced here
   // for direct access by leaf components (GuideButton, TeachMeButton, etc.)
@@ -121,7 +138,7 @@ export type SSEStore = SSEStoreState & SSEStoreActions
  * - Listener references stored for proper cleanup
  */
 // eslint-disable-next-line max-lines-per-function -- Zustand store requires all state/actions in single create()
-export const useSSEStore = create<SSEStore>((set, get) => ({
+const baseStore = create<SSEStore>((set, get) => ({
   // Public state
   events: [],
   latestEvent: null,
@@ -146,6 +163,8 @@ export const useSSEStore = create<SSEStore>((set, get) => ({
   _listenerRefs: null,
 
   connect: (analysisId: string) => {
+    // Track connection start time for timeout warnings (Issue #399)
+    set({ connectionStartTime: Date.now() })
     createConnection(analysisId, { getState: get, setState: set })
   },
 
@@ -170,6 +189,9 @@ export const useSSEStore = create<SSEStore>((set, get) => ({
       hasFailedStages: false,
       failedStagesCount: 0,
       analysisMetadata: null,
+      // Connection lifecycle tracking - clear on reset (Issue #399)
+      connectionStartTime: null,
+      lastActivityTime: null,
       // Internal state - ensure clean slate
       _eventSource: null,
       _reconnectAttempts: 0,
@@ -210,6 +232,8 @@ export const useSSEStore = create<SSEStore>((set, get) => ({
       return {
         events: cappedEvents,
         latestEvent: event,
+        // Track activity for timeout logic (Issue #399)
+        lastActivityTime: Date.now(),
       }
     })
   },
@@ -221,6 +245,39 @@ export const useSSEStore = create<SSEStore>((set, get) => ({
     set(partial)
   },
 }))
+
+// Apply computed middleware for loading states (Issue #399)
+export const useSSEStore = createComputed(
+  baseStore,
+  (
+    state: SSEStore
+  ): Pick<
+    SSEStore,
+    | 'loadingState'
+    | 'connectionMessage'
+    | 'showTimeoutWarning'
+    | 'analysisPhase'
+    | 'shouldShowProgress'
+  > => ({
+    loadingState: deriveLoadingState(state),
+    connectionMessage: getConnectionMessage(state),
+    showTimeoutWarning: shouldShowTimeoutWarning(state),
+    analysisPhase: getAnalysisPhase(state),
+    shouldShowProgress: shouldShowProgress(state),
+  }),
+  {
+    keys: [
+      'events',
+      'latestEvent',
+      'isConnected',
+      'isComplete',
+      'error',
+      'activeAnalysisId',
+      'connectionStartTime',
+      'lastActivityTime',
+    ],
+  }
+)
 
 // ============================================================================
 // Selectors (Issue #396 - Granular subscriptions to prevent unnecessary re-renders)
