@@ -334,6 +334,16 @@ class ArxivPDFExtractor:
             Cleaned text content
 
         """
+        # Remove null bytes (PDF-specific issue)
+        if "\x00" in content:
+            null_count = content.count("\x00")
+            logger.warning(
+                "pdf_null_bytes_detected",
+                count=null_count,
+                source="arxiv_pdf",
+            )
+            content = content.replace("\x00", "")
+
         # Remove excessive whitespace
         content = re.sub(r"\n{3,}", "\n\n", content)
 

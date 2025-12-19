@@ -14,6 +14,12 @@ logger = get_logger(__name__)
 # Minimum reduction percentage to log cleaning metrics
 SIGNIFICANT_REDUCTION_THRESHOLD = 5
 
+# Invalid Unicode code points for PostgreSQL UTF-8
+NULL_BYTE = "\x00"
+SURROGATE_RANGE_START = 0xD800
+SURROGATE_RANGE_END = 0xDFFF
+INVALID_CODE_POINTS = {0xFFFE, 0xFFFF}
+
 # Patterns for content that should be removed (case-insensitive)
 BOILERPLATE_PATTERNS = [
     # Cookie consent / GDPR
@@ -57,6 +63,63 @@ END_CONTENT_INDICATORS = [
     r"^#{1,3}\s*(?:newsletter|subscribe|sign up)",
     r"^#{1,3}\s*(?:footer|sidebar|widget)",
 ]
+
+
+def sanitize_utf8(text: str) -> str:
+    """Sanitize text to ensure PostgreSQL UTF-8 compatibility.
+
+    Removes characters that are invalid in PostgreSQL's UTF-8 encoding:
+    - Null bytes (0x00) - never valid in text
+    - UTF-16 surrogate characters (0xD800-0xDFFF) - invalid in UTF-8
+    - Invalid Unicode code points (0xFFFE, 0xFFFF)
+
+    Preserves all legitimate Unicode including emoji, CJK characters, etc.
+
+    Args:
+        text: Input text to sanitize
+
+    Returns:
+        Text with invalid characters removed
+
+    """
+    if not text:
+        return text
+
+    original_length = len(text)
+
+    # Remove null bytes
+    cleaned = text.replace(NULL_BYTE, "")
+
+    # Remove UTF-16 surrogates and invalid code points
+    cleaned_chars = []
+    removed_count = 0
+
+    for char in cleaned:
+        code_point = ord(char)
+
+        # Check if character is in surrogate range or invalid code point
+        if (
+            SURROGATE_RANGE_START <= code_point <= SURROGATE_RANGE_END
+            or code_point in INVALID_CODE_POINTS
+        ):
+            removed_count += 1
+            continue
+
+        cleaned_chars.append(char)
+
+    cleaned = "".join(cleaned_chars)
+
+    # Log warning if sanitization occurred
+    chars_removed = original_length - len(cleaned)
+    if chars_removed > 0:
+        logger.warning(
+            "utf8_sanitization_occurred",
+            original_length=original_length,
+            cleaned_length=len(cleaned),
+            chars_removed=chars_removed,
+        )
+
+    return cleaned
 
 
 def clean_extracted_content(content: str) -> str:
@@ -136,6 +199,9 @@ def clean_extracted_content(content: str) -> str:
             reduction_percent=round(reduction_pct, 1),
             found_main_content=found_main_content,
         )
+
+    # Sanitize UTF-8 for PostgreSQL compatibility (must be last step)
+    cleaned = sanitize_utf8(cleaned)
 
     return cleaned
 
