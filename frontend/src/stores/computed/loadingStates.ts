@@ -182,17 +182,17 @@ function getTerminalLoadingState(state: SSEStore): LoadingState | null {
  * This is the core logic that computes granular loading states from existing data
  */
 export function deriveLoadingState(state: SSEStore): LoadingState {
-  // Check connection states first
-  const connectionState = getConnectionLoadingState(state)
-  if (connectionState) return connectionState
+  // Check terminal states first (complete/error take precedence over everything)
+  const terminalState = getTerminalLoadingState(state)
+  if (terminalState) return terminalState
 
-  // Check analysis states
+  // Check analysis states (ongoing work)
   const analysisState = getAnalysisLoadingState(state)
   if (analysisState) return analysisState
 
-  // Check terminal states
-  const terminalState = getTerminalLoadingState(state)
-  if (terminalState) return terminalState
+  // Check connection states
+  const connectionState = getConnectionLoadingState(state)
+  if (connectionState) return connectionState
 
   // Fallback states
   if (state.isConnected) {

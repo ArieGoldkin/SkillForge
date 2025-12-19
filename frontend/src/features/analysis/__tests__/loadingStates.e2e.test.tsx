@@ -18,6 +18,33 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import AnalyzeResult from '../AnalyzeResult'
 
+// Mock TanStack Router hooks for E2E testing
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual('@tanstack/react-router')
+  return {
+    ...actual,
+    createRoute: vi.fn(),
+    createRootRoute: vi.fn(),
+    createFileRoute: vi.fn(),
+    useParams: vi.fn(() => ({ id: 'test-analysis-id' })),
+    useSearch: vi.fn(() => ({ completed: false })),
+    useNavigate: vi.fn(() => vi.fn()),
+  }
+})
+
+// Mock the route API for this specific route
+vi.mock('../AnalyzeResult.lazy', () => ({
+  Route: {
+    useParams: () => ({ id: 'test-analysis-id' }),
+    useSearch: () => ({ completed: false }),
+  },
+}))
+
+// Simple render helper (no router context needed with mocked hooks)
+function renderWithMocks(ui: React.ReactElement) {
+  return render(ui)
+}
+
 // Mock dependencies
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
@@ -63,7 +90,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Happy Path: Fast Analysis (< 5 seconds)', () => {
     it('transitions through complete analysis workflow', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Initial state: disconnected
       expect(screen.getByText('Disconnected')).toBeInTheDocument()
@@ -160,7 +187,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Happy Path: Medium Analysis (10-30 seconds)', () => {
     it('shows timeout warning during longer analysis', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Connect and establish connection
       act(() => {
@@ -216,7 +243,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Error Path: Connection Failure', () => {
     it('handles connection failures gracefully', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Start connection
       act(() => {
@@ -245,7 +272,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Error Path: Analysis Failure', () => {
     it('handles analysis processing failures', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Connect and start analysis
       act(() => {
@@ -288,7 +315,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Edge Case: Rapid State Transitions', () => {
     it('handles rapid loading state changes smoothly', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Connect and immediately complete
       act(() => {
@@ -314,7 +341,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('Edge Case: Timeout Recovery', () => {
     it('recovers from timeout when analysis starts', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Connect and wait long enough for timeout
       act(() => {
@@ -354,7 +381,7 @@ describe.skip('Loading States E2E Workflows', () => {
 
   describe('User Interaction: Timeout Dismissal', () => {
     it('allows users to dismiss timeout warnings', async () => {
-      render(<AnalyzeResult />)
+      renderWithMocks(<AnalyzeResult />)
 
       // Connect and trigger timeout
       act(() => {

@@ -12,17 +12,66 @@ import type { SSEEvent } from '@app-types/sse'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { useSSEStore } from '../sseStore'
+import { deriveLoadingState, getConnectionMessage } from '../computed/loadingStates'
 
-// Mock EventSource to prevent real connections
-global.EventSource = vi.fn().mockImplementation(() => ({
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  close: vi.fn(),
-  readyState: 1,
-  url: 'mock-url',
-}))
+// Helper function for testing loading state computation
+function getLoadingState() {
+  const state = useSSEStore.getState()
+  return deriveLoadingState(state as any) // Cast to match SSEStore type
+}
 
-describe.skip('SSE Store Loading States Integration', () => {
+// Mock EventSource for realistic SSE simulation
+class MockEventSource {
+  url: string
+  readyState: number = 0
+  onopen?: (event: Event) => void
+  onmessage?: (event: MessageEvent) => void
+  onerror?: (event: Event) => void
+  private listeners = new Map<string, Function>()
+  private intervalId?: NodeJS.Timeout
+
+  constructor(url: string) {
+    this.url = url
+
+    // Simulate connection establishment
+    setTimeout(() => {
+      this.readyState = 1
+      this.onopen?.(new Event('open'))
+    }, 10)
+
+    // Simulate periodic SSE messages
+    this.intervalId = setInterval(() => {
+      const event = new MessageEvent('message', {
+        data: JSON.stringify({
+          type: 'progress',
+          stage: 'extraction',
+          status: 'running',
+          timestamp: new Date().toISOString(),
+        }),
+      })
+      this.onmessage?.(event)
+    }, 100)
+  }
+
+  addEventListener(type: string, listener: Function) {
+    this.listeners.set(type, listener)
+  }
+
+  removeEventListener(type: string) {
+    this.listeners.delete(type)
+  }
+
+  close() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId)
+    }
+    this.readyState = 2
+  }
+}
+
+global.EventSource = MockEventSource as any
+
+describe('SSE Store Loading States Integration', () => {
   beforeEach(() => {
     // Reset store state before each test by calling the reset action
     const { reset } = useSSEStore.getState()
@@ -71,7 +120,16 @@ describe.skip('SSE Store Loading States Integration', () => {
 
   describe('Loading State Transitions', () => {
     it('starts in disconnected state', () => {
-      const { loadingState } = useSSEStore.getState()
+      const state = useSSEStore.getState()
+      const loadingState = deriveLoadingState(
+        state.isConnected,
+        state.connectionStartTime,
+        state.lastActivityTime,
+        state.latestEvent,
+        state.error,
+        state.isComplete,
+        state._reconnectAttempts
+      )
       expect(loadingState.type).toBe('disconnected')
     })
 
@@ -79,9 +137,11 @@ describe.skip('SSE Store Loading States Integration', () => {
       const { connect } = useSSEStore.getState()
       connect('test-analysis-id')
 
-      const { loadingState, connectionStartTime } = useSSEStore.getState()
+      const state = useSSEStore.getState()
+      const loadingState = getLoadingState()
+
       expect(loadingState.type).toBe('connecting')
-      expect(loadingState.startTime).toBe(connectionStartTime)
+      expect(loadingState.startTime).toBe(state.connectionStartTime)
     })
 
     it('transitions to waiting_for_events when connected but no events', () => {
@@ -94,7 +154,7 @@ describe.skip('SSE Store Loading States Integration', () => {
         connectionStartTime: Date.now(),
       })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('waiting_for_events')
     })
 
@@ -108,7 +168,7 @@ describe.skip('SSE Store Loading States Integration', () => {
         connectionStartTime: connectionTime,
       })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('timeout_warning')
       expect(loadingState.connectedAt).toBe(connectionTime)
     })
@@ -128,7 +188,7 @@ describe.skip('SSE Store Loading States Integration', () => {
 
       _addEvent(extractionEvent)
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('extracting')
       expect(loadingState.stage).toBe('extraction')
       expect(loadingState.wordCount).toBe(1500)
@@ -149,7 +209,7 @@ describe.skip('SSE Store Loading States Integration', () => {
 
       _addEvent(analysisEvent)
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('analyzing')
       expect(loadingState.stage).toBe('tech_comparison')
       expect(loadingState.progress).toBe(0) // No progress calculation yet
@@ -169,7 +229,7 @@ describe.skip('SSE Store Loading States Integration', () => {
 
       _addEvent(generationEvent)
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('generating')
       expect(loadingState.stage).toBe('artifact_generation')
     })
@@ -183,7 +243,7 @@ describe.skip('SSE Store Loading States Integration', () => {
         artifactId: 'test-artifact-123',
       })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('complete')
       expect(loadingState.artifactId).toBe('test-artifact-123')
     })
@@ -196,7 +256,7 @@ describe.skip('SSE Store Loading States Integration', () => {
         error: new Error('Network timeout'),
       })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('error')
       expect(loadingState.error).toBe('Network timeout')
     })
@@ -222,10 +282,9 @@ describe.skip('SSE Store Loading States Integration', () => {
       // Change relevant state - should trigger recomputation
       useSSEStore.setState({ isConnected: true })
 
-      const { loadingState: newLoadingState, connectionMessage: newConnectionMessage } =
-        useSSEStore.getState()
+      const newLoadingState = getLoadingState()
       expect(newLoadingState.type).toBe('waiting_for_events')
-      expect(newConnectionMessage).toBe('Preparing analysis...')
+      expect(getConnectionMessage(useSSEStore.getState())).toBe('Preparing analysis...')
     })
 
     it('recomputes when events array changes', () => {
@@ -233,7 +292,7 @@ describe.skip('SSE Store Loading States Integration', () => {
       connect('test-analysis-id')
       useSSEStore.setState({ isConnected: true })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('waiting_for_events')
 
       // Add an event
@@ -246,7 +305,7 @@ describe.skip('SSE Store Loading States Integration', () => {
 
       _addEvent(event)
 
-      const { loadingState: newLoadingState } = useSSEStore.getState()
+      const newLoadingState = getLoadingState()
       expect(newLoadingState.type).toBe('extracting')
     })
 
@@ -255,14 +314,14 @@ describe.skip('SSE Store Loading States Integration', () => {
       connect('test-analysis-id')
       useSSEStore.setState({ isConnected: true })
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('waiting_for_events')
 
       // Simulate timeout
       const oldTime = Date.now() - 31000
       useSSEStore.setState({ connectionStartTime: oldTime })
 
-      const { loadingState: newLoadingState } = useSSEStore.getState()
+      const newLoadingState = getLoadingState()
       expect(newLoadingState.type).toBe('timeout_warning')
     })
   })
@@ -301,7 +360,7 @@ describe.skip('SSE Store Loading States Integration', () => {
       }
       _addEvent(analyzingEvent)
 
-      const { loadingState } = useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(loadingState.type).toBe('analyzing')
       expect(loadingState.progress).toBeGreaterThan(0)
       expect(loadingState.progress).toBeLessThanOrEqual(100)
@@ -324,11 +383,9 @@ describe.skip('SSE Store Loading States Integration', () => {
 
       reset()
 
-      const {
-        connectionStartTime: newConnectionStartTime,
-        lastActivityTime: newLastActivityTime,
-        loadingState,
-      } = useSSEStore.getState()
+      const { connectionStartTime: newConnectionStartTime, lastActivityTime: newLastActivityTime } =
+        useSSEStore.getState()
+      const loadingState = getLoadingState()
       expect(newConnectionStartTime).toBeNull()
       expect(newLastActivityTime).toBeNull()
       expect(loadingState.type).toBe('disconnected')
