@@ -637,6 +637,104 @@ BAD EXAMPLE (DO NOT USE):
   suggestion: "Consider refactoring to improve code quality"
 
 Be constructive and provide actionable improvements.""",
+    # Issue #418: LLM-as-Judge Evaluator prompts for quality assessment
+    "evaluator-quality-relevance": """Evaluate the relevance of the output to the input.
+
+Input: {{input}}
+Output: {{output}}
+
+Score the relevance from 0-10 where:
+- 0-3: Not relevant, misses the point entirely
+- 4-6: Somewhat relevant, addresses some aspects but misses key points
+- 7-9: Highly relevant, addresses most aspects thoroughly
+- 10: Perfectly relevant, addresses all aspects comprehensively
+
+## Evaluation Process:
+1. Identify the key topics and requirements in the input
+2. Check how many of these are addressed in the output
+3. Assess the quality of coverage for each addressed topic
+4. Consider if irrelevant information dilutes the response
+
+Respond with ONLY a number from 0-10.""",
+    "evaluator-quality-depth": """Evaluate the depth and thoroughness of the analysis.
+
+Input: {{input}}
+Output: {{output}}
+
+Score the depth from 0-10 where:
+- 0-3: Superficial, lacks meaningful detail or analysis
+- 4-6: Moderate depth, covers basics but misses nuances
+- 7-9: Deep analysis, provides good detail and insights
+- 10: Extremely thorough and comprehensive, expert-level analysis
+
+## Evaluation Process:
+1. Check if the output goes beyond surface-level observations
+2. Look for specific examples, code snippets, or technical details
+3. Assess whether complex topics are properly explained
+4. Consider if trade-offs, edge cases, and alternatives are discussed
+
+Respond with ONLY a number from 0-10.""",
+    "evaluator-quality-accuracy": """Evaluate the factual accuracy of the output.
+
+Input: {{input}}
+Output: {{output}}
+Reference: {{reference}}
+
+Score the accuracy from 0-10 where:
+- 0-3: Many errors, hallucinations, or incorrect information
+- 4-6: Some errors but mostly accurate on key points
+- 7-9: Accurate with only minor issues or imprecisions
+- 10: Completely accurate, no factual errors
+
+## Evaluation Process:
+1. Compare factual claims against the reference (if available)
+2. Check for logical consistency within the output
+3. Identify any hallucinated information or made-up details
+4. Verify technical accuracy of code examples or specifications
+
+Respond with ONLY a number from 0-10.""",
+    "evaluator-quality-coherence": """Evaluate the coherence and clarity of the output.
+
+Output: {{output}}
+
+Score the coherence from 0-10 where:
+- 0-3: Incoherent, confusing structure, hard to follow
+- 4-6: Somewhat coherent, could be clearer or better organized
+- 7-9: Coherent and well-structured, easy to understand
+- 10: Perfectly clear, logical flow, excellent organization
+
+## Evaluation Process:
+1. Check if ideas flow logically from one to the next
+2. Assess the use of clear headings, sections, or structure
+3. Look for smooth transitions between topics
+4. Verify that conclusions follow from the preceding analysis
+
+Respond with ONLY a number from 0-10.""",
+    "evaluator-quality-overall": """Evaluate the overall quality of the output.
+
+Input: {{input}}
+Output: {{output}}
+Reference: {{reference}}
+
+Consider ALL quality dimensions:
+- Relevance: Does it address the input requirements?
+- Depth: Is the analysis thorough and detailed?
+- Accuracy: Is the information factually correct?
+- Coherence: Is it well-structured and clear?
+
+Score the overall quality from 0-10 where:
+- 0-3: Poor quality, fails on multiple dimensions
+- 4-6: Acceptable quality, meets basic requirements
+- 7-9: High quality, excels in most dimensions
+- 10: Exceptional quality, production-ready output
+
+## Evaluation Process:
+1. Assess each dimension briefly
+2. Weight relevance and accuracy slightly higher than others
+3. Consider how well dimensions work together
+4. Identify any critical failures that should lower the overall score
+
+Respond with ONLY a number from 0-10.""",
 }
 
 

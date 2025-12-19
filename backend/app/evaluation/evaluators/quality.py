@@ -10,6 +10,9 @@ All evaluators are compatible with Langfuse's evaluate() method.
 
 Issue #299-304: Fixed dict-to-string bug where outputs were converted via str()
 resulting in the LLM judge seeing "{'insights': '...'}" instead of actual content.
+
+Issue #418: Evaluator prompts are now fetched from Langfuse via PromptManager
+with automatic fallback to hardcoded prompts if Langfuse is unavailable.
 """
 
 from collections.abc import Callable, Coroutine
@@ -18,8 +21,11 @@ from typing import Any
 from langchain_core.prompts import ChatPromptTemplate
 
 from app.core.config import get_settings
+from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.evaluation.types import Example, Run
+
+logger = get_logger(__name__)
 
 # Issue #299-304: Increased from 8000 to 15000 to preserve analytical depth
 # Previous limit was too aggressive, causing G-Eval to see only shallow summaries,
@@ -182,6 +188,125 @@ def _format_list_items(key: str, items: list) -> str:
     return "\n".join(parts)
 
 
+# Hardcoded fallback prompts (used when Langfuse is unavailable)
+FALLBACK_PROMPTS = {
+    "relevance": """Evaluate the relevance of the output to the input.
+
+Input: {input}
+Output: {output}
+
+Score the relevance from 0-10 where:
+- 0-3: Not relevant, misses the point
+- 4-6: Somewhat relevant, addresses some aspects
+- 7-9: Highly relevant, addresses most aspects
+- 10: Perfectly relevant, addresses all aspects
+
+Respond with ONLY a number from 0-10.""",
+    "depth": """Evaluate the depth and thoroughness of the analysis.
+
+Input: {input}
+Output: {output}
+
+Score the depth from 0-10 where:
+- 0-3: Superficial, lacks detail
+- 4-6: Moderate depth, covers basics
+- 7-9: Deep analysis, good detail
+- 10: Extremely thorough and comprehensive
+
+Respond with ONLY a number from 0-10.""",
+    "accuracy": """Evaluate the factual accuracy of the output.
+
+Input: {input}
+Output: {output}
+Reference: {reference}
+
+Score the accuracy from 0-10 where:
+- 0-3: Many errors or hallucinations
+- 4-6: Some errors but mostly accurate
+- 7-9: Accurate with minor issues
+- 10: Completely accurate
+
+Respond with ONLY a number from 0-10.""",
+    "coherence": """Evaluate the coherence and clarity of the output.
+
+Output: {output}
+
+Score the coherence from 0-10 where:
+- 0-3: Incoherent, confusing structure
+- 4-6: Somewhat coherent, could be clearer
+- 7-9: Coherent and well-structured
+- 10: Perfectly clear and logical
+
+Respond with ONLY a number from 0-10.""",
+    "overall": """Evaluate the overall quality of the output.
+
+Input: {input}
+Output: {output}
+Reference: {reference}
+
+Consider relevance, depth, accuracy, and coherence.
+Score the overall quality from 0-10 where:
+- 0-3: Poor quality
+- 4-6: Acceptable quality
+- 7-9: High quality
+- 10: Exceptional quality
+
+Respond with ONLY a number from 0-10.""",
+}
+
+# Mapping from aspect to Langfuse prompt name
+LANGFUSE_PROMPT_NAMES = {
+    "relevance": "evaluator-quality-relevance",
+    "depth": "evaluator-quality-depth",
+    "accuracy": "evaluator-quality-accuracy",
+    "coherence": "evaluator-quality-coherence",
+    "overall": "evaluator-quality-overall",
+}
+
+
+async def _get_evaluator_prompt(aspect: str) -> str:
+    """Get evaluator prompt from Langfuse with fallback to hardcoded.
+
+    Issue #418: Fetches prompt from Langfuse via PromptManager for versioning
+    and A/B testing. Falls back to hardcoded prompts if Langfuse is unavailable.
+
+    Args:
+        aspect: Quality aspect (relevance, depth, accuracy, coherence, overall)
+
+    Returns:
+        Prompt template string with {input}, {output}, {reference} placeholders
+
+    """
+    prompt_name = LANGFUSE_PROMPT_NAMES.get(aspect, LANGFUSE_PROMPT_NAMES["overall"])
+
+    try:
+        from app.shared.services.prompts.prompt_manager import get_prompt_manager
+
+        prompt_manager = get_prompt_manager()
+        langfuse_prompt = await prompt_manager.get_prompt(prompt_name)
+
+        # Convert Langfuse {{variable}} syntax to ChatPromptTemplate {variable} syntax
+        prompt_template = langfuse_prompt.replace("{{", "{").replace("}}", "}")
+
+        logger.debug(
+            "evaluator_prompt_fetched_from_langfuse",
+            aspect=aspect,
+            prompt_name=prompt_name,
+        )
+
+        return prompt_template
+
+    except Exception as e:  # noqa: BLE001 - Graceful degradation
+        logger.warning(
+            "evaluator_prompt_langfuse_fallback",
+            aspect=aspect,
+            prompt_name=prompt_name,
+            error=str(e),
+            message="Using hardcoded fallback prompt",
+        )
+        return FALLBACK_PROMPTS.get(aspect, FALLBACK_PROMPTS["overall"])
+
+
 def create_quality_evaluator(
     aspect: str = "overall",
     judge_model: str | None = None,
@@ -190,6 +315,9 @@ def create_quality_evaluator(
 
     This factory function creates evaluators that use an LLM to judge
     subjective quality aspects of outputs.
+
+    Issue #418: Prompts are fetched from Langfuse via PromptManager with
+    automatic fallback to hardcoded prompts if unavailable.
 
     Args:
         aspect: Quality aspect to evaluate (relevance, depth, accuracy, coherence, overall)
@@ -205,73 +333,6 @@ def create_quality_evaluator(
         ```
 
     """
-    # Define prompts for different aspects
-    prompts = {
-        "relevance": """Evaluate the relevance of the output to the input.
-
-Input: {input}
-Output: {output}
-
-Score the relevance from 0-10 where:
-- 0-3: Not relevant, misses the point
-- 4-6: Somewhat relevant, addresses some aspects
-- 7-9: Highly relevant, addresses most aspects
-- 10: Perfectly relevant, addresses all aspects
-
-Respond with ONLY a number from 0-10.""",
-        "depth": """Evaluate the depth and thoroughness of the analysis.
-
-Input: {input}
-Output: {output}
-
-Score the depth from 0-10 where:
-- 0-3: Superficial, lacks detail
-- 4-6: Moderate depth, covers basics
-- 7-9: Deep analysis, good detail
-- 10: Extremely thorough and comprehensive
-
-Respond with ONLY a number from 0-10.""",
-        "accuracy": """Evaluate the factual accuracy of the output.
-
-Input: {input}
-Output: {output}
-Reference: {reference}
-
-Score the accuracy from 0-10 where:
-- 0-3: Many errors or hallucinations
-- 4-6: Some errors but mostly accurate
-- 7-9: Accurate with minor issues
-- 10: Completely accurate
-
-Respond with ONLY a number from 0-10.""",
-        "coherence": """Evaluate the coherence and clarity of the output.
-
-Output: {output}
-
-Score the coherence from 0-10 where:
-- 0-3: Incoherent, confusing structure
-- 4-6: Somewhat coherent, could be clearer
-- 7-9: Coherent and well-structured
-- 10: Perfectly clear and logical
-
-Respond with ONLY a number from 0-10.""",
-        "overall": """Evaluate the overall quality of the output.
-
-Input: {input}
-Output: {output}
-Reference: {reference}
-
-Consider relevance, depth, accuracy, and coherence.
-Score the overall quality from 0-10 where:
-- 0-3: Poor quality
-- 4-6: Acceptable quality
-- 7-9: High quality
-- 10: Exceptional quality
-
-Respond with ONLY a number from 0-10.""",
-    }
-
-    prompt_template = prompts.get(aspect, prompts["overall"])
 
     async def quality_evaluator(run: Run, example: Example) -> dict[str, Any]:
         """Evaluate output quality using LLM-as-judge.
@@ -307,10 +368,7 @@ Respond with ONLY a number from 0-10.""",
 
         # Issue #299-304: Debug logging to diagnose quality score issues
         # Log content lengths to verify extraction is working
-        from app.core.logging import get_logger
-
-        _logger = get_logger(__name__)
-        _logger.debug(
+        logger.debug(
             "quality_evaluator_content_extracted",
             aspect=aspect,
             input_length=len(extracted_input),
@@ -320,6 +378,8 @@ Respond with ONLY a number from 0-10.""",
             output_preview=extracted_output[:200] if extracted_output else "<empty>",
         )
 
+        # Issue #418: Fetch prompt from Langfuse (with fallback to hardcoded)
+        prompt_template = await _get_evaluator_prompt(aspect)
         prompt = ChatPromptTemplate.from_template(prompt_template)
 
         # Get judge model

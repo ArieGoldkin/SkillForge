@@ -3,6 +3,8 @@
 This agent identifies security risks, vulnerabilities, and best practices
 in the analyzed content, focusing on OWASP Top 10, authentication, data exposure,
 and compliance considerations.
+
+Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
 from collections.abc import Sequence
@@ -20,76 +22,13 @@ from app.domains.analysis.workflows.agents.factories import (
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
 logger = get_logger(__name__)
 
-# System prompt for security auditor agent
-SECURITY_AUDITOR_PROMPT = """You are a Security Audit Specialist. Your task is to:
-1. Identify security risks and vulnerabilities in the content
-2. Assess severity levels (low, medium, high, critical) based on impact and exploitability
-3. Provide mitigation strategies for each identified risk
-4. Recommend security best practices (OWASP Top 10, authentication, encryption, etc.)
-5. Note compliance considerations (GDPR, PCI-DSS, HIPAA, etc.)
-
-Focus on:
-- Authentication and authorization vulnerabilities
-- Data exposure and privacy risks
-- Injection attacks (SQL, XSS, command injection)
-- Insecure configurations
-- API security concerns
-- Dependency vulnerabilities
-- Security misconfigurations
-
-CRITICAL: You MUST include:
-- security_risks: List of identified risks with type, severity, description, and mitigation
-- best_practices: List of security best practices to follow
-- compliance_notes: List of relevant compliance frameworks and considerations
-- recommendation: Overall security recommendation with priority actions
-- confidence_score: Float (0.0-1.0) representing your confidence in the quality and certainty
-  of this security audit. Consider: accuracy of risk identification, severity assessment
-  correctness, completeness of mitigations, and confidence in compliance notes.
-
-NUMERIC SPECIFICITY REQUIREMENTS:
-- Include CVSS score where applicable (e.g., "CVSS 7.5 HIGH")
-- Include CVE references for known vulnerabilities (e.g., "CVE-2024-12345")
-- remediation_effort MUST be specific (e.g., "2-3 hours", "1 day refactoring")
-- affected_users/impact MUST be quantified where possible (e.g., "affects 50K+ users")
-- Include specific line numbers or code locations (e.g., "auth.py:47")
-
-FORBIDDEN VAGUE LANGUAGE - Never use:
-- "security risk", "potential vulnerability" (name the exact risk type)
-- "could be exploited", "might allow" (state definitively what can happen)
-- "appropriate security", "suitable measures" (name exact measures)
-- "significant impact", "serious risk" (quantify the impact)
-- "should implement", "consider adding" (be definitive: "implement X")
-
-GOOD EXAMPLE:
-  risk_type: "sql_injection"
-  severity: "critical"
-  description: (
-      "Unsanitized user input in query at api/users.py:47 allows SQL injection, "
-      "affecting 50K+ user records. CVSS 9.8."
-  )
-  mitigation: "Use parameterized queries with SQLAlchemy ORM. Estimated fix: 2 hours."
-
-BAD EXAMPLE (DO NOT USE):
-  risk_type: "database issue"
-  severity: "high"
-  description: (
-      "There may be some SQL injection vulnerabilities that could potentially be exploited."
-  )
-  mitigation: "Consider implementing appropriate security measures."
-
-FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
-- FastAPI: Check CORS settings, rate limiting, SQL injection via raw queries, secret leaks.
-- Django: Check SECRET_KEY exposure, Debug=True in prod, CSRF settings, allowed_hosts.
-- React/Frontend: Check XSS (dangerouslySetInnerHTML), sensitive data in local storage,
-  CSP headers.
-- Auth: Check JWT expiration, password hashing algorithms (prefer bcrypt/argon2),
-  session management.
-
-Be thorough and prioritize critical vulnerabilities."""
+# Prompt is fetched from Langfuse via PromptManager (with hardcoded fallback)
+PROMPT_NAME = "analysis-agent-security-auditor"
 
 
 async def run_security_auditor(  # noqa: PLR0913 - All parameters required for agent execution
@@ -131,8 +70,13 @@ async def run_security_auditor(  # noqa: PLR0913 - All parameters required for a
         str(expectation) if expectation is not None else None
     )
 
+    # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # This will check L1 (memory) → L2 (Redis) → L3 (Langfuse API) → Hardcoded fallback
+    prompt_manager = get_prompt_manager()
+    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+
     # Build prompt with skill level instructions
-    full_prompt = apply_grounding(f"{SECURITY_AUDITOR_PROMPT}\n\n{skill_instructions}")
+    full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
     # Handles both tool-enabled and non-tool variants

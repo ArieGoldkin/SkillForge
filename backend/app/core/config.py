@@ -478,12 +478,13 @@ class Settings(BaseSettings):
         description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
     )
 
-    # Langfuse Prompt Management Configuration (Issue #379)
+    # Langfuse Prompt Management Configuration (Issue #379, #418)
     LANGFUSE_PROMPTS_ENABLED: bool = Field(
-        default=False,
+        default=True,
         description=(
             "Enable Langfuse Prompt Management. When disabled, uses hardcoded prompts. "
-            "Gradual rollout: Start with False, test in staging, enable in production."
+            "Note: All 8 agents now use PromptManager with automatic fallback to hardcoded "
+            "prompts if Langfuse is unavailable (Issue #418)."
         ),
     )
     LANGFUSE_PROMPTS_L1_TTL: int = Field(
