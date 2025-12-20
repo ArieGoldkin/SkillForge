@@ -122,7 +122,50 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
         )
         # Return empty findings on cancellation (allows other agents to continue)
         return {"agent_findings": []}
+    except TimeoutError:
+        # Agent execution exceeded timeout
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        await emit_agent_progress(
+            analysis_id,
+            "code_quality_critic",
+            "failed",
+            error="Agent execution timed out",
+            error_code="CODE_QUALITY_CRITIC_TIMEOUT",
+            processing_time_ms=processing_time_ms,
+        )
+        logger.warning(
+            "code_quality_critic_timeout",
+            analysis_id=str(analysis_id),
+            duration_seconds=duration,
+            timeout_seconds=STEP_TIMEOUT,
+        )
+        # Return empty findings to allow other agents to continue
+        return {"agent_findings": []}
+    except ValueError as e:
+        # Specificity validation failed
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        await emit_agent_progress(
+            analysis_id,
+            "code_quality_critic",
+            "failed",
+            error=f"Specificity validation failed: {str(e)}",
+            error_code="CODE_QUALITY_CRITIC_SPECIFICITY_FAILED",
+            processing_time_ms=processing_time_ms,
+        )
+        logger.warning(
+            "code_quality_critic_specificity_failed",
+            analysis_id=str(analysis_id),
+            error=str(e),
+            duration_seconds=duration,
+        )
+        # Return empty findings to allow other agents to continue
+        return {"agent_findings": []}
     except Exception as e:
+        # Unexpected errors (database, LLM API, etc.)
         duration = time.time() - start_time
         processing_time_ms = int(duration * 1000)
 
