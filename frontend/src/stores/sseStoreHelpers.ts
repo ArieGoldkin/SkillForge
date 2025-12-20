@@ -301,62 +301,90 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
  */
 function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
   return (event: MessageEvent) => {
-    // Guard: connection errors may fire this with undefined data
-    if (!event.data) {
-      logger.warn('Received error event with no data - likely connection error', {
-        eventType: event.type,
-        eventTarget: event.target?.toString(),
-        analysisId: store.getState().activeAnalysisId,
-      })
-      return
-    }
+    handleErrorEventData(store, event)
+  }
+}
 
-    try {
-      const rawData = JSON.parse(event.data)
-      const validatedData = parseSSEEvent(rawData)
+/**
+ * Process error event data with validation and error handling
+ */
+function handleErrorEventData(store: StoreAPI, event: MessageEvent): void {
+  // Guard: connection errors may fire this with undefined data
+  if (!event.data) {
+    logger.warn('Received error event with no data - likely connection error', {
+      eventType: event.type,
+      eventTarget: event.target?.toString(),
+      analysisId: store.getState().activeAnalysisId,
+    })
+    return
+  }
 
-      if (!validatedData) {
-        logger.error('Error event validation failed', {
-          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
-          eventType: 'error',
-        })
-        store.setState({
-          error: new Error('Received invalid error event from server'),
-        })
-        return
-      }
+  try {
+    processValidatedErrorEvent(store, event)
+  } catch (error) {
+    handleErrorEventParseError(event, error)
+  }
+}
 
-      logger.error('Server sent error event', {
-        validatedData,
-        analysisId: validatedData.analysis_id,
-        stage: validatedData.stage,
-        error: validatedData.details?.error,
-      })
+/**
+ * Process a validated error event
+ */
+function processValidatedErrorEvent(store: StoreAPI, event: MessageEvent): void {
+  const rawData = JSON.parse(event.data)
+  const validatedData = parseSSEEvent(rawData)
 
-      // Use _addEvent for memory-safe event storage
-      store.getState()._addEvent(validatedData)
-      store.setState({
-        error: new Error(
-          isErrorEvent(validatedData)
-            ? (validatedData.error ?? validatedData.details?.error ?? 'Analysis failed')
-            : 'Analysis failed'
-        ),
-      })
+  if (!validatedData) {
+    logger.error('Error event validation failed', {
+      rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+      eventType: 'error',
+    })
+    store.setState({
+      error: new Error('Received invalid error event from server'),
+    })
+    return
+  }
 
-      if (isErrorEvent(validatedData)) {
-        // Skip disconnection in test environment to allow multiple events in tests
-        if (process.env.NODE_ENV !== 'test') {
-          store.getState().disconnect()
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to parse error event', {
-        rawData: event.data?.substring(0, 200),
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      })
+  logAndStoreErrorEvent(store, validatedData)
+
+  if (isErrorEvent(validatedData)) {
+    // Skip disconnection in test environment to allow multiple events in tests
+    if (process.env.NODE_ENV !== 'test') {
+      store.getState().disconnect()
     }
   }
+}
+
+/**
+ * Log error event and store it in the system
+ */
+function logAndStoreErrorEvent(store: StoreAPI, validatedData: SSEEvent): void {
+  logger.error('Server sent error event', {
+    validatedData,
+    analysisId: validatedData.analysis_id,
+    stage: validatedData.stage,
+    error: validatedData.details?.error,
+  })
+
+  // Use _addEvent for memory-safe event storage
+  store.getState()._addEvent(validatedData)
+  store.setState({
+    error: new Error(
+      isErrorEvent(validatedData)
+        ? (validatedData.error ?? validatedData.details?.error ?? 'Analysis failed')
+        : 'Analysis failed'
+    ),
+  })
+}
+
+/**
+ * Handle parsing errors for error events
+ */
+function handleErrorEventParseError(event: MessageEvent, error: unknown): void {
+  logger.error('Failed to parse error event', {
+    rawData: event.data?.substring(0, 200),
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  })
 }
 
 /**
