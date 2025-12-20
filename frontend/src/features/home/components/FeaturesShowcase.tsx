@@ -11,6 +11,8 @@
 
 import type * as React from 'react'
 
+import { UI_CONSTANTS } from '@/lib/constants'
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
 import { AnalysisTab } from './AnalysisTab'
@@ -26,7 +28,9 @@ import { TutorTab } from './TutorTab'
 export const FeaturesShowcase: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div
+        className={`${UI_CONSTANTS.LAYOUT_MAX_WIDTH_7XL} ${UI_CONSTANTS.LAYOUT_MARGIN_X_AUTO} space-y-8`}
+      >
         <div>
           <h1 className="text-4xl font-bold mb-2">Feature Components Showcase</h1>
           <p className="text-muted-foreground">

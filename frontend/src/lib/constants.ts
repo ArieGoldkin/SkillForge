@@ -227,6 +227,10 @@ export const UI_CONSTANTS = {
   STATUS_STYLE_INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   STATUS_STYLE_ERROR: 'bg-red-500/10 text-red-500 border-red-500/20',
   STATUS_STYLE_WARNING: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+
+  // Layout constraints (Tailwind CSS)
+  LAYOUT_MAX_WIDTH_7XL: 'max-w-7xl',
+  LAYOUT_MARGIN_X_AUTO: 'mx-auto',
 } as const
 
 // ============================================================================
@@ -298,6 +302,34 @@ export const BUSINESS_CONSTANTS = {
   STATUS_STYLE_INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
   STATUS_STYLE_ERROR: 'bg-red-500/10 text-red-500 border-red-500/20',
   STATUS_STYLE_WARNING: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+} as const
+
+// ============================================================================
+// DATABASE DEFAULT CONSTANTS
+// ============================================================================
+
+export const DB_DEFAULTS = {
+  // Agent examples
+  AGENT_EXAMPLE_QUALITY_SCORE: 1.0,
+
+  // Artifacts
+  ARTIFACT_INITIAL_VERSION: 1,
+  ARTIFACT_INITIAL_DOWNLOAD_COUNT: 0,
+
+  // Analysis status
+  ANALYSIS_STATUS_PENDING: 'pending',
+
+  // Tutoring sessions
+  TUTORING_SESSION_STATUS_ACTIVE: 'active',
+  TUTORING_SESSION_CURRENT_SECTION: 0,
+  TUTORING_SESSION_CURRENT_LESSON: 0,
+  TUTORING_SESSION_PHASE_SYLLABUS_GENERATION: 'syllabus_generation',
+  TUTORING_SESSION_USER_LEVEL_INTERMEDIATE: 'intermediate',
+  TUTORING_SESSION_UNDERSTANDING_SCORES_EMPTY: '{}',
+  ARTIFACT_METADATA_EMPTY: '{}',
+
+  // Boolean defaults
+  BOOLEAN_FALSE: false,
 } as const
 
 // ============================================================================

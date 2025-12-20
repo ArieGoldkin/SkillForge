@@ -486,8 +486,6 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
  * All state managed through Zustand store (no module-level variables)
  */
 export function createConnection(analysisId: string, store: StoreAPI): void {
-  // eslint-disable-line max-lines-per-function
-
   const state = store.getState()
 
   // Prevent duplicate connections
