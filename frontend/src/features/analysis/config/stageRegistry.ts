@@ -148,7 +148,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   dependencies_analysis: {
     id: 'dependencies_analysis',
     title: 'Dependencies Analysis',
-    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_TESTING_STRATEGIST,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_TECHNICAL_WRITER,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',

@@ -49,12 +49,12 @@ const EXPECTED_STAGE_NAMES: StageName[] = [
   'supervisor_routing',
   // Agent stages (all optional)
   'tech_comparison',
+  'dependencies_analysis',
   'security_audit',
   'implementation_planning',
   'performance_audit',
   'code_quality_audit',
   'trends_analysis',
-  'dependencies_analysis',
   // Quality stages
   'aggregation',
   'quality_validation',
