@@ -1,3 +1,5 @@
+/* eslint-disable max-lines -- SSE Helpers contain comprehensive event lifecycle management: retention policies, memory monitoring, cleanup logic, and connection management. File length reflects necessary complexity for robust SSE handling. */
+
 /**
  * SSE Store Helper Functions
  *
@@ -12,17 +14,24 @@
 
 import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
-import { parseSSEEvent } from '@/schemas/sse'
+import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
+import { parseSSEEvent, type SSEEvent } from '@/schemas/sse'
 
 import type { SSEStore, SSEStoreState } from './sseStore'
 
-// Configuration constants
-const MAX_RECONNECT_ATTEMPTS = 3
-const INITIAL_RECONNECT_DELAY = 1000 // 1s
-const MAX_RECONNECT_DELAY = 4000 // 4s
+// Configuration constants (imported from shared constants)
+const MAX_RECONNECT_ATTEMPTS = LIMIT_CONSTANTS.SSE_RECONNECT_ATTEMPTS
+const INITIAL_RECONNECT_DELAY = LIMIT_CONSTANTS.SSE_RECONNECT_DELAY_INITIAL
+const MAX_RECONNECT_DELAY = LIMIT_CONSTANTS.SSE_RECONNECT_DELAY_MAX
 
 /** Maximum events to keep in memory (prevents unbounded growth) */
-export const MAX_EVENTS = 500
+export const MAX_EVENTS = LIMIT_CONSTANTS.MAX_EVENTS
+
+// Event retention policies imported from shared constants
+
+// Re-export for backward compatibility
+export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS }
 
 /**
  * Listener references for proper cleanup
@@ -47,6 +56,92 @@ type StoreAPI = {
  */
 function getReconnectDelay(attempts: number): number {
   return Math.min(INITIAL_RECONNECT_DELAY * 2 ** attempts, MAX_RECONNECT_DELAY)
+}
+
+/**
+ * Event lifecycle management - determines if event should be retained
+ */
+export function shouldRetainEvent(event: SSEEvent, now: number = Date.now()): boolean {
+  const eventTime =
+    typeof event.timestamp === 'string' ? new Date(event.timestamp).getTime() : event.timestamp
+  const eventAge = now - eventTime
+
+  // Always keep critical events
+  if (event.type === 'error' || event.type === 'complete') {
+    return true
+  }
+
+  // Apply retention policies based on event type
+  if (event.type === 'progress') {
+    return eventAge < EVENT_RETENTION_POLICIES.progress
+  }
+
+  // Default: keep recent events (5 minutes)
+  return eventAge < EVENT_RETENTION_POLICIES.activity
+}
+
+/**
+ * Clean up old events based on retention policies
+ */
+export function cleanupOldEvents(events: SSEEvent[]): SSEEvent[] {
+  const now = Date.now()
+  return events.filter((event) => shouldRetainEvent(event, now))
+}
+
+/**
+ * Get memory usage statistics for monitoring
+ */
+export function getEventMemoryStats(events: SSEEvent[]) {
+  const now = Date.now()
+  const totalEvents = events.length
+  const memoryUsage = totalEvents / MAX_EVENTS
+
+  // Count events by type and age
+  const stats = {
+    total: totalEvents,
+    memoryUsage,
+    byType: {
+      progress: 0,
+      error: 0,
+      complete: 0,
+      activity: 0,
+    },
+    byAge: {
+      recent: 0, // < 1 minute
+      medium: 0, // 1-5 minutes
+      old: 0, // > 5 minutes
+    },
+    alerts: [] as string[],
+  }
+
+  events.forEach((event) => {
+    const eventTime =
+      typeof event.timestamp === 'string' ? new Date(event.timestamp).getTime() : event.timestamp
+    const age = now - eventTime
+    const ageMinutes = age / (60 * 1000)
+
+    // Count by type
+    if (event.type === 'progress') stats.byType.progress++
+    else if (event.type === 'error') stats.byType.error++
+    else if (event.type === 'complete') stats.byType.complete++
+    else stats.byType.activity++
+
+    // Count by age
+    if (ageMinutes < 1) stats.byAge.recent++
+    else if (ageMinutes < 5) stats.byAge.medium++
+    else stats.byAge.old++
+  })
+
+  // Generate alerts based on thresholds
+  if (memoryUsage >= MEMORY_CONSTANTS.EMERGENCY_THRESHOLD) {
+    stats.alerts.push('EMERGENCY: Event buffer near capacity - forcing cleanup')
+  } else if (memoryUsage >= MEMORY_CONSTANTS.CRITICAL_THRESHOLD) {
+    stats.alerts.push('CRITICAL: Event buffer over 90% capacity')
+  } else if (memoryUsage >= MEMORY_CONSTANTS.WARNING_THRESHOLD) {
+    stats.alerts.push('WARNING: Event buffer over 70% capacity')
+  }
+
+  return stats
 }
 
 /**
@@ -261,7 +356,7 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
         error.message.includes('fetch') ||
         error.message.includes('connection lost'))
     ) {
-      console.log('[SSE] Network recovered, clearing error state')
+      logger.info('Network recovered, clearing error state', { service: 'sse' })
       store.setState({ error: null })
       // The UI will handle reconnection automatically
     }

@@ -3,6 +3,8 @@ import { useEffect, useMemo } from 'react'
 import type { SSEStore } from '@stores/sseStore'
 import { useSSEStore } from '@stores/sseStore'
 
+import { logger } from '@/lib/logger'
+
 import { trackComponentPerformance } from '@services/performance/webVitals.service'
 
 /**
@@ -52,7 +54,7 @@ export function useSSE(analysisId: string) {
 
     // Only connect if not already connected to this analysis
     if (activeAnalysisId !== analysisId) {
-      console.log(`🔗 SSE: Connecting to analysis ${analysisId}`)
+      logger.info(`Connecting to analysis`, { analysisId, service: 'sse' })
       connect(analysisId)
 
       // Track connection performance
@@ -60,7 +62,11 @@ export function useSSE(analysisId: string) {
       const connectDuration = connectEndTime - connectStartTime
       trackComponentPerformance('sse-connection', connectDuration)
 
-      console.log(`⚡ SSE: Connection established in ${connectDuration.toFixed(2)}ms`)
+      logger.debug(`Connection established`, {
+        analysisId,
+        duration: connectDuration,
+        service: 'sse',
+      })
     }
 
     // Track SSE event processing performance
