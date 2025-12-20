@@ -15,6 +15,10 @@ export const TIME_CONSTANTS = {
   MINUTE: 60 * 1000,
   HOUR: 60 * 60 * 1000,
 
+  // Time conversion constants
+  SECONDS_PER_MINUTE: 60,
+  MINUTES_PER_HOUR: 60,
+
   // Query stale times
   QUERY_STALE_TIME: 60 * 1000, // 1 minute
 
@@ -26,6 +30,9 @@ export const TIME_CONSTANTS = {
 
   // Performance thresholds
   PERFORMANCE_REGRESSION_THRESHOLD: 1.2, // 20% regression allowed
+
+  // Mock API delays
+  MOCK_API_DELAY: 1500, // 1.5 seconds for demo responses
 } as const
 
 // ============================================================================
@@ -218,7 +225,7 @@ export const UI_CONSTANTS = {
   // Flexbox utilities
   FLEX_START: 'flex items-start',
   FLEX_BETWEEN: 'justify-between',
-  FLEX_CENTER: 'items-center',
+  FLEX_ITEMS_CENTER: 'items-center',
   FLEX_GAP_SM: 'gap-2',
   FLEX_GAP_MD: 'gap-3',
 
@@ -236,8 +243,8 @@ export const UI_CONSTANTS = {
 
   // Component dimensions
   ICON_SIZE_SM: '0.75rem', // w-3 h-3
-  ICON_SIZE_MD: '1rem', // w-4 h-4
-  ICON_SIZE_LG: '2rem', // w-8 h-8
+  ICON_FONT_SIZE_MD: '1rem', // w-4 h-4
+  ICON_FONT_SIZE_LG: '2rem', // w-8 h-8
   ICON_SIZE_XL: '4rem', // w-16 h-16
 
   // Border radius
@@ -404,6 +411,20 @@ export const DB_DEFAULTS = {
 } as const
 
 // ============================================================================
+// ROUTING PRIORITIES
+// ============================================================================
+
+export const ROUTING_PRIORITIES = {
+  // Analysis render router priorities (higher = higher priority)
+  LEGACY_COMPLETION: 100, // Legacy completion (highest priority)
+  MODERN_COMPLETION: 90, // Modern completion (SSE-based)
+  LOADING_STATES: 80, // Loading states (active analysis phases)
+  ERROR_STATES: 70, // Error states (analysis failed)
+  LOADING_COMPLETION: 60, // Loading completion (analysis finished via loading state)
+  DEFAULT_ANALYSIS_UI: 10, // Default analysis UI (fallback)
+} as const
+
+// ============================================================================
 // COMPONENT CONSTANTS
 // ============================================================================
 
@@ -423,8 +444,15 @@ export const COMPONENT_CONSTANTS = {
   HOVER_SCALE_DURATION: 200, // milliseconds
 
   // Size limits
+  SIZE_LIMIT_10: 10,
+  SIZE_LIMIT_20: 20,
+  SIZE_LIMIT_50: 50,
+  SIZE_LIMIT_100: 100,
   SIZE_LIMIT_500: 500,
   SIZE_LIMIT_1000: 1000,
+
+  // Time estimation thresholds
+  TIME_ESTIMATION_HIGH_REMAINING_THRESHOLD: 10, // If 10+ stages remain, estimate 1-2 minutes
 
   // Percentage limits
   PERCENTAGE_80: 80,
@@ -432,8 +460,9 @@ export const COMPONENT_CONSTANTS = {
   PERCENTAGE_95: 95,
 
   // Time limits
-  TIME_LIMIT_60: 60, // seconds
   TIME_LIMIT_30: 30, // seconds
+  TIME_LIMIT_60: 60, // seconds
+  TIME_LIMIT_5000: 5000, // milliseconds
 
   // Dimension values
   DIMENSION_12: 12,
@@ -441,4 +470,11 @@ export const COMPONENT_CONSTANTS = {
   DIMENSION_20: 20,
   DIMENSION_48: 48,
   DIMENSION_80: 80,
+
+  // Data truncation limits
+  DATA_TRUNCATION_LIMIT: 500,
+
+  // Diagram spacing (Mermaid)
+  DIAGRAM_NODE_SPACING: 80,
+  DIAGRAM_RANK_SPACING: 80,
 } as const

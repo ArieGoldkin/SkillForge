@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import mermaid from 'mermaid'
 
-import { VALIDATION_CONSTANTS } from '@/lib/constants'
+import { COMPONENT_CONSTANTS, VALIDATION_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
 
 import { cn } from '@lib/utils'
@@ -30,8 +30,8 @@ const initializeMermaid = () => {
     // Flowchart configuration for proper text rendering (Issue #299-304)
     flowchart: {
       htmlLabels: true, // Enable HTML labels for better text handling
-      nodeSpacing: 80, // Increased space between nodes
-      rankSpacing: 80, // Increased space between ranks
+      nodeSpacing: COMPONENT_CONSTANTS.DIAGRAM_NODE_SPACING, // Increased space between nodes
+      rankSpacing: COMPONENT_CONSTANTS.DIAGRAM_RANK_SPACING, // Increased space between ranks
       curve: 'basis', // Smooth curves
       padding: 25, // Increased padding inside nodes to prevent text truncation
       useMaxWidth: false, // Don't constrain to container width

@@ -1,4 +1,4 @@
-import { BUSINESS_CONSTANTS } from '@/lib/constants'
+import { BUSINESS_CONSTANTS, ROUTING_PRIORITIES } from '@/lib/constants'
 
 import { ErrorBoundary } from '@shared/components'
 
@@ -30,7 +30,7 @@ const RENDER_ROUTES: RenderRoute[] = [
 
   // Priority 90: Modern completion (SSE-based completion)
   {
-    priority: 90,
+    priority: ROUTING_PRIORITIES.MODERN_COMPLETION,
     condition: ({ isResolvedComplete, resolvedArtifactId }) =>
       Boolean(isResolvedComplete && resolvedArtifactId),
     render: (props) => <CompletedAnalysisView {...extractCompletionProps(props)} />,
@@ -38,7 +38,7 @@ const RENDER_ROUTES: RenderRoute[] = [
 
   // Priority 80: Loading states (active analysis phases)
   {
-    priority: 80,
+    priority: ROUTING_PRIORITIES.LOADING_STATES,
     condition: ({ loadingState }) =>
       ['waiting_for_events', 'extracting', 'analyzing', 'generating'].includes(loadingState.type),
     render: (props) => (
@@ -62,7 +62,7 @@ const RENDER_ROUTES: RenderRoute[] = [
 
   // Priority 70: Error states (analysis failed)
   {
-    priority: 70,
+    priority: ROUTING_PRIORITIES.ERROR_STATES,
     condition: ({ loadingState }) => loadingState.type === 'error',
     render: (props) => (
       <CommonAnalysisLayout analysisMetadata={props.analysisMetadata} analysisId={props.id}>
@@ -73,14 +73,14 @@ const RENDER_ROUTES: RenderRoute[] = [
 
   // Priority 60: Loading completion (analysis finished via loading state)
   {
-    priority: 60,
+    priority: ROUTING_PRIORITIES.LOADING_COMPLETION,
     condition: ({ loadingState }) => loadingState.type === 'complete',
     render: (props) => <CompletedAnalysisView {...extractCompletionProps(props)} />,
   },
 
   // Priority 10: Default analysis UI (fallback - active analysis view)
   {
-    priority: 10,
+    priority: ROUTING_PRIORITIES.DEFAULT_ANALYSIS_UI,
     condition: () => true, // Always matches as fallback
     // eslint-disable-next-line complexity, max-lines-per-function -- Complex conditional rendering logic for multiple analysis states
     render: (props) => {

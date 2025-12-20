@@ -3,7 +3,7 @@ import * as React from 'react'
 
 import { AlertCircle, CheckCircle2, Circle, Info, Loader2, XCircle } from 'lucide-react'
 
-import { BUSINESS_CONSTANTS, UI_CONSTANTS } from '@/lib/constants'
+import { BUSINESS_CONSTANTS, TIME_CONSTANTS, UI_CONSTANTS } from '@/lib/constants'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -64,11 +64,12 @@ const formatRelativeTime = (timestamp: Date): string => {
   const diff = now - timestamp.getTime()
 
   const seconds = Math.floor(diff / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
+  const hours = Math.floor(minutes / TIME_CONSTANTS.MINUTES_PER_HOUR)
 
-  if (seconds < 60) return `${seconds} seconds ago`
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds} seconds ago`
+  if (minutes < TIME_CONSTANTS.MINUTES_PER_HOUR)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
   return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
 }
 
@@ -77,10 +78,10 @@ const formatRelativeTime = (timestamp: Date): string => {
  */
 const formatDuration = (ms: number): string => {
   const seconds = Math.floor(ms / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
-  const minutes = Math.floor(seconds / 60)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
 
-  if (seconds < 60) return `${seconds}s`
-  return `${minutes}m ${seconds % 60}s`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds}s`
+  return `${minutes}m ${seconds % TIME_CONSTANTS.SECONDS_PER_MINUTE}s`
 }
 
 /**
@@ -168,7 +169,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
 
           {/* Timestamp and duration */}
           <div
-            className={`${UI_CONSTANTS.FLEX_CENTER} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.FONT_SIZE_XS} ${UI_CONSTANTS.TEXT_COLOR_MUTED}`}
+            className={`${UI_CONSTANTS.FLEX_ITEMS_CENTER} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.FONT_SIZE_XS} ${UI_CONSTANTS.TEXT_COLOR_MUTED}`}
           >
             {step.timestamp && <span>{formatRelativeTime(step.timestamp)}</span>}
             {step.duration && step.status === 'completed' && (

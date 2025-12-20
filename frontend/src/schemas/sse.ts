@@ -10,6 +10,7 @@
 import { z } from 'zod'
 
 import { logger } from '@/lib/logger'
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 import {
   StageNameSchema,
@@ -159,7 +160,8 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
   if (!result.success) {
     logger.error('SSE event validation failed', {
       validationErrors: result.error.format(),
-      receivedData: typeof data === 'string' ? data.substring(0, 500) : data,
+      receivedData:
+        typeof data === 'string' ? data.substring(0, COMPONENT_CONSTANTS.SIZE_LIMIT_500) : data,
       dataType: typeof data,
     })
     return null

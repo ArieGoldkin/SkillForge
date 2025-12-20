@@ -6,6 +6,7 @@ import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /**
  * Individual agent activity entry
@@ -142,7 +143,7 @@ const ActivityEntry: React.FC<{ activity: AgentActivity; isNew?: boolean }> = ({
 export const AgentActivityFeed: React.FC<AgentActivityFeedProps> = ({
   activities,
   isLive = false,
-  maxItems = 10,
+  maxItems = COMPONENT_CONSTANTS.MAX_ITEMS_DEFAULT,
   className,
 }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null)
