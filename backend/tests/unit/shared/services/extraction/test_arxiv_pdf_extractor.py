@@ -179,8 +179,8 @@ class TestArxivPDFExtractorIntegration:
         mock_reader.metadata = {"/Title": "Test Paper"}
 
         # Act
-        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
-            MockPdfReader.return_value = mock_reader
+        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
             content, title, page_count = extractor._extract_pdf_text(
                 b"fake pdf bytes", "2512.08296"
             )
@@ -205,9 +205,9 @@ class TestArxivPDFExtractorIntegration:
         mock_reader.metadata = {"/Title": "RAG Paper"}
 
         # Act
-        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
-            MockPdfReader.return_value = mock_reader
-            content, title, page_count = extractor._extract_pdf_text(
+        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            content, title, _page_count = extractor._extract_pdf_text(
                 b"fake pdf bytes", "2512.08296"
             )
 
@@ -234,9 +234,9 @@ class TestArxivPDFExtractorIntegration:
         mock_reader.metadata = {"/Title": "Multi-page Paper"}
 
         # Act
-        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
-            MockPdfReader.return_value = mock_reader
-            content, title, page_count = extractor._extract_pdf_text(
+        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            content, _title, page_count = extractor._extract_pdf_text(
                 b"fake pdf bytes", "2512.08296"
             )
 

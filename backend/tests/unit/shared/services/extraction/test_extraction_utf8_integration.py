@@ -222,8 +222,8 @@ class TestArxivPDFExtractorSanitization:
         mock_response.content = b"fake pdf bytes"
 
         # Act
-        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as MockPdfReader:
-            MockPdfReader.return_value = mock_reader
+        with patch("app.shared.services.extraction.arxiv_pdf_extractor.PdfReader") as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
             with patch.object(extractor.client, "get", new_callable=AsyncMock) as mock_get:
                 mock_get.return_value = mock_response
                 result = await extractor.extract_article("https://arxiv.org/abs/2512.08296")

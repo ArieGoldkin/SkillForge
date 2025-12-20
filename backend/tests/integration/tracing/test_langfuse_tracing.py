@@ -4,7 +4,7 @@ Tests metadata propagation, thread grouping, runtime metadata updates,
 and consistent decorator usage across the codebase.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

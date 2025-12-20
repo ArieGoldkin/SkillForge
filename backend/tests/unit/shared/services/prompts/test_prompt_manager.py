@@ -4,7 +4,7 @@ Tests multi-level caching, fallback behavior, and version tracking.
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 

@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.evaluation.types import Example, Run
 from app.domains.analysis.workflows.nodes.quality_gate_node import (
     ASPECT_MINIMUMS,
     MAX_RETRY_ATTEMPTS,
@@ -19,6 +18,7 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
     should_retry_synthesis,
 )
 from app.domains.analysis.workflows.state import AnalysisState
+from app.evaluation.types import Example, Run
 
 
 @pytest.fixture

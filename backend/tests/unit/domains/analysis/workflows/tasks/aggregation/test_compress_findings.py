@@ -6,6 +6,7 @@ Tests Phase 0 implementation of finding compression for multi-phase synthesis.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
     COMPRESSION_SYSTEM_PROMPT,
@@ -53,7 +54,7 @@ class TestCompressedFinding:
         assert finding.confidence == 0.5
 
         # Invalid confidence - too high
-        with pytest.raises(Exception):  # Pydantic validation error
+        with pytest.raises(ValidationError):
             CompressedFinding(
                 agent_name="test",
                 key_insights=["insight"],
@@ -62,7 +63,7 @@ class TestCompressedFinding:
             )
 
         # Invalid confidence - negative
-        with pytest.raises(Exception):  # Pydantic validation error
+        with pytest.raises(ValidationError):
             CompressedFinding(
                 agent_name="test",
                 key_insights=["insight"],
@@ -443,7 +444,7 @@ class TestCompressAllFindings:
                     confidence=0.8,
                     data_quality="high",
                 )
-            raise Exception("Compression failed")
+            raise RuntimeError("Compression failed")
 
         mock_llm = MagicMock()
         mock_structured_llm = MagicMock()
@@ -483,7 +484,7 @@ class TestCompressAllFindings:
             call_count[0] += 1
             if call_count[0] == 1:
                 # First call (primary model) - fail
-                raise Exception("Primary model not available")
+                raise RuntimeError("Primary model not available")
             # Second call (fallback model) - succeed
             return mock_llm
 
