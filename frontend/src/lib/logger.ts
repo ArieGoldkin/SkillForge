@@ -1,3 +1,5 @@
+/* eslint-disable no-console -- Logger utility is designed to use console methods for structured logging in both development and production environments */
+
 /**
  * Frontend logging utility - structured logging for production
  *

@@ -13,6 +13,7 @@
  */
 
 import { onCLS, onINP, onLCP, onFCP, onTTFB, type Metric } from 'web-vitals'
+
 import { logger, logWebVitals } from '@/lib/logger'
 
 // Google Analytics gtag types

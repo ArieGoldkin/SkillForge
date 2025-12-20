@@ -8,10 +8,10 @@ import 'prismjs/themes/prism-tomorrow.css'
 
 import './design-system/prism-custom.css'
 import './index.css'
+import { TIME_CONSTANTS, RETRY_CONSTANTS } from './lib/constants'
+import { logger } from './lib/logger'
 import { router } from './router'
 import { initWebVitals } from './services/performance/webVitals.service'
-import { logger } from './lib/logger'
-import { TIME_CONSTANTS, RETRY_CONSTANTS } from './lib/constants'
 
 // Performance monitoring initialization
 if (import.meta.env.DEV) {
