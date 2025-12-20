@@ -1,3 +1,5 @@
+import { BUSINESS_CONSTANTS } from '@/lib/constants'
+
 import type { CompletionProps, ProgressProps, AnalysisProps } from './types'
 
 /**
@@ -82,7 +84,7 @@ export function extractAnalysisProps(props: {
       : step.status === 'skipped'
         ? 'pending'
         : step.status) as 'pending' | 'running' | 'completed' | 'failed', // Map and cast status
-    progress: step.timestamp ? 100 : undefined, // Simple progress calculation
+    progress: step.timestamp ? BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE : undefined, // Simple progress calculation
     error: step.errorDetails?.error,
   }))
 

@@ -1,3 +1,5 @@
+import { BUSINESS_CONSTANTS } from '@/lib/constants'
+
 import { ErrorBoundary } from '@shared/components'
 
 import { ActivityColumn } from '../activity/ActivityColumn'
@@ -21,7 +23,7 @@ import type { RenderRoute, AnalysisProps } from './types'
 const RENDER_ROUTES: RenderRoute[] = [
   // Priority 100: Legacy completion (highest priority - backwards compatibility)
   {
-    priority: 100,
+    priority: BUSINESS_CONSTANTS.PRIORITY_LEGACY_COMPLETION,
     condition: ({ completed, urlArtifactId }) => Boolean(completed && urlArtifactId),
     render: (props) => <CompletedAnalysisView {...extractCompletionProps(props)} />,
   },

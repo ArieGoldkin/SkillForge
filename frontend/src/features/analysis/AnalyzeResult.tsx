@@ -10,6 +10,8 @@ import {
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
+import { BUSINESS_CONSTANTS } from '@/lib/constants'
+
 import { AnalysisRenderRouter } from './components/render-router/AnalysisRenderRouter'
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'
 import { useAnalysisStatus } from './hooks/useAnalysisStatus'
@@ -89,7 +91,7 @@ const checkIsTrulyComplete = (params: {
     isStatusComplete(params.resolvedStatus) ||
     (params.isComplete &&
       params.overallProgress.stage === 'complete' &&
-      params.overallProgress.progress === 100))
+      params.overallProgress.progress === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
 
 /**
  * Custom hook for managing focus when analysis completes

@@ -243,6 +243,24 @@ export const API_CONSTANTS = {
 } as const
 
 // ============================================================================
+// BUSINESS LOGIC CONSTANTS
+// ============================================================================
+
+export const BUSINESS_CONSTANTS = {
+  // Progress and completion
+  PROGRESS_COMPLETE_PERCENTAGE: 100,
+
+  // Priority levels (higher = more important)
+  PRIORITY_LEGACY_COMPLETION: 100,
+
+  // Time conversion constants
+  MILLISECONDS_PER_SECOND: 1000,
+
+  // Color intensity values (Tailwind CSS)
+  COLOR_INTENSITY_MEDIUM: 500, // bg-green-500, text-blue-500, etc.
+} as const
+
+// ============================================================================
 // COMPONENT CONSTANTS
 // ============================================================================
 

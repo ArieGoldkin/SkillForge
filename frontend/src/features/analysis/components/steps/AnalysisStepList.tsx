@@ -3,6 +3,8 @@ import * as React from 'react'
 
 import { AlertCircle, CheckCircle2, Circle, Info, Loader2, XCircle } from 'lucide-react'
 
+import { BUSINESS_CONSTANTS } from '@/lib/constants'
+
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -61,7 +63,7 @@ const formatRelativeTime = (timestamp: Date): string => {
   const now = Date.now()
   const diff = now - timestamp.getTime()
 
-  const seconds = Math.floor(diff / 1000)
+  const seconds = Math.floor(diff / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
 
@@ -74,7 +76,7 @@ const formatRelativeTime = (timestamp: Date): string => {
  * Format duration in milliseconds to human-readable string
  */
 const formatDuration = (ms: number): string => {
-  const seconds = Math.floor(ms / 1000)
+  const seconds = Math.floor(ms / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
   const minutes = Math.floor(seconds / 60)
 
   if (seconds < 60) return `${seconds}s`
