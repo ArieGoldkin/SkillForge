@@ -248,6 +248,8 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Upload test results on failure
         uses: actions/upload-artifact@v6
@@ -449,6 +451,8 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Upload test results on failure
         uses: actions/upload-artifact@v6
@@ -526,6 +530,8 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Cleanup
         if: always()
