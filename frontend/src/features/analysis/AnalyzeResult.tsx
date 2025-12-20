@@ -9,6 +9,7 @@ import {
   useShouldShowProgress,
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
+import { useShallow } from 'zustand/react/shallow'
 
 import { BUSINESS_CONSTANTS } from '@/lib/constants'
 
@@ -135,9 +136,10 @@ export default function AnalyzeResult() {
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
 
   // Consolidated selectors for optimal performance (3 instead of 7 subscriptions)
+  // Using useShallow for object-returning selectors to prevent infinite re-renders
   const events = useSSEStore(selectEvents)
-  const { isConnected, connect, disconnect } = useSSEStore(selectConnectionState)
-  const { isComplete, error, reset } = useSSEStore(selectAnalysisState)
+  const { isConnected, connect, disconnect } = useSSEStore(useShallow(selectConnectionState))
+  const { isComplete, error, reset } = useSSEStore(useShallow(selectAnalysisState))
 
   // New computed loading states (Issue #399)
   const loadingState = useLoadingState()
@@ -207,6 +209,7 @@ export default function AnalyzeResult() {
       isFailed,
       effectiveError,
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Break down overallProgress to primitives (Issue #438)
   }, [
     artifactId,
     urlArtifactId,
@@ -216,7 +219,9 @@ export default function AnalyzeResult() {
     error,
     errorMessage,
     completed,
-    overallProgress,
+    // Only include the specific properties we use from overallProgress
+    overallProgress.stage,
+    overallProgress.progress,
     hasFailedStages,
   ])
 

@@ -40,11 +40,14 @@ describe('Performance Verification - Issue #395', () => {
     // Verify consolidated selectors are implemented
     expect(fileContent).toContain('selectConnectionState')
     expect(fileContent).toContain('selectAnalysisState')
+    // Issue #438: Now using useShallow to prevent infinite re-renders
+    expect(fileContent).toContain('useShallow(selectConnectionState)')
+    expect(fileContent).toContain('useShallow(selectAnalysisState)')
     expect(fileContent).toContain(
-      'const { isConnected, connect, disconnect } = useSSEStore(selectConnectionState)'
+      'const { isConnected, connect, disconnect } = useSSEStore(useShallow(selectConnectionState))'
     )
     expect(fileContent).toContain(
-      'const { isComplete, error, reset } = useSSEStore(selectAnalysisState)'
+      'const { isComplete, error, reset } = useSSEStore(useShallow(selectAnalysisState))'
     )
   })
 

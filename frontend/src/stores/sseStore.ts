@@ -327,34 +327,36 @@ export const selectAnalysisMetadata = (state: SSEStore) => state.analysisMetadat
 export const selectSetAnalysisMetadata = (state: SSEStore) => state.setAnalysisMetadata
 
 // Computed Loading State Hooks (Issue #399 - Missing Loading States)
+// IMPORTANT: Hooks that return objects MUST use useShallow to prevent infinite re-renders
+// See issue #438 for details on the "getSnapshot should be cached" error
 
 /**
  * Hook to get the current loading state
- * Recomputes only when relevant state changes
+ * Uses useShallow because deriveLoadingState returns discriminated union objects
  */
-export const useLoadingState = () => useSSEStore(deriveLoadingState)
+export const useLoadingState = () => useSSEStore(useShallow(deriveLoadingState))
 
 /**
  * Hook to get the connection message
- * Recomputes only when relevant state changes
+ * Returns primitive string - no shallow comparison needed
  */
 export const useConnectionMessage = () => useSSEStore(getConnectionMessage)
 
 /**
  * Hook to get timeout warning state
- * Recomputes only when relevant state changes
+ * Returns primitive boolean - no shallow comparison needed
  */
 export const useShowTimeoutWarning = () => useSSEStore(shouldShowTimeoutWarning)
 
 /**
  * Hook to get current analysis phase
- * Recomputes only when relevant state changes
+ * Returns primitive string|null - no shallow comparison needed
  */
 export const useAnalysisPhase = () => useSSEStore(getAnalysisPhase)
 
 /**
  * Hook to get progress visibility
- * Recomputes only when relevant state changes
+ * Returns primitive boolean - no shallow comparison needed
  */
 export const useShouldShowProgress = () => useSSEStore(shouldShowProgress)
 

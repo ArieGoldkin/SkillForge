@@ -200,6 +200,22 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
 
     // Only update store if values actually changed to prevent infinite loops
     const prevMetadata = prevMetadataRef.current
+
+    // Helper to compare overallProgress objects shallowly
+    const overallProgressChanged = () => {
+      if (!prevMetadata?.overallProgress) return true
+      const prev = prevMetadata.overallProgress
+      const curr = newMetadata.overallProgress
+      return (
+        prev.stage !== curr.stage ||
+        prev.progress !== curr.progress ||
+        prev.currentStep !== curr.currentStep ||
+        prev.totalSteps !== curr.totalSteps ||
+        prev.completedSteps !== curr.completedSteps ||
+        prev.estimatedTimeRemaining !== curr.estimatedTimeRemaining
+      )
+    }
+
     if (
       !prevMetadata ||
       prevMetadata.artifactId !== newMetadata.artifactId ||
@@ -207,16 +223,22 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       prevMetadata.hasFailedStages !== newMetadata.hasFailedStages ||
       prevMetadata.failedStagesCount !== newMetadata.failedStagesCount ||
       prevMetadata.analysisMetadata !== newMetadata.analysisMetadata ||
-      // Deep comparison for overallProgress object
-      JSON.stringify(prevMetadata.overallProgress) !== JSON.stringify(newMetadata.overallProgress)
+      overallProgressChanged()
     ) {
       setAnalysisMetadata(newMetadata)
       prevMetadataRef.current = newMetadata
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Break down overallProgress to primitives to prevent infinite loops (Issue #438). We use individual properties instead of the whole object to ensure stable references.
   }, [
     artifactId,
     traceId,
-    overallProgress,
+    // Break down overallProgress to primitives to prevent infinite loops
+    overallProgress.stage,
+    overallProgress.progress,
+    overallProgress.currentStep,
+    overallProgress.totalSteps,
+    overallProgress.completedSteps,
+    overallProgress.estimatedTimeRemaining,
     hasFailedStages,
     failedStagesCount,
     analysisMetadata,
