@@ -53,7 +53,7 @@ export default defineConfig({
     retry: process.env.CI ? 2 : 0,
     // Test tagging system (2025 best practices)
     // Exclude E2E tests by default unless E2E_READY=true
-    testNamePattern: process.env.E2E_READY === 'true' ? undefined : /^(?!.*@e2e).*$/,
+    testNamePattern: process.env.E2E_READY === 'true' ? undefined : /^(?!.*@component-e2e).*$/,
     tags: {
       // Test Types (Primary categorization)
       e2e: ['@e2e'],              // End-to-end user workflows

@@ -82,7 +82,7 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
 // Only load and run when E2E_READY=true
 const conditionalDescribe = process.env.E2E_READY === 'true' ? describe : describe.skip
 
-conditionalDescribe('Analysis Flow E2E @e2e @critical', () => {
+conditionalDescribe('Analysis Flow Component @component-e2e @critical', () => {
   beforeEach(() => {
     e2eSetup.setup()
   })

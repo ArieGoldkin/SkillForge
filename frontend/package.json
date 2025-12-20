@@ -22,7 +22,7 @@
 
     "test:unit": "vitest run --testNamePattern=\"@unit\"",
     "test:integration": "vitest run --testNamePattern=\"@integration\"",
-    "test:e2e": "E2E_READY=true vitest run --testNamePattern=\"@e2e\"",
+    "test:component-e2e": "E2E_READY=true vitest run --testNamePattern=\"@component-e2e\"",
     "test:ci": "vitest run --testNamePattern=\"@ci\" --coverage",
     "test:slow": "vitest run --testNamePattern=\"@slow\"",
     "test:performance": "RUN_PERFORMANCE_TESTS=true vitest run --testNamePattern=\"@slow\"",

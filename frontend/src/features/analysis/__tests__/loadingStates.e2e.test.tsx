@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 // Only load and run when E2E_READY=true
 const conditionalDescribe = process.env.E2E_READY === 'true' ? describe : describe.skip
 
-conditionalDescribe('Loading States E2E Workflows @critical', () => {
+conditionalDescribe('Loading States Component Workflows @component-e2e @critical', () => {
   it('should be skipped when E2E_READY is not set', () => {
     // This test will only run when E2E_READY=true
     expect(true).toBe(true)

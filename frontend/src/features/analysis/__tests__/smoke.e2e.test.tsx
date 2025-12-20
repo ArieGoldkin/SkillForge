@@ -22,7 +22,7 @@ vi.mock('@tanstack/react-router', () => ({
 // Only load and run when E2E_READY=true
 const conditionalDescribe = process.env.E2E_READY === 'true' ? describe : describe.skip
 
-conditionalDescribe('Smoke E2E Tests @critical', () => {
+conditionalDescribe('Smoke Component Tests @component-e2e @critical', () => {
   it('should render AnalyzeResult component without crashing', () => {
     expect(() => {
       render(<AnalyzeResult />)

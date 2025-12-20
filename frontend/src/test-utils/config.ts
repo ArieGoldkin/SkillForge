@@ -16,7 +16,7 @@ export const TestPatterns = {
    */
   fastFeedback: {
     include: ['@unit', '@component'],
-    exclude: ['@slow', '@e2e', '@integration'],
+    exclude: ['@slow', '@component-e2e', '@integration'],
     timeout: 5000,
     retries: 0,
   },
@@ -26,7 +26,7 @@ export const TestPatterns = {
    */
   ci: {
     include: ['@unit', '@component', '@integration', '@ci'],
-    exclude: ['@e2e', '@slow', '@manual'],
+    exclude: ['@component-e2e', '@slow', '@manual'],
     timeout: 10000,
     retries: 2,
     coverage: true,
@@ -36,7 +36,7 @@ export const TestPatterns = {
    * Full test suite (nightly, release)
    */
   full: {
-    include: ['@unit', '@component', '@integration', '@e2e'],
+    include: ['@unit', '@component', '@integration', '@component-e2e'],
     exclude: ['@manual'],
     timeout: 30000,
     retries: 3,
@@ -57,7 +57,7 @@ export const TestPatterns = {
    * E2E only (when infrastructure is available)
    */
   e2e: {
-    include: ['@e2e'],
+    include: ['@component-e2e'],
     exclude: [],
     timeout: 30000,
     retries: 1,
@@ -148,7 +148,7 @@ export const TestCategories = {
    * E2E tests - Full user workflows
    */
   e2e: {
-    tags: ['@e2e'],
+    tags: ['@component-e2e'],
     description: 'Complete user journey from UI to backend',
     priority: 'high',
     requires: ['E2E_READY=true', 'full infrastructure'],
@@ -183,7 +183,7 @@ export const TestExecution = {
    */
   shouldRun: (tags: string[]): boolean => {
     // E2E tests only run when E2E_READY=true
-    if (tags.includes('@e2e') && !TestEnvironment.isE2EReady) {
+    if (tags.includes('@component-e2e') && !TestEnvironment.isE2EReady) {
       return false
     }
 
@@ -205,7 +205,7 @@ export const TestExecution = {
    */
   getTimeout: (tags: string[]): number => {
     if (tags.includes('@slow')) return 30000
-    if (tags.includes('@e2e')) return 20000
+    if (tags.includes('@component-e2e')) return 20000
     if (tags.includes('@integration')) return 10000
     return TestEnvironment.testTimeout
   },
@@ -215,7 +215,7 @@ export const TestExecution = {
    */
   getRetries: (tags: string[]): number => {
     if (tags.includes('@flaky')) return 3
-    if (tags.includes('@e2e')) return 1
+    if (tags.includes('@component-e2e')) return 1
     if (TestEnvironment.isCI) return 2
     return 0
   },
