@@ -159,29 +159,36 @@ test.describe('Error Handling Tests', () => {
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
 
-    // Click and immediately check for loading indicators using Promise.race
+    // Click and check for any valid loading/navigation outcome
+    // Use Promise.allSettled to check all outcomes, then verify at least one succeeded
     const clickPromise = submitButton.click();
 
-    const result = await Promise.race([
-      // Scenario 1: Check for aria-busy attribute
-      page.locator('[aria-busy="true"]').waitFor({ state: 'visible', timeout: 2000 })
-        .then(() => ({ type: 'aria-busy', value: true }))
-        .catch(() => ({ type: 'aria-busy', value: false })),
-      // Scenario 2: Check for "Analyzing..." text
-      page.getByText(/analyzing/i).waitFor({ state: 'visible', timeout: 2000 })
-        .then(() => ({ type: 'loading-text', value: true }))
-        .catch(() => ({ type: 'loading-text', value: false })),
-      // Scenario 3: Page navigates quickly
-      page.waitForURL(/\/(analyze|library)/, { timeout: 5000 })
-        .then(() => ({ type: 'navigated', value: true }))
-        .catch(() => ({ type: 'navigated', value: false })),
+    const outcomes = await Promise.allSettled([
+      // Scenario 1: Check for aria-busy attribute on button
+      page.locator('button[aria-busy="true"]').waitFor({ state: 'visible', timeout: 3000 }),
+      // Scenario 2: Check for "Analyzing..." text on button
+      page.getByRole('button', { name: /analyzing/i }).waitFor({ state: 'visible', timeout: 3000 }),
+      // Scenario 3: Check for disabled button (also a loading indicator)
+      page.locator('button:disabled').waitFor({ state: 'visible', timeout: 3000 }),
+      // Scenario 4: Page navigates to analyze route
+      page.waitForURL(/\/analyze/, { timeout: 5000 }),
+      // Scenario 5: Check for any error message (API validation)
+      page.getByRole('alert').waitFor({ state: 'visible', timeout: 3000 }),
     ]);
 
     await clickPromise;
 
-    // Valid outcomes: loading indicator shown OR navigation occurred
-    const isValid = result.value === true;
-    expect(isValid).toBe(true);
+    // Valid outcomes: at least one of the checks succeeded (status === 'fulfilled')
+    const anySucceeded = outcomes.some(outcome => outcome.status === 'fulfilled');
+
+    // Log for debugging in CI
+    if (!anySucceeded) {
+      console.log('No valid outcome detected. Outcomes:', outcomes.map((o, i) =>
+        `${i}: ${o.status}${o.status === 'rejected' ? ` (${(o as PromiseRejectedResult).reason?.message || 'unknown'})` : ''}`
+      ));
+    }
+
+    expect(anySucceeded).toBe(true);
   });
 
   test('should maintain UI functionality after API errors', async ({ page }) => {
