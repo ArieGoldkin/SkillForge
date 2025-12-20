@@ -6,6 +6,8 @@
  * initialization (avoiding React purity violations).
  */
 
+import { DEMO_CONSTANTS } from '@/lib/constants'
+
 import type { AgentActivity, AnalysisStep } from '@features/analysis/components'
 import type { SkillCardProps } from '@features/library/components'
 
@@ -19,15 +21,15 @@ export const createAnalysisSteps = (): AnalysisStep[] => [
     title: 'Extracting Content',
     description: 'Fetching and parsing content from URL',
     status: 'completed',
-    timestamp: new Date(Date.now() - 300000),
-    duration: 5000,
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_5_MINUTES),
+    duration: DEMO_CONSTANTS.TIME_OFFSET_5_SECONDS,
   },
   {
     id: '2',
     title: 'Multi-Agent Analysis',
     description: 'Running specialized analysis agents',
     status: 'in-progress',
-    timestamp: new Date(Date.now() - 60000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_1_MINUTE),
   },
   {
     id: '3',
@@ -46,25 +48,25 @@ export const createAgentActivities = (): AgentActivity[] => [
     id: '1',
     agentName: 'Security Auditor',
     action: 'Analyzing authentication patterns...',
-    timestamp: new Date(Date.now() - 5000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_5_SECONDS),
   },
   {
     id: '2',
     agentName: 'Tech Comparator',
     action: 'Comparing React Server Components vs traditional SSR',
-    timestamp: new Date(Date.now() - 15000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_15_SECONDS),
   },
   {
     id: '3',
     agentName: 'Best Practices',
     action: 'Checking code organization patterns',
-    timestamp: new Date(Date.now() - 25000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_25_SECONDS),
   },
   {
     id: '4',
     agentName: 'Implementation Planner',
     action: 'Creating step-by-step implementation guide',
-    timestamp: new Date(Date.now() - 35000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_35_SECONDS),
   },
 ]
 
@@ -78,10 +80,10 @@ export const createSkills = (): SkillCardProps[] => [
     title: 'React Server Components',
     description: 'Learn RSC fundamentals and integration with Next.js App Router',
     difficulty: 'intermediate',
-    duration: 45,
+    duration: DEMO_CONSTANTS.ACTIVITY_DURATION_MEDIUM,
     tags: ['React', 'Next.js', 'Server Components', 'SSR'],
     status: 'in-progress',
-    progress: 60,
+    progress: DEMO_CONSTANTS.SAMPLE_PROGRESS_PERCENTAGE,
     // eslint-disable-next-line no-console -- Demo showcase only
     onSelect: (id) => console.log('Selected skill:', id),
   },
@@ -90,7 +92,7 @@ export const createSkills = (): SkillCardProps[] => [
     title: 'TypeScript Advanced Patterns',
     description: 'Master generics, conditional types, and type inference',
     difficulty: 'advanced',
-    duration: 120,
+    duration: DEMO_CONSTANTS.ACTIVITY_DURATION_LONG,
     tags: ['TypeScript', 'Generics', 'Type Safety'],
     status: 'not-started',
     // eslint-disable-next-line no-console -- Demo showcase only
@@ -101,7 +103,7 @@ export const createSkills = (): SkillCardProps[] => [
     title: 'CSS Grid Layout',
     description: 'Build responsive layouts with CSS Grid',
     difficulty: 'beginner',
-    duration: 30,
+    duration: DEMO_CONSTANTS.ACTIVITY_DURATION_SHORT,
     tags: ['CSS', 'Layout', 'Responsive'],
     status: 'completed',
     // eslint-disable-next-line no-console -- Demo showcase only
@@ -118,20 +120,20 @@ export const createChatMessages = () => [
     id: 'msg-1',
     role: 'assistant' as const,
     content: 'Hello! How can I help you learn today?',
-    timestamp: new Date(Date.now() - 120000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_2_MINUTES),
   },
   {
     id: 'msg-2',
     role: 'user' as const,
     content: 'Can you explain React Server Components?',
-    timestamp: new Date(Date.now() - 60000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_1_MINUTE),
   },
   {
     id: 'msg-3',
     role: 'assistant' as const,
     content:
       'Great question! Let me guide you through this. First, think about where traditional React components execute...',
-    timestamp: new Date(Date.now() - 30000),
+    timestamp: new Date(Date.now() - DEMO_CONSTANTS.TIME_OFFSET_30_SECONDS),
   },
 ]
 

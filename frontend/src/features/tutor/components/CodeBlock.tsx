@@ -2,6 +2,8 @@ import * as React from 'react'
 
 import { Check, Copy } from 'lucide-react'
 
+import { logger } from '@/lib/logger'
+
 import { Button } from '@shared/components/ui/button'
 
 import { cn } from '@lib/utils'
@@ -52,7 +54,13 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       setIsCopied(true)
       setTimeout(() => setIsCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy code:', error)
+      logger.error('Failed to copy code to clipboard', {
+        codeLength: code.length,
+        language,
+        filename,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
     }
   }
 

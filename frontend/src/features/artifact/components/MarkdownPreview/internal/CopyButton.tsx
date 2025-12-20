@@ -1,6 +1,9 @@
+/* eslint-disable max-lines-per-function -- Function includes structured logging for clipboard errors */
 import * as React from 'react'
 
 import { Check, Copy } from 'lucide-react'
+
+import { logger } from '@/lib/logger'
 
 import { cn } from '@lib/utils'
 
@@ -26,7 +29,12 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
       setIsCopied(true)
       setTimeout(() => setIsCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
+      logger.error('Failed to copy text to clipboard', {
+        textLength: text.length,
+        textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
     }
   }
 

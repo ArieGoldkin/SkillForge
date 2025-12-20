@@ -9,6 +9,8 @@
 
 import * as React from 'react'
 
+import { DEMO_CONSTANTS } from '@/lib/constants'
+
 import {
   AgentActivityFeed,
   AnalysisProgressCard,
@@ -78,7 +80,7 @@ export const AnalysisTab: React.FC = () => {
           <h3 className="text-lg font-medium mb-3">AnalysisProgressCard</h3>
           <AnalysisProgressCard
             stage="analyzing"
-            progress={60}
+            progress={DEMO_CONSTANTS.SAMPLE_PROGRESS_PERCENTAGE}
             currentStep="Multi-Agent Analysis"
             totalSteps={3}
             completedSteps={2}
@@ -95,7 +97,11 @@ export const AnalysisTab: React.FC = () => {
         {/* Activity Feed */}
         <div>
           <h3 className="text-lg font-medium mb-3">AgentActivityFeed</h3>
-          <AgentActivityFeed activities={agentActivities} isLive={true} maxItems={10} />
+          <AgentActivityFeed
+            activities={agentActivities}
+            isLive={true}
+            maxItems={DEMO_CONSTANTS.MAX_ACTIVITY_ITEMS}
+          />
         </div>
 
         {/* Markdown Preview */}
@@ -106,9 +112,9 @@ export const AnalysisTab: React.FC = () => {
             metadata={{
               topics: ['React', 'TypeScript', 'API Design'],
               complexity: 'intermediate',
-              word_count: 450,
+              word_count: DEMO_CONSTANTS.SAMPLE_WORD_COUNT,
               agent_count: 5,
-              avg_confidence: 0.87,
+              avg_confidence: DEMO_CONSTANTS.SAMPLE_AVG_CONFIDENCE,
             }}
           />
         </div>

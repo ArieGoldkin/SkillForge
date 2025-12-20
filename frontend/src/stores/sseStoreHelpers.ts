@@ -34,6 +34,95 @@ export const MAX_EVENTS = LIMIT_CONSTANTS.MAX_EVENTS
 export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS }
 
 /**
+ * Generate a deduplication key for an SSE event
+ * Used to identify duplicate events that should be merged or ignored
+ */
+function getEventDeduplicationKey(event: SSEEvent): string {
+  const { type, analysis_id, stage, status } = event
+
+  switch (type) {
+    case 'progress':
+      // Progress events are deduplicated by analysis + stage + status
+      // Same stage with same status = duplicate (e.g., multiple "running" events for extraction)
+      return `${analysis_id}:${stage}:${status}`
+
+    case 'complete':
+      // Complete events are deduplicated by analysis + type
+      // Only one completion event per analysis
+      return `${analysis_id}:${type}`
+
+    case 'error':
+      // Error events are deduplicated by analysis + stage
+      // Only one error per stage (subsequent errors for same stage are ignored)
+      return `${analysis_id}:${stage}:error`
+
+    default:
+      // Unknown event types are not deduplicated
+      return `${analysis_id}:${type}:${stage}:${status}:${Date.now()}`
+  }
+}
+
+/**
+ * Check if two events are duplicates based on their content
+ * For duplicate events, keep the more recent one (higher timestamp)
+ */
+function isDuplicateEvent(existing: SSEEvent, incoming: SSEEvent): boolean {
+  if (existing.type !== incoming.type) return false
+  if (existing.analysis_id !== incoming.analysis_id) return false
+
+  switch (existing.type) {
+    case 'progress':
+      // Same analysis, stage, and status = duplicate
+      return existing.stage === incoming.stage && existing.status === incoming.status
+
+    case 'complete':
+      // Any complete event for same analysis = duplicate
+      return true
+
+    case 'error':
+      // Same analysis and stage error = duplicate
+      return existing.stage === incoming.stage
+
+    default:
+      return false
+  }
+}
+
+/**
+ * Deduplicate SSE events, keeping the most recent version of each unique event
+ * Prevents event array bloat from duplicate status updates
+ */
+export function deduplicateEvents(events: SSEEvent[]): SSEEvent[] {
+  const eventMap = new Map<string, SSEEvent>()
+
+  for (const event of events) {
+    const key = getEventDeduplicationKey(event)
+    const existing = eventMap.get(key)
+
+    if (!existing) {
+      // First occurrence of this event type
+      eventMap.set(key, event)
+    } else if (isDuplicateEvent(existing, event)) {
+      // Duplicate - keep the more recent one based on timestamp
+      const existingTime = new Date(existing.timestamp).getTime()
+      const incomingTime = new Date(event.timestamp).getTime()
+
+      if (incomingTime > existingTime) {
+        eventMap.set(key, event)
+      }
+      // If timestamps are equal or incoming is older, keep existing
+    } else {
+      // Not a duplicate (different content), keep both
+      eventMap.set(`${key}:${Date.now()}`, event)
+    }
+  }
+
+  return Array.from(eventMap.values()).sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+}
+
+/**
  * Listener references for proper cleanup
  * Storing references allows removeEventListener to work correctly
  */
@@ -167,7 +256,10 @@ function handleProgressEvent(store: StoreAPI): (event: MessageEvent) => void {
       const validatedData = parseSSEEvent(rawData)
 
       if (!validatedData) {
-        console.error('[SSE] Progress event validation failed')
+        logger.error('Progress event validation failed', {
+          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+          eventType: 'progress',
+        })
         store.setState({
           error: new Error('Received invalid progress event from server'),
         })
@@ -177,7 +269,11 @@ function handleProgressEvent(store: StoreAPI): (event: MessageEvent) => void {
       // Use _addEvent for memory-safe event storage
       store.getState()._addEvent(validatedData)
     } catch (error) {
-      console.error('[SSE] Failed to parse progress event:', error)
+      logger.error('Failed to parse progress event', {
+        rawData: event.data?.substring(0, 200),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
       store.setState({
         error: error instanceof Error ? error : new Error('Failed to parse progress event'),
       })
@@ -195,7 +291,10 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
       const validatedData = parseSSEEvent(rawData)
 
       if (!validatedData) {
-        console.error('[SSE] Complete event validation failed')
+        logger.error('Complete event validation failed', {
+          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+          eventType: 'complete',
+        })
         store.setState({
           error: new Error('Received invalid complete event from server'),
         })
@@ -210,7 +309,11 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
         store.getState().disconnect()
       }
     } catch (error) {
-      console.error('[SSE] Failed to parse complete event:', error)
+      logger.error('Failed to parse complete event', {
+        rawData: event.data?.substring(0, 200),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
       store.setState({
         error: error instanceof Error ? error : new Error('Failed to parse complete event'),
       })
@@ -226,7 +329,11 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
   return (event: MessageEvent) => {
     // Guard: connection errors may fire this with undefined data
     if (!event.data) {
-      console.warn('[SSE] Received error event with no data (connection error)')
+      logger.warn('Received error event with no data - likely connection error', {
+        eventType: event.type,
+        eventTarget: event.target?.toString(),
+        analysisId: store.getState().activeAnalysisId,
+      })
       return
     }
 
@@ -235,14 +342,22 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
       const validatedData = parseSSEEvent(rawData)
 
       if (!validatedData) {
-        console.error('[SSE] Error event validation failed')
+        logger.error('Error event validation failed', {
+          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+          eventType: 'error',
+        })
         store.setState({
           error: new Error('Received invalid error event from server'),
         })
         return
       }
 
-      console.error('[SSE] Server error event:', validatedData)
+      logger.error('Server sent error event', {
+        validatedData,
+        analysisId: validatedData.analysis_id,
+        stage: validatedData.stage,
+        error: validatedData.details?.error,
+      })
 
       // Use _addEvent for memory-safe event storage
       store.getState()._addEvent(validatedData)
@@ -258,7 +373,11 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
         store.getState().disconnect()
       }
     } catch (error) {
-      console.error('[SSE] Failed to parse error event:', error)
+      logger.error('Failed to parse error event', {
+        rawData: event.data?.substring(0, 200),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
     }
   }
 }
@@ -268,7 +387,12 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
  */
 function handleConnectionError(analysisId: string, store: StoreAPI): (error: Event) => void {
   return (error: Event) => {
-    console.error('[SSE] Connection error:', error)
+    logger.error('SSE connection error occurred', {
+      error: error instanceof Error ? error.message : String(error),
+      analysisId: store.getState().activeAnalysisId,
+      connectionState: store.getState().connectionState,
+      attempts: store.getState()._reconnectAttempts,
+    })
 
     const state = store.getState()
     const attempts = state._reconnectAttempts
@@ -282,9 +406,13 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
       const delay = getReconnectDelay(attempts)
       const newAttempts = attempts + 1
 
-      console.warn(
-        `[SSE] Reconnecting in ${delay}ms (attempt ${newAttempts}/${MAX_RECONNECT_ATTEMPTS})`
-      )
+      logger.warn('SSE reconnection scheduled', {
+        delay,
+        attempt: newAttempts,
+        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        analysisId,
+        reason: 'connection_lost',
+      })
 
       const timeoutId = setTimeout(() => {
         store.getState().connect(analysisId)
@@ -295,7 +423,12 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
         _reconnectTimeoutId: timeoutId,
       })
     } else {
-      console.error('[SSE] Max reconnection attempts reached - giving up')
+      logger.error('SSE max reconnection attempts reached', {
+        analysisId,
+        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        totalAttempts: attempts + 1,
+        reason: 'persistent_connection_failure',
+      })
       store.setState({
         _permanentlyFailed: true,
         error: new Error('Connection failed after multiple attempts. Please refresh to retry.'),
@@ -382,17 +515,28 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
  * All state managed through Zustand store (no module-level variables)
  */
 export function createConnection(analysisId: string, store: StoreAPI): void {
+  // eslint-disable-line max-lines-per-function
   const state = store.getState()
 
   // Prevent duplicate connections
   if (state.activeAnalysisId === analysisId && state.isConnected) {
-    console.warn(`[SSE] Already connected to analysis ${analysisId}`)
+    logger.warn('SSE connection attempt for already connected analysis', {
+      analysisId,
+      connectionState: state.connectionState,
+      isConnected: state.isConnected,
+    })
     return
   }
 
   // Prevent reconnection after permanent failure (for same analysis)
   if (state._permanentlyFailed && state.activeAnalysisId === analysisId) {
-    console.warn(`[SSE] Connection permanently failed for ${analysisId}. Refresh to retry.`)
+    logger.warn('SSE reconnection blocked due to permanent failure', {
+      analysisId,
+      permanentlyFailed: state._permanentlyFailed,
+      activeAnalysisId: state.activeAnalysisId,
+      maxAttempts: MAX_RECONNECT_ATTEMPTS,
+      suggestion: 'user_refresh_required',
+    })
     return
   }
 
@@ -427,7 +571,12 @@ export function createConnection(analysisId: string, store: StoreAPI): void {
     const cleanupNetworkRecovery = setupNetworkRecovery(analysisId, store)
     store.setState({ _cleanupNetworkRecovery: cleanupNetworkRecovery })
   } catch (error) {
-    console.error('[SSE] Failed to create connection:', error)
+    logger.error('Failed to create SSE connection', {
+      analysisId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userAgent: navigator?.userAgent,
+    })
     store.setState({
       error: error instanceof Error ? error : new Error('Failed to create SSE connection'),
       isConnected: false,

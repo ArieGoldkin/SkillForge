@@ -12,6 +12,8 @@ import * as React from 'react'
 
 import type { AnalysisStatus } from '@app-types/api'
 
+import { DEMO_CONSTANTS } from '@/lib/constants'
+
 import type { SkillFilters as SkillFiltersType } from '@features/library/components/SkillFilters'
 import { SkillFilters } from '@features/library/components/SkillFilters'
 import { SkillGridView } from '@features/library/components/SkillGridView'
@@ -29,7 +31,7 @@ export const LibraryTab: React.FC = () => {
     difficulty: [],
     status: [],
     tags: [],
-    durationRange: [0, 1000],
+    durationRange: [DEMO_CONSTANTS.DURATION_RANGE_MIN, DEMO_CONSTANTS.DURATION_RANGE_MAX],
   })
 
   return (

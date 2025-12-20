@@ -127,3 +127,46 @@ export const LEGACY_CONSTANTS = {
   // Content (use CONTENT_CONSTANTS instead)
   SAMPLE_WORD_COUNT: 1200,
 } as const
+
+// ============================================================================
+// DEMO/SHOWCASE DATA CONSTANTS
+// ============================================================================
+
+export const DEMO_CONSTANTS = {
+  // Sample analysis data
+  SAMPLE_WORD_COUNT: 450,
+  SAMPLE_AVG_CONFIDENCE: 0.87,
+  SAMPLE_PROGRESS_PERCENTAGE: 60,
+
+  // Activity durations (seconds)
+  ACTIVITY_DURATION_SHORT: 30, // 30 seconds
+  ACTIVITY_DURATION_MEDIUM: 45, // 45 seconds
+  ACTIVITY_DURATION_LONG: 120, // 2 minutes
+
+  // Time offsets for demo timestamps (milliseconds)
+  TIME_OFFSET_5_SECONDS: 5000,
+  TIME_OFFSET_15_SECONDS: 15000,
+  TIME_OFFSET_25_SECONDS: 25000,
+  TIME_OFFSET_30_SECONDS: 30000,
+  TIME_OFFSET_35_SECONDS: 35000,
+  TIME_OFFSET_1_MINUTE: 60000,
+  TIME_OFFSET_2_MINUTES: 120000,
+  TIME_OFFSET_5_MINUTES: 300000,
+
+  // UI limits for demo components
+  MAX_ACTIVITY_ITEMS: 10,
+
+  // Duration ranges for filtering (milliseconds)
+  DURATION_RANGE_MIN: 0,
+  DURATION_RANGE_MAX: 1000, // 1 second max for demo
+} as const
+
+// ============================================================================
+// COMPONENT CONSTANTS
+// ============================================================================
+
+export const COMPONENT_CONSTANTS = {
+  // UI element limits
+  MAX_ITEMS_DEFAULT: 10,
+  MAX_VISIBLE_ACTIVITIES: 10,
+} as const

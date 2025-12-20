@@ -12,6 +12,8 @@
 
 import type { AgentStageName, StageName, WorkflowStageName } from '@app-types/sse'
 
+import { logger } from '@/lib/logger'
+
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 
 // ============================================================================
@@ -361,7 +363,11 @@ export function normalizeStageNameFromBackend(backendName: string): StageName | 
   }
 
   // Unknown stage - log warning
-  console.warn(`[Stage Registry] Unknown backend stage/agent name: ${backendName}`)
+  logger.warn('Unknown backend stage/agent name received', {
+    backendName,
+    availableStages: Object.keys(STAGE_CONFIG),
+    availableAgents: Object.keys(AGENT_TO_STAGE_MAP),
+  })
   return null
 }
 

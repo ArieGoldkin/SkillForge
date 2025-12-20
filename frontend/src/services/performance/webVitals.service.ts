@@ -1,3 +1,5 @@
+/* eslint-disable max-lines -- File contains comprehensive web vitals tracking with structured logging */
+
 /**
  * Web Vitals Performance Monitoring Service
  *
@@ -80,7 +82,7 @@ function buildAttributionData(metric: Metric): Record<string, unknown> {
  */
 function sendToGoogleAnalytics(metric: Metric): void {
   if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID === 'G-XXXXXXXXXX') {
-    console.warn('Web Vitals: GA_MEASUREMENT_ID not configured, skipping analytics')
+    logger.warn('Web Vitals analytics skipped - GA_MEASUREMENT_ID not configured')
     return
   }
 
@@ -125,7 +127,11 @@ function sendToCustomAnalytics(metric: Metric): void {
     // Use sendBeacon for reliability (continues after page unload)
     keepalive: true,
   }).catch((error) => {
-    console.warn('Failed to send web vitals to custom analytics:', error)
+    logger.warn('Failed to send web vitals to custom analytics', {
+      error: error instanceof Error ? error.message : String(error),
+      metric: metric.name,
+      value: metric.value,
+    })
   })
 }
 
@@ -231,7 +237,11 @@ export function reportCustomMetric(
   value: number,
   context?: Record<string, unknown>
 ): void {
-  console.log(`📊 Custom metric: ${name} = ${value}`, context)
+  logger.info('Custom performance metric recorded', {
+    metric: name,
+    value,
+    context,
+  })
 
   if (typeof gtag !== 'undefined') {
     gtag('event', name, {

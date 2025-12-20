@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 
 import mermaid from 'mermaid'
 
+import { logger } from '@/lib/logger'
+
 import { cn } from '@lib/utils'
 
 interface MermaidRendererProps {
@@ -88,7 +90,12 @@ const renderMermaidDiagram = async (element: HTMLDivElement, code: string) => {
       bindFunctions?.(element)
     }
   } catch (error) {
-    console.error('Mermaid rendering error:', error)
+    logger.error('Mermaid diagram rendering failed', {
+      codeLength: code.length,
+      codePreview: code.substring(0, 100) + (code.length > 100 ? '...' : ''),
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     if (element) {
       // Escape code to prevent XSS
       const escapedCode = code

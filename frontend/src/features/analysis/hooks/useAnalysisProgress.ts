@@ -13,7 +13,7 @@
  *
  * @module hooks/useAnalysisProgress
  */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { isErrorEvent } from '@app-types/sse'
 import type { SSEEvent } from '@app-types/sse'
@@ -178,15 +178,41 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // derived data directly via selectors instead of through prop chains
   const setAnalysisMetadata = useSSEStore(selectSetAnalysisMetadata)
 
+  // Store previous values to prevent unnecessary store updates
+  const prevMetadataRef = useRef<{
+    artifactId: string | null
+    traceId: string | null
+    overallProgress: typeof overallProgress
+    hasFailedStages: boolean
+    failedStagesCount: number
+    analysisMetadata: typeof analysisMetadata
+  } | null>(null)
+
   useEffect(() => {
-    setAnalysisMetadata({
+    const newMetadata = {
       artifactId: artifactId ?? null,
       traceId: traceId ?? null,
       overallProgress,
       hasFailedStages,
       failedStagesCount,
-      analysisMetadata: analysisMetadata ?? null,
-    })
+      analysisMetadata: analysisMetadata || undefined,
+    }
+
+    // Only update store if values actually changed to prevent infinite loops
+    const prevMetadata = prevMetadataRef.current
+    if (
+      !prevMetadata ||
+      prevMetadata.artifactId !== newMetadata.artifactId ||
+      prevMetadata.traceId !== newMetadata.traceId ||
+      prevMetadata.hasFailedStages !== newMetadata.hasFailedStages ||
+      prevMetadata.failedStagesCount !== newMetadata.failedStagesCount ||
+      prevMetadata.analysisMetadata !== newMetadata.analysisMetadata ||
+      // Deep comparison for overallProgress object
+      JSON.stringify(prevMetadata.overallProgress) !== JSON.stringify(newMetadata.overallProgress)
+    ) {
+      setAnalysisMetadata(newMetadata)
+      prevMetadataRef.current = newMetadata
+    }
   }, [
     artifactId,
     traceId,
