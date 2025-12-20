@@ -14,6 +14,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.annotation_service import AnnotationService
+from app.core.langfuse_client import LangfuseClientError
 from app.db.models.annotation_queue import AnnotationQueue
 
 
@@ -40,12 +41,11 @@ class TestSubmitFeedback:
         artifact_id = uuid.uuid4()
         trace_id = "trace-123"
 
-        # Mock Langfuse client
-        mock_client = MagicMock()
-        mock_client.create_score = MagicMock()
-        mock_client.flush = MagicMock()
+        # Mock Langfuse client (NEW: AsyncMock, returns boolean)
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=trace_id,
@@ -75,11 +75,10 @@ class TestSubmitFeedback:
         artifact_id = uuid.uuid4()
         trace_id = "trace-456"
 
-        mock_client = MagicMock()
-        mock_client.create_score = MagicMock()
-        mock_client.flush = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=trace_id,
@@ -108,16 +107,16 @@ class TestSubmitFeedback:
         comment = "Missing implementation details"
 
         # Mock Langfuse client
-        mock_client = MagicMock()
-        mock_client.create_score = MagicMock()
-        mock_client.flush = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
+        mock_client.add_to_annotation_queue = AsyncMock(return_value=True)
 
         # Mock existing queue check (not queued)
         mock_result = AsyncMock()
         mock_result.scalar_one_or_none = MagicMock(return_value=None)
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=trace_id,
@@ -148,11 +147,10 @@ class TestSubmitFeedback:
         trace_id = "trace-langfuse"
         comment = "Great content!"
 
-        mock_client = MagicMock()
-        mock_client.create_score = MagicMock()
-        mock_client.flush = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=trace_id,
@@ -163,14 +161,13 @@ class TestSubmitFeedback:
         # Should submit to Langfuse
         assert result["langfuse_submitted"] is True
 
-        # Verify Langfuse API calls
+        # Verify Langfuse API calls (no flush() in new client)
         mock_client.create_score.assert_called_once_with(
             trace_id=trace_id,
             name="user_feedback",
             value=1.0,
             comment=comment,
         )
-        mock_client.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_submit_feedback_graceful_degradation_no_langfuse(self, service, mock_session):
@@ -178,7 +175,7 @@ class TestSubmitFeedback:
         artifact_id = uuid.uuid4()
 
         # Mock no Langfuse client
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=None):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=None):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=None,
@@ -197,10 +194,10 @@ class TestSubmitFeedback:
         trace_id = "trace-error"
 
         # Mock Langfuse client that raises exception
-        mock_client = MagicMock()
-        mock_client.create_score.side_effect = Exception("Langfuse API error")
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(side_effect=LangfuseClientError("Langfuse API error"))
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service.submit_feedback(
                 artifact_id=artifact_id,
                 trace_id=trace_id,
@@ -220,8 +217,10 @@ class TestSubmitFeedback:
         comment = "Bad content"
 
         # Mock Langfuse client
-        mock_client = MagicMock()
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
+
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             # Mock database error during queuing
             mock_session.execute.side_effect = Exception("Database connection failed")
 
@@ -429,7 +428,7 @@ class TestInternalMethods:
     @pytest.mark.asyncio
     async def test_submit_langfuse_score_when_client_unavailable(self, service):
         """_submit_langfuse_score() returns False when client unavailable."""
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=None):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=None):
             result = await service._submit_langfuse_score(
                 trace_id="trace-123",
                 score_name="test_score",
@@ -441,11 +440,10 @@ class TestInternalMethods:
     @pytest.mark.asyncio
     async def test_submit_langfuse_score_success(self, service):
         """_submit_langfuse_score() submits score successfully."""
-        mock_client = MagicMock()
-        mock_client.create_score = MagicMock()
-        mock_client.flush = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service._submit_langfuse_score(
                 trace_id="trace-success",
                 score_name="quality",
@@ -460,15 +458,14 @@ class TestInternalMethods:
             value=0.9,
             comment="High quality",
         )
-        mock_client.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_submit_langfuse_score_handles_exception(self, service):
         """_submit_langfuse_score() handles exceptions gracefully."""
-        mock_client = MagicMock()
-        mock_client.create_score.side_effect = Exception("API error")
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(side_effect=LangfuseClientError("API error"))
 
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             result = await service._submit_langfuse_score(
                 trace_id="trace-error",
                 score_name="test",
@@ -550,8 +547,11 @@ class TestIntegration:
         trace_id = "trace-workflow"
 
         # Mock Langfuse client
-        mock_client = MagicMock()
-        with patch("app.core.annotation_service.get_langfuse_client", return_value=mock_client):
+        mock_client = AsyncMock()
+        mock_client.create_score = AsyncMock(return_value=True)
+        mock_client.add_to_annotation_queue = AsyncMock(return_value=True)
+
+        with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
             # Mock no existing queue entry
             mock_result = AsyncMock()
             mock_result.scalar_one_or_none = MagicMock(return_value=None)
@@ -632,27 +632,19 @@ class TestLangfuseQueueIntegration:
         with patch("app.core.annotation_service.settings") as mock_settings:
             mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
 
-            # Mock httpx AsyncClient
-            mock_response = MagicMock()
-            mock_response.raise_for_status = MagicMock()
-
-            async def mock_post(*args, **kwargs):
-                # Verify request payload follows Langfuse Annotation Queue API
-                json_data = kwargs.get("json")
-                # objectId is the trace_id (Langfuse links to traces)
-                assert json_data["objectId"] == trace_id
-                # objectType must be TRACE, OBSERVATION, or SESSION
-                assert json_data["objectType"] == "TRACE"
-                # Langfuse API only accepts objectId and objectType, no data field
-                assert "data" not in json_data
-                return mock_response
-
+            # Mock Langfuse client
             mock_client = AsyncMock()
-            mock_client.post = mock_post
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=None)
 
-            with patch("httpx.AsyncClient", return_value=mock_client):
+            async def mock_add_to_queue(queue_id, trace_id, object_type):
+                # Verify parameters follow Langfuse Annotation Queue API
+                assert queue_id == "aq_test_queue_123"
+                assert trace_id == "trace-langfuse-123"
+                assert object_type == "TRACE"
+                return True
+
+            mock_client.add_to_annotation_queue = mock_add_to_queue
+
+            with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
                 result = await service._add_to_langfuse_queue(
                     artifact_id=artifact_id,
                     trace_id=trace_id,
@@ -767,20 +759,13 @@ class TestLangfuseQueueIntegration:
         with patch("app.core.annotation_service.settings") as mock_settings:
             mock_settings.LANGFUSE_ANNOTATION_QUEUE_ID = queue_id
 
-            # Mock HTTP error
-            import httpx
-
-            async def mock_post_error(*args, **kwargs):
-                raise httpx.HTTPStatusError(
-                    "Queue not found", request=MagicMock(), response=MagicMock()
-                )
-
+            # Mock Langfuse client with error
             mock_client = AsyncMock()
-            mock_client.post = mock_post_error
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client.add_to_annotation_queue = AsyncMock(
+                side_effect=LangfuseClientError("Queue not found")
+            )
 
-            with patch("httpx.AsyncClient", return_value=mock_client):
+            with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
                 result = await service._add_to_langfuse_queue(
                     artifact_id=artifact_id,
                     trace_id="trace-123",

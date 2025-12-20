@@ -13,18 +13,16 @@ Architecture:
 - Structured logging for debugging
 """
 
-import os
 import uuid
 from datetime import UTC, datetime
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
-import httpx
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_client import LangfuseClientError, get_langfuse_api_client
 from app.core.logging import get_logger
 from app.db.models.annotation_queue import AnnotationQueue
 from app.db.session import get_db
@@ -305,7 +303,7 @@ class AnnotationService:
             )
             return False
 
-        client = get_langfuse_client()
+        client = get_langfuse_api_client()
         if not client:
             logger.debug(
                 "langfuse_client_unavailable",
@@ -315,26 +313,24 @@ class AnnotationService:
             return False
 
         try:
-            client.create_score(
+            success = await client.create_score(
                 trace_id=trace_id,
                 name=score_name,
                 value=score_value,
                 comment=comment,
             )
 
-            # Flush to ensure score is sent
-            client.flush()
+            if success:
+                logger.info(
+                    "langfuse_score_submitted",
+                    trace_id=trace_id,
+                    score_name=score_name,
+                    score_value=score_value,
+                )
 
-            logger.info(
-                "langfuse_score_submitted",
-                trace_id=trace_id,
-                score_name=score_name,
-                score_value=score_value,
-            )
+            return success
 
-            return True
-
-        except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        except LangfuseClientError as e:
             logger.warning(
                 "langfuse_score_submission_failed",
                 trace_id=trace_id,
@@ -439,33 +435,36 @@ class AnnotationService:
 
         # Get validated configuration
         queue_id = settings.LANGFUSE_ANNOTATION_QUEUE_ID
-        public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
-        secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-        host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
+        if not queue_id:
+            logger.debug(
+                "langfuse_queue_id_not_set",
+                artifact_id=str(artifact_id),
+                message="LANGFUSE_ANNOTATION_QUEUE_ID not set, skipping Langfuse queue",
+            )
+            return False
 
-        # Type guard: Validation ensures these are not None
-        # (checked in _validate_langfuse_queue_config)
-        assert public_key is not None, "public_key validated in precondition check"
-        assert secret_key is not None, "secret_key validated in precondition check"
+        # Get Langfuse client
+        client = get_langfuse_api_client()
+        if not client:
+            logger.debug(
+                "langfuse_client_unavailable",
+                artifact_id=str(artifact_id),
+                message="Langfuse client not configured",
+            )
+            return False
 
-        # Langfuse Annotation Queue API only accepts objectId and objectType
-        # Metadata is stored locally in the annotation_queue table
-        item_data: dict[str, Any] = {
-            "objectId": trace_id,  # Link to the Langfuse trace
-            "objectType": "TRACE",  # Required: TRACE, OBSERVATION, or SESSION
-        }
+        # Type guard: Validation ensures trace_id is not None
+        assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"
 
         try:
-            # Submit to Langfuse Annotation Queue API
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{host}/api/public/annotation-queues/{queue_id}/items",
-                    json=item_data,
-                    auth=(public_key, secret_key),
-                    timeout=10.0,
-                )
-                response.raise_for_status()
+            # Submit to Langfuse Annotation Queue API using new client
+            success = await client.add_to_annotation_queue(
+                queue_id=queue_id,
+                trace_id=trace_id,
+                object_type="TRACE",
+            )
 
+            if success:
                 logger.info(
                     "artifact_added_to_langfuse_queue",
                     artifact_id=str(artifact_id),
@@ -474,9 +473,9 @@ class AnnotationService:
                     reason=reason,
                 )
 
-                return True
+            return success
 
-        except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        except LangfuseClientError as e:
             # Graceful degradation - log warning but don't fail the operation
             logger.warning(
                 "langfuse_queue_submission_failed",
@@ -514,28 +513,6 @@ class AnnotationService:
             )
             return False
 
-        # Check if Langfuse is enabled
-        langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
-        if not langfuse_enabled:
-            logger.debug(
-                "langfuse_not_enabled",
-                message="LANGFUSE_ENABLED not set, skipping Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
-
-        # Get Langfuse credentials
-        public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
-        secret_key = os.getenv("LANGFUSE_SECRET_KEY")
-
-        if not public_key or not secret_key:
-            logger.debug(
-                "langfuse_credentials_missing",
-                message="Langfuse credentials not set, skipping Langfuse queue",
-                artifact_id=str(artifact_id),
-            )
-            return False
-
         # Langfuse requires trace_id to link to TRACE objectType
         if not trace_id:
             logger.debug(
@@ -546,6 +523,7 @@ class AnnotationService:
             return False
 
         # All validations passed
+        # (Client handles LANGFUSE_ENABLED and credential validation)
         return True
 
 
