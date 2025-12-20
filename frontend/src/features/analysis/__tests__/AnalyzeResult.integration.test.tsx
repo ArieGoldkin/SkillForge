@@ -27,44 +27,81 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 // Mock SSE store for controlled testing
+const mockState = {
+  events: [],
+  isConnected: false,
+  isComplete: false,
+  error: null,
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+  reset: vi.fn(),
+  setAnalysisMetadata: vi.fn(),
+}
+
 vi.mock('@stores/sseStore', () => ({
-  useSSEStore: vi.fn(),
-  useLoadingState: vi.fn(),
-  useShowTimeoutWarning: vi.fn(),
-  useShouldShowProgress: vi.fn(),
+  useSSEStore: vi.fn((selector) => {
+    if (typeof selector === 'function') {
+      return selector(mockState)
+    }
+    return mockState
+  }),
+  selectSetAnalysisMetadata: vi.fn(() => mockState.setAnalysisMetadata),
+  useLoadingState: vi.fn(() => ({ type: 'waiting_for_events' })),
+  useShowTimeoutWarning: vi.fn(() => false),
+  useShouldShowProgress: vi.fn(() => false),
 }))
 
-const mockUseSSEStore = vi.mocked(useSSEStore)
-const mockUseLoadingState = vi.mocked(useLoadingState)
-const mockUseShowTimeoutWarning = vi.mocked(useShowTimeoutWarning)
-const mockUseShouldShowProgress = vi.mocked(useShouldShowProgress)
+// Mock stage status processing hook
+vi.mock('../hooks/useStageStatusProcessing', () => ({
+  useStageStatusProcessing: vi.fn(() => ({
+    stageStatuses: new Map(),
+    isComplete: false,
+    artifactId: null,
+    traceId: null,
+    expectedTotalStages: 0,
+  })),
+}))
+
+// Mock activity feed hook
+vi.mock('../hooks/useActivityFeed', () => ({
+  useActivityFeed: vi.fn(() => []),
+}))
 
 describe('AnalyzeResult Integration Tests @integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Setup default mocks
-    mockUseSSEStore.mockImplementation((selector) => {
-      if (selector === vi.fn()) return { connect: vi.fn(), disconnect: vi.fn() }
-      return {}
-    })
-
-    mockUseLoadingState.mockReturnValue('waiting_for_events')
-    mockUseShowTimeoutWarning.mockReturnValue(false)
-    mockUseShouldShowProgress.mockReturnValue(false)
   })
+
+  // Helper function to mock SSE store dynamically for specific tests
+  const mockSSEStore = (overrides: Record<string, unknown> = {}) => {
+    const defaultState = {
+      events: [],
+      isConnected: false,
+      isComplete: false,
+      error: null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      reset: vi.fn(),
+      ...overrides,
+    }
+
+    vi.mocked(useSSEStore).mockImplementation((selector) => {
+      if (typeof selector === 'function') {
+        return selector(defaultState)
+      }
+      return defaultState
+    })
+  }
 
   describe('SSE Connection Integration', () => {
     it('connects to SSE endpoint on mount', async () => {
       const mockConnect = vi.fn()
       const mockDisconnect = vi.fn()
 
-      // Mock the store to return connection functions
-      mockUseSSEStore.mockImplementation((selector) => {
-        if (typeof selector === 'function') {
-          return { connect: mockConnect, disconnect: mockDisconnect }
-        }
-        return {}
+      // Mock the store with connection functions
+      mockSSEStore({
+        connect: mockConnect,
+        disconnect: mockDisconnect,
       })
 
       render(<AnalyzeResult />)
@@ -83,11 +120,9 @@ describe('AnalyzeResult Integration Tests @integration', () => {
       const mockConnect = vi.fn()
       const mockDisconnect = vi.fn()
 
-      mockUseSSEStore.mockImplementation((selector) => {
-        if (typeof selector === 'function') {
-          return { connect: mockConnect, disconnect: mockDisconnect }
-        }
-        return {}
+      mockSSEStore({
+        connect: mockConnect,
+        disconnect: mockDisconnect,
       })
 
       const { unmount } = render(<AnalyzeResult />)
@@ -106,13 +141,10 @@ describe('AnalyzeResult Integration Tests @integration', () => {
 
     it('handles connection state changes', async () => {
       const mockConnect = vi.fn()
-      let connectionState = { connect: mockConnect, disconnect: vi.fn() }
 
-      mockUseSSEStore.mockImplementation((selector) => {
-        if (typeof selector === 'function') {
-          return connectionState
-        }
-        return {}
+      mockSSEStore({
+        connect: mockConnect,
+        disconnect: vi.fn(),
       })
 
       const { rerender } = render(<AnalyzeResult />)
@@ -123,7 +155,10 @@ describe('AnalyzeResult Integration Tests @integration', () => {
       })
 
       // Simulate connection state change
-      connectionState = { connect: vi.fn(), disconnect: vi.fn() }
+      mockSSEStore({
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      })
 
       rerender(<AnalyzeResult />)
 
@@ -134,17 +169,17 @@ describe('AnalyzeResult Integration Tests @integration', () => {
 
   describe('Component Integration', () => {
     it('integrates with loading state display', () => {
-      mockUseLoadingState.mockReturnValue('extracting')
+      vi.mocked(useLoadingState).mockReturnValue({ type: 'extracting' })
 
       render(<AnalyzeResult />)
 
       // Verify loading state is passed through correctly
-      expect(screen.getByTestId('loading-state-display')).toBeInTheDocument()
-      expect(screen.getByText('extracting')).toBeInTheDocument()
+      expect(screen.getByText('Extracting content...')).toBeInTheDocument()
+      expect(screen.getByText('Reading and analyzing your content')).toBeInTheDocument()
     })
 
     it('integrates with timeout warning system', () => {
-      mockUseShowTimeoutWarning.mockReturnValue(true)
+      vi.mocked(useShowTimeoutWarning).mockReturnValue(true)
 
       render(<AnalyzeResult />)
 
@@ -153,7 +188,7 @@ describe('AnalyzeResult Integration Tests @integration', () => {
     })
 
     it('integrates with progress tracking', () => {
-      mockUseShouldShowProgress.mockReturnValue(true)
+      vi.mocked(useShouldShowProgress).mockReturnValue(true)
 
       render(<AnalyzeResult />)
 
