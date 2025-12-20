@@ -25,7 +25,9 @@
       "@app-types/*": ["./src/types/*"],
       "@lib/*": ["./src/lib/*"],
       "@services/*": ["./src/services/*"],
-      "@router/*": ["./src/router/*"]
+      "@router/*": ["./src/router/*"],
+      "@test-utils/*": ["./src/test-utils/*"],
+      "@components/*": ["./src/components/*"]
     },
 
     /* Linting */

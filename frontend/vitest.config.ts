@@ -19,6 +19,16 @@ export default defineConfig({
       reportsDirectory: './coverage',
       exclude: ['node_modules/', 'src/**/*.d.ts', 'src/**/*.test.{ts,tsx}'],
     },
+    // Test tagging system (2025 best practices)
+    tags: {
+      e2e: ['@e2e'],
+      integration: ['@integration'],
+      unit: ['@unit'],
+      slow: ['@slow'],
+      manual: ['@manual'],
+      ci: ['@ci'],
+      dev: ['@dev'],
+    },
     // Performance monitoring setup
     performance: {
       // Enable performance monitoring in tests

@@ -257,6 +257,7 @@ service-account.json
 *_api_key.txt
 api_keys/
 secrets/
+.secrets/
 
 # SSL Certificates (if self-signed for dev)
 *.pem
