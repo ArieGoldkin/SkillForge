@@ -72,12 +72,14 @@ jobs:
           pip-audit --requirement requirements.txt --desc --format=json --output=backend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: backend-security-report
           path: backend/backend-security-report.json
           retention-days: 30
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Check for critical/high vulnerabilities
         working-directory: ./backend
@@ -121,12 +123,14 @@ jobs:
           npm audit --json > frontend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: frontend-security-report
           path: frontend/frontend-security-report.json
           retention-days: 30
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Check for critical/high vulnerabilities
         working-directory: ./frontend
@@ -217,8 +221,10 @@ jobs:
           fi
 
       - name: Upload security summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: security-summary
           path: security-summary.md
           retention-days: 30
+          compression-level: 9
+          if-no-files-found: warn

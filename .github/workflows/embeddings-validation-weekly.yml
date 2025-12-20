@@ -132,13 +132,15 @@ jobs:
 
       - name: Upload validation results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: embeddings-validation-${{ github.run_number }}
           path: |
             backend/evaluation_results_real.json
             backend/embeddings_validation_report.md
           retention-days: 90
+          compression-level: 9
+          if-no-files-found: warn
 
       - name: Check for regressions
         if: always()
