@@ -5,6 +5,7 @@
 import type { StageName, StageStatus } from '@app-types/sse'
 
 import type { AnalysisStepStatus } from '../components/steps/AnalysisStepList'
+import { TIME_CONSTANTS } from '@/lib/constants'
 
 import { STAGE_CONFIG } from './stageConfig'
 
@@ -102,7 +103,7 @@ export function getStageDescription(
     }
     // Show processing time if available
     if (details?.processing_time_ms && typeof details.processing_time_ms === 'number') {
-      const seconds = Math.round(details.processing_time_ms / 1000)
+      const seconds = Math.round(details.processing_time_ms / TIME_CONSTANTS.SECOND)
       return `Failed after ${seconds}s`
     }
     return 'Failed'
@@ -229,7 +230,7 @@ export function getActionDescription(
       }
       // Show processing time if available
       if (details?.processing_time_ms && typeof details.processing_time_ms === 'number') {
-        const seconds = Math.round(details.processing_time_ms / 1000)
+        const seconds = Math.round(details.processing_time_ms / TIME_CONSTANTS.SECOND)
         return `Failed after ${seconds}s`
       }
       return `Failed ${stageTitle}`

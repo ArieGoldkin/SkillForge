@@ -5,6 +5,7 @@ import { Loader2, Search, X } from 'lucide-react'
 import { Input } from '@shared/components/ui/input'
 
 import { cn } from '@lib/utils'
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /**
  * Props for SkillSearch component
@@ -35,7 +36,7 @@ export interface SkillSearchProps {
 export const SkillSearch: React.FC<SkillSearchProps> = ({
   placeholder = 'Search...',
   onSearch,
-  debounceMs = 300,
+  debounceMs = COMPONENT_CONSTANTS.SEARCH_DEBOUNCE_MS,
   className,
 }) => {
   const [query, setQuery] = React.useState('')

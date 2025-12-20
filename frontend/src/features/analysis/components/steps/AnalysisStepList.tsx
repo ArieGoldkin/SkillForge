@@ -7,6 +7,7 @@ import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
+import { TIME_CONSTANTS } from '@/lib/constants'
 
 /**
  * Status type for each analysis step
@@ -61,12 +62,13 @@ const formatRelativeTime = (timestamp: Date): string => {
   const now = Date.now()
   const diff = now - timestamp.getTime()
 
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
+  const seconds = Math.floor(diff / TIME_CONSTANTS.SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
+  const hours = Math.floor(minutes / TIME_CONSTANTS.MINUTES_PER_HOUR)
 
-  if (seconds < 60) return `${seconds} seconds ago`
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds} seconds ago`
+  if (minutes < TIME_CONSTANTS.MINUTES_PER_HOUR)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
   return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
 }
 
@@ -74,11 +76,11 @@ const formatRelativeTime = (timestamp: Date): string => {
  * Format duration in milliseconds to human-readable string
  */
 const formatDuration = (ms: number): string => {
-  const seconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(seconds / 60)
+  const seconds = Math.floor(ms / TIME_CONSTANTS.SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
 
-  if (seconds < 60) return `${seconds}s`
-  return `${minutes}m ${seconds % 60}s`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds}s`
+  return `${minutes}m ${seconds % TIME_CONSTANTS.SECONDS_PER_MINUTE}s`
 }
 
 /**
