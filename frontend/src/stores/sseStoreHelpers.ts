@@ -47,9 +47,9 @@ function getEventDeduplicationKey(event: SSEEvent): string {
       return `${analysis_id}:${stage}:${status}`
 
     case 'complete':
-      // Complete events are deduplicated by analysis + stage + type
-      // Only one completion event per analysis stage (keep most recent)
-      return `${analysis_id}:${stage}:${type}`
+      // Complete events are deduplicated by analysis + type
+      // Only one completion event per analysis (keep most recent)
+      return `${analysis_id}:${type}`
 
     case 'error':
       // Error events are deduplicated by analysis + stage

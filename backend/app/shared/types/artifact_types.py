@@ -68,3 +68,4 @@ class GeneratedArtifact(TypedDict, total=False):
     quick_reference: str
     diagrams: list[str]
     glossary: dict[str, str]
+

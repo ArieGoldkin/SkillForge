@@ -63,13 +63,36 @@ function getMockEventSource(): MockEventSource | null {
 
 describe('SSE Store @unit @store', () => {
   beforeEach(() => {
+    // Ensure complete isolation - clear any existing mock instance
+    if (mockInstance) {
+      mockInstance.listeners.clear()
+      mockInstance.close()
+    }
     mockInstance = null
+
+    // Stub globals
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8000')
+
+    // Reset store and validate
     useSSEStore.getState().reset()
+
+    // Ensure store is properly reset
+    const state = useSSEStore.getState()
+    expect(state.events).toEqual([])
+    expect(state.isConnected).toBe(false)
+    expect(state.error).toBe(null)
+    expect(state.latestEvent).toBe(null)
   })
 
   afterEach(() => {
+    // Clean up any remaining mock instance
+    if (mockInstance) {
+      mockInstance.listeners.clear()
+      mockInstance.close()
+      mockInstance = null
+    }
+
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
   })
@@ -175,13 +198,36 @@ describe('SSE Store @unit @store', () => {
  */
 describe('Event Buffer Management', () => {
   beforeEach(() => {
+    // Ensure complete isolation - clear any existing mock instance
+    if (mockInstance) {
+      mockInstance.listeners.clear()
+      mockInstance.close()
+    }
     mockInstance = null
+
+    // Stub globals
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8000')
+
+    // Reset store and validate
     useSSEStore.getState().reset()
+
+    // Ensure store is properly reset
+    const state = useSSEStore.getState()
+    expect(state.events).toEqual([])
+    expect(state.isConnected).toBe(false)
+    expect(state.error).toBe(null)
+    expect(state.latestEvent).toBe(null)
   })
 
   afterEach(() => {
+    // Clean up any remaining mock instance
+    if (mockInstance) {
+      mockInstance.listeners.clear()
+      mockInstance.close()
+      mockInstance = null
+    }
+
     vi.unstubAllGlobals()
     vi.unstubAllEnvs()
   })
@@ -245,10 +291,10 @@ describe('Event Buffer Management', () => {
     })
 
     it('deduplicates complete events for same analysis', async () => {
-      // Mock the disconnect method to prevent actual disconnection during test
-      const originalDisconnect = useSSEStore.getState().disconnect
-      const mockDisconnect = vi.fn()
-      useSSEStore.setState({ disconnect: mockDisconnect })
+      // Spy on the disconnect method to prevent actual disconnection during test
+      const disconnectSpy = vi
+        .spyOn(useSSEStore.getState(), 'disconnect')
+        .mockImplementation(() => {})
 
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
@@ -272,21 +318,16 @@ describe('Event Buffer Management', () => {
         status: 'complete',
         timestamp: new Date(baseTime - 1000).toISOString(), // More recent
       }
+
       getMockEventSource()?.simulateEvent('complete', event2)
-      await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(2))
 
-      const events = useSSEStore.getState().events
-      console.log(
-        'Complete events test - Final events:',
-        events.map((e) => ({ stage: e.stage, timestamp: e.timestamp }))
-      )
-      // Should have both events since they have different stages
-      expect(events.length).toBe(2)
-      const completeEvents = events.filter((e) => e.type === 'complete')
-      expect(completeEvents.length).toBe(2)
+      // Should deduplicate to keep only the more recent event
+      await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
 
-      // Restore the original disconnect method
-      useSSEStore.setState({ disconnect: originalDisconnect })
+      expect(useSSEStore.getState().events[0].timestamp).toBe(event2.timestamp) // Should keep the newer event
+
+      // Restore the disconnect method
+      disconnectSpy.mockRestore()
     })
 
     it('deduplicates error events for same stage', async () => {
@@ -345,10 +386,10 @@ describe('Event Buffer Management', () => {
     })
 
     it('prioritizes critical events (error/complete) during cleanup', async () => {
-      // Mock the disconnect method to prevent disconnection during test
-      const originalDisconnect = useSSEStore.getState().disconnect
-      const mockDisconnect = vi.fn()
-      useSSEStore.setState({ disconnect: mockDisconnect })
+      // Spy on the disconnect method to prevent disconnection during test
+      const disconnectSpy = vi
+        .spyOn(useSSEStore.getState(), 'disconnect')
+        .mockImplementation(() => {})
 
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
@@ -401,8 +442,8 @@ describe('Event Buffer Management', () => {
         expect(errorEvents[0].error).toBe('Critical error')
       }
 
-      // Restore the original disconnect method
-      useSSEStore.setState({ disconnect: originalDisconnect })
+      // Restore the disconnect method
+      disconnectSpy.mockRestore()
     })
   })
 

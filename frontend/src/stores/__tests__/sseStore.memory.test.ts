@@ -27,7 +27,7 @@ function createProgressEvent(index: number): SSEProgressEvent {
   return {
     type: 'progress',
     analysis_id: TEST_ANALYSIS_ID,
-    stage: 'extraction',
+    stage: `stage_${index}`, // Different stage for each event to avoid deduplication
     status: 'running',
     timestamp: new Date().toISOString(),
     details: { word_count: index * 100, index },
