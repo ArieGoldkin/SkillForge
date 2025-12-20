@@ -15,6 +15,7 @@ import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearchInfinite } from './hooks'
 import { mapFiltersToQuery, normalizeTitle } from './utils'
 import { dedupeByAnalysisId } from './utils/libraryTransform'
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
 export default function Library() {
@@ -26,7 +27,7 @@ export default function Library() {
     difficulty: [],
     tags: [],
     status: [],
-    durationRange: [0, 1000],
+    durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
   })
   const limit = 15
 

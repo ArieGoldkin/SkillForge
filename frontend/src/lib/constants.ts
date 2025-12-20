@@ -307,6 +307,12 @@ export const COMPONENT_CONSTANTS = {
   SIZE_LIMIT_500: 500,
   SIZE_LIMIT_1000: 1000,
 
+  // Content truncation limits
+  ERROR_MESSAGE_TRUNCATE_LENGTH: 100,
+
+  // Library/Skill filter defaults
+  SKILL_DURATION_FILTER_MAX: 1000, // milliseconds
+
   // Percentage limits
   PERCENTAGE_80: 80,
   PERCENTAGE_90: 90,

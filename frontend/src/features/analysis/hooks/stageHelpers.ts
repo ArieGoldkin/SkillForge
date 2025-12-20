@@ -5,7 +5,7 @@
 import type { StageName, StageStatus } from '@app-types/sse'
 
 import type { AnalysisStepStatus } from '../components/steps/AnalysisStepList'
-import { TIME_CONSTANTS } from '@/lib/constants'
+import { COMPONENT_CONSTANTS, TIME_CONSTANTS } from '@/lib/constants'
 
 import { STAGE_CONFIG } from './stageConfig'
 
@@ -95,7 +95,9 @@ export function getStageDescription(
     // Show error message from details if available
     if (details?.error && typeof details.error === 'string') {
       const errorMsg =
-        details.error.length > 100 ? `${details.error.substring(0, 100)}...` : details.error
+        details.error.length > COMPONENT_CONSTANTS.ERROR_MESSAGE_TRUNCATE_LENGTH
+          ? `${details.error.substring(0, COMPONENT_CONSTANTS.ERROR_MESSAGE_TRUNCATE_LENGTH)}...`
+          : details.error
       return `Failed: ${errorMsg}`
     }
     if (details?.error_code && typeof details.error_code === 'string') {
