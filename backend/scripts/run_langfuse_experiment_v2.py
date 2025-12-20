@@ -1,30 +1,36 @@
 #!/usr/bin/env python
-"""Run Langfuse dataset experiment using CORRECT SDK patterns.
+"""Run Langfuse dataset experiment using CORRECT SDK patterns (v3).
 
-This script uses the proper Langfuse SDK patterns for dataset experiments:
-1. Fetch dataset with langfuse.get_dataset()
-2. Use item.run() context manager to create proper traces
-3. Link scores to dataset items properly
-4. Use G-Eval scoring from app.shared.services.g_eval.scorer
+Issue #428: Refactored to use proper Langfuse SDK `run_experiment()` API.
 
-Key improvements over v1:
-- Uses item.run() context manager for proper trace linking
-- No random trace IDs - traces are automatically linked to dataset items
-- Uses real Langfuse SDK methods, not fabricated API endpoints
-- Scores appear under Datasets > Runs in Langfuse UI
+This script implements the recommended Langfuse patterns (Dec 2025):
+1. Uses `langfuse.run_experiment()` for automatic iteration and tracing
+2. Returns proper `Evaluation` objects from evaluator functions
+3. Supports run-level evaluators for aggregate metrics
+4. Integrates with G-Eval scoring via Langfuse-compatible adapters
+
+Key improvements over v1/v2:
+- No manual `for item in items:` loop - SDK handles iteration
+- Evaluators return `Evaluation` objects (not custom classes)
+- Run-level aggregation (average scores, pass rates)
+- Proper experiment UI integration in Langfuse dashboard
+- Structured output via `result.format()`
 
 Usage:
-    # Create dataset only (no experiment)
-    poetry run python scripts/run_langfuse_experiment_v2.py --create-dataset
-
     # Run a quick experiment with 3 examples
     poetry run python scripts/run_langfuse_experiment_v2.py --quick
 
-    # Run full experiment
+    # Run full experiment with all examples
     poetry run python scripts/run_langfuse_experiment_v2.py --full
+
+    # Run with specific agent type
+    poetry run python scripts/run_langfuse_experiment_v2.py --full --agent-type security_auditor
 
     # Dry run (show what would happen)
     poetry run python scripts/run_langfuse_experiment_v2.py --dry-run
+
+    # Legacy mode (uses old item.run() pattern for comparison)
+    poetry run python scripts/run_langfuse_experiment_v2.py --quick --legacy
 
 Environment:
     LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST, LANGFUSE_ENABLED
@@ -33,11 +39,12 @@ Environment:
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -50,212 +57,315 @@ if env_path.exists():
     load_dotenv(env_path)
 
 from app.core.logging import get_logger  # noqa: E402
-from app.evaluation.datasets import load_dataset  # noqa: E402
-from app.shared.services.g_eval.scorer import g_eval_score  # noqa: E402
 
 logger = get_logger(__name__)
 
-DATASET_NAME = "skillforge-golden-analysis"
+# Issue #428: Use the dataset created by sync_golden_dataset_to_langfuse.py
+# which includes full artifact content (not just summaries)
+DATASET_NAME = "skillforge_golden_analyses_v1_prod"
 EXPERIMENT_NAME_PREFIX = "g_eval_quality"
 
 
-async def create_langfuse_dataset(dry_run: bool = False) -> dict:
-    """Create or update a Langfuse dataset from golden data.
+def check_langfuse_enabled() -> bool:
+    """Check if Langfuse is enabled and configured."""
+    if os.getenv("LANGFUSE_ENABLED", "false").lower() != "true":
+        print("ERROR: LANGFUSE_ENABLED must be 'true' to run experiment")
+        return False
 
-    Uses the correct SDK pattern:
-    - langfuse.create_dataset() to create dataset
-    - langfuse.create_dataset_item() to add items
+    if not os.getenv("LANGFUSE_PUBLIC_KEY") or not os.getenv("LANGFUSE_SECRET_KEY"):
+        print("ERROR: LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY must be set")
+        return False
+
+    return True
+
+
+def create_task_function(agent_type: str):
+    """Create the task function for experiment execution.
+
+    The task function processes a single dataset item and returns output
+    for evaluation. In our case, we use the expected_output as the "output"
+    since we're evaluating existing artifacts.
 
     Args:
-        dry_run: If True, just show what would be created
+        agent_type: Agent type for context
 
     Returns:
-        Dict with creation results
+        Task function compatible with langfuse.run_experiment()
 
     """
-    # Load golden dataset
-    dataset = load_dataset("golden/agent_analysis")
 
-    if dry_run:
-        print(f"\n[DRY RUN] Would create Langfuse dataset '{DATASET_NAME}'")
-        print(f"  Examples: {len(dataset)}")
-        for i, example in enumerate(dataset[:3]):
-            print(f"  Example {i + 1}: {example.get('id', 'N/A')[:40]}...")
-        return {"status": "dry_run", "example_count": len(dataset)}
+    def task(*, item, **kwargs) -> dict[str, Any]:
+        """Process a single dataset item.
 
-    try:
-        import os
+        For golden dataset evaluation, we're evaluating existing artifacts,
+        so we return the expected_output (artifact content) as the output.
 
-        from langfuse import Langfuse
+        Args:
+            item: Langfuse ExperimentItem with input/expected_output
+            **kwargs: Additional context from Langfuse
 
-        # Create Langfuse client using SDK
-        langfuse = Langfuse(
-            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
-            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-            host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
-        )
+        Returns:
+            The output to be evaluated
 
-        print(f"\nCreating/updating Langfuse dataset: {DATASET_NAME}")
+        """
+        # For golden dataset: the expected_output contains the artifact content
+        # that was already generated - we're evaluating its quality
+        expected = item.expected_output if hasattr(item, "expected_output") else {}
 
-        # Create dataset (idempotent - won't fail if exists)
-        langfuse.create_dataset(
-            name=DATASET_NAME,
-            description="SkillForge golden dataset for agent analysis quality evaluation",
-            metadata={
-                "source": "golden/agent_analysis",
-                "created_at": datetime.now().isoformat(),
-                "version": "2.0",
-            },
-        )
-        print(f"  Dataset created/found: {DATASET_NAME}")
+        if isinstance(expected, dict):
+            return expected
+        else:
+            return {"content": str(expected)}
 
-        # Add items from golden dataset
-        items_created = 0
-        for example in dataset:
-            example_id = example.get("id", f"example_{items_created}")
-            inputs = example.get("inputs", {})
-            expected_output = example.get("outputs", {})
-
-            langfuse.create_dataset_item(
-                dataset_name=DATASET_NAME,
-                input=inputs,
-                expected_output=expected_output,
-                metadata={
-                    "original_id": example_id,
-                    "agent_type": inputs.get("agent_type", "unknown"),
-                },
-            )
-            items_created += 1
-            if items_created <= 3 or items_created % 10 == 0:
-                print(f"  Added item {items_created}: {example_id[:40]}...")
-
-        # Flush to ensure items are sent
-        langfuse.flush()
-
-        print(f"\n  Total items created: {items_created}")
-
-        return {
-            "status": "success",
-            "dataset_name": DATASET_NAME,
-            "items_created": items_created,
-        }
-
-    except ImportError:
-        print("ERROR: Langfuse package not installed. Run: poetry add langfuse")
-        return {"status": "error", "message": "Langfuse not installed"}
-    except Exception as e:
-        logger.exception("Failed to create Langfuse dataset")
-        return {"status": "error", "message": str(e)}
+    task.__name__ = f"golden_artifact_task_{agent_type}"
+    return task
 
 
-async def run_experiment(
+def run_experiment_modern(
     max_examples: int | None = None,
     dry_run: bool = False,
     experiment_name: str | None = None,
-) -> dict:
-    """Run G-Eval experiment using CORRECT Langfuse SDK patterns.
+    agent_type: str = "tech_comparator",
+    quality_threshold: float = 0.6,
+) -> dict[str, Any]:
+    """Run G-Eval experiment using MODERN Langfuse SDK patterns.
 
-    Uses item.run() context manager to properly link traces to dataset items.
-    This is the recommended pattern from Langfuse documentation.
+    Uses `langfuse.run_experiment()` API for proper integration with
+    Langfuse Experiments UI and automatic score aggregation.
 
     Args:
         max_examples: Limit number of examples (None = all)
         dry_run: If True, just show what would run
-        experiment_name: Custom experiment name (default: g_eval_quality_v{timestamp})
+        experiment_name: Custom experiment name
+        agent_type: Agent type for G-Eval rubrics
+        quality_threshold: Threshold for pass rate calculation
 
     Returns:
         Dict with experiment results
 
     """
-    import os
-
-    # Check if Langfuse is enabled
-    if os.getenv("LANGFUSE_ENABLED", "false").lower() != "true":
-        print("ERROR: LANGFUSE_ENABLED must be 'true' to run experiment")
+    if not check_langfuse_enabled():
         return {"status": "error", "message": "Langfuse not enabled"}
 
     try:
         from langfuse import Langfuse
 
-        # Create Langfuse client
+        from app.shared.services.g_eval import (
+            create_g_eval_overall_evaluator,
+            get_standard_run_evaluators,
+        )
+
+        # Initialize Langfuse client
         langfuse = Langfuse(
             public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
             secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
             host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
         )
 
-        # Fetch dataset from Langfuse
+        # Fetch dataset
+        print(f"\nFetching dataset: {DATASET_NAME}...")
+        dataset = langfuse.get_dataset(DATASET_NAME)
+        all_items = list(dataset.items)
+
+        # Apply limit if specified
+        items_to_evaluate = all_items[:max_examples] if max_examples else all_items
+
+        exp_name = (
+            experiment_name or f"{EXPERIMENT_NAME_PREFIX}_v3_{int(datetime.now().timestamp())}"
+        )
+
+        print(f"\n{'=' * 70}")
+        print("G-EVAL EXPERIMENT (Modern SDK Pattern)")
+        print("=" * 70)
+        print(f"  Dataset:     {DATASET_NAME}")
+        print(f"  Items:       {len(items_to_evaluate)} / {len(all_items)}")
+        print(f"  Experiment:  {exp_name}")
+        print(f"  Agent Type:  {agent_type}")
+        print(f"  Threshold:   {quality_threshold}")
+        print("=" * 70)
+
+        if dry_run:
+            print(f"\n[DRY RUN] Would evaluate {len(items_to_evaluate)} items")
+            print("  Pattern: langfuse.run_experiment() with Evaluation objects")
+            print("  Evaluators: g_eval_overall")
+            print("  Run Evaluators: avg_score, avg_criteria, pass_rate")
+            print("\nSample items:")
+            for i, item in enumerate(items_to_evaluate[:3]):
+                inp = item.input if hasattr(item, "input") else {}
+                print(f"  {i + 1}. {inp.get('title', 'N/A')[:50]}...")
+            return {"status": "dry_run", "example_count": len(items_to_evaluate)}
+
+        # Create evaluators using new Langfuse-compatible adapters
+        # Issue #428: These return proper Evaluation objects
+        overall_evaluator = create_g_eval_overall_evaluator(
+            agent_type=agent_type,
+            use_cache=True,
+        )
+
+        # Run-level evaluators for aggregate metrics
+        run_evaluators = get_standard_run_evaluators(quality_threshold)
+
+        print(f"\nRunning experiment with {len(items_to_evaluate)} items...")
+        print("  Using langfuse.run_experiment() API")
+        print("  Evaluators: g_eval_overall")
+        print(f"  Run Evaluators: {len(run_evaluators)} aggregate metrics")
+
+        # Create task function
+        task_fn = create_task_function(agent_type)
+
+        # Run experiment using MODERN SDK pattern
+        # This is the KEY FIX from Issue #428
+        result = langfuse.run_experiment(
+            name=exp_name,
+            description=f"G-Eval quality evaluation for {agent_type} agent artifacts",
+            data=items_to_evaluate,
+            task=task_fn,
+            evaluators=[overall_evaluator],
+            run_evaluators=run_evaluators,
+            metadata={
+                "agent_type": agent_type,
+                "quality_threshold": quality_threshold,
+                "dataset_name": DATASET_NAME,
+                "sdk_pattern": "run_experiment_v3",
+            },
+        )
+
+        # Flush to ensure all data is sent
+        langfuse.flush()
+
+        # Print results
+        print(f"\n{'=' * 70}")
+        print("EXPERIMENT COMPLETE")
+        print("=" * 70)
+
+        # Try to get formatted results
+        try:
+            formatted = result.format()
+            print(formatted)
+        except Exception as format_err:
+            logger.warning("result_format_failed", error=str(format_err))
+            print(f"  Experiment: {exp_name}")
+            print(f"  Items processed: {len(items_to_evaluate)}")
+
+        # Extract aggregate metrics from run evaluations
+        run_evals = getattr(result, "run_evaluations", [])
+        metrics = {}
+        for eval_obj in run_evals:
+            if hasattr(eval_obj, "name") and hasattr(eval_obj, "value"):
+                metrics[eval_obj.name] = eval_obj.value
+                print(
+                    f"  {eval_obj.name}: {eval_obj.value:.3f}"
+                    if eval_obj.value
+                    else f"  {eval_obj.name}: N/A"
+                )
+
+        print(f"\n  View in Langfuse: {os.getenv('LANGFUSE_HOST', 'http://localhost:3000')}")
+        print(f"  Path: /datasets/{DATASET_NAME}/experiments")
+
+        return {
+            "status": "success",
+            "experiment_name": exp_name,
+            "example_count": len(items_to_evaluate),
+            "metrics": metrics,
+            "sdk_pattern": "run_experiment_v3",
+        }
+
+    except ImportError as e:
+        print(f"ERROR: Missing dependency - {e}")
+        print("Run: poetry add langfuse")
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.exception("experiment_failed")
+        print(f"ERROR: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+def run_experiment_legacy(
+    max_examples: int | None = None,
+    dry_run: bool = False,
+    experiment_name: str | None = None,
+) -> dict[str, Any]:
+    """Run experiment using LEGACY item.run() pattern.
+
+    Preserved for comparison and backward compatibility.
+    Use --legacy flag to invoke this mode.
+
+    Args:
+        max_examples: Limit number of examples
+        dry_run: If True, just show what would run
+        experiment_name: Custom experiment name
+
+    Returns:
+        Dict with experiment results
+
+    """
+    if not check_langfuse_enabled():
+        return {"status": "error", "message": "Langfuse not enabled"}
+
+    try:
+        from langfuse import Langfuse
+
+        from app.shared.services.g_eval.scorer import g_eval_score
+
+        langfuse = Langfuse(
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            host=os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
+        )
+
         print(f"\nFetching dataset: {DATASET_NAME}...")
         lf_dataset = langfuse.get_dataset(DATASET_NAME)
-
-        # Get all items
         all_items = list(lf_dataset.items)
         items_to_evaluate = all_items[:max_examples] if max_examples else all_items
 
-        print(f"\n{'=' * 60}")
-        print(f"G-EVAL EXPERIMENT: {len(items_to_evaluate)} examples")
-        print(f"Dataset: {DATASET_NAME}")
-        print(
-            f"Experiment: {experiment_name or f'{EXPERIMENT_NAME_PREFIX}_v{int(datetime.now().timestamp())}'}"
+        exp_name = (
+            experiment_name or f"{EXPERIMENT_NAME_PREFIX}_legacy_{int(datetime.now().timestamp())}"
         )
-        print("=" * 60)
+
+        print(f"\n{'=' * 70}")
+        print("G-EVAL EXPERIMENT (Legacy item.run() Pattern)")
+        print("=" * 70)
+        print("  WARNING: Using legacy pattern - consider using --modern instead")
+        print(f"  Dataset: {DATASET_NAME}")
+        print(f"  Items: {len(items_to_evaluate)}")
+        print(f"  Experiment: {exp_name}")
+        print("=" * 70)
 
         if dry_run:
-            print(f"\n[DRY RUN] Would evaluate {len(items_to_evaluate)} examples")
-            print("  Criteria: completeness, accuracy, coherence, depth")
-            print("  Scoring: G-Eval LLM-as-Judge")
-            print("  Results: Linked to dataset items via item.run()")
-            print("\nExample items:")
-            for i, item in enumerate(items_to_evaluate[:3]):
-                print(f"  {i + 1}. ID: {item.id}")
-                print(f"     Agent: {item.input.get('agent_type', 'unknown')}")
+            print(f"\n[DRY RUN] Would evaluate {len(items_to_evaluate)} items using legacy pattern")
             return {"status": "dry_run", "example_count": len(items_to_evaluate)}
 
-        # Run experiment with item.run() context manager
-        exp_name = experiment_name or f"{EXPERIMENT_NAME_PREFIX}_v{int(datetime.now().timestamp())}"
+        import asyncio
+
         results = []
         total_score = 0.0
-        successful_count = 0
+        successful = 0
 
         for i, item in enumerate(items_to_evaluate):
-            print(f"\n[{i + 1}/{len(items_to_evaluate)}] Evaluating item: {item.id}")
+            print(f"\n[{i + 1}/{len(items_to_evaluate)}] Evaluating item: {item.id[:20]}...")
 
-            # Extract inputs
             inputs = item.input if isinstance(item.input, dict) else {}
             expected_output = item.expected_output if item.expected_output else {}
             input_content = inputs.get("content", "")[:8000]
             agent_type = inputs.get("agent_type", "tech_comparator")
 
-            print(f"  Agent type: {agent_type}")
-            print(f"  Input length: {len(input_content)} chars")
-
             try:
-                # Use item.run() context manager to create proper trace
-                # This is the CORRECT pattern from Langfuse docs (Dec 2025)
-                # Returns root_span for trace-level operations
                 with item.run(
                     run_name=exp_name,
-                    run_metadata={"agent_type": agent_type},
+                    run_metadata={"agent_type": agent_type, "pattern": "legacy"},
                 ) as root_span:
-                    # Run G-Eval scoring
-                    g_eval_result = await g_eval_score(
-                        input_content=input_content,
-                        output=expected_output,
-                        agent_type=agent_type,
-                        trace_id=None,  # Will use current trace from context
+                    # Run G-Eval
+                    g_eval_result = asyncio.run(
+                        g_eval_score(
+                            input_content=input_content,
+                            output=expected_output,
+                            agent_type=agent_type,
+                        )
                     )
 
-                    print(f"  Overall score: {g_eval_result.overall:.2f}")
-                    print(f"  Confidence: {g_eval_result.confidence:.2f}")
+                    print(f"  Score: {g_eval_result.overall:.2f}")
 
-                    # Log individual criteria scores
-                    for criterion, score_obj in g_eval_result.criteria_scores.items():
-                        print(
-                            f"    - {criterion}: {score_obj.score}/5 ({score_obj.normalized:.2f})"
-                        )
-
-                    # Use score_trace() to score the TRACE (appears in dataset runs)
-                    # This is different from score() which only scores the observation
+                    # Score the trace
                     for criterion, score_obj in g_eval_result.criteria_scores.items():
                         root_span.score_trace(
                             name=f"g_eval_{criterion}",
@@ -263,94 +373,75 @@ async def run_experiment(
                             comment=score_obj.reasoning[:200] if score_obj.reasoning else None,
                         )
 
-                    # Overall score on the trace
                     root_span.score_trace(
                         name="g_eval_overall",
                         value=g_eval_result.overall,
-                        comment=f"Weighted average across {len(g_eval_result.criteria_scores)} criteria",
+                        comment=f"Legacy pattern - {len(g_eval_result.criteria_scores)} criteria",
                     )
 
                     total_score += g_eval_result.overall
-                    successful_count += 1
-
+                    successful += 1
                     results.append(
                         {
                             "item_id": item.id,
-                            "agent_type": agent_type,
                             "overall": g_eval_result.overall,
-                            "confidence": g_eval_result.confidence,
-                            "criteria": {
-                                k: {"score": v.score, "normalized": v.normalized}
-                                for k, v in g_eval_result.criteria_scores.items()
-                            },
                         }
                     )
 
             except Exception as e:
                 logger.exception(f"Error evaluating item {item.id}")
                 print(f"  ERROR: {e}")
-                results.append(
-                    {
-                        "item_id": item.id,
-                        "error": str(e),
-                    }
-                )
+                results.append({"item_id": item.id, "error": str(e)})
 
-        # Summary
-        print(f"\n{'=' * 60}")
-        print("EXPERIMENT SUMMARY")
-        print("=" * 60)
-
-        if successful_count > 0:
-            avg_score = total_score / successful_count
-            successful_results = [r for r in results if "overall" in r]
-            print(f"  Evaluated: {successful_count}/{len(items_to_evaluate)} examples")
-            print(f"  Average overall score: {avg_score:.2f}")
-            print(
-                f"  Score range: {min(r['overall'] for r in successful_results):.2f} - "
-                f"{max(r['overall'] for r in successful_results):.2f}"
-            )
-        else:
-            avg_score = 0
-            print("  No successful evaluations")
-
-        # Flush Langfuse to send all data
-        print("\n  Flushing results to Langfuse...")
         langfuse.flush()
-        print("  ✓ Results sent to Langfuse")
 
-        print("\n  View results in Langfuse UI:")
-        print(f"  {os.getenv('LANGFUSE_HOST', 'http://localhost:3000')}/datasets/{DATASET_NAME}")
+        avg_score = total_score / successful if successful > 0 else 0
+
+        print(f"\n{'=' * 70}")
+        print("EXPERIMENT COMPLETE (Legacy)")
+        print("=" * 70)
+        print(f"  Evaluated: {successful}/{len(items_to_evaluate)}")
+        print(f"  Average: {avg_score:.3f}")
+        print("\n  NOTE: Run with --modern for better Langfuse integration")
 
         return {
             "status": "success",
             "experiment_name": exp_name,
             "example_count": len(items_to_evaluate),
-            "successful_count": successful_count,
+            "successful_count": successful,
             "average_score": avg_score,
-            "results": results,
+            "sdk_pattern": "legacy_item_run",
         }
 
-    except ImportError:
-        print("ERROR: Langfuse package not installed. Run: poetry add langfuse")
-        return {"status": "error", "message": "Langfuse not installed"}
     except Exception as e:
-        logger.exception("Experiment failed")
+        logger.exception("legacy_experiment_failed")
         return {"status": "error", "message": str(e)}
 
 
-async def main():
+def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Run Langfuse dataset experiment with G-Eval (v2 - correct SDK patterns)",
+        description="Run Langfuse dataset experiment with G-Eval (v3 - proper SDK patterns)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Quick test (3 items, modern pattern)
+  poetry run python scripts/run_langfuse_experiment_v2.py --quick
+
+  # Full experiment
+  poetry run python scripts/run_langfuse_experiment_v2.py --full
+
+  # With specific agent type
+  poetry run python scripts/run_langfuse_experiment_v2.py --full --agent-type security_auditor
+
+  # Legacy pattern (for comparison)
+  poetry run python scripts/run_langfuse_experiment_v2.py --quick --legacy
+
+  # Dry run
+  poetry run python scripts/run_langfuse_experiment_v2.py --full --dry-run
+""",
     )
 
-    parser.add_argument(
-        "--create-dataset",
-        action="store_true",
-        help="Create Langfuse dataset from golden data (no experiment)",
-    )
     parser.add_argument(
         "--quick",
         action="store_true",
@@ -367,6 +458,11 @@ async def main():
         help="Show what would happen without running",
     )
     parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="Use legacy item.run() pattern instead of run_experiment()",
+    )
+    parser.add_argument(
         "--max-examples",
         type=int,
         help="Maximum examples to evaluate",
@@ -374,49 +470,59 @@ async def main():
     parser.add_argument(
         "--experiment-name",
         type=str,
-        help="Custom experiment name (default: g_eval_quality_v{timestamp})",
+        help="Custom experiment name",
+    )
+    parser.add_argument(
+        "--agent-type",
+        type=str,
+        default="tech_comparator",
+        help="Agent type for G-Eval rubrics (default: tech_comparator)",
+    )
+    parser.add_argument(
+        "--quality-threshold",
+        type=float,
+        default=0.6,
+        help="Quality threshold for pass rate (default: 0.6)",
     )
 
     args = parser.parse_args()
 
-    if args.create_dataset:
-        result = await create_langfuse_dataset(dry_run=args.dry_run)
-        print(f"\nResult: {json.dumps(result, indent=2)}")
-
-    elif args.quick:
-        result = await run_experiment(
-            max_examples=3,
-            dry_run=args.dry_run,
-            experiment_name=args.experiment_name,
-        )
-        print(f"\nResult: {result['status']}")
-        if result["status"] == "success":
-            print(f"  Experiment: {result['experiment_name']}")
-            print(f"  Success rate: {result['successful_count']}/{result['example_count']}")
-            print(f"  Average score: {result['average_score']:.2f}")
-
+    # Determine max examples
+    if args.quick:
+        max_examples = args.max_examples or 3
     elif args.full:
-        result = await run_experiment(
-            max_examples=args.max_examples,
+        max_examples = args.max_examples  # None means all
+    else:
+        # Default: show help
+        parser.print_help()
+        print("\n" + "=" * 70)
+        print("TIP: Use --quick for a fast test or --full for complete evaluation")
+        print("=" * 70)
+        return
+
+    # Run experiment
+    if args.legacy:
+        result = run_experiment_legacy(
+            max_examples=max_examples,
             dry_run=args.dry_run,
             experiment_name=args.experiment_name,
         )
-        print(f"\nResult: {result['status']}")
-        if result["status"] == "success":
-            print(f"  Experiment: {result['experiment_name']}")
-            print(f"  Success rate: {result['successful_count']}/{result['example_count']}")
-            print(f"  Average score: {result['average_score']:.2f}")
-
     else:
-        parser.print_help()
-        print("\nExamples:")
-        print("  poetry run python scripts/run_langfuse_experiment_v2.py --create-dataset")
-        print("  poetry run python scripts/run_langfuse_experiment_v2.py --quick")
-        print("  poetry run python scripts/run_langfuse_experiment_v2.py --full --max-examples 5")
-        print(
-            "  poetry run python scripts/run_langfuse_experiment_v2.py --full --experiment-name 'my-test'"
+        result = run_experiment_modern(
+            max_examples=max_examples,
+            dry_run=args.dry_run,
+            experiment_name=args.experiment_name,
+            agent_type=args.agent_type,
+            quality_threshold=args.quality_threshold,
         )
+
+    # Print final status
+    print(f"\nResult: {result['status']}")
+    if result["status"] == "success":
+        print(f"  SDK Pattern: {result.get('sdk_pattern', 'unknown')}")
+        if "metrics" in result:
+            print(f"  Metrics: {json.dumps(result['metrics'], indent=4, default=str)}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

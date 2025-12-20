@@ -11,6 +11,8 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
+from langfuse import get_client, observe
+
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -25,6 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
+@observe(as_type="agent", name="security_auditor")
 async def security_auditor_node(state: AnalysisState) -> dict[str, object]:
     """Security auditor agent node.
 
@@ -61,6 +64,16 @@ async def security_auditor_node(state: AnalysisState) -> dict[str, object]:
         return {"agent_findings": []}
 
     start_time = time.time()
+
+    # Update Langfuse agent-level metadata
+    langfuse = get_client()
+    if langfuse:
+        langfuse.update_current_span(
+            metadata={
+                "agent_type": "security_auditor",
+                "analysis_id": str(analysis_id),
+            }
+        )
 
     # Get Langfuse trace ID for correlation and update runtime metadata
     update_current_trace(

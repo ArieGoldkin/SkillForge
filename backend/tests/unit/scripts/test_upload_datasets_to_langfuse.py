@@ -169,9 +169,9 @@ class TestUploadDataset:
             result = upload_dataset("supervisor")
             assert result is False
 
-    @patch("upload_datasets_to_langfuse.get_langfuse_client")
+    @patch("upload_datasets_to_langfuse.get_langfuse_service")
     @patch("upload_datasets_to_langfuse.load_dataset")
-    def test_upload_dataset_success(self, mock_load, mock_client):
+    def test_upload_dataset_success(self, mock_load, mock_get_service):
         """Test successful dataset upload."""
         # Mock dataset loading
         mock_load.return_value = [
@@ -196,10 +196,12 @@ class TestUploadDataset:
             }
         ]
 
-        # Mock Langfuse client
+        # Mock Langfuse service and client
         mock_langfuse = MagicMock()
         mock_langfuse.get_dataset.side_effect = Exception("Dataset not found")
-        mock_client.return_value = mock_langfuse
+        mock_service = MagicMock()
+        mock_service.sdk_client = mock_langfuse
+        mock_get_service.return_value = mock_service
 
         result = upload_dataset("supervisor")
         assert result is True
@@ -217,9 +219,9 @@ class TestUploadDataset:
         assert "input" in item_call.kwargs
         assert "expected_output" in item_call.kwargs
 
-    @patch("upload_datasets_to_langfuse.get_langfuse_client")
+    @patch("upload_datasets_to_langfuse.get_langfuse_service")
     @patch("upload_datasets_to_langfuse.load_dataset")
-    def test_upload_dataset_existing_dataset(self, mock_load, mock_client):
+    def test_upload_dataset_existing_dataset(self, mock_load, mock_get_service):
         """Test upload to existing dataset."""
         mock_load.return_value = [
             {
@@ -243,11 +245,14 @@ class TestUploadDataset:
             }
         ]
 
-        # Mock Langfuse client - dataset exists
+        # Mock Langfuse service and client - dataset exists
         mock_langfuse = MagicMock()
         mock_dataset = MagicMock()
+        mock_dataset.items = []  # Empty items list
         mock_langfuse.get_dataset.return_value = mock_dataset
-        mock_client.return_value = mock_langfuse
+        mock_service = MagicMock()
+        mock_service.sdk_client = mock_langfuse
+        mock_get_service.return_value = mock_service
 
         result = upload_dataset("supervisor")
         assert result is True

@@ -81,7 +81,7 @@ class TestCreateRunnableConfig:
     @pytest.mark.unit
     def test_returns_empty_config_by_default(self):
         """When no thread_id and no callback, should return minimal config."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config
@@ -95,7 +95,7 @@ class TestCreateRunnableConfig:
     @pytest.mark.unit
     def test_includes_thread_id_when_provided(self):
         """When thread_id provided, should include in configurable."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config
@@ -109,7 +109,7 @@ class TestCreateRunnableConfig:
         """When Langfuse enabled, should include callback handler."""
         mock_callback = MagicMock()
 
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = mock_callback
 
             from app.core.timeout_config import create_runnable_config
@@ -122,7 +122,7 @@ class TestCreateRunnableConfig:
     @pytest.mark.unit
     def test_no_callbacks_when_langfuse_disabled(self):
         """When Langfuse disabled (returns None), should not include callbacks key."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config
@@ -136,7 +136,7 @@ class TestCreateRunnableConfig:
         """Should handle both thread_id and callback together."""
         mock_callback = MagicMock()
 
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = mock_callback
 
             from app.core.timeout_config import create_runnable_config
@@ -151,7 +151,7 @@ class TestCreateRunnableConfig:
     @pytest.mark.unit
     def test_thread_id_none_no_configurable(self):
         """When thread_id is None, should not add configurable key."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config
@@ -163,7 +163,7 @@ class TestCreateRunnableConfig:
     @pytest.mark.unit
     def test_returns_runnable_config_type(self):
         """Should return a dict compatible with RunnableConfig."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config
@@ -182,7 +182,7 @@ class TestIntegration:
     @pytest.mark.unit
     def test_create_config_for_langgraph(self):
         """Config should be valid for LangGraph execution."""
-        with patch("app.core.langfuse_config.get_langfuse_callback_handler") as mock_handler:
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
             mock_handler.return_value = None
 
             from app.core.timeout_config import create_runnable_config

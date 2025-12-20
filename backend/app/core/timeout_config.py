@@ -106,7 +106,7 @@ def create_runnable_config(
         >>> # If Langfuse enabled, config["callbacks"] contains CallbackHandler
 
     """
-    from app.core.langfuse_config import get_langfuse_callback_handler
+    from app.core.langfuse_service import get_langfuse_callback_handler
 
     config: RunnableConfig = {}
 

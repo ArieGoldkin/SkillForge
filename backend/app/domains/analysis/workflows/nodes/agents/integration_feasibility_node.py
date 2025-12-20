@@ -11,6 +11,8 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
+from langfuse import get_client, observe
+
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -25,6 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
+@observe(as_type="agent", name="integration_feasibility")
 async def integration_feasibility_node(state: AnalysisState) -> dict[str, object]:
     """Execute integration feasibility analysis.
 
@@ -61,6 +64,16 @@ async def integration_feasibility_node(state: AnalysisState) -> dict[str, object
         return {"agent_findings": []}
 
     start_time = time.time()
+
+    # Update Langfuse agent-level metadata
+    langfuse = get_client()
+    if langfuse:
+        langfuse.update_current_span(
+            metadata={
+                "agent_type": "integration_feasibility",
+                "analysis_id": str(analysis_id),
+            }
+        )
 
     # Get Langfuse trace ID for correlation and update runtime metadata
     update_current_trace(
@@ -122,7 +135,50 @@ async def integration_feasibility_node(state: AnalysisState) -> dict[str, object
         )
         # Return empty findings on cancellation (allows other agents to continue)
         return {"agent_findings": []}
+    except TimeoutError:
+        # Agent execution exceeded timeout
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        await emit_agent_progress(
+            analysis_id,
+            "integration_feasibility",
+            "failed",
+            error="Agent execution timed out",
+            error_code="INTEGRATION_FEASIBILITY_TIMEOUT",
+            processing_time_ms=processing_time_ms,
+        )
+        logger.warning(
+            "integration_feasibility_timeout",
+            analysis_id=str(analysis_id),
+            duration_seconds=duration,
+            timeout_seconds=STEP_TIMEOUT,
+        )
+        # Return empty findings to allow other agents to continue
+        return {"agent_findings": []}
+    except ValueError as e:
+        # Specificity validation failed
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        await emit_agent_progress(
+            analysis_id,
+            "integration_feasibility",
+            "failed",
+            error=f"Specificity validation failed: {e!s}",
+            error_code="INTEGRATION_FEASIBILITY_SPECIFICITY_FAILED",
+            processing_time_ms=processing_time_ms,
+        )
+        logger.warning(
+            "integration_feasibility_specificity_failed",
+            analysis_id=str(analysis_id),
+            error=str(e),
+            duration_seconds=duration,
+        )
+        # Return empty findings to allow other agents to continue
+        return {"agent_findings": []}
     except Exception as e:
+        # Unexpected errors (database, LLM API, etc.)
         duration = time.time() - start_time
         processing_time_ms = int(duration * 1000)
 

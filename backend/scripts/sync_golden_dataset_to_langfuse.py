@@ -44,7 +44,7 @@ env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
 
-from app.core.langfuse_config import get_langfuse_client  # noqa: E402
+from app.core.langfuse_service import get_langfuse_service  # noqa: E402
 from app.core.logging import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
@@ -136,34 +136,47 @@ def load_golden_dataset() -> dict[str, Any]:
 
 def format_analysis_item(
     analysis: dict[str, Any],
+    artifact: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Format an analysis for Langfuse dataset item.
 
     Args:
         analysis: Analysis record from golden dataset
+        artifact: Optional artifact with markdown_content for rich evaluation
 
     Returns:
         Tuple of (input, expected_output, metadata)
 
     """
+    # Get artifact content if available (truncate to 8000 chars for Langfuse)
+    artifact_content = ""
+    if artifact:
+        artifact_content = artifact.get("markdown_content", "")[:8000]
+
     input_data = {
         "url": analysis.get("url", ""),
         "content_type": analysis.get("content_type", "article"),
         "title": analysis.get("title", ""),
+        # Issue #428: Include artifact content for meaningful G-Eval scoring
+        "content": artifact_content,
     }
 
-    # For golden dataset, all analyses are completed
+    # For golden dataset, expected output includes the full artifact
     expected_output = {
         "status": "completed",
+        # Include artifact content as expected output for comparison
+        "artifact_content": artifact_content,
     }
 
     # Issue #410: Include dataset version in item metadata for traceability
     metadata = {
         "analysis_id": analysis.get("id", ""),
+        "artifact_id": artifact.get("id", "") if artifact else "",
         "created_at": analysis.get("created_at", ""),
         "source": "golden_dataset_backup",
         "source_format_version": "v2.0",
         "dataset_version": DATASET_VERSION,
+        "content_length": len(artifact_content),
     }
 
     return input_data, expected_output, metadata
@@ -190,10 +203,20 @@ def sync_to_langfuse(
     version = dataset.get("version", "unknown")
     counts = dataset.get("counts", {})
     analyses = dataset.get("data", {}).get("analyses", [])
+    artifacts = dataset.get("data", {}).get("artifacts", [])
+
+    # Build artifact lookup by analysis_id for joining content
+    # Issue #428: Include artifact content for meaningful evaluation
+    artifact_by_analysis: dict[str, dict[str, Any]] = {}
+    for artifact in artifacts:
+        analysis_id = artifact.get("analysis_id", "")
+        if analysis_id and analysis_id not in artifact_by_analysis:
+            artifact_by_analysis[analysis_id] = artifact
 
     print(f"  Version: {version}")
     print(f"  Total analyses: {counts.get('analyses', len(analyses))}")
-    print(f"  Total artifacts: {counts.get('artifacts', 0)}")
+    print(f"  Total artifacts: {counts.get('artifacts', len(artifacts))}")
+    print(f"  Analyses with artifacts: {len(artifact_by_analysis)}")
 
     if max_items:
         analyses = analyses[:max_items]
@@ -211,13 +234,15 @@ def sync_to_langfuse(
             "total": len(analyses),
         }
 
-    # Get Langfuse client
+    # Get Langfuse service
     if not check_langfuse_enabled():
         return {"status": "error", "message": "Langfuse not enabled or configured"}
 
-    langfuse = get_langfuse_client()
-    if not langfuse:
+    service = get_langfuse_service()
+    if not service or not service.sdk_client:
         return {"status": "error", "message": "Langfuse client not initialized"}
+
+    langfuse = service.sdk_client
 
     # Create or get existing dataset
     # Issue #410: Include semantic version in dataset metadata
@@ -252,8 +277,12 @@ def sync_to_langfuse(
         title = analysis.get("title", "Untitled")[:40]
 
         try:
-            # Format item
-            input_data, expected_output, metadata = format_analysis_item(analysis)
+            # Get artifact for this analysis (if available)
+            analysis_id = analysis.get("id", "")
+            artifact = artifact_by_analysis.get(analysis_id)
+
+            # Format item with artifact content
+            input_data, expected_output, metadata = format_analysis_item(analysis, artifact)
 
             # Check for duplicates (idempotent uploads)
             item_hash = compute_item_hash(input_data, expected_output)

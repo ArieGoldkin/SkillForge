@@ -20,7 +20,7 @@ from pathlib import Path
 # Add app to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,13 +40,15 @@ def verify_datasets() -> bool:
         True if all datasets have expected counts, False otherwise.
 
     """
-    client = get_langfuse_client()
-    if not client:
+    service = get_langfuse_service()
+    if not service or not service.sdk_client:
         logger.error(
             "langfuse_client_unavailable",
             message="Failed to get Langfuse client. Check LANGFUSE_ENABLED and credentials.",
         )
         return False
+
+    client = service.sdk_client
 
     logger.info(
         "verification_start",

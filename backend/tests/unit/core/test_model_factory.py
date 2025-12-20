@@ -470,9 +470,9 @@ def test_task_model_map_contains_supervisor():
 
 
 def test_task_model_map_contains_g_eval():
-    """Test TASK_MODEL_MAP includes g_eval routing to Gemini Flash."""
+    """Test TASK_MODEL_MAP includes g_eval routing to Gemini Flash Preview."""
     assert "g_eval" in TASK_MODEL_MAP
-    assert TASK_MODEL_MAP["g_eval"] == "gemini-3-flash"
+    assert TASK_MODEL_MAP["g_eval"] == "gemini-3-flash-preview"
 
 
 def test_task_model_map_excludes_agents():

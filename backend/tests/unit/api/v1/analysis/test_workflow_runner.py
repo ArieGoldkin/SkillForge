@@ -1059,7 +1059,7 @@ async def test_langfuse_callback_passed_to_workflow(
             return_value=mock_repository_instance,
         ),
         patch(
-            "app.core.langfuse_config.get_langfuse_callback_handler",
+            "app.core.langfuse_service.get_langfuse_callback_handler",
             return_value=mock_callback_handler,
         ),
     ):

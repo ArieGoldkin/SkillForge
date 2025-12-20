@@ -42,7 +42,7 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 
 # Load environment variables BEFORE app config initialization
@@ -123,8 +123,8 @@ async def create_langfuse_trace(trace_id: str) -> bool:
         The trace_id is stored in the database regardless.
 
     """
-    langfuse = get_langfuse_client()
-    if not langfuse:
+    service = get_langfuse_service()
+    if not service or not service.sdk_client:
         logger.warning(
             "langfuse_unavailable",
             message="Langfuse client not available - trace creation skipped",

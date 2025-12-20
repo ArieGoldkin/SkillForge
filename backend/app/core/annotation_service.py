@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.langfuse_client import LangfuseClientError, get_langfuse_api_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.db.models.annotation_queue import AnnotationQueue
 from app.db.session import get_db
@@ -303,34 +303,34 @@ class AnnotationService:
             )
             return False
 
-        client = get_langfuse_api_client()
-        if not client:
+        service = get_langfuse_service()
+        if not service:
             logger.debug(
-                "langfuse_client_unavailable",
+                "langfuse_service_unavailable",
                 score_name=score_name,
-                message="Langfuse client not configured",
+                message="Langfuse service not configured",
             )
             return False
 
         try:
-            success = await client.create_score(
+            # LangfuseService.submit_score handles SDK calls and flushing
+            service.submit_score(
                 trace_id=trace_id,
                 name=score_name,
                 value=score_value,
                 comment=comment,
             )
 
-            if success:
-                logger.info(
-                    "langfuse_score_submitted",
-                    trace_id=trace_id,
-                    score_name=score_name,
-                    score_value=score_value,
-                )
+            logger.info(
+                "langfuse_score_submitted",
+                trace_id=trace_id,
+                score_name=score_name,
+                score_value=score_value,
+            )
 
-            return success
+            return True
 
-        except LangfuseClientError as e:
+        except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
             logger.warning(
                 "langfuse_score_submission_failed",
                 trace_id=trace_id,
@@ -419,6 +419,10 @@ class AnnotationService:
 
         This enables reviewers to use the Langfuse UI for annotation workflows.
 
+        Note: The Langfuse Python SDK does not currently expose annotation queue
+        methods. This would need to be implemented using the REST API directly
+        via httpx if needed.
+
         Args:
             artifact_id: ID of the artifact to queue
             trace_id: Optional Langfuse trace ID
@@ -443,13 +447,13 @@ class AnnotationService:
             )
             return False
 
-        # Get Langfuse client
-        client = get_langfuse_api_client()
-        if not client:
+        # Get Langfuse service to check if enabled
+        service = get_langfuse_service()
+        if not service:
             logger.debug(
-                "langfuse_client_unavailable",
+                "langfuse_service_unavailable",
                 artifact_id=str(artifact_id),
-                message="Langfuse client not configured",
+                message="Langfuse service not configured",
             )
             return False
 
@@ -457,8 +461,8 @@ class AnnotationService:
         assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"
 
         try:
-            # Submit to Langfuse Annotation Queue API using new client
-            success = await client.add_to_annotation_queue(
+            # Use LangfuseService which handles annotation queue REST API
+            success = await service.add_to_annotation_queue(
                 queue_id=queue_id,
                 trace_id=trace_id,
                 object_type="TRACE",
@@ -475,7 +479,7 @@ class AnnotationService:
 
             return success
 
-        except LangfuseClientError as e:
+        except Exception as e:  # noqa: BLE001 - Graceful degradation
             # Graceful degradation - log warning but don't fail the operation
             logger.warning(
                 "langfuse_queue_submission_failed",
