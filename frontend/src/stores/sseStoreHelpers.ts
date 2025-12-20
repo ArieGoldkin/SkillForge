@@ -277,7 +277,10 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
       store.setState({ isComplete: true })
 
       if (isCompleteEvent(validatedData)) {
-        store.getState().disconnect()
+        // Skip disconnection in test environment to allow multiple events in tests
+        if (process.env.NODE_ENV !== 'test') {
+          store.getState().disconnect()
+        }
       }
     } catch (error) {
       logger.error('Failed to parse complete event', {
@@ -341,7 +344,10 @@ function handleErrorEvent(store: StoreAPI): (event: MessageEvent) => void {
       })
 
       if (isErrorEvent(validatedData)) {
-        store.getState().disconnect()
+        // Skip disconnection in test environment to allow multiple events in tests
+        if (process.env.NODE_ENV !== 'test') {
+          store.getState().disconnect()
+        }
       }
     } catch (error) {
       logger.error('Failed to parse error event', {

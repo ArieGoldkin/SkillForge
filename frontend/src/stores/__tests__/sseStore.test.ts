@@ -291,11 +291,6 @@ describe('Event Buffer Management', () => {
     })
 
     it('deduplicates complete events for same analysis', async () => {
-      // Spy on the disconnect method to prevent actual disconnection during test
-      const disconnectSpy = vi
-        .spyOn(useSSEStore.getState(), 'disconnect')
-        .mockImplementation(() => {})
-
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
@@ -325,17 +320,9 @@ describe('Event Buffer Management', () => {
       await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
 
       expect(useSSEStore.getState().events[0].timestamp).toBe(event2.timestamp) // Should keep the newer event
-
-      // Restore the disconnect method
-      disconnectSpy.mockRestore()
     })
 
     it('deduplicates error events for same stage', async () => {
-      // Temporarily override the disconnect method to prevent disconnection during test
-      const originalStore = useSSEStore.getState()
-      const originalDisconnect = originalStore.disconnect
-      ;(originalStore as any).disconnect = vi.fn()
-
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
@@ -351,9 +338,6 @@ describe('Event Buffer Management', () => {
       getMockEventSource()?.simulateEvent('error', event1)
       await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
 
-      // Small delay to ensure first event processing is complete
-      await new Promise((resolve) => setTimeout(resolve, 10))
-
       const event2: SSEErrorEvent = {
         type: 'error',
         analysis_id: TEST_ANALYSIS_ID,
@@ -366,9 +350,6 @@ describe('Event Buffer Management', () => {
       await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
 
       expect(useSSEStore.getState().events[0].error).toBe('Second error')
-
-      // Restore the disconnect method
-      ;(originalStore as any).disconnect = originalDisconnect
     })
   })
 
@@ -397,11 +378,6 @@ describe('Event Buffer Management', () => {
     })
 
     it('prioritizes critical events (error/complete) during cleanup', async () => {
-      // Spy on the disconnect method to prevent disconnection during test
-      const disconnectSpy = vi
-        .spyOn(useSSEStore.getState(), 'disconnect')
-        .mockImplementation(() => {})
-
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
@@ -452,9 +428,6 @@ describe('Event Buffer Management', () => {
       if (errorEvents.length > 0) {
         expect(errorEvents[0].error).toBe('Critical error')
       }
-
-      // Restore the disconnect method
-      disconnectSpy.mockRestore()
     })
   })
 
