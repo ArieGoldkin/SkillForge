@@ -3,6 +3,7 @@ import * as React from 'react'
 
 import { Check, Copy } from 'lucide-react'
 
+import { VALIDATION_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
 
 import { cn } from '@lib/utils'
@@ -31,7 +32,9 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
     } catch (error) {
       logger.error('Failed to copy text to clipboard', {
         textLength: text.length,
-        textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+        textPreview:
+          text.substring(0, VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH) +
+          (text.length > VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH ? '...' : ''),
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       })

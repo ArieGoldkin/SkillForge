@@ -162,6 +162,87 @@ export const DEMO_CONSTANTS = {
 } as const
 
 // ============================================================================
+// UI/SPACING CONSTANTS
+// ============================================================================
+
+export const UI_CONSTANTS = {
+  // Spacing (Tailwind CSS equivalents)
+  SPACING_XS: '0.5rem', // 8px - space-2
+  SPACING_SM: '0.75rem', // 12px - space-3
+  SPACING_MD: '1rem', // 16px - space-4
+  SPACING_LG: '1.5rem', // 24px - space-6
+  SPACING_XL: '2rem', // 32px - space-8
+  SPACING_2XL: '3rem', // 48px - space-12
+  SPACING_3XL: '4rem', // 64px - space-16
+
+  // Section padding
+  SECTION_PADDING_Y: '5rem', // py-20
+  SECTION_PADDING_X: '2rem', // px-8
+
+  // Component dimensions
+  ICON_SIZE_SM: '0.75rem', // w-3 h-3
+  ICON_SIZE_MD: '1rem', // w-4 h-4
+  ICON_SIZE_LG: '2rem', // w-8 h-8
+  ICON_SIZE_XL: '4rem', // w-16 h-16
+
+  // Border radius
+  BORDER_RADIUS_SM: '0.25rem', // rounded
+  BORDER_RADIUS_MD: '0.375rem', // rounded-md
+  BORDER_RADIUS_LG: '0.5rem', // rounded-lg
+  BORDER_RADIUS_FULL: '9999px', // rounded-full
+
+  // Font sizes (Tailwind equivalents)
+  FONT_SIZE_XS: '0.75rem', // text-xs
+  FONT_SIZE_SM: '0.875rem', // text-sm
+  FONT_SIZE_BASE: '1rem', // text-base
+  FONT_SIZE_LG: '1.125rem', // text-lg
+  FONT_SIZE_XL: '1.25rem', // text-xl
+  FONT_SIZE_2XL: '1.5rem', // text-2xl
+  FONT_SIZE_3XL: '1.875rem', // text-3xl
+  FONT_SIZE_4XL: '2.25rem', // text-4xl
+
+  // Heights
+  INPUT_HEIGHT: '3.5rem', // h-14
+  BUTTON_HEIGHT: '2.5rem', // h-10
+} as const
+
+// ============================================================================
+// VALIDATION CONSTANTS
+// ============================================================================
+
+export const VALIDATION_CONSTANTS = {
+  // String length limits
+  ERROR_MESSAGE_TRUNCATE_LENGTH: 100,
+  ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH: 80,
+  PREVIEW_TEXT_LENGTH: 50,
+  CODE_PREVIEW_LENGTH: 100,
+
+  // Input validation
+  MIN_SEARCH_QUERY_LENGTH: 2,
+  MAX_SEARCH_QUERY_LENGTH: 200,
+
+  // Content limits
+  MAX_WORD_COUNT_DISPLAY: 2500,
+} as const
+
+// ============================================================================
+// API CONSTANTS
+// ============================================================================
+
+export const API_CONSTANTS = {
+  // Pagination
+  DEFAULT_LIBRARY_LIMIT: 15,
+  DEFAULT_SEARCH_LIMIT: 20,
+
+  // Timeouts (milliseconds)
+  DEFAULT_TIMEOUT: 30000, // 30 seconds
+  LONG_TIMEOUT: 60000, // 1 minute
+
+  // Request limits
+  MAX_CONCURRENT_REQUESTS: 5,
+} as const
+
+// ============================================================================
 // COMPONENT CONSTANTS
 // ============================================================================
 
@@ -169,4 +250,12 @@ export const COMPONENT_CONSTANTS = {
   // UI element limits
   MAX_ITEMS_DEFAULT: 10,
   MAX_VISIBLE_ACTIVITIES: 10,
+
+  // Debounce delays
+  SEARCH_DEBOUNCE_MS: 300,
+  FILTER_DEBOUNCE_MS: 300,
+
+  // Animation durations
+  TRANSITION_DURATION: 200, // milliseconds
+  HOVER_SCALE_DURATION: 200, // milliseconds
 } as const

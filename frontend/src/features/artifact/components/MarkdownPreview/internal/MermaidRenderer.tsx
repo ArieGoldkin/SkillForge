@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import mermaid from 'mermaid'
 
+import { VALIDATION_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
 
 import { cn } from '@lib/utils'
@@ -92,7 +93,9 @@ const renderMermaidDiagram = async (element: HTMLDivElement, code: string) => {
   } catch (error) {
     logger.error('Mermaid diagram rendering failed', {
       codeLength: code.length,
-      codePreview: code.substring(0, 100) + (code.length > 100 ? '...' : ''),
+      codePreview:
+        code.substring(0, VALIDATION_CONSTANTS.CODE_PREVIEW_LENGTH) +
+        (code.length > VALIDATION_CONSTANTS.CODE_PREVIEW_LENGTH ? '...' : ''),
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     })

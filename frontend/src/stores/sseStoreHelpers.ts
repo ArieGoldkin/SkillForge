@@ -63,32 +63,6 @@ function getEventDeduplicationKey(event: SSEEvent): string {
 }
 
 /**
- * Check if two events are duplicates based on their content
- * For duplicate events, keep the more recent one (higher timestamp)
- */
-function isDuplicateEvent(existing: SSEEvent, incoming: SSEEvent): boolean {
-  if (existing.type !== incoming.type) return false
-  if (existing.analysis_id !== incoming.analysis_id) return false
-
-  switch (existing.type) {
-    case 'progress':
-      // Same analysis, stage, and status = duplicate
-      return existing.stage === incoming.stage && existing.status === incoming.status
-
-    case 'complete':
-      // Any complete event for same analysis = duplicate (keep most recent)
-      return true
-
-    case 'error':
-      // Same analysis and stage error = duplicate (multiple errors for same stage)
-      return existing.stage === incoming.stage
-
-    default:
-      return false
-  }
-}
-
-/**
  * Deduplicate SSE events, keeping the most recent version of each unique event
  * Prevents event array bloat from duplicate status updates
  */
@@ -513,6 +487,7 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
  */
 export function createConnection(analysisId: string, store: StoreAPI): void {
   // eslint-disable-line max-lines-per-function
+
   const state = store.getState()
 
   // Prevent duplicate connections

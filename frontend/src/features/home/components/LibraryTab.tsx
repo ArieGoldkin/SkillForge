@@ -12,7 +12,7 @@ import * as React from 'react'
 
 import type { AnalysisStatus } from '@app-types/api'
 
-import { DEMO_CONSTANTS } from '@/lib/constants'
+import { DEMO_CONSTANTS, COMPONENT_CONSTANTS } from '@/lib/constants'
 
 import type { SkillFilters as SkillFiltersType } from '@features/library/components/SkillFilters'
 import { SkillFilters } from '@features/library/components/SkillFilters'
@@ -45,7 +45,7 @@ export const LibraryTab: React.FC = () => {
           <SkillSearch
             placeholder="Search skills..."
             onSearch={(query) => console.log('Search:', query)} // eslint-disable-line no-console -- Demo showcase only
-            debounceMs={300}
+            debounceMs={COMPONENT_CONSTANTS.SEARCH_DEBOUNCE_MS}
           />
         </div>
 
