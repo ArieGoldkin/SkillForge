@@ -175,6 +175,15 @@ export const UI_CONSTANTS = {
   SPACING_2XL: '3rem', // 48px - space-12
   SPACING_3XL: '4rem', // 64px - space-16
 
+  // Common spacing classes
+  PADDING_XS: 'p-1', // 4px
+  PADDING_SM: 'p-2', // 8px
+  PADDING_MD: 'p-4', // 16px
+  PADDING_LG: 'p-6', // 24px
+
+  MARGIN_BOTTOM_SM: 'mb-3', // 12px
+  MARGIN_Y_XS: 'my-1', // 4px
+
   // Section padding
   SECTION_PADDING_Y: '5rem', // py-20
   SECTION_PADDING_X: '2rem', // px-8
@@ -201,9 +210,23 @@ export const UI_CONSTANTS = {
   FONT_SIZE_3XL: '1.875rem', // text-3xl
   FONT_SIZE_4XL: '2.25rem', // text-4xl
 
+  // Text colors (semantic)
+  TEXT_COLOR_MUTED: 'text-muted-foreground',
+  TEXT_COLOR_SECONDARY: 'text-muted-foreground',
+
+  // Button styles
+  BUTTON_STYLE_PRIMARY: 'bg-primary text-primary-foreground hover:bg-primary/90',
+  BUTTON_STYLE_SECONDARY: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+  BUTTON_STYLE_DESTRUCTIVE: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+
   // Heights
   INPUT_HEIGHT: '3.5rem', // h-14
   BUTTON_HEIGHT: '2.5rem', // h-10
+
+  // Complex status colors with opacity
+  STATUS_STYLE_INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  STATUS_STYLE_ERROR: 'bg-red-500/10 text-red-500 border-red-500/20',
+  STATUS_STYLE_WARNING: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
 } as const
 
 // ============================================================================
@@ -258,6 +281,23 @@ export const BUSINESS_CONSTANTS = {
 
   // Color intensity values (Tailwind CSS)
   COLOR_INTENSITY_MEDIUM: 500, // bg-green-500, text-blue-500, etc.
+
+  // Status colors
+  STATUS_COLOR_SUCCESS: 'bg-green-500',
+  STATUS_COLOR_ERROR: 'bg-red-500',
+  STATUS_COLOR_INFO: 'bg-blue-500',
+  STATUS_COLOR_WARNING: 'bg-purple-500',
+
+  // Status text colors
+  STATUS_TEXT_SUCCESS: 'text-green-500',
+  STATUS_TEXT_ERROR: 'text-red-500',
+  STATUS_TEXT_INFO: 'text-blue-500',
+  STATUS_TEXT_WARNING: 'text-purple-500',
+
+  // Complex status colors with opacity
+  STATUS_STYLE_INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  STATUS_STYLE_ERROR: 'bg-red-500/10 text-red-500 border-red-500/20',
+  STATUS_STYLE_WARNING: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
 } as const
 
 // ============================================================================

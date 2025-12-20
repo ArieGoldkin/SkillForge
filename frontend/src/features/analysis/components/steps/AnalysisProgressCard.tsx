@@ -2,6 +2,8 @@ import { memo } from 'react'
 
 import { FileText, Github, Loader2, Video } from 'lucide-react'
 
+import { UI_CONSTANTS } from '@/lib/constants'
+
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 import { Progress } from '@shared/components/ui/progress'
@@ -92,17 +94,17 @@ const CONTENT_TYPE_CONFIG = {
   article: {
     icon: FileText,
     label: 'Article',
-    color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    color: UI_CONSTANTS.STATUS_STYLE_INFO,
   },
   video: {
     icon: Video,
     label: 'Video',
-    color: 'bg-red-500/10 text-red-500 border-red-500/20',
+    color: UI_CONSTANTS.STATUS_STYLE_ERROR,
   },
   repo: {
     icon: Github,
     label: 'Repository',
-    color: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    color: UI_CONSTANTS.STATUS_STYLE_WARNING,
   },
 } as const
 
