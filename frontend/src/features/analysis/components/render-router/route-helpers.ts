@@ -46,6 +46,8 @@ export function extractProgressProps(props: {
 
 /**
  * Extracts props needed for the default analysis UI (ActiveAnalysisView)
+ * NOTE: This function is currently unused as ActiveAnalysisView was inlined into the router
+ * Keeping it for backwards compatibility in case it's needed in the future
  */
 // eslint-disable-next-line max-lines-per-function -- Complex prop extraction and transformation logic for analysis UI
 export function extractAnalysisProps(props: {

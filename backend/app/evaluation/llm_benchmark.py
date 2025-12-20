@@ -61,7 +61,7 @@ from typing import Any, Literal
 import tiktoken
 
 from app.core.config import settings
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
@@ -241,13 +241,14 @@ class LLMBenchmark:
         self.local_mode = local_mode
         self.project_name = project_name
 
-        # Initialize Langfuse client with graceful fallback
+        # Initialize Langfuse SDK client via service with graceful fallback
         if not local_mode:
             try:
-                self.client = get_langfuse_client()
+                service = get_langfuse_service()
+                self.client = service.sdk_client if service else None
             except Exception as e:
                 logger.warning(
-                    "langfuse_client_init_failed",
+                    "langfuse_service_init_failed",
                     error=str(e),
                     message="Falling back to local mode",
                 )

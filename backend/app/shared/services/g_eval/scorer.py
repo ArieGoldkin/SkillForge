@@ -220,7 +220,7 @@ def _submit_token_metrics_to_langfuse(
 
     """
     try:
-        from app.core.langfuse_config import submit_langfuse_score
+        from app.core.langfuse_service import submit_langfuse_score
         from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 
         # Extract token usage from response
@@ -350,7 +350,7 @@ def _submit_g_eval_scores_to_langfuse(
 
     """
     try:
-        from app.core.langfuse_config import submit_langfuse_score
+        from app.core.langfuse_service import submit_langfuse_score
 
         # Submit each criterion score individually for detailed analytics
         for criterion, score_obj in criteria_scores.items():
@@ -425,7 +425,7 @@ async def _score_criterion(
             )
             # Submit cache hit metric to Langfuse
             try:
-                from app.core.langfuse_config import submit_langfuse_score
+                from app.core.langfuse_service import submit_langfuse_score
 
                 submit_langfuse_score(
                     name="g_eval_cache_hit",
@@ -450,7 +450,7 @@ async def _score_criterion(
     # Submit cache miss metric to Langfuse (only if cache was enabled)
     if use_cache:
         try:
-            from app.core.langfuse_config import submit_langfuse_score
+            from app.core.langfuse_service import submit_langfuse_score
 
             submit_langfuse_score(
                 name="g_eval_cache_hit",
@@ -546,6 +546,7 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
     use_self_consistency: bool = False,
     n_samples: int = 3,
     trace_id: str | None = None,
+    submit_to_langfuse: bool = True,
 ) -> GEvalResult:
     """Score output quality using G-Eval LLM-as-Judge.
 
@@ -558,6 +559,9 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
         use_self_consistency: Enable self-consistency voting for 15-25% accuracy boost
         n_samples: Number of samples for self-consistency voting (default=3)
         trace_id: Langfuse trace ID to attach scores to (optional)
+        submit_to_langfuse: Whether to submit scores to Langfuse directly (default True).
+            Set to False when using Langfuse evaluators via run_experiment() since
+            those return Evaluation objects that Langfuse handles automatically.
 
     Returns:
         GEvalResult with overall score and per-criterion breakdown.
@@ -647,12 +651,15 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
         )
 
         # Submit G-Eval scores to Langfuse for quality analytics
-        _submit_g_eval_scores_to_langfuse(
-            criteria_scores=criteria_scores,
-            overall=overall,
-            agent_type=agent_type,
-            trace_id=trace_id,
-        )
+        # Issue #428: Only submit directly when not using Langfuse evaluators
+        # (evaluators return Evaluation objects that Langfuse handles automatically)
+        if submit_to_langfuse:
+            _submit_g_eval_scores_to_langfuse(
+                criteria_scores=criteria_scores,
+                overall=overall,
+                agent_type=agent_type,
+                trace_id=trace_id,
+            )
 
         return GEvalResult(
             overall=overall,
@@ -703,12 +710,14 @@ async def g_eval_score(  # noqa: PLR0913 - Function needs all these parameters
     )
 
     # Submit G-Eval scores to Langfuse for quality analytics
-    _submit_g_eval_scores_to_langfuse(
-        criteria_scores=criteria_scores,
-        overall=overall,
-        agent_type=agent_type,
-        trace_id=trace_id,
-    )
+    # Issue #428: Only submit directly when not using Langfuse evaluators
+    if submit_to_langfuse:
+        _submit_g_eval_scores_to_langfuse(
+            criteria_scores=criteria_scores,
+            overall=overall,
+            agent_type=agent_type,
+            trace_id=trace_id,
+        )
 
     return GEvalResult(
         overall=overall,

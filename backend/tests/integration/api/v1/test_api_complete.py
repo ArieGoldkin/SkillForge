@@ -141,7 +141,7 @@ async def test_full_workflow_e2e(reset_engine_connections, db_session):
 
     # Create a patched version of the mock workflow that includes db_session
     async def mock_workflow_with_db(analysis_id: str, url: str) -> None:
-        """Wrapper that passes db_session to the mock workflow."""
+        """Pass db_session to the mock workflow."""
         await mock_workflow_with_events(analysis_id, url, db=db_session)
 
     with (

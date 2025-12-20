@@ -34,10 +34,10 @@ from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.api_key_validation import log_api_key_configuration  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
-from app.core.langfuse_config import (  # noqa: E402
-    configure_langfuse_client,
+from app.core.langfuse_service import (  # noqa: E402
+    configure_langfuse_service,
     flush_langfuse,
-    shutdown_langfuse,
+    shutdown_langfuse_service,
 )
 from app.core.logging import get_logger, setup_logging  # noqa: E402
 
@@ -113,9 +113,9 @@ async def lifespan(app: FastAPI):
 
     # Configure Langfuse for observability
     # Langfuse handles async generators natively - no workarounds needed!
-    configure_langfuse_client()
+    configure_langfuse_service()
 
-    # Check Langfuse configuration
+    # Check Langfuse configuration (Issue #432 - Fail-fast validation)
     langfuse_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() == "true"
     langfuse_host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
 
@@ -124,12 +124,17 @@ async def lifespan(app: FastAPI):
         secret_key = os.getenv("LANGFUSE_SECRET_KEY")
 
         if not public_key or not secret_key:
-            logger.warning(
+            error_msg = (
+                "Langfuse is enabled but credentials are missing. "
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+            )
+            logger.error(
                 "langfuse_credentials_missing",
-                message="Langfuse enabled but API keys not set",
+                message=error_msg,
                 public_key_set=bool(public_key),
                 secret_key_set=bool(secret_key),
             )
+            raise RuntimeError(error_msg)
         else:
             logger.info(
                 "langfuse_configured",
@@ -177,7 +182,7 @@ async def lifespan(app: FastAPI):
     try:
         # Give Langfuse 10 seconds to complete shutdown
         await asyncio.wait_for(
-            asyncio.to_thread(shutdown_langfuse),
+            shutdown_langfuse_service(),
             timeout=10.0,
         )
     except TimeoutError:

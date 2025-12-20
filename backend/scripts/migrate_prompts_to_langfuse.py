@@ -18,7 +18,7 @@ import argparse
 import sys
 from typing import Any
 
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.shared.services.prompts.prompt_manager import HARDCODED_PROMPTS
 
@@ -111,10 +111,10 @@ def migrate_all_prompts(dry_run: bool = True, label: str = "production") -> dict
         Dictionary with migration results
 
     """
-    # Get Langfuse client
-    client = get_langfuse_client()
+    # Get Langfuse service
+    service = get_langfuse_service()
 
-    if not client:
+    if not service or not service.sdk_client:
         logger.error(
             "langfuse_client_unavailable",
             message=(
@@ -126,6 +126,8 @@ def migrate_all_prompts(dry_run: bool = True, label: str = "production") -> dict
             "status": "error",
             "message": "Langfuse client not configured",
         }
+
+    client = service.sdk_client
 
     results = []
 

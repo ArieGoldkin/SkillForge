@@ -267,11 +267,11 @@ class Settings(BaseSettings):
 
     # Quality Evaluation Configuration
     QUALITY_JUDGE_MODEL: str = Field(
-        default="gemini-3-flash",
+        default="gemini-3-flash-preview",
         description=(
             "LLM model for quality evaluation (LLM-as-judge). "
             "Used by quality gate to score relevance, depth, coherence. "
-            "Defaults to gemini-3-flash ($0.50/$3.00 per 1M tokens) for best eval quality. "
+            "Defaults to gemini-3-flash-preview (released Dec 17, 2025 - $0.50/$3.00 per 1M tokens). "
             "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
@@ -511,6 +511,27 @@ class Settings(BaseSettings):
         ),
     )
 
+    # Langfuse Observability Configuration (Issue #432)
+    LANGFUSE_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable Langfuse observability. When enabled, requires LANGFUSE_PUBLIC_KEY "
+            "and LANGFUSE_SECRET_KEY to be set."
+        ),
+    )
+    LANGFUSE_PUBLIC_KEY: str | None = Field(
+        default=None,
+        description="Langfuse public API key (required when LANGFUSE_ENABLED=true)",
+    )
+    LANGFUSE_SECRET_KEY: str | None = Field(
+        default=None,
+        description="Langfuse secret API key (required when LANGFUSE_ENABLED=true)",
+    )
+    LANGFUSE_HOST: str = Field(
+        default="http://localhost:3000",
+        description="Langfuse server URL",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
@@ -615,6 +636,22 @@ class Settings(BaseSettings):
                 "Set it via environment variables or in the .env file."
             )
             raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_langfuse_configuration(self) -> "Settings":
+        """Validate Langfuse configuration consistency (Issue #432).
+
+        When LANGFUSE_ENABLED=true, both LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY
+        must be set. This prevents production systems from running without observability
+        when they expect it to be enabled.
+        """
+        if self.LANGFUSE_ENABLED and (not self.LANGFUSE_PUBLIC_KEY or not self.LANGFUSE_SECRET_KEY):
+            error_msg = (
+                "Langfuse is enabled but credentials are missing. "
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+            )
+            raise ValueError(error_msg)
         return self
 
     def is_development(self) -> bool:

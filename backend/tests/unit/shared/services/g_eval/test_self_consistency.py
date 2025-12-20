@@ -300,7 +300,7 @@ class TestLangfuseScoreSubmission:
 
         with (
             patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
-            patch("app.core.langfuse_config.submit_langfuse_score") as mock_submit,
+            patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
         ):
             # Mock criterion scores
             mock_score.side_effect = [
@@ -357,7 +357,7 @@ class TestLangfuseScoreSubmission:
 
         with (
             patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
-            patch("app.core.langfuse_config.submit_langfuse_score") as mock_submit,
+            patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
         ):
             # Mock Langfuse failure
             mock_submit.side_effect = Exception("Langfuse connection error")

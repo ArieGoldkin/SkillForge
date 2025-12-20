@@ -91,14 +91,24 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
         # No insights to validate - skip gate
         # Still submit latency for skipped evaluation
-        from app.core.langfuse_config import submit_langfuse_score
+        from app.core.langfuse_service import get_langfuse_service
 
-        latency_seconds = time.time() - start_time
-        submit_langfuse_score(
-            name="latency_seconds",
-            value=latency_seconds,
-            comment=f"Quality gate skipped (no insights) in {latency_seconds:.2f}s",
-        )
+        langfuse_service = get_langfuse_service()
+        if langfuse_service and langfuse_service.sdk_client:
+            try:
+                latency_seconds = time.time() - start_time
+                trace_id = get_current_trace_id()
+                if trace_id:
+                    langfuse_service.sdk_client.create_score(
+                        trace_id=str(trace_id),
+                        name="latency_seconds",
+                        value=latency_seconds,
+                        data_type="NUMERIC",
+                        comment=f"Quality gate skipped (no insights) in {latency_seconds:.2f}s",
+                    )
+                    langfuse_service.sdk_client.flush()
+            except Exception as e:  # noqa: BLE001 - Graceful degradation
+                logger.debug("latency_score_failed_no_insights", error=str(e))
 
         return {
             "quality_scores": {},
@@ -290,39 +300,67 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Submit quality scores to Langfuse for analytics
-        from app.core.langfuse_config import submit_langfuse_score
+        # Issue #432: Submit G-Eval scores using direct Langfuse SDK API
+        from app.core.langfuse_service import get_langfuse_service
 
-        if trace_id:
-            for aspect, score_data in quality_scores.items():
-                submit_langfuse_score(
-                    trace_id=trace_id,
-                    name=f"quality_{aspect}",
-                    value=score_data["score"],
-                    comment=score_data.get("comment"),
+        langfuse_service = get_langfuse_service()
+        if langfuse_service and langfuse_service.sdk_client and trace_id:
+            try:
+                sdk_client = langfuse_service.sdk_client
+
+                # Submit individual criterion scores
+                for aspect, score_data in quality_scores.items():
+                    reasoning = score_data.get("comment", "")
+                    # Truncate comment to 200 chars max for readability
+                    comment = reasoning[:200] if reasoning else None
+
+                    sdk_client.create_score(
+                        trace_id=str(trace_id),
+                        name=f"g_eval_{aspect}",
+                        value=score_data["score"],
+                        data_type="NUMERIC",
+                        comment=comment,
+                    )
+
+                # Submit overall average score
+                sdk_client.create_score(
+                    trace_id=str(trace_id),
+                    name="g_eval_overall",
+                    value=avg_score,
+                    data_type="NUMERIC",
+                    comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
                 )
 
-            # Submit overall average score
-            submit_langfuse_score(
-                trace_id=trace_id,
-                name="quality_avg",
-                value=avg_score,
-                comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
-            )
+                # Flush to ensure scores are sent immediately
+                sdk_client.flush()
 
+                logger.info(
+                    "g_eval_scores_submitted_to_langfuse",
+                    analysis_id=analysis_id,
+                    trace_id=trace_id,
+                    aspect_count=len(quality_scores),
+                    avg_score=avg_score,
+                    gate_passed=gate_passed,
+                )
+
+            except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+                logger.warning(
+                    "g_eval_score_submission_failed",
+                    analysis_id=analysis_id,
+                    trace_id=trace_id,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    message="Failed to submit G-Eval scores to Langfuse, continuing anyway",
+                    exc_info=True,
+                )
+        else:
             logger.debug(
-                "quality_scores_submitted_to_langfuse",
+                "g_eval_scores_not_submitted",
                 analysis_id=analysis_id,
                 trace_id=trace_id,
-                aspect_count=len(quality_scores),
-                avg_score=avg_score,
-            )
-        else:
-            logger.warning(
-                "quality_scores_not_submitted_no_trace",
-                analysis_id=analysis_id,
-                message="No trace_id available - quality scores not submitted to Langfuse",
-                quality_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
-                avg_score=avg_score,
+                langfuse_available=bool(langfuse_service),
+                sdk_client_available=bool(langfuse_service and langfuse_service.sdk_client),
+                message="Langfuse not available - G-Eval scores not submitted",
             )
 
         # Issue #413: Quality-based auto-tagging for trace classification
@@ -351,20 +389,31 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Submit latency metric to Langfuse
-        latency_seconds = time.time() - start_time
-        submit_langfuse_score(
-            trace_id=trace_id,
-            name="latency_seconds",
-            value=latency_seconds,
-            comment=f"Quality gate evaluation took {latency_seconds:.2f}s",
-        )
+        if langfuse_service and langfuse_service.sdk_client and trace_id:
+            try:
+                latency_seconds = time.time() - start_time
+                langfuse_service.sdk_client.create_score(
+                    trace_id=str(trace_id),
+                    name="latency_seconds",
+                    value=latency_seconds,
+                    data_type="NUMERIC",
+                    comment=f"Quality gate evaluation took {latency_seconds:.2f}s",
+                )
+                langfuse_service.sdk_client.flush()
 
-        logger.debug(
-            "quality_gate_latency_submitted",
-            analysis_id=analysis_id,
-            latency_seconds=latency_seconds,
-            trace_id=trace_id,
-        )
+                logger.debug(
+                    "quality_gate_latency_submitted",
+                    analysis_id=analysis_id,
+                    latency_seconds=latency_seconds,
+                    trace_id=trace_id,
+                )
+            except Exception as e:  # noqa: BLE001 - Graceful degradation
+                logger.warning(
+                    "latency_score_submission_failed",
+                    analysis_id=analysis_id,
+                    error=str(e),
+                    exc_info=True,
+                )
 
         # Return quality scores and gate status
         return {
@@ -388,14 +437,23 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Submit latency metric even on error
-        from app.core.langfuse_config import submit_langfuse_score
+        from app.core.langfuse_service import get_langfuse_service
 
-        submit_langfuse_score(
-            trace_id=trace_id,
-            name="latency_seconds",
-            value=duration,
-            comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
-        )
+        langfuse_service = get_langfuse_service()
+        if langfuse_service and langfuse_service.sdk_client:
+            try:
+                current_trace_id = trace_id if trace_id else get_current_trace_id()
+                if current_trace_id:
+                    langfuse_service.sdk_client.create_score(
+                        trace_id=str(current_trace_id),
+                        name="latency_seconds",
+                        value=duration,
+                        data_type="NUMERIC",
+                        comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
+                    )
+                    langfuse_service.sdk_client.flush()
+            except Exception as score_error:  # noqa: BLE001 - Graceful degradation
+                logger.debug("latency_score_failed_on_error", error=str(score_error))
 
         # On error, pass the gate (fail open) to avoid blocking workflow
         # but log the failure for investigation

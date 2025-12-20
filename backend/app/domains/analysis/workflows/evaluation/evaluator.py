@@ -7,7 +7,7 @@ improvement of agent performance based on Langfuse evaluation results.
 from datetime import UTC, datetime
 
 from app.core.config import settings
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.domains.analysis.workflows.state import AnalysisState
@@ -56,8 +56,8 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
     )
 
     try:
-        # Langfuse client available for future enhancements
-        _ = get_langfuse_client()
+        # Langfuse service available for future enhancements
+        _ = get_langfuse_service()
         evaluation_results: dict[str, object] = {}
 
         for finding in agent_findings:

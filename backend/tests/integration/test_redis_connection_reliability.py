@@ -15,7 +15,6 @@ Quick test (skip 10-minute idle test):
 Note: These tests run sequentially (-n 0) to avoid connection pool exhaustion.
 """
 
-import asyncio
 import socket
 import sys
 import time
@@ -23,7 +22,6 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from redis import Redis
 from redis.exceptions import ConnectionError
 
 from app.core.logging import get_logger
@@ -265,7 +263,6 @@ async def test_l2_cache_retry_on_connection_error():
             retry_attempts.append(datetime.now(UTC))
             if len(retry_attempts) < 3:
                 raise ConnectionError("Simulated connection error")
-            return None  # Cache miss on third attempt
 
         if pm.redis_client:
             with patch.object(pm.redis_client, "get", side_effect=mock_get_with_errors):
@@ -320,8 +317,8 @@ def test_connection_survives_multiple_pings():
                 if i % 20 == 0:
                     logger.info("ping_batch", index=i, success_count=success_count)
                 time.sleep(0.01)  # 10ms delay between pings
-            except Exception as e:
-                logger.error("ping_failed", index=i, error=str(e))
+            except Exception:
+                logger.exception("ping_failed", index=i)
 
         # Verify all pings succeeded
         assert success_count == 100, f"All 100 pings should succeed, got {success_count}"
