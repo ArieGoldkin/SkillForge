@@ -602,7 +602,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_llm_configuration(self) -> "Settings":
         """Ensure LLM provider/API key configuration is valid."""
-        # Skip validation in development/e2e if API key is not set (allows local dev without API keys)
+        # Skip validation in development/e2e if API key is not set
+        # (allows local dev without API keys)
         if self.is_development() or self.is_e2e():
             return self
 
