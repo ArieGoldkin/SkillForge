@@ -40,14 +40,12 @@ export function createMockAnchorElement(
   const filteredOverrides = Object.entries(overrides).reduce(
     (acc, [key, value]) => {
       if (value !== undefined) {
-        // Use any to bypass readonly property restrictions in test mocks
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        // biome-ignore lint/suspicious/noExplicitAny: Required for test mock property assignment
-        ;(acc as any)[key] = value
+        // Use Record to bypass readonly property restrictions in test mocks
+        ;(acc as Record<string, unknown>)[key] = value
       }
       return acc
     },
-    {} as Partial<HTMLAnchorElement>
+    {} as Record<string, unknown>
   )
 
   // Create base defaults
