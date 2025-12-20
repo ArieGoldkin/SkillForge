@@ -13,6 +13,8 @@
 
 import type { StageName } from '@app-types/sse'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 // Import only what we need for the business logic functions
 import { AGENT_TO_STAGE_MAP, TOTAL_STAGES, getOptionalStages } from '../config/stageRegistry'
 
@@ -102,7 +104,7 @@ export function estimateTimeRemaining(completedStages: number): string | undefin
     return '~2-3 minutes'
   }
   const remaining = TOTAL_STAGES - completedStages
-  if (remaining >= 10) {
+  if (remaining >= COMPONENT_CONSTANTS.TIME_ESTIMATION_HIGH_REMAINING_THRESHOLD) {
     return '~1-2 minutes'
   }
   if (remaining <= 3) {

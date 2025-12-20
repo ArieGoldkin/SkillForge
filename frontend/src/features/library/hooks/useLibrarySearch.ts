@@ -1,6 +1,8 @@
 import type { LibraryListResponse, LibrarySearchParams } from '@app-types/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
+import { TIME_CONSTANTS } from '@/lib/constants'
+
 import { analyzeAPI } from '@services/api.service'
 
 /**
@@ -22,7 +24,7 @@ export function useLibrarySearch(params: LibrarySearchParams) {
   return useQuery<LibraryListResponse>({
     queryKey: ['library', params],
     queryFn: () => analyzeAPI.searchLibrary(params),
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * TIME_CONSTANTS.SECOND, // 30 seconds
     placeholderData: (previousData) => previousData, // Keep previous data while loading
     retry: false, // Don't retry on failure - let user manually retry
   })

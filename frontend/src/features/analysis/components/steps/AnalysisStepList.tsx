@@ -3,6 +3,8 @@ import * as React from 'react'
 
 import { AlertCircle, CheckCircle2, Circle, Info, Loader2, XCircle } from 'lucide-react'
 
+import { BUSINESS_CONSTANTS, TIME_CONSTANTS, UI_CONSTANTS } from '@/lib/constants'
+
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -61,12 +63,13 @@ const formatRelativeTime = (timestamp: Date): string => {
   const now = Date.now()
   const diff = now - timestamp.getTime()
 
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
+  const seconds = Math.floor(diff / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
+  const hours = Math.floor(minutes / TIME_CONSTANTS.MINUTES_PER_HOUR)
 
-  if (seconds < 60) return `${seconds} seconds ago`
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds} seconds ago`
+  if (minutes < TIME_CONSTANTS.MINUTES_PER_HOUR)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
   return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
 }
 
@@ -74,11 +77,11 @@ const formatRelativeTime = (timestamp: Date): string => {
  * Format duration in milliseconds to human-readable string
  */
 const formatDuration = (ms: number): string => {
-  const seconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(seconds / 60)
+  const seconds = Math.floor(ms / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
 
-  if (seconds < 60) return `${seconds}s`
-  return `${minutes}m ${seconds % 60}s`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds}s`
+  return `${minutes}m ${seconds % TIME_CONSTANTS.SECONDS_PER_MINUTE}s`
 }
 
 /**
@@ -155,7 +158,9 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
         >
-          <div className="flex items-start justify-between gap-2 mb-1">
+          <div
+            className={`${UI_CONSTANTS.FLEX_START} ${UI_CONSTANTS.FLEX_BETWEEN} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.MARGIN_BOTTOM_SM}`}
+          >
             <h4 className="font-medium text-sm">{step.title}</h4>
             <Badge variant={getStatusBadgeVariant(step.status)} className="text-xs">
               {step.status === 'in-progress' ? 'Running' : step.status}
@@ -163,7 +168,9 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
           </div>
 
           {/* Timestamp and duration */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div
+            className={`${UI_CONSTANTS.FLEX_ITEMS_CENTER} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.FONT_SIZE_XS} ${UI_CONSTANTS.TEXT_COLOR_MUTED}`}
+          >
             {step.timestamp && <span>{formatRelativeTime(step.timestamp)}</span>}
             {step.duration && step.status === 'completed' && (
               <>
@@ -196,7 +203,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
             {step.status === 'completed' && step.successMetrics && (
               <div className="rounded-md bg-green-500/10 border border-green-500/20 p-3 space-y-2">
                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
                   <span className="font-medium">Success Metrics</span>
                 </div>
                 <div className="space-y-1.5 text-xs">
@@ -247,7 +254,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
             {step.status === 'skipped' && step.skipReason && (
               <div className="rounded-md bg-muted border border-border p-3">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <Info className="h-4 w-4" />
+                  <Info className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
                   <span className="font-medium">Skip Reason</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{step.skipReason}</p>
@@ -258,7 +265,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
             {step.status === 'failed' && step.errorDetails && (
               <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 space-y-2">
                 <div className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-4 w-4" />
+                  <AlertCircle className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
                   <span className="font-medium">Error Details</span>
                 </div>
                 <div className="space-y-1.5 text-xs">

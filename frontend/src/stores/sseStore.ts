@@ -18,6 +18,7 @@ import {
   type ListenerRefs,
   cleanupOldEvents,
   getEventMemoryStats,
+  deduplicateEvents,
 } from './sseStoreHelpers'
 
 // Analysis Metadata Types (Issue #396 - Eliminate Prop Drilling)
@@ -174,6 +175,23 @@ const baseStore = create<SSEStore>((set, get) => ({
 
   disconnect: () => {
     closeConnection({ getState: get, setState: set })
+
+    // Keep events for UI display after disconnect - only reset() clears events
+    // This allows users to see final analysis state even after connection closes
+    set((_state) => ({
+      // Keep events and latestEvent for UI display
+      // Clear connection-specific state but preserve analysis results
+      isConnected: false,
+      connectionState: 'disconnected' as ConnectionState,
+      lastActivityTime: null,
+      // Clear internal connection tracking but preserve analysis metadata
+      _eventSource: null,
+      _listenerRefs: null,
+      _reconnectAttempts: 0,
+      _reconnectTimeoutId: null,
+      _permanentlyFailed: false,
+      _cleanupNetworkRecovery: undefined,
+    }))
   },
 
   reset: () => {
@@ -232,7 +250,10 @@ const baseStore = create<SSEStore>((set, get) => ({
    */
   _addEvent: (event: SSEEvent) => {
     set((state) => {
-      let newEvents = [...state.events, event]
+      let newEvents = [...state.events]
+
+      // Deduplicate events before adding new one
+      newEvents = deduplicateEvents([...newEvents, event])
 
       // Apply retention policies and cleanup old events
       newEvents = cleanupOldEvents(newEvents)

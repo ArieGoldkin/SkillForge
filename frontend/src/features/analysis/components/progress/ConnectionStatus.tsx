@@ -2,6 +2,7 @@ import type * as React from 'react'
 
 import { Wifi, WifiOff, AlertTriangle, Loader2 } from 'lucide-react'
 
+import { UI_CONSTANTS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import type { LoadingState } from '@/types/loading'
 
@@ -26,7 +27,9 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ loadingState
 
       case 'connected':
         return {
-          icon: <Wifi className="h-3.5 w-3.5" />,
+          icon: (
+            <Wifi className={`${UI_CONSTANTS.HEIGHT_XS_MEDIUM} ${UI_CONSTANTS.WIDTH_XS_MEDIUM}`} />
+          ),
           text: 'Connected',
           className: 'text-status-success',
         }
@@ -40,21 +43,33 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ loadingState
 
       case 'timeout_warning':
         return {
-          icon: <AlertTriangle className="h-3.5 w-3.5" />,
+          icon: (
+            <AlertTriangle
+              className={`${UI_CONSTANTS.HEIGHT_XS_MEDIUM} ${UI_CONSTANTS.WIDTH_XS_MEDIUM}`}
+            />
+          ),
           text: 'Connection timeout',
           className: 'text-orange-600',
         }
 
       case 'disconnected':
         return {
-          icon: <WifiOff className="h-3.5 w-3.5" />,
+          icon: (
+            <WifiOff
+              className={`${UI_CONSTANTS.HEIGHT_XS_MEDIUM} ${UI_CONSTANTS.WIDTH_XS_MEDIUM}`}
+            />
+          ),
           text: 'Disconnected',
           className: 'text-muted-foreground',
         }
 
       default:
         return {
-          icon: <WifiOff className="h-3.5 w-3.5" />,
+          icon: (
+            <WifiOff
+              className={`${UI_CONSTANTS.HEIGHT_XS_MEDIUM} ${UI_CONSTANTS.WIDTH_XS_MEDIUM}`}
+            />
+          ),
           text: 'Disconnected',
           className: 'text-muted-foreground',
         }

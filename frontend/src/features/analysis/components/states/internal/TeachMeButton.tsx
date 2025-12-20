@@ -12,6 +12,8 @@ import { useState, useCallback } from 'react'
 import { selectAnalysisId, selectAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 import { GraduationCap } from 'lucide-react'
 
+import { logger } from '@/lib/logger'
+
 import { TopicSelectModal } from '@features/tutor/components'
 import { useStartTutoring } from '@features/tutor/hooks/useStartTutoring'
 
@@ -34,7 +36,11 @@ function useTopicModal(analysisId: string | null) {
 
   const { topics, isLoadingTopics, fetchTopics, startTutoring } = useStartTutoring({
     analysisId: analysisId ?? '',
-    onError: (error) => console.error('Tutoring error:', error),
+    onError: (error) =>
+      logger.error('Tutoring session error', {
+        analysisId,
+        errorMessage: error,
+      }),
   })
 
   const open = useCallback(async () => {

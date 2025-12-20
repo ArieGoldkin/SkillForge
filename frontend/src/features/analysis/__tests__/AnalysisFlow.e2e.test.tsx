@@ -7,7 +7,7 @@
  * Tagged with @e2e - only runs when E2E_READY=true
  */
 
-import React from 'react'
+import type React from 'react'
 
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'

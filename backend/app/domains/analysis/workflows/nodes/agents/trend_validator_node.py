@@ -11,8 +11,6 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
-from langfuse import get_client, observe
-
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -27,7 +25,6 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
-@observe(as_type="agent", name="trend_validator")
 async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
     """Execute trend validation analysis.
 
@@ -64,16 +61,6 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
         return {"agent_findings": []}
 
     start_time = time.time()
-
-    # Update Langfuse agent-level metadata
-    langfuse = get_client()
-    if langfuse:
-        langfuse.update_current_span(
-            metadata={
-                "agent_type": "trend_validator",
-                "analysis_id": str(analysis_id),
-            }
-        )
 
     # Get Langfuse trace ID for correlation and update runtime metadata
     update_current_trace(
@@ -165,7 +152,7 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
             analysis_id,
             "trend_validator",
             "failed",
-            error=f"Specificity validation failed: {e!s}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="TREND_VALIDATOR_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )

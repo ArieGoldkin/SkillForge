@@ -982,9 +982,9 @@ describe('parseSSEEvent helper function', () => {
       parseSSEEvent(invalidEvent)
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[SSE Validation] Invalid event structure:',
+        '[ERROR] SSE event validation failed',
         expect.objectContaining({
-          error: expect.any(Object),
+          dataType: 'object',
           receivedData: invalidEvent,
         })
       )

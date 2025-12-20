@@ -1,3 +1,5 @@
+import { UI_CONSTANTS } from '@/lib/constants'
+
 interface WorkflowStepProps {
   number: number
   title: string
@@ -7,7 +9,9 @@ interface WorkflowStepProps {
 function WorkflowStep({ number, title, description }: WorkflowStepProps) {
   return (
     <div className="flex gap-6 items-start">
-      <div className="shrink-0 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl">
+      <div
+        className={`${UI_CONSTANTS.SHRINK_NONE} ${UI_CONSTANTS.ICON_SIZE_MD} ${UI_CONSTANTS.BORDER_RADIUS_FULL} bg-primary text-primary-foreground ${UI_CONSTANTS.FLEX_CENTER} font-bold ${UI_CONSTANTS.FONT_SIZE_XL}`}
+      >
         {number}
       </div>
       <div>
@@ -46,9 +50,13 @@ export function HowItWorksSection() {
   ]
 
   return (
-    <section className="py-20 px-8">
+    <section className={`${UI_CONSTANTS.PADDING_Y_LG} ${UI_CONSTANTS.PADDING_X_MD}`}>
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-16">How It Works</h2>
+        <h2
+          className={`${UI_CONSTANTS.FONT_SIZE_4XL} font-bold ${UI_CONSTANTS.TEXT_CENTER} ${UI_CONSTANTS.MARGIN_BOTTOM_LG}`}
+        >
+          How It Works
+        </h2>
         <div className="space-y-8">
           {steps.map((step) => (
             <WorkflowStep key={step.number} {...step} />

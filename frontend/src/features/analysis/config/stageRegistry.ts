@@ -12,6 +12,9 @@
 
 import type { AgentStageName, StageName, WorkflowStageName } from '@app-types/sse'
 
+import { STAGE_ORDER_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
+
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 
 // ============================================================================
@@ -64,7 +67,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   extraction: {
     id: 'extraction',
     title: 'Content Extraction',
-    order: 1,
+    order: STAGE_ORDER_CONSTANTS.STAGE_EXTRACTION,
     uiStage: 'extracting',
     category: 'workflow',
     agentTypes: ['extraction'],
@@ -72,7 +75,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   embedding: {
     id: 'embedding',
     title: 'Embedding Generation',
-    order: 2,
+    order: STAGE_ORDER_CONSTANTS.STAGE_CHUNKING,
     uiStage: 'processing',
     category: 'workflow',
     agentTypes: ['embedding'],
@@ -80,7 +83,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   supervisor_routing: {
     id: 'supervisor_routing',
     title: 'Routing to Agents',
-    order: 3,
+    order: STAGE_ORDER_CONSTANTS.STAGE_EMBEDDING,
     uiStage: 'processing',
     category: 'workflow',
     agentTypes: ['supervisor', 'supervisor_route'],
@@ -90,7 +93,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   tech_comparison: {
     id: 'tech_comparison',
     title: 'Tech Comparison',
-    order: 4,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_CONTENT_ANALYSIS,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -99,7 +102,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   security_audit: {
     id: 'security_audit',
     title: 'Security Audit',
-    order: 5,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_SECURITY_AUDITOR,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -108,7 +111,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   implementation_planning: {
     id: 'implementation_planning',
     title: 'Implementation Planning',
-    order: 6,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_IMPLEMENTATION_PLANNER,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -118,7 +121,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   performance_audit: {
     id: 'performance_audit',
     title: 'Performance Audit',
-    order: 7,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_CODE_QUALITY,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -127,7 +130,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   code_quality_audit: {
     id: 'code_quality_audit',
     title: 'Code Quality Audit',
-    order: 8,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_PERFORMANCE_OPTIMIZER,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -136,7 +139,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   trends_analysis: {
     id: 'trends_analysis',
     title: 'Trends Analysis',
-    order: 9,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_TESTING_STRATEGIST,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -145,7 +148,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   dependencies_analysis: {
     id: 'dependencies_analysis',
     title: 'Dependencies Analysis',
-    order: 10,
+    order: STAGE_ORDER_CONSTANTS.STAGE_AGENT_TECHNICAL_WRITER,
     uiStage: 'analyzing',
     optional: true,
     category: 'agent',
@@ -156,7 +159,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   aggregation: {
     id: 'aggregation',
     title: 'Aggregating Results',
-    order: 11,
+    order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_AGGREGATION,
     uiStage: 'generating',
     category: 'quality',
     agentTypes: ['aggregation'],
@@ -164,7 +167,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   quality_validation: {
     id: 'quality_validation',
     title: 'Quality Validation',
-    order: 12,
+    order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_VALIDATION,
     uiStage: 'generating',
     category: 'quality',
     agentTypes: ['quality_validation'],
@@ -172,7 +175,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   artifact_generation: {
     id: 'artifact_generation',
     title: 'Generating Report',
-    order: 13,
+    order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_GENERATION,
     uiStage: 'generating',
     category: 'quality',
     agentTypes: ['artifact_generation'],
@@ -182,7 +185,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   chunking: {
     id: 'chunking',
     title: 'Content Chunking',
-    order: 14,
+    order: STAGE_ORDER_CONSTANTS.STAGE_ARTIFACT_CHUNKING,
     uiStage: 'processing',
     optional: true,
     category: 'workflow',
@@ -191,14 +194,14 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   workflow: {
     id: 'workflow',
     title: 'Workflow',
-    order: 15,
+    order: STAGE_ORDER_CONSTANTS.STAGE_ARTIFACT_WORKFLOW,
     uiStage: 'processing',
     category: 'workflow',
   },
   pattern_comparison: {
     id: 'pattern_comparison',
     title: 'Pattern Comparison',
-    order: 16,
+    order: STAGE_ORDER_CONSTANTS.STAGE_ARTIFACT_PATTERN_COMPARISON,
     uiStage: 'analyzing',
     optional: true,
     category: 'workflow',
@@ -206,7 +209,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   metrics: {
     id: 'metrics',
     title: 'Metrics Collection',
-    order: 17,
+    order: STAGE_ORDER_CONSTANTS.STAGE_ARTIFACT_METRICS,
     uiStage: 'generating',
     optional: true,
     category: 'workflow',
@@ -361,7 +364,11 @@ export function normalizeStageNameFromBackend(backendName: string): StageName | 
   }
 
   // Unknown stage - log warning
-  console.warn(`[Stage Registry] Unknown backend stage/agent name: ${backendName}`)
+  logger.warn('Unknown backend stage/agent name received', {
+    backendName,
+    availableStages: Object.keys(STAGE_CONFIG),
+    availableAgents: Object.keys(AGENT_TO_STAGE_MAP),
+  })
   return null
 }
 

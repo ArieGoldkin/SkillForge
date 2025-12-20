@@ -13,6 +13,8 @@ import type {
   LibrarySearchParams,
 } from '@app-types/api'
 
+import { logger } from '@/lib/logger'
+
 // API base URL - uses Vite env variable or defaults to localhost:8500
 // Note: Use relative path '' for Vite proxy, or full URL for direct backend access
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8500'
@@ -82,7 +84,11 @@ export const analyzeAPI = {
     try {
       return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
     } catch (error) {
-      console.warn(`getArtifactByAnalysis not available for ${analysisId}:`, error)
+      logger.warn('getArtifactByAnalysis not available', {
+        analysisId,
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: `/api/v1/analyze/${analysisId}/artifact`,
+      })
       return null
     }
   },
@@ -95,7 +101,11 @@ export const analyzeAPI = {
     try {
       return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
     } catch (error) {
-      console.warn(`getArtifact not available for ${analysisId}:`, error)
+      logger.warn('getArtifact not available', {
+        analysisId,
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: `/api/v1/analyze/${analysisId}/artifact`,
+      })
       return null
     }
   },
@@ -109,7 +119,11 @@ export const analyzeAPI = {
     try {
       return await apiFetch<ArtifactMetadataResponse>(`/api/v1/artifacts/${artifactId}`)
     } catch (error) {
-      console.warn(`getArtifactById failed for ${artifactId}:`, error)
+      logger.warn('getArtifactById failed', {
+        artifactId,
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: `/api/v1/artifacts/${artifactId}`,
+      })
       return null
     }
   },
@@ -130,7 +144,11 @@ export const analyzeAPI = {
 
       return await response.text()
     } catch (error) {
-      console.warn(`downloadArtifact failed for ${artifactId}:`, error)
+      logger.warn('downloadArtifact failed', {
+        artifactId,
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: `/api/v1/artifacts/${artifactId}/download`,
+      })
       return null
     }
   },
@@ -144,7 +162,10 @@ export const analyzeAPI = {
     try {
       return await apiFetch<Analysis[]>('/api/v1/analyze')
     } catch (error) {
-      console.warn('listAnalyses not available:', error)
+      logger.warn('listAnalyses not available', {
+        error: error instanceof Error ? error.message : String(error),
+        endpoint: '/api/v1/analyze',
+      })
       return []
     }
   },

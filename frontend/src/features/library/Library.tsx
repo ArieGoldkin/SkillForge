@@ -3,6 +3,8 @@ import { useCallback, useMemo, useState } from 'react'
 import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
 import { ContentGrid } from './components/ContentGrid'
@@ -26,7 +28,7 @@ export default function Library() {
     difficulty: [],
     tags: [],
     status: [],
-    durationRange: [0, 1000],
+    durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
   })
   const limit = 15
 

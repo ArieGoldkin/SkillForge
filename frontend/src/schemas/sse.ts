@@ -9,6 +9,9 @@
 
 import { z } from 'zod'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
+
 import {
   StageNameSchema,
   StageStatusSchema,
@@ -155,9 +158,11 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
   const result = SSEEventSchema.safeParse(data)
 
   if (!result.success) {
-    console.error('[SSE Validation] Invalid event structure:', {
-      error: result.error.format(),
-      receivedData: data,
+    logger.error('SSE event validation failed', {
+      validationErrors: result.error.format(),
+      receivedData:
+        typeof data === 'string' ? data.substring(0, COMPONENT_CONSTANTS.SIZE_LIMIT_500) : data,
+      dataType: typeof data,
     })
     return null
   }

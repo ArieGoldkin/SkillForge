@@ -4,6 +4,8 @@
 /* eslint-disable max-lines -- File contains multiple helper functions for stage descriptions with rich detail extraction */
 import type { StageName, StageStatus } from '@app-types/sse'
 
+import { VALIDATION_CONSTANTS } from '@/lib/constants'
+
 import type { AnalysisStepStatus } from '../components/steps/AnalysisStepList'
 
 import { STAGE_CONFIG } from './stageConfig'
@@ -94,7 +96,9 @@ export function getStageDescription(
     // Show error message from details if available
     if (details?.error && typeof details.error === 'string') {
       const errorMsg =
-        details.error.length > 100 ? `${details.error.substring(0, 100)}...` : details.error
+        details.error.length > VALIDATION_CONSTANTS.ERROR_MESSAGE_TRUNCATE_LENGTH
+          ? `${details.error.substring(0, VALIDATION_CONSTANTS.ERROR_MESSAGE_TRUNCATE_LENGTH)}...`
+          : details.error
       return `Failed: ${errorMsg}`
     }
     if (details?.error_code && typeof details.error_code === 'string') {
@@ -221,7 +225,9 @@ export function getActionDescription(
       // Show error message from details if available
       if (details?.error && typeof details.error === 'string') {
         const errorMsg =
-          details.error.length > 80 ? `${details.error.substring(0, 80)}...` : details.error
+          details.error.length > VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH
+            ? `${details.error.substring(0, VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH)}...`
+            : details.error
         return `Failed: ${errorMsg}`
       }
       if (details?.error_code && typeof details.error_code === 'string') {

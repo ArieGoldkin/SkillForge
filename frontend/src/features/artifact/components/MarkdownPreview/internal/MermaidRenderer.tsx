@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react'
 
 import mermaid from 'mermaid'
 
+import { COMPONENT_CONSTANTS, VALIDATION_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
+
 import { cn } from '@lib/utils'
 
 interface MermaidRendererProps {
@@ -27,12 +30,12 @@ const initializeMermaid = () => {
     // Flowchart configuration for proper text rendering (Issue #299-304)
     flowchart: {
       htmlLabels: true, // Enable HTML labels for better text handling
-      nodeSpacing: 80, // Increased space between nodes
-      rankSpacing: 80, // Increased space between ranks
+      nodeSpacing: COMPONENT_CONSTANTS.DIAGRAM_NODE_SPACING, // Increased space between nodes
+      rankSpacing: COMPONENT_CONSTANTS.DIAGRAM_RANK_SPACING, // Increased space between ranks
       curve: 'basis', // Smooth curves
       padding: 25, // Increased padding inside nodes to prevent text truncation
       useMaxWidth: false, // Don't constrain to container width
-      wrappingWidth: 300, // Wider wrapping to prevent truncation in diamonds
+      wrappingWidth: COMPONENT_CONSTANTS.DIAGRAM_WRAPPING_WIDTH, // Wider wrapping to prevent truncation in diamonds
       defaultRenderer: 'dagre-wrapper', // Use dagre-wrapper for better text handling
     },
     // Ensure proper wrapping for long text
@@ -88,7 +91,14 @@ const renderMermaidDiagram = async (element: HTMLDivElement, code: string) => {
       bindFunctions?.(element)
     }
   } catch (error) {
-    console.error('Mermaid rendering error:', error)
+    logger.error('Mermaid diagram rendering failed', {
+      codeLength: code.length,
+      codePreview:
+        code.substring(0, VALIDATION_CONSTANTS.CODE_PREVIEW_LENGTH) +
+        (code.length > VALIDATION_CONSTANTS.CODE_PREVIEW_LENGTH ? '...' : ''),
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
     if (element) {
       // Escape code to prevent XSS
       const escapedCode = code

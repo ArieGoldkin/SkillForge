@@ -136,6 +136,12 @@ ignore = [
 "app/workflows/tasks/schemas/*.py" = [
     "PLR2004",  # Magic values - field validators use numeric constraints (3-7 items, etc.)
 ]
+# Result<T, E> type system - UP047 type parameter syntax would complicate the API unnecessarily
+"app/shared/types/result_types.py" = [
+    "UP047",  # Generic function should use type parameters - conflicts with clean API design
+    "D102",   # Missing method docstring - type utilities prioritize clean API over verbose docs
+    "D105",   # Missing magic method docstring - __repr__ is self-documenting
+]
 # Evaluation framework - experimental benchmarking code with complex logic
 "app/evaluation/**/*.py" = [
     "PLR0912",  # Too many branches - evaluator logic requires multiple checks

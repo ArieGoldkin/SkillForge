@@ -1,5 +1,7 @@
 import { AlertCircle, FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
+import { UI_CONSTANTS } from '@/lib/constants'
+
 import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
@@ -35,14 +37,16 @@ export function HeroSection({
   error,
 }: HeroSectionProps) {
   return (
-    <section className="py-20 px-8">
+    <section className={`${UI_CONSTANTS.PADDING_Y_LG} ${UI_CONSTANTS.PADDING_X_MD}`}>
       <div className="max-w-4xl mx-auto text-center">
         <h1 className="text-5xl md:text-6xl font-bold mb-6">
           Intelligent Learning
           <br />
           Integration Platform
         </h1>
-        <p className="text-xl text-muted-foreground mb-12">
+        <p
+          className={`${UI_CONSTANTS.FONT_SIZE_XL} ${UI_CONSTANTS.TEXT_COLOR_MUTED} ${UI_CONSTANTS.MARGIN_BOTTOM_MD}`}
+        >
           Analyze technical content and generate AI-ready implementation guides with expert tutoring
         </p>
 
@@ -96,7 +100,7 @@ function ContentAnalysisForm({
           placeholder="Enter URL, video link, or repository..."
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="pl-12 h-14 text-base"
+          className={`pl-12 ${UI_CONSTANTS.HEIGHT_XL} ${UI_CONSTANTS.FONT_SIZE_BASE}`}
           required
         />
       </div>
@@ -178,7 +182,7 @@ function ContentTypeBadge({ icon: Icon, label, selected, onClick }: ContentTypeB
     <Badge
       variant={selected ? 'default' : 'outline'}
       className={cn(
-        'cursor-pointer transition-all hover:scale-105 px-4 py-2 gap-2',
+        `cursor-pointer ${UI_CONSTANTS.BUTTON_TRANSITION} ${UI_CONSTANTS.BUTTON_HOVER} ${UI_CONSTANTS.BUTTON_PADDING} ${UI_CONSTANTS.BUTTON_GAP}`,
         selected && 'ring-2 ring-ring ring-offset-2'
       )}
       onClick={onClick}
