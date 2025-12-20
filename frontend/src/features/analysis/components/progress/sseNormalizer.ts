@@ -17,6 +17,8 @@ import type {
   SSEErrorEvent,
 } from '@app-types/sse'
 
+import { logger } from '@/lib/logger'
+
 import {
   VALID_STAGES,
   normalizeStageNameFromBackend,
@@ -66,7 +68,11 @@ function normalizeStatus(status: string): StageStatus {
   }
 
   // Unknown status - default to 'running' with warning
-  console.warn(`[SSE Normalizer] Unknown status: ${status}, defaulting to 'running'`)
+  logger.warn('Unknown status received from backend, defaulting to running', {
+    status,
+    validStatuses: VALID_STATUSES,
+    eventType: 'status_normalization',
+  })
   return 'running'
 }
 
@@ -134,7 +140,12 @@ function normalizeCompleteEvent(event: Record<string, unknown>): SSECompleteEven
   // artifact_id is required for complete events
   const artifactId = details.artifact_id || event.artifact_id
   if (!artifactId) {
-    console.warn('[SSE Normalizer] Complete event missing artifact_id')
+    logger.warn('Complete event missing required artifact_id', {
+      analysisId: event.analysis_id,
+      eventType: 'complete',
+      availableFields: Object.keys(event),
+      detailsFields: Object.keys(details),
+    })
   }
 
   return {
@@ -185,7 +196,11 @@ function normalizeErrorEvent(event: Record<string, unknown>): SSEErrorEvent | nu
 export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
   // Handle null/undefined
   if (!rawEvent || typeof rawEvent !== 'object') {
-    console.warn('[SSE Normalizer] Invalid event:', rawEvent)
+    logger.warn('Received invalid SSE event structure', {
+      eventType: typeof rawEvent,
+      eventValue: rawEvent,
+      expectedType: 'object',
+    })
     return null
   }
 
@@ -193,7 +208,12 @@ export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
 
   // Check for required fields
   if (!event.type || !event.analysis_id) {
-    console.warn('[SSE Normalizer] Event missing required fields:', event)
+    logger.warn('SSE event missing required fields', {
+      hasType: !!event.type,
+      hasAnalysisId: !!event.analysis_id,
+      availableFields: Object.keys(event),
+      eventData: event,
+    })
     return null
   }
 
@@ -207,7 +227,12 @@ export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
     case 'error':
       return normalizeErrorEvent(event)
     default:
-      console.warn(`[SSE Normalizer] Unknown event type: ${eventType}`)
+      logger.warn('Received unknown SSE event type', {
+        eventType,
+        validTypes: ['progress', 'complete', 'error'],
+        analysisId: event.analysis_id,
+        eventData: event,
+      })
       return null
   }
 }
