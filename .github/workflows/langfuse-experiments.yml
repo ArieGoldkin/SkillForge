@@ -283,13 +283,14 @@ jobs:
 
       - name: Upload experiment results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: langfuse-experiment-results-${{ github.run_number }}
           path: |
             backend/experiment_results.json
             backend/experiment_report.md
             backend/experiment_output.log
+          compression-level: 9
           retention-days: 30
           if-no-files-found: warn
 

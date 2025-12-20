@@ -241,20 +241,23 @@ jobs:
         run: npx playwright test --project=chromium
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-lightweight
           path: frontend/playwright-report/
+          compression-level: 9
           retention-days: 14
 
       - name: Upload test results on failure
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-results-lightweight
           path: frontend/test-results/
+          compression-level: 9
           retention-days: 7
+          if-no-files-found: warn
 
       - name: Collect Docker logs on failure
         if: failure()
@@ -439,20 +442,23 @@ jobs:
           npx playwright test --project=chromium
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-with-llm
           path: frontend/playwright-report/
+          compression-level: 9
           retention-days: 14
 
       - name: Upload test results on failure
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-results-with-llm
           path: frontend/test-results/
+          compression-level: 9
           retention-days: 7
+          if-no-files-found: warn
 
       - name: Collect Docker logs on failure
         if: failure()
@@ -513,11 +519,12 @@ jobs:
           docker compose -f docker-compose.e2e.yml up --build --exit-code-from e2e
 
       - name: Upload Docker test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-docker
           path: frontend/playwright-report/
+          compression-level: 9
           retention-days: 14
 
       - name: Cleanup

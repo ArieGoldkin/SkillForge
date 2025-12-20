@@ -220,14 +220,16 @@ jobs:
 
       - name: Upload evaluation results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: evaluation-results
           path: |
             backend/evaluation_results.json
             backend/evaluation_report.md
             backend/evaluation_results_regression.md
+          compression-level: 9
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Check evaluation status
         if: always()

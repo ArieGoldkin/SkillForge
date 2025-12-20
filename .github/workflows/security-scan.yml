@@ -72,11 +72,12 @@ jobs:
           pip-audit --requirement requirements.txt --desc --format=json --output=backend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: backend-security-report
           path: backend/backend-security-report.json
+          compression-level: 9
           retention-days: 30
 
       - name: Check for critical/high vulnerabilities
@@ -121,11 +122,12 @@ jobs:
           npm audit --json > frontend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: frontend-security-report
           path: frontend/frontend-security-report.json
+          compression-level: 9
           retention-days: 30
 
       - name: Check for critical/high vulnerabilities
@@ -193,9 +195,11 @@ jobs:
     if: always()
     steps:
       - name: Download security reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
+          pattern: "*-security-report"
           path: security-reports
+          merge-multiple: true
 
       - name: Generate security summary
         run: |
@@ -217,8 +221,9 @@ jobs:
           fi
 
       - name: Upload security summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: security-summary
           path: security-summary.md
+          compression-level: 9
           retention-days: 30
