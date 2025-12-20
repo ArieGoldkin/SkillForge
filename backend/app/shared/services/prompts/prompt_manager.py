@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.core.config import get_settings
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.shared.services.cache.redis_connection import create_redis_client
 
@@ -931,12 +931,13 @@ class PromptManager:
 
     @property
     def langfuse_client(self):
-        """Lazy-load Langfuse client."""
+        """Lazy-load Langfuse SDK client via service."""
         if not self.enable_langfuse:
             return None
 
         if self._langfuse_client is None:
-            self._langfuse_client = get_langfuse_client()
+            service = get_langfuse_service()
+            self._langfuse_client = service.sdk_client if service else None
 
         return self._langfuse_client
 

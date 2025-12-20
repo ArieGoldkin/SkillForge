@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 pytestmark = [
     pytest.mark.smoke,
     pytest.mark.retrieval,
-    # FIXME(#299): Skip retrieval smoke tests until queries.json is updated for real golden dataset
+    # TODO(#299): Skip retrieval smoke tests until queries.json is updated for real golden dataset
     pytest.mark.skipif(
         os.getenv("CI") == "true",
         reason="Smoke tests use synthetic fixtures; golden dataset now has real production data (issue #299)",
@@ -51,7 +51,7 @@ pytestmark = [
 def fixture_loader() -> FixtureLoader:
     """Provide fixture loader for test data.
 
-    FIXME(#299): These fixtures were designed for synthetic test data.
+    TODO(#299): These fixtures were designed for synthetic test data.
     After removing fake artifacts from golden dataset, we need to either:
     1. Regenerate queries.json to match real golden dataset content (RAG, LangGraph, etc.)
     2. Create separate synthetic test database for these smoke tests

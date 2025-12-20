@@ -43,7 +43,7 @@ from typing import Any
 # Add app to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.langfuse_config import get_langfuse_client
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.evaluation.datasets import load_dataset, load_dataset_with_metadata
 
@@ -293,14 +293,16 @@ def upload_dataset(  # noqa: PLR0912 - Script function with necessary complexity
             )
         return True
 
-    # Get Langfuse client
-    client = get_langfuse_client()
-    if not client:
+    # Get Langfuse service
+    service = get_langfuse_service()
+    if not service or not service.sdk_client:
         logger.error(
             "langfuse_client_unavailable",
             message="Failed to get Langfuse client",
         )
         return False
+
+    client = service.sdk_client
 
     # Check if dataset exists and fetch existing item hashes for deduplication
     dataset_exists = False

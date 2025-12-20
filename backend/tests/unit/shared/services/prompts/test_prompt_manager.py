@@ -4,7 +4,7 @@ Tests multi-level caching, fallback behavior, and version tracking.
 """
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -247,7 +247,7 @@ class TestPromptManager:
     async def test_langfuse_disabled(self):
         """Test manager works with Langfuse disabled."""
         with patch(
-            "app.shared.services.prompts.prompt_manager.get_langfuse_client",
+            "app.shared.services.prompts.prompt_manager.get_langfuse_service",
             return_value=None,
         ):
             manager = PromptManager(
@@ -266,9 +266,12 @@ class TestPromptManager:
     @pytest.mark.asyncio
     async def test_redis_disabled(self, mock_langfuse):
         """Test manager works with Redis disabled."""
+        # Create a mock service that returns the mock_langfuse client
+        mock_service = MagicMock()
+        mock_service.sdk_client = mock_langfuse
         with patch(
-            "app.shared.services.prompts.prompt_manager.get_langfuse_client",
-            return_value=mock_langfuse,
+            "app.shared.services.prompts.prompt_manager.get_langfuse_service",
+            return_value=mock_service,
         ):
             manager = PromptManager(
                 enable_langfuse=True,

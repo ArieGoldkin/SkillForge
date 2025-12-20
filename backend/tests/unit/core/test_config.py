@@ -274,3 +274,67 @@ def test_settings_production_accepts_secure_config(monkeypatch):
     assert settings.LOG_LEVEL == "INFO"
     assert settings.CORS_ORIGINS == ["https://app.example.com"]
     get_settings.cache_clear()
+
+
+def test_langfuse_enabled_requires_credentials(monkeypatch):
+    """Test LANGFUSE_ENABLED=true requires both public and secret keys (Issue #432)."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    get_settings.cache_clear()
+
+    # Test missing both keys
+    with pytest.raises(ValueError, match="Langfuse is enabled but credentials are missing"):
+        Settings(
+            LANGFUSE_ENABLED=True,
+            LANGFUSE_PUBLIC_KEY=None,
+            LANGFUSE_SECRET_KEY=None,
+        )
+
+    # Test missing public key
+    with pytest.raises(ValueError, match="Langfuse is enabled but credentials are missing"):
+        Settings(
+            LANGFUSE_ENABLED=True,
+            LANGFUSE_PUBLIC_KEY=None,
+            LANGFUSE_SECRET_KEY="sk-test-secret",
+        )
+
+    # Test missing secret key
+    with pytest.raises(ValueError, match="Langfuse is enabled but credentials are missing"):
+        Settings(
+            LANGFUSE_ENABLED=True,
+            LANGFUSE_PUBLIC_KEY="pk-test-public",
+            LANGFUSE_SECRET_KEY=None,
+        )
+
+    get_settings.cache_clear()
+
+
+def test_langfuse_enabled_with_valid_credentials(monkeypatch):
+    """Test LANGFUSE_ENABLED=true accepts valid credentials (Issue #432)."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    get_settings.cache_clear()
+
+    settings = Settings(
+        LANGFUSE_ENABLED=True,
+        LANGFUSE_PUBLIC_KEY="pk-test-public",
+        LANGFUSE_SECRET_KEY="sk-test-secret",
+    )
+    assert settings.LANGFUSE_ENABLED is True
+    assert settings.LANGFUSE_PUBLIC_KEY == "pk-test-public"
+    assert settings.LANGFUSE_SECRET_KEY == "sk-test-secret"
+    get_settings.cache_clear()
+
+
+def test_langfuse_disabled_allows_missing_credentials(monkeypatch):
+    """Test LANGFUSE_ENABLED=false allows missing credentials (Issue #432)."""
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    get_settings.cache_clear()
+
+    settings = Settings(
+        LANGFUSE_ENABLED=False,
+        LANGFUSE_PUBLIC_KEY=None,
+        LANGFUSE_SECRET_KEY=None,
+    )
+    assert settings.LANGFUSE_ENABLED is False
+    assert settings.LANGFUSE_PUBLIC_KEY is None
+    assert settings.LANGFUSE_SECRET_KEY is None
+    get_settings.cache_clear()
