@@ -29,7 +29,8 @@ Usage:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable, TypeVar, overload
+from collections.abc import Callable
+from typing import TypeVar
 
 # Type variables for Result<T, E>
 T = TypeVar("T")
