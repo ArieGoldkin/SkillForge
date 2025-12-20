@@ -29,7 +29,7 @@ Usage:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, overload
+from typing import Callable, TypeVar, overload
 
 # Type variables for Result<T, E>
 T = TypeVar("T")
@@ -75,27 +75,27 @@ class Result[T, E](ABC):
         ...
 
     @abstractmethod
-    def unwrap_or_else(self, op: callable[[E], T]) -> T:
+    def unwrap_or_else(self, op: Callable[[E], T]) -> T:
         """Return Ok value or compute default from Err."""
         ...
 
     @abstractmethod
-    def map(self, op: callable[[T], U]) -> Result[U, E]:
+    def map(self, op: Callable[[T], U]) -> Result[U, E]:
         """Apply function to contained Ok value."""
         ...
 
     @abstractmethod
-    def map_err(self, op: callable[[E], U]) -> Result[T, U]:
+    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         """Apply function to contained Err value."""
         ...
 
     @abstractmethod
-    def and_then(self, op: callable[[T], Result[U, E]]) -> Result[U, E]:
+    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         """Chain operations that return Results."""
         ...
 
     @abstractmethod
-    def or_else(self, op: callable[[E], Result[T, U]]) -> Result[T, U]:
+    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:
         """Chain error recovery operations."""
         ...
 
@@ -117,28 +117,28 @@ class Ok(Result[T, E]):
         return False
 
     def unwrap(self) -> T:
-        return self._value
+        return self._value  # type: ignore[return-value]
 
     def unwrap_err(self) -> E:
         msg = "Called unwrap_err on Ok value"
         raise UnwrapError(msg)
 
     def unwrap_or(self, default: T) -> T:
-        return self._value
+        return self._value  # type: ignore[return-value]
 
-    def unwrap_or_else(self, op: callable[[E], T]) -> T:
-        return self._value
+    def unwrap_or_else(self, op: Callable[[E], T]) -> T:
+        return self._value  # type: ignore[return-value]
 
-    def map(self, op: callable[[T], U]) -> Result[U, E]:
-        return Ok(op(self._value))
+    def map(self, op: Callable[[T], U]) -> Result[U, E]:
+        return Ok(op(self._value))  # type: ignore[arg-type]
 
-    def map_err(self, op: callable[[E], U]) -> Result[T, U]:
+    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         return Ok(self._value)  # type: ignore
 
-    def and_then(self, op: callable[[T], Result[U, E]]) -> Result[U, E]:
-        return op(self._value)
+    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
+        return op(self._value)  # type: ignore[arg-type]
 
-    def or_else(self, op: callable[[E], Result[T, U]]) -> Result[T, U]:
+    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:
         return Ok(self._value)  # type: ignore
 
 
@@ -160,25 +160,25 @@ class Err(Result[T, E]):
         raise UnwrapError(msg)
 
     def unwrap_err(self) -> E:
-        return self._value
+        return self._value  # type: ignore[return-value]
 
     def unwrap_or(self, default: T) -> T:
         return default
 
-    def unwrap_or_else(self, op: callable[[E], T]) -> T:
-        return op(self._value)
+    def unwrap_or_else(self, op: Callable[[E], T]) -> T:
+        return op(self._value)  # type: ignore[arg-type]
 
-    def map(self, op: callable[[T], U]) -> Result[U, E]:
+    def map(self, op: Callable[[T], U]) -> Result[U, E]:
         return Err(self._value)  # type: ignore
 
-    def map_err(self, op: callable[[E], U]) -> Result[T, U]:
+    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         return Err(op(self._value))  # type: ignore
 
-    def and_then(self, op: callable[[T], Result[U, E]]) -> Result[U, E]:
+    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         return Err(self._value)  # type: ignore
 
-    def or_else(self, op: callable[[E], Result[T, U]]) -> Result[T, U]:
-        return op(self._value)
+    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:
+        return op(self._value)  # type: ignore[arg-type]
 
 
 class UnwrapError(Exception):
@@ -199,14 +199,6 @@ def err(error: E) -> Result[T, E]:  # type: ignore
 
 
 # Utility functions for working with Results
-@overload
-def is_ok(result: Result[T, E]) -> bool: ...
-
-
-@overload
-def is_err(result: Result[T, E]) -> bool: ...
-
-
 def is_ok(result: Result[T, E]) -> bool:
     """Check if a Result is Ok."""
     return result.is_ok()
