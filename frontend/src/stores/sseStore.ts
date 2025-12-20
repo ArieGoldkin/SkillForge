@@ -9,7 +9,14 @@ import {
   getAnalysisPhase,
   shouldShowProgress,
 } from './computed/loadingStates'
-import { closeConnection, createConnection, MAX_EVENTS, type ListenerRefs } from './sseStoreHelpers'
+import {
+  closeConnection,
+  createConnection,
+  MAX_EVENTS,
+  type ListenerRefs,
+  cleanupOldEvents,
+  getEventMemoryStats,
+} from './sseStoreHelpers'
 
 // Analysis Metadata Types (Issue #396 - Eliminate Prop Drilling)
 
@@ -223,14 +230,38 @@ const baseStore = create<SSEStore>((set, get) => ({
    */
   _addEvent: (event: SSEEvent) => {
     set((state) => {
-      const newEvents = [...state.events, event]
-      // Memory safety: cap events array size
-      const cappedEvents = newEvents.length > MAX_EVENTS ? newEvents.slice(-MAX_EVENTS) : newEvents
+      let newEvents = [...state.events, event]
+
+      // Apply retention policies and cleanup old events
+      newEvents = cleanupOldEvents(newEvents)
+
+      // Emergency cleanup if still over limit
+      if (newEvents.length > MAX_EVENTS) {
+        // Keep most recent events, prioritizing critical ones
+        const criticalEvents = newEvents.filter((e) => e.type === 'error' || e.type === 'complete')
+        const otherEvents = newEvents.filter((e) => e.type !== 'error' && e.type !== 'complete')
+        newEvents = [...criticalEvents, ...otherEvents.slice(-(MAX_EVENTS - criticalEvents.length))]
+      }
+
+      // Get memory stats for monitoring
+      const memoryStats = getEventMemoryStats(newEvents)
+
+      // Log alerts if any
+      memoryStats.alerts.forEach((alert) => {
+        console.warn(`[SSE Memory] ${alert}`, {
+          totalEvents: memoryStats.total,
+          memoryUsage: `${(memoryStats.memoryUsage * 100).toFixed(1)}%`,
+          byType: memoryStats.byType,
+        })
+      })
+
       return {
-        events: cappedEvents,
+        events: newEvents,
         latestEvent: event,
         // Track activity for timeout logic (Issue #399)
         lastActivityTime: Date.now(),
+        // Store memory stats for debugging/monitoring
+        _memoryStats: memoryStats,
       }
     })
   },

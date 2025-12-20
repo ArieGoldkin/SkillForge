@@ -5,6 +5,8 @@
  * Follows 2025 testing best practices for environment-aware testing.
  */
 
+import { TIME_CONSTANTS, CONTENT_CONSTANTS } from '@/lib/constants'
+
 export interface TestEnvironmentConfig {
   // Execution Modes
   isCI: boolean
@@ -46,8 +48,10 @@ export const TestEnvironment: TestEnvironmentConfig = {
   hasBrowser: typeof window !== 'undefined' || process.env.VITEST_BROWSER === 'true',
 
   // Performance thresholds (CI vs local)
-  slowTestThreshold: process.env.CI ? 5000 : 2000,
-  testTimeout: process.env.CI ? 10000 : 5000,
+  slowTestThreshold: process.env.CI
+    ? TIME_CONSTANTS.SLOW_TEST_THRESHOLD_CI
+    : TIME_CONSTANTS.SLOW_TEST_THRESHOLD_LOCAL,
+  testTimeout: process.env.CI ? TIME_CONSTANTS.TEST_TIMEOUT_CI : TIME_CONSTANTS.TEST_TIMEOUT_LOCAL,
 
   // Feature flags
   enablePerformanceMonitoring: process.env.PERFORMANCE_MONITORING !== 'false',
@@ -136,7 +140,7 @@ export const PerformanceMonitor = {
   checkRegression: (testName: string, duration: number, baseline?: number) => {
     if (!baseline) return
 
-    const regressionThreshold = 1.2 // 20% regression
+    const regressionThreshold = TIME_CONSTANTS.PERFORMANCE_REGRESSION_THRESHOLD
     if (duration > baseline * regressionThreshold) {
       console.warn(
         `🐌 Performance regression in ${testName}: ${duration}ms vs ${baseline}ms baseline`
@@ -165,7 +169,9 @@ export const createTestData = {
    * Create user data based on environment
    */
   user: () => ({
-    id: TestEnvironment.isE2EReady ? 'real-user-123' : 'mock-user-123',
+    id: TestEnvironment.isE2EReady
+      ? CONTENT_CONSTANTS.SAMPLE_USER_ID_REAL
+      : CONTENT_CONSTANTS.SAMPLE_USER_ID_MOCK,
     email: TestEnvironment.isE2EReady ? process.env.TEST_USER_EMAIL : 'test@example.com',
     name: 'Test User',
     token: TestEnvironment.isE2EReady ? process.env.TEST_API_TOKEN : 'mock-token',
@@ -175,11 +181,11 @@ export const createTestData = {
    * Create analysis data
    */
   analysis: () => ({
-    id: 'test-analysis-id',
+    id: CONTENT_CONSTANTS.SAMPLE_ANALYSIS_ID,
     url: 'https://example.com',
     title: 'Test Analysis',
     status: 'completed',
-    wordCount: 1200,
+    wordCount: CONTENT_CONSTANTS.SAMPLE_WORD_COUNT,
   }),
 
   /**

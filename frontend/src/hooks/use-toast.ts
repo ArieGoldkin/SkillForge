@@ -4,6 +4,8 @@
  * TODO: Replace with proper toast UI component (e.g., Sonner, React Hot Toast)
  */
 
+import { logger } from '@/lib/logger'
+
 export type ToastVariant = 'default' | 'destructive' | 'success'
 
 export interface ToastOptions {
@@ -21,12 +23,7 @@ export function useToast() {
     const message = [title, description].filter(Boolean).join(': ')
 
     // Log to console for development (will be replaced with proper toast library)
-    if (variant === 'destructive') {
-      console.error(`[Toast ${variant}]`, message)
-    } else {
-      // eslint-disable-next-line no-console
-      console.log(`[Toast ${variant}]`, message)
-    }
+    logger.info(`Toast notification`, { variant, message, title, description, service: 'toast' })
 
     // For production, you'd integrate a proper toast library here
   }

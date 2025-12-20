@@ -10,14 +10,16 @@ import './design-system/prism-custom.css'
 import './index.css'
 import { router } from './router'
 import { initWebVitals } from './services/performance/webVitals.service'
+import { logger } from './lib/logger'
+import { TIME_CONSTANTS, RETRY_CONSTANTS } from './lib/constants'
 
 // Performance monitoring initialization
 if (import.meta.env.DEV) {
   // React Scan for development-time visual performance monitoring
-  console.log('🔍 Initializing React Scan performance monitoring...')
+  logger.debug('Initializing React Scan performance monitoring', { service: 'react-scan' })
   import('react-scan')
     .then(({ scan }) => {
-      console.log('✅ React Scan loaded, starting scan...')
+      logger.debug('React Scan loaded, starting scan', { service: 'react-scan' })
       scan({
         enabled: true,
         log: true, // Enable console logging for render info
@@ -25,10 +27,10 @@ if (import.meta.env.DEV) {
         trackUnnecessaryRenders: false, // Enable unnecessary render tracking (can be performance intensive)
         animationSpeed: 'fast', // Animation speed for highlights
       })
-      console.log('🚀 React Scan initialized successfully!')
+      logger.info('React Scan initialized successfully', { service: 'react-scan' })
     })
     .catch((error) => {
-      console.error('❌ React Scan failed to initialize:', error)
+      logger.error('React Scan failed to initialize', { error, service: 'react-scan' })
     })
 }
 
@@ -39,8 +41,8 @@ initWebVitals()
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
-      retry: 1,
+      staleTime: TIME_CONSTANTS.QUERY_STALE_TIME,
+      retry: RETRY_CONSTANTS.QUERY_RETRY_COUNT,
     },
   },
 })

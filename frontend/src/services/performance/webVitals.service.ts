@@ -13,6 +13,7 @@
  */
 
 import { onCLS, onINP, onLCP, onFCP, onTTFB, type Metric } from 'web-vitals'
+import { logger, logWebVitals } from '@/lib/logger'
 
 // Google Analytics gtag types
 declare global {
@@ -145,7 +146,10 @@ function queueMetric(metric: Metric): void {
 function flushMetricsQueue(): void {
   if (metricsQueue.length === 0) return
 
-  console.log(`📊 Sending ${metricsQueue.length} Web Vitals metrics to analytics`)
+  logger.info(`Sending ${metricsQueue.length} Web Vitals metrics to analytics`, {
+    metricCount: metricsQueue.length,
+    service: 'webVitals',
+  })
 
   metricsQueue.forEach((metric) => {
     sendToGoogleAnalytics(metric)
@@ -162,41 +166,42 @@ function flushMetricsQueue(): void {
 export function initWebVitals(): void {
   // Only track in production or when explicitly enabled
   if (import.meta.env.DEV && !import.meta.env.VITE_ENABLE_WEB_VITALS_DEV) {
-    console.log(
-      'ℹ️ Web Vitals: Skipping in development (set VITE_ENABLE_WEB_VITALS_DEV=true to enable)'
-    )
+    logger.debug('Web Vitals: Skipping in development', {
+      reason: 'VITE_ENABLE_WEB_VITALS_DEV not set',
+      service: 'webVitals',
+    })
     return
   }
 
-  console.log('📊 Initializing Web Vitals tracking...')
+  logger.info('Initializing Web Vitals tracking', { service: 'webVitals' })
 
   // Track all Core Web Vitals metrics
   onCLS((metric) => {
     const attribution = (metric as unknown as { attribution?: unknown }).attribution
-    console.log(`📏 CLS: ${metric.value.toFixed(3)} (${metric.rating})`, attribution)
+    logWebVitals('CLS', metric.value, metric.rating, { attribution, service: 'webVitals' })
     queueMetric(metric)
   })
 
   onINP((metric) => {
     const attribution = (metric as unknown as { attribution?: unknown }).attribution
-    console.log(`⚡ INP: ${metric.value}ms (${metric.rating})`, attribution)
+    logWebVitals('INP', metric.value, metric.rating, { attribution, service: 'webVitals' })
     queueMetric(metric)
   })
 
   onLCP((metric) => {
     const attribution = (metric as unknown as { attribution?: unknown }).attribution
-    console.log(`🎨 LCP: ${metric.value}ms (${metric.rating})`, attribution)
+    logWebVitals('LCP', metric.value, metric.rating, { attribution, service: 'webVitals' })
     queueMetric(metric)
   })
 
   onFCP((metric) => {
     const attribution = (metric as unknown as { attribution?: unknown }).attribution
-    console.log(`🖌️ FCP: ${metric.value}ms (${metric.rating})`, attribution)
+    logWebVitals('FCP', metric.value, metric.rating, { attribution, service: 'webVitals' })
     queueMetric(metric)
   })
 
   onTTFB((metric) => {
-    console.log(`🌐 TTFB: ${metric.value}ms (${metric.rating})`)
+    logWebVitals('TTFB', metric.value, metric.rating, { service: 'webVitals' })
     queueMetric(metric)
   })
 
@@ -214,7 +219,7 @@ export function initWebVitals(): void {
   window.addEventListener('pagehide', flushMetricsQueue)
   window.addEventListener('beforeunload', flushMetricsQueue)
 
-  console.log('✅ Web Vitals tracking initialized')
+  logger.info('Web Vitals tracking initialized', { service: 'webVitals' })
 }
 
 /**
