@@ -280,7 +280,7 @@ class CircuitBreaker:
 
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            return await self.call(func, *args, **kwargs)
+            return await self.call(func, *args, **kwargs)  # type: ignore[return-value]
 
         return wrapper
 
