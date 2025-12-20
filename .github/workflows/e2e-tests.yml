@@ -238,7 +238,7 @@ jobs:
           API_BASE_URL: http://localhost:8500
           # Signal to tests that LLM is disabled
           E2E_LLM_DISABLED: "true"
-        run: npm run test:e2e -- --project=chromium
+        run: npx playwright test --project=chromium
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -436,7 +436,7 @@ jobs:
           LANGFUSE_PASSWORD: ci-test-password-2025
         run: |
           # Run full test suite including LLM and Langfuse integration tests
-          npm run test:e2e -- --project=chromium
+          npx playwright test --project=chromium
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

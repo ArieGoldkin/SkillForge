@@ -101,7 +101,7 @@ LLM calls were timing out even though they should succeed. Root causes found:
 
 ## Next Steps
 
-1. Monitor LangSmith traces to verify retry behavior
+1. Monitor Langfuse traces to verify retry behavior
 2. Verify that timeouts work correctly in production
 3. Adjust `LLM_MAX_RETRIES` if needed based on observed behavior
 4. Adjust `LLM_TIMEOUT` if API calls consistently exceed timeout

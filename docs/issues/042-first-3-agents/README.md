@@ -174,7 +174,7 @@ supervisor_route → execute_agents → [tech_comparator, integration_feasibilit
 
    - ToolStrategy ensures type-safe structured output
 
-   - Validation errors automatically traced by LangSmith
+   - Validation errors automatically traced by Langfuse
 
 
 2. **Parallel Execution with Session Isolation:**
@@ -237,7 +237,7 @@ supervisor_route → execute_agents → [tech_comparator, integration_feasibilit
    - Failed agents return error info in findings list
 
 
-7. **LangSmith Tracing:**
+7. **Langfuse Tracing:**
 
 
    - All agents traced with `@traceable` decorator
@@ -381,7 +381,7 @@ See detailed verification documents:
 
 1. **Foreign Key Constraint Violation** - Integration tests now create `Analysis` record before running workflow (required for `agent_findings` foreign key)
 
-2. **LangSmith Logging Errors** - Suppressed background thread logging to prevent VS Code Test Explorer from showing tests as failed
+2. **Langfuse Logging Errors** - Suppressed background thread logging to prevent VS Code Test Explorer from showing tests as failed
 
 3. **Timeout Issues** - Increased timeouts for checkpointer test (180s per run, 420s total) to account for rate limiting
 

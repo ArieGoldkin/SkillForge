@@ -14,7 +14,7 @@
 **Title:** [🔵 Backend] Improve Content Extraction Error Handling [2 pts]
 
 **Description:**  
-JinaReaderError occurs for some URLs but error context is minimal. Multiple extraction failures observed in LangSmith traces with insufficient debugging information.
+JinaReaderError occurs for some URLs but error context is minimal. Multiple extraction failures observed in Langfuse traces with insufficient debugging information.
 
 **Labels:** `🔵 backend`, `🐛 bug`, `extraction`, `jina`
 
@@ -30,7 +30,7 @@ JinaReaderError('Extraction failed')
 
 ### Observations
 
-- Multiple `extract_content` failures in LangSmith traces
+- Multiple `extract_content` failures in Langfuse traces
 - Some appear to be from tests (`test-analysis-id`)
 - Real extractions may also be failing
 - **Error messages lack context:** No HTTP status, response details, or request URLs
@@ -185,7 +185,7 @@ class JinaReaderRateLimitError(JinaReaderError):
 ## Related Issues
 
 - **Issue #4:** Content Extraction (Jina AI) (original implementation)
-- Discovered during system health analysis using LangSmith MCP
+- Discovered during system health analysis using Langfuse MCP
 
 ---
 
@@ -195,7 +195,7 @@ After implementation:
 
 1. **Unit Tests:** Run Jina Reader tests with various error scenarios
 2. **Integration Tests:** Test with real URLs that fail (404, timeout)
-3. **LangSmith:** Verify error traces contain detailed context
+3. **Langfuse:** Verify error traces contain detailed context
 4. **Manual Test:** Trigger extraction failure and verify error message is helpful
 
 ---

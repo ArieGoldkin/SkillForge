@@ -33,9 +33,9 @@
         }
       },
       "provenance": {
-        "source": "synthetic|langsmith|github|arxiv|production",
+        "source": "synthetic|langfuse|github|arxiv|production",
         "created_at": "...",
-        "langsmith_trace_id": "..."
+        "langfuse_trace_id": "..."
       },
       "validation": {
         "status": "draft|pending_review|validated|rejected",
@@ -70,23 +70,23 @@ python -m app.evaluation.schemas.validation \
   --output validation_report.md
 ```
 
-### 2. Extract from LangSmith
+### 2. Extract from Langfuse
 
 ```bash
-python -m app.evaluation.ingestion.langsmith_extractor \
+python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --agent-type security_auditor \
   --min-confidence 0.85 \
   --date-range 2025-12-01:2025-12-10 \
-  --output datasets/drafts/langsmith_security_20251210.json
+  --output datasets/drafts/langfuse_security_20251210.json
 ```
 
 ### 3. Review Examples (CLI)
 
 ```bash
 python -m app.evaluation.validation.reviewer_cli \
-  --dataset datasets/drafts/langsmith_security_20251210.json \
+  --dataset datasets/drafts/langfuse_security_20251210.json \
   --reviewer yonatangross
 ```
 
@@ -96,7 +96,7 @@ python -m app.evaluation.validation.reviewer_cli \
 python -m app.evaluation.versioning.tagger \
   --datasets datasets/v2/agent/*.json \
   --version-type minor \
-  --changelog "Added 15 LangSmith examples"
+  --changelog "Added 15 Langfuse examples"
 ```
 
 ### 5. Run Evaluation
@@ -135,7 +135,7 @@ backend/app/evaluation/
 │   └── archived/                   ← Old versions
 │
 ├── ingestion/
-│   ├── langsmith_extractor.py      ← LangSmith extraction
+│   ├── langfuse_extractor.py      ← Langfuse extraction
 │   ├── github_importer.py          ← GitHub issues
 │   └── arxiv_importer.py           ← arXiv papers
 │
@@ -155,7 +155,7 @@ backend/app/evaluation/
 | Source | Use Case | Selection Criteria |
 |--------|----------|-------------------|
 | **synthetic** | Hand-crafted examples | Expert validation |
-| **langsmith** | Production traces | Confidence ≥0.85, no errors |
+| **langfuse** | Production traces | Confidence ≥0.85, no errors |
 | **github** | Bug reports, edge cases | Closed issues with labels |
 | **arxiv** | Research papers | Recent papers in domain |
 | **production** | Real user data | Consent + anonymization |
@@ -168,7 +168,7 @@ backend/app/evaluation/
 ```
 DRAFT → PENDING_REVIEW → VALIDATED → RELEASED
   │           │              │           │
-  └─(create)  └─(2/3 approve) └─(git tag) └─(LangSmith sync)
+  └─(create)  └─(2/3 approve) └─(git tag) └─(Langfuse sync)
 ```
 
 **Approval Requirements:**
@@ -240,11 +240,11 @@ else:
         print(f"❌ {error}")
 ```
 
-### Extract from LangSmith
+### Extract from Langfuse
 
 ```python
-from app.evaluation.ingestion.langsmith_extractor import (
-    LangSmithExtractor,
+from app.evaluation.ingestion.langfuse_extractor import (
+    LangfuseExtractor,
     ExtractionConfig,
 )
 
@@ -255,7 +255,7 @@ config = ExtractionConfig(
     min_confidence=0.85,
 )
 
-extractor = LangSmithExtractor()
+extractor = LangfuseExtractor()
 examples = extractor.extract(config)
 extractor.save_dataset(examples, "datasets/drafts/security.json")
 ```
@@ -294,11 +294,11 @@ python -m app.evaluation.schemas.validation \
 # - Missing validation status
 ```
 
-### LangSmith Extraction Returns Empty
+### Langfuse Extraction Returns Empty
 
 ```bash
 # Check criteria
-python -m app.evaluation.ingestion.langsmith_extractor \
+python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --min-confidence 0.5  # Lower threshold
@@ -324,7 +324,7 @@ grep -A 5 '"validation"' datasets/v2/agent/my_dataset.json
 ## Best Practices
 
 1. **Always validate** before committing: `make validate-datasets`
-2. **Use LangSmith** for high-confidence production examples
+2. **Use Langfuse** for high-confidence production examples
 3. **Add adversarial** examples to test robustness
 4. **Version control** all datasets with Git tags
 5. **Document provenance** completely (source, URL, notes)

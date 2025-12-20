@@ -390,7 +390,7 @@ async def test_backwards_compat_old_analyses()
 |--------|--------|--------|-------------|
 | State size per agent | ~50KB | ~2KB | Log state size in agent nodes |
 | Checkpoint size | ~400KB | ~50KB | Monitor LangGraph checkpoints |
-| Agent context tokens | ~15K | ~3K | Track via LangSmith |
+| Agent context tokens | ~15K | ~3K | Track via Langfuse |
 
 ---
 

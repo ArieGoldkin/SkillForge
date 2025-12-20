@@ -84,7 +84,7 @@ All 6 issues shown in "In Progress" column are **COMPLETE** and **VERIFIED**:
 **Test Results:**
 - ✅ Unit tests updated for token counting
 - ✅ Test tolerance for off-by-one rounding (8000-8001 tokens)
-- ✅ No token limit errors in LangSmith traces
+- ✅ No token limit errors in Langfuse traces
 
 **Result:** ✅ **NO MORE TOKEN LIMIT VIOLATIONS**
 

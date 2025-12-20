@@ -1,4 +1,4 @@
-# LangSmith Studio Issues Analysis
+# Langfuse Studio Issues Analysis
 
 ## Issue #1: SSE EventSourceResponse AttributeError
 
@@ -177,7 +177,7 @@ trend_validator_node.py:107
     ┌─────────────────────────────────────────────────────────┐
     │  Chrome/Safari Browser (HTTPS)                          │
     │  ┌───────────────────────────────────────────────────┐ │
-    │  │  LangSmith Studio UI                               │ │
+    │  │  Langfuse Studio UI                               │ │
     │  │  https://studio.langchain.com                      │ │
     │  │                                                    │ │
     │  │  ┌──────────────────────────────────────────────┐ │ │

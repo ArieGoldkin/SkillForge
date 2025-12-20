@@ -59,3 +59,5 @@ export { TimeoutWarningBanner } from './TimeoutWarningBanner'
 
 // Error Handling
 export { AnalysisErrorFallback } from './AnalysisErrorFallback'
+
+// Note: ActiveAnalysisView is used internally by the router

@@ -180,7 +180,7 @@ poetry add "httpx[brotli,zstd]@^0.28.1" sse-starlette@^2.1.3 structlog@^24.4.0 t
 poetry add youtube-transcript-api@^0.6.2 pygithub@^2.5.0 beautifulsoup4@^4.12.3 playwright@^1.48.0
 
 # 11. Add observability
-poetry add langsmith@^1.0.0
+poetry add langfuse@^1.0.0
 
 # 12. Add dev dependencies
 poetry add --group dev pytest@^8.3.4 pytest-asyncio@^0.25.1 pytest-cov@^5.0.0

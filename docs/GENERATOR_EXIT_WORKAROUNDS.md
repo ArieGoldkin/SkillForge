@@ -2,14 +2,14 @@
 
 ## Overview
 
-This document describes the 5-layer hybrid approach for handling `GeneratorExit` exceptions that appear in LangSmith traces from LangGraph execution. The solution addresses both our code layer and LangGraph's internal cleanup mechanisms.
+This document describes the 5-layer hybrid approach for handling `GeneratorExit` exceptions that appear in Langfuse traces from LangGraph execution. The solution addresses both our code layer and LangGraph's internal cleanup mechanisms.
 
 ## Problem Analysis
 
-`GeneratorExit` appearing in LangSmith traces is a **two-layered problem**:
+`GeneratorExit` appearing in Langfuse traces is a **two-layered problem**:
 
 1. **Your code layer**: Async generators that need proper cleanup when streaming is interrupted
-2. **LangGraph internal layer**: The Pregel execution engine's internal cleanup generates `GeneratorExit` events that LangSmith captures as errors
+2. **LangGraph internal layer**: The Pregel execution engine's internal cleanup generates `GeneratorExit` events that Langfuse captures as errors
 
 ## Solution Architecture
 
@@ -19,7 +19,7 @@ The hybrid approach uses **5 defensive layers**:
 Layer 1: Your async generators           → Use aclosing()
 Layer 2: Your node functions             → Use @robust_traceable wrappers
 Layer 3: Workflow execution              → Conditional try/except
-Layer 4: LangSmith visualization         → Query filtering
+Layer 4: Langfuse visualization         → Query filtering
 Layer 5: Long-term fix                   → Report to LangGraph
 ```
 
@@ -53,7 +53,7 @@ async def stream_news():
 
 ## Layer 2: Robust @traceable Wrappers
 
-**Purpose**: Intercept GeneratorExit before LangSmith's tracing layer sees it.
+**Purpose**: Intercept GeneratorExit before Langfuse's tracing layer sees it.
 
 **Implementation**:
 
@@ -71,12 +71,12 @@ async def my_node(state: AnalysisState) -> dict:
 ```
 
 **Why it solves the issue**:
-- Prevents error logging: Catches `GeneratorExit` before LangSmith's tracing layer sees it
+- Prevents error logging: Catches `GeneratorExit` before Langfuse's tracing layer sees it
 - Preserves cleanup: Re-raises the exception so Python's generator cleanup still works
 - Distinguishes errors: Only suppresses the logging, not the exception itself
 - Non-invasive: Keeps your actual node logic clean and traceable
 
-**Effectiveness**: Eliminates 90% of GeneratorExit traces from your node functions in LangSmith.
+**Effectiveness**: Eliminates 90% of GeneratorExit traces from your node functions in Langfuse.
 
 **Files using this pattern**:
 - All 8 agent nodes in `backend/app/workflows/nodes/agents/*.py`
@@ -114,14 +114,14 @@ except GeneratorExit as gen_exit:
 **Files using this pattern**:
 - `backend/app/api/v1/workflow_runner.py` - Main workflow execution
 
-## Layer 4: LangSmith Query Filtering
+## Layer 4: Langfuse Query Filtering
 
-**Purpose**: Hide GeneratorExit noise in LangSmith UI without losing data.
+**Purpose**: Hide GeneratorExit noise in Langfuse UI without losing data.
 
 **Implementation**:
 
 ```python
-from app.core.langsmith_queries import (
+from app.core.langfuse_queries import (
     list_runs_without_generator_exit,
     list_failed_runs_without_generator_exit,
     get_generator_exit_count,
@@ -140,9 +140,9 @@ count = get_generator_exit_count(
 )
 ```
 
-**LangSmith Dashboard Filters**:
+**Langfuse Dashboard Filters**:
 
-In LangSmith UI, use this filter expression:
+In Langfuse UI, use this filter expression:
 ```
 and(not(has(error, "GeneratorExit")), eq(status, "success"))
 ```
@@ -150,13 +150,13 @@ and(not(has(error, "GeneratorExit")), eq(status, "success"))
 **Why it solves the issue**:
 - Hides noise without losing data: Filters out `GeneratorExit` at query time, not collection time
 - Preserves debugging info: Original traces with `GeneratorExit` still exist if you need them
-- Works for dashboards: Can be applied to all LangSmith visualizations
+- Works for dashboards: Can be applied to all Langfuse visualizations
 - No code changes: Can be implemented immediately by any team member
 
-**Effectiveness**: 100% visual cleanup of LangSmith UI (but doesn't fix root cause).
+**Effectiveness**: 100% visual cleanup of Langfuse UI (but doesn't fix root cause).
 
 **Files providing this functionality**:
-- `backend/app/core/langsmith_queries.py` - Query utilities
+- `backend/app/core/langfuse_queries.py` - Query utilities
 
 ## Layer 5: Report to LangGraph Team
 
@@ -164,7 +164,7 @@ and(not(has(error, "GeneratorExit")), eq(status, "success"))
 
 **Status**: TODO - File GitHub issue
 
-**Proposed Issue Title**: "GeneratorExit during Pregel cleanup logged as error in LangSmith"
+**Proposed Issue Title**: "GeneratorExit during Pregel cleanup logged as error in Langfuse"
 
 **Issue Template**:
 
@@ -173,15 +173,15 @@ and(not(has(error, "GeneratorExit")), eq(status, "success"))
 
 When using `graph.ainvoke()` or `graph.astream()`, LangGraph's Pregel execution engine 
 generates GeneratorExit exceptions during internal cleanup. These are logged as errors 
-in LangSmith traces, cluttering observability data.
+in Langfuse traces, cluttering observability data.
 
 ## Expected Behavior
 
-GeneratorExit during normal cleanup should not appear as errors in LangSmith traces.
+GeneratorExit during normal cleanup should not appear as errors in Langfuse traces.
 
 ## Actual Behavior
 
-GeneratorExit appears as nested error traces in LangSmith, making debugging difficult.
+GeneratorExit appears as nested error traces in Langfuse, making debugging difficult.
 
 ## Reproduction
 
@@ -197,12 +197,12 @@ result = await workflow.ainvoke(input)  # GeneratorExit appears in traces
 ## Environment
 
 - langgraph==0.2.x
-- langsmith==0.1.x
+- langfuse==0.1.x
 - Python 3.13
 
 ## Suggested Fix
 
-Filter GeneratorExit in LangGraph's internal tracing before it reaches LangSmith.
+Filter GeneratorExit in LangGraph's internal tracing before it reaches Langfuse.
 ```
 
 **Why it solves the issue**:
@@ -221,7 +221,7 @@ Filter GeneratorExit in LangGraph's internal tracing before it reaches LangSmith
 │  • Your streaming code: 30% of traces                       │
 │  • Your node functions: 40% of traces                       │
 │  • LangGraph Pregel: 30% of traces                          │
-│  TOTAL: 100% noise in LangSmith                             │
+│  TOTAL: 100% noise in Langfuse                             │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -250,16 +250,16 @@ Filter GeneratorExit in LangGraph's internal tracing before it reaches LangSmith
 - [x] Layer 1: `aclosing()` added to all async generator iterations
 - [x] Layer 2: `robust_traceable` wrapper created and deployed to all nodes
 - [x] Layer 3: Conditional GeneratorExit handling in workflow runner
-- [x] Layer 4: LangSmith query utilities created
+- [x] Layer 4: Langfuse query utilities created
 
 ### 🔄 In Progress
 
-- [ ] Layer 4: LangSmith dashboard filters configured (manual step)
+- [ ] Layer 4: Langfuse dashboard filters configured (manual step)
 - [ ] Layer 5: GitHub issue filed with LangGraph team
 
 ### 📋 Next Steps
 
-1. Configure LangSmith project filters (Layer 4 - manual configuration)
+1. Configure Langfuse project filters (Layer 4 - manual configuration)
 2. File GitHub issue with LangGraph (Layer 5)
 3. Monitor GeneratorExit count over time using `get_generator_exit_count()`
 4. Update when LangGraph releases fix
@@ -274,7 +274,7 @@ Filter GeneratorExit in LangGraph's internal tracing before it reaches LangSmith
 ## Related Files
 
 - `backend/app/core/tracing.py` - `robust_traceable` wrapper
-- `backend/app/core/langsmith_queries.py` - Query utilities
+- `backend/app/core/langfuse_queries.py` - Query utilities
 - `.cursorrules` - Mandatory patterns documentation
 - `backend/app/workflows/agents/streaming.py` - Async generator example
 - `backend/app/api/v1/workflow_runner.py` - Workflow-level handling

@@ -32,7 +32,7 @@ import json
 import os
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Add parent directory to path for imports
@@ -158,7 +158,7 @@ async def create_langfuse_trace(trace_id: str) -> bool:
                         {
                             "type": "trace-create",
                             "id": trace_id,  # Event ID
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                             "body": {
                                 "id": trace_id,
                                 "name": "E2E Test Analysis - Langfuse Integration",

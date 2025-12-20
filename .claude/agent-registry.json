@@ -854,7 +854,7 @@
         "prompt-management",
         "quality-evaluation",
         "session-tracking",
-        "langsmith-migration"
+        "langfuse-integration"
       ],
       "used_by_agents": ["ai-ml-engineer", "code-quality-reviewer"],
       "progressive_load": {

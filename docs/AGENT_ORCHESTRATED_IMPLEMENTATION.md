@@ -221,7 +221,7 @@ PHASE 2: CHAIN-OF-THOUGHT SUPERVISOR (Weeks 5-8)
 │  • Implement generate_cot_reasoning() function                               │
 │  • Create decision validator                                                 │
 │  • Integrate with existing supervisor.py                                     │
-│  • Add reasoning traces to LangSmith                                         │
+│  • Add reasoning traces to Langfuse                                         │
 │                                                                              │
 │  Backend-System-Architect Tasks:                                             │
 │  • Modify supervisor routing logic                                           │
@@ -318,16 +318,16 @@ PHASE 5: REACT ENHANCEMENT (Weeks 16-17)
 │  • Create ReActTracedAgent wrapper                                           │
 │  • Implement ReActTracingCallback                                            │
 │  • Add create_tool_enabled_agent_with_tracing()                              │
-│  • Integrate with LangSmith for trace visualization                          │
+│  • Integrate with Langfuse for trace visualization                          │
 │                                                                              │
 │  Code-Quality-Reviewer Tasks:                                                │
 │  • Validate all tool calls captured                                          │
-│  • Review LangSmith trace visibility                                         │
+│  • Review Langfuse trace visibility                                         │
 │  • Ensure no performance overhead                                            │
 │                                                                              │
 │  Quality Gate:                                                               │
 │  ✓ All tool calls captured in traces                                        │
-│  ✓ Traces visible in LangSmith                                              │
+│  ✓ Traces visible in Langfuse                                              │
 │  ✓ No performance overhead (async tracing)                                  │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -519,7 +519,7 @@ Skills: evidence-verification, quality-gates
 
 Task: Validate Phase 1 success criteria
   ├─ Example retrieval latency <100ms P95 ✓
-  ├─ Quality improvement >10% (LangSmith feedback) ✓
+  ├─ Quality improvement >10% (Langfuse feedback) ✓
   ├─ No latency regression (<5% increase) ✓
   ├─ Test coverage >80% ✓
 
@@ -813,7 +813,7 @@ DELIVERABLES:
 EVIDENCE:
   • Tests: 34 passing (test_few_shot_selector.py, test_prompt_builders.py)
   • Coverage: 87% (above 80% threshold)
-  • Quality improvement: +12% (LangSmith feedback scores)
+  • Quality improvement: +12% (Langfuse feedback scores)
   • Latency: 82ms P95 (within 100ms target)
 
 SHARED LEARNINGS:
@@ -887,7 +887,7 @@ PROCEED: ✅
 **Phase 1 Quality Gate:**
 ```
 ✓ Example retrieval latency <100ms P95
-✓ Quality improvement >10% (LangSmith feedback comparison)
+✓ Quality improvement >10% (Langfuse feedback comparison)
 ✓ No latency regression (<5% increase in end-to-end time)
 ✓ Test coverage >80%
 ✓ Seeded 98 examples from golden dataset
@@ -926,7 +926,7 @@ PROCEED: ✅
 **Phase 5 Quality Gate:**
 ```
 ✓ All tool calls captured in traces
-✓ Traces visible in LangSmith
+✓ Traces visible in Langfuse
 ✓ No performance overhead (async tracing)
 ✓ Test coverage >80%
 ```
@@ -1207,11 +1207,11 @@ mkdir -p .claude/skills/advanced-prompting-techniques/{references,templates}
       "token_cost": 200
     },
     "react-tracing": {
-      "keywords": ["react", "tool use", "tracing", "observability", "langsmith"],
+      "keywords": ["react", "tool use", "tracing", "observability", "langfuse"],
       "solves": [
         "How do I trace agent tool usage?",
         "ReAct pattern observability",
-        "LangSmith integration"
+        "Langfuse integration"
       ],
       "reference_file": "references/react-tracing.md",
       "token_cost": 180

@@ -225,7 +225,7 @@ submit_langfuse_score(
 **Explanation**:
 - Score submission is **always** through Langfuse via `submit_langfuse_score()`
 - Conditional on `LANGFUSE_ENABLED=true` only
-- No alternative backends (no LangSmith legacy code found)
+- No alternative backends (no Langfuse legacy code found)
 
 **User Query Discrepancy**: The validation task mentioned `EVALUATOR_BACKEND=langfuse`, but this variable doesn't exist in the codebase. The integration is simpler - scores are submitted to Langfuse when `LANGFUSE_ENABLED=true`.
 

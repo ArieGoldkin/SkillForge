@@ -495,7 +495,7 @@ ORDER BY date;
 
 ## Migration from LangSmith
 
-See `references/langsmith-migration.md` for complete migration guide.
+See Langfuse documentation at https://langfuse.com/docs for integration details.
 
 **Key Differences:**
 - Langfuse: Self-hosted, open-source, free

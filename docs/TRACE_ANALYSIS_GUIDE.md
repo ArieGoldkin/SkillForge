@@ -1,4 +1,4 @@
-# LangSmith Trace Analysis Guide
+# Langfuse Trace Analysis Guide
 
 ## Understanding Your Trace
 
@@ -6,15 +6,15 @@
 
 **Answer: This is EXPECTED and NORMAL.**
 
-The "2 hidden runs" message in LangSmith indicates that there are low-level cleanup traces that LangSmith hides by default. These are:
+The "2 hidden runs" message in Langfuse indicates that there are low-level cleanup traces that Langfuse hides by default. These are:
 
 - **LangGraph's internal cleanup traces**: When Pregel closes async generators during cleanup, it creates traces
 - **These bypass our `@robust_traceable` wrapper** because they happen at LangGraph's internal execution level
-- **They're hidden by default** - LangSmith UI hides them because they're noise
+- **They're hidden by default** - Langfuse UI hides them because they're noise
 
 **To Inspect Hidden Runs:**
 ```bash
-python backend/scripts/inspect_langsmith_trace.py <trace_id>
+python backend/scripts/inspect_langfuse_trace.py <trace_id>
 ```
 
 This will show you if the hidden runs are GeneratorExit cleanup traces (expected) vs real errors.
@@ -55,7 +55,7 @@ if artifact:
     print(f"Size: {len(artifact.markdown_content)} chars")
 ```
 
-**In LangSmith Trace:**
+**In Langfuse Trace:**
 - The outer trace shows `null` output (expected - background task returns None)
 - The workflow result is visible in the **nested traces** inside the workflow
 - Each node's output is captured automatically by `@traceable`
@@ -65,12 +65,12 @@ if artifact:
 ### Layer 2: `@robust_traceable` Wrapper
 
 This decorator **only** handles GeneratorExit exceptions - nothing else:
-- Intercepts GeneratorExit before LangSmith captures it
+- Intercepts GeneratorExit before Langfuse captures it
 - Prevents cleanup GeneratorExit from appearing as errors
-- Doesn't interfere with normal tracing - LangSmith handles everything automatically
+- Doesn't interfere with normal tracing - Langfuse handles everything automatically
 
 **What we DON'T do:**
-- ❌ No explicit LangSmith API calls in business logic
+- ❌ No explicit Langfuse API calls in business logic
 - ❌ No manual trace updates
 - ❌ No interference with workflow execution
 
@@ -103,7 +103,7 @@ async def check_workflow(analysis_id: str):
 ### Inspect Hidden Runs
 
 ```bash
-python backend/scripts/inspect_langsmith_trace.py bcab7522-eb5e-4633-a891-b0b842b2544f
+python backend/scripts/inspect_langfuse_trace.py bcab7522-eb5e-4633-a891-b0b842b2544f
 ```
 
 This will tell you:
@@ -117,5 +117,5 @@ This will tell you:
 2. **Workflow failing**: ❌ No - Completed successfully  
 3. **Null output / Artifact**: ✅ Normal - Background task pattern, artifact in database
 
-The implementation is working correctly. The hidden runs are just LangGraph's internal cleanup traces, which is why LangSmith hides them by default.
+The implementation is working correctly. The hidden runs are just LangGraph's internal cleanup traces, which is why Langfuse hides them by default.
 

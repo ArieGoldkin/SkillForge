@@ -51,7 +51,8 @@ class AnalysisChunk(Base):
         embedding_latency_ms: Embedding generation latency for monitoring
         was_truncated: Whether content was truncated before embedding
         pii_flag: Whether PII was detected in this chunk (Issue #220)
-        pii_types: List of detected PII types (e.g., ["email", "phone_us"]) - never contains actual PII
+        pii_types: List of detected PII types (e.g., ["email", "phone_us"])
+        # - never contains actual PII
         created_at: Chunk creation timestamp
         updated_at: Last update timestamp (auto-updated)
 

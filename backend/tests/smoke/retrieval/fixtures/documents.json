@@ -28,9 +28,9 @@
       "content_type": "tutorial"
     },
     {
-      "id": "langsmith-evaluation",
+      "id": "langfuse-evaluation",
       "title": "LangSmith Evaluation Framework",
-      "url": "https://docs.langchain.com/langsmith/evaluation",
+      "url": "https://docs.langchain.com/langfuse/evaluation",
       "content_type": "tutorial"
     },
     {

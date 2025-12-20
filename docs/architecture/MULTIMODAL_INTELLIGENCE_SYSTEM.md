@@ -219,18 +219,18 @@ __all__ = [
 | **Visual Search MRR** | ≥0.80 | Mean Reciprocal Rank |
 | **Mermaid Recreation BLEU** | ≥0.60 | Similarity to ground truth |
 
-### 2.5 LangSmith Integration
+### 2.5 Langfuse Integration
 
 ```python
 # backend/app/evaluation/visual_benchmark.py
 
-"""Visual benchmark runner integrated with LangSmith."""
+"""Visual benchmark runner integrated with Langfuse."""
 
-from langsmith import Client
-from langsmith.evaluation import evaluate
+from langfuse import Client
+from langfuse.evaluation import evaluate
 
 class VisualBenchmark:
-    """Run visual evaluation experiments with LangSmith tracking."""
+    """Run visual evaluation experiments with Langfuse tracking."""
 
     def __init__(self, dataset_name: str = "visual-golden-v1"):
         self.client = Client()
@@ -623,7 +623,7 @@ This architecture follows the **API Gateway pattern**...
 ║  │                                                                                     │ ║
 ║  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐    │ ║
 ║  │  │   #309     │  │   #310     │  │   #311     │  │   #312     │  │   #313     │    │ ║
-║  │  │  Visual    │  │ Annotation │  │  Golden    │  │   Eval     │  │ LangSmith  │    │ ║
+║  │  │  Visual    │  │ Annotation │  │  Golden    │  │   Eval     │  │ Langfuse  │    │ ║
 ║  │  │  Dataset   │  │ Interface  │  │  Dataset   │  │ Framework  │  │Integration │    │ ║
 ║  │  │ Collection │  │ (Streamlit)│  │ Validation │  │  Setup     │  │            │    │ ║
 ║  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘  └────────────┘    │ ║
@@ -774,7 +774,7 @@ This architecture follows the **API Gateway pattern**...
 | #310 | Annotation interface (Streamlit) | `tooling`, `eval` | 8 |
 | #311 | Inter-annotator agreement validation | `eval`, `quality` | 3 |
 | #312 | Visual evaluation framework setup | `eval`, `infra` | 5 |
-| #313 | LangSmith visual benchmarks integration | `eval`, `observability` | 3 |
+| #313 | Langfuse visual benchmarks integration | `eval`, `observability` | 3 |
 
 ### Phase 2: Extraction Infrastructure (5 issues)
 
@@ -1154,7 +1154,7 @@ TIER 3: Deep Analysis
 | **Visual Search MRR** | ≥ 0.80 | Golden dataset eval |
 | **E2E Tests Passing** | 100% | Playwright CI |
 | **P95 Latency** | < 3s | Load testing |
-| **Cost per Image** | < $0.005 | LangSmith tracking |
+| **Cost per Image** | < $0.005 | Langfuse tracking |
 | **Documentation** | Complete | Review checklist |
 
 ### Quality Gates

@@ -6,7 +6,7 @@
 
 ## Overview
 
-SkillForge uses **self-hosted Langfuse** for comprehensive LLM observability, replacing the deprecated LangSmith service. Langfuse provides end-to-end tracing, quality scoring, prompt management, and cost tracking for all AI-powered workflows.
+SkillForge uses **self-hosted Langfuse** for comprehensive LLM observability, replacing the deprecated Langfuse service. Langfuse provides end-to-end tracing, quality scoring, prompt management, and cost tracking for all AI-powered workflows.
 
 **Why Langfuse?**
 - Free and open-source (no usage limits)
@@ -737,7 +737,6 @@ for item in dataset.items:
 - [Langfuse Skill](../.claude/skills/langfuse-observability/SKILL.md) - Technical integration details
 - [Langfuse MCP Integration](./LANGFUSE_MCP_INTEGRATION.md) - Prompt management via Claude Code
 - [Langfuse MCP Quickstart](./LANGFUSE_MCP_QUICKSTART.md) - 5-minute setup guide
-- [Migration Guide](./LANGSMITH_TO_LANGFUSE_MIGRATION.md) - LangSmith → Langfuse migration
 - [Integration Gaps](./LANGFUSE_INTEGRATION_GAPS.md) - Feature status and roadmap
 
 ### Backend Code References

@@ -7,8 +7,8 @@ This guide covers multiple approaches to debug the SkillForge backend.
 1. [VS Code Debugging](#vs-code-debugging)
 2. [Docker Container Debugging](#docker-container-debugging)
 3. [Enhanced Logging for Debugging](#enhanced-logging-for-debugging)
-4. [LangSmith Trace Correlation](#langsmith-trace-correlation)
-5. [LangSmith Studio Local Debugging](#langsmith-studio-local-debugging)
+4. [Langfuse Trace Correlation](#langfuse-trace-correlation)
+5. [Langfuse Studio Local Debugging](#langfuse-studio-local-debugging)
 6. [Common Debugging Scenarios](#common-debugging-scenarios)
 
 ---
@@ -141,7 +141,7 @@ We've implemented comprehensive logging that makes debugging easier. All excepti
 - **Exception type and message**
 - **Duration** of operation
 - **Timeout values** (step_timeout, reference timeout)
-- **LangSmith trace ID** (for correlation)
+- **Langfuse trace ID** (for correlation)
 - **Full stack traces** (for non-GeneratorExit exceptions)
 - **Context**: agent_type, analysis_id, handled_gracefully flag
 
@@ -183,19 +183,19 @@ Available levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 
 ---
 
-## LangSmith Trace Correlation
+## Langfuse Trace Correlation
 
 ### Finding Trace IDs in Logs
 
-All workflow operations now log LangSmith trace IDs when available. Look for `trace_id` in log entries:
+All workflow operations now log Langfuse trace IDs when available. Look for `trace_id` in log entries:
 
 ```bash
 docker-compose logs backend | grep "trace_id"
 ```
 
-### Correlating Logs with LangSmith
+### Correlating Logs with Langfuse
 
-1. **Get trace ID from LangSmith UI** (from the trace URL)
+1. **Get trace ID from Langfuse UI** (from the trace URL)
 2. **Search logs for that trace ID:**
    ```bash
    docker-compose logs backend | grep "4f6b004a-641e-49e1-8ab1-d294a358c0c5"
@@ -215,18 +215,18 @@ docker-compose logs backend | grep "trace_id"
 
 ---
 
-## LangSmith Trace Visibility Issues
+## Langfuse Trace Visibility Issues
 
-### Problem: Traces Not Appearing in LangSmith UI
+### Problem: Traces Not Appearing in Langfuse UI
 
 **Symptoms:**
 - `LANGCHAIN_TRACING_V2=true` is set
-- Application logs show `langsmith_enabled=True`
-- No traces appear in LangSmith UI
+- Application logs show `langfuse_enabled=True`
+- No traces appear in Langfuse UI
 - Logs show `POST /runs/multipart HTTP/1.1" 202` (traces accepted by server)
 
 **Root Cause:**
-LangChain's tracing system requires `LANGCHAIN_API_KEY` to authenticate with LangSmith, even if `LANGSMITH_API_KEY` is set. The application will automatically use `LANGSMITH_API_KEY` as a fallback, but it's recommended to set both explicitly.
+LangChain's tracing system requires `LANGCHAIN_API_KEY` to authenticate with Langfuse, even if `LANGFUSE_PUBLIC_KEY` is set. The application will automatically use `LANGFUSE_PUBLIC_KEY` as a fallback, but it's recommended to set both explicitly.
 
 ### Troubleshooting Steps
 
@@ -234,39 +234,39 @@ LangChain's tracing system requires `LANGCHAIN_API_KEY` to authenticate with Lan
 
 ```bash
 # Check container environment variables
-docker-compose exec backend env | grep -E "(LANGCHAIN|LANGSMITH)"
+docker-compose exec backend env | grep -E "(LANGCHAIN|LANGFUSE)"
 
 # Expected output:
 # LANGCHAIN_TRACING_V2=true
 # LANGCHAIN_API_KEY=lsv2_pt_...
-# LANGSMITH_API_KEY=lsv2_pt_...
+# LANGFUSE_PUBLIC_KEY=lsv2_pt_...
 # LANGCHAIN_PROJECT=skillforge-backend
 ```
 
 **2. Check Startup Logs for Diagnostics:**
 
 ```bash
-# Look for LangSmith connection diagnostics in startup logs
-docker-compose logs backend | grep -E "(langsmith_connection|langsmith_api_key|application_startup)"
+# Look for Langfuse connection diagnostics in startup logs
+docker-compose logs backend | grep -E "(langfuse_connection|langfuse_api_key|application_startup)"
 
 # Expected successful output:
-# [info] langsmith_connection_success langsmith_enabled=True langsmith_project=skillforge-backend api_key_set=True
-# [info] application_startup langsmith_enabled=True langchain_api_key_set=True langsmith_api_key_set=True
+# [info] langfuse_connection_success langfuse_enabled=True langfuse_project=skillforge-backend api_key_set=True
+# [info] application_startup langfuse_enabled=True langchain_api_key_set=True langfuse_api_key_set=True
 ```
 
 **3. Check for Warnings/Errors:**
 
 ```bash
 # Look for API key warnings
-docker-compose logs backend | grep -E "(langsmith_api_key_fallback|langsmith_api_key_missing|langsmith_connection_failed)"
+docker-compose logs backend | grep -E "(langfuse_api_key_fallback|langfuse_api_key_missing|langfuse_connection_failed)"
 
-# If you see "langsmith_api_key_fallback":
-#   → LANGCHAIN_API_KEY is missing, using LANGSMITH_API_KEY (this is OK, but set both explicitly)
+# If you see "langfuse_api_key_fallback":
+#   → LANGCHAIN_API_KEY is missing, using LANGFUSE_PUBLIC_KEY (this is OK, but set both explicitly)
 #
-# If you see "langsmith_api_key_missing":
-#   → Neither key is set - add LANGCHAIN_API_KEY or LANGSMITH_API_KEY to .env
+# If you see "langfuse_api_key_missing":
+#   → Neither key is set - add LANGCHAIN_API_KEY or LANGFUSE_PUBLIC_KEY to .env
 #
-# If you see "langsmith_connection_failed":
+# If you see "langfuse_connection_failed":
 #   → API key is invalid or network issue - check API key and connectivity
 ```
 
@@ -274,24 +274,24 @@ docker-compose logs backend | grep -E "(langsmith_api_key_fallback|langsmith_api
 
 ```bash
 # Check your .env file
-cat backend/.env | grep -E "(LANGCHAIN|LANGSMITH)"
+cat backend/.env | grep -E "(LANGCHAIN|LANGFUSE)"
 
 # Both should be set (can use same value):
 # LANGCHAIN_API_KEY=lsv2_pt_...
-# LANGSMITH_API_KEY=lsv2_pt_...
+# LANGFUSE_PUBLIC_KEY=lsv2_pt_...
 # LANGCHAIN_TRACING_V2=true
 # LANGCHAIN_PROJECT=skillforge-backend
 ```
 
-**5. Test LangSmith Connection Manually:**
+**5. Test Langfuse Connection Manually:**
 
 ```bash
 # Test connection from container
 docker-compose exec backend python3 -c "
-from langsmith import Client
+from langfuse import Client
 import os
 client = Client()
-print('API Key:', 'SET' if os.getenv('LANGCHAIN_API_KEY') or os.getenv('LANGSMITH_API_KEY') else 'NOT SET')
+print('API Key:', 'SET' if os.getenv('LANGCHAIN_API_KEY') or os.getenv('LANGFUSE_PUBLIC_KEY') else 'NOT SET')
 print('Connection test:', 'SUCCESS' if client.info else 'FAILED')
 "
 ```
@@ -303,15 +303,15 @@ print('Connection test:', 'SUCCESS' if client.info else 'FAILED')
 Add to `backend/.env`:
 ```bash
 # Get your API key from https://smith.langchain.com/settings
-LANGSMITH_API_KEY=lsv2_pt_...
-LANGCHAIN_API_KEY=lsv2_pt_...  # Can be same value as LANGSMITH_API_KEY
+LANGFUSE_PUBLIC_KEY=lsv2_pt_...
+LANGCHAIN_API_KEY=lsv2_pt_...  # Can be same value as LANGFUSE_PUBLIC_KEY
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_PROJECT=skillforge-backend
 ```
 
 **Option 2: Rely on Automatic Fallback**
 
-The application will automatically use `LANGSMITH_API_KEY` if `LANGCHAIN_API_KEY` is missing, but you'll see a warning in logs. It's better to set both explicitly.
+The application will automatically use `LANGFUSE_PUBLIC_KEY` if `LANGCHAIN_API_KEY` is missing, but you'll see a warning in logs. It's better to set both explicitly.
 
 **After Fixing:**
 
@@ -322,40 +322,40 @@ The application will automatically use `LANGSMITH_API_KEY` if `LANGCHAIN_API_KEY
 
 2. **Verify startup logs show success:**
    ```bash
-   docker-compose logs backend | grep "langsmith_connection_success"
+   docker-compose logs backend | grep "langfuse_connection_success"
    ```
 
-3. **Trigger a workflow and check LangSmith UI:**
+3. **Trigger a workflow and check Langfuse UI:**
    - Traces should appear under the project name specified in `LANGCHAIN_PROJECT`
    - Look for traces in https://smith.langchain.com
 
 ### Common Issues
 
-**Issue: "langsmith_api_key_missing" error**
-- **Cause:** Neither `LANGCHAIN_API_KEY` nor `LANGSMITH_API_KEY` is set
-- **Fix:** Add at least `LANGSMITH_API_KEY` to `.env` (fallback will work) or set both explicitly
+**Issue: "langfuse_api_key_missing" error**
+- **Cause:** Neither `LANGCHAIN_API_KEY` nor `LANGFUSE_PUBLIC_KEY` is set
+- **Fix:** Add at least `LANGFUSE_PUBLIC_KEY` to `.env` (fallback will work) or set both explicitly
 
-**Issue: "langsmith_connection_failed" error**
+**Issue: "langfuse_connection_failed" error**
 - **Cause:** Invalid API key or network connectivity issue
 - **Fix:** Verify API key is correct at https://smith.langchain.com/settings, check network connectivity
 
 **Issue: Traces accepted (HTTP 202) but not visible in UI**
 - **Cause:** Usually an API key authentication issue - traces are accepted but not associated with your account
-- **Fix:** Ensure `LANGCHAIN_API_KEY` is set correctly (not just `LANGSMITH_API_KEY`)
+- **Fix:** Ensure `LANGCHAIN_API_KEY` is set correctly (not just `LANGFUSE_PUBLIC_KEY`)
 
 **Issue: Traces appear in different project**
 - **Cause:** `LANGCHAIN_PROJECT` is set to a different project name
-- **Fix:** Check `LANGCHAIN_PROJECT` value matches the project name in LangSmith UI
+- **Fix:** Check `LANGCHAIN_PROJECT` value matches the project name in Langfuse UI
 
 ---
 
-## LangSmith Studio Local Debugging
+## Langfuse Studio Local Debugging
 
-LangSmith Studio is an interactive IDE for debugging LangGraph workflows locally. It provides visual debugging, step-through execution, state inspection, and trace visualization.
+Langfuse Studio is an interactive IDE for debugging LangGraph workflows locally. It provides visual debugging, step-through execution, state inspection, and trace visualization.
 
 ### Architecture
 
-LangSmith Studio runs as a separate development server alongside FastAPI:
+Langfuse Studio runs as a separate development server alongside FastAPI:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -381,7 +381,7 @@ LangSmith Studio runs as a separate development server alongside FastAPI:
            └──────────────┬───────────────┘
                           │
                   ┌───────▼────────┐
-                  │  LangSmith     │
+                  │  Langfuse     │
                   │  Cloud Tracing │
                   └─────────────────┘
 
@@ -400,7 +400,7 @@ Studio UI (port 2024) → LangGraph CLI (8123)
 - Python 3.13 installed locally
 - Backend dependencies installed (`poetry install` in `backend/` directory)
 - Database accessible (either local PostgreSQL or Docker postgres running)
-- LangSmith API keys configured in `backend/.env`
+- Langfuse API keys configured in `backend/.env`
 
 **Steps:**
 
@@ -424,8 +424,8 @@ Studio UI (port 2024) → LangGraph CLI (8123)
 3. **Verify environment configuration** in `backend/.env`:
    ```bash
    # Required for Studio debugging
-   LANGSMITH_API_KEY=lsv2_pt_...
-   LANGCHAIN_API_KEY=lsv2_pt_...  # Can be same as LANGSMITH_API_KEY
+   LANGFUSE_PUBLIC_KEY=lsv2_pt_...
+   LANGCHAIN_API_KEY=lsv2_pt_...  # Can be same as LANGFUSE_PUBLIC_KEY
    LANGCHAIN_TRACING_V2=true
    LANGCHAIN_PROJECT=skillforge-backend
    DATABASE_URL=postgresql://...  # Optional: Studio can use in-memory checkpointer
@@ -481,13 +481,13 @@ Studio UI (port 2024) → LangGraph CLI (8123)
    - Inspect checkpoints and state history
 
 5. **View traces**:
-   - Traces automatically appear in LangSmith cloud UI
+   - Traces automatically appear in Langfuse cloud UI
    - Same project as FastAPI traces (`LANGCHAIN_PROJECT`)
    - Full trace correlation with Studio execution
 
 ### When to Use Studio vs FastAPI
 
-**Use LangSmith Studio for:**
+**Use Langfuse Studio for:**
 - Interactive debugging and step-through execution
 - State inspection at each workflow step
 - Testing workflow logic without full API integration
@@ -514,9 +514,9 @@ Studio and FastAPI can run simultaneously without conflicts:
 
 ### Cloning Remote Traces for Local Testing
 
-You can replay traces from LangSmith cloud in Studio:
+You can replay traces from Langfuse cloud in Studio:
 
-1. **Open trace in LangSmith cloud UI**:
+1. **Open trace in Langfuse cloud UI**:
    - Navigate to https://smith.langchain.com
    - Open the trace you want to debug
 
@@ -530,7 +530,7 @@ You can replay traces from LangSmith cloud in Studio:
    - Workflow state is restored from the remote trace
    - You can step through execution locally
    - Make changes to workflow code and test
-   - Traces from local execution appear in same LangSmith project
+   - Traces from local execution appear in same Langfuse project
 
 ### Dependency Conflict Resolution
 
@@ -607,13 +607,13 @@ If Studio UI doesn't open automatically:
 - Check terminal output for the Studio URL
 - Verify no firewall is blocking the port
 
-**Traces Not Appearing in LangSmith:**
+**Traces Not Appearing in Langfuse:**
 
-If traces from Studio don't appear in LangSmith cloud:
+If traces from Studio don't appear in Langfuse cloud:
 - Verify `LANGCHAIN_TRACING_V2=true` in `.env`
 - Verify `LANGCHAIN_API_KEY` is set correctly
-- Check Studio terminal output for LangSmith connection errors
-- Ensure `LANGCHAIN_PROJECT` matches your LangSmith project name
+- Check Studio terminal output for Langfuse connection errors
+- Ensure `LANGCHAIN_PROJECT` matches your Langfuse project name
 
 ### Step-Through Debugging with VS Code
 
@@ -640,7 +640,7 @@ See [VS Code Debugging](#vs-code-debugging) section for more details.
 
 **Symptoms:**
 - Workflow doesn't complete
-- LangSmith shows GeneratorExit
+- Langfuse shows GeneratorExit
 - No errors in logs
 
 **Debugging Steps:**
@@ -782,10 +782,10 @@ docker-compose logs --tail=50 backend
 ## Tips
 
 1. **Use structured logging**: All logs are structured JSON in production, making them easy to parse and search
-2. **Correlate with LangSmith**: Use trace IDs to correlate application logs with LangSmith traces
+2. **Correlate with Langfuse**: Use trace IDs to correlate application logs with Langfuse traces
 3. **Check duration**: Slow operations are logged with `duration_seconds` - use this to identify bottlenecks
 4. **Review error context**: All errors include full context (agent_type, analysis_id, timeout values, etc.)
-5. **GeneratorExit is normal**: GeneratorExit appears in LangSmith traces but is handled gracefully - check logs for `handled_gracefully=True`
+5. **GeneratorExit is normal**: GeneratorExit appears in Langfuse traces but is handled gracefully - check logs for `handled_gracefully=True`
 
 ---
 

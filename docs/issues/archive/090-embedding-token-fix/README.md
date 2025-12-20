@@ -22,7 +22,7 @@ Embedding service uses character-based truncation (32,000 chars) but OpenAI mode
 
 ## Problem Statement
 
-### Error from LangSmith
+### Error from Langfuse
 
 ```
 This model's maximum context length is 8192 tokens, however you requested 8974 tokens
@@ -86,7 +86,7 @@ Use `tiktoken` to count tokens instead of characters. `tiktoken` is already in `
 - [x] Use tiktoken to count tokens instead of characters ✅
 - [x] Truncate to 8,000 tokens (safety margin below 8,192 limit) ✅
 - [x] Add unit tests for token-based truncation ✅
-- [x] Verify no token limit errors in LangSmith traces ✅
+- [x] Verify no token limit errors in Langfuse traces ✅
 - [x] Update docstring to reflect token-based truncation ✅
 - [x] Update logging to show token count (not just character count) ✅
 
@@ -137,7 +137,7 @@ if original_token_count > self.max_tokens:
 ## Related Issues
 
 - **Issue #5:** Embedding Service Implementation (original implementation)
-- Discovered during system health analysis using LangSmith MCP
+- Discovered during system health analysis using Langfuse MCP
 
 ---
 
@@ -147,7 +147,7 @@ After implementation:
 
 1. **Unit Tests:** Run embedding service tests
 2. **Integration Tests:** Test with large content (GitHub README)
-3. **LangSmith:** Verify no token limit errors in traces
+3. **Langfuse:** Verify no token limit errors in traces
 4. **Manual Test:** Analyze large document and verify embedding succeeds
 
 ---

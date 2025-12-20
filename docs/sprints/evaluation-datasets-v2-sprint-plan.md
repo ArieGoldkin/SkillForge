@@ -56,7 +56,7 @@
 - **Edge Cases:** Minimal (2/20 queries are edge cases)
 - **Adversarial Examples:** 0 examples
 - **Difficulty Stratification:** None (all roughly "medium")
-- **Real-World Data:** 0 examples from LangSmith/production
+- **Real-World Data:** 0 examples from Langfuse/production
 
 **Quality Assessment:**
 - **Retrieval Coverage:** Good for happy path (semantic, keyword, hybrid, coarse-to-fine)
@@ -67,7 +67,7 @@
 
 **MUST HAVE (Critical - Block Sprint Completion):**
 1. Schema v2.0 with Pydantic validation
-2. 15 real-world examples from LangSmith production traces
+2. 15 real-world examples from Langfuse production traces
 3. Difficulty stratification (trivial/easy/medium/hard/adversarial) for all examples
 4. 10 edge case examples (short queries, special chars, long documents)
 5. 5 adversarial examples (injection attempts, ambiguous queries)
@@ -112,22 +112,22 @@
 
 ---
 
-#### Story 2: Real-World Examples from LangSmith (8 pts)
+#### Story 2: Real-World Examples from Langfuse (8 pts)
 **As an** ML engineer
-**I want** 15 real-world queries from production LangSmith traces
+**I want** 15 real-world queries from production Langfuse traces
 **So that** evaluation reflects actual user behavior
 
 **Acceptance Criteria:**
-- [ ] Extract 15 queries from LangSmith production traces (past 30 days)
+- [ ] Extract 15 queries from Langfuse production traces (past 30 days)
 - [ ] At least 5 queries that failed in production (low similarity scores)
 - [ ] At least 5 queries that succeeded (high similarity scores)
 - [ ] At least 5 queries with medium performance (borderline cases)
 - [ ] Include ground truth: actual chunk IDs retrieved + relevance scores
 - [ ] Document provenance: trace ID, timestamp, user context (anonymized)
-- [ ] Add to `queries.json` with tag `source: "langsmith"`
+- [ ] Add to `queries.json` with tag `source: "langfuse"`
 
-**Risk:** Medium - Requires LangSmith access and data export
-**Dependency:** LangSmith credentials configured
+**Risk:** Medium - Requires Langfuse access and data export
+**Dependency:** Langfuse credentials configured
 
 ---
 
@@ -199,7 +199,7 @@
 **So that** statistical significance of evaluation improves
 
 **Acceptance Criteria:**
-- [ ] Add 20 queries from real-world LangSmith data (overlaps with Story 2)
+- [ ] Add 20 queries from real-world Langfuse data (overlaps with Story 2)
 - [ ] Add 10 edge cases (Story 4)
 - [ ] Add 5 adversarial examples (Story 5)
 - [ ] Add 5 new domain-specific queries (DevOps, Mobile - Story 7)
@@ -351,7 +351,7 @@
 │  Story 3: Difficulty (3)    [Continue Story 2]         Story 5: Adv. (3)    │
 │                                                                              │
 │  Deliverable:               Deliverable:               Deliverable:         │
-│  • Pydantic schemas         • 15 LangSmith queries     • 10 edge cases      │
+│  • Pydantic schemas         • 15 Langfuse queries     • 10 edge cases      │
 │  • Difficulty labels        • Provenance metadata      • 5 adversarial      │
 │                             • Ground truth labels                           │
 │                                                                              │
@@ -407,7 +407,7 @@
 
 **Tasks:**
 1. **Morning (3 hrs):**
-   - Access LangSmith production traces (past 30 days)
+   - Access Langfuse production traces (past 30 days)
    - Filter for retrieval-related runs (search queries)
    - Export 50 candidate queries with metadata (trace ID, timestamp, scores)
    - Anonymize user context (remove PII, session IDs)
@@ -419,16 +419,16 @@
      - 5 medium-performing (similarity 0.5-0.8)
    - Extract ground truth: chunk IDs + relevance scores from traces
    - Format as v2.0 schema-compliant JSON
-   - Add to `queries.json` with `source: "langsmith"`, `trace_id` metadata
-   - Document provenance in `LANGSMITH_QUERIES.md`
+   - Add to `queries.json` with `source: "langfuse"`, `trace_id` metadata
+   - Document provenance in `LANGFUSE_QUERIES.md`
 
 **Acceptance Gate:**
-- [ ] 15 LangSmith queries added to `queries.json`
+- [ ] 15 Langfuse queries added to `queries.json`
 - [ ] All queries include ground truth labels
 - [ ] Provenance metadata complete (trace IDs documented)
 
 **Risk Mitigation:**
-- If LangSmith data insufficient, supplement with 5-10 queries from GitHub issues/discussions
+- If Langfuse data insufficient, supplement with 5-10 queries from GitHub issues/discussions
 - If data export takes >2 hrs, reduce to 10 queries (still meets minimum requirement)
 
 ---
@@ -512,7 +512,7 @@
 **Tasks:**
 1. **Morning (3 hrs):**
    - **Human Validation:**
-     - Select 20 critical queries (mix of difficulties, including all LangSmith queries)
+     - Select 20 critical queries (mix of difficulties, including all Langfuse queries)
      - Run retrieval to get top-10 chunks per query
      - Annotate relevance scores (0-3) for each chunk
      - Record annotations in `queries.json`: `human_judgments` field
@@ -576,7 +576,7 @@
 
 | Risk | Probability | Impact | Mitigation | Owner |
 |------|------------|--------|------------|-------|
-| **LangSmith data unavailable** | Medium | High | Supplement with GitHub issues/discussions | ML Engineer |
+| **Langfuse data unavailable** | Medium | High | Supplement with GitHub issues/discussions | ML Engineer |
 | **Schema changes break existing tests** | Low | Medium | Maintain backward compatibility with v1.0 | ML Engineer |
 | **Human validation takes too long** | Medium | Medium | Reduce to 15 queries if time-constrained | ML Engineer |
 | **CI workflow permissions issues** | Medium | Low | Document manual run as fallback | Backend Support |
@@ -588,7 +588,7 @@
 |------|------------|--------|------------|-------|
 | **ML Engineer unavailable Day 4-5** | Low | High | Front-load critical work to Days 1-3 | Sprint Owner |
 | **Backend support not available** | Medium | Low | ML Engineer handles all backend tasks | ML Engineer |
-| **LangSmith quota exceeded** | Low | Low | Use free tier (sufficient for 15 queries) | ML Engineer |
+| **Langfuse quota exceeded** | Low | Low | Use free tier (sufficient for 15 queries) | ML Engineer |
 
 ### Quality Risks
 
@@ -606,7 +606,7 @@
 
 **MUST HAVE (All Required for Sprint Success):**
 - [x] Schema v2.0 implemented with Pydantic validation
-- [x] 15 real-world queries from LangSmith with ground truth
+- [x] 15 real-world queries from Langfuse with ground truth
 - [x] All queries labeled with difficulty (trivial/easy/medium/hard/adversarial)
 - [x] 10 edge case queries added (40 examples across 8 categories)
 - [x] 5 adversarial queries added (30 examples via generator)
@@ -688,7 +688,7 @@ python -m scripts.check_query_coverage
 - **Pass Criteria:**
   - Queries are realistic and clear
   - Expected chunks are correct (gold standard)
-  - No PII in LangSmith queries
+  - No PII in Langfuse queries
 - **Failure Action:** Revise queries based on feedback
 
 **Gate 5: CI Integration Test (Day 6)**
@@ -748,7 +748,7 @@ python -m scripts.check_query_coverage
 **Agenda:**
 1. **Demo (20 mins):**
    - Schema v2.0 validation in action
-   - Real-world queries from LangSmith
+   - Real-world queries from Langfuse
    - CI workflow running on test PR
    - Query statistics dashboard
 
@@ -768,7 +768,7 @@ python -m scripts.check_query_coverage
 **Agenda:**
 1. **What Went Well (10 mins):**
    - Schema v2.0 design was smooth
-   - LangSmith data export worked well
+   - Langfuse data export worked well
    - CI integration completed on time
 
 2. **What Could Be Improved (10 mins):**
@@ -874,8 +874,8 @@ class QuerySchema(BaseModel):
     min_score: float | None = Field(default=None, ge=0.0, le=1.0)
     max_score: float | None = Field(default=None, ge=0.0, le=1.0)
     description: str
-    source: str = Field(default="synthetic", description="synthetic | langsmith | github")
-    trace_id: str | None = Field(default=None, description="LangSmith trace ID")
+    source: str = Field(default="synthetic", description="synthetic | langfuse | github")
+    trace_id: str | None = Field(default=None, description="Langfuse trace ID")
     human_judgments: dict[str, int] | None = Field(default=None)
 ```
 
@@ -970,7 +970,7 @@ jobs:
 - `backend/tests/smoke/retrieval/README.md` - Test suite overview
 
 **External Resources:**
-- LangSmith Documentation: https://docs.smith.langchain.com/
+- Langfuse Documentation: https://docs.smith.langchain.com/
 - Pydantic V2 Documentation: https://docs.pydantic.dev/latest/
 - GitHub Actions Documentation: https://docs.github.com/en/actions
 - Information Retrieval Metrics: Manning & Raghavan (2008) - Introduction to IR
