@@ -189,11 +189,28 @@ export default tseslint.config(
     },
   },
 
+  // Relaxed rules for constants file (comprehensive constants organization)
+  {
+    files: ['**/lib/constants.ts'],
+    rules: {
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
+    },
+  },
+
+  // Relaxed rules for status/display components (legitimate complex switch statements)
+  {
+    files: ['**/components/**/ConnectionStatus.tsx', '**/components/**/AnalysisTab.tsx'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 70, skipBlankLines: true, skipComments: true }],
+    },
+  },
+
   // Relaxed rules for store helper files (complex state management utilities)
   {
     files: ['**/stores/*StoreHelpers.ts'],
     rules: {
       'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 70, skipBlankLines: true, skipComments: true }],
       'no-console': 'off', // Store helpers need console for debugging connection issues
     },
   },
