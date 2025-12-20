@@ -16,7 +16,7 @@ import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
 import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
-import { parseSSEEvent } from '@/schemas/sse'
+import { parseSSEEvent, type SSEEvent } from '@/schemas/sse'
 
 import type { SSEStore, SSEStoreState } from './sseStore'
 
