@@ -183,7 +183,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // Should log warning but not throw or set error
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[SSE] Received error event with no data (connection error)'
+        '[WARN] Received error event with no data - likely connection error',
+        expect.objectContaining({
+          eventType: 'error',
+        })
       )
       expect(consoleErrorSpy).not.toHaveBeenCalled()
 
@@ -209,7 +212,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       }
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[SSE] Received error event with no data (connection error)'
+        '[WARN] Received error event with no data - likely connection error',
+        expect.objectContaining({
+          eventType: 'error',
+        })
       )
       expect(store.getState().events).toEqual([])
 
@@ -236,7 +242,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateEvent('error', errorEvent)
 
       // Should handle error event properly
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[SSE] Server error event:', errorEvent)
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[ERROR] Server sent error event',
+        expect.objectContaining({
+          validatedData: errorEvent,
+        })
+      )
       expect(store.getState().events).toHaveLength(1)
       expect(store.getState().latestEvent).toEqual(errorEvent)
       expect(store.getState().error?.message).toBe('Extraction failed')
@@ -313,7 +324,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // Should reach permanent failure state after 3 reconnect attempts
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[SSE] Max reconnection attempts reached - giving up'
+        '[ERROR] SSE max reconnection attempts reached',
+        expect.objectContaining({
+          reason: 'persistent_connection_failure',
+        })
       )
       expect(store.getState().error?.message).toBe(
         'Connection failed after multiple attempts. Please refresh to retry.'
@@ -327,7 +341,11 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // Should be blocked by permanentlyFailed flag
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        `[SSE] Connection permanently failed for ${TEST_ANALYSIS_ID}. Refresh to retry.`
+        '[WARN] SSE reconnection blocked due to permanent failure',
+        expect.objectContaining({
+          permanentlyFailed: true,
+          suggestion: 'user_refresh_required',
+        })
       )
 
       consoleWarnSpy.mockRestore()
@@ -387,24 +405,42 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Reconnecting in 1000ms (attempt 1/3)')
+      expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+        1,
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 1000,
+          attempt: 1,
+          maxAttempts: 3,
+        })
       )
 
       // Trigger connection error - should schedule reconnect attempt 2
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Reconnecting in 2000ms (attempt 2/3)')
+      expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+        2,
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 2000,
+          attempt: 2,
+          maxAttempts: 3,
+        })
       )
 
       // Trigger connection error - should schedule reconnect attempt 3
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Reconnecting in 4000ms (attempt 3/3)')
+      expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+        3,
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 4000,
+          attempt: 3,
+          maxAttempts: 3,
+        })
       )
 
       // Trigger final connection error - should give up
@@ -413,7 +449,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // After 3rd attempt, should give up
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[SSE] Max reconnection attempts reached - giving up'
+        '[ERROR] SSE max reconnection attempts reached',
+        expect.objectContaining({
+          reason: 'persistent_connection_failure',
+        })
       )
 
       // Try to reconnect - should be blocked
@@ -421,7 +460,11 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       createConnection(TEST_ANALYSIS_ID, store)
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        `[SSE] Connection permanently failed for ${TEST_ANALYSIS_ID}. Refresh to retry.`
+        '[WARN] SSE reconnection blocked due to permanent failure',
+        expect.objectContaining({
+          permanentlyFailed: true,
+          suggestion: 'user_refresh_required',
+        })
       )
 
       consoleErrorSpy.mockRestore()
@@ -438,19 +481,40 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // First failure - should wait 1000ms (1s)
       getMockEventSource()?.simulateConnectionError()
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[SSE] Reconnecting in 1000ms (attempt 1/3)')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 1000,
+          attempt: 1,
+          maxAttempts: 3,
+        })
+      )
 
       await vi.advanceTimersByTimeAsync(1000)
 
       // Second failure - should wait 2000ms (2s)
       getMockEventSource()?.simulateConnectionError()
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[SSE] Reconnecting in 2000ms (attempt 2/3)')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 2000,
+          attempt: 2,
+          maxAttempts: 3,
+        })
+      )
 
       await vi.advanceTimersByTimeAsync(2000)
 
       // Third failure - should wait 4000ms (4s - max)
       getMockEventSource()?.simulateConnectionError()
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[SSE] Reconnecting in 4000ms (attempt 3/3)')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 4000,
+          attempt: 3,
+          maxAttempts: 3,
+        })
+      )
 
       consoleWarnSpy.mockRestore()
       consoleErrorSpy.mockRestore()
@@ -470,7 +534,11 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateConnectionError()
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Reconnecting in 1000ms (attempt 1/3)')
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          delay: 1000,
+          attempt: 1,
+        })
       )
 
       consoleWarnSpy.mockClear()
@@ -487,7 +555,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       // If reconnectAttempts was reset by onopen, this should show attempt 1/3
       // If it wasn't reset, this will show attempt 2/3
       const warnCalls = consoleWarnSpy.mock.calls
-      const hasAttempt1 = warnCalls.some((call) => call[0]?.includes('attempt 1/3'))
+      const hasAttempt1 = warnCalls.some((call) => call[1]?.attempt === 1)
 
       // Note: This test verifies the behavior exists in the code
       // The actual reset happens in handleOpen (line 48 of sseStoreHelpers.ts)
@@ -525,7 +593,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       createConnection(TEST_ANALYSIS_ID, store)
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        `[SSE] Already connected to analysis ${TEST_ANALYSIS_ID}`
+        '[WARN] SSE connection attempt for already connected analysis',
+        expect.objectContaining({
+          isConnected: true,
+        })
       )
 
       consoleWarnSpy.mockRestore()
@@ -588,7 +659,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateConnectionError()
 
       // Should have pending reconnect timeout
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Reconnecting'))
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.any(Object)
+      )
 
       // Create new connection before timeout fires
       createConnection('test-456', store)
@@ -660,7 +734,14 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('attempt 2/3'))
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          attempt: 2,
+          maxAttempts: 3,
+          reason: 'connection_lost',
+        })
+      )
 
       // Close connection
       closeConnection(store)
@@ -673,7 +754,13 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('attempt 1/3'))
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[WARN] SSE reconnection scheduled',
+        expect.objectContaining({
+          attempt: 1,
+          maxAttempts: 3,
+        })
+      )
 
       consoleWarnSpy.mockRestore()
       consoleErrorSpy.mockRestore()
