@@ -91,7 +91,8 @@ class ChunkRepository:
             filters: Optional JSONB metadata filters (e.g., {"chunk_type": "section"})
 
         Returns:
-            List of tuples (AnalysisChunk, similarity_score) ordered by similarity (most similar first).
+            List of tuples (AnalysisChunk, similarity_score) ordered by similarity
+            (most similar first).
             Similarity score is 1 - cosine_distance, ranging from 0.0 to 1.0 (normalized vectors).
 
         Example:
