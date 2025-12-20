@@ -152,7 +152,7 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
             analysis_id,
             "code_quality_critic",
             "failed",
-            error=f"Specificity validation failed: {str(e)}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="CODE_QUALITY_CRITIC_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )

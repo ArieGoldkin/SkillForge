@@ -152,7 +152,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
             analysis_id,
             "performance_analyst",
             "failed",
-            error=f"Specificity validation failed: {str(e)}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="PERFORMANCE_ANALYST_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )

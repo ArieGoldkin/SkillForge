@@ -152,7 +152,7 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
             analysis_id,
             "trend_validator",
             "failed",
-            error=f"Specificity validation failed: {str(e)}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="TREND_VALIDATOR_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )

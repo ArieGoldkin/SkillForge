@@ -29,7 +29,7 @@ Usage:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Union, overload
+from typing import TypeVar, overload
 
 # Type variables for Result<T, E>
 T = TypeVar("T")
@@ -37,7 +37,7 @@ E = TypeVar("E")
 U = TypeVar("U")
 
 
-class Result(Generic[T, E], ABC):
+class Result[T, E](ABC):
     """Base Result type for type-safe error handling.
 
     Result<T, E> represents either a successful value of type T (Ok)
@@ -45,7 +45,7 @@ class Result(Generic[T, E], ABC):
     checks and provides compile-time guarantees about error handling.
     """
 
-    def __init__(self, value: Union[T, E]) -> None:
+    def __init__(self, value: T | E) -> None:
         """Initialize Result - use Ok() or Err() constructors instead."""
         self._value = value
 
@@ -120,7 +120,8 @@ class Ok(Result[T, E]):
         return self._value
 
     def unwrap_err(self) -> E:
-        raise UnwrapError("Called unwrap_err on Ok value")
+        msg = "Called unwrap_err on Ok value"
+        raise UnwrapError(msg)
 
     def unwrap_or(self, default: T) -> T:
         return self._value
@@ -155,7 +156,8 @@ class Err(Result[T, E]):
         return True
 
     def unwrap(self) -> T:
-        raise UnwrapError(f"Called unwrap on Err value: {self._value}")
+        msg = f"Called unwrap on Err value: {self._value}"
+        raise UnwrapError(msg)
 
     def unwrap_err(self) -> E:
         return self._value
@@ -181,6 +183,7 @@ class Err(Result[T, E]):
 
 class UnwrapError(Exception):
     """Exception raised when unwrapping a Result fails."""
+
     pass
 
 
@@ -215,7 +218,7 @@ def is_err(result: Result[T, E]) -> bool:
 
 
 # Pattern matching helpers (Python 3.10+)
-def match(result: Result[T, E]) -> tuple[bool, Union[T, E]]:
+def match(result: Result[T, E]) -> tuple[bool, T | E]:
     """Return (is_ok, value_or_error) for pattern matching."""
     if result.is_ok():
         return True, result.unwrap()

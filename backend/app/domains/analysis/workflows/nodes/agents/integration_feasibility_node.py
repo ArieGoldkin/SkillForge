@@ -152,7 +152,7 @@ async def integration_feasibility_node(state: AnalysisState) -> dict[str, object
             analysis_id,
             "integration_feasibility",
             "failed",
-            error=f"Specificity validation failed: {str(e)}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="INTEGRATION_FEASIBILITY_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )

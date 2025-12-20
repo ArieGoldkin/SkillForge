@@ -152,7 +152,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
             analysis_id,
             "dependency_mapper",
             "failed",
-            error=f"Specificity validation failed: {str(e)}",
+            error=f"Specificity validation failed: {e!r}",
             error_code="DEPENDENCY_MAPPER_SPECIFICITY_FAILED",
             processing_time_ms=processing_time_ms,
         )
