@@ -1,14 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { GraduationCap } from 'lucide-react'
 
+import { ExternalNavLink, NavLink } from './NavLink'
+
 /**
- * NavigationLinks Component
- *
- * Primary navigation links:
- * - SkillForge branding (home link)
- * - Main navigation items (Home, Library, About)
- *
- * Responsive: Navigation items hidden on mobile (shown via menu button)
+ * NavigationLinks - Primary navigation links for SkillForge.
+ * Includes branding and main nav items. Hidden on mobile (shown via menu).
  */
 export function NavigationLinks() {
   return (
@@ -21,42 +18,16 @@ export function NavigationLinks() {
         <GraduationCap className="h-7 w-7 lg:h-8 lg:w-8" />
         <span>SkillForge</span>
       </Link>
-
       <div className="hidden gap-4 md:flex lg:gap-6">
-        <Link
-          to="/"
-          className="relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1"
-          activeProps={{
-            className: 'text-primary',
-          }}
-        >
-          Home
-        </Link>
-        <Link
-          to="/library"
-          className="relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1"
-          activeProps={{
-            className: 'text-primary',
-          }}
-        >
-          Library
-        </Link>
-        <a
-          href="#about"
-          className="relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1"
-        >
-          About
-        </a>
-        <Link
-          to="/showcase"
-          className="relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1"
-          activeProps={{
-            className: 'text-primary',
-          }}
-        >
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/library">Library</NavLink>
+        <ExternalNavLink href="#about">About</ExternalNavLink>
+        <NavLink to="/showcase" badge="DEV">
           Showcase
-          <span className="ml-1 text-xs align-super opacity-60">DEV</span>
-        </Link>
+        </NavLink>
+        <NavLink to="/annotation-queue" badge="ADMIN">
+          Review Queue
+        </NavLink>
       </div>
     </div>
   )

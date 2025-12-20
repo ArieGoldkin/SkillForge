@@ -313,7 +313,7 @@ class TestSubmitLangfuseScore:
                 comment="High relevance",
             )
 
-            mock_client.score.assert_called_once_with(
+            mock_client.create_score.assert_called_once_with(
                 trace_id="custom-trace-123",
                 name="relevance",
                 value=0.85,
@@ -334,8 +334,8 @@ class TestSubmitLangfuseScore:
             submit_langfuse_score(name="depth", value=0.9)
 
             mock_client.get_current_trace_id.assert_called_once()
-            mock_client.score.assert_called_once()
-            call_kwargs = mock_client.score.call_args.kwargs
+            mock_client.create_score.assert_called_once()
+            call_kwargs = mock_client.create_score.call_args.kwargs
             assert call_kwargs["trace_id"] == "auto-trace-456"
 
     @pytest.mark.unit
@@ -351,7 +351,7 @@ class TestSubmitLangfuseScore:
 
             submit_langfuse_score(name="test", value=0.5)
 
-            mock_client.score.assert_not_called()
+            mock_client.create_score.assert_not_called()
 
     @pytest.mark.unit
     def test_handles_score_exception_gracefully(self, mock_env_enabled):
@@ -360,7 +360,7 @@ class TestSubmitLangfuseScore:
 
         mock_client = MagicMock()
         mock_client.get_current_trace_id.return_value = "trace-123"
-        mock_client.score.side_effect = Exception("API error")
+        mock_client.create_score.side_effect = Exception("API error")
 
         with patch("app.core.langfuse_config.get_langfuse_client") as mock_get:
             mock_get.return_value = mock_client
@@ -455,8 +455,9 @@ class TestIntegration:
         config_module.shutdown_langfuse()
 
         # Verify lifecycle
-        mock_client.score.assert_called_once()
-        assert mock_client.flush.call_count == 2  # Once from flush, once from shutdown
+        mock_client.create_score.assert_called_once()
+        # Flush is called 3 times: once from submit_score, once from flush_langfuse, once from shutdown
+        assert mock_client.flush.call_count == 3
         mock_client.shutdown.assert_called_once()
         assert config_module._langfuse_client is None
 

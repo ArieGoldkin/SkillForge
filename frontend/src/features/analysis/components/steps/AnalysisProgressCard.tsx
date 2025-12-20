@@ -1,4 +1,4 @@
-import type * as React from 'react'
+import { memo } from 'react'
 
 import { FileText, Github, Loader2, Video } from 'lucide-react'
 
@@ -106,7 +106,10 @@ const CONTENT_TYPE_CONFIG = {
   },
 } as const
 
-export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
+/**
+ * AnalysisProgressCard wrapped with React.memo for optimized re-renders
+ */
+export const AnalysisProgressCard = memo(function AnalysisProgressCard({
   stage,
   progress,
   currentStep,
@@ -118,7 +121,7 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
   hasFailedStages = false,
   failedStagesCount = 0,
   className,
-}) => {
+}: AnalysisProgressCardProps) {
   const stageConfig = getStageConfig(stage, hasFailedStages)
   const isComplete = stage === 'complete'
   const isActive = !isComplete
@@ -169,7 +172,8 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
           <Progress
             value={progress}
             className="h-2"
-            aria-label={`Analysis progress: ${progress}%`}
+            aria-label="Analysis progress"
+            aria-valuetext={`${progress}% complete - ${currentStep}`}
           />
         </div>
 
@@ -213,6 +217,4 @@ export const AnalysisProgressCard: React.FC<AnalysisProgressCardProps> = ({
       </CardContent>
     </Card>
   )
-}
-
-AnalysisProgressCard.displayName = 'AnalysisProgressCard'
+})

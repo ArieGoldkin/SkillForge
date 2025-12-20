@@ -1,5 +1,8 @@
 /**
  * Action buttons for AnalysisCompleteCard
+ *
+ * Issue #396: Removed prop drilling - GuideButton and TeachMeButton
+ * now get their IDs directly from Zustand store.
  */
 
 import { Eye } from 'lucide-react'
@@ -12,20 +15,12 @@ import { GuideButton } from './GuideButton'
 import { TeachMeButton } from './TeachMeButton'
 
 interface ActionButtonsProps {
-  artifactId: string
-  analysisId?: string
-  analysisTitle?: string
+  /** UI-only props */
   isCompact: boolean
   onPreview: () => void
 }
 
-export function ActionButtons({
-  artifactId,
-  analysisId,
-  analysisTitle,
-  isCompact,
-  onPreview,
-}: ActionButtonsProps) {
+export function ActionButtons({ isCompact, onPreview }: ActionButtonsProps) {
   return (
     <div className={cn('flex gap-3', isCompact && 'flex-col w-full')}>
       <Button
@@ -37,14 +32,9 @@ export function ActionButtons({
         <Eye className={cn(isCompact ? 'h-4 w-4' : 'h-5 w-5')} />
         Preview
       </Button>
-      {analysisId && (
-        <TeachMeButton
-          analysisId={analysisId}
-          analysisTitle={analysisTitle}
-          isCompact={isCompact}
-        />
-      )}
-      <GuideButton artifactId={artifactId} analysisId={analysisId} isCompact={isCompact} />
+      {/* TeachMeButton and GuideButton get IDs from store (Issue #396) */}
+      <TeachMeButton isCompact={isCompact} />
+      <GuideButton isCompact={isCompact} />
     </div>
   )
 }

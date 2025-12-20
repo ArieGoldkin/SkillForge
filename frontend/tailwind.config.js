@@ -60,6 +60,11 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        // Status colors for loading states (from design tokens)
+        'status-success': "var(--color-chart-5)",
+        'status-warning': "var(--color-chart-4)",
+        'status-info': "var(--color-chart-1)",
+        'status-error': "var(--color-destructive)",
       },
       borderRadius: {
         lg: "var(--radius)",

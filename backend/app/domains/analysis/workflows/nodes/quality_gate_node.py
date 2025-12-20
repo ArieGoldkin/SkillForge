@@ -51,8 +51,12 @@ COVERAGE_ADJUSTED_MINIMUMS: dict[str, float] = {
 # Aspects to evaluate
 QUALITY_ASPECTS = ["relevance", "depth", "coherence"]
 
+# Issue #413: Quality tier thresholds for auto-tagging
+QUALITY_TIER_HIGH_THRESHOLD = 0.8  # avg_score >= this -> "quality:high"
+QUALITY_TIER_MEDIUM_THRESHOLD = 0.6  # avg_score >= this -> "quality:medium", else "quality:low"
 
-async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915
+
+async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0912, PLR0915
     """Quality gate validation node.
 
     Evaluates synthesized insights using LLM-as-judge evaluators for:
@@ -77,19 +81,30 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
 
+    # Start timing at the very beginning
+    start_time = time.time()
+
     if not aggregated_insights:
         logger.warning(
             "quality_gate_skipped_no_insights",
             analysis_id=analysis_id,
         )
         # No insights to validate - skip gate
+        # Still submit latency for skipped evaluation
+        from app.core.langfuse_config import submit_langfuse_score
+
+        latency_seconds = time.time() - start_time
+        submit_langfuse_score(
+            name="latency_seconds",
+            value=latency_seconds,
+            comment=f"Quality gate skipped (no insights) in {latency_seconds:.2f}s",
+        )
+
         return {
             "quality_scores": {},
             "quality_gate_retry_count": retry_count,
             "quality_gate_passed": True,
         }
-
-    start_time = time.time()
 
     # Update Langfuse trace metadata
     update_current_trace(
@@ -98,6 +113,8 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             "retry_count": retry_count,
         },
         tags=["quality-gate"],
+        session_id=f"analysis-{analysis_id}",
+        user_id="anonymous",
     )
     trace_id = get_current_trace_id()
 
@@ -275,20 +292,78 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         # Submit quality scores to Langfuse for analytics
         from app.core.langfuse_config import submit_langfuse_score
 
-        for aspect, score_data in quality_scores.items():
+        if trace_id:
+            for aspect, score_data in quality_scores.items():
+                submit_langfuse_score(
+                    trace_id=trace_id,
+                    name=f"quality_{aspect}",
+                    value=score_data["score"],
+                    comment=score_data.get("comment"),
+                )
+
+            # Submit overall average score
             submit_langfuse_score(
                 trace_id=trace_id,
-                name=f"quality_{aspect}",
-                value=score_data["score"],
-                comment=score_data.get("comment"),
+                name="quality_avg",
+                value=avg_score,
+                comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
             )
 
-        # Submit overall average score
+            logger.debug(
+                "quality_scores_submitted_to_langfuse",
+                analysis_id=analysis_id,
+                trace_id=trace_id,
+                aspect_count=len(quality_scores),
+                avg_score=avg_score,
+            )
+        else:
+            logger.warning(
+                "quality_scores_not_submitted_no_trace",
+                analysis_id=analysis_id,
+                message="No trace_id available - quality scores not submitted to Langfuse",
+                quality_scores={aspect: s["score"] for aspect, s in quality_scores.items()},
+                avg_score=avg_score,
+            )
+
+        # Issue #413: Quality-based auto-tagging for trace classification
+        # Tag traces with quality tier for filtering/analytics in Langfuse
+        quality_tier = (
+            "quality:high"
+            if avg_score >= QUALITY_TIER_HIGH_THRESHOLD
+            else "quality:medium"
+            if avg_score >= QUALITY_TIER_MEDIUM_THRESHOLD
+            else "quality:low"
+        )
+        quality_tags = [quality_tier, f"gate:{'passed' if gate_passed else 'failed'}"]
+        if use_adjusted_thresholds:
+            quality_tags.append("coverage:limited")
+        if failed_aspects:
+            quality_tags.append("aspects:failed")
+
+        update_current_trace(tags=quality_tags)
+
+        logger.info(
+            "quality_gate_auto_tagged",
+            analysis_id=analysis_id,
+            quality_tier=quality_tier,
+            tags=quality_tags,
+            trace_id=trace_id,
+        )
+
+        # Submit latency metric to Langfuse
+        latency_seconds = time.time() - start_time
         submit_langfuse_score(
             trace_id=trace_id,
-            name="quality_avg",
-            value=avg_score,
-            comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
+            name="latency_seconds",
+            value=latency_seconds,
+            comment=f"Quality gate evaluation took {latency_seconds:.2f}s",
+        )
+
+        logger.debug(
+            "quality_gate_latency_submitted",
+            analysis_id=analysis_id,
+            latency_seconds=latency_seconds,
+            trace_id=trace_id,
         )
 
         # Return quality scores and gate status
@@ -310,6 +385,16 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             duration_seconds=duration,
             trace_id=trace_id,
             exc_info=True,
+        )
+
+        # Submit latency metric even on error
+        from app.core.langfuse_config import submit_langfuse_score
+
+        submit_langfuse_score(
+            trace_id=trace_id,
+            name="latency_seconds",
+            value=duration,
+            comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
         )
 
         # On error, pass the gate (fail open) to avoid blocking workflow

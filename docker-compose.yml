@@ -30,7 +30,16 @@ services:
       retries: 5
     volumes:
       - redis-dev-data:/data
-    command: redis-server --appendonly yes --tcp-keepalive 300
+    command: >
+      redis-server
+      --timeout 0
+      --tcp-keepalive 60
+      --maxclients 1000
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+    networks:
+      - default
 
   backend:
     build:

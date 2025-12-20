@@ -1,145 +1,47 @@
 /**
  * SSE Event Types for SkillForge Analysis Workflow
  * Based on: docs/issues/040-sse-endpoint/SSE_SCHEMA.md
- * Version: 1.0
- */
-
-/**
- * Agent stage names - represent individual processing stages
  *
- * IMPORTANT: These match backend stage names from AGENT_REGISTRY (backend/app/core/agent_config.py)
- * Note: 'implementation_planning' is used by BOTH implementation_planner AND integration_feasibility agents
+ * This file re-exports types from Zod schemas for backward compatibility.
+ * Single source of truth: @/schemas/sse and @/schemas/base
+ *
+ * @deprecated Import directly from @/schemas/sse for runtime validation
  */
-export type AgentStageName =
-  // Core workflow stages (always present)
-  | 'extraction'
-  | 'embedding'
-  | 'supervisor_routing'
-  | 'aggregation'
-  | 'quality_validation'
-  | 'artifact_generation'
-  // Agent stages (dynamically selected by supervisor, 0-8 agents)
-  | 'tech_comparison'
-  | 'security_audit'
-  | 'implementation_planning' // Used by BOTH implementation_planner AND integration_feasibility
-  | 'performance_audit'
-  | 'code_quality_audit'
-  | 'trends_analysis'
-  | 'dependencies_analysis'
-  // Optional stages
-  | 'chunking' // Only if ENABLE_COARSE_TO_FINE=true
 
-/**
- * Workflow-level stage names - represent workflow-wide events
- * @see docs/issues/040-sse-endpoint/SSE_SCHEMA.md
- */
-export type WorkflowStageName = 'workflow' | 'pattern_comparison' | 'metrics'
+// ============================================================================
+// Re-export Base Types from Zod Schemas
+// ============================================================================
 
-/**
- * All possible stage names (agent + workflow-level)
- */
-export type StageName = AgentStageName | WorkflowStageName
+export type {
+  AgentStageName,
+  WorkflowStageName,
+  StageName,
+  StageStatus,
+  ContentType,
+  FindingsQuality,
+  Coverage,
+} from '@/schemas/base'
 
-/**
- * Stage status values
- * - pending: Stage hasn't started yet
- * - running: Stage is currently executing
- * - complete: Stage finished successfully
- * - failed: Stage encountered an error
- * - skipped: Stage was skipped (not selected by supervisor)
- */
-export type StageStatus = 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
+// ============================================================================
+// Re-export SSE Event Types from Zod Schemas
+// ============================================================================
 
-export interface SSEProgressEvent {
-  type: 'progress'
-  analysis_id: string
-  stage: StageName
-  status: StageStatus
-  timestamp: string
-  expected_total_stages?: number
-  findings_summary?: string
-  insights_count?: number
-  confidence_score?: number
-  analysis_metadata?: {
-    title?: string
-    content_type?: 'article' | 'video' | 'repo'
-    url?: string
-    word_count?: number
-  }
-  skip_reasons?: Record<string, string> // agent_type -> reason
-  success_metrics?: {
-    findings_quality?: 'high' | 'medium' | 'low'
-    coverage?: 'comprehensive' | 'partial' | 'minimal'
-    key_insights?: string[]
-  }
-  details?: {
-    word_count?: number
-    agent?: string
-    progress_percent?: number
-    expected_total_stages?: number
-    findings_summary?: string
-    insights_count?: number
-    confidence_score?: number
-    analysis_metadata?: {
-      title?: string
-      content_type?: 'article' | 'video' | 'repo'
-      url?: string
-      word_count?: number
-    }
-    skip_reasons?: Record<string, string>
-    success_metrics?: {
-      findings_quality?: 'high' | 'medium' | 'low'
-      coverage?: 'comprehensive' | 'partial' | 'minimal'
-      key_insights?: string[]
-    }
-    [key: string]: unknown
-  }
-}
+export type {
+  SSEEvent,
+  SSEProgressEvent,
+  SSECompleteEvent,
+  SSEErrorEvent,
+  AnalysisMetadata,
+  SuccessMetrics,
+} from '@/schemas/sse'
 
-export interface SSECompleteEvent {
-  type: 'complete'
-  analysis_id: string
-  stage: 'artifact_generation' | 'workflow'
-  status: 'complete'
-  timestamp: string
-  artifact_id?: string
-  details?: Record<string, unknown>
-}
+// ============================================================================
+// Re-export Type Guards and Helper Functions
+// ============================================================================
 
-export interface SSEErrorEvent {
-  type: 'error'
-  analysis_id: string
-  stage: string
-  status: 'failed'
-  timestamp: string
-  error?: string // Backend sends error at top level
-  details?: {
-    // Optional for backward compatibility
-    error?: string
-    error_code?: string
-    [key: string]: unknown
-  }
-}
-
-export type SSEEvent = SSEProgressEvent | SSECompleteEvent | SSEErrorEvent
-
-/**
- * Type guard to check if an event is a progress event
- */
-export function isProgressEvent(event: SSEEvent): event is SSEProgressEvent {
-  return event.type === 'progress'
-}
-
-/**
- * Type guard to check if an event is a complete event
- */
-export function isCompleteEvent(event: SSEEvent): event is SSECompleteEvent {
-  return event.type === 'complete'
-}
-
-/**
- * Type guard to check if an event is an error event
- */
-export function isErrorEvent(event: SSEEvent): event is SSEErrorEvent {
-  return event.type === 'error'
-}
+export {
+  isProgressEvent,
+  isCompleteEvent,
+  isErrorEvent,
+  parseSSEEvent,
+} from '@/schemas/sse'

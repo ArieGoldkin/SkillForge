@@ -478,6 +478,39 @@ class Settings(BaseSettings):
         description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
     )
 
+    # Langfuse Prompt Management Configuration (Issue #379, #418)
+    LANGFUSE_PROMPTS_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable Langfuse Prompt Management. When disabled, uses hardcoded prompts. "
+            "Note: All 8 agents now use PromptManager with automatic fallback to hardcoded "
+            "prompts if Langfuse is unavailable (Issue #418)."
+        ),
+    )
+    LANGFUSE_PROMPTS_L1_TTL: int = Field(
+        default=300,
+        description="L1 in-memory cache TTL in seconds (default: 5 minutes)",
+    )
+    LANGFUSE_PROMPTS_L2_TTL: int = Field(
+        default=900,
+        description="L2 Redis cache TTL in seconds (default: 15 minutes)",
+    )
+    LANGFUSE_PROMPTS_REDIS_ENABLED: bool = Field(
+        default=True,
+        description="Enable Redis L2 cache for prompts (shared across workers)",
+    )
+
+    # Langfuse Annotation Queue Configuration (Issue #382)
+    LANGFUSE_ANNOTATION_QUEUE_ID: str | None = Field(
+        default=None,
+        description=(
+            "Langfuse Annotation Queue ID for human review workflow. "
+            "When set, low-quality artifacts and negative feedback are added to "
+            "this queue for manual review. Get the ID from Langfuse UI Settings → "
+            "Annotation Queues or run: poetry run python scripts/setup_langfuse_annotation_queue.py"
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

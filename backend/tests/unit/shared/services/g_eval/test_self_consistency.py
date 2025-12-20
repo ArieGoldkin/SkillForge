@@ -290,6 +290,103 @@ class TestSelfConsistencyScoring:
             assert "Second reasoning (winner)" in result.final_score.reasoning
 
 
+class TestLangfuseScoreSubmission:
+    """Tests for Langfuse score submission in G-Eval."""
+
+    @pytest.mark.asyncio
+    async def test_g_eval_submits_scores_to_langfuse(self) -> None:
+        """Test that G-Eval scores are submitted to Langfuse."""
+        from app.shared.services.g_eval.scorer import g_eval_score
+
+        with (
+            patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
+            patch("app.core.langfuse_config.submit_langfuse_score") as mock_submit,
+        ):
+            # Mock criterion scores
+            mock_score.side_effect = [
+                CriterionScore(
+                    criterion="completeness",
+                    score=4,
+                    normalized=0.75,
+                    confidence=0.85,
+                    reasoning="Good completeness",
+                ),
+                CriterionScore(
+                    criterion="accuracy",
+                    score=5,
+                    normalized=1.0,
+                    confidence=0.9,
+                    reasoning="Excellent accuracy",
+                ),
+            ]
+
+            result = await g_eval_score(
+                input_content="Test input",
+                output="Test output",
+                agent_type="test_agent",
+                criteria=["completeness", "accuracy"],
+                use_self_consistency=False,
+            )
+
+            # Verify scores were submitted to Langfuse
+            # Should submit 3 scores: 2 criteria + 1 overall
+            assert mock_submit.call_count == 3
+
+            # Verify individual criterion scores
+            calls = mock_submit.call_args_list
+            criterion_calls = [c for c in calls if c[1]["name"].startswith("g_eval_")]
+
+            # Check completeness score
+            completeness_call = next(c for c in calls if c[1]["name"] == "g_eval_completeness")
+            assert completeness_call[1]["value"] == 0.75
+            assert "test_agent" in completeness_call[1]["comment"]
+
+            # Check accuracy score
+            accuracy_call = next(c for c in calls if c[1]["name"] == "g_eval_accuracy")
+            assert accuracy_call[1]["value"] == 1.0
+
+            # Check overall score
+            overall_call = next(c for c in calls if c[1]["name"] == "g_eval_overall")
+            assert overall_call[1]["value"] == result.overall
+            assert "test_agent" in overall_call[1]["comment"]
+
+    @pytest.mark.asyncio
+    async def test_g_eval_gracefully_handles_langfuse_failure(self) -> None:
+        """Test that G-Eval continues if Langfuse submission fails."""
+        from app.shared.services.g_eval.scorer import g_eval_score
+
+        with (
+            patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
+            patch("app.core.langfuse_config.submit_langfuse_score") as mock_submit,
+        ):
+            # Mock Langfuse failure
+            mock_submit.side_effect = Exception("Langfuse connection error")
+
+            # Mock criterion scores
+            mock_score.return_value = CriterionScore(
+                criterion="completeness",
+                score=4,
+                normalized=0.75,
+                confidence=0.85,
+                reasoning="Good completeness",
+            )
+
+            # Should still complete successfully despite Langfuse failure
+            result = await g_eval_score(
+                input_content="Test input",
+                output="Test output",
+                agent_type="test_agent",
+                criteria=["completeness"],
+                use_self_consistency=False,
+            )
+
+            # Result should still be valid
+            assert result.overall > 0
+            assert "completeness" in result.criteria_scores
+            # Error should be caught and logged, not propagated
+            assert result.error is None
+
+
 class TestSelfConsistencyIntegration:
     """Integration tests for self-consistency with g_eval_score."""
 

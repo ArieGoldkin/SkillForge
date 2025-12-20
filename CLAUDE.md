@@ -1,7 +1,7 @@
 ---
 name: claude-main
 description: AI Agent Hub - Modular Intelligence System
-version: 4.0.0
+version: 4.1.0
 ---
 
 # 🚀 AI Agent Hub - Intelligent Orchestration
@@ -56,26 +56,26 @@ version: 4.0.0
 
 ## 🐛 Known Bugs & Fixes (Historical Reference)
 
-### SSE Race Condition (Fixed Dec 2024)
+### SSE Race Condition (Fixed Dec 2025)
 - **Problem**: Frontend shows 0% progress, "Waiting for agent activity..." while backend runs
 - **Root Cause**: EventBroadcaster had no buffering - events published before SSE subscriber connects were lost
 - **Fix**: Added event buffering with `deque(maxlen=100)` per channel, events replayed to new subscribers
 - **Location**: `backend/app/services/event_broadcaster.py`
 - **Tests**: `backend/tests/unit/test_event_broadcaster.py` (5 buffer tests)
 
-### Quality Gate ValidationError (Fixed Dec 2024)
+### Quality Gate ValidationError (Fixed Dec 2025)
 - **Problem**: `pydantic.v1.error_wrappers.ValidationError: 3 validation errors for Run`
 - **Root Cause**: LangSmith `Run` schema required `start_time` and `trace_id` fields (pre-Langfuse migration)
 - **Fix**: Added `start_time=datetime.now(UTC)` and `trace_id=uuid4()` to mock Run object
 - **Location**: `backend/app/workflows/nodes/quality_gate_node.py` lines 102-129
-- **Note**: Now using Langfuse for observability (Dec 2024 migration)
+- **Note**: Now using Langfuse for observability (Dec 2025 migration)
 
-### Workflow Timeout (Configured Dec 2024)
+### Workflow Timeout (Configured Dec 2025)
 - **Problem**: Workflow times out during multi-agent execution
 - **Fix**: Increased `STEP_TIMEOUT` from 90s to 300s (5 minutes)
 - **Location**: `backend/app/core/timeout_config.py`
 
-### Redis Connection Keepalive (Fixed Dec 2024)
+### Redis Connection Keepalive (Fixed Dec 2025)
 - **Problem**: "Connection closed by server" errors, semantic cache completely broken
 - **Root Cause**: No socket keepalive configured - idle connections >5min dropped by OS/firewall
 - **Fix**: Added connection pooling with keepalive, timeouts, health checks, retry policy
@@ -83,34 +83,34 @@ version: 4.0.0
 - **Config**: `backend/app/core/config.py` (5 new REDIS_* settings)
 - **Tests**: `backend/tests/unit/shared/services/cache/test_redis_connection.py`
 
-### G-Eval Gemini Response Parsing (Fixed Dec 2024)
+### G-Eval Gemini Response Parsing (Fixed Dec 2025)
 - **Problem**: "Failed to parse judge response: [{'type': 'text', 'text': '10', ...}]"
-- **Root Cause**: Gemini (Dec 2024+) returns dict format, parser expected simple string
+- **Root Cause**: Gemini (Dec 2025+) returns dict format, parser expected simple string
 - **Fix**: Added `_extract_text_from_llm_response()` to handle Gemini's dict format
 - **Location**: `backend/app/shared/services/g_eval/scorer.py:129-154`
 - **Tests**: `backend/tests/unit/evaluation/test_quality_evaluator.py::test_parse_gemini_dict_response`
 
-### Quality Truncation Limits (Fixed Dec 2024)
+### Quality Truncation Limits (Fixed Dec 2025)
 - **Problem**: Depth scores 5/10 (AWFUL), content truncated before evaluation
 - **Root Cause**: Aggressive truncation (200-2000 chars) destroyed analytical depth
 - **Fix**: Increased limits: scorer 2000→8000, quality 8000→15000, compression 200→500
 - **Location**: Multiple files (scorer.py, quality.py, compress_findings.py, quality_gate_node.py)
 - **Docs**: `docs/QUALITY_INITIATIVE_FIXES.md` for full details
 
-### Artifact API Endpoint (Fixed Dec 2024)
+### Artifact API Endpoint (Fixed Dec 2025)
 - **Problem**: GET /api/v1/artifacts/{id} returns 404
 - **Root Cause**: Endpoint never defined, only /download variant existed
 - **Fix**: Added `get_artifact_by_id()` route exposing existing repository method
 - **Location**: `backend/app/api/v1/artifacts.py`
 - **Tests**: `backend/tests/unit/api/v1/test_artifacts.py`
 
-### UI Status Contradiction (Fixed Dec 2024)
+### UI Status Contradiction (Fixed Dec 2025)
 - **Problem**: Green "Complete" badge shown despite failed stages
 - **Root Cause**: Status logic didn't account for partial failures
 - **Fix**: Show "Complete with Errors" (red) when failures exist, added error details display
 - **Location**: `frontend/src/features/analysis/components/steps/AnalysisProgressCard.tsx`
 
-### Retrieval Ranking Quality (Improved Dec 2024)
+### Retrieval Ranking Quality (Improved Dec 2025)
 - **Problem**: Expected chunks ranked 6-10 instead of top-5 (91.1% pass rate)
 - **Root Cause**: Query-time tsvector (5-10x slower), low fetch multiplier, no metadata boosting
 - **Fix**:
@@ -369,27 +369,33 @@ NEW WAY (semantic discovery):
 
 ## 📚 Claude Code Skills
 
-**18 specialized knowledge modules** installed in `.claude/skills/` directory:
+**23 specialized knowledge modules** installed in `.claude/skills/` directory:
 
 | Skill | Use When |
 |-------|----------|
 | **ai-native-development** | Building RAG pipelines, embeddings, vector DBs, LLM integration |
 | **api-design-framework** | Designing REST/GraphQL/gRPC APIs |
 | **architecture-decision-record** | Documenting architectural decisions (ADRs) |
+| **brainstorming** | Refining rough ideas through Socratic questioning (expanded Dec 2025) |
 | **code-review-playbook** | Conducting code reviews with conventional comments |
 | **database-schema-designer** | Designing SQL/NoSQL schemas and migrations |
 | **design-system-starter** | Creating design systems, tokens, components |
+| **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (expanded Dec 2025) |
 | **edge-computing-patterns** | Deploying to Cloudflare Workers, Vercel Edge, Deno Deploy |
 | **evidence-verification** | Collecting quality evidence (v3.5.0) |
+| **golden-dataset-management** | Backup/restore for test datasets, data validation (new Dec 2025) |
+| **langfuse-observability** | Self-hosted LLM observability, replaces LangSmith (new Dec 2025) |
+| **langgraph-workflows** | Multi-agent workflow orchestration with LangGraph (new Dec 2025) |
+| **llm-caching-patterns** | Multi-level caching for 70-95% LLM cost reduction (new Dec 2025) |
+| **observability-monitoring** | Logging, metrics, tracing, alerting (expanded Dec 2025) |
+| **performance-optimization** | Database queries, bundle size, Core Web Vitals, caching (expanded Dec 2025) |
+| **pgvector-search** | Hybrid search with PGVector HNSW + BM25 RRF fusion (new Dec 2025) |
 | **quality-gates** | Complexity assessment and gate validation (v3.5.0) |
 | **react-server-components-framework** | Next.js 15 App Router, RSC, Server Actions |
 | **security-checklist** | Security audits, OWASP Top 10 compliance |
 | **streaming-api-patterns** | SSE, WebSockets, ReadableStream, real-time APIs |
 | **testing-strategy-builder** | Building test plans and coverage strategies |
 | **type-safety-validation** | End-to-end type safety with Zod, tRPC, Prisma |
-| **performance-optimization** | Database queries, bundle size, Core Web Vitals, caching (v3.7.0) |
-| **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (v3.7.0) |
-| **observability-monitoring** | Logging, metrics, tracing, alerting (v3.7.0) |
 
 **How to use skills (v4.0 - Progressive Loading):**
 1. **FIRST**: Read `.claude/skills/<skill-name>/capabilities.json` (~100 tokens)
@@ -428,7 +434,7 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 - **Blocking**: Critical vulnerabilities block approval
 - **Fix commands**: Actionable remediation guidance
 
-## 📁 Project Structure (v4.0.0 - Dynamic MCP)
+## 📁 Project Structure (v4.1.0 - Expanded Skills)
 
 ```
 .claude/
@@ -437,7 +443,7 @@ NEW: Load .claude/skills/api-design-framework/capabilities.json (100 tokens)
 ├── instructions/          # Orchestration & context rules
 │   ├── orchestration.md   # 🔄 Updated with MCP integration (v2.0)
 │   └── ...                # Core instructions
-├── skills/                # 18 specialized knowledge modules
+├── skills/                # 23 specialized knowledge modules
 │   └── */capabilities.json # 🆕 Progressive loading indexes (v4.0)
 ├── workflows/             # 🆕 Pre-composed multi-skill workflows (v4.0)
 │   ├── secure-api-endpoint.md
@@ -517,5 +523,7 @@ poetry run python scripts/backup_golden_dataset.py restore
 
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
+
+*📦 v4.1.0 (Dec 2025): Expanded skills ecosystem - 5 new skills (LLM caching, Langfuse observability, LangGraph workflows, PGVector search, golden dataset management) + 4 major skill expansions (brainstorming, performance, devops, observability).*
 
 *📦 v4.0.0: Dynamic MCP architecture with semantic discovery, progressive loading, and workflow composition.*

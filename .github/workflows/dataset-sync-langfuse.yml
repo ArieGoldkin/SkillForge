@@ -1,0 +1,135 @@
+name: Dataset Sync to Langfuse
+
+# Issue #409: Automated golden dataset sync to Langfuse
+# Syncs backend/data/golden_dataset_backup.json to Langfuse datasets
+
+on:
+  # Weekly automated sync (Sunday 3am UTC)
+  schedule:
+    - cron: "0 3 * * 0"
+
+  # Manual trigger with options
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run mode (don't upload)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      max_items:
+        description: "Limit to N items (empty = all 98)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dataset-sync-langfuse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync Golden Dataset to Langfuse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-py3.13-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Sync golden dataset to Langfuse
+        id: sync
+        continue-on-error: true
+        working-directory: backend
+        env:
+          LANGFUSE_ENABLED: "true"
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+        run: |
+          # Build command with optional flags
+          CMD="poetry run python scripts/sync_golden_dataset_to_langfuse.py"
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+
+          if [ -n "${{ inputs.max_items }}" ]; then
+            CMD="$CMD --max-items ${{ inputs.max_items }}"
+          fi
+
+          echo "Running: $CMD"
+          $CMD 2>&1 | tee sync_output.log
+
+      - name: Report sync results
+        if: always()
+        run: |
+          echo "## Dataset Sync Results" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.sync.outcome }}" = "success" ]; then
+            echo "✅ Golden dataset successfully synced to Langfuse" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Mode**: ${{ inputs.dry_run == 'true' && 'Dry Run' || 'Full Sync' }}" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ inputs.max_items }}" ]; then
+              echo "- **Limited to**: ${{ inputs.max_items }} items" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **Items**: All 98 golden analyses" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Sync Output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 backend/sync_output.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output log found" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Dataset sync encountered errors" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Troubleshooting" >> $GITHUB_STEP_SUMMARY
+            echo "1. Check Langfuse credentials (LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY)" >> $GITHUB_STEP_SUMMARY
+            echo "2. Verify LANGFUSE_HOST is accessible" >> $GITHUB_STEP_SUMMARY
+            echo "3. Review sync logs below" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Error Output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat backend/sync_output.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No output log found" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload sync logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dataset-sync-logs-${{ github.run_number }}
+          path: backend/sync_output.log
+          retention-days: 30
+          if-no-files-found: ignore

@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 import { useNavigate } from '@tanstack/react-router'
 
+import { ReactScanTest } from '@/components/ReactScanTest'
+
 import type { SkillLevel } from '@shared/SkillLevelSelector'
 
 import { analyzeAPI } from '@services/api.service'
@@ -54,6 +56,13 @@ export default function Home() {
       />
       <FeaturesSection />
       <HowItWorksSection />
+
+      {/* React Scan Performance Test (development only) */}
+      {import.meta.env.DEV && (
+        <div className="container mx-auto px-4 py-8">
+          <ReactScanTest />
+        </div>
+      )}
     </div>
   )
 }

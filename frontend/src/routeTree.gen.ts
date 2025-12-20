@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ShowcaseRouteImport } from './routes/showcase'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as AnnotationQueueRouteImport } from './routes/annotation-queue'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorSessionIdRouteImport } from './routes/tutor.$sessionId'
@@ -25,6 +26,11 @@ const ShowcaseRoute = ShowcaseRouteImport.update({
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnnotationQueueRoute = AnnotationQueueRouteImport.update({
+  id: '/annotation-queue',
+  path: '/annotation-queue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplatRoute = SplatRouteImport.update({
@@ -56,6 +62,7 @@ const AnalyzeIdRoute = AnalyzeIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/annotation-queue': typeof AnnotationQueueRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/annotation-queue': typeof AnnotationQueueRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/annotation-queue': typeof AnnotationQueueRoute
   '/library': typeof LibraryRoute
   '/showcase': typeof ShowcaseRoute
   '/analyze/$id': typeof AnalyzeIdRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/annotation-queue'
     | '/library'
     | '/showcase'
     | '/analyze/$id'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/annotation-queue'
     | '/library'
     | '/showcase'
     | '/analyze/$id'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/annotation-queue'
     | '/library'
     | '/showcase'
     | '/analyze/$id'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  AnnotationQueueRoute: typeof AnnotationQueueRoute
   LibraryRoute: typeof LibraryRoute
   ShowcaseRoute: typeof ShowcaseRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/annotation-queue': {
+      id: '/annotation-queue'
+      path: '/annotation-queue'
+      fullPath: '/annotation-queue'
+      preLoaderRoute: typeof AnnotationQueueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  AnnotationQueueRoute: AnnotationQueueRoute,
   LibraryRoute: LibraryRoute,
   ShowcaseRoute: ShowcaseRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,

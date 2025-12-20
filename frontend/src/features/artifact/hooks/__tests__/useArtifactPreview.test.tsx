@@ -12,10 +12,13 @@ import { analyzeAPI } from '@services/api.service'
 
 import { useArtifactPreview } from '../useArtifactPreview'
 
-// Mock the API service
+// Valid UUID for testing
+const TEST_ARTIFACT_ID = '987fcdeb-51a2-43d7-8f9e-123456789abc'
+
+// Mock the API service - must match what useArtifact.ts actually calls
 vi.mock('@services/api.service', () => ({
   analyzeAPI: {
-    downloadArtifact: vi.fn(),
+    getArtifactById: vi.fn(),
   },
 }))
 
@@ -41,7 +44,7 @@ describe('useArtifactPreview', () => {
 
   describe('Modal State', () => {
     it('starts with modal closed', () => {
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -49,7 +52,7 @@ describe('useArtifactPreview', () => {
     })
 
     it('opens modal when openPreview is called with valid artifactId', () => {
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -85,7 +88,7 @@ describe('useArtifactPreview', () => {
     })
 
     it('closes modal when closePreview is called', () => {
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -103,18 +106,23 @@ describe('useArtifactPreview', () => {
 
   describe('Lazy Loading', () => {
     it('does not fetch artifact when modal is closed', () => {
-      renderHook(() => useArtifactPreview('artifact-123'), {
+      renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
-      expect(analyzeAPI.downloadArtifact).not.toHaveBeenCalled()
+      expect(analyzeAPI.getArtifactById).not.toHaveBeenCalled()
     })
 
     it('fetches artifact when modal is opened', async () => {
       const mockContent = '# Test Guide'
-      vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
+      vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce({
+        analysis_id: 'test-analysis-id',
+        artifact_id: TEST_ARTIFACT_ID,
+        markdown_content: mockContent,
+        trace_id: 'test-trace-id',
+      })
 
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -123,7 +131,7 @@ describe('useArtifactPreview', () => {
       })
 
       await waitFor(() => {
-        expect(analyzeAPI.downloadArtifact).toHaveBeenCalledWith('artifact-123')
+        expect(analyzeAPI.getArtifactById).toHaveBeenCalledWith(TEST_ARTIFACT_ID)
       })
 
       await waitFor(() => {
@@ -134,11 +142,23 @@ describe('useArtifactPreview', () => {
 
   describe('Loading and Error States', () => {
     it('shows loading state while fetching', async () => {
-      vi.mocked(analyzeAPI.downloadArtifact).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve('content'), 100))
+      vi.mocked(analyzeAPI.getArtifactById).mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  analysis_id: 'test-analysis-id',
+                  artifact_id: TEST_ARTIFACT_ID,
+                  markdown_content: 'content',
+                  trace_id: 'test-trace-id',
+                }),
+              100
+            )
+          )
       )
 
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -150,9 +170,9 @@ describe('useArtifactPreview', () => {
     })
 
     it('returns error when fetch fails', async () => {
-      vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(null)
+      vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce(null)
 
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 
@@ -171,9 +191,14 @@ describe('useArtifactPreview', () => {
   describe('Download Function', () => {
     it('exposes download function from useArtifact', async () => {
       const mockContent = '# Guide Content'
-      vi.mocked(analyzeAPI.downloadArtifact).mockResolvedValueOnce(mockContent)
+      vi.mocked(analyzeAPI.getArtifactById).mockResolvedValueOnce({
+        analysis_id: 'test-analysis-id',
+        artifact_id: TEST_ARTIFACT_ID,
+        markdown_content: mockContent,
+        trace_id: 'test-trace-id',
+      })
 
-      const { result } = renderHook(() => useArtifactPreview('artifact-123'), {
+      const { result } = renderHook(() => useArtifactPreview(TEST_ARTIFACT_ID), {
         wrapper: createWrapper(),
       })
 

@@ -4,6 +4,7 @@
 
 import { useCallback } from 'react'
 
+import type { ArtifactMetadataResponse } from '@app-types/api'
 import { useQuery } from '@tanstack/react-query'
 
 import { analyzeAPI } from '@services/api.service'
@@ -12,6 +13,7 @@ import { downloadMarkdown } from './downloadMarkdown'
 
 export interface UseArtifactState {
   content: string | null
+  traceId: string | null
   isLoading: boolean
   error: Error | null
 }
@@ -20,12 +22,12 @@ export interface UseArtifactReturn extends UseArtifactState {
   download: () => void
 }
 
-async function fetchArtifact(artifactId: string): Promise<string> {
-  const content = await analyzeAPI.downloadArtifact(artifactId)
-  if (!content) {
-    throw new Error('Failed to load artifact content')
+async function fetchArtifact(artifactId: string): Promise<ArtifactMetadataResponse> {
+  const metadata = await analyzeAPI.getArtifactById(artifactId)
+  if (!metadata) {
+    throw new Error('Failed to load artifact metadata')
   }
-  return content
+  return metadata
 }
 
 export function useArtifact(artifactId: string | undefined): UseArtifactReturn {
@@ -38,13 +40,14 @@ export function useArtifact(artifactId: string | undefined): UseArtifactReturn {
   })
 
   const download = useCallback(() => {
-    if (data && artifactId) {
-      downloadMarkdown(data, `implementation-guide-${artifactId}.md`)
+    if (data?.markdown_content && artifactId) {
+      downloadMarkdown(data.markdown_content, `implementation-guide-${artifactId}.md`)
     }
   }, [data, artifactId])
 
   return {
-    content: data ?? null,
+    content: data?.markdown_content ?? null,
+    traceId: data?.trace_id ?? null,
     isLoading,
     error: artifactId ? (error as Error | null) : new Error('No artifact ID provided'),
     download,

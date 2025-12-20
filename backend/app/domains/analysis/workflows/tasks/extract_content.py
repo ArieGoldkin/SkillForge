@@ -61,7 +61,11 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
     try:
         from app.core.tracing import update_current_trace
 
-        update_current_trace(metadata={"analysis_id": str(analysis_id), "url": url})
+        update_current_trace(
+            metadata={"analysis_id": str(analysis_id), "url": url},
+            session_id=f"analysis-{analysis_id}",
+            user_id="anonymous",
+        )
     except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 

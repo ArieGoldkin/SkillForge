@@ -6,6 +6,7 @@ This node conducts a section quiz with feedback to evaluate understanding.
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
 from app.domains.tutor.repositories.message_repository import TutorMessageRepository
 from app.domains.tutor.workflows.config import TUTOR_COMPACTION_CONFIG
@@ -83,6 +84,7 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
             "tutor_phase": "section_review",
         },
         session_id=str(session_id),
+        user_id="anonymous",
     )
 
     # Emit SSE event: review started
@@ -146,7 +148,8 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
             injected_memory=None,  # Future RAG integration point
         )
 
-        response = await model.ainvoke(messages)
+        config = create_runnable_config()
+        response = await model.ainvoke(messages, config=config)
         review_content = extract_string_content(response)
 
         # Stream review via SSE

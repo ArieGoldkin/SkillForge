@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
-from app.core.tracing import get_current_trace_id
+from app.core.tracing import get_current_trace_id, robust_traceable
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.api import ArtifactSection
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
@@ -185,6 +185,12 @@ async def _load_content_from_artifact(
         return fallback_content
 
 
+@robust_traceable(
+    name="run_tech_comparator",
+    run_type="agent",
+    tags=["agent", "tech_comparator", "analysis"],
+    metadata={"agent_type": "tech_comparator"},
+)
 async def run_tech_comparator_with_session(
     content: str,
     content_type: str,
@@ -243,6 +249,12 @@ async def run_tech_comparator_with_session(
         return {}  # Return empty dict on error to allow other agents to continue
 
 
+@robust_traceable(
+    name="run_integration_feasibility",
+    run_type="agent",
+    tags=["agent", "integration_feasibility", "analysis"],
+    metadata={"agent_type": "integration_feasibility"},
+)
 async def run_integration_feasibility_with_session(
     content: str,
     content_type: str,
@@ -300,6 +312,12 @@ async def run_integration_feasibility_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_implementation_planner",
+    run_type="agent",
+    tags=["agent", "implementation_planner", "analysis"],
+    metadata={"agent_type": "implementation_planner"},
+)
 async def run_implementation_planner_with_session(
     content: str,
     content_type: str,
@@ -357,6 +375,12 @@ async def run_implementation_planner_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_security_auditor",
+    run_type="agent",
+    tags=["agent", "security_auditor", "analysis"],
+    metadata={"agent_type": "security_auditor"},
+)
 async def run_security_auditor_with_session(
     content: str,
     content_type: str,
@@ -442,6 +466,12 @@ async def run_security_auditor_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_performance_analyst",
+    run_type="agent",
+    tags=["agent", "performance_analyst", "analysis"],
+    metadata={"agent_type": "performance_analyst"},
+)
 async def run_performance_analyst_with_session(
     content: str,
     content_type: str,
@@ -499,6 +529,12 @@ async def run_performance_analyst_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_code_quality_critic",
+    run_type="agent",
+    tags=["agent", "code_quality_critic", "analysis"],
+    metadata={"agent_type": "code_quality_critic"},
+)
 async def run_code_quality_critic_with_session(
     content: str,
     content_type: str,
@@ -556,6 +592,12 @@ async def run_code_quality_critic_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_trend_validator",
+    run_type="agent",
+    tags=["agent", "trend_validator", "analysis"],
+    metadata={"agent_type": "trend_validator"},
+)
 async def run_trend_validator_with_session(
     content: str,
     content_type: str,
@@ -606,7 +648,7 @@ async def run_trend_validator_with_session(
         )
         return {}
     except Exception as e:
-        duration = time.time() - start_time
+        duration: int | float = time.time() - start_time
         logger.error(
             "agent_failed",
             agent_type="trend_validator",
@@ -622,6 +664,12 @@ async def run_trend_validator_with_session(
         return {}
 
 
+@robust_traceable(
+    name="run_dependency_mapper",
+    run_type="agent",
+    tags=["agent", "dependency_mapper", "analysis"],
+    metadata={"agent_type": "dependency_mapper"},
+)
 async def run_dependency_mapper_with_session(
     content: str,
     content_type: str,

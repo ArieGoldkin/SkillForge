@@ -226,18 +226,16 @@ export function useStreamingChat() {
 
 ```python
 # backend/app/services/llm/tracing.py
-from langsmith import traceable
-from langsmith.wrappers import wrap_openai
+from langfuse.decorators import observe, langfuse_context
+from langfuse import Langfuse
 import structlog
 
 logger = structlog.get_logger()
+langfuse = Langfuse()
 
-# Wrap OpenAI client for automatic tracing
-wrapped_openai = wrap_openai(openai_client)
-
-@traceable(run_type="llm")
+@observe()
 async def traced_chat(messages: list[dict], **kwargs):
-    """Traced LLM call with automatic LangSmith logging."""
+    """Traced LLM call with automatic Langfuse logging."""
     logger.info(
         "llm_request",
         model=kwargs.get("model"),
@@ -254,7 +252,7 @@ async def traced_chat(messages: list[dict], **kwargs):
 
 **Use MCP:**
 ```
-mcp__skillforge-langsmith__list_projects(project_name="chat")
+mcp__skillforge-langfuse__get_traces(project_name="chat")
 ```
 
 ---
@@ -311,7 +309,7 @@ class ChatInput(BaseModel):
 | Tool | Purpose |
 |------|---------|
 | `context7` | Anthropic/OpenAI SDK docs |
-| `skillforge-langsmith` | View traces, monitor costs |
+| `skillforge-langfuse` | View traces, monitor costs |
 | `mcp-find` | Discover additional AI testing tools |
 
 ---

@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.constants import DEFAULT_TITLE
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
-from app.core.tracing import robust_traceable
+from app.core.tracing import get_current_trace_id, robust_traceable
 from app.domains.analysis.workflows.analysis import analysis_workflow
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
@@ -284,7 +284,7 @@ async def _handle_workflow_exception(
         "workflow_type": "analysis",
     },
 )
-async def run_workflow_task(
+async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with validation/persistence logic
     analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
 ) -> None:
     """Run analysis workflow in background task.
@@ -318,6 +318,7 @@ async def run_workflow_task(
         },
         tags=["analysis", "workflow"],
         session_id=f"analysis-{analysis_id}",  # Group all traces for this analysis
+        user_id="anonymous",  # Will be dynamic after auth implementation
     )
 
     try:
@@ -331,18 +332,35 @@ async def run_workflow_task(
         # Note: Workflow-level timeout is handled by step_timeout on graph
         config = create_runnable_config(thread_id=str(analysis_id))
 
+        # Issue #384: Verify Langfuse callback handler is present for graph visualization
+        # The callback handler enables automatic graph structure inference in Langfuse UI
+        callbacks_enabled = bool(config.get("callbacks"))
+        if callbacks_enabled:
+            logger.debug(
+                "langfuse_callback_enabled",
+                analysis_id=str(analysis_id),
+                message="Langfuse CallbackHandler present - graph visualization enabled",
+            )
+        else:
+            logger.debug(
+                "langfuse_callback_disabled",
+                analysis_id=str(analysis_id),
+                message="Langfuse disabled or not configured - graph visualization unavailable",
+            )
+
         input_state: dict[str, str] = {
             "url": url,
             "analysis_id": str(analysis_id),
             "skill_level": skill_level,
         }
 
-        # Execute workflow
+        # Execute workflow with callbacks (Issue #384: enables graph visualization)
         logger.debug(
             "workflow_execution_starting",
             analysis_id=str(analysis_id),
             url=url,
             thread_id=str(analysis_id),
+            callbacks_enabled=callbacks_enabled,
         )
         result = await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
         workflow_completed = True  # Mark as completed successfully
@@ -420,6 +438,9 @@ async def run_workflow_task(
         # Reuse artifact from validation check above (already queried)
         # Also attach artifact info to Langfuse trace for visibility
         try:
+            # Get trace_id for frontend feedback submission (Issue #385)
+            trace_id = get_current_trace_id()
+
             # Re-query artifact for SSE event (artifact variable from validation is out of scope)
             async with AsyncSessionLocal() as db_session:
                 repository = ArtifactRepository(session=db_session)
@@ -432,11 +453,13 @@ async def run_workflow_task(
                         stage=get_stage_name("artifact_generation"),
                         status="complete",
                         artifact_id=str(artifact.id),
+                        trace_id=trace_id,  # Include trace_id for feedback workflow
                     )
                     logger.info(
                         "workflow_complete_event_emitted",
                         analysis_id=str(analysis_id),
                         artifact_id=str(artifact.id),
+                        trace_id=trace_id,
                     )
                 else:
                     # Artifact not found - log warning but still emit complete event
@@ -450,6 +473,7 @@ async def run_workflow_task(
                         analysis_id=str(analysis_id),
                         stage=get_stage_name("artifact_generation"),
                         status="complete",
+                        trace_id=trace_id,  # Include trace_id even without artifact
                     )
         except Exception as event_error:
             logger.error(

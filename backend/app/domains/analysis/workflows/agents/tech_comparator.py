@@ -2,6 +2,8 @@
 
 This agent identifies the primary technology discussed in content and compares
 it to relevant alternatives, providing pros, cons, use cases, and recommendations.
+
+Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,86 +18,13 @@ from app.domains.analysis.workflows.agents.factories import (
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
 logger = get_logger(__name__)
 
-# System prompt for tech comparator agent
-TECH_COMPARATOR_PROMPT = """You are a Technical Comparison Specialist.
-
-CRITICAL: You MUST provide ALL required fields. Missing fields will cause validation errors.
-
-Required Output Structure (EXAMPLE FORMAT - extract actual values from content):
-{
-  "primary_tech": "<PRIMARY TECH FROM CONTENT>",
-  "alternatives": ["<ALT 1 FROM CONTENT>", "<ALT 2>", "<ALT 3>"],
-  "comparison": {
-    "<PRIMARY TECH>": {
-      "pros": ["<ACTUAL PROS FROM CONTENT>"],
-      "cons": ["<ACTUAL CONS FROM CONTENT>"],
-      "use_cases": ["<ACTUAL USE CASES FROM CONTENT>"]
-    }
-  },
-  "recommendation": "<RECOMMENDATION BASED ON CONTENT>"
-}
-
-Field Requirements:
-1. **primary_tech** (REQUIRED): String - primary technology name with version (
-    e.g., "LangGraph 0.6.7"
-)
-2. **alternatives** (REQUIRED): List of 2-3 alternative technology names with versions
-3. **comparison** (REQUIRED): Dictionary mapping tech names to comparison entries
-   - MUST include entry for primary_tech
-   - MUST include entry for each alternative
-   - Each entry: {"pros": [], "cons": [], "use_cases": []}
-4. **recommendation** (REQUIRED): String with clear recommendation
-5. **confidence_score** (REQUIRED): Float (0.0-1.0) - confidence in quality and certainty
-   of this comparison. Consider: accuracy of identification, completeness of analysis,
-   relevance of alternatives, and confidence in recommendation.
-
-NUMERIC SPECIFICITY REQUIREMENTS:
-- primary_tech MUST include version (e.g., "LangGraph 0.6.7", "React 18.2.0")
-- alternatives MUST include versions (e.g., "LangChain Agents 0.1.0")
-- pros MUST include quantifiable benefits (e.g., "40% faster cold start", "3x better throughput")
-- cons MUST include specific limitations (
-    e.g., "Max 100 concurrent executions", "No TypeScript support"
-)
-- use_cases MUST include scale (e.g., "Best for 10K-100K daily users", "Handles 50K+ req/sec")
-
-FORBIDDEN VAGUE LANGUAGE - Never use:
-- "better performance", "faster" (quantify: "2x faster", "150ms vs 450ms")
-- "more features", "richer ecosystem" (list specific features)
-- "good for most projects", "suitable for many use cases" (specify exact use cases)
-- "some limitations", "a few drawbacks" (enumerate each)
-- "popular choice", "widely used" (cite adoption metrics)
-
-GOOD EXAMPLE:
-  primary_tech: "LangGraph 0.6.7"
-  pros: [
-      "Native state persistence with PostgreSQL checkpointing",
-      "Built-in retry with 3x backoff",
-      "50% less boilerplate than LangChain Agents",
-  ]
-  cons: ["Requires Python 3.9+", "Max 256MB state size", "No native JavaScript SDK"]
-  use_cases: [
-      "Multi-step agentic workflows processing 1K-50K tasks/day",
-      "RAG pipelines with <500ms latency requirements",
-  ]
-
-BAD EXAMPLE (DO NOT USE):
-  primary_tech: "LangGraph"
-  pros: ["Good performance", "Easy to use", "Popular framework"]
-  cons: ["Some learning curve", "Limited documentation"]
-  use_cases: ["Various AI applications", "Building agents"]
-
-IMPORTANT: The "comparison" field must include entries for primary_tech AND all alternatives.
-Do not omit any required fields. Return exactly ONE structured response/tool call; never
-return multiple tool calls or extra responses.
-
-COMPARISON STRATEGY:
-- If multiple frameworks are detected (e.g., Django vs FastAPI), treat them as the primary subjects.
-- Focus on "Build vs Buy" if applicable.
-- Highlight "Standard vs Modern" approaches (e.g., Redux vs Zustand)."""
+# Prompt is fetched from Langfuse via PromptManager (with hardcoded fallback)
+PROMPT_NAME = "analysis-agent-tech-comparator"
 
 
 async def run_tech_comparator(
@@ -151,8 +80,13 @@ async def run_tech_comparator(
         calculated_threshold=specificity_threshold,
     )
 
+    # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # This will check L1 (memory) → L2 (Redis) → L3 (Langfuse API) → Hardcoded fallback
+    prompt_manager = get_prompt_manager()
+    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+
     # Build prompt with skill level instructions and grounding
-    full_prompt = apply_grounding(f"{TECH_COMPARATOR_PROMPT}\n\n{skill_instructions}")
+    full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
     agent = await create_tech_comparator_agent_with_few_shot(

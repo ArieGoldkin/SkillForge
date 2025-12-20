@@ -339,6 +339,45 @@ AGENT_RUBRICS: Final[dict[str, dict]] = {
             },
         },
     },
+    "artifact_generator": {
+        "criteria": ["completeness", "coherence", "depth", "actionability"],
+        "weights": {
+            "completeness": 0.30,
+            "coherence": 0.25,
+            "depth": 0.25,
+            "actionability": 0.20,
+        },
+        "rubrics": {
+            "completeness": {
+                1: "Artifact is empty or missing major sections, no structure or overview",
+                2: "Major sections missing (>50% of expected content), thin or placeholder content",
+                3: "Has core sections (overview, implementation steps, examples) but lacks depth",
+                4: "All major sections present with detailed content and examples",
+                5: "Comprehensive guide with all sections thoroughly developed, examples, and edge cases",
+            },
+            "coherence": {
+                1: "Disorganized, contradictory sections, no logical flow between topics",
+                2: "Poor organization with disconnected sections and confusing navigation",
+                3: "Adequate structure with table of contents and section flow",
+                4: "Well-organized with clear progression and cross-references between sections",
+                5: "Excellent structure with seamless flow, clear navigation, and professional formatting",
+            },
+            "depth": {
+                1: "Superficial treatment with no technical details or code examples",
+                2: "Basic coverage without implementation details, architecture, or reasoning",
+                3: "Moderate technical depth with some code examples and explanations",
+                4: "Good technical depth with detailed implementation guidance and architecture",
+                5: "Expert-level depth with comprehensive examples, trade-offs, and advanced considerations",
+            },
+            "actionability": {
+                1: "No practical guidance, purely theoretical without implementation steps",
+                2: "Vague guidance without specific commands, code samples, or next steps",
+                3: "Basic implementation steps with some code snippets and setup instructions",
+                4: "Clear step-by-step guidance with runnable code examples and verification steps",
+                5: "Highly actionable with copy-paste ready code, CLI commands, and validation checklists",
+            },
+        },
+    },
 }
 
 # ============================================================================

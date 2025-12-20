@@ -101,6 +101,20 @@ export const analyzeAPI = {
   },
 
   /**
+   * Get artifact metadata by artifact ID
+   * GET /api/v1/artifacts/{artifact_id}
+   * Returns artifact metadata including trace_id
+   */
+  getArtifactById: async (artifactId: string): Promise<ArtifactMetadataResponse | null> => {
+    try {
+      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/artifacts/${artifactId}`)
+    } catch (error) {
+      console.warn(`getArtifactById failed for ${artifactId}:`, error)
+      return null
+    }
+  },
+
+  /**
    * Download artifact markdown content by artifact ID
    * GET /api/v1/artifacts/{artifact_id}/download
    * Returns raw markdown content as string

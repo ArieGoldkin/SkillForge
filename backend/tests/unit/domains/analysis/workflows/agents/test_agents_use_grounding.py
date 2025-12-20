@@ -36,26 +36,30 @@ def base_state() -> AnalysisState:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "agent_module,agent_function,agent_prompt_constant",
+    "agent_module,agent_function,prompt_name",
     [
-        ("tech_comparator", "run_tech_comparator", "TECH_COMPARATOR_PROMPT"),
-        ("security_auditor", "run_security_auditor", "SECURITY_AUDITOR_PROMPT"),
-        ("implementation_planner", "run_implementation_planner", "IMPLEMENTATION_PLANNER_PROMPT"),
-        ("performance_analyst", "run_performance_analyst", "PERFORMANCE_ANALYST_PROMPT"),
-        ("code_quality_critic", "run_code_quality_critic", "CODE_QUALITY_CRITIC_PROMPT"),
-        ("trend_validator", "run_trend_validator", "TREND_VALIDATOR_PROMPT"),
-        ("dependency_mapper", "run_dependency_mapper", "DEPENDENCY_MAPPER_PROMPT"),
+        ("tech_comparator", "run_tech_comparator", "analysis-agent-tech-comparator"),
+        ("security_auditor", "run_security_auditor", "analysis-agent-security-auditor"),
+        (
+            "implementation_planner",
+            "run_implementation_planner",
+            "analysis-agent-implementation-planner",
+        ),
+        ("performance_analyst", "run_performance_analyst", "analysis-agent-performance-analyst"),
+        ("code_quality_critic", "run_code_quality_critic", "analysis-agent-code-quality-critic"),
+        ("trend_validator", "run_trend_validator", "analysis-agent-trend-validator"),
+        ("dependency_mapper", "run_dependency_mapper", "analysis-agent-dependency-mapper"),
         (
             "integration_feasibility",
             "run_integration_feasibility",
-            "INTEGRATION_FEASIBILITY_PROMPT",
+            "analysis-agent-integration-feasibility",
         ),
     ],
 )
 async def test_agent_applies_grounding(
     agent_module: str,
     agent_function: str,
-    agent_prompt_constant: str,
+    prompt_name: str,
     mock_session: AsyncSession,
     base_state: AnalysisState,
 ):
@@ -100,6 +104,9 @@ async def test_agent_applies_grounding(
         "processing_time_ms": 100,
     }
 
+    # Mock PromptManager to return a base prompt
+    test_base_prompt = f"You are a {agent_module} agent. Analyze the content."
+
     with (
         patch(
             f"app.domains.analysis.workflows.agents.{agent_module}.{factory_name}",
@@ -110,7 +117,15 @@ async def test_agent_applies_grounding(
             new_callable=AsyncMock,
             return_value=mock_tracking_result,
         ),
+        patch(
+            f"app.domains.analysis.workflows.agents.{agent_module}.get_prompt_manager"
+        ) as mock_get_pm,
     ):
+        # Configure PromptManager mock
+        mock_pm = AsyncMock()
+        mock_pm.get_prompt = AsyncMock(return_value=test_base_prompt)
+        mock_get_pm.return_value = mock_pm
+
         # Run the agent
         await agent_func(
             content="Test content about React and TypeScript",
@@ -126,11 +141,10 @@ async def test_agent_applies_grounding(
             f"{agent_function} prompt does not include GROUNDING_INSTRUCTIONS"
         )
 
-        # Verify the base prompt is also present
-        base_prompt = getattr(module, agent_prompt_constant)
-        # The prompt should contain both grounding and base prompt content
-        # We can't check for exact base_prompt since it's modified with skill_level
-        # But we can check for a distinctive part of the base prompt
+        # Verify the prompt manager was called
+        mock_pm.get_prompt.assert_called_once_with(prompt_name)
+
+        # Verify the prompt contains more than just grounding (includes base prompt)
         assert len(captured_prompt) > len(GROUNDING_INSTRUCTIONS), (
             f"{agent_function} prompt is too short - may not include base prompt"
         )
@@ -154,7 +168,15 @@ async def test_tech_comparator_uses_grounding(
             "app.domains.analysis.workflows.agents.tech_comparator.run_agent_with_tracking",
             new_callable=AsyncMock,
         ),
+        patch(
+            "app.domains.analysis.workflows.agents.tech_comparator.get_prompt_manager"
+        ) as mock_get_pm,
     ):
+        # Mock PromptManager
+        mock_pm = AsyncMock()
+        mock_pm.get_prompt = AsyncMock(return_value="Base tech comparator prompt")
+        mock_get_pm.return_value = mock_pm
+
         # Set return value for apply_grounding
         mock_apply.return_value = "grounded_prompt"
 
@@ -188,7 +210,15 @@ async def test_security_auditor_uses_grounding(
             "app.domains.analysis.workflows.agents.security_auditor.run_agent_with_tracking",
             new_callable=AsyncMock,
         ),
+        patch(
+            "app.domains.analysis.workflows.agents.security_auditor.get_prompt_manager"
+        ) as mock_get_pm,
     ):
+        # Mock PromptManager
+        mock_pm = AsyncMock()
+        mock_pm.get_prompt = AsyncMock(return_value="Base security auditor prompt")
+        mock_get_pm.return_value = mock_pm
+
         mock_apply.return_value = "grounded_prompt"
 
         await run_security_auditor(
@@ -222,7 +252,15 @@ async def test_implementation_planner_uses_grounding(
             "app.domains.analysis.workflows.agents.implementation_planner.run_agent_with_tracking",
             new_callable=AsyncMock,
         ),
+        patch(
+            "app.domains.analysis.workflows.agents.implementation_planner.get_prompt_manager"
+        ) as mock_get_pm,
     ):
+        # Mock PromptManager
+        mock_pm = AsyncMock()
+        mock_pm.get_prompt = AsyncMock(return_value="Base implementation planner prompt")
+        mock_get_pm.return_value = mock_pm
+
         mock_apply.return_value = "grounded_prompt"
 
         await run_implementation_planner(

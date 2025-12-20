@@ -23,6 +23,7 @@ from app.db.models.agent_finding import AgentFinding  # noqa: E402, F401
 from app.db.models.agent_memory import AgentMemory  # noqa: E402, F401
 from app.db.models.analysis import Analysis  # noqa: E402, F401
 from app.db.models.analysis_chunk import AnalysisChunk  # noqa: E402, F401
+from app.db.models.annotation_queue import AnnotationQueue  # noqa: E402, F401
 from app.db.models.artifact import Artifact  # noqa: E402, F401
 from app.db.models.progress import AnalysisProgress  # noqa: E402, F401
 from app.db.models.tutoring import TutoringMessage, TutoringSession  # noqa: E402, F401

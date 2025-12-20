@@ -1,0 +1,102 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "langgraph-workflows",
+  "version": "1.0.0",
+  "description": "Multi-agent workflow orchestration with LangGraph 1.0 - state management, supervisor patterns, conditional routing, checkpointing",
+
+  "capabilities": {
+    "state-management": {
+      "keywords": ["langgraph state", "typeddict state", "state schema", "annotated list", "state accumulation"],
+      "solves": [
+        "How do I manage workflow state in LangGraph?",
+        "Define LangGraph state schema",
+        "Accumulate results from multiple agents",
+        "TypedDict vs Pydantic for state"
+      ],
+      "reference_file": "references/state-management.md",
+      "token_cost": 200
+    },
+
+    "supervisor-worker": {
+      "keywords": ["supervisor pattern", "multi-agent coordination", "agent routing", "worker agents"],
+      "solves": [
+        "How do I coordinate multiple agents?",
+        "Implement supervisor-worker pattern",
+        "Route to specialized agents",
+        "SkillForge 8-agent pipeline"
+      ],
+      "reference_file": "references/supervisor-worker-pattern.md",
+      "token_cost": 250
+    },
+
+    "conditional-routing": {
+      "keywords": ["conditional edges", "routing logic", "dynamic routing", "workflow branching"],
+      "solves": [
+        "How do I route based on state?",
+        "Dynamic workflow paths",
+        "Conditional edges in LangGraph",
+        "Quality gate routing"
+      ],
+      "reference_file": "references/conditional-routing.md",
+      "token_cost": 180
+    },
+
+    "checkpointing": {
+      "keywords": ["checkpoints", "workflow persistence", "resume workflow", "fault tolerance"],
+      "solves": [
+        "How do I save workflow state?",
+        "Resume interrupted workflow",
+        "Fault-tolerant LangGraph",
+        "PostgreSQL checkpointing"
+      ],
+      "reference_file": "references/checkpoints-persistence.md",
+      "token_cost": 150
+    }
+  },
+
+  "triggers": {
+    "high_confidence": [
+      "build langgraph workflow",
+      "multi-agent coordination",
+      "supervisor pattern",
+      "workflow state management",
+      "checkpoint langgraph"
+    ],
+    "medium_confidence": [
+      "agent orchestration",
+      "conditional workflow",
+      "workflow routing",
+      "resume workflow"
+    ]
+  },
+
+  "integrates_with": [
+    "ai-native-development",
+    "langfuse-observability",
+    "performance-optimization"
+  ],
+
+  "used_by_agents": [
+    "ai-ml-engineer",
+    "backend-system-architect"
+  ],
+
+  "progressive_loading": {
+    "tier1_discovery": "capabilities.json (100 tokens)",
+    "tier2_overview": "SKILL.md (600 tokens)",
+    "tier3_specific": "references/*.md (150-250 tokens each)",
+    "tier4_templates": "templates/*.py (complete implementations)"
+  },
+
+  "mcp_tools": {
+    "documentation": {
+      "tool": "context7",
+      "library_ids": ["/langchain-ai/langgraph"],
+      "use_when": "Need current LangGraph API docs"
+    },
+    "observability": {
+      "tool": "skillforge-langfuse",
+      "use_when": "Tracing multi-agent workflows"
+    }
+  }
+}

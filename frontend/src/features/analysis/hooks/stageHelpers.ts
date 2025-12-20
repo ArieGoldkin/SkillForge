@@ -124,11 +124,12 @@ export function getStageDescription(
  * Generate agent name from stage
  */
 export function getAgentName(stage: StageName, details?: Record<string, unknown>): string {
-  if (details?.agent && typeof details.agent === 'string') {
+  if (details?.agent && typeof details.agent === 'string' && details.agent.length > 0) {
     // Format agent name: snake_case -> Title Case
     return details.agent
       .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .filter((word) => word.length > 0) // Guard against empty strings from split
+      .map((word) => (word[0]?.toUpperCase() ?? '') + word.slice(1))
       .join(' ')
   }
 

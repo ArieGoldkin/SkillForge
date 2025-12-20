@@ -66,10 +66,10 @@
       "token_cost": 150
     },
     "observability": {
-      "keywords": ["langsmith", "langfuse", "tracing", "monitoring", "evaluation"],
+      "keywords": ["langfuse", "tracing", "monitoring", "evaluation", "llm observability"],
       "solves": [
         "How do I monitor LLM performance?",
-        "Set up LangSmith tracing",
+        "Set up Langfuse tracing",
         "Evaluate AI quality"
       ],
       "reference_file": "references/observability.md",
@@ -92,7 +92,7 @@
   },
 
   "mcp_tools": {
-    "observability": { "tool": "skillforge-langsmith", "use_when": "Tracing/evaluation needed" },
+    "observability": { "tool": "skillforge-langfuse", "use_when": "Tracing/evaluation needed" },
     "documentation": { "tool": "context7", "library_ids": ["/langchain-ai/langgraph", "/anthropics/anthropic-sdk-python"] }
   }
 }

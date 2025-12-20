@@ -6,6 +6,7 @@ Issue #299-304: Quality gate now uses FAIL-OPEN behavior - always generate artif
 even with low quality scores. Users prefer getting something over nothing.
 """
 
+import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -13,13 +14,19 @@ import pytest
 from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
 from app.domains.analysis.workflows.state import AnalysisState
 
+# Use valid UUIDs for tests (annotation queue requires UUID format)
+TEST_UUID_1 = str(uuid.uuid4())
+TEST_UUID_2 = str(uuid.uuid4())
+TEST_UUID_3 = str(uuid.uuid4())
+TEST_UUID_4 = str(uuid.uuid4())
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_quality_gate_fail_node_sets_warning_status():
     """Test that fail node sets quality_gate_warning (fail-open behavior)."""
     state: AnalysisState = {
-        "analysis_id": "test-analysis-123",
+        "analysis_id": TEST_UUID_1,
         "quality_gate_passed": False,
         "quality_gate_retry_count": 2,
         "quality_gate_avg_score": 0.5,
@@ -50,7 +57,7 @@ async def test_quality_gate_fail_node_sets_warning_status():
 async def test_quality_gate_fail_node_emits_progress_event():
     """Test that fail node emits SSE progress event (not error - fail-open)."""
     state: AnalysisState = {
-        "analysis_id": "test-analysis-456",
+        "analysis_id": TEST_UUID_2,
         "quality_gate_passed": False,
         "quality_gate_retry_count": 2,
         "quality_gate_avg_score": 0.45,
@@ -77,7 +84,7 @@ async def test_quality_gate_fail_node_emits_progress_event():
         # Check event type is "progress" not "error" (fail-open)
         assert call_args[0][0] == "progress"
         kwargs = call_args[1]
-        assert kwargs["analysis_id"] == "test-analysis-456"
+        assert kwargs["analysis_id"] == TEST_UUID_2
         assert kwargs["stage"] == "quality_gate"
         assert kwargs["status"] == "low_quality"  # Not "failed"
         assert "score: 0.45" in kwargs["message"]
@@ -94,7 +101,7 @@ async def test_quality_gate_fail_node_emits_progress_event():
 async def test_quality_gate_fail_node_logs_warning():
     """Test that fail node logs warning (not error) with proper fields."""
     state: AnalysisState = {
-        "analysis_id": "test-analysis-789",
+        "analysis_id": TEST_UUID_3,
         "quality_gate_passed": False,
         "quality_gate_retry_count": 2,
         "quality_gate_avg_score": 0.6,
@@ -121,7 +128,7 @@ async def test_quality_gate_fail_node_logs_warning():
         # Check log event name and fields
         assert call_args[0][0] == "quality_gate_failed_continuing_to_artifact"
         kwargs = call_args[1]
-        assert kwargs["analysis_id"] == "test-analysis-789"
+        assert kwargs["analysis_id"] == TEST_UUID_3
         assert kwargs["avg_score"] == 0.6
         assert kwargs["retry_count"] == 2
         assert "quality_scores" in kwargs
@@ -133,7 +140,7 @@ async def test_quality_gate_fail_node_logs_warning():
 async def test_quality_gate_fail_node_handles_none_values():
     """Test that fail node handles None/missing values gracefully."""
     state: AnalysisState = {
-        "analysis_id": "test-analysis-000",
+        "analysis_id": TEST_UUID_4,
         # Missing quality_gate_avg_score, quality_scores, retry_count
     }
 

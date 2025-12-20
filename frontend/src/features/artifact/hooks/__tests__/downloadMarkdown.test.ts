@@ -4,6 +4,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMockAnchorElement } from '@/test-utils/factories'
+
 import { downloadMarkdown } from '../downloadMarkdown'
 
 describe('downloadMarkdown', () => {
@@ -34,11 +36,13 @@ describe('downloadMarkdown', () => {
     URL.revokeObjectURL = mockRevokeObjectURL
 
     // Mock document.createElement to return a mock link
-    vi.spyOn(document, 'createElement').mockReturnValue({
-      href: '',
-      download: '',
-      click: mockClick,
-    } as unknown as HTMLAnchorElement)
+    vi.spyOn(document, 'createElement').mockReturnValue(
+      createMockAnchorElement({
+        href: '',
+        download: '',
+        click: mockClick,
+      })
+    )
 
     // Mock document.body methods
     vi.spyOn(document.body, 'appendChild').mockImplementation(mockAppendChild)
@@ -67,12 +71,12 @@ describe('downloadMarkdown', () => {
   })
 
   it('sets correct href and download attributes on link', () => {
-    const mockLink = {
+    const mockLink = createMockAnchorElement({
       href: '',
       download: '',
       click: mockClick,
-    }
-    vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLAnchorElement)
+    })
+    vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
 
     downloadMarkdown('content', 'my-file.md')
 

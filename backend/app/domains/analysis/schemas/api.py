@@ -202,6 +202,7 @@ class ArtifactMetadataResponse(BaseModel):
     analysis_id: str = Field(..., description="Parent analysis identifier")
     markdown_content: str = Field(..., description="Artifact markdown content")
     artifact_metadata: dict | None = Field(None, description="Optional artifact metadata")
+    trace_id: str | None = Field(None, description="Langfuse trace ID for feedback")
     created_at: str = Field(..., description="Creation timestamp")
 
 

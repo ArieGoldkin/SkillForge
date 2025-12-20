@@ -1,5 +1,4 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { analyzeAPI } from '@services/api.service'
@@ -12,7 +11,7 @@ vi.mock('@services/api.service', () => ({
   },
 }))
 
-const mockStatus = analyzeAPI.getAnalysisStatus as unknown as Mock
+const mockStatus = vi.mocked(analyzeAPI.getAnalysisStatus)
 
 const baseStatus = {
   analysis_id: 'analysis-1',

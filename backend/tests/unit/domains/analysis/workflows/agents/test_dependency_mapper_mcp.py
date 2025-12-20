@@ -44,6 +44,16 @@ def mock_state():
     return {"skill_level": "intermediate"}
 
 
+@pytest.fixture
+def mock_prompt_manager():
+    """Create mock PromptManager for all tests."""
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a dependency mapper agent. Analyze dependencies."
+    )
+    return mock_pm
+
+
 # ============================================================================
 # TestRunDependencyMapperWithTools - Core Agent Function
 # ============================================================================
@@ -57,10 +67,18 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_uses_tool_enabled_agent_when_tools_provided(
-        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
+        self,
+        mock_get_pm,
+        mock_create_agent,
+        mock_run_tracking,
+        mock_tools,
+        mock_state,
+        mock_prompt_manager,
     ):
         """When tools are provided, should create agent with tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -87,10 +105,18 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_passes_dependency_mapping_schema_to_tool_agent(
-        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
+        self,
+        mock_get_pm,
+        mock_create_agent,
+        mock_run_tracking,
+        mock_tools,
+        mock_state,
+        mock_prompt_manager,
     ):
         """Agent factory receives DependencyMapping response schema."""
+        mock_get_pm.return_value = mock_prompt_manager
         from app.domains.analysis.schemas.agents.dependency_mapper import DependencyMapping
 
         mock_agent = MagicMock()
@@ -118,10 +144,18 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_enhances_prompt_with_skill_level_and_tools(
-        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
+        self,
+        mock_get_pm,
+        mock_create_agent,
+        mock_run_tracking,
+        mock_tools,
+        mock_state,
+        mock_prompt_manager,
     ):
         """System prompt includes both skill level and tool guidance."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -152,10 +186,12 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_uses_structured_agent_when_no_tools(
-        self, mock_create_agent, mock_run_tracking, mock_state
+        self, mock_get_pm, mock_create_agent, mock_run_tracking, mock_state, mock_prompt_manager
     ):
         """When no tools provided, should create agent without tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -182,10 +218,12 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_uses_structured_agent_when_empty_tools(
-        self, mock_create_agent, mock_run_tracking, mock_state
+        self, mock_get_pm, mock_create_agent, mock_run_tracking, mock_state, mock_prompt_manager
     ):
         """When empty tools list provided, should create agent with empty tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -212,10 +250,18 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_tool_call_config_max_calls_is_20(
-        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
+        self,
+        mock_get_pm,
+        mock_create_agent,
+        mock_run_tracking,
+        mock_tools,
+        mock_state,
+        mock_prompt_manager,
     ):
         """Dependency mapper factory configures max_tool_calls=20 internally."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -243,10 +289,18 @@ class TestRunDependencyMapperWithTools:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_runs_agent_with_tracking(
-        self, mock_create_agent, mock_run_tracking, mock_tools, mock_state
+        self,
+        mock_get_pm,
+        mock_create_agent,
+        mock_run_tracking,
+        mock_tools,
+        mock_state,
+        mock_prompt_manager,
     ):
         """Agent execution uses run_agent_with_tracking for persistence."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -365,10 +419,12 @@ class TestSkillLevelIntegration:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_beginner_skill_level_with_tools(
-        self, mock_create_agent, mock_run_tracking, mock_tools
+        self, mock_get_pm, mock_create_agent, mock_run_tracking, mock_tools, mock_prompt_manager
     ):
         """Beginner skill level instructions included when using tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -396,10 +452,12 @@ class TestSkillLevelIntegration:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
     async def test_expert_skill_level_with_tools(
-        self, mock_create_agent, mock_run_tracking, mock_tools
+        self, mock_get_pm, mock_create_agent, mock_run_tracking, mock_tools, mock_prompt_manager
     ):
         """Expert skill level instructions included when using tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}
@@ -427,8 +485,12 @@ class TestSkillLevelIntegration:
     @patch(
         "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
     )
-    async def test_skill_level_without_tools(self, mock_create_agent, mock_run_tracking):
+    @patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
+    async def test_skill_level_without_tools(
+        self, mock_get_pm, mock_create_agent, mock_run_tracking, mock_prompt_manager
+    ):
         """Skill level instructions work with agent without tools."""
+        mock_get_pm.return_value = mock_prompt_manager
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
         mock_run_tracking.return_value = {"agent_type": "dependency_mapper", "findings": {}}

@@ -24,6 +24,7 @@ def test_url():
     return "https://example.com/article"
 
 
+@patch("app.api.v1.analysis.workflow_runner.get_current_trace_id")
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
 @patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 @patch("app.api.v1.analysis.workflow_runner.logger")
@@ -31,6 +32,7 @@ async def test_run_workflow_task_success(
     mock_logger,
     mock_workflow,
     mock_emit_event,
+    mock_get_trace_id,
     mock_analysis_id,
     test_url,
 ):
@@ -38,6 +40,9 @@ async def test_run_workflow_task_success(
     import uuid
 
     from app.db.models.artifact import Artifact
+
+    # Mock trace_id retrieval (Issue #385)
+    mock_get_trace_id.return_value = "test-trace-id-123"
 
     # Mock workflow to complete successfully with data to persist
     mock_workflow.ainvoke = AsyncMock(
@@ -124,12 +129,13 @@ async def test_run_workflow_task_success(
     assert mock_analysis.status == "complete"
     mock_db_session_status.commit.assert_called_once()
 
-    # Verify complete event was emitted with artifact_id
+    # Verify complete event was emitted with artifact_id and trace_id
     complete_calls = [call for call in mock_emit_event.call_args_list if call[0][0] == "complete"]
     assert len(complete_calls) == 1, "Complete event should be emitted exactly once"
     complete_call = complete_calls[0]
     assert "artifact_id" in complete_call.kwargs
     assert complete_call.kwargs["artifact_id"] == str(artifact_id)
+    assert "trace_id" in complete_call.kwargs  # Issue #385
 
 
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
@@ -311,6 +317,7 @@ async def test_run_workflow_task_analysis_not_found(
     mock_db_session.commit.assert_not_called()
 
 
+@patch("app.api.v1.analysis.workflow_runner.get_current_trace_id")
 @patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
 @patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 @patch("app.api.v1.analysis.workflow_runner.logger")
@@ -318,6 +325,7 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     mock_logger,
     mock_workflow,
     mock_emit_event,
+    mock_get_trace_id,
     mock_analysis_id,
     test_url,
 ):
@@ -325,6 +333,9 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     import uuid
 
     from app.db.models.artifact import Artifact
+
+    # Mock trace_id retrieval (Issue #385)
+    mock_get_trace_id.return_value = "test-trace-id-456"
 
     # Mock workflow to complete successfully
     mock_workflow.ainvoke = AsyncMock(
@@ -421,6 +432,8 @@ async def test_run_workflow_task_emits_complete_event_with_artifact_id(
     assert call_kwargs["artifact_id"] == str(artifact_id), (
         f"artifact_id should match artifact.id, got {call_kwargs.get('artifact_id')}"
     )
+    # Verify trace_id is included in kwargs (Issue #385)
+    assert "trace_id" in call_kwargs, f"trace_id should be in event kwargs, got {call_kwargs}"
 
 
 @pytest.mark.asyncio
@@ -950,3 +963,125 @@ async def test_handle_partial_match_runtime_error():
             # Should be treated as regular RuntimeError, not converted GeneratorExit
             mock_status.assert_called_once_with(analysis_id, "failed")
             mock_emit.assert_called_once_with(analysis_id, exc)
+
+
+# ============================================================================
+# Tests for Issue #384: Langfuse Graph Visualization
+# ============================================================================
+
+
+@pytest.mark.asyncio
+@patch("app.api.v1.analysis.workflow_runner.emit_streaming_event")
+@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.api.v1.analysis.workflow_runner.logger")
+async def test_langfuse_callback_passed_to_workflow(
+    mock_logger,
+    mock_workflow,
+    mock_emit_event,
+    mock_analysis_id,
+    test_url,
+):
+    """Test that Langfuse callback handler is passed to workflow invocation (Issue #384).
+
+    This test verifies that when Langfuse is enabled, the callback handler
+    is included in the config passed to graph.ainvoke(), enabling graph
+    visualization in the Langfuse UI.
+    """
+    import uuid
+
+    from app.db.models.artifact import Artifact
+
+    # Mock workflow to complete successfully
+    mock_workflow.ainvoke = AsyncMock(
+        return_value={
+            "raw_content": "Test content",
+            "extraction_metadata": {"title": "Test Title"},
+            "content_embedding": [0.1] * 1536,
+        }
+    )
+
+    # Mock analysis and artifact
+    mock_analysis = MagicMock()
+    mock_analysis.status = "pending"
+    mock_analysis.id = mock_analysis_id
+
+    artifact_id = uuid.uuid4()
+    mock_artifact = MagicMock(spec=Artifact)
+    mock_artifact.id = artifact_id
+
+    # Mock database sessions (same pattern as other tests)
+    mock_db_session_persist = AsyncMock()
+    mock_result_persist = MagicMock()
+    mock_result_persist.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session_persist.execute.return_value = mock_result_persist
+    mock_db_session_persist.__aenter__ = AsyncMock(return_value=mock_db_session_persist)
+    mock_db_session_persist.__aexit__ = AsyncMock(return_value=False)
+
+    mock_db_session_artifact_validation = AsyncMock()
+    mock_db_session_artifact_validation.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_validation
+    )
+    mock_db_session_artifact_validation.__aexit__ = AsyncMock(return_value=False)
+
+    mock_db_session_status = AsyncMock()
+    mock_result_status = MagicMock()
+    mock_result_status.scalar_one_or_none.return_value = mock_analysis
+    mock_db_session_status.execute.return_value = mock_result_status
+    mock_db_session_status.__aenter__ = AsyncMock(return_value=mock_db_session_status)
+    mock_db_session_status.__aexit__ = AsyncMock(return_value=False)
+
+    mock_db_session_artifact_event = AsyncMock()
+    mock_db_session_artifact_event.__aenter__ = AsyncMock(
+        return_value=mock_db_session_artifact_event
+    )
+    mock_db_session_artifact_event.__aexit__ = AsyncMock(return_value=False)
+
+    mock_repository_instance = AsyncMock()
+    mock_repository_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
+
+    session_calls = [
+        mock_db_session_persist,
+        mock_db_session_artifact_validation,
+        mock_db_session_status,
+        mock_db_session_artifact_event,
+    ]
+
+    def session_factory():
+        return session_calls.pop(0) if session_calls else mock_db_session_artifact_event
+
+    # Mock Langfuse callback handler to be enabled
+    mock_callback_handler = MagicMock()
+
+    with (
+        patch("app.db.session.AsyncSessionLocal", side_effect=session_factory),
+        patch(
+            "app.db.repositories.artifact_repository.ArtifactRepository",
+            return_value=mock_repository_instance,
+        ),
+        patch(
+            "app.core.langfuse_config.get_langfuse_callback_handler",
+            return_value=mock_callback_handler,
+        ),
+    ):
+        await run_workflow_task(mock_analysis_id, test_url)
+
+    # Verify workflow was called with config containing callbacks
+    mock_workflow.ainvoke.assert_called_once()
+    call_args = mock_workflow.ainvoke.call_args
+
+    # Extract config from kwargs (config is passed as named parameter)
+    config = call_args.kwargs.get("config") or call_args[1] if len(call_args) > 1 else {}
+
+    # Verify callbacks are present in config (Issue #384)
+    assert "callbacks" in config, "Config should contain 'callbacks' key for graph visualization"
+    assert config["callbacks"] == [mock_callback_handler], (
+        "Callbacks should contain Langfuse handler"
+    )
+
+    # Verify debug log was called with callbacks_enabled=True
+    debug_calls = [
+        call
+        for call in mock_logger.debug.call_args_list
+        if "langfuse_callback_enabled" in str(call)
+    ]
+    assert len(debug_calls) == 1, "Should log that Langfuse callback is enabled"

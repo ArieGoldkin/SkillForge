@@ -36,6 +36,7 @@ async def get_artifact_by_analysis(
         artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
         if artifact.artifact_metadata
         else None,
+        trace_id=cast(str | None, artifact.trace_id) if artifact.trace_id else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 
@@ -73,6 +74,7 @@ async def get_artifact_by_id(
         artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
         if artifact.artifact_metadata
         else None,
+        trace_id=cast(str | None, artifact.trace_id) if artifact.trace_id else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 

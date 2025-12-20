@@ -8,8 +8,11 @@
 import type { SSEErrorEvent, SSEProgressEvent } from '@app-types/sse'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SSEStore } from '../sseStoreHelpers'
-import { closeConnection, createConnection } from '../sseStoreHelpers'
+import type { SSEStore } from '../sseStore'
+import { closeConnection, createConnection, type ListenerRefs } from '../sseStoreHelpers'
+
+// Valid UUIDs for testing
+const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
 
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
@@ -95,6 +98,9 @@ function getMockEventSource(): MockEventSource | null {
 
 /**
  * Create a mock StoreAPI for testing
+ *
+ * The mock includes all internal state fields that were moved from module-level
+ * to the Zustand store for proper memory management.
  */
 function createMockStore(): {
   store: {
@@ -104,15 +110,27 @@ function createMockStore(): {
   state: SSEStore
 } {
   const state: SSEStore = {
+    // Public state
     events: [],
     latestEvent: null,
     error: null,
     isConnected: false,
     isComplete: false,
     activeAnalysisId: null,
+
+    // Internal state (moved from module-level for memory safety)
+    _eventSource: null,
+    _reconnectAttempts: 0,
+    _reconnectTimeoutId: null,
+    _permanentlyFailed: false,
+    _listenerRefs: null as ListenerRefs | null,
+
+    // Actions
     connect: vi.fn(),
     disconnect: vi.fn(),
     reset: vi.fn(),
+    _addEvent: vi.fn(),
+    _setInternalState: vi.fn(),
   }
 
   const store = {
@@ -125,6 +143,12 @@ function createMockStore(): {
       }
     },
   }
+
+  // Wire up _addEvent to actually add events (for tests that check events array)
+  state._addEvent = vi.fn((event) => {
+    state.events = [...state.events, event]
+    state.latestEvent = event
+  })
 
   return { store, state }
 }
@@ -151,7 +175,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Simulate connection error event with no data (undefined)
@@ -175,7 +199,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const { store } = createMockStore()
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Manually create MessageEvent with null data
@@ -196,12 +220,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const { store } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       const errorEvent: SSEErrorEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
         timestamp: new Date().toISOString(),
@@ -224,12 +248,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const { store } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       const errorEvent: SSEErrorEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'embedding',
         status: 'failed',
         timestamp: new Date().toISOString(),
@@ -247,12 +271,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const { store } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       const errorEvent: SSEErrorEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'unknown',
         status: 'failed',
         timestamp: new Date().toISOString(),
@@ -276,7 +300,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       setAutoConnect(false)
 
       // First connection attempt
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Simulate immediate connection failures for all 3 attempts
@@ -299,11 +323,11 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       consoleWarnSpy.mockClear()
 
       // Try to reconnect with SAME analysis ID
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
 
       // Should be blocked by permanentlyFailed flag
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[SSE] Connection permanently failed for test-123. Refresh to retry.'
+        `[SSE] Connection permanently failed for ${TEST_ANALYSIS_ID}. Refresh to retry.`
       )
 
       consoleWarnSpy.mockRestore()
@@ -319,7 +343,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       setAutoConnect(false)
 
       // First connection attempt
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Simulate connection failures to reach permanent failure
@@ -356,7 +380,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       setAutoConnect(false)
 
       // First connection attempt
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Trigger connection error - should schedule reconnect attempt 1
@@ -394,10 +418,10 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // Try to reconnect - should be blocked
       consoleWarnSpy.mockClear()
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[SSE] Connection permanently failed for test-123. Refresh to retry.'
+        `[SSE] Connection permanently failed for ${TEST_ANALYSIS_ID}. Refresh to retry.`
       )
 
       consoleErrorSpy.mockRestore()
@@ -409,7 +433,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // First failure - should wait 1000ms (1s)
@@ -438,7 +462,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       // First connection succeeds (auto-connect enabled by default)
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
       expect(store.getState().isConnected).toBe(true)
 
@@ -493,14 +517,16 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // Set up initial state as already connected
       store.setState({
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
         isConnected: true,
       })
 
       // Try to connect again with same ID
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('[SSE] Already connected to analysis test-123')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        `[SSE] Already connected to analysis ${TEST_ANALYSIS_ID}`
+      )
 
       consoleWarnSpy.mockRestore()
     })
@@ -513,11 +539,11 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       store.setState({ disconnect: disconnectMock })
 
       // First connection
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       store.setState({
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
         isConnected: true,
       })
 
@@ -531,12 +557,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
     it('should handle progress events correctly', async () => {
       const { store } = createMockStore()
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       const progressEvent: SSEProgressEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'running',
         timestamp: new Date().toISOString(),
@@ -555,7 +581,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       // First connection
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Trigger connection error to start reconnect
@@ -580,12 +606,12 @@ describe('SSE Store Helpers - Bug Fixes', () => {
     it('should close EventSource and reset state', async () => {
       const { store } = createMockStore()
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       store.setState({
         isConnected: true,
-        activeAnalysisId: 'test-123',
+        activeAnalysisId: TEST_ANALYSIS_ID,
       })
 
       closeConnection(store)
@@ -600,7 +626,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Trigger connection error to start reconnect
@@ -624,7 +650,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       // Trigger some connection errors
@@ -641,7 +667,7 @@ describe('SSE Store Helpers - Bug Fixes', () => {
 
       // New connection should start from attempt 1
       consoleWarnSpy.mockClear()
-      createConnection('test-123', store)
+      createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
       getMockEventSource()?.simulateConnectionError()

@@ -507,8 +507,7 @@ function countTokens(text: string, model = 'gpt-4'): number {
 Track LLM performance, costs, and quality in production.
 
 **Tools:**
-- **LangSmith**: Tracing, evaluation, monitoring
-- **LangFuse**: Open-source observability
+- **Langfuse**: Open-source LLM observability, tracing, evaluation, monitoring
 - **Custom Logging**: Structured logs with metrics
 
 **Key Metrics:**
@@ -519,7 +518,7 @@ Track LLM performance, costs, and quality in production.
 - Quality scores (relevance, coherence, factuality)
 
 **Detailed Implementation:** See `references/observability.md` for:
-- LangSmith and LangFuse integration
+- Langfuse integration (self-hosted LLM observability)
 - Custom logger implementation
 - Performance monitoring
 - Quality evaluation
@@ -720,7 +719,7 @@ const prompt = `${problem}\n\nLet's think step by step:`
 - [LangChain Documentation](https://python.langchain.com/docs/)
 - [Pinecone Documentation](https://docs.pinecone.io/)
 - [Chroma Documentation](https://docs.trychroma.com/)
-- [LangSmith Observability](https://docs.smith.langchain.com/)
+- [Langfuse Observability](https://langfuse.com/docs)
 
 ---
 

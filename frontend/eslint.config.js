@@ -164,12 +164,61 @@ export default tseslint.config(
     },
   },
 
-  // Relaxed rules for test files
+  // Relaxed rules for test files and test utilities
   {
-    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    files: [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/__tests__/**/*.ts',
+      '**/__tests__/**/*.tsx',
+      '**/test-utils/**/*.ts',
+      '**/test-utils/**/*.tsx',
+    ],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',
+      'no-console': 'off', // Test utilities need console for debugging/reporting
+    },
+  },
+
+  // Relaxed rules for performance monitoring (needs console.log for metrics)
+  {
+    files: ['**/services/performance/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Relaxed rules for store helper files (complex state management utilities)
+  {
+    files: ['**/stores/*StoreHelpers.ts'],
+    rules: {
+      'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+      'no-console': 'off', // Store helpers need console for debugging connection issues
+    },
+  },
+
+  // Relaxed rules for SSE hooks (need console for connection debugging)
+  {
+    files: ['**/hooks/useSSE.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Relaxed rules for app entry point (dev-only initialization logging)
+  {
+    files: ['**/main.tsx'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Relaxed rules for main store files (Zustand stores with state + actions + selectors)
+  {
+    files: ['**/stores/*Store.ts'],
+    rules: {
+      'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
     },
   }
 )

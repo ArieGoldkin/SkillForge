@@ -1,0 +1,90 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "pgvector-search",
+  "version": "1.0.0",
+  "description": "Hybrid search with PGVector + BM25 using RRF, metadata filtering, and performance optimization",
+
+  "capabilities": {
+    "hybrid-search-rrf": {
+      "keywords": ["hybrid search", "rrf", "reciprocal rank fusion", "vector bm25", "semantic keyword search"],
+      "solves": [
+        "How do I combine vector and keyword search?",
+        "Implement hybrid retrieval with RRF",
+        "Merge semantic and BM25 results",
+        "Improve search recall and precision"
+      ],
+      "reference_file": "references/hybrid-search-rrf.md",
+      "token_cost": 250
+    },
+
+    "indexing-strategies": {
+      "keywords": ["pgvector index", "hnsw", "ivfflat", "vector index performance", "index tuning"],
+      "solves": [
+        "How do I index PGVector for performance?",
+        "HNSW vs IVFFlat comparison",
+        "Optimize vector search speed",
+        "Scale to millions of vectors"
+      ],
+      "reference_file": "references/indexing-strategies.md",
+      "token_cost": 200
+    },
+
+    "metadata-filtering": {
+      "keywords": ["metadata filter", "faceted search", "content type filter", "score boosting"],
+      "solves": [
+        "How do I filter search by metadata?",
+        "Boost search results by section title",
+        "Pre-filter before vector search",
+        "Improve search relevance with boosting"
+      ],
+      "reference_file": "references/metadata-filtering.md",
+      "token_cost": 180
+    }
+  },
+
+  "triggers": {
+    "high_confidence": [
+      "hybrid search",
+      "pgvector rrf",
+      "vector bm25 search",
+      "semantic keyword search",
+      "reciprocal rank fusion"
+    ],
+    "medium_confidence": [
+      "vector search performance",
+      "pgvector indexing",
+      "semantic search optimization",
+      "search metadata filtering"
+    ]
+  },
+
+  "integrates_with": [
+    "ai-native-development",
+    "database-schema-designer",
+    "performance-optimization"
+  ],
+
+  "used_by_agents": [
+    "ai-ml-engineer",
+    "backend-system-architect"
+  ],
+
+  "progressive_loading": {
+    "tier1_discovery": "capabilities.json (100 tokens)",
+    "tier2_overview": "SKILL.md (500 tokens)",
+    "tier3_specific": "references/*.md (180-250 tokens each)",
+    "tier4_templates": "templates/*.py (complete implementations)"
+  },
+
+  "mcp_tools": {
+    "documentation": {
+      "tool": "context7",
+      "library_ids": ["/pgvector/pgvector"],
+      "use_when": "Need current PGVector API docs"
+    },
+    "database": {
+      "tool": "skillforge-postgres-dev",
+      "use_when": "Testing search queries"
+    }
+  }
+}

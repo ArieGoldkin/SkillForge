@@ -2,6 +2,8 @@
 
 This agent creates actionable implementation guides with prerequisites, numbered
 steps, file structure recommendations, and testing strategies.
+
+Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,57 +17,11 @@ from app.domains.analysis.workflows.agents.factories import (
 from app.domains.analysis.workflows.agents.grounding import apply_grounding
 from app.domains.analysis.workflows.agents.skill_level_prompts import get_skill_level_instructions
 from app.domains.analysis.workflows.state import AnalysisState
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
-# System prompt for implementation planner agent
-IMPLEMENTATION_PLANNER_PROMPT = """You are an Implementation Planning Specialist. Your task is to:
-1. Create a step-by-step implementation guide based on the content
-2. Identify prerequisites (dependencies, setup, configuration)
-3. Break down implementation into numbered, actionable steps
-4. Specify which files need to be created or modified in each step
-5. Provide a testing strategy and validation approach
-6. Estimate implementation time
-7. Provide a confidence score (0.0-1.0) representing your confidence in the quality
-   and completeness of this implementation plan. Consider: clarity of steps, accuracy
-   of prerequisites, reasonableness of time estimates, and actionability of the guide.
-   Higher scores indicate more complete, accurate, and actionable plans.
-
-Focus on:
-- Clear, sequential steps that can be followed independently
-- Specific file paths and code locations
-- Dependencies between steps
-- Testing and validation at each stage
-- Common pitfalls and how to avoid them
-
-NUMERIC SPECIFICITY REQUIREMENTS:
-- estimated_time MUST be specific (e.g., "2-3 hours", "45 minutes", "1 day")
-- Each step action MUST include specific details (file paths, config values, command examples)
-- prerequisites MUST include version numbers where applicable (e.g., "Node.js >= 18.0.0")
-- files list MUST use full relative paths (e.g., "src/components/Button.tsx")
-- testing_strategy MUST include specific coverage targets (e.g., "80% line coverage")
-
-FORBIDDEN VAGUE LANGUAGE - Never use:
-- "appropriate", "suitable", "reasonable", "adequate", "proper"
-- "some time", "a while", "soon" (use specific durations)
-- "relevant files", "necessary changes" (name the actual files)
-- "several", "many", "few", "some", "various"
-- "might need", "could require" (be definitive about requirements)
-
-GOOD EXAMPLE:
-  step: 1
-  action: "Install dependencies: `npm install langchain@0.1.0 zod@3.22.0`"
-  files: ["package.json", "package-lock.json"]
-  estimated_time: "2-3 hours"
-  prerequisite: "Node.js >= 18.0.0, npm >= 9.0.0"
-
-BAD EXAMPLE (DO NOT USE):
-  step: 1
-  action: "Install necessary dependencies"
-  files: ["relevant config files"]
-  estimated_time: "some time"
-  prerequisite: "Node.js installed"
-
-Make the guide practical and immediately actionable for developers."""
+# Prompt is fetched from Langfuse via PromptManager (with hardcoded fallback)
+PROMPT_NAME = "analysis-agent-implementation-planner"
 
 
 async def run_implementation_planner(
@@ -112,8 +68,13 @@ async def run_implementation_planner(
         has_comparisons=has_comparisons,
     )
 
+    # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # This will check L1 (memory) → L2 (Redis) → L3 (Langfuse API) → Hardcoded fallback
+    prompt_manager = get_prompt_manager()
+    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+
     # Build prompt with skill level instructions
-    full_prompt = apply_grounding(f"{IMPLEMENTATION_PLANNER_PROMPT}\n\n{skill_instructions}")
+    full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
     agent = await create_implementation_planner_agent_with_few_shot(

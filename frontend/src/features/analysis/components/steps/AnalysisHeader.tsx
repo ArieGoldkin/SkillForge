@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 import { FileText, Github, Video } from 'lucide-react'
 
 import { GoldenDatasetBadge } from '@features/artifact/components/internal/GoldenDatasetBadge'
@@ -32,7 +34,17 @@ const CONTENT_TYPE_CONFIG = {
   },
 } as const
 
-export function AnalysisHeader({ title, url, contentType, wordCount }: AnalysisHeaderProps) {
+/**
+ * AnalysisHeader - Displays analysis title and metadata
+ *
+ * Wrapped with React.memo - only re-renders when title/url/contentType/wordCount change.
+ */
+export const AnalysisHeader = memo(function AnalysisHeader({
+  title,
+  url,
+  contentType,
+  wordCount,
+}: AnalysisHeaderProps) {
   const isGoldenDataset = url ? isGoldenDatasetUrl(url) : false
   const documentName = isGoldenDataset && url ? extractDocumentName(url) : undefined
   const contentTypeConfig = contentType ? CONTENT_TYPE_CONFIG[contentType] : null
@@ -67,4 +79,4 @@ export function AnalysisHeader({ title, url, contentType, wordCount }: AnalysisH
       </div>
     </div>
   )
-}
+})

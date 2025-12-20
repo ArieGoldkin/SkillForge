@@ -131,7 +131,9 @@ def mock_state():
     "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
 )
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
 async def test_run_dependency_mapper_success(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_agent,
@@ -142,6 +144,13 @@ async def test_run_dependency_mapper_success(
     analysis_id = str(uuid4())
     content = "This article discusses React dependencies and setup."
     content_type = "article"
+
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a dependency mapper agent. Analyze dependencies."
+    )
+    mock_get_pm.return_value = mock_pm
 
     mock_create_agent.return_value = mock_agent
     mock_run_tracking.return_value = {
@@ -181,7 +190,9 @@ async def test_run_dependency_mapper_success(
     "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
 )
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
 async def test_run_dependency_mapper_error_handling(
+    mock_get_pm,
     mock_run_tracking,
     mock_create_agent,
     mock_agent,
@@ -192,6 +203,13 @@ async def test_run_dependency_mapper_error_handling(
     analysis_id = str(uuid4())
     content = "Test content"
     content_type = "article"
+
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a dependency mapper agent. Analyze dependencies."
+    )
+    mock_get_pm.return_value = mock_pm
 
     mock_create_agent.return_value = mock_agent
     mock_run_tracking.side_effect = RuntimeError("Agent execution failed")
@@ -205,8 +223,9 @@ async def test_run_dependency_mapper_error_handling(
     "app.domains.analysis.workflows.agents.dependency_mapper.create_dependency_mapper_agent_with_few_shot"
 )
 @patch("app.domains.analysis.workflows.agents.dependency_mapper.run_agent_with_tracking")
+@patch("app.domains.analysis.workflows.agents.dependency_mapper.get_prompt_manager")
 async def test_run_dependency_mapper_schema_validation(
-    mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
+    mock_get_pm, mock_run_tracking, mock_create_agent, mock_agent, mock_session, mock_state
 ):
     """Test dependency mapper schema validation.
 
@@ -215,6 +234,13 @@ async def test_run_dependency_mapper_schema_validation(
     analysis_id = str(uuid4())
     content = "Dependency content"
     content_type = "article"
+
+    # Mock PromptManager
+    mock_pm = AsyncMock()
+    mock_pm.get_prompt = AsyncMock(
+        return_value="You are a dependency mapper agent. Analyze dependencies."
+    )
+    mock_get_pm.return_value = mock_pm
 
     mock_create_agent.return_value = mock_agent
     mock_run_tracking.return_value = {
