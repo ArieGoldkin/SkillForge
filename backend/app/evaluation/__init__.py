@@ -8,8 +8,19 @@ Key components:
 - Benchmark runner: Executes A/B experiments across multiple models
 - Evaluators: Correctness, quality (LLM-as-judge), latency, and cost metrics
 - Config generator: Produces optimal model configuration from experiment results
+- Experiment runner: CI/CD automation for Langfuse experiments (Issue #428)
 """
 
+from app.evaluation.experiment_runner import (
+    ExperimentRunResult,
+    ExperimentRunner,
+    ExperimentSummary,
+)
 from app.evaluation.llm_benchmark import LLMBenchmark
 
-__all__ = ["LLMBenchmark"]
+__all__ = [
+    "ExperimentRunResult",
+    "ExperimentRunner",
+    "ExperimentSummary",
+    "LLMBenchmark",
+]
