@@ -1,5 +1,7 @@
 import { AlertCircle, FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
+import { UI_CONSTANTS } from '@/lib/constants'
+
 import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
@@ -8,7 +10,6 @@ import { SkillLevelSelector } from '@shared/SkillLevelSelector'
 import type { SkillLevel } from '@shared/SkillLevelSelector'
 
 import { cn } from '@lib/utils'
-import { UI_CONSTANTS } from '@/lib/constants'
 
 type ContentType = 'article' | 'video' | 'repository'
 

@@ -66,8 +66,6 @@ async function fetchUsers(): Promise<User[]> {
  * AnalysisTab component
  */
 export const AnalysisTab: React.FC = () => {
-  // eslint-disable-line max-lines-per-function
-
   // Use useState initializer to ensure Date.now() is called only once (React purity)
   const [analysisSteps] = React.useState(createAnalysisSteps)
   const [agentActivities] = React.useState(createAgentActivities)

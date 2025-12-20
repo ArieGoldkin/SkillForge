@@ -3,6 +3,8 @@ import { useCallback, useMemo, useState } from 'react'
 import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
 import { ContentGrid } from './components/ContentGrid'
@@ -15,7 +17,6 @@ import { SkillSearch } from './components/SkillSearch'
 import { useFilteredSkills, useLibrarySearchInfinite } from './hooks'
 import { mapFiltersToQuery, normalizeTitle } from './utils'
 import { dedupeByAnalysisId } from './utils/libraryTransform'
-import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /* eslint-disable max-lines-per-function -- Complex component with search, filters, and pagination logic. Further extraction would reduce cohesion. */
 export default function Library() {

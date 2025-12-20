@@ -1,8 +1,9 @@
 import type { LibraryListResponse, LibrarySearchParams } from '@app-types/api'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
-import { analyzeAPI } from '@services/api.service'
 import { TIME_CONSTANTS } from '@/lib/constants'
+
+import { analyzeAPI } from '@services/api.service'
 
 /**
  * Hook for searching library with full-text, semantic, or hybrid search

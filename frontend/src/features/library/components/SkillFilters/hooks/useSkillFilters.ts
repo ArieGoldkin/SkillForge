@@ -8,6 +8,7 @@
 import { useMemo } from 'react'
 
 import type { AnalysisStatus } from '@app-types/api'
+
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 import type { SkillDifficulty } from '../../SkillCard'

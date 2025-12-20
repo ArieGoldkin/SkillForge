@@ -2,10 +2,11 @@ import * as React from 'react'
 
 import { Loader2, Search, X } from 'lucide-react'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Input } from '@shared/components/ui/input'
 
 import { cn } from '@lib/utils'
-import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /**
  * Props for SkillSearch component

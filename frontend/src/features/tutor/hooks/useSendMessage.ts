@@ -1,8 +1,9 @@
 import type { TutoringMessage } from '@app-types/api'
 import { useMutation } from '@tanstack/react-query'
 
-import { mockTutoringAPI } from '@services/mock.service'
 import { TIME_CONSTANTS } from '@/lib/constants'
+
+import { mockTutoringAPI } from '@services/mock.service'
 
 interface UseSendMessageProps {
   sessionId: string

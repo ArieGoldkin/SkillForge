@@ -2,8 +2,8 @@ import type * as React from 'react'
 
 import { Wifi, WifiOff, AlertTriangle, Loader2 } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
 import { UI_CONSTANTS } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import type { LoadingState } from '@/types/loading'
 
 interface ConnectionStatusProps {

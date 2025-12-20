@@ -6,7 +6,6 @@ import { COMPONENT_CONSTANTS, VALIDATION_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
 
 import { cn } from '@lib/utils'
-import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 interface MermaidRendererProps {
   code: string

@@ -2,11 +2,12 @@ import * as React from 'react'
 
 import { Activity } from 'lucide-react'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
-import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 /**
  * Individual agent activity entry

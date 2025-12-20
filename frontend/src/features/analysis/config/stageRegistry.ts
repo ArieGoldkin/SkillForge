@@ -12,8 +12,8 @@
 
 import type { AgentStageName, StageName, WorkflowStageName } from '@app-types/sse'
 
-import { logger } from '@/lib/logger'
 import { STAGE_ORDER_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 
