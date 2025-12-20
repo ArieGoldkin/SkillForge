@@ -40,22 +40,23 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
         ValueError: If URL format is invalid for ACL authentication
 
     """
-    if not url.startswith('redis://'):
+    if not url.startswith("redis://"):
         msg = f"Redis URL must start with 'redis://', got: {url}"
         raise ValueError(msg)
 
     # Parse URL components
     try:
         from urllib.parse import urlparse
+
         parsed = urlparse(url)
 
         result = {
-            'scheme': parsed.scheme,
-            'hostname': parsed.hostname,
-            'port': str(parsed.port or 6379),
-            'path': parsed.path or '/0',
-            'username': parsed.username,
-            'password': parsed.password,
+            "scheme": parsed.scheme,
+            "hostname": parsed.hostname,
+            "port": str(parsed.port or 6379),
+            "path": parsed.path or "/0",
+            "username": parsed.username,
+            "password": parsed.password,
         }
 
         # Validate ACL authentication pattern
@@ -66,7 +67,7 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
                 username=parsed.username,
                 has_password=bool(parsed.password),
                 hostname=parsed.hostname,
-                port=result['port']
+                port=result["port"],
             )
         elif parsed.password and not parsed.username:
             # Password-only authentication: redis://:pass@host:port (default user)
@@ -75,7 +76,7 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
                 username="default",
                 has_password=bool(parsed.password),
                 hostname=parsed.hostname,
-                port=result['port']
+                port=result["port"],
             )
         else:
             # No authentication - development only
@@ -83,7 +84,7 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
                 "redis_no_authentication_configured",
                 message="Consider enabling Redis authentication for security",
                 hostname=parsed.hostname,
-                port=result['port']
+                port=result["port"],
             )
 
         return result
@@ -256,9 +257,7 @@ def create_redis_client_with_acl(
     Example:
         >>> # Explicit ACL authentication
         >>> client = create_redis_client_with_acl(
-        ...     "redis://redis:6379",
-        ...     username="skillforge-user",
-        ...     password="secure-password"
+        ...     "redis://redis:6379", username="skillforge-user", password="secure-password"
         ... )
 
     """
