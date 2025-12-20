@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload benchmark results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: llm-benchmark-results-${{ github.run_number }}
           path: backend/benchmark_results.json
