@@ -531,96 +531,27 @@ class LangfuseClient:
             return []
 
     # =========================================================================
-    # Experiment API (2025 SDK)
+    # Experiments: Use Langfuse SDK directly (not REST API)
     # =========================================================================
-
-    async def create_experiment(
-        self,
-        *,
-        name: str,
-        dataset_name: str,
-        description: str | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None:
-        """Create an experiment in Langfuse.
-
-        Args:
-            name: Experiment name
-            dataset_name: Dataset to run experiment on
-            description: Optional description
-            metadata: Optional metadata
-
-        Returns:
-            Experiment data or None on failure
-
-        """
-        payload: dict[str, Any] = {
-            "name": name,
-            "datasetName": dataset_name,
-        }
-
-        if description:
-            payload["description"] = description
-        if metadata:
-            payload["metadata"] = metadata
-
-        try:
-            result = await self._request(
-                "POST",
-                "/api/public/v2/experiments",
-                json=payload,
-            )
-
-            logger.info(
-                "langfuse_experiment_created",
-                name=name,
-                dataset=dataset_name,
-            )
-
-            return result
-        except LangfuseClientError:
-            return None
-
-    async def log_experiment_run(
-        self,
-        *,
-        experiment_id: str,
-        dataset_item_id: str,
-        trace_id: str,
-        output: str | dict[str, Any],
-        scores: dict[str, float] | None = None,
-    ) -> bool:
-        """Log a single experiment run.
-
-        Args:
-            experiment_id: Experiment ID
-            dataset_item_id: Dataset item that was tested
-            trace_id: Trace ID of the run
-            output: Model output
-            scores: Optional scores for this run
-
-        Returns:
-            True if logged successfully
-
-        """
-        payload: dict[str, Any] = {
-            "datasetItemId": dataset_item_id,
-            "traceId": trace_id,
-            "output": output,
-        }
-
-        if scores:
-            payload["scores"] = [{"name": k, "value": v} for k, v in scores.items()]
-
-        try:
-            await self._request(
-                "POST",
-                f"/api/public/v2/experiments/{experiment_id}/runs",
-                json=payload,
-            )
-            return True
-        except LangfuseClientError:
-            return False
+    #
+    # IMPORTANT: Langfuse does NOT have REST API endpoints for experiments.
+    # The /api/public/v2/experiments endpoints were fabricated and never worked.
+    #
+    # For running experiments on datasets, use the Langfuse Python SDK directly:
+    #
+    #   from langfuse import Langfuse
+    #
+    #   langfuse = Langfuse()
+    #   dataset = langfuse.get_dataset("my-dataset")
+    #
+    #   for item in dataset.items:
+    #       with item.run(run_name="my-experiment") as observation:
+    #           # Your evaluation logic here
+    #           result = evaluate(item.input)
+    #           observation.score(name="accuracy", value=0.9)
+    #
+    # See: scripts/run_langfuse_experiment_v2.py for a working example
+    # Docs: https://langfuse.com/docs/datasets/python-decorator
 
 
 # Module-level singleton

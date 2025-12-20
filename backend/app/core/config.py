@@ -267,11 +267,11 @@ class Settings(BaseSettings):
 
     # Quality Evaluation Configuration
     QUALITY_JUDGE_MODEL: str = Field(
-        default="gemini-3-flash",
+        default="gemini-3-flash-preview",
         description=(
             "LLM model for quality evaluation (LLM-as-judge). "
             "Used by quality gate to score relevance, depth, coherence. "
-            "Defaults to gemini-3-flash ($0.50/$3.00 per 1M tokens) for best eval quality. "
+            "Defaults to gemini-3-flash-preview (released Dec 17, 2025 - $0.50/$3.00 per 1M tokens). "
             "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
