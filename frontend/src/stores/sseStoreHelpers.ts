@@ -1,3 +1,5 @@
+/* eslint-disable max-lines -- SSE Helpers contain comprehensive event lifecycle management: retention policies, memory monitoring, cleanup logic, and connection management. File length reflects necessary complexity for robust SSE handling. */
+
 /**
  * SSE Store Helper Functions
  *
@@ -12,11 +14,11 @@
 
 import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
+import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
 import { parseSSEEvent } from '@/schemas/sse'
 
 import type { SSEStore, SSEStoreState } from './sseStore'
-import { logger } from '@/lib/logger'
-import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES } from '@/lib/constants'
 
 // Configuration constants (imported from shared constants)
 const MAX_RECONNECT_ATTEMPTS = LIMIT_CONSTANTS.SSE_RECONNECT_ATTEMPTS
@@ -28,8 +30,8 @@ export const MAX_EVENTS = LIMIT_CONSTANTS.MAX_EVENTS
 
 // Event retention policies imported from shared constants
 
-// Memory usage thresholds imported from shared constants
-export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS } from '@/lib/constants'
+// Re-export for backward compatibility
+export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS }
 
 /**
  * Listener references for proper cleanup
@@ -60,7 +62,9 @@ function getReconnectDelay(attempts: number): number {
  * Event lifecycle management - determines if event should be retained
  */
 export function shouldRetainEvent(event: SSEEvent, now: number = Date.now()): boolean {
-  const eventAge = now - event.timestamp
+  const eventTime =
+    typeof event.timestamp === 'string' ? new Date(event.timestamp).getTime() : event.timestamp
+  const eventAge = now - eventTime
 
   // Always keep critical events
   if (event.type === 'error' || event.type === 'complete') {
@@ -111,7 +115,9 @@ export function getEventMemoryStats(events: SSEEvent[]) {
   }
 
   events.forEach((event) => {
-    const age = now - event.timestamp
+    const eventTime =
+      typeof event.timestamp === 'string' ? new Date(event.timestamp).getTime() : event.timestamp
+    const age = now - eventTime
     const ageMinutes = age / (60 * 1000)
 
     // Count by type
@@ -127,11 +133,11 @@ export function getEventMemoryStats(events: SSEEvent[]) {
   })
 
   // Generate alerts based on thresholds
-  if (memoryUsage >= MEMORY_THRESHOLDS.EMERGENCY_THRESHOLD) {
+  if (memoryUsage >= MEMORY_CONSTANTS.EMERGENCY_THRESHOLD) {
     stats.alerts.push('EMERGENCY: Event buffer near capacity - forcing cleanup')
-  } else if (memoryUsage >= MEMORY_THRESHOLDS.CRITICAL_THRESHOLD) {
+  } else if (memoryUsage >= MEMORY_CONSTANTS.CRITICAL_THRESHOLD) {
     stats.alerts.push('CRITICAL: Event buffer over 90% capacity')
-  } else if (memoryUsage >= MEMORY_THRESHOLDS.WARNING_THRESHOLD) {
+  } else if (memoryUsage >= MEMORY_CONSTANTS.WARNING_THRESHOLD) {
     stats.alerts.push('WARNING: Event buffer over 70% capacity')
   }
 
