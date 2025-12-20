@@ -13,7 +13,6 @@ from app.core.circuit_breaker import CircuitBreakerConfig, CircuitState
 from app.core.langfuse_client import (
     LangfuseClient,
     LangfuseClientError,
-    LangfuseUnavailableError,
     close_langfuse_client,
     get_langfuse_api_client,
 )

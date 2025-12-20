@@ -644,7 +644,9 @@ class TestLangfuseQueueIntegration:
 
             mock_client.add_to_annotation_queue = mock_add_to_queue
 
-            with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
+            with patch(
+                "app.core.annotation_service.get_langfuse_api_client", return_value=mock_client
+            ):
                 result = await service._add_to_langfuse_queue(
                     artifact_id=artifact_id,
                     trace_id=trace_id,
@@ -765,7 +767,9 @@ class TestLangfuseQueueIntegration:
                 side_effect=LangfuseClientError("Queue not found")
             )
 
-            with patch("app.core.annotation_service.get_langfuse_api_client", return_value=mock_client):
+            with patch(
+                "app.core.annotation_service.get_langfuse_api_client", return_value=mock_client
+            ):
                 result = await service._add_to_langfuse_queue(
                     artifact_id=artifact_id,
                     trace_id="trace-123",
