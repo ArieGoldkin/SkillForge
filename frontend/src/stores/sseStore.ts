@@ -176,12 +176,11 @@ const baseStore = create<SSEStore>((set, get) => ({
   disconnect: () => {
     closeConnection({ getState: get, setState: set })
 
-    // Clear events on disconnect to prevent stale data accumulation (Issue #404)
-    // Note: This is separate from reset() which clears everything for a new analysis
+    // Keep events for UI display after disconnect - only reset() clears events
+    // This allows users to see final analysis state even after connection closes
     set((_state) => ({
-      events: [],
-      latestEvent: null,
-      // Keep error state for debugging, but clear connection-specific state
+      // Keep events and latestEvent for UI display
+      // Clear connection-specific state but preserve analysis results
       isConnected: false,
       connectionState: 'disconnected' as ConnectionState,
       lastActivityTime: null,

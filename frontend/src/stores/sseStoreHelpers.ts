@@ -48,7 +48,7 @@ function getEventDeduplicationKey(event: SSEEvent): string {
 
     case 'complete':
       // Complete events are deduplicated by analysis + type
-      // Only one completion event per analysis
+      // Only one completion event per analysis (keep most recent)
       return `${analysis_id}:${type}`
 
     case 'error':
@@ -76,11 +76,11 @@ function isDuplicateEvent(existing: SSEEvent, incoming: SSEEvent): boolean {
       return existing.stage === incoming.stage && existing.status === incoming.status
 
     case 'complete':
-      // Any complete event for same analysis = duplicate
+      // Any complete event for same analysis = duplicate (keep most recent)
       return true
 
     case 'error':
-      // Same analysis and stage error = duplicate
+      // Same analysis and stage error = duplicate (multiple errors for same stage)
       return existing.stage === incoming.stage
 
     default:
@@ -102,8 +102,8 @@ export function deduplicateEvents(events: SSEEvent[]): SSEEvent[] {
     if (!existing) {
       // First occurrence of this event type
       eventMap.set(key, event)
-    } else if (isDuplicateEvent(existing, event)) {
-      // Duplicate - keep the more recent one based on timestamp
+    } else {
+      // Same key - keep the more recent one based on timestamp
       const existingTime = new Date(existing.timestamp).getTime()
       const incomingTime = new Date(event.timestamp).getTime()
 
@@ -111,9 +111,6 @@ export function deduplicateEvents(events: SSEEvent[]): SSEEvent[] {
         eventMap.set(key, event)
       }
       // If timestamps are equal or incoming is older, keep existing
-    } else {
-      // Not a duplicate (different content), keep both
-      eventMap.set(`${key}:${Date.now()}`, event)
     }
   }
 

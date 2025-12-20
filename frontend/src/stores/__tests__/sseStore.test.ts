@@ -248,12 +248,13 @@ describe('Event Buffer Management', () => {
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
+      const baseTime = Date.now()
       const event1: SSECompleteEvent = {
         type: 'complete',
         analysis_id: TEST_ANALYSIS_ID,
         stage: 'artifact_generation',
         status: 'complete',
-        timestamp: recentTimestamp(2000),
+        timestamp: new Date(baseTime - 2000).toISOString(), // Older timestamp
         artifact_id: TEST_ARTIFACT_ID,
       }
       getMockEventSource()?.simulateEvent('complete', event1)
@@ -264,7 +265,7 @@ describe('Event Buffer Management', () => {
         analysis_id: TEST_ANALYSIS_ID,
         stage: 'workflow',
         status: 'complete',
-        timestamp: recentTimestamp(1000), // More recent
+        timestamp: new Date(baseTime - 1000).toISOString(), // More recent
       }
       getMockEventSource()?.simulateEvent('complete', event2)
       await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
@@ -276,12 +277,13 @@ describe('Event Buffer Management', () => {
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
+      const baseTime = Date.now()
       const event1: SSEErrorEvent = {
         type: 'error',
         analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
-        timestamp: recentTimestamp(2000),
+        timestamp: new Date(baseTime - 2000).toISOString(),
         error: 'First error',
       }
       getMockEventSource()?.simulateEvent('error', event1)
@@ -292,7 +294,7 @@ describe('Event Buffer Management', () => {
         analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
-        timestamp: recentTimestamp(1000), // More recent
+        timestamp: new Date(baseTime - 1000).toISOString(), // More recent
         error: 'Second error',
       }
       getMockEventSource()?.simulateEvent('error', event2)
@@ -381,7 +383,7 @@ describe('Event Buffer Management', () => {
   })
 
   describe('Disconnect Cleanup', () => {
-    it('clears events on disconnect', async () => {
+    it('preserves events on disconnect for UI display', async () => {
       useSSEStore.getState().connect(TEST_ANALYSIS_ID)
       await vi.waitFor(() => expect(useSSEStore.getState().isConnected).toBe(true))
 
@@ -396,12 +398,13 @@ describe('Event Buffer Management', () => {
       getMockEventSource()?.simulateEvent('progress', event)
       await vi.waitFor(() => expect(useSSEStore.getState().events.length).toBe(1))
 
-      // Disconnect should clear events
+      // Disconnect should preserve events for UI display
       useSSEStore.getState().disconnect()
 
-      expect(useSSEStore.getState().events).toEqual([])
+      expect(useSSEStore.getState().events).toHaveLength(1)
+      expect(useSSEStore.getState().events[0]).toEqual(event)
       expect(useSSEStore.getState().isConnected).toBe(false)
-      expect(useSSEStore.getState().latestEvent).toBe(null)
+      expect(useSSEStore.getState().latestEvent).toEqual(event)
     })
 
     it('preserves analysis metadata on disconnect', async () => {
@@ -425,9 +428,10 @@ describe('Event Buffer Management', () => {
       store.disconnect()
 
       // Should preserve analysis metadata
-      expect(store.artifactId).toBe(TEST_ARTIFACT_ID)
-      expect(store.traceId).toBe('trace-123')
-      expect(store.overallProgress?.stage).toBe('complete')
+      const afterDisconnect = useSSEStore.getState()
+      expect(afterDisconnect.artifactId).toBe(TEST_ARTIFACT_ID)
+      expect(afterDisconnect.traceId).toBe('trace-123')
+      expect(afterDisconnect.overallProgress?.stage).toBe('complete')
     })
   })
 
