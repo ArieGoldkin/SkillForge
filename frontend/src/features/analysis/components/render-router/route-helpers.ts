@@ -47,6 +47,7 @@ export function extractProgressProps(props: {
 /**
  * Extracts props needed for the default analysis UI (ActiveAnalysisView)
  */
+// eslint-disable-next-line max-lines-per-function -- Complex prop extraction and transformation logic for analysis UI
 export function extractAnalysisProps(props: {
   id: string
   analysisMetadata?: AnalysisProps['analysisMetadata']

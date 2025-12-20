@@ -363,20 +363,20 @@
             }
         },
         {
-            "id": "langsmith-eval-001",
+            "id": "langfuse-eval-001",
             "inputs": {
                 "content": "LangSmith Evaluation Framework. Tutorial on evaluating LLM applications using LangSmith's evaluation tools.",
                 "content_type": "tutorial",
                 "agent_type": "content_quality_analyst",
                 "metadata": {
-                    "url": "https://docs.langchain.com/langsmith/evaluation",
+                    "url": "https://docs.langchain.com/langfuse/evaluation",
                     "title": "LangSmith Evaluation Framework"
                 }
             },
             "expected_outputs": {
                 "primary": {
                     "agent_type": "content_quality_analyst",
-                    "key_findings": ["langsmith", "evaluation", "testing"]
+                    "key_findings": ["langfuse", "evaluation", "testing"]
                 },
                 "acceptable_alternatives": [],
                 "forbidden_outputs": []
@@ -400,14 +400,14 @@
                 "source": "github",
                 "created_at": "2025-12-15T10:59:14Z",
                 "created_by": "canonical_backup_generator",
-                "source_url": "https://docs.langchain.com/langsmith/evaluation"
+                "source_url": "https://docs.langchain.com/langfuse/evaluation"
             },
             "validation": {"status": "draft", "validated_by": []},
             "metadata": {
                 "difficulty": "medium",
                 "edge_case": false,
                 "adversarial": false,
-                "tags": ["langsmith", "evaluation", "testing", "tutorial"]
+                "tags": ["langfuse", "evaluation", "testing", "tutorial"]
             }
         },
         {

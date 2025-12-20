@@ -814,7 +814,7 @@ POST /api/v1/tutor/sessions/{id}/messages → 200 OK
 ║   ════════════════                                                           ║
 ║   ✅ Full RAG pipeline                   ✅ 80%+ test coverage              ║
 ║   ✅ Hybrid search (semantic+keyword)    ✅ Multi-provider LLM support      ║
-║   ✅ LangSmith evaluation framework      ✅ Golden dataset (96 analyses)    ║
+║   ✅ Langfuse evaluation framework      ✅ Golden dataset (96 analyses)    ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
@@ -919,7 +919,7 @@ Full refactor from LangGraph Functional API to StateGraph with native parallel e
 #### Phase 1: Exception Handling Fix ✅
 - **File:** `backend/app/workflows/tasks/runners.py` (renamed from `agent_runners.py`)
 - **Fix:** Removed all `try/except` blocks that returned `BaseException` objects
-- **Impact:** Exceptions now propagate naturally, eliminating LangSmith warnings
+- **Impact:** Exceptions now propagate naturally, eliminating Langfuse warnings
 - **Functions Fixed:** 8 agent runner functions (tech_comparator, security_auditor, etc.)
 
 #### Phase 2: StateGraph Conversion ✅
@@ -945,8 +945,8 @@ Full refactor from LangGraph Functional API to StateGraph with native parallel e
     - `pattern_comparison` events (A/B testing)
     - `metrics` events (performance metrics)
 - **Metrics Service:**
-  - `backend/app/services/langsmith_metrics.py` - LangSmith metrics extraction
-  - `backend/tests/unit/services/test_langsmith_metrics.py` - Service tests
+  - `backend/app/services/langfuse_metrics.py` - Langfuse metrics extraction
+  - `backend/tests/unit/services/test_langfuse_metrics.py` - Service tests
 
 ### Workflow Structure (StateGraph)
 
@@ -956,7 +956,7 @@ extract → [embedding, supervisor] (parallel) → parallel_agents → aggregate
 
 **Benefits:**
 - ✅ Native LangGraph parallel execution (fan-out/fan-in)
-- ✅ Better observability in LangSmith (proper state visibility)
+- ✅ Better observability in Langfuse (proper state visibility)
 - ✅ Proper exception propagation (no more warnings)
 - ✅ Foundation for evaluation-optimizer pattern
 - ✅ Enhanced SSE streaming for advanced patterns
@@ -973,7 +973,7 @@ extract → [embedding, supervisor] (parallel) → parallel_agents → aggregate
 - ✅ New tests created for:
   - Graph builder (test_graph_builder.py)
   - Evaluation modules (test_evaluator.py, test_optimizer.py)
-  - Metrics service (test_langsmith_metrics.py)
+  - Metrics service (test_langfuse_metrics.py)
 - ⚠️ Test execution requires dependencies installed (poetry install)
 
 ### Known Issues
@@ -985,7 +985,7 @@ extract → [embedding, supervisor] (parallel) → parallel_agents → aggregate
 ### Next Steps
 1. **Test Execution:** Run full test suite after `poetry install`
 2. **Dev Environment Verification:** Test with real analysis in dev environment
-3. **LangSmith Verification:** Confirm no warnings in traces
+3. **Langfuse Verification:** Confirm no warnings in traces
 4. **Documentation:** Update architecture docs with StateGraph patterns
 
 **Related Issues:**

@@ -81,6 +81,7 @@ const RENDER_ROUTES: RenderRoute[] = [
     priority: 10,
     condition: () => true, // Always matches as fallback
     render: (props) => {
+      // eslint-disable-line complexity, max-lines-per-function -- Complex conditional rendering logic for multiple analysis states
       const {
         id,
         analysisMetadata,

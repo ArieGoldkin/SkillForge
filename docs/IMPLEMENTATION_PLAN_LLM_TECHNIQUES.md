@@ -61,7 +61,7 @@
 [x] PostgreSQL 17 with PGVector extension (existing)
 [x] Python 3.11+ with Poetry (existing)
 [x] LangChain + LangGraph installed (existing)
-[x] LangSmith account for observability (existing)
+[x] Langfuse account for observability (existing)
 [x] Golden Dataset: 98 curated analyses (existing)
 
 [ ] Redis Stack 7.4+ (NEW - Phase 3)
@@ -1050,7 +1050,7 @@ A/B Test Setup:
 | Metric | Target | Measurement |
 |--------|--------|-------------|
 | Example retrieval latency | <100ms P95 | Prometheus/logs |
-| Quality improvement | >10% | LangSmith feedback comparison |
+| Quality improvement | >10% | Langfuse feedback comparison |
 | No latency regression | <5% increase | End-to-end timing |
 | Test coverage | >80% | pytest-cov |
 
@@ -2473,7 +2473,7 @@ async def resolve_all_conflicts(conflicts: list[Conflict]) -> list[ConflictResol
 │  APPROACH:                                                                   │
 │  - Keep native function calling (already implemented)                       │
 │  - Add reasoning trace prompts for observability                            │
-│  - Integrate traces with LangSmith for debugging                            │
+│  - Integrate traces with Langfuse for debugging                            │
 │                                                                              │
 │  NOTE: Current implementation already uses provider native function         │
 │        calling which is 40% faster than custom ReAct parsing.               │
@@ -2593,7 +2593,7 @@ poetry run alembic downgrade -1
 │                         KEY PERFORMANCE INDICATORS                          │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-QUALITY METRICS (LangSmith):
+QUALITY METRICS (Langfuse):
 ┌─────────────────────────────────────────────────────────────────┐
 │  • Agent output quality score (human feedback)                   │
 │  • Supervisor selection accuracy                                 │

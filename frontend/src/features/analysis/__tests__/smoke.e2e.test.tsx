@@ -5,9 +5,9 @@
  * These tests run when E2E_READY=true and validate basic functionality.
  */
 
+import { environmentCapabilities } from '@test-utils/environment'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { environmentCapabilities } from '@test-utils/environment'
 
 import AnalyzeResult from '../AnalyzeResult'
 

@@ -303,8 +303,8 @@ class TestGetAgentConfig:
 ```python
 class TestLifespanStartup:
     async def test_exception_handler_setup(self)
-    async def test_langsmith_connection_success(self)
-    async def test_langsmith_connection_fallback(self)
+    async def test_langfuse_connection_success(self)
+    async def test_langfuse_connection_fallback(self)
 
 class TestExceptionHandlers:
     async def test_skillforge_exception_handler(self, client)

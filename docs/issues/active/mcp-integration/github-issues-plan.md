@@ -189,7 +189,7 @@ to query real-time data:
 - [ ] security_auditor can query CVE database in real-time
 - [ ] dependency_mapper can fetch current package versions
 - [ ] Agents work correctly when MCP servers are unavailable
-- [ ] Tool calls are traced in LangSmith
+- [ ] Tool calls are traced in Langfuse
 - [ ] <500ms added latency per tool call
 
 ## Child Issues
@@ -427,7 +427,7 @@ output but cannot call external tools. We need a new factory that:
 - [ ] System prompt enhancement with tool guidance
 - [ ] Parallel tool calls enabled for efficiency
 - [ ] Works with existing `run_agent_with_tracking()`
-- [ ] Tool calls traced in LangSmith
+- [ ] Tool calls traced in Langfuse
 - [ ] Unit tests comparing tool-enabled vs structured-only
 
 ## Technical Details
@@ -520,7 +520,7 @@ knowledge, which may be outdated. With MCP tools, it can:
 - [ ] Use `create_tool_enabled_agent()` when tools available
 - [ ] Graceful fallback to structured-only when tools unavailable
 - [ ] Updated prompt encouraging tool use for verification
-- [ ] Tool calls visible in LangSmith traces
+- [ ] Tool calls visible in Langfuse traces
 - [ ] Integration test with mock CVE MCP server
 
 ## Technical Details
@@ -772,7 +772,7 @@ Unit tests cover individual components, but we need integration tests that:
 - Test full tool call flow (agent → pool → server → response)
 - Verify graceful degradation scenarios
 - Test concurrent tool calls
-- Validate LangSmith tracing
+- Validate Langfuse tracing
 
 ## Acceptance Criteria
 

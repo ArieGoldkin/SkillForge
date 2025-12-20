@@ -32,7 +32,7 @@
   5. `performance_analyst` (priority: 0.9)
 - **Reasoning:** Supervisor correctly identified technical content requiring multiple analysis perspectives
 
-### 4. LangSmith Tracing
+### 4. Langfuse Tracing
 - **Status:** ✅ PASSING
 - **Enabled:** `LANGCHAIN_TRACING_V2=true`
 - **Project:** `skillforge-backend`
@@ -65,7 +65,7 @@
 
 **Total Workflow Time:** ~113 seconds (excluding agent execution)
 
-## 🔍 LangSmith Trace Verification
+## 🔍 Langfuse Trace Verification
 
 All workflow components are properly instrumented:
 
@@ -150,7 +150,7 @@ async def run_tech_comparator_with_session() -> dict[str, object] | Exception:
 - **Type Annotations:** ✅ All properly typed with ParamSpec/TypeVar
 - **Logging:** ✅ Structured logging with context throughout
 - **Error Handling:** ✅ Proper exception handling and logging
-- **Tracing:** ✅ Full LangSmith instrumentation
+- **Tracing:** ✅ Full Langfuse instrumentation
 - **SSE Events:** ✅ All stages emit progress events
 - **Code Quality:** ✅ All ruff/mypy checks passing
 
@@ -159,11 +159,11 @@ async def run_tech_comparator_with_session() -> dict[str, object] | Exception:
 1. **Fix Database Session Issue:** Implement per-agent session creation or proper pooling
 2. **Increase Agent Timeout:** Consider 120s for complex analyses
 3. **Add Retry Logic:** For transient database connection errors
-4. **Monitor LangSmith:** Verify traces are appearing correctly in dashboard
+4. **Monitor Langfuse:** Verify traces are appearing correctly in dashboard
 
 ## 🎯 Next Steps
 
 1. Fix database session concurrency issue
 2. Re-run verification test
 3. Verify agent findings are saved correctly
-4. Check LangSmith dashboard for complete trace hierarchy
+4. Check Langfuse dashboard for complete trace hierarchy

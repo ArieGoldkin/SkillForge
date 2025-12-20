@@ -6,19 +6,25 @@ import type { AnalysisProps } from '../types'
 
 // Mock child components
 vi.mock('../../states/CompletedAnalysisView', () => ({
-  CompletedAnalysisView: (props: any) => (
-    <div data-testid="completed-analysis-view">Completed: {props.analysisId || 'unknown'}</div>
+  CompletedAnalysisView: (props: Record<string, unknown>) => (
+    <div data-testid="completed-analysis-view">
+      Completed: {String(props.analysisId || 'unknown')}
+    </div>
   ),
 }))
 
 vi.mock('../../LoadingStateDisplay', () => ({
-  LoadingStateDisplay: ({ loadingState }: { loadingState: any }) => (
-    <div data-testid="loading-state-display">{loadingState?.type || 'unknown'}</div>
+  LoadingStateDisplay: ({ loadingState }: { loadingState: Record<string, unknown> }) => (
+    <div data-testid="loading-state-display">{String(loadingState?.type || 'unknown')}</div>
   ),
 }))
 
 vi.mock('../CommonAnalysisLayout', () => ({
-  CommonAnalysisLayout: ({ children, showTimeoutWarning, progressContent }: any) => (
+  CommonAnalysisLayout: ({
+    children,
+    showTimeoutWarning,
+    progressContent,
+  }: Record<string, unknown>) => (
     <div data-testid="common-analysis-layout">
       {showTimeoutWarning && <div data-testid="timeout-warning-banner">Timeout Warning</div>}
       {children}
@@ -30,7 +36,7 @@ vi.mock('../CommonAnalysisLayout', () => ({
 // ActiveAnalysisView was inlined into the router - no mock needed
 
 vi.mock('../../progress/ProgressColumn', () => ({
-  ProgressColumn: (props: any) => <div data-testid="progress-column" />,
+  ProgressColumn: (_props: Record<string, unknown>) => <div data-testid="progress-column" />,
 }))
 
 describe('AnalysisRenderRouter', () => {

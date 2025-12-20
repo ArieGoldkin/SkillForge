@@ -235,7 +235,7 @@ async for event in broadcaster.subscribe(channel):  # Missing cleanup!
 ### Robust Tracing with GeneratorExit Handling (MANDATORY)
 **✅ GOOD: Use robust_traceable with metadata and runtime updates**
 ```python
-from langsmith import get_current_run_tree
+from langfuse import get_current_run_tree
 from app.core.config import settings
 from app.core.tracing import robust_traceable
 

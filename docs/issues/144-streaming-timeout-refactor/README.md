@@ -11,7 +11,7 @@
 
 ## Issue Overview
 
-**Title:** Feature/integration testing langsmith
+**Title:** Feature/integration testing langfuse
 
 **Description:**  
 Refactor streaming agent timeout handling to avoid `GeneratorExit` errors caused by `asyncio.wait_for` cancellation. The original implementation used `asyncio.wait_for` with a timeout, which cancels the async generator when timeout occurs, causing `GeneratorExit` exceptions that were difficult to handle gracefully in LangGraph workflows.

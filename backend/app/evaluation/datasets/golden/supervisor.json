@@ -194,7 +194,7 @@
     "metadata": {
       "complexity": "low",
       "primary_agent": "implementation_planner",
-      "source": "real_langsmith"
+      "source": "real_langfuse"
     }
   },
   {

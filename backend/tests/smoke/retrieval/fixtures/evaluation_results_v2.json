@@ -28,7 +28,7 @@
       "failed_example_ids": [
         "q-tot-applications",
         "q-langgraph-supervisor",
-        "q-langsmith-metrics",
+        "q-langfuse-metrics",
         "q-mlops-best-practices",
         "q-perplexity-retrieval",
         "q-terraform-iac"

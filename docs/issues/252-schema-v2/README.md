@@ -40,7 +40,7 @@ backend/app/evaluation/
 │   └── validation.py                  # Pydantic validation + CLI
 ├── ingestion/
 │   ├── __init__.py                    # Module exports
-│   └── langsmith_extractor.py         # LangSmith trace extractor
+│   └── langfuse_extractor.py         # Langfuse trace extractor
 └── datasets/
     └── agent_analysis_golden_v2.json  # Example v2.0 dataset
 ```
@@ -51,11 +51,11 @@ backend/app/evaluation/
 ```json
 {
   "provenance": {
-    "source": "langsmith|github|arxiv|synthetic|production|human_crafted",
+    "source": "langfuse|github|arxiv|synthetic|production|human_crafted",
     "created_at": "2025-12-10T00:00:00Z",
     "created_by": "username",
     "source_url": "https://...",
-    "langsmith_trace_id": "abc123",
+    "langfuse_trace_id": "abc123",
     "github_issue_url": "https://github.com/...",
     "arxiv_id": "2501.12345"
   }
@@ -120,22 +120,22 @@ print(f"Errors: {result.errors}")
 
 ---
 
-## 🔄 LangSmith Extractor
+## 🔄 Langfuse Extractor
 
 ### CLI Usage
 ```bash
-poetry run python -m app.evaluation.ingestion.langsmith_extractor \
+poetry run python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --agent-type security_auditor \
   --min-confidence 0.85 \
   --date-range 2025-12-01:2025-12-10 \
-  --output datasets/drafts/langsmith_security_20251210.json
+  --output datasets/drafts/langfuse_security_20251210.json
 ```
 
 ### Python API
 ```python
-from app.evaluation.ingestion import LangSmithExtractor, ExtractionConfig
+from app.evaluation.ingestion import LangfuseExtractor, ExtractionConfig
 
 config = ExtractionConfig(
     project_name="skillforge-prod",
@@ -144,7 +144,7 @@ config = ExtractionConfig(
     min_confidence=0.85
 )
 
-extractor = LangSmithExtractor()
+extractor = LangfuseExtractor()
 examples = extractor.extract(config)
 extractor.save_dataset(examples, "output.json")
 ```
@@ -159,7 +159,7 @@ extractor.save_dataset(examples, "output.json")
 - [x] Validation workflow (draft → validated)
 - [x] Human review tracking (2/3 consensus)
 - [x] Pydantic validation with CLI
-- [x] LangSmith trace extractor
+- [x] Langfuse trace extractor
 - [x] Example golden dataset in v2.0 format
 - [x] All CI checks pass (ruff format, lint, mypy)
 
@@ -168,7 +168,7 @@ extractor.save_dataset(examples, "output.json")
 ## 🔗 Dependencies
 
 - **jsonschema**: JSON Schema validation (added to dev dependencies)
-- **langsmith**: LangSmith API client (already installed via langchain)
+- **langfuse**: Langfuse API client (already installed via langchain)
 
 ---
 

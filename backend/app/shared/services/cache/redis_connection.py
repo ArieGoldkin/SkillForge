@@ -25,7 +25,7 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-def _validate_redis_url(url: str) -> dict[str, str]:
+def _validate_redis_url(url: str) -> dict[str, str | None]:
     """Validate and parse Redis URL for ACL authentication patterns.
 
     Supports Redis ACL URLs in format: redis://[username]:[password]@host:port[/database]
@@ -38,9 +38,11 @@ def _validate_redis_url(url: str) -> dict[str, str]:
 
     Raises:
         ValueError: If URL format is invalid for ACL authentication
+
     """
     if not url.startswith('redis://'):
-        raise ValueError(f"Redis URL must start with 'redis://', got: {url}")
+        msg = f"Redis URL must start with 'redis://', got: {url}"
+        raise ValueError(msg)
 
     # Parse URL components
     try:
@@ -87,7 +89,8 @@ def _validate_redis_url(url: str) -> dict[str, str]:
         return result
 
     except Exception as e:
-        raise ValueError(f"Invalid Redis URL format: {url}. Error: {e}") from e
+        msg = f"Invalid Redis URL format: {url}. Error: {e}"
+        raise ValueError(msg) from e
 
 
 def create_redis_client(
@@ -257,6 +260,7 @@ def create_redis_client_with_acl(
         ...     username="skillforge-user",
         ...     password="secure-password"
         ... )
+
     """
     if not redis_url:
         settings = get_settings()

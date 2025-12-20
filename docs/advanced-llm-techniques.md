@@ -713,7 +713,7 @@ Document Structure (JSON):
 │    "hit_count": 42,                                                       │
 │    "last_hit_at": "2025-12-16T14:22:00Z",                                 │
 │    "ttl_seconds": 86400,                // 24 hours                       │
-│    "quality_score": 0.92                // From LangSmith feedback        │
+│    "quality_score": 0.92                // From Langfuse feedback        │
 │  }                                                                        │
 └──────────────────────────────────────────────────────────────────────────┘
 
@@ -921,7 +921,7 @@ Based on [Redis's 10 Techniques for Semantic Cache Optimization](https://redis.i
    - Ensures good hit rate from day one
 
 5. **Quality-Based Eviction**
-   - Prioritize keeping high-quality responses (LangSmith feedback)
+   - Prioritize keeping high-quality responses (Langfuse feedback)
    - Evict low-quality entries first when cache is full
 
 6. **Observability**
@@ -955,7 +955,7 @@ Phase 1: FEW-SHOT PROMPTING (2-3 weeks)
 │  ├─ Add create_few_shot_agent() factory                          │
 │  ├─ Feature flag: ENABLE_FEW_SHOT_PROMPTING                      │
 │  ├─ A/B test: 20% traffic with few-shot                          │
-│  ├─ Monitor quality metrics (LangSmith feedback)                 │
+│  ├─ Monitor quality metrics (Langfuse feedback)                 │
 │  └─ Rollout to 100% if quality improves >10%                     │
 │                                                                   │
 │  Success Criteria:                                               │
@@ -983,7 +983,7 @@ Phase 2: CHAIN-OF-THOUGHT SUPERVISOR (3-4 weeks)
 │  Week 4: Rollout                                                 │
 │  ├─ Gradual rollout (20% → 50% → 100%)                           │
 │  ├─ Monitor for selection quality improvements                   │
-│  └─ Add reasoning logs to LangSmith traces                       │
+│  └─ Add reasoning logs to Langfuse traces                       │
 │                                                                   │
 │  Success Criteria:                                               │
 │  ✓ Agent selection accuracy +15% (vs baseline)                   │
@@ -1058,7 +1058,7 @@ Phase 5: REACT ENHANCEMENT (1-2 weeks)
 │  ├─ Create ReActTracedAgent wrapper                              │
 │  ├─ Implement ReActTracingCallback                               │
 │  ├─ Add create_tool_enabled_agent_with_tracing()                 │
-│  └─ Integrate with LangSmith for trace visualization             │
+│  └─ Integrate with Langfuse for trace visualization             │
 │                                                                   │
 │  Week 2: Rollout & Monitoring                                    │
 │  ├─ Enable tracing for tool-enabled agents                       │
@@ -1068,7 +1068,7 @@ Phase 5: REACT ENHANCEMENT (1-2 weeks)
 │                                                                   │
 │  Success Criteria:                                               │
 │  ✓ All tool calls captured in traces                             │
-│  ✓ Traces visible in LangSmith                                   │
+│  ✓ Traces visible in Langfuse                                   │
 │  ✓ No performance overhead (tracing is async)                    │
 └──────────────────────────────────────────────────────────────────┘
 
@@ -1127,7 +1127,7 @@ Request Flow:
 ┌──────────────────────────────────────────────────────────────────┐
 │  Metrics Collection (Same for Both Groups)                        │
 │                                                                   │
-│  - Quality: LangSmith feedback scores, human eval                 │
+│  - Quality: Langfuse feedback scores, human eval                 │
 │  - Performance: Latency, token usage, cache hit rate              │
 │  - Cost: Estimated USD per analysis                               │
 │  - Reliability: Error rate, fallback triggers                     │

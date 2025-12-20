@@ -38,8 +38,8 @@ All code changes have been implemented and verified. Ready for Dev Environment t
 #### Layer 3: Workflow-Level Handling
 - [x] `backend/app/api/v1/workflow_runner.py` - Conditional try/except in place ✓
 
-#### Layer 4: LangSmith Query Utilities
-- [x] `backend/app/core/langsmith_queries.py` - Created with filter helpers ✓
+#### Layer 4: Langfuse Query Utilities
+- [x] `backend/app/core/langfuse_queries.py` - Created with filter helpers ✓
 
 #### Layer 5: Documentation
 - [x] `docs/GENERATOR_EXIT_WORKAROUNDS.md` - Complete documentation ✓
@@ -54,7 +54,7 @@ All code changes have been implemented and verified. Ready for Dev Environment t
 ## Files Created
 
 1. `backend/app/core/tracing.py` - Enhanced with `robust_traceable` decorator
-2. `backend/app/core/langsmith_queries.py` - Query utilities for LangSmith filtering
+2. `backend/app/core/langfuse_queries.py` - Query utilities for Langfuse filtering
 3. `docs/GENERATOR_EXIT_WORKAROUNDS.md` - Complete implementation guide
 4. `backend/tests/integration/workflows/test_generator_exit_layers.py` - Integration tests
 
@@ -99,13 +99,13 @@ pytest tests/ -v --tb=short
 
 ### 3. Check for Type Errors
 ```bash
-mypy app/core/tracing.py app/core/langsmith_queries.py
+mypy app/core/tracing.py app/core/langfuse_queries.py
 ```
 
 ### 4. Lint All Modified Files
 ```bash
-ruff check app/core/tracing.py app/core/langsmith_queries.py
-ruff format --check app/core/tracing.py app/core/langsmith_queries.py
+ruff check app/core/tracing.py app/core/langfuse_queries.py
+ruff format --check app/core/tracing.py app/core/langfuse_queries.py
 ```
 
 ### 5. Manual Testing in Dev Environment
@@ -117,16 +117,16 @@ ruff format --check app/core/tracing.py app/core/langsmith_queries.py
 
 **Test Layer 2 (robust_traceable):**
 - [ ] Run a workflow execution
-- [ ] Check LangSmith traces - GeneratorExit should not appear as errors
+- [ ] Check Langfuse traces - GeneratorExit should not appear as errors
 - [ ] Verify traces are still properly nested
 
 **Test Layer 3 (Workflow-level):**
 - [ ] Run workflow to completion - verify no false GeneratorExit errors
 - [ ] Test workflow cancellation - verify real errors are logged
 
-**Test Layer 4 (LangSmith Queries):**
+**Test Layer 4 (Langfuse Queries):**
 ```python
-from app.core.langsmith_queries import (
+from app.core.langfuse_queries import (
     list_runs_without_generator_exit,
     get_generator_exit_count,
 )
@@ -139,7 +139,7 @@ print(f"GeneratorExit count: {count}")
 runs = list_runs_without_generator_exit("your-project-name", limit=10)
 ```
 
-### 6. Monitor LangSmith Dashboard
+### 6. Monitor Langfuse Dashboard
 
 - [ ] Apply filter: `and(not(has(error, "GeneratorExit")), eq(status, "success"))`
 - [ ] Verify GeneratorExit traces are filtered out in UI
@@ -153,12 +153,12 @@ runs = list_runs_without_generator_exit("your-project-name", limit=10)
 ## Expected Outcomes
 
 ### Immediate (After Testing)
-- ✅ 70-80% reduction in GeneratorExit traces in LangSmith
+- ✅ 70-80% reduction in GeneratorExit traces in Langfuse
 - ✅ Cleaner trace visualization
 - ✅ Real errors remain visible
 
-### Short-term (After LangSmith Filtering)
-- ✅ 95%+ visual cleanup in LangSmith UI
+### Short-term (After Langfuse Filtering)
+- ✅ 95%+ visual cleanup in Langfuse UI
 - ✅ Easier debugging of actual issues
 
 ### Metrics to Track
@@ -175,7 +175,7 @@ generator_exit_count_after = 10   # per 100 traces (80% reduction)
 ## Known Limitations
 
 1. **Layer 5 (GitHub Issue)**: Not yet filed - pending manual action
-2. **Layer 4 (LangSmith Filters)**: Requires manual configuration in LangSmith UI
+2. **Layer 4 (Langfuse Filters)**: Requires manual configuration in Langfuse UI
 3. **Some @traceable usage remains**: Files outside scope (tutor nodes, etc.) still use direct `@traceable` - this is acceptable as they're not in the critical path
 
 ## Rollback Plan
@@ -185,7 +185,7 @@ If issues are found in Dev Environment:
 1. Revert `robust_traceable` usage back to `@traceable` in affected files
 2. Keep `aclosing()` usage (it's a standard Python pattern)
 3. Revert workflow_runner.py changes if needed
-4. Keep LangSmith query utilities (they're read-only helpers)
+4. Keep Langfuse query utilities (they're read-only helpers)
 
 ## Support
 

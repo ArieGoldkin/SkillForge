@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'

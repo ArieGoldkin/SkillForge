@@ -11,7 +11,7 @@
 
 Instead of guessing which model is "best" for each task, we will:
 1. **Build golden datasets** for each task type (supervisor, analysis, synthesis)
-2. **Run A/B experiments** across multiple providers using LangSmith
+2. **Run A/B experiments** across multiple providers using Langfuse
 3. **Measure quality, latency, and cost** with automated evaluators
 4. **Select winners** based on actual performance data
 5. **Auto-configure** the system with winning models per task
@@ -74,7 +74,7 @@ Instead of guessing which model is "best" for each task, we will:
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
-│  │                     GOLDEN DATASETS (LangSmith)                        │ │
+│  │                     GOLDEN DATASETS (Langfuse)                        │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │       │                                                                     │
 │       ├─▶ supervisor-golden-v1 (50 examples)                               │
@@ -102,7 +102,7 @@ Instead of guessing which model is "best" for each task, we will:
 │       │     │     ├─▶ Run task with model                                  │
 │       │     │     ├─▶ Collect outputs                                      │
 │       │     │     ├─▶ Run evaluators                                       │
-│       │     │     └─▶ Record to LangSmith experiment                       │
+│       │     │     └─▶ Record to Langfuse experiment                       │
 │       │     └─▶ Compare results across models                              │
 │       │                                                                     │
 │       └─▶ Models to test:                                                  │
@@ -143,7 +143,7 @@ Instead of guessing which model is "best" for each task, we will:
 │  │                     RESULTS & CONFIG GENERATION                        │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │       │                                                                     │
-│       ├─▶ Store experiments in LangSmith                                   │
+│       ├─▶ Store experiments in Langfuse                                   │
 │       │                                                                     │
 │       ├─▶ Generate comparison report (Markdown)                            │
 │       │     • Table: Model × Task × Metrics                                │
@@ -267,7 +267,7 @@ MODEL_REGISTRY: dict[str, ModelInfo] = {
 **File:** `backend/app/evaluation/llm_benchmark.py`
 
 ```python
-from langsmith import Client
+from langfuse import Client
 from app.core.model_registry import MODEL_REGISTRY
 from app.core.model_factory import get_chat_model
 
@@ -286,7 +286,7 @@ class LLMBenchmark:
         results = {}
 
         for model_name in models:
-            # Create experiment in LangSmith
+            # Create experiment in Langfuse
             experiment_name = f"{self.task_type}-{model_name}-{datetime.now().isoformat()}"
 
             # Run evaluation
@@ -480,15 +480,15 @@ docs/evaluation/
 │  ├─▶ Model A/B Testing                                                      │
 │  │     ├─▶ 7 models across 4 providers                                     │
 │  │     ├─▶ Track: latency, cost, quality                                   │
-│  │     └─▶ Store in LangSmith experiments                                  │
+│  │     └─▶ Store in Langfuse experiments                                  │
 │  │                                                                          │
 │  └─▶ Auto-Configuration                                                     │
 │        ├─▶ Generate optimal model config                                   │
 │        └─▶ Fallback chains based on results                                │
 │                                                                             │
 │  SHARED INFRASTRUCTURE:                                                     │
-│  ├─▶ LangSmith datasets (already have 3)                                   │
-│  ├─▶ LangSmith experiments                                                 │
+│  ├─▶ Langfuse datasets (already have 3)                                   │
+│  ├─▶ Langfuse experiments                                                 │
 │  └─▶ Evaluator patterns (openevals compatible)                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -514,7 +514,7 @@ docs/evaluation/
 |-----|-------|--------------|
 | **Day 1 AM** | Model Registry | `model_registry.py` with Dec 2025 models |
 | **Day 1 PM** | Golden Datasets | 50 supervisor, 30 agent examples |
-| **Day 2 AM** | Benchmark Runner | `llm_benchmark.py` with LangSmith integration |
+| **Day 2 AM** | Benchmark Runner | `llm_benchmark.py` with Langfuse integration |
 | **Day 2 PM** | Evaluators | correctness, quality, latency, cost evaluators |
 | **Day 3 AM** | Run Experiments | Full A/B test across all models |
 | **Day 3 PM** | Results & Config | Comparison report, `model_config.json` |
@@ -533,7 +533,7 @@ A: Four evaluators: correctness (exact match), quality (LLM-as-judge), latency, 
 A: Generated in `model_config.json` based on experiment results.
 
 **Q: How do we test it?**
-A: LangSmith experiments with reproducible datasets.
+A: Langfuse experiments with reproducible datasets.
 
 **Q: Which is better, who is doing the best job?**
 A: Composite score = quality×0.5 + speed×0.3 + cost×0.2 → ranked comparison.
@@ -543,7 +543,7 @@ A: Composite score = quality×0.5 + speed×0.3 + cost×0.2 → ranked comparison
 **Ready to implement?** This plan provides:
 - ✅ Data-driven model selection (not guessing)
 - ✅ Latest December 2025 models and pricing
-- ✅ LangSmith integration for experiments
+- ✅ Langfuse integration for experiments
 - ✅ Connects to Issue #219 (eval harness)
 - ✅ Automated config generation from results
 - ✅ Fallback chains based on actual performance

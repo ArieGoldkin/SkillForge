@@ -2,12 +2,12 @@
 
 ## Executive Summary
 
-**Key Finding**: The LangSmith trace shows a **successful workflow execution** (24.40s, status: Success), but `GeneratorExit` can still appear in traces because:
+**Key Finding**: The Langfuse trace shows a **successful workflow execution** (24.40s, status: Success), but `GeneratorExit` can still appear in traces because:
 
 1. **LangGraph's `step_timeout` itself causes `GeneratorExit`** when it cancels tasks
 2. This is **expected Python behavior** for async generator cancellation
 3. Our safety nets **catch and handle it gracefully**, allowing workflows to succeed
-4. **LangSmith still records it** as an error from LangGraph's core, even though we handle it
+4. **Langfuse still records it** as an error from LangGraph's core, even though we handle it
 
 ## Trace Analysis: `ed697364-1e70-40c1-9023-67d2d5b59cbb`
 
@@ -30,7 +30,7 @@ Workflow Flow:
 └── tech_comparator (6.63s) ✅ [Parallel]
 ```
 
-**Observation**: This trace shows **no visible errors** - the workflow completed successfully. However, the user's concern is valid: `GeneratorExit` can still occur in other runs, and when it does, it appears in LangSmith traces even though we handle it.
+**Observation**: This trace shows **no visible errors** - the workflow completed successfully. However, the user's concern is valid: `GeneratorExit` can still occur in other runs, and when it does, it appears in Langfuse traces even though we handle it.
 
 ## Why Our Fixes Didn't Fully Eliminate GeneratorExit
 
@@ -89,7 +89,7 @@ compiled_graph.step_timeout = STEP_TIMEOUT  # 90s
                         v
 ┌─────────────────────────────────────────────────────────────┐
 │ Returns empty dict/findings → Workflow continues ✅         │
-│ BUT: LangSmith still records GeneratorExit in trace ⚠️     │
+│ BUT: Langfuse still records GeneratorExit in trace ⚠️     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -134,21 +134,21 @@ except GeneratorExit:
 
 **Result**: Workflows succeed even when individual agents timeout.
 
-## The Real Issue: LangSmith Trace Visibility
+## The Real Issue: Langfuse Trace Visibility
 
 ### What's Happening
 
 1. **Workflow succeeds** ✅ (our safety nets work)
 2. **GeneratorExit is raised** (normal cancellation behavior)
-3. **LangSmith records it** ⚠️ (even though we handle it)
+3. **Langfuse records it** ⚠️ (even though we handle it)
 4. **User sees error in trace** (but workflow actually succeeded)
 
-### Why LangSmith Records It
+### Why Langfuse Records It
 
-LangSmith traces capture **all exceptions**, including `GeneratorExit`, even when they're handled. This is because:
+Langfuse traces capture **all exceptions**, including `GeneratorExit`, even when they're handled. This is because:
 
 - `GeneratorExit` is a `BaseException` (not `Exception`)
-- LangSmith's tracing hooks capture it before our handlers
+- Langfuse's tracing hooks capture it before our handlers
 - The trace shows the "raw" exception, not the handled result
 
 ## Visualization: Before vs After Our Fixes
@@ -238,7 +238,7 @@ LangSmith traces capture **all exceptions**, including `GeneratorExit`, even whe
 
 ### ⚠️ Still Present (But Expected)
 - `GeneratorExit` can still occur when `step_timeout` cancels
-- LangSmith traces may show it (but workflows succeed)
+- Langfuse traces may show it (but workflows succeed)
 - This is **normal Python behavior** for async generator cancellation
 
 ## Recommendations
@@ -249,15 +249,15 @@ LangSmith traces capture **all exceptions**, including `GeneratorExit`, even whe
 - Normal Python async generator cancellation
 - Handled gracefully by our code
 - Allows workflows to succeed with partial results
-- LangSmith visibility is just observability, not a bug
+- Langfuse visibility is just observability, not a bug
 
 **Action**: Document that `GeneratorExit` in traces is expected when timeouts occur, and that workflows handle it gracefully.
 
-### Option 2: Suppress GeneratorExit in LangSmith (If Possible)
+### Option 2: Suppress GeneratorExit in Langfuse (If Possible)
 
-**Rationale**: If LangSmith provides a way to filter or suppress `GeneratorExit` in traces, we could use it.
+**Rationale**: If Langfuse provides a way to filter or suppress `GeneratorExit` in traces, we could use it.
 
-**Action**: Investigate LangSmith's exception filtering options.
+**Action**: Investigate Langfuse's exception filtering options.
 
 ### Option 3: Increase step_timeout (Not Recommended)
 
@@ -274,7 +274,7 @@ LangSmith traces capture **all exceptions**, including `GeneratorExit`, even whe
 
 1. **Expected behavior** when `step_timeout` cancels tasks
 2. **Handled gracefully** by our safety nets
-3. **Visible in LangSmith** but don't indicate failures
+3. **Visible in Langfuse** but don't indicate failures
 4. **Normal Python async generator cancellation** per PEP 492/525
 
 The workflow succeeds, agents degrade gracefully, and the system is more robust. The `GeneratorExit` in traces is a **visibility artifact**, not a functional problem.

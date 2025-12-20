@@ -280,7 +280,7 @@ beautifulsoup4 = "^4.12.3"
 playwright = "^1.48.0"
 
 # Observability
-langsmith = "^1.0.0"
+langfuse = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -1359,7 +1359,7 @@ logger.info(
 - **Sentry** - Error monitoring (5k events/month free)
 
 ### Optional Tools
-- **LangSmith** - LangChain observability (debugging workflows)
+- **Langfuse** - LangChain observability (debugging workflows)
 - **Playwright** - E2E testing
 - **Postman/Bruno** - API testing
 

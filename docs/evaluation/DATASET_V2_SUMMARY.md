@@ -30,7 +30,7 @@ A production-grade evaluation dataset system with:
 3. **Version Control** - Semantic versioning with Git tags
 4. **Scoring Rubrics** - Customizable evaluation criteria per example
 5. **Edge Cases & Adversarial Examples** - Systematic robustness testing
-6. **Integration** - LangSmith traces, GitHub issues, arXiv papers
+6. **Integration** - Langfuse traces, GitHub issues, arXiv papers
 7. **CI/CD Automation** - Validation on every PR, regression testing
 
 ---
@@ -42,7 +42,7 @@ DATA SOURCES               INGESTION                VALIDATION              RELE
 ════════════               ═════════                ══════════              ═══════
 
 ┌─────────────┐           ┌─────────────┐          ┌──────────┐           ┌─────────┐
-│ LangSmith   │──────────▶│  Extractor  │─────────▶│ Reviewer │──────────▶│ Git Tag │
+│ Langfuse   │──────────▶│  Extractor  │─────────▶│ Reviewer │──────────▶│ Git Tag │
 │ Traces      │           │  (CI ≥0.85) │          │ (2/3 OK) │           │ v2.x.x  │
 └─────────────┘           └─────────────┘          └──────────┘           └─────────┘
                                  │                       │                      │
@@ -53,7 +53,7 @@ DATA SOURCES               INGESTION                VALIDATION              RELE
                           ┌─────────────┐          ┌──────────┐           ┌─────────┐
 ┌─────────────┐           │ Normalize   │          │ Approval │           │ Upload  │
 │ arXiv       │──────────▶│ to v2.0     │─────────▶│ Gate     │──────────▶│ to      │
-│ Papers      │           │ Schema      │          │ (quality)│           │LangSmith│
+│ Papers      │           │ Schema      │          │ (quality)│           │Langfuse│
 └─────────────┘           └─────────────┘          └──────────┘           └─────────┘
                                  │                       │
 ┌─────────────┐                  │                       │
@@ -89,7 +89,7 @@ Every example records its origin:
 | Source | Use Case | Selection Criteria |
 |--------|----------|-------------------|
 | `synthetic` | Hand-crafted | Expert validation |
-| `langsmith` | Production traces | Confidence ≥0.85, no errors, latency <5s |
+| `langfuse` | Production traces | Confidence ≥0.85, no errors, latency <5s |
 | `github` | Bug reports | Closed issues with labels: bug, security, edge-case |
 | `arxiv` | Research papers | Recent papers in relevant domains |
 | `production` | Real user data | Consent + PII anonymization |
@@ -171,7 +171,7 @@ Systematic robustness testing with flags:
 
 ## Integration Points
 
-### LangSmith Integration
+### Langfuse Integration
 
 **Purpose**: Extract high-quality examples from production traces
 
@@ -183,11 +183,11 @@ Systematic robustness testing with flags:
 
 **Command**:
 ```bash
-python -m app.evaluation.ingestion.langsmith_extractor \
+python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --min-confidence 0.85 \
-  --output datasets/drafts/langsmith_extract.json
+  --output datasets/drafts/langfuse_extract.json
 ```
 
 **Metadata Captured**: Trace ID, model used, latency, cost, input/output tokens
@@ -272,7 +272,7 @@ backend/app/evaluation/
 │   └── archived/                       ← Old versions for historical reference
 │
 ├── ingestion/                          ← Data pipeline tools
-│   ├── langsmith_extractor.py         ← Extract from LangSmith traces
+│   ├── langfuse_extractor.py         ← Extract from Langfuse traces
 │   ├── github_importer.py             ← Import from GitHub issues
 │   ├── arxiv_importer.py              ← Import from arXiv papers
 │   └── normalizer.py                  ← Normalize to v2 schema
@@ -288,7 +288,7 @@ backend/app/evaluation/
 │   └── differ.py                      ← Dataset diff tool
 │
 └── exporters/                          ← Export to various formats
-    ├── langsmith_uploader.py          ← Upload to LangSmith
+    ├── langfuse_uploader.py          ← Upload to Langfuse
     └── pytest_adapter.py              ← Pytest fixtures
 ```
 
@@ -297,7 +297,7 @@ backend/app/evaluation/
 ## Implementation Timeline
 
 ### Week 1: Ingestion Layer
-- ✅ LangSmith trace extractor (done)
+- ✅ Langfuse trace extractor (done)
 - 🔲 GitHub issue importer
 - 🔲 arXiv paper importer
 - 🔲 Schema normalizer
@@ -315,7 +315,7 @@ backend/app/evaluation/
 ### Week 4: CI/CD Integration
 - 🔲 GitHub Actions workflow
 - 🔲 Regression test framework
-- 🔲 Automated LangSmith sync
+- 🔲 Automated Langfuse sync
 
 ### Week 5: Migration
 - 🔲 Migrate v1 datasets to v2
@@ -328,13 +328,13 @@ backend/app/evaluation/
 
 | Feature | v1.0 | v2.0 |
 |---------|------|------|
-| **Provenance Tracking** | ❌ All synthetic | ✅ 6 sources (LangSmith/GitHub/arXiv/etc) |
+| **Provenance Tracking** | ❌ All synthetic | ✅ 6 sources (Langfuse/GitHub/arXiv/etc) |
 | **Human Validation** | ❌ No workflow | ✅ Multi-reviewer approval (2/3) |
 | **Versioning** | ❌ No versions | ✅ Semantic versioning + Git tags |
 | **Scoring Rubrics** | ❌ Fixed criteria | ✅ Weighted, customizable rubrics |
 | **Edge Cases** | ❌ No flags | ✅ Edge case + adversarial flags |
 | **CI/CD Integration** | ❌ Manual | ✅ Automated validation + regression tests |
-| **LangSmith Sync** | ❌ Manual upload | ✅ Automated sync via pipeline |
+| **Langfuse Sync** | ❌ Manual upload | ✅ Automated sync via pipeline |
 
 ---
 
@@ -380,7 +380,7 @@ backend/app/evaluation/
 - **JSON Schema**: [dataset_v2_schema.json](/Users/yonatangross/coding/SkillForge/backend/app/evaluation/schemas/dataset_v2_schema.json)
 - **Example Dataset**: [agent_analysis_golden_v2.json](/Users/yonatangross/coding/SkillForge/backend/app/evaluation/datasets/agent_analysis_golden_v2.json)
 - **Validation Tool**: [validation.py](/Users/yonatangross/coding/SkillForge/backend/app/evaluation/schemas/validation.py)
-- **LangSmith Extractor**: [langsmith_extractor.py](/Users/yonatangross/coding/SkillForge/backend/app/evaluation/ingestion/langsmith_extractor.py)
+- **Langfuse Extractor**: [langfuse_extractor.py](/Users/yonatangross/coding/SkillForge/backend/app/evaluation/ingestion/langfuse_extractor.py)
 
 ---
 

@@ -78,7 +78,7 @@ TECHNICAL_TERMS = frozenset(
     {
         "langgraph",
         "langchain",
-        "langsmith",
+        "langfuse",
         "terraform",
         "kubernetes",
         "k8s",

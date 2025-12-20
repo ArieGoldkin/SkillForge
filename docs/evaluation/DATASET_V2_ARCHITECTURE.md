@@ -21,12 +21,12 @@
 
 The Evaluation Dataset v2.0 system introduces:
 
-- **Provenance Tracking**: Every example records its origin (synthetic, LangSmith, GitHub, arXiv, production)
+- **Provenance Tracking**: Every example records its origin (synthetic, Langfuse, GitHub, arXiv, production)
 - **Human Validation Workflow**: Multi-reviewer approval process with quality scoring
 - **Version Control**: Semantic versioning with Git tags for dataset releases
 - **Scoring Rubrics**: Weighted evaluation criteria (correctness, completeness, quality, latency, cost)
 - **Edge Cases & Adversarial Examples**: Flags for robustness testing
-- **Integration**: LangSmith trace extraction, GitHub issue import, CI/CD automation
+- **Integration**: Langfuse trace extraction, GitHub issue import, CI/CD automation
 
 ---
 
@@ -41,7 +41,7 @@ The Evaluation Dataset v2.0 system introduces:
 │   ════════════                   ════════════════                            │
 │                                                                             │
 │   ┌──────────────┐              ┌──────────────────┐                       │
-│   │  LangSmith   │─────────────▶│  Trace Extractor │                       │
+│   │  Langfuse   │─────────────▶│  Trace Extractor │                       │
 │   │   Traces     │              │  (production     │                       │
 │   └──────────────┘              │   examples)      │                       │
 │                                 └──────────────────┘                       │
@@ -112,9 +112,9 @@ The Evaluation Dataset v2.0 system introduces:
 │                                          │                                  │
 │                                          ▼                                  │
 │   CONSUMPTION LAYER              ┌──────────────────┐                       │
-│   ═══════════════════            │  LangSmith Sync  │                       │
+│   ═══════════════════            │  Langfuse Sync  │                       │
 │                                  │  (upload to      │                       │
-│   ┌──────────────────┐           │   LangSmith      │                       │
+│   ┌──────────────────┐           │   Langfuse      │                       │
 │   │  CI/CD Pipeline  │           │   datasets)      │                       │
 │   │  (pytest)        │           └──────────────────┘                       │
 │   └──────────────────┘                   │                                  │
@@ -160,7 +160,7 @@ backend/app/evaluation/
 │   │       └── synthesis_aggregation_golden_v2.json
 │   │
 │   ├── drafts/                         # Work-in-progress datasets
-│   │   ├── draft_langsmith_20251210.json
+│   │   ├── draft_langfuse_20251210.json
 │   │   └── draft_github_issues_security.json
 │   │
 │   └── archived/                       # Old versions for historical reference
@@ -168,7 +168,7 @@ backend/app/evaluation/
 │
 ├── ingestion/                          # Data pipeline ingestion tools
 │   ├── __init__.py
-│   ├── langsmith_extractor.py         # Extract examples from LangSmith traces
+│   ├── langfuse_extractor.py         # Extract examples from Langfuse traces
 │   ├── github_importer.py             # Import from GitHub issues
 │   ├── arxiv_importer.py              # Import from arXiv papers
 │   ├── normalizer.py                  # Normalize to v2 schema
@@ -188,7 +188,7 @@ backend/app/evaluation/
 │
 ├── exporters/                          # Export to various formats
 │   ├── __init__.py
-│   ├── langsmith_uploader.py          # Upload to LangSmith
+│   ├── langfuse_uploader.py          # Upload to Langfuse
 │   └── pytest_adapter.py              # Pytest fixtures
 │
 ├── evaluators/                         # Evaluation functions (existing)
@@ -206,17 +206,17 @@ backend/app/evaluation/
 
 ## Integration Points
 
-### 1. LangSmith Integration
+### 1. Langfuse Integration
 
 **Purpose**: Extract high-quality examples from production traces
 
 ```python
-# Usage: Extract examples from LangSmith
-python -m app.evaluation.ingestion.langsmith_extractor \
+# Usage: Extract examples from Langfuse
+python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --min-confidence 0.85 \
-  --output datasets/drafts/langsmith_extract_20251210.json
+  --output datasets/drafts/langfuse_extract_20251210.json
 ```
 
 **Selection Criteria**:
@@ -486,7 +486,7 @@ def test_tech_comparator_correctness(agent_golden_dataset):
 │       ▼                                                                 │
 │  ┌──────────────────┐                                                   │
 │  │ Sync to          │                                                   │
-│  │ LangSmith        │                                                   │
+│  │ Langfuse        │                                                   │
 │  └──────────────────┘                                                   │
 │                                                                         │
 └───────────────────────────────────────────────────────────────────────────┘
@@ -513,7 +513,7 @@ backend/app/evaluation/datasets/
 Git Tags:
 =========
 eval-datasets-v2.0.0  ← Initial v2 release
-eval-datasets-v2.1.0  ← +10 examples from LangSmith
+eval-datasets-v2.1.0  ← +10 examples from Langfuse
 eval-datasets-v2.2.0  ← +5 adversarial examples
 
 Versioning Rules:
@@ -638,17 +638,17 @@ python -m app.evaluation.migration.migrate_v1_to_v2 \
 
 ## Usage Examples
 
-### 1. Extract from LangSmith
+### 1. Extract from Langfuse
 
 ```bash
 # Extract high-confidence examples from production
-python -m app.evaluation.ingestion.langsmith_extractor \
+python -m app.evaluation.ingestion.langfuse_extractor \
   --project-name skillforge-prod \
   --task-type agent \
   --agent-type security_auditor \
   --min-confidence 0.85 \
   --date-range 2025-12-01:2025-12-10 \
-  --output datasets/drafts/langsmith_security_20251210.json
+  --output datasets/drafts/langfuse_security_20251210.json
 ```
 
 ### 2. Human Review CLI
@@ -656,13 +656,13 @@ python -m app.evaluation.ingestion.langsmith_extractor \
 ```bash
 # Review draft examples
 python -m app.evaluation.validation.reviewer_cli \
-  --dataset datasets/drafts/langsmith_security_20251210.json \
+  --dataset datasets/drafts/langfuse_security_20251210.json \
   --reviewer yonatangross
 
 # Interactive prompts:
-# Example 1/15: agent-sec-langsmith-001
+# Example 1/15: agent-sec-langfuse-001
 # Status: draft
-# Source: langsmith (trace ID: abc123)
+# Source: langfuse (trace ID: abc123)
 #
 # Inputs: <displays inputs>
 # Expected Outputs: <displays outputs>
@@ -679,7 +679,7 @@ python -m app.evaluation.validation.reviewer_cli \
 python -m app.evaluation.versioning.tagger \
   --datasets datasets/v2/agent/*.json \
   --version-type minor \
-  --changelog "Added 15 LangSmith examples, 5 adversarial cases"
+  --changelog "Added 15 Langfuse examples, 5 adversarial cases"
 
 # Creates:
 # - Git tag: eval-datasets-v2.1.0
@@ -708,20 +708,20 @@ pytest backend/tests/evaluation/ \
 
 | Feature | v1.0 | v2.0 |
 |---------|------|------|
-| **Provenance Tracking** | ❌ All synthetic | ✅ LangSmith/GitHub/arXiv/synthetic |
+| **Provenance Tracking** | ❌ All synthetic | ✅ Langfuse/GitHub/arXiv/synthetic |
 | **Human Validation** | ❌ No workflow | ✅ Multi-reviewer approval |
 | **Versioning** | ❌ No versions | ✅ Semantic versioning + Git tags |
 | **Scoring Rubrics** | ❌ Fixed criteria | ✅ Weighted, customizable rubrics |
 | **Edge Cases** | ❌ No flags | ✅ Edge case + adversarial flags |
 | **CI/CD Integration** | ❌ Manual | ✅ Automated validation + regression tests |
-| **LangSmith Sync** | ❌ Manual upload | ✅ Automated sync via pipeline |
+| **Langfuse Sync** | ❌ Manual upload | ✅ Automated sync via pipeline |
 
 ---
 
 ## Next Steps
 
 1. **Implement Ingestion Layer** (Week 1)
-   - LangSmith trace extractor
+   - Langfuse trace extractor
    - GitHub issue importer
    - Schema normalizer
 
@@ -738,7 +738,7 @@ pytest backend/tests/evaluation/ \
 4. **CI/CD Integration** (Week 4)
    - GitHub Actions workflow
    - Regression test framework
-   - Automated LangSmith sync
+   - Automated Langfuse sync
 
 5. **Migration** (Week 5)
    - Migrate v1 datasets to v2

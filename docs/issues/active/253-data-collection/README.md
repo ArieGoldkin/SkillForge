@@ -1,4 +1,4 @@
-# Issue #253: Real-World Data Collection from LangSmith & GitHub
+# Issue #253: Real-World Data Collection from Langfuse & GitHub
 
 **Sprint**: 12 (Evaluation Dataset)
 **Points**: 8
@@ -6,7 +6,7 @@
 
 ## Objective
 
-Collect 50+ real-world examples from production LangSmith traces and GitHub issues to achieve 70%+ real-world data ratio in the evaluation dataset.
+Collect 50+ real-world examples from production Langfuse traces and GitHub issues to achieve 70%+ real-world data ratio in the evaluation dataset.
 
 ## Deliverables
 
@@ -59,7 +59,7 @@ examples = await importer.import_issues(config)
 importer.save_dataset(examples, "datasets/drafts/github_langchain.json")
 ```
 
-### 3. Enhanced LangSmith Extractor
+### 3. Enhanced Langfuse Extractor
 
 Enhanced the existing extractor with:
 - **Domain Inference**: Maps content keywords and agent types to technical domains
@@ -69,9 +69,9 @@ Enhanced the existing extractor with:
 
 **New Methods**:
 ```python
-from app.evaluation.ingestion import LangSmithExtractor
+from app.evaluation.ingestion import LangfuseExtractor
 
-extractor = LangSmithExtractor()
+extractor = LangfuseExtractor()
 
 # Extract balanced examples for all 8 agents
 examples = extractor.extract_all_agents(
@@ -106,7 +106,7 @@ bands = extractor.extract_by_confidence_bands(
 |--------|-------|--------|
 | PII Anonymizer | 32 | All passing |
 | GitHub Importer | 27 | All passing |
-| LangSmith Extractor | 41 (23 new) | All passing |
+| Langfuse Extractor | 41 (23 new) | All passing |
 | Validation | 13 | All passing |
 | **Total** | **113** | **All passing** |
 
@@ -120,8 +120,8 @@ bands = extractor.extract_by_confidence_bands(
 
 ### Modified Files
 - `app/evaluation/ingestion/__init__.py` - Added exports
-- `app/evaluation/ingestion/langsmith_extractor.py` - Enhanced with domain/PII
-- `tests/unit/evaluation/test_langsmith_extractor.py` - Added 23 new tests
+- `app/evaluation/ingestion/langfuse_extractor.py` - Enhanced with domain/PII
+- `tests/unit/evaluation/test_langfuse_extractor.py` - Added 23 new tests
 
 ## Verification Checklist
 
@@ -129,8 +129,8 @@ bands = extractor.extract_by_confidence_bands(
 - [x] PII Anonymizer preserves allowlisted patterns
 - [x] GitHub Importer respects rate limits
 - [x] GitHub Importer infers agents from keywords and labels
-- [x] LangSmith Extractor anonymizes content before storage
-- [x] LangSmith Extractor includes domain in metadata
+- [x] Langfuse Extractor anonymizes content before storage
+- [x] Langfuse Extractor includes domain in metadata
 - [x] All 113 unit tests passing
 - [x] All lint checks passing (ruff format, ruff check, mypy)
 - [x] v2.0 schema compatibility maintained
@@ -138,4 +138,4 @@ bands = extractor.extract_by_confidence_bands(
 ## Commits
 
 1. `eafc685` - feat(#253): add PII anonymizer and GitHub importer for data collection
-2. `4d80017` - feat(#253): enhance LangSmith extractor with domain inference and PII integration
+2. `4d80017` - feat(#253): enhance Langfuse extractor with domain inference and PII integration

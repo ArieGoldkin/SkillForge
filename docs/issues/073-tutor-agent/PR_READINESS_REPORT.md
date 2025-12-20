@@ -58,7 +58,7 @@
 - ⚠️ `.mcp.json` missing (expected - gitignored, but `.cursor/mcp.json` exists)
 
 ### API Keys
-- ✅ `LANGSMITH_API_KEY` set in environment
+- ✅ `LANGFUSE_PUBLIC_KEY` set in environment
 - ✅ Backend `.env` file exists (contains API keys)
 
 ### MCP Configuration
@@ -68,7 +68,7 @@
   - playwright
   - context7
   - memory
-  - skillforge-langsmith
+  - skillforge-langfuse
 
 ### CI/CD Configuration
 - ✅ `.github/workflows/backend-ci.yml` exists

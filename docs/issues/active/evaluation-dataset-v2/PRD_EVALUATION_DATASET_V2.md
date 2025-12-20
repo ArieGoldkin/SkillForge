@@ -184,7 +184,7 @@ This PRD defines requirements for **Evaluation Dataset v2.0**, which will introd
 - Version control: Dataset version in metadata.json
 
 **M2. Real-World Data Collection**
-- 70 real-world examples (50% of 140 target) from actual LangSmith runs
+- 70 real-world examples (50% of 140 target) from actual Langfuse runs
 - Manual curation: Select diverse URLs analyzed in production/staging
 - Quality review: Verify expected outputs match actual agent findings
 
@@ -334,7 +334,7 @@ This PRD defines requirements for **Evaluation Dataset v2.0**, which will introd
 - **Mitigation:**
   1. Two-person review: One person creates, another verifies expected outputs
   2. Run evaluation on staging agents first, inspect failures
-  3. Use LangSmith traces to validate expected outputs match actual runs
+  3. Use Langfuse traces to validate expected outputs match actual runs
 - **Contingency:** If >10% of examples have wrong expected outputs, revert to 50% real-world target (70 examples)
 
 **Risk 2: Evaluation Time Exceeds Budget (Probability: 40%, Impact: Medium, Severity: MEDIUM)**
@@ -388,7 +388,7 @@ This PRD defines requirements for **Evaluation Dataset v2.0**, which will introd
 - [ ] Create DATASET_GUIDE.md with schema, criteria, taxonomy
 
 **Day 3-5: Real-World Data Collection (Must Have)**
-- [ ] Query LangSmith for 100 most diverse production/staging analyses
+- [ ] Query Langfuse for 100 most diverse production/staging analyses
 - [ ] Select 70 examples across domains: web dev (20), backend (15), DevOps (15), mobile (10), data eng (10)
 - [ ] Manual curation: Extract content, verify expected outputs, add metadata
 

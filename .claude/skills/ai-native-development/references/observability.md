@@ -11,9 +11,9 @@ AI observability tracks LLM performance, costs, and quality. This reference cove
 ### Setup
 
 ```typescript
-import { Client } from 'langsmith'
+import { Client } from 'langfuse'
 
-const langsmith = new Client({
+const langfuse = new Client({
   apiKey: process.env.LANGSMITH_API_KEY
 })
 ```
@@ -22,7 +22,7 @@ const langsmith = new Client({
 
 ```typescript
 async function tracedLLMCall(input: string) {
-  const runId = await langsmith.createRun({
+  const runId = await langfuse.createRun({
     name: 'chat_completion',
     run_type: 'llm',
     inputs: { prompt: input },
@@ -37,7 +37,7 @@ async function tracedLLMCall(input: string) {
 
     const output = response.choices[0].message.content!
 
-    await langsmith.updateRun(runId, {
+    await langfuse.updateRun(runId, {
       outputs: { response: output },
       end_time: Date.now(),
       extra: {
@@ -48,7 +48,7 @@ async function tracedLLMCall(input: string) {
 
     return output
   } catch (error) {
-    await langsmith.updateRun(runId, {
+    await langfuse.updateRun(runId, {
       error: error.message,
       end_time: Date.now()
     })
@@ -61,7 +61,7 @@ async function tracedLLMCall(input: string) {
 
 ```typescript
 async function tracedRAG(question: string) {
-  const pipelineRunId = await langsmith.createRun({
+  const pipelineRunId = await langfuse.createRun({
     name: 'rag_pipeline',
     run_type: 'chain',
     inputs: { question }
@@ -69,7 +69,7 @@ async function tracedRAG(question: string) {
 
   try {
     // 1. Retrieval step
-    const retrievalRunId = await langsmith.createRun({
+    const retrievalRunId = await langfuse.createRun({
       name: 'retrieval',
       run_type: 'retriever',
       inputs: { query: question },
@@ -78,13 +78,13 @@ async function tracedRAG(question: string) {
 
     const docs = await queryDocuments(question, 5)
 
-    await langsmith.updateRun(retrievalRunId, {
+    await langfuse.updateRun(retrievalRunId, {
       outputs: { documents: docs },
       end_time: Date.now()
     })
 
     // 2. Generation step
-    const generationRunId = await langsmith.createRun({
+    const generationRunId = await langfuse.createRun({
       name: 'generation',
       run_type: 'llm',
       inputs: { question, context: docs },
@@ -93,19 +93,19 @@ async function tracedRAG(question: string) {
 
     const answer = await ragQuery(question, docs)
 
-    await langsmith.updateRun(generationRunId, {
+    await langfuse.updateRun(generationRunId, {
       outputs: { answer },
       end_time: Date.now()
     })
 
-    await langsmith.updateRun(pipelineRunId, {
+    await langfuse.updateRun(pipelineRunId, {
       outputs: { answer },
       end_time: Date.now()
     })
 
     return answer
   } catch (error) {
-    await langsmith.updateRun(pipelineRunId, {
+    await langfuse.updateRun(pipelineRunId, {
       error: error.message,
       end_time: Date.now()
     })

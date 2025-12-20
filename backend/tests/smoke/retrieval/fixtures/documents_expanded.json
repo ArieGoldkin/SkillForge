@@ -1895,14 +1895,14 @@
       ]
     },
     {
-      "id": "langsmith-evaluation",
+      "id": "langfuse-evaluation",
       "title": "LangSmith Evaluation Framework",
-      "source_url": "https://docs.langchain.com/langsmith/evaluation",
+      "source_url": "https://docs.langchain.com/langfuse/evaluation",
       "content_type": "tutorial",
       "bucket": "long",
       "language": "en",
       "tags": [
-        "langsmith",
+        "langfuse",
         "evaluation",
         "testing",
         "ai",
@@ -1910,25 +1910,25 @@
       ],
       "sections": [
         {
-          "id": "langsmith-evaluation/intro",
+          "id": "langfuse-evaluation/intro",
           "title": "LangSmith for AI Evaluation",
           "content": "LangSmith provides observability and evaluation infrastructure for LLM applications. It captures traces of agent execution, enabling debugging and performance analysis. The evaluation framework supports both offline testing with golden datasets and online monitoring of production traffic. LangSmith integrates with LangChain and LangGraph to automatically capture execution traces without code changes.",
           "granularity": "coarse"
         },
         {
-          "id": "langsmith-evaluation/offline",
+          "id": "langfuse-evaluation/offline",
           "title": "Offline Evaluation",
           "content": "Offline evaluation tests system behavior against curated datasets before deployment. Create datasets with input examples and expected outputs. Define evaluators for metrics like accuracy, relevance, and groundedness. LangSmith supports custom evaluators using Python functions or LLM-as-judge patterns. Run experiments to compare different prompts, models, or architectures. Track metrics over time to prevent regression. Use A/B testing to validate improvements.",
           "granularity": "coarse"
         },
         {
-          "id": "langsmith-evaluation/online",
+          "id": "langfuse-evaluation/online",
           "title": "Online Monitoring",
           "content": "Online monitoring tracks production system behavior in real-time. LangSmith automatically logs all LLM calls, agent actions, and tool usage. Set up alerts for anomalies like increased latency, higher error rates, or poor user feedback. Sample and evaluate production traces to detect quality degradation. Collect user feedback (thumbs up/down) for continuous evaluation. Export production data to create new test cases and expand datasets.",
           "granularity": "coarse"
         },
         {
-          "id": "langsmith-evaluation/metrics",
+          "id": "langfuse-evaluation/metrics",
           "title": "Evaluation Metrics",
           "content": "Key evaluation metrics include task success rate, response quality, retrieval accuracy, and cost per query. For RAG systems, measure context precision (relevance), context recall (completeness), and answer groundedness. For agents, track tool selection accuracy, task completion rate, and steps to completion. Use both automated metrics (cosine similarity, BLEU) and LLM-based judges for nuanced evaluation. Balance speed, quality, and cost metrics.",
           "granularity": "coarse"
@@ -1936,14 +1936,14 @@
       ]
     },
     {
-      "id": "langsmith-observability-guide",
+      "id": "langfuse-observability-guide",
       "title": "LangSmith Observability for LLM Applications",
       "source_url": "https://docs.langchain.com/oss/python/langchain/observability",
       "content_type": "tutorial",
       "bucket": "long",
       "language": "en",
       "tags": [
-        "langsmith",
+        "langfuse",
         "llm",
         "observability",
         "langchain"
@@ -1951,25 +1951,25 @@
       "sections": [
         {
           "content": "LangSmith provides end-to-end observability for LLM applications built with LangChain or custom frameworks. Traces capture the complete execution path of LLM chains, including prompt templates, model invocations, retrieval steps, and tool calls. Each trace contains spans representing individual operations with timing, inputs, outputs, and metadata. Runs represent single executions of chains or agents, while projects organize related runs for comparison and analysis. The LangSmith SDK automatically instruments LangChain components, capturing telemetry without code changes. For custom applications, manual instrumentation using the RunTree API provides fine-grained control over span creation and metadata attachment. The platform stores traces persistently, enabling historical analysis and debugging of production issues that occurred hours or days earlier.",
-          "id": "langsmith-observability-guide/langsmith-architecture-and-core-concepts",
+          "id": "langfuse-observability-guide/langfuse-architecture-and-core-concepts",
           "title": "LangSmith Architecture and Core Concepts",
           "granularity": "coarse"
         },
         {
           "content": "Trace visualization reveals the internal behavior of complex LLM chains, making debugging tractable. The LangSmith UI displays hierarchical span trees with timing waterfalls, similar to browser developer tools. Prompt inspection shows the exact text sent to LLMs, including variable substitution and chat formatting. Token usage tracking at each LLM call enables cost attribution and optimization. Retrieval steps display source documents, similarity scores, and query transformations, helping diagnose RAG pipeline issues. Error traces capture exception stack traces and the chain state at failure time. Filtering and search functionality helps locate problematic traces across thousands of production runs. Comparison views show before/after behavior when testing prompt modifications or model upgrades, quantifying the impact of changes.",
-          "id": "langsmith-observability-guide/debugging-llm-chains-with-traces",
+          "id": "langfuse-observability-guide/debugging-llm-chains-with-traces",
           "title": "Debugging LLM Chains with Traces",
           "granularity": "coarse"
         },
         {
           "content": "LangSmith's monitoring features track key metrics across deployed LLM applications. Latency percentiles (p50, p95, p99) identify slow chains requiring optimization. Token usage dashboards break down costs by chain component, model provider, and project. Error rate tracking with automatic categorization surfaces common failure modes. Custom metrics defined through the SDK track domain-specific KPIs like retrieval relevance scores or user satisfaction ratings. Automated rules trigger alerts when metrics exceed thresholds, integrating with PagerDuty, Slack, or email. Feedback collection APIs enable human-in-the-loop evaluation, capturing thumbs up/down ratings or detailed annotations. A/B testing support compares multiple prompt variants or models in production, using statistical tests to determine the best performer.",
-          "id": "langsmith-observability-guide/production-monitoring-and-alerting",
+          "id": "langfuse-observability-guide/production-monitoring-and-alerting",
           "title": "Production Monitoring and Alerting",
           "granularity": "coarse"
         },
         {
           "content": "LangSmith datasets provide ground truth for evaluating LLM application quality. Datasets consist of input examples and expected outputs or evaluation criteria. Examples can be manually curated, sampled from production traces, or synthetically generated. Evaluation runs execute chains against dataset examples, comparing outputs using LLM-as-judge evaluators, exact match, semantic similarity, or custom scoring functions. Regression testing compares evaluation results across code changes or model updates, preventing quality degradation. Online evaluation continuously tests production deployments against held-out examples, providing leading indicators of performance issues. Dataset versioning tracks changes over time, ensuring reproducible evaluation. Integration with CI/CD pipelines gates deployments on evaluation pass rates, enforcing quality standards.",
-          "id": "langsmith-observability-guide/dataset-management-and-evaluation",
+          "id": "langfuse-observability-guide/dataset-management-and-evaluation",
           "title": "Dataset Management and Evaluation",
           "granularity": "coarse"
         }

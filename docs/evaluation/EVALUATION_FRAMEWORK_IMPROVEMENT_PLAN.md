@@ -10,7 +10,7 @@
 
 SkillForge's multi-agent LangGraph system currently uses **synthetic datasets** (41 total examples across 3 evaluation types). This plan outlines a comprehensive strategy to:
 
-1. **Export high-quality production traces from LangSmith** as golden datasets
+1. **Export high-quality production traces from Langfuse** as golden datasets
 2. **Define multi-dimensional evaluation metrics** (agent accuracy, supervisor routing, synthesis quality)
 3. **Generate diverse synthetic data** (edge cases, adversarial examples, difficulty stratification)
 4. **Automate CI/CD evaluation** with regression detection and A/B testing support
@@ -22,13 +22,13 @@ SkillForge's multi-agent LangGraph system currently uses **synthetic datasets** 
 
 ---
 
-## 1. LangSmith Integration: Production Trace Export Pipeline
+## 1. Langfuse Integration: Production Trace Export Pipeline
 
 ### 1.1 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    LANGSMITH TRACE COLLECTION                    │
+│                    LANGFUSE TRACE COLLECTION                    │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │   Production Workflows                                           │
@@ -73,7 +73,7 @@ SkillForge's multi-agent LangGraph system currently uses **synthetic datasets** 
 │   • synthesis_golden_v2.json                                     │
 │                                                                   │
 │   Metadata:                                                       │
-│   • source: "langsmith_trace"                                    │
+│   • source: "langfuse_trace"                                    │
 │   • trace_id: "abc123"                                           │
 │   • user_feedback: 5.0                                           │
 │   • collection_date: "2025-12-10"                                │
@@ -81,23 +81,23 @@ SkillForge's multi-agent LangGraph system currently uses **synthetic datasets** 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 LangSmith Export Script
+### 1.2 Langfuse Export Script
 
 ```python
-# backend/scripts/export_langsmith_traces.py
+# backend/scripts/export_langfuse_traces.py
 
 import os
 import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from langsmith import Client
+from langfuse import Client
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 
-# Initialize LangSmith client
-langsmith_client = Client(
-    api_key=os.getenv("LANGSMITH_API_KEY"),
-    api_url=os.getenv("LANGSMITH_API_URL", "https://api.smith.langchain.com")
+# Initialize Langfuse client
+langfuse_client = Client(
+    api_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+    api_url=os.getenv("LANGFUSE_HOST", "http://localhost:3000")
 )
 
 # Initialize PII detection (Presidio)
@@ -111,10 +111,10 @@ def export_high_quality_traces(
     days_back: int = 30
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Export high-quality traces from LangSmith for golden dataset creation.
+    Export high-quality traces from Langfuse for golden dataset creation.
 
     Args:
-        project_name: LangSmith project name
+        project_name: Langfuse project name
         min_feedback_score: Minimum user feedback score (1-5)
         max_traces: Maximum traces to export
         days_back: How many days back to search
@@ -123,11 +123,11 @@ def export_high_quality_traces(
         Dict with keys: "agent_examples", "supervisor_examples", "synthesis_examples"
     """
 
-    # Query LangSmith for high-quality runs
+    # Query Langfuse for high-quality runs
     end_time = datetime.now()
     start_time = end_time - timedelta(days=days_back)
 
-    runs = langsmith_client.list_runs(
+    runs = langfuse_client.list_runs(
         project_name=project_name,
         start_time=start_time,
         end_time=end_time,
@@ -167,7 +167,7 @@ def export_high_quality_traces(
                     "reasoning": anonymized_data["supervisor_reasoning"]
                 },
                 "metadata": {
-                    "source": "langsmith_trace",
+                    "source": "langfuse_trace",
                     "trace_id": str(run.id),
                     "user_feedback": run.feedback_stats.get("user_score", {}).get("avg", 0),
                     "collection_date": datetime.now().isoformat(),
@@ -186,7 +186,7 @@ def export_high_quality_traces(
                     },
                     "outputs": agent_output,
                     "metadata": {
-                        "source": "langsmith_trace",
+                        "source": "langfuse_trace",
                         "trace_id": str(run.id),
                         "user_feedback": run.feedback_stats.get("user_score", {}).get("avg", 0),
                         "collection_date": datetime.now().isoformat(),
@@ -211,7 +211,7 @@ def export_high_quality_traces(
                     "cross_domain_connections": anonymized_data.get("cross_domain_connections", [])
                 },
                 "metadata": {
-                    "source": "langsmith_trace",
+                    "source": "langfuse_trace",
                     "trace_id": str(run.id),
                     "user_feedback": run.feedback_stats.get("user_score", {}).get("avg", 0),
                     "collection_date": datetime.now().isoformat(),
@@ -228,14 +228,14 @@ def export_high_quality_traces(
 
 
 def extract_trace_components(run) -> Dict[str, Any]:
-    """Extract structured data from LangSmith run."""
+    """Extract structured data from Langfuse run."""
     try:
         # Get run inputs and outputs
         inputs = run.inputs or {}
         outputs = run.outputs or {}
 
         # Get child runs for agent-level data
-        child_runs = list(langsmith_client.list_runs(
+        child_runs = list(langfuse_client.list_runs(
             project_name=run.session_id,
             filter=f"eq(parent_run_id, '{run.id}')"
         ))
@@ -1454,7 +1454,7 @@ jobs:
         working-directory: backend
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
         run: |
           poetry run python -m app.evaluation.run_agent_evaluation \
             --dataset app/evaluation/datasets/agent_analysis_golden_v2.json \
@@ -1813,8 +1813,8 @@ def generate_ab_recommendation(winner: str, significant: bool, effect_size: floa
 - ✅ Implement supervisor routing evaluation
 - ✅ Implement synthesis quality evaluation
 
-### Phase 2: LangSmith Integration (Week 2)
-- Export production traces from LangSmith
+### Phase 2: Langfuse Integration (Week 2)
+- Export production traces from Langfuse
 - Implement PII anonymization pipeline
 - Create golden dataset v2 (target: 200+ examples)
 - Validate dataset quality
@@ -1845,7 +1845,7 @@ def generate_ab_recommendation(winner: str, significant: bool, effect_size: floa
 ### Dataset Quality
 - ✅ 200+ golden examples across 3 evaluation types
 - ✅ 90% coverage of content types (articles, tutorials, code, research papers)
-- ✅ 80% of examples from real production traces (LangSmith export)
+- ✅ 80% of examples from real production traces (Langfuse export)
 - ✅ PII-free datasets safe for public sharing
 
 ### Evaluation Metrics
@@ -1863,7 +1863,7 @@ def generate_ab_recommendation(winner: str, significant: bool, effect_size: floa
 
 ### Production Monitoring
 - ✅ Weekly evaluation against golden datasets
-- ✅ LangSmith trace export automated (monthly)
+- ✅ Langfuse trace export automated (monthly)
 - ✅ A/B testing framework for new agent versions
 - ✅ Continuous dataset expansion based on production diversity
 
@@ -1873,7 +1873,7 @@ def generate_ab_recommendation(winner: str, significant: bool, effect_size: floa
 
 - **SkillForge Issue #220**: PII Detection Research (Hybrid Presidio approach)
 - **SkillForge Issue #223**: Retrieval Smoke Tests (IR metrics - Recall, MRR, NDCG)
-- **LangSmith Documentation**: Trace export and evaluation APIs
+- **Langfuse Documentation**: Trace export and evaluation APIs
 - **arXiv:2503.16416**: Survey on Evaluation of LLM-based Agents (CLASSic framework)
 - **TheAgentCompany Benchmark**: Real-world agent task evaluation (30% autonomous completion baseline)
 
