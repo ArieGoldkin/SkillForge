@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import mermaid from 'mermaid'
 
 import { cn } from '@lib/utils'
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 interface MermaidRendererProps {
   code: string
@@ -32,7 +33,7 @@ const initializeMermaid = () => {
       curve: 'basis', // Smooth curves
       padding: 25, // Increased padding inside nodes to prevent text truncation
       useMaxWidth: false, // Don't constrain to container width
-      wrappingWidth: 300, // Wider wrapping to prevent truncation in diamonds
+      wrappingWidth: COMPONENT_CONSTANTS.DIAGRAM_WRAPPING_WIDTH, // Wider wrapping to prevent truncation in diamonds
       defaultRenderer: 'dagre-wrapper', // Use dagre-wrapper for better text handling
     },
     // Ensure proper wrapping for long text

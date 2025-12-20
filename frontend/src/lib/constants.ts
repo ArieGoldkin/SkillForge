@@ -333,6 +333,7 @@ export const COMPONENT_CONSTANTS = {
   // Diagram spacing (Mermaid)
   DIAGRAM_NODE_SPACING: 80,
   DIAGRAM_RANK_SPACING: 80,
+  DIAGRAM_WRAPPING_WIDTH: 300, // Wider wrapping to prevent truncation in diamonds
 } as const
 
 // ============================================================================
