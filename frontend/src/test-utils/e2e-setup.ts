@@ -6,7 +6,7 @@
  * E2E_READY=true to avoid impacting unit test performance.
  */
 
-import React from 'react'
+import type React from 'react'
 
 import { vi } from 'vitest'
 
@@ -124,7 +124,7 @@ class E2ETestContext {
   private setupMockAPI() {
     // Analysis endpoints
     this.mockServer.on('POST', '/api/v1/analyze', (request) => ({
-      id: 'test-analysis-' + Date.now(),
+      id: `test-analysis-${Date.now()}`,
       status: 'queued',
       url: request.url,
       createdAt: new Date().toISOString(),
@@ -209,8 +209,7 @@ export const e2eSetup = {
       close = vi.fn()
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Global assignment requires any
-    global.EventSource = MockEventSource as any
+    global.EventSource = MockEventSource as typeof EventSource
 
     // Note: Store and hook mocks are handled at the test level
     // to avoid path resolution issues in the global setup

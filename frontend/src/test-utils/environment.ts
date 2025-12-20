@@ -71,7 +71,7 @@ export const conditionalTest = {
    * @returns Conditional test runner
    */
   e2e: (name: string, fn: () => void | Promise<void>) => {
-    return TestEnvironment.isE2EReady ? it(name, fn) : (it.skip(name, fn) as void)
+    return TestEnvironment.isE2EReady ? it(name, fn) : (it.skip(name, fn) as undefined)
   },
 
   /**

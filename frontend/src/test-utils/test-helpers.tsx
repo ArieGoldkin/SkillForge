@@ -8,7 +8,7 @@
 import React from 'react'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, RenderOptions } from '@testing-library/react'
+import { render, type RenderOptions } from '@testing-library/react'
 
 import { TestEnvironment } from './environment'
 
@@ -142,7 +142,7 @@ export const waitFor = {
   /**
    * Wait for element with timeout awareness
    */
-  element: async (selector: string, options: { timeout?: number } = {}) => {
+  element: async (_selector: string, options: { timeout?: number } = {}) => {
     const _timeout = options.timeout || TestEnvironment.testTimeout
 
     // Implementation would use testing-library's waitFor
@@ -177,8 +177,8 @@ export const waitFor = {
    * Wait for component state change
    */
   stateChange: async (
-    component: unknown,
-    stateKey: string,
+    _component: unknown,
+    _stateKey: string,
     _expectedValue: unknown,
     options: { timeout?: number } = {}
   ) => {
