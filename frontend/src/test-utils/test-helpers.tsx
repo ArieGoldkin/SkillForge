@@ -179,7 +179,7 @@ export const waitFor = {
   stateChange: async (
     component: unknown,
     stateKey: string,
-    expectedValue: unknown,
+    _expectedValue: unknown,
     options: { timeout?: number } = {}
   ) => {
     const _timeout = options.timeout || TestEnvironment.testTimeout
@@ -224,7 +224,9 @@ export const createMocks = {
         delete store[key]
       }),
       clear: vi.fn(() => {
-        Object.keys(store).forEach((key) => delete store[key])
+        Object.keys(store).forEach((key) => {
+          delete store[key]
+        })
       }),
       key: vi.fn((index: number) => Object.keys(store)[index] || null),
       get length() {
