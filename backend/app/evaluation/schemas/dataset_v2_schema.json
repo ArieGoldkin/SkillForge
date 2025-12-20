@@ -298,11 +298,11 @@
               "source_url": {
                 "type": "string",
                 "format": "uri",
-                "description": "URL to original source (for langsmith/github/arxiv)"
+                "description": "URL to original source (for langfuse/github/arxiv)"
               },
               "langsmith_trace_id": {
                 "type": "string",
-                "description": "LangSmith trace ID if sourced from production traces"
+                "description": "Langfuse trace ID if sourced from production traces"
               },
               "github_issue_url": {
                 "type": "string",

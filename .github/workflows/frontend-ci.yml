@@ -109,8 +109,8 @@ jobs:
         with:
           name: frontend-test-reports
           path: frontend/coverage/
-          retention-days: 7
           compression-level: 9
+          retention-days: 7
           if-no-files-found: warn
 
   # ============================================================================
@@ -143,6 +143,6 @@ jobs:
         with:
           name: frontend-build
           path: frontend/dist
+          compression-level: 0
           retention-days: 7
-          compression-level: 9
           if-no-files-found: warn

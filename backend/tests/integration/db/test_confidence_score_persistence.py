@@ -5,8 +5,8 @@ import uuid
 import pytest
 from sqlalchemy import select
 
-from app.models.agent_finding import AgentFinding
-from app.models.analysis import Analysis
+from app.db.models.agent_finding import AgentFinding
+from app.db.models.analysis import Analysis
 
 
 @pytest.mark.asyncio

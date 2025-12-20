@@ -26,7 +26,7 @@ async def test_openai_embedding_service_returns_expected_dimensions() -> None:
 
     app.core.config.settings = get_settings()
 
-    from app.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings import EmbeddingService
 
     service = EmbeddingService()
     embedding = await service.generate_embedding("ci-sanity", normalize=True)

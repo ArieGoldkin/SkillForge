@@ -87,6 +87,7 @@ interface SSECompleteEvent {
   stage: "artifact_generation"
   status: "complete"
   timestamp: string  // ISO 8601
+  trace_id?: string  // Optional Langfuse trace ID for feedback submission
   details: {
     artifact_id: string  // UUID of generated artifact
   }
@@ -101,6 +102,7 @@ interface SSECompleteEvent {
   "stage": "artifact_generation",
   "status": "complete",
   "timestamp": "2025-01-01T10:35:00.456Z",
+  "trace_id": "trace-abc-123-def-456",
   "details": {
     "artifact_id": "789e0123-e45f-67g8-h901-234567890abc"
   }
@@ -223,6 +225,7 @@ export interface SSECompleteEvent {
   stage: "artifact_generation"
   status: "complete"
   timestamp: string
+  trace_id?: string  // Optional Langfuse trace ID for feedback submission
   details: {
     artifact_id: string
   }
@@ -314,7 +317,8 @@ await emit_streaming_event(
     analysis_id=str(analysis_id),
     stage="artifact_generation",
     status="complete",
-    artifact_id=str(artifact_id)
+    artifact_id=str(artifact_id),
+    trace_id=trace_id  # Optional Langfuse trace ID
 )
 
 # Error event

@@ -1,6 +1,6 @@
 """LLM output evaluators for benchmarking.
 
-This module provides evaluators compatible with LangSmith's evaluate() method:
+This module provides evaluators compatible with Langfuse's evaluate() method:
 - Correctness: Task-specific accuracy metrics
 - Quality: LLM-as-judge scoring for relevance, depth, accuracy, coherence
 - Latency: Time-to-first-token and total response time

@@ -2,6 +2,9 @@ import { useState } from 'react'
 
 import { useNavigate } from '@tanstack/react-router'
 
+import { ReactScanTest } from '@/components/ReactScanTest'
+import { logger } from '@/lib/logger'
+
 import type { SkillLevel } from '@shared/SkillLevelSelector'
 
 import { analyzeAPI } from '@services/api.service'
@@ -12,6 +15,7 @@ import { HowItWorksSection } from './components/HowItWorksSection'
 
 type ContentType = 'article' | 'video' | 'repository'
 
+// eslint-disable-next-line max-lines-per-function -- Component handles URL input, content type selection, skill level selection, form validation, API calls, and error handling
 export default function Home() {
   const navigate = useNavigate()
   const [url, setUrl] = useState('')
@@ -33,7 +37,11 @@ export default function Home() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create analysis'
       setError(message)
-      console.error('Failed to create analysis:', err)
+      logger.error('Failed to create analysis', {
+        error: err instanceof Error ? err.message : String(err),
+        url,
+        skillLevel,
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -54,6 +62,13 @@ export default function Home() {
       />
       <FeaturesSection />
       <HowItWorksSection />
+
+      {/* React Scan Performance Test (development only) */}
+      {import.meta.env.DEV && (
+        <div className="container mx-auto px-4 py-8">
+          <ReactScanTest />
+        </div>
+      )}
     </div>
   )
 }

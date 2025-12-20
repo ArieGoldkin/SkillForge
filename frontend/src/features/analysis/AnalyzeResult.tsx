@@ -1,21 +1,54 @@
-import { useEffect, useMemo } from 'react'
+/* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useSSEStore } from '@stores/sseStore'
+import type { SSEStore } from '@stores/sseStore'
+import {
+  useSSEStore,
+  useLoadingState,
+  useShowTimeoutWarning,
+  useShouldShowProgress,
+} from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 
-import {
-  ActivityColumn,
-  AnalysisCompleteCard,
-  AnalysisHeader,
-  ErrorAlert,
-  LoadingState,
-  ProgressColumn,
-} from './components'
-import { CompletedAnalysisView } from './components/states/CompletedAnalysisView'
+import { BUSINESS_CONSTANTS } from '@/lib/constants'
+
+import { AnalysisRenderRouter } from './components/render-router/AnalysisRenderRouter'
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'
 import { useAnalysisStatus } from './hooks/useAnalysisStatus'
 
+// New computed loading state hooks (Issue #399)
+
 const routeApi = getRouteApi('/analyze/$id')
+
+/**
+ * Zustand Selectors - Optimized consolidated subscriptions
+ * Reduces from 7 individual subscriptions to 3 consolidated ones
+ */
+
+/**
+ * High-frequency events selector (keep separate to avoid unnecessary re-renders)
+ */
+const selectEvents = (state: SSEStore) => state.events
+
+/**
+ * Connection state selector - consolidates connection-related state and actions
+ */
+const selectConnectionState = (state: SSEStore) => ({
+  isConnected: state.isConnected,
+  connect: state.connect,
+  disconnect: state.disconnect,
+})
+
+/**
+ * Analysis state selector - consolidates analysis completion, errors, and reset
+ */
+const selectAnalysisState = (state: SSEStore) => ({
+  isComplete: state.isComplete,
+  error: state.error,
+  reset: state.reset,
+})
+
+// Legacy selectors removed - now using consolidated selectors
 
 const useSSELifecycle = ({
   analysisId,
@@ -41,82 +74,98 @@ const useSSELifecycle = ({
   }, [analysisId, shouldConnect, connect, disconnect, reset])
 }
 
-// Check if status indicates completion (both 'complete' from SSE and 'completed' from backend)
+// Check if status indicates completion
 const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
 
-// Check if we're still waiting for SSE events to start
-const checkWaitingForFirstEvent = (params: {
-  isResolvedComplete: boolean
-  isFailed: boolean
-  eventsLength: number
-  error: Error | null
-  isComplete: boolean
-  statusLoading: boolean
-  resolvedStatus?: string
-}) =>
-  !params.isResolvedComplete &&
-  !params.isFailed &&
-  params.eventsLength === 0 &&
-  !params.error &&
-  !params.isComplete &&
-  (params.statusLoading || !params.resolvedStatus)
-
-const useDerivedState = ({
-  artifactId,
-  urlArtifactId,
-  statusState,
-  isComplete,
-  events,
-  hasError,
-  error,
-  errorMessage,
-  completed,
-}: {
-  artifactId?: string
-  urlArtifactId?: string
-  statusState: ReturnType<typeof useAnalysisStatus>
-  isComplete: boolean
-  events: unknown[]
-  hasError: boolean
-  error: Error | null
-  errorMessage?: string | null
+// Check if truly complete (all stages passed, 100% progress)
+const checkIsTrulyComplete = (params: {
+  hasFailedStages: boolean
   completed?: boolean
-}) => {
-  const resolvedArtifactId = useMemo(
-    () => artifactId || statusState.resolvedArtifactId || urlArtifactId,
-    [artifactId, statusState.resolvedArtifactId, urlArtifactId]
-  )
+  urlArtifactId?: string
+  resolvedStatus?: string
+  isComplete: boolean
+  overallProgress: { stage: string; progress: number }
+}) =>
+  !params.hasFailedStages &&
+  ((params.completed && Boolean(params.urlArtifactId)) ||
+    isStatusComplete(params.resolvedStatus) ||
+    (params.isComplete &&
+      params.overallProgress.stage === 'complete' &&
+      params.overallProgress.progress === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
 
-  const resolvedStatus = useMemo(
-    () => statusState.resolvedStatus || (isComplete ? 'completed' : undefined),
-    [isComplete, statusState.resolvedStatus]
-  )
+/**
+ * Custom hook for managing focus when analysis completes
+ * WCAG 2.4.3: Focus Order - Moves focus to completion card for screen readers
+ */
+const useCompletionFocus = (isComplete: boolean) => {
+  const completionRef = useRef<HTMLDivElement>(null)
+  const hasAnnouncedRef = useRef(false)
 
-  const isResolvedComplete =
-    (completed && Boolean(urlArtifactId)) || isStatusComplete(resolvedStatus) || isComplete
-  const isFailed = resolvedStatus === 'failed' || hasError
-  const effectiveError =
-    statusState.statusError || errorMessage || error?.message || 'An error occurred during analysis'
-  const waitingForFirstEvent = checkWaitingForFirstEvent({
-    isResolvedComplete,
-    isFailed,
-    eventsLength: events.length,
-    error,
-    isComplete,
-    statusLoading: statusState.loading,
-    resolvedStatus: statusState.resolvedStatus,
-  })
+  useEffect(() => {
+    if (isComplete && completionRef.current && !hasAnnouncedRef.current) {
+      // Focus the completion card for screen reader users
+      completionRef.current.focus()
+      hasAnnouncedRef.current = true
+    }
+  }, [isComplete])
 
-  return { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError }
+  // Reset announcement flag when not complete
+  useEffect(() => {
+    if (!isComplete) {
+      hasAnnouncedRef.current = false
+    }
+  }, [isComplete])
+
+  return completionRef
 }
 
-// eslint-disable-next-line max-lines-per-function
+// Local component definitions moved to separate files:
+// - AnalysisInProgress → render-router/CommonAnalysisLayout
+// - ActivityOrCompletionColumn → ActiveAnalysisView.tsx
+// - ActiveAnalysisView → ActiveAnalysisView.tsx
+
+/**
+ * Main analysis result component
+ * Orchestrates SSE connection, status polling, and view state management
+ * Delegates rendering to specialized view components
+ */
+// eslint-disable-next-line max-lines-per-function -- Component orchestrates SSE lifecycle, status polling, and view routing which requires extensive setup and state management. Rendering logic is extracted to separate components.
 export default function AnalyzeResult() {
   const { id } = routeApi.useParams()
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
-  const { events, isConnected, isComplete, error, connect, disconnect, reset } = useSSEStore()
-  const { overallProgress, steps, activities, hasError, errorMessage, artifactId } =
-    useAnalysisProgress(events)
+
+  // Consolidated selectors for optimal performance (3 instead of 7 subscriptions)
+  const events = useSSEStore(selectEvents)
+  const { isConnected, connect, disconnect } = useSSEStore(selectConnectionState)
+  const { isComplete, error, reset } = useSSEStore(selectAnalysisState)
+
+  // New computed loading states (Issue #399)
+  const loadingState = useLoadingState()
+  const showTimeoutWarning = useShowTimeoutWarning()
+  const shouldShowProgress = useShouldShowProgress()
+
+  // Timeout warning dismissal state (Issue #399)
+  const [timeoutWarningDismissed, setTimeoutWarningDismissed] = useState(false)
+
+  // Memoized event handler to prevent unnecessary re-renders
+  const handleTimeoutWarningDismiss = useCallback(() => {
+    setTimeoutWarningDismissed(true)
+  }, [])
+
+  // Focus management for accessibility
+  const completionRef = useCompletionFocus(isComplete)
+  // Issue #396: traceId no longer needed here - leaf components get it from store
+  const {
+    overallProgress,
+    steps,
+    activities,
+    hasError,
+    errorMessage,
+    artifactId,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+  } = useAnalysisProgress(events)
   const statusState = useAnalysisStatus({
     analysisId: id,
     completedParam: Boolean(completed),
@@ -131,51 +180,94 @@ export default function AnalyzeResult() {
     reset,
   })
 
-  const { resolvedArtifactId, isResolvedComplete, isFailed, waitingForFirstEvent, effectiveError } =
-    useDerivedState({
-      artifactId,
-      urlArtifactId,
-      statusState,
-      isComplete,
-      events,
-      hasError,
-      error,
-      errorMessage,
+  const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useMemo(() => {
+    const resolvedArtifactId = artifactId || statusState.resolvedArtifactId || urlArtifactId
+    const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'completed' : undefined)
+
+    const isTrulyComplete = checkIsTrulyComplete({
+      hasFailedStages,
       completed,
+      urlArtifactId,
+      resolvedStatus,
+      isComplete,
+      overallProgress,
     })
 
-  if (completed && urlArtifactId) {
-    return <CompletedAnalysisView analysisId={id} artifactId={urlArtifactId} />
-  }
+    const isResolvedComplete = isTrulyComplete
+    const isFailed = resolvedStatus === 'failed' || hasError
+    const effectiveError =
+      statusState.statusError ||
+      errorMessage ||
+      error?.message ||
+      'An error occurred during analysis'
 
-  if (isResolvedComplete && resolvedArtifactId) {
-    return <CompletedAnalysisView analysisId={id} artifactId={resolvedArtifactId} />
-  }
+    return {
+      resolvedArtifactId,
+      isResolvedComplete,
+      isFailed,
+      effectiveError,
+    }
+  }, [
+    artifactId,
+    urlArtifactId,
+    statusState,
+    isComplete,
+    hasError,
+    error,
+    errorMessage,
+    completed,
+    overallProgress,
+    hasFailedStages,
+  ])
 
-  if (waitingForFirstEvent) {
-    return <LoadingState />
-  }
+  // 🎯 DECLARATIVE RENDER ROUTER - Replaces 100+ lines of complex conditionals
+  // All routing logic is now handled by the AnalysisRenderRouter component
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <AnalysisHeader title="Content Analysis" url={id ? `Analysis ID: ${id}` : ''} />
-
-      {(error || hasError || statusState.statusError || isFailed) && (
-        <ErrorAlert message={effectiveError} />
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProgressColumn overallProgress={overallProgress} steps={steps} />
-        {isComplete || isResolvedComplete ? (
-          <AnalysisCompleteCard
-            artifactId={resolvedArtifactId || artifactId}
-            analysisId={id}
-            variant="column"
-          />
-        ) : (
-          <ActivityColumn activities={activities} isLive={isConnected} />
-        )}
-      </div>
-    </div>
+  const isFatalError = Boolean(
+    (error || statusState.statusError || isFailed) && events.length === 0 && !isConnected
   )
+
+  // Collect all props needed by any route
+  const allProps = {
+    // Route parameters
+    id,
+    completed,
+    urlArtifactId,
+
+    // Computed states
+    isResolvedComplete,
+    resolvedArtifactId,
+    isFatalError,
+    effectiveError,
+
+    // Loading states
+    loadingState,
+    showTimeoutWarning,
+    timeoutWarningDismissed,
+    shouldShowProgress,
+    handleTimeoutWarningDismiss,
+
+    // Progress and metadata
+    overallProgress,
+    steps,
+    activities,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+
+    // Error states
+    error,
+    hasError,
+    statusError: statusState.statusError,
+    isFailed,
+
+    // Connection state
+    isConnected,
+    isComplete,
+
+    // Accessibility refs
+    completionRef,
+  }
+
+  return <AnalysisRenderRouter {...allProps} />
 }

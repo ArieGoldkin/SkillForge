@@ -2,7 +2,7 @@ import type * as React from 'react'
 import { useMemo } from 'react'
 
 import type { AgentStageName } from '@app-types/sse'
-import { useSSE } from '@hooks/useSSE'
+import { useSSEStore, useLoadingState, useShouldShowProgress } from '@stores/sseStore'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -13,8 +13,26 @@ import { ConnectionStatus } from './ConnectionStatus'
 import { ALL_STAGES } from './constants'
 import { deriveStageStates } from './deriveStageStates'
 import { ErrorAlert } from './ErrorAlert'
-import { ReconnectingMessage } from './ReconnectingMessage'
 import { StageItem } from './StageItem'
+
+/**
+ * Check if an error is a network/connection error (not a stage validation error)
+ * ErrorAlert should only show network errors, StageItem shows stage errors
+ */
+function isNetworkError(error: Error): boolean {
+  const networkErrorPatterns = [
+    'network',
+    'connection',
+    'fetch',
+    'timeout',
+    'server',
+    'unavailable',
+    'disconnected',
+  ]
+
+  const errorMessage = error.message.toLowerCase()
+  return networkErrorPatterns.some((pattern) => errorMessage.includes(pattern))
+}
 
 /**
  * Props for ProgressTracker component
@@ -42,37 +60,42 @@ export interface ProgressTrackerProps {
  * ```
  */
 export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
-  analysisId,
   className,
   stages = ALL_STAGES,
   onComplete,
   onError,
 }) => {
-  const { events, error, isConnected, isComplete } = useSSE(analysisId)
+  // Use computed loading states (Issue #399)
+  const { events, error, isComplete } = useSSEStore()
+  const loadingState = useLoadingState()
+  const shouldShowProgress = useShouldShowProgress()
 
   const stageStates = useMemo(
     () => deriveStageStates(stages, events, onComplete, onError),
     [stages, events, onComplete, onError]
   )
 
-  const showReconnecting = !isConnected && !isComplete && !error
-
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">Analysis Progress</CardTitle>
-          <ConnectionStatus isConnected={isConnected} />
+          <ConnectionStatus loadingState={loadingState} />
         </div>
       </CardHeader>
       <CardContent>
-        {error && <ErrorAlert message={error.message} />}
-        {showReconnecting && <ReconnectingMessage />}
-        <div className="space-y-0 max-h-[500px] overflow-y-auto">
-          {stageStates.map((stage, index) => (
-            <StageItem key={stage.name} stage={stage} isLast={index === stageStates.length - 1} />
-          ))}
-        </div>
+        {error && isNetworkError(error) && <ErrorAlert message={error.message} />}
+        {shouldShowProgress && (
+          <div
+            className="space-y-0 max-h-[31.25rem] overflow-y-auto"
+            role="list"
+            aria-label="Analysis stages"
+          >
+            {stageStates.map((stage, index) => (
+              <StageItem key={stage.name} stage={stage} isLast={index === stageStates.length - 1} />
+            ))}
+          </div>
+        )}
         {isComplete && <CompletionMessage />}
       </CardContent>
     </Card>

@@ -4,19 +4,19 @@ on:
   pull_request:
     branches: [main, dev]
     paths:
-      - 'backend/app/services/chunking/**'
-      - 'backend/app/services/retrieval/**'
-      - 'backend/app/services/embeddings/**'
-      - 'backend/app/services/search/**'
+      - 'backend/app/shared/services/chunking/**'
+      - 'backend/app/shared/services/retrieval/**'
+      - 'backend/app/shared/services/embeddings/**'
+      - 'backend/app/shared/services/search/**'
       - 'backend/tests/smoke/retrieval/**'
       - '.github/workflows/retrieval-smoke-tests.yml'
   push:
     branches: [main, dev]
     paths:
-      - 'backend/app/services/chunking/**'
-      - 'backend/app/services/retrieval/**'
-      - 'backend/app/services/embeddings/**'
-      - 'backend/app/services/search/**'
+      - 'backend/app/shared/services/chunking/**'
+      - 'backend/app/shared/services/retrieval/**'
+      - 'backend/app/shared/services/embeddings/**'
+      - 'backend/app/shared/services/search/**'
       - 'backend/tests/smoke/retrieval/**'
   workflow_dispatch:
 
@@ -125,8 +125,8 @@ jobs:
         with:
           name: smoke-test-results
           path: backend/test-results/
-          retention-days: 7
           compression-level: 9
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Comment PR with results

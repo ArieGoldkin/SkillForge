@@ -57,7 +57,7 @@ print(f"Extraction complete for {analysis_id}")
 
 **4. SSE Instrumentation in LangGraph Nodes**
 ```python
-from app.services.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 async def extract_content_node(state: AnalysisState) -> dict:
     """Extract content with SSE events."""
@@ -180,7 +180,7 @@ poetry add "httpx[brotli,zstd]@^0.28.1" sse-starlette@^2.1.3 structlog@^24.4.0 t
 poetry add youtube-transcript-api@^0.6.2 pygithub@^2.5.0 beautifulsoup4@^4.12.3 playwright@^1.48.0
 
 # 11. Add observability
-poetry add langsmith@^1.0.0
+poetry add langfuse@^1.0.0
 
 # 12. Add dev dependencies
 poetry add --group dev pytest@^8.3.4 pytest-asyncio@^0.25.1 pytest-cov@^5.0.0
@@ -838,9 +838,9 @@ class AnalysisDetail(BaseModel):
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.schemas.analysis import AnalyzeRequest, AnalyzeResponse
+from app.domains.analysis.schemas.api import AnalyzeRequest, AnalyzeResponse
 from app.models.analysis import Analysis
-from app.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
 from app.core.logging import logger
 import uuid
 
@@ -1306,8 +1306,8 @@ pip install langgraph>=1.0.0 langchain>=1.0.0 langchain-core>=1.0.0 langchain-co
 from typing import TypedDict
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.postgres import PostgresSaver
-from app.services.extraction.jina_reader import JinaReader
-from app.services.embeddings import embedding_service
+from app.shared.services.extraction.jina_reader import JinaReader
+from app.shared.services.embeddings.service import EmbeddingService
 from app.core.logging import logger
 from app.core.config import settings
 
@@ -1679,7 +1679,7 @@ async def run_tech_comparator_node(state: AnalysisState) -> dict:
 
 **SSE Instrumentation in Agent Nodes:**
 ```python
-from app.services.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 async def run_tech_comparator_node(state: AnalysisState) -> dict:
     """Run tech comparator with SSE events."""
@@ -1880,7 +1880,7 @@ agent = create_agent(model, tools=[tool1, tool2])
 
 **4. SSE Instrumentation:**
 ```python
-from app.services.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 await emit_streaming_event(
     "progress",

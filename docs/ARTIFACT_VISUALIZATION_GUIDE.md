@@ -8,7 +8,7 @@ To visualize any artifact, use the script:
 # View the most recent artifact
 python backend/scripts/visualize_artifact.py --latest
 
-# View by analysis ID (from your LangSmith trace)
+# View by analysis ID (from your Langfuse trace)
 python backend/scripts/visualize_artifact.py --analysis-id <analysis_id>
 
 # View by artifact ID
@@ -300,9 +300,9 @@ $ python backend/scripts/visualize_artifact.py --artifact-id a1b2c3d4-e5f6-7890-
 [Shows complete markdown content in terminal]
 ```
 
-## Integration with LangSmith Trace
+## Integration with Langfuse Trace
 
-To visualize an artifact from a LangSmith trace:
+To visualize an artifact from a Langfuse trace:
 
 1. **Get Analysis ID** from your trace URL or trace metadata
 2. **Run visualization script**:

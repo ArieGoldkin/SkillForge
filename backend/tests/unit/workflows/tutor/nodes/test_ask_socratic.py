@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ async def test_ask_socratic_generates_question(sample_tutor_state_with_message):
     """Test that ask_socratic generates a Socratic question."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.ask_socratic import ask_socratic
+    from app.domains.tutor.workflows.nodes.ask_socratic import ask_socratic
 
     mock_response = MagicMock()
     mock_response.content = "Can you explain how this concept applies in practice?"
@@ -52,12 +52,17 @@ async def test_ask_socratic_generates_question(sample_tutor_state_with_message):
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.ask_socratic.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.ask_socratic.get_chat_model", return_value=mock_model
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
         patch(
-            "app.db.repositories.tutor_message_repository.TutorMessageRepository"
+            "app.domains.tutor.repositories.message_repository.TutorMessageRepository"
         ) as mock_repo_class,
-        patch("app.workflows.tutor.nodes.ask_socratic._emit_tutor_event", new_callable=AsyncMock),
+        patch(
+            "app.domains.tutor.workflows.nodes.ask_socratic._emit_tutor_event",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_session = AsyncMock()
         mock_factory.return_value.__aenter__.return_value = mock_session

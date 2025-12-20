@@ -2,6 +2,8 @@ import * as React from 'react'
 
 import { Activity } from 'lucide-react'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -57,11 +59,11 @@ const getAgentColor = (agentName: string): string => {
   }
 
   const colors = [
-    'bg-[oklch(0.8348_0.1302_160.9080)]', // Teal
-    'bg-[oklch(0.6231_0.1880_259.8145)]', // Purple
-    'bg-[oklch(0.6056_0.2189_292.7172)]', // Magenta
-    'bg-[oklch(0.7686_0.1647_70.0804)]', // Yellow-green
-    'bg-[oklch(0.6959_0.1491_162.4796)]', // Green
+    'bg-chart-1', // Teal
+    'bg-chart-2', // Purple
+    'bg-chart-3', // Magenta
+    'bg-chart-4', // Yellow-green
+    'bg-chart-5', // Green
   ]
 
   return colors[Math.abs(hash) % colors.length]
@@ -142,7 +144,7 @@ const ActivityEntry: React.FC<{ activity: AgentActivity; isNew?: boolean }> = ({
 export const AgentActivityFeed: React.FC<AgentActivityFeedProps> = ({
   activities,
   isLive = false,
-  maxItems = 10,
+  maxItems = COMPONENT_CONSTANTS.MAX_ITEMS_DEFAULT,
   className,
 }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null)

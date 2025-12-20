@@ -223,7 +223,7 @@ class CuttingEdgeGenerator:
         # Build base pattern from distribution
         pattern: list[Literal["medium", "hard", "adversarial"]] = []
         for diff, freq in distribution.items():
-            pattern.extend([diff] * freq)  # type: ignore[misc]
+            pattern.extend([diff] * freq)  # type: ignore[list-item]
 
         # Repeat pattern to match count
         full_sequence = (pattern * ((count // len(pattern)) + 1))[:count]

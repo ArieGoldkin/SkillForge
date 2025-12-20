@@ -354,7 +354,56 @@ class AgentCommunicationBus {
 }
 ```
 
-### 6. Streaming Responses
+### 6. Multi-Agent Synthesis & Aggregation (v1.1.0)
+
+When multiple specialized agents analyze content, synthesize their findings into coherent output.
+
+**Fan-Out/Fan-In Pattern:**
+```python
+async def multi_agent_analysis(content: str) -> AggregatedInsights:
+    """8-agent fan-out with synthesis aggregation."""
+    # Fan-out: Run agents in parallel
+    agents = [
+        tech_comparator, security_auditor, implementation_planner,
+        integration_analyst, performance_analyst, code_quality_critic,
+        trend_validator, dependency_mapper
+    ]
+
+    findings = await asyncio.gather(
+        *[agent.analyze(content) for agent in agents],
+        return_exceptions=True  # Don't fail all if one fails
+    )
+
+    # Filter successful results with confidence scores
+    valid_findings = [
+        f for f in findings
+        if not isinstance(f, Exception) and f.confidence > 0.5
+    ]
+
+    # Fan-in: Synthesize into coherent artifact
+    return await synthesize_findings(valid_findings)
+```
+
+**Confidence Score Handling:**
+```python
+def resolve_conflicts(findings: list[AgentFinding]) -> dict:
+    """When agents disagree, prioritize by confidence."""
+    conflicts = detect_contradictions(findings)
+
+    for conflict in conflicts:
+        # Higher confidence wins
+        winner = max(conflict.agents, key=lambda a: a.confidence)
+        record_resolution(
+            conflict=conflict.description,
+            resolution=winner.recommendation,
+            priority_agent=winner.agent_type,
+            reasoning=f"Confidence {winner.confidence:.2f} > others"
+        )
+```
+
+**Detailed Implementation:** See SkillForge's `synthesis.py` for production patterns.
+
+### 7. Streaming Responses
 
 Deliver real-time AI responses for better UX.
 
@@ -366,7 +415,68 @@ Deliver real-time AI responses for better UX.
 
 **Detailed Implementation:** See `../streaming-api-patterns/SKILL.md` for streaming patterns
 
-### 7. Cost Optimization
+### 8. LLM-as-Judge Evaluation (v1.1.0)
+
+Use LLMs to evaluate LLM outputs for quality assurance.
+
+**Quality Aspects:**
+```python
+QUALITY_DIMENSIONS = {
+    "relevance": "How relevant is the output to the input?",
+    "depth": "How thorough and detailed is the analysis?",
+    "coherence": "How well-structured and clear is the content?",
+    "accuracy": "Are facts and code snippets correct?",
+    "completeness": "Are all required sections present?"
+}
+```
+
+**Evaluator Pattern:**
+```python
+from langchain_community.evaluation import load_evaluator
+
+def create_quality_evaluator(aspect: str):
+    """Create LLM-as-judge evaluator for a quality aspect."""
+    return load_evaluator(
+        evaluator=LabeledScoreStringEvalChain,
+        criteria={aspect: QUALITY_DIMENSIONS[aspect]},
+        llm=ChatOpenAI(model="gpt-4o-mini"),  # Cost-effective judge
+        normalize_by=10  # Output 0.0-1.0 scores
+    )
+
+async def evaluate_output_quality(
+    input_content: str,
+    output_content: str
+) -> dict[str, float]:
+    """Evaluate output across all quality dimensions."""
+    scores = {}
+    for aspect in QUALITY_DIMENSIONS:
+        evaluator = create_quality_evaluator(aspect)
+        result = await evaluator.aevaluate_strings(
+            input=input_content,
+            prediction=output_content
+        )
+        scores[aspect] = result["score"]
+    return scores
+```
+
+**Quality Gate Integration:**
+```python
+QUALITY_THRESHOLD = 0.7  # Minimum acceptable score
+
+async def quality_gate(state: dict) -> dict:
+    """Block low-quality outputs with retry capability."""
+    scores = await evaluate_output_quality(
+        state["input"], state["output"]
+    )
+    avg_score = sum(scores.values()) / len(scores)
+
+    return {
+        "quality_scores": scores,
+        "quality_passed": avg_score >= QUALITY_THRESHOLD
+    }
+```
+
+### 9. Cost Optimization
 
 **Strategies:**
 - Use smaller models for simple tasks (GPT-3.5 vs GPT-4)
@@ -397,8 +507,7 @@ function countTokens(text: string, model = 'gpt-4'): number {
 Track LLM performance, costs, and quality in production.
 
 **Tools:**
-- **LangSmith**: Tracing, evaluation, monitoring
-- **LangFuse**: Open-source observability
+- **Langfuse**: Open-source LLM observability, tracing, evaluation, monitoring
 - **Custom Logging**: Structured logs with metrics
 
 **Key Metrics:**
@@ -409,7 +518,7 @@ Track LLM performance, costs, and quality in production.
 - Quality scores (relevance, coherence, factuality)
 
 **Detailed Implementation:** See `references/observability.md` for:
-- LangSmith and LangFuse integration
+- Langfuse integration (self-hosted LLM observability)
 - Custom logger implementation
 - Performance monitoring
 - Quality evaluation
@@ -610,7 +719,7 @@ const prompt = `${problem}\n\nLet's think step by step:`
 - [LangChain Documentation](https://python.langchain.com/docs/)
 - [Pinecone Documentation](https://docs.pinecone.io/)
 - [Chroma Documentation](https://docs.trychroma.com/)
-- [LangSmith Observability](https://docs.smith.langchain.com/)
+- [Langfuse Observability](https://langfuse.com/docs)
 
 ---
 

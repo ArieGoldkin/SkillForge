@@ -196,88 +196,95 @@ graph TB
 
 ```mermaid
 graph TB
-    Start([User Submits URL])
-    
-    subgraph "FastAPI Endpoint"
-        Validate[Validate URL]
-        CreateRecord[Create Analysis Record]
-        ReturnID[Return analysis_id]
+    UserStart([User Submits URL])
+
+    subgraph apiLayer [FastAPI API]
+        CreateAnalysis["POST /api/v1/analyze"]
+        StreamSSE["GET /api/v1/analyze/{analysis_id}/stream"]
+        GetStatus["GET /api/v1/analyze/{analysis_id}"]
+        GetArtifact["GET /api/v1/analyze/{analysis_id}/artifact"]
+        DownloadArtifact["GET /api/v1/artifacts/{artifact_id}/download"]
     end
-    
-    subgraph "LangGraph v1.0 StateGraph"
-        EntryPoint[StateGraph Entry: extract]
-        
-        subgraph "Workflow Nodes"
-            Extract[extract node]
-            
-            subgraph "Parallel Execution (Fan-Out)"
-                Embed[embedding node]
-                Supervisor[supervisor node]
-            end
-            
-            Router["route_to_agents (Send API)"]
-            
-            subgraph "Agent Nodes (Native LangGraph Parallel via Send API)"
-                TechComp[tech_comparator node]
-                Security[security_auditor node]
-                ImplPlan[implementation_planner node]
-                Perf[performance_analyst node]
-                CodeQual[code_quality_critic node]
-                Trends[trend_validator node]
-                Deps[dependency_mapper node]
-                IntFeas[integration_feasibility node]
-            end
-            
-            Aggregate[aggregate node]
-        end
+
+    subgraph workerLayer [Background Workflow Runner]
+        RunTask["run_workflow_task(analysis_id, url, skill_level)"]
     end
-    
-    subgraph "SSE Events"
-        SSEProgress[progress events]
-        SSEComplete[complete event]
-        SSEError[error events]
+
+    subgraph stateGraph [LangGraph v1.0 StateGraph]
+        Extract[extract]
+        Embed[embedding]
+        ChunkAndEmbed[chunk_and_embed]
+        InjectContext[inject_context]
+        Supervisor[supervisor]
+        RouteToAgents[route_to_agents]
+        TechComp[tech_comparator]
+        Security[security_auditor]
+        ImplPlan[implementation_planner]
+        Perf[performance_analyst]
+        CodeQual[code_quality_critic]
+        Trends[trend_validator]
+        Deps[dependency_mapper]
+        IntFeas[integration_feasibility]
+        Aggregate[aggregate]
+        QualityGate[quality_gate]
+        IncrementRetry[increment_retry]
+        QualityGateFail[quality_gate_fail]
+        GenerateArtifact[generate_artifact]
     end
-    
-    subgraph "Database"
-        SaveProgress[Save Progress]
-        SaveFindings[Save Agent Findings]
-        SaveArtifact[Save Artifact]
+
+    subgraph sse [SSE Event Stream]
+        ProgressEvent["type=progress (stage, status)"]
+        QualityGateEvent["type=quality_gate (stage=quality_validation)"]
+        ErrorEvent["type=error"]
+        CompleteEvent["type=complete (stage=artifact_generation)"]
     end
-    
-    Start --> Validate
-    Validate --> CreateRecord
-    CreateRecord --> ReturnID
-    ReturnID --> EntryPoint
-    
-    EntryPoint --> Extract
-    Extract -->|"SSE: extraction running"| SSEProgress
+
+    subgraph db [PostgreSQL]
+        Analyses[(analyses)]
+        Artifacts[(artifacts)]
+        Chunks[(analysis_chunks)]
+        Progress[(analysis_progress_events)]
+    end
+
+    UserStart --> CreateAnalysis
+    CreateAnalysis --> Analyses
+    CreateAnalysis --> RunTask
+    CreateAnalysis --> StreamSSE
+    CreateAnalysis --> GetStatus
+
+    StreamSSE --> ProgressEvent
+
+    RunTask --> Extract
     Extract --> Embed
+    Extract --> ChunkAndEmbed
+    Extract --> InjectContext
     Extract --> Supervisor
-    
-    Embed -->|"SSE: embedding complete"| SSEProgress
-    Supervisor -->|"SSE: supervisor_routing"| SSEProgress
-    Embed --> Router
-    Supervisor --> Router
-    
-    Router -->|"Send API: Dynamic Routing"| TechComp
-    Router -->|"Send API"| Security
-    Router -->|"Send API"| ImplPlan
-    Router -->|"Send API"| Perf
-    Router -->|"Send API"| CodeQual
-    Router -->|"Send API"| Trends
-    Router -->|"Send API"| Deps
-    Router -->|"Send API"| IntFeas
-    
-    TechComp -->|"SSE: tech_comparison"| SSEProgress
-    Security -->|"SSE: security_audit"| SSEProgress
-    ImplPlan -->|"SSE: implementation_planning"| SSEProgress
-    Perf -->|"SSE: performance_audit"| SSEProgress
-    CodeQual -->|"SSE: code_quality"| SSEProgress
-    Trends -->|"SSE: trends_analysis"| SSEProgress
-    Deps -->|"SSE: dependencies"| SSEProgress
-    IntFeas -->|"SSE: integration_feasibility"| SSEProgress
-    
-    TechComp -->|"Fan-In: State Reducer"| Aggregate
+
+    Extract -->|"SSE stage=extraction"| ProgressEvent
+    Embed -->|"SSE stage=embedding"| ProgressEvent
+    ChunkAndEmbed -->|"SSE stage=chunking"| ProgressEvent
+    Supervisor -->|"SSE stage=supervisor_routing"| ProgressEvent
+
+    Supervisor --> RouteToAgents
+    RouteToAgents --> TechComp
+    RouteToAgents --> Security
+    RouteToAgents --> ImplPlan
+    RouteToAgents --> Perf
+    RouteToAgents --> CodeQual
+    RouteToAgents --> Trends
+    RouteToAgents --> Deps
+    RouteToAgents --> IntFeas
+
+    TechComp -->|"SSE stage=tech_comparison"| ProgressEvent
+    Security -->|"SSE stage=security_audit"| ProgressEvent
+    ImplPlan -->|"SSE stage=implementation_planning"| ProgressEvent
+    Perf -->|"SSE stage=performance_audit"| ProgressEvent
+    CodeQual -->|"SSE stage=code_quality_audit"| ProgressEvent
+    Trends -->|"SSE stage=trends_analysis"| ProgressEvent
+    Deps -->|"SSE stage=dependencies_analysis"| ProgressEvent
+    IntFeas -->|"SSE stage=implementation_planning"| ProgressEvent
+
+    TechComp --> Aggregate
     Security --> Aggregate
     ImplPlan --> Aggregate
     Perf --> Aggregate
@@ -285,72 +292,98 @@ graph TB
     Trends --> Aggregate
     Deps --> Aggregate
     IntFeas --> Aggregate
-    
-    Aggregate -->|"SSE: aggregation complete"| SSEComplete
-    
-    Extract --> SaveProgress
-    TechComp --> SaveFindings
-    Security --> SaveFindings
-    ImplPlan --> SaveFindings
-    Perf --> SaveFindings
-    CodeQual --> SaveFindings
-    Trends --> SaveFindings
-    Deps --> SaveFindings
-    IntFeas --> SaveFindings
-    Aggregate --> SaveArtifact
-    
-    End([Analysis Complete])
-    SSEComplete --> End
+
+    Aggregate -->|"SSE stage=aggregation"| ProgressEvent
+    Aggregate --> QualityGate
+    QualityGate --> QualityGateEvent
+
+    QualityGate -->|"retry_synthesis"| IncrementRetry
+    QualityGate -->|"continue"| GenerateArtifact
+    QualityGate -->|"fail"| QualityGateFail
+    IncrementRetry --> Aggregate
+
+    GenerateArtifact -->|"SSE stage=artifact_generation"| ProgressEvent
+    GenerateArtifact --> Artifacts
+    RunTask -->|"Persist raw_content/extraction_metadata/content_embedding"| Analyses
+    ChunkAndEmbed --> Chunks
+    ProgressEvent --> Progress
+    ErrorEvent --> Progress
+    QualityGateEvent --> Progress
+    CompleteEvent --> Progress
+
+    RunTask --> CompleteEvent
+    QualityGateFail --> ErrorEvent
+    CompleteEvent --> StreamSSE
     
 ```
 
 ---
 
-## Agent Coverage by Content Type
+## Agent Coverage by Content Type (Issue #299-304)
 
-The system uses intelligent agent selection based on content type capabilities.
-Agents are filtered by their ability to process specific content types, resulting
-in varying agent counts per analysis. This is **intentional design** to avoid
-running agents that cannot meaningfully analyze the content type.
+The system uses **content-aware smart routing** with **minimum 3 agents** enforcement.
+This ensures diverse perspectives on every analysis while intelligently skipping agents
+when content lacks relevant data for them to analyze.
 
-### Agent Capabilities Matrix
+### Content Signal Detection
 
-| Agent | Article | Documentation | Code | Changelog |
-|-------|---------|---------------|------|-----------|
-| tech_comparator | ✅ | ✅ | ✅ | ✅ |
-| security_auditor | ❌ | ✅ | ✅ | ❌ |
-| implementation_planner | ✅ | ✅ | ✅ | ❌ |
-| performance_analyst | ❌ | ✅ | ✅ | ❌ |
-| code_quality_critic | ❌ | ❌ | ✅ | ❌ |
-| trend_validator | ✅ | ✅ | ✅ | ✅ |
-| dependency_mapper | ❌ | ❌ | ✅ | ❌ |
-| integration_feasibility | ✅ | ✅ | ✅ | ❌ |
+The supervisor detects content signals to determine agent relevance:
+
+| Signal Type | Detection | Affects Agents |
+|-------------|-----------|----------------|
+| **Code Patterns** | imports, function defs, class defs | code_quality_critic, dependency_mapper |
+| **Benchmarks** | p99, latency, req/sec metrics | performance_analyst |
+| **Security** | auth, encryption, vulnerability keywords | security_auditor |
+| **Architecture** | system design, API, microservices | integration_feasibility |
+| **Comparisons** | vs, compare, alternative keywords | tech_comparator |
+
+### Agent Expectations
+
+Each agent receives an expectation level based on content signals:
+
+- **FULL_ANALYSIS** (threshold: 0.70) - Rich relevant data, comprehensive analysis expected
+- **PARTIAL** (threshold: 0.55) - Some relevant data, focused analysis on available content
+- **OPPORTUNISTIC** (threshold: 0.45) - Limited data, extract insights where possible
+
+### Minimum 3 Agents Enforcement
+
+**CRITICAL:** Every analysis runs at least 3 agents regardless of content type.
+
+```
+Content Signals → Supervisor Selection → MIN(3, selected) → Filtered Agents
+                                              ↓
+                         If < 3: Add defaults (implementation_planner,
+                                              dependency_mapper, trend_validator)
+```
 
 ### Expected Agent Counts
 
-- **Article Content:** 4-6 agents
-  - Available: tech_comparator, implementation_planner, trend_validator, integration_feasibility
-  - Excluded: code_quality_critic (code only), dependency_mapper (code only), security_auditor (code/documentation), performance_analyst (code/documentation)
-  
-- **Documentation Content:** 5-7 agents
-  - Available: tech_comparator, security_auditor, implementation_planner, performance_analyst, trend_validator, integration_feasibility
-  - Excluded: code_quality_critic (code only), dependency_mapper (code only)
-  
-- **Code Content:** 6-8 agents
-  - Available: All agents can process code
-  - Count varies based on supervisor's selection (may not always select all 8)
+- **Article Content:** 3-5 agents (minimum 3 enforced)
+  - Core: implementation_planner, trend_validator, integration_feasibility
+  - Signal-based: tech_comparator (if comparisons), security_auditor (if security patterns)
+
+- **Documentation Content:** 3-6 agents (minimum 3 enforced)
+  - Core: implementation_planner, trend_validator, integration_feasibility
+  - Signal-based: security_auditor, performance_analyst (if benchmarks)
+
+- **Code Content:** 4-8 agents (minimum 3, typically more due to rich signals)
+  - Core: All code-capable agents available
+  - Auto-activated: dependency_mapper (imports), code_quality_critic (code patterns)
 
 ### Selection Process
 
-1. **Supervisor LLM Selection:** The supervisor analyzes content and selects relevant agents using structured output (`AgentSelection`)
-2. **Content Type Filtering:** Selected agents are filtered by `filter_agents_by_content_type()` based on their capabilities
-3. **Result:** Only compatible agents execute, ensuring efficient resource usage
+1. **Content Signal Detection:** Regex-based pattern matching for code, benchmarks, security, architecture
+2. **Supervisor LLM Selection:** Selects agents using structured output with minimum 3 constraint
+3. **Signal-Based Filtering:** Agents skipped when NO relevant signals detected
+4. **Minimum Enforcement:** If < 3 agents after filtering, defaults are added
+5. **Expectation Assignment:** Each agent receives FULL/PARTIAL/OPPORTUNISTIC expectation
 
 ### Implementation Details
 
-- **Location:** `backend/app/workflows/nodes/supervisor.py` + `backend/app/workflows/utils/content_type_detection.py`
-- **Filtering Logic:** `filter_agents_by_content_type()` checks `AGENT_CAPABILITIES` mapping
-- **Content Type Detection:** Heuristic-based detection with content type hints from extraction metadata
+- **Content Signals:** `backend/app/shared/workflows/utils/content_signals.py`
+- **Supervisor Logic:** `backend/app/domains/analysis/workflows/nodes/supervisor.py` (lines 355-388)
+- **Schema Enforcement:** `AgentSelection` Pydantic model with `min_length=3`
+- **Agent Expectations:** Propagated via `supervisor_decision.agent_expectations` in state
 
 ---
 
@@ -382,12 +415,20 @@ sequenceDiagram
     W->>DB: Save Progress
     W->>W: Content extracted
     
-    W->>W: task generate_embedding
-    W->>DB: Save Embedding
-    
-    W->>W: task supervisor_route
-    W->>SSE: Emit progress supervisor_routing
-    SSE-->>F: Event: supervisor_routing
+    par Fan-out after extract
+        W->>W: task generate_embedding
+        W->>SSE: Emit progress embedding running/complete
+    and Optional coarse-to-fine
+        W->>W: node chunk_and_embed (coarse/fine/summaries)
+        W->>DB: Persist analysis_chunks (vectors)
+        W->>SSE: Emit progress chunking running/complete
+    and Proactive context (Issue #300)
+        W->>W: node inject_context (no SSE)
+    and Supervisor
+        W->>W: node supervisor_route
+        W->>SSE: Emit progress supervisor_routing
+        SSE-->>F: Event: supervisor_routing
+    end
     
     W->>W: route_to_agents (Send API)
     W->>W: Parallel agent nodes (tech_comparator, security_auditor, ...)
@@ -400,9 +441,12 @@ sequenceDiagram
     Note over W: ... 5 more sub-agents
     
     W->>W: task aggregate_findings
+    W->>SSE: Emit progress aggregation running/complete
+    W->>W: node quality_gate (may trigger retries)
+    W->>SSE: Emit quality_gate (stage=quality_validation)
     W->>W: task generate_artifact
     W->>DB: Save Artifact
-    W->>SSE: Emit "complete" (artifact_generation)
+    W->>SSE: Emit \"complete\" (stage=artifact_generation, artifact_id)
     SSE-->>F: Event: complete
     F->>U: Show "Download" button
     
@@ -521,23 +565,23 @@ graph TB
 ```mermaid
 classDiagram
     class FastAPIEndpoint {
-        +POST /api/v1/analyze
-        +GET /api/v1/analyze/{id}/stream
-        +GET /api/v1/artifacts/{id}/download
+        +postAnalyze()
+        +streamAnalyze()
+        +downloadArtifact()
     }
     
     class IAnalysisRepository {
         <<interface>>
         +create(url: str) Analysis
-        +get_by_id(id: UUID) Analysis
-        +list_active() List[Analysis]
+        +getById(id: UUID) Analysis
+        +listActive() Analysis[]
     }
     
     class AnalysisRepository {
         -db: AsyncSession
         +create(url: str) Analysis
-        +get_by_id(id: UUID) Analysis
-        +list_active() List[Analysis]
+        +getById(id: UUID) Analysis
+        +listActive() Analysis[]
     }
     
     class AnalysisModel {
@@ -548,11 +592,11 @@ classDiagram
     }
     
     class LangGraphWorkflow {
-        +entrypoint checkpointer
-        +task extract_content
-        +task supervisor_route
-        +task run_agents
-        +task generate_artifact
+        +entrypoint(checkpointer)
+        +extractContent()
+        +supervisorRoute()
+        +runAgents()
+        +generateArtifact()
     }
     
     class SupervisorAgent {
@@ -595,89 +639,84 @@ classDiagram
 flowchart TD
     Start([User Input: URL])
     
-    subgraph "Request Flow"
-        Validate[Validate URL Format]
-        DetectType[Detect Content Type]
-        CreateAnalysis[Create Analysis Record]
+    subgraph requestFlow [Request Flow]
+        DetectType[Detect content type]
+        CreateAnalysis[Create analysis status=pending]
+        StartWorkflow["Start background workflow task"]
     end
     
-    subgraph "Content Extraction"
-        JinaExtract[Jina AI Extract]
-        YouTubeExtract[YouTube Transcript]
-        GitHubExtract[GitHub Repo]
+    subgraph extraction [Extraction]
+        Extract[extract node]
+        Jina[JinaReader]
+        YouTube[YouTube transcript]
+        GitHub[GitHub repo extract]
     end
     
-    subgraph "Processing"
-        GenerateEmbed[Generate Embedding]
-        StoreEmbed[Store in PGVector]
-        SupervisorDecide[Supervisor Routes]
+    subgraph fanOut [Parallel after extract]
+        Embed[embedding]
+        Chunking[chunk_and_embed optional]
+        InjectContext[inject_context]
+        Supervisor[supervisor]
     end
     
-    subgraph "Agent Analysis"
-        TechComp[Tech Comparator]
-        Security[Security Auditor]
-        ImplPlan[Implementation Planner]
-        Perf[Performance Auditor]
-        CodeQual[Code Quality]
-        Trends[Trends Analyzer]
-        Deps[Dependencies]
+    subgraph agents [Agent fan-out Send API]
+        TechComp[tech_comparator]
+        Security[security_auditor]
+        ImplPlan[implementation_planner]
+        Perf[performance_analyst]
+        CodeQual[code_quality_critic]
+        Trends[trend_validator]
+        Deps[dependency_mapper]
+        IntFeas[integration_feasibility]
     end
     
-    subgraph "Aggregation"
-        Aggregate[Aggregate Findings]
-        GenerateMarkdown[Generate Markdown]
-        SaveArtifact[Save Artifact]
+    subgraph synthesis [Synthesis]
+        Aggregate[aggregate_findings]
+        QualityGate[quality_gate]
+        GenerateArtifact[generate_artifact]
     end
     
-    subgraph "Response"
-        SSEStream[SSE Stream Events]
-        Download[Download Endpoint]
+    subgraph persistence [Persistence]
+        Analyses[(analyses)]
+        Chunks[(analysis_chunks)]
+        Artifacts[(artifacts)]
+        Progress[(analysis_progress_events)]
     end
     
-    Start --> Validate
-    Validate --> DetectType
-    DetectType --> CreateAnalysis
+    subgraph response [Client Response]
+        SSE["SSE stream (/api/v1/analyze/analysis_id/stream)"]
+        Complete["type=complete event"]
+        Download["Download (/api/v1/artifacts/artifact_id/download)"]
+    end
     
-    CreateAnalysis --> JinaExtract
-    CreateAnalysis --> YouTubeExtract
-    CreateAnalysis --> GitHubExtract
+    Start --> DetectType --> CreateAnalysis --> Analyses
+    CreateAnalysis --> StartWorkflow
+    CreateAnalysis --> SSE
     
-    JinaExtract --> GenerateEmbed
-    YouTubeExtract --> GenerateEmbed
-    GitHubExtract --> GenerateEmbed
+    StartWorkflow --> Extract
+    Extract --> Jina
+    Extract --> YouTube
+    Extract --> GitHub
+    Extract --> fanOut
     
-    GenerateEmbed --> StoreEmbed
-    StoreEmbed --> SupervisorDecide
+    Embed --> Analyses
+    Chunking --> Chunks
+    Supervisor --> agents
     
-    SupervisorDecide --> TechComp
-    SupervisorDecide --> Security
-    SupervisorDecide --> ImplPlan
-    SupervisorDecide --> Perf
-    SupervisorDecide --> CodeQual
-    SupervisorDecide --> Trends
-    SupervisorDecide --> Deps
+    agents --> Aggregate --> QualityGate --> GenerateArtifact --> Artifacts
     
-    TechComp --> Aggregate
-    Security --> Aggregate
-    ImplPlan --> Aggregate
-    Perf --> Aggregate
-    CodeQual --> Aggregate
-    Trends --> Aggregate
-    Deps --> Aggregate
+    SSE --> Progress
+    Extract --> Progress
+    Embed --> Progress
+    Chunking --> Progress
+    Supervisor --> Progress
+    Aggregate --> Progress
+    QualityGate --> Progress
+    GenerateArtifact --> Progress
+    GenerateArtifact --> Complete --> SSE
     
-    Aggregate --> GenerateMarkdown
-    GenerateMarkdown --> SaveArtifact
-    
-    CreateAnalysis --> SSEStream
-    JinaExtract --> SSEStream
-    SupervisorDecide --> SSEStream
-    TechComp --> SSEStream
-    Security --> SSEStream
-    SaveArtifact --> SSEStream
-    
-    SaveArtifact --> Download
-    
-    End([User Downloads Artifact])
+    Complete --> Download
+    End([User downloads artifact])
     Download --> End
     
 ```

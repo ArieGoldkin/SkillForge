@@ -1,56 +1,19 @@
 /**
  * ProgressTracker Constants
- * Shared stage configuration and helper functions
+ * UI-specific helper functions for stage display
+ *
+ * Stage configuration now comes from stageRegistry.ts
  */
 
-import type { AgentStageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@app-types/sse'
 
-/**
- * All available pipeline stages
- */
-export const ALL_STAGES: AgentStageName[] = [
-  'extraction',
-  'embedding',
-  'supervisor_routing',
-  'tech_comparison',
-  'security_audit',
-  'implementation_planning',
-  'performance_audit',
-  'code_quality_audit',
-  'trends_analysis',
-  'dependencies_analysis',
-  'aggregation',
-  'artifact_generation',
-]
-
-/**
- * Currently working stages (for testing with real backend)
- */
-export const WORKING_STAGES: AgentStageName[] = ['extraction', 'embedding', 'supervisor_routing']
-
-/**
- * Stage configuration with user-friendly labels
- */
-export const STAGE_CONFIG: Record<AgentStageName, { label: string }> = {
-  extraction: { label: 'Content Extraction' },
-  embedding: { label: 'Embedding Generation' },
-  supervisor_routing: { label: 'Agent Routing' },
-  tech_comparison: { label: 'Technology Comparison' },
-  security_audit: { label: 'Security Audit' },
-  implementation_planning: { label: 'Implementation Planning' },
-  performance_audit: { label: 'Performance Analysis' },
-  code_quality_audit: { label: 'Code Quality Review' },
-  trends_analysis: { label: 'Trends Analysis' },
-  dependencies_analysis: { label: 'Dependencies Review' },
-  aggregation: { label: 'Results Aggregation' },
-  artifact_generation: { label: 'Artifact Generation' },
-}
+import { ALL_STAGES, getStageTitle } from '../../config/stageRegistry'
 
 /**
  * Internal state for each stage
  */
 export interface StageState {
-  name: AgentStageName
+  name: StageName
   label: string
   status: StageStatus
   agent?: string
@@ -60,11 +23,12 @@ export interface StageState {
 
 /**
  * Create initial stage states from stage list
+ * Uses registry to get canonical stage titles
  */
-export function createInitialStages(stages: AgentStageName[]): StageState[] {
+export function createInitialStages(stages: StageName[]): StageState[] {
   return stages.map((name) => ({
     name,
-    label: STAGE_CONFIG[name].label,
+    label: getStageTitle(name),
     status: 'pending' as StageStatus,
   }))
 }
@@ -116,3 +80,6 @@ export function getStatusBadgeVariant(
       return 'default'
   }
 }
+
+// Re-export ALL_STAGES for backward compatibility
+export { ALL_STAGES }

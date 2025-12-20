@@ -31,7 +31,7 @@ This guide provides everything needed to build an intelligent Health Coach agent
 | Vector Search | pgvector | Semantic search for personalization |
 | Embeddings | OpenAI text-embedding-3-small | 1536-dim vectors |
 | LLM | OpenAI GPT-4 / Claude | Agent reasoning |
-| Observability | LangSmith | Tracing & debugging |
+| Observability | Langfuse | Tracing & debugging |
 | Package Mgmt | Poetry | Dependencies |
 
 ### Frontend
@@ -102,7 +102,7 @@ health-coach/
 │   │   ├── core/
 │   │   │   ├── config.py              # Environment settings
 │   │   │   ├── model_factory.py       # LLM initialization
-│   │   │   └── langsmith_config.py    # Tracing setup
+│   │   │   └── langfuse_config.py    # Tracing setup
 │   │   ├── workflows/
 │   │   │   ├── graph_builder.py       # LangGraph workflow
 │   │   │   ├── state.py               # State TypedDict
@@ -918,7 +918,7 @@ docker compose up -d postgres
 # Environment Variables (.env)
 DATABASE_URL=postgresql://user:pass@localhost:5432/health_coach
 OPENAI_API_KEY=sk-...
-LANGCHAIN_API_KEY=lsv2_...  # LangSmith
+LANGCHAIN_API_KEY=lsv2_...  # Langfuse
 LANGCHAIN_PROJECT=health-coach
 LANGCHAIN_TRACING_V2=true
 ```

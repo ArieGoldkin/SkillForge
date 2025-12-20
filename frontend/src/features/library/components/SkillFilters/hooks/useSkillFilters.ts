@@ -9,6 +9,8 @@ import { useMemo } from 'react'
 
 import type { AnalysisStatus } from '@app-types/api'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import type { SkillDifficulty } from '../../SkillCard'
 
 /**
@@ -57,7 +59,10 @@ export const useSkillFilters = (
       filters.difficulty.length +
       filters.status.length +
       filters.tags.length +
-      (filters.durationRange[0] > 0 || filters.durationRange[1] < 1000 ? 1 : 0),
+      (filters.durationRange[0] > 0 ||
+      filters.durationRange[1] < COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX
+        ? 1
+        : 0),
     [filters]
   )
 
@@ -90,7 +95,7 @@ export const useSkillFilters = (
       difficulty: [],
       status: [],
       tags: [],
-      durationRange: [0, 1000],
+      durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
     })
   }
 

@@ -23,20 +23,16 @@ if "DATABASE_URL" not in os.environ:
 if "OPENAI_API_KEY" not in os.environ:
     os.environ["OPENAI_API_KEY"] = "sk-test-placeholder-for-unit-tests"
 
-# CRITICAL: Disable LangSmith tracing for UNIT tests only
+# CRITICAL: Disable Langfuse tracing for UNIT tests only
 # Integration tests have their own conftest.py (tests/integration/conftest.py) that enables tracing
-# This must be set before importing any modules that use langsmith.traceable
-# Setting these env vars prevents LangSmith from initializing background threads for unit tests
-# Integration tests will override this in their conftest.py which runs AFTER this one
-# (pytest loads conftest.py files in order: root conftest, then subdirectory conftest)
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
-os.environ["LANGSMITH_TRACING"] = "false"
-# Also unset API key to prevent any initialization attempts in unit tests
-# Integration tests will restore it in their conftest.py
-if "LANGSMITH_API_KEY" in os.environ:
-    del os.environ["LANGSMITH_API_KEY"]
-if "LANGCHAIN_API_KEY" in os.environ:
-    del os.environ["LANGCHAIN_API_KEY"]
+# This must be set before importing any modules that use Langfuse
+# Setting these env vars prevents Langfuse from initializing background threads for unit tests
+os.environ["LANGFUSE_ENABLED"] = "false"
+# Also unset API keys to prevent any initialization attempts in unit tests
+if "LANGFUSE_PUBLIC_KEY" in os.environ:
+    del os.environ["LANGFUSE_PUBLIC_KEY"]
+if "LANGFUSE_SECRET_KEY" in os.environ:
+    del os.environ["LANGFUSE_SECRET_KEY"]
 
 import pytest
 import pytest_asyncio
@@ -45,16 +41,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.main import app
-from app.services.event_broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster import broadcaster
 
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
 # to avoid DATABASE_URL validation errors in CI environments without database config
 
-# Suppress LangSmith background thread logging errors
+# Suppress Langfuse background thread logging errors
 # These loggers emit DEBUG messages during teardown that fail when stdout is closed
 for _logger_name in [
-    "langsmith._internal._background_thread",
-    "langsmith.client",
+    "langfuse",
+    "langfuse.task_manager",
     "urllib3.connectionpool",
 ]:
     logging.getLogger(_logger_name).setLevel(logging.WARNING)
@@ -231,6 +227,45 @@ def ensure_llm_model_set(monkeypatch):
         monkeypatch.setenv("LLM_MAX_RETRIES", "1")
     # Clear settings cache to pick up env vars
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def mock_async_session_local():
+    """Create a properly mocked AsyncSessionLocal for unit tests.
+
+    This fixture provides a mock AsyncSessionLocal that returns an async context manager,
+    which in turn yields a mock session. Use this in unit tests that need to mock database
+    sessions without making real database connections.
+
+    Usage:
+        async def test_something(mock_async_session_local, mock_session):
+            with patch("app.db.session.AsyncSessionLocal", mock_async_session_local):
+                # Your test code here
+                pass
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    # Create a mock session
+    mock_session = MagicMock()
+    mock_session.configure_mock(
+        **{
+            "__aenter__": AsyncMock(return_value=mock_session),
+            "__aexit__": AsyncMock(return_value=False),
+        }
+    )
+
+    # Create a mock async context manager that yields the session
+    mock_context_manager = MagicMock()
+    mock_context_manager.configure_mock(
+        **{
+            "__aenter__": AsyncMock(return_value=mock_session),
+            "__aexit__": AsyncMock(return_value=False),
+        }
+    )
+
+    # AsyncSessionLocal itself is callable and returns the context manager
+    mock_async_session_local = MagicMock(return_value=mock_context_manager)
+    return mock_async_session_local
 
 
 @pytest.fixture
@@ -483,17 +518,25 @@ async def cleanup_event_broadcaster():
     """Clean up event broadcaster after each test.
 
     Leverages pytest 9.0.1's improved async fixture lifecycle management.
-    Clears all channels and subscriptions to prevent hanging tests
-    from lingering event broadcaster queues.
+    Clears all channels, subscriptions, and event buffers to prevent:
+    - Hanging tests from lingering event broadcaster queues
+    - Flaky tests from previous test's buffered events being replayed
 
     pytest 9.0.1 provides automatic cleanup for async fixtures,
     ensuring resources are properly released even if tests fail.
     No need for try/finally - automatic cleanup handles it.
+
+    Note: Event buffers were added in commit 9430387 (SSE race condition fix).
+    This cleanup must clear buffers to prevent test pollution.
     """
     yield
     # Clear all channels and subscriptions
     # pytest 9.0.1 automatically ensures this cleanup runs even if test fails
     broadcaster._channels.clear()
+    # CRITICAL: Also clear buffers to prevent test pollution
+    # Without this, buffered events from previous tests are replayed to new subscribers
+    # This caused flakiness in test_emit_streaming_event_with_kwargs
+    broadcaster._buffers.clear()
 
 
 @pytest_asyncio.fixture
@@ -563,7 +606,7 @@ async def create_test_analysis(db_session):
             )
             # Now you can use analysis_id with agents
     """
-    from app.models.analysis import Analysis
+    from app.db.models.analysis import Analysis
 
     async def _create(
         analysis_id: str,

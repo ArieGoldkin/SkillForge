@@ -57,20 +57,26 @@ LangChain handles retry logic internally with proper async behavior (no blocking
 - PEP 789: https://peps.python.org/pep-0789/ (avoiding yield in cancellation scopes)
 """
 
+import os
+
 from langchain_core.runnables import RunnableConfig
 
 # Agent execution timeout (in seconds)
 AGENT_TIMEOUT: float = 60.0  # 60 seconds (1 minute) - LLM calls should complete faster
 
 # LLM synthesis timeout (in seconds)
-SYNTHESIS_TIMEOUT: float = 90.0  # 90 seconds (1.5 minutes) - synthesis may need slightly more time
+# Issue #299-304: Increased from 90s to 180s to allow 60s per phase (3 phases)
+# The detailed schema prompts require more LLM processing time
+SYNTHESIS_TIMEOUT: float = 180.0  # 180 seconds (3 minutes) - allow 60s per phase
 
 # Streaming timeout (in seconds)
 STREAMING_TIMEOUT: float = 120.0  # 120 seconds (2 minutes) - streaming should be faster
 
 # Graph step timeout (in seconds) - set on compiled graph
 # This is the single source of truth for timeout handling
-STEP_TIMEOUT: float = 90.0  # 90 seconds (1.5 minutes per step) - reasonable for LLM agent execution
+# Override via SKILLFORGE_STEP_TIMEOUT env var for complex regeneration tasks
+_step_timeout_env = os.environ.get("SKILLFORGE_STEP_TIMEOUT")
+STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 300.0  # Default 5 min
 
 # Workflow-level timeout (in seconds) - for entire workflow
 WORKFLOW_TIMEOUT: float = 900.0  # 900 seconds (15 minutes) - entire workflow should complete faster
@@ -85,18 +91,29 @@ def create_runnable_config(
     Timeout handling is managed by `step_timeout` on the compiled graph.
     This is the recommended approach per LangGraph best practices.
 
+    This function also integrates Langfuse CallbackHandler for LLM observability,
+    enabling token count tracking and cost visibility in the Langfuse dashboard.
+
     Args:
         thread_id: Optional thread ID for checkpointing
 
     Returns:
-        RunnableConfig with thread_id if provided
+        RunnableConfig with thread_id and Langfuse callbacks if enabled
 
     Example:
         >>> config = create_runnable_config(thread_id="abc-123")
         >>> config["configurable"]["thread_id"]  # "abc-123"
+        >>> # If Langfuse enabled, config["callbacks"] contains CallbackHandler
 
     """
+    from app.core.langfuse_service import get_langfuse_callback_handler
+
     config: RunnableConfig = {}
+
+    # Add Langfuse callback for LLM token/cost tracking
+    callback = get_langfuse_callback_handler()
+    if callback:
+        config["callbacks"] = [callback]
 
     if thread_id:
         config["configurable"] = {"thread_id": thread_id}

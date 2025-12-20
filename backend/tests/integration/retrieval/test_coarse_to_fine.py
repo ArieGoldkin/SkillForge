@@ -2,10 +2,10 @@ import pytest
 from sqlalchemy import text
 
 from app.db.base import Base
+from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.repositories.chunk_repository import ChunkRepository
 from app.db.session import AsyncSessionLocal, engine
-from app.models.analysis_chunk import AnalysisChunk
-from app.services.retrieval.coarse_to_fine import retrieve_coarse_to_fine
+from app.shared.services.search.coarse_to_fine import retrieve_coarse_to_fine
 
 
 @pytest.mark.asyncio

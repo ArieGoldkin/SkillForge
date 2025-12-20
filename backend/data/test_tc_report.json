@@ -1,0 +1,88 @@
+{
+  "generated_at": "2025-12-17T09:30:59.545564+00:00",
+  "summary": {
+    "total_artifacts": 5,
+    "processed": 5,
+    "successful": 5,
+    "filtered_out": 0,
+    "errors": 0,
+    "avg_quality_score": 0.595,
+    "high_quality_count": 1,
+    "hq_rate_percent": 20.0,
+    "score_distribution": {
+      "0.5-0.7 (poor)": 2,
+      "0.0-0.5 (unusable)": 2,
+      "0.8-0.9 (good)": 1
+    },
+    "examples_by_agent": {
+      "tech_comparator": 5
+    }
+  },
+  "results": [
+    {
+      "artifact_id": "4c87c299-5b11-44fc-b646-77c8ff0c0346",
+      "agent_type": "tech_comparator",
+      "input_summary": "REST API Design Best Practices",
+      "quality_score": 0.6375,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 1.0,
+        "balance": 0.5,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "4b48abc0-b6f9-4169-a0d2-e39361cc59c9",
+      "agent_type": "tech_comparator",
+      "input_summary": "Dropbox: File Synchronization Engine",
+      "quality_score": 0.4625,
+      "criteria_scores": {
+        "completeness": 0.0,
+        "accuracy": 0.25,
+        "balance": 0.75,
+        "recommendation": 1.0
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "29340a7d-1ba4-4ada-884f-e121d06a9b08",
+      "agent_type": "tech_comparator",
+      "input_summary": "Terraform Infrastructure as Code: Declarative Cloud Management",
+      "quality_score": 0.48750000000000004,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 0.5,
+        "balance": 0.5,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "9ecdd18f-7b0f-46fd-880d-1bd444821179",
+      "agent_type": "tech_comparator",
+      "input_summary": "CI/CD with GitHub Actions: Automated Software Delivery",
+      "quality_score": 0.5625,
+      "criteria_scores": {
+        "completeness": 0.25,
+        "accuracy": 0.75,
+        "balance": 0.5,
+        "recommendation": 0.75
+      },
+      "error": null
+    },
+    {
+      "artifact_id": "4fa2e115-30f0-4508-8c39-917ce26def12",
+      "agent_type": "tech_comparator",
+      "input_summary": "API Security Best Practices: Defense in Depth",
+      "quality_score": 0.825,
+      "criteria_scores": {
+        "completeness": 0.5,
+        "accuracy": 1.0,
+        "balance": 1.0,
+        "recommendation": 0.75
+      },
+      "error": null
+    }
+  ]
+}

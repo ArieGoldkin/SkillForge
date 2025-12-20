@@ -77,6 +77,7 @@ jobs:
         with:
           name: backend-security-report
           path: backend/backend-security-report.json
+          compression-level: 9
           retention-days: 30
           compression-level: 9
           if-no-files-found: warn
@@ -128,6 +129,7 @@ jobs:
         with:
           name: frontend-security-report
           path: frontend/frontend-security-report.json
+          compression-level: 9
           retention-days: 30
           compression-level: 9
           if-no-files-found: warn
@@ -199,7 +201,9 @@ jobs:
       - name: Download security reports
         uses: actions/download-artifact@v7
         with:
+          pattern: "*-security-report"
           path: security-reports
+          merge-multiple: true
 
       - name: Generate security summary
         run: |
@@ -225,6 +229,7 @@ jobs:
         with:
           name: security-summary
           path: security-summary.md
+          compression-level: 9
           retention-days: 30
           compression-level: 9
           if-no-files-found: warn

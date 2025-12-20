@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSSE } from '../useSSE'
 
+// Valid UUIDs for testing
+const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
+const _TEST_ANALYSIS_ID_2 = 'a1b2c3d4-e5f6-47a8-b9c0-d1e2f3a4b5c6'
+
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
  */
@@ -67,19 +71,19 @@ describe('useSSE Hook', () => {
   })
 
   it('connects when mounted', async () => {
-    const { result } = renderHook(() => useSSE('test-123'))
+    const { result } = renderHook(() => useSSE(TEST_ANALYSIS_ID))
 
     await waitFor(() => expect(result.current.isConnected).toBe(true))
-    expect(getMockEventSource()?.url).toContain('test-123')
+    expect(getMockEventSource()?.url).toContain(TEST_ANALYSIS_ID)
   })
 
   it('returns events from store', async () => {
-    const { result } = renderHook(() => useSSE('test-123'))
+    const { result } = renderHook(() => useSSE(TEST_ANALYSIS_ID))
     await waitFor(() => expect(result.current.isConnected).toBe(true))
 
     const event: SSEProgressEvent = {
       type: 'progress',
-      analysis_id: 'test-123',
+      analysis_id: TEST_ANALYSIS_ID,
       stage: 'extraction',
       status: 'running',
       timestamp: new Date().toISOString(),
@@ -92,8 +96,8 @@ describe('useSSE Hook', () => {
   })
 
   it('shares state across instances', async () => {
-    const { result: result1 } = renderHook(() => useSSE('test-123'))
-    const { result: result2 } = renderHook(() => useSSE('test-123'))
+    const { result: result1 } = renderHook(() => useSSE(TEST_ANALYSIS_ID))
+    const { result: result2 } = renderHook(() => useSSE(TEST_ANALYSIS_ID))
 
     await waitFor(() => {
       expect(result1.current.isConnected).toBe(true)
@@ -102,7 +106,7 @@ describe('useSSE Hook', () => {
 
     const event: SSEProgressEvent = {
       type: 'progress',
-      analysis_id: 'test-123',
+      analysis_id: TEST_ANALYSIS_ID,
       stage: 'extraction',
       status: 'running',
       timestamp: new Date().toISOString(),

@@ -9,10 +9,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.models.agent_memory import AgentMemory, MemoryType
-from app.services.memory import AgentMemoryService, MemorySearchResult, MemorySnippet
+from app.db.models.agent_memory import AgentMemory, MemoryType
+from app.shared.services.memory import AgentMemoryService, MemorySearchResult, MemorySnippet
 
 
+@pytest.mark.unit
 @pytest.mark.asyncio
 class TestAgentMemoryServiceSearch:
     """Tests for the search() method."""

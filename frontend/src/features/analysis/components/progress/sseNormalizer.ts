@@ -3,6 +3,9 @@
  *
  * Transforms backend SSE events to match frontend type definitions.
  * Handles schema differences between backend implementation and frontend spec.
+ *
+ * Uses the unified stage registry for stage name normalization and validation.
+ * @see Issue #397: Create unified stage registry
  */
 
 import type {
@@ -14,14 +17,13 @@ import type {
   SSEErrorEvent,
 } from '@app-types/sse'
 
-/**
- * Stage name mapping from backend to frontend
- * Backend may use different names than the frontend spec
- */
-const STAGE_NAME_MAP: Record<string, StageName> = {
-  supervisor: 'supervisor_routing',
-  // Add more mappings as backend stages are implemented
-}
+import { logger } from '@/lib/logger'
+
+import {
+  VALID_STAGES,
+  normalizeStageNameFromBackend,
+  isValidStage,
+} from '../../config/stageRegistry'
 
 /**
  * Status mapping from backend to frontend
@@ -32,34 +34,9 @@ const STATUS_MAP: Record<string, StageStatus> = {
 }
 
 /**
- * Valid stage names (from frontend spec)
- */
-const VALID_STAGES: StageName[] = [
-  'extraction',
-  'embedding',
-  'supervisor_routing',
-  'tech_comparison',
-  'security_audit',
-  'implementation_planning',
-  'performance_audit',
-  'code_quality_audit',
-  'trends_analysis',
-  'dependencies_analysis',
-  'aggregation',
-  'artifact_generation',
-]
-
-/**
  * Valid statuses (from frontend spec)
  */
 const VALID_STATUSES: StageStatus[] = ['pending', 'running', 'complete', 'failed']
-
-/**
- * Check if a value is a valid stage name
- */
-function isValidStageName(stage: string): stage is StageName {
-  return VALID_STAGES.includes(stage as StageName)
-}
 
 /**
  * Check if a value is a valid status
@@ -70,21 +47,10 @@ function isValidStatus(status: string): status is StageStatus {
 
 /**
  * Normalize stage name from backend to frontend
+ * Uses the unified stage registry for all stage transformations
  */
 function normalizeStage(stage: string): StageName | null {
-  // Check if it needs mapping
-  if (stage in STAGE_NAME_MAP) {
-    return STAGE_NAME_MAP[stage]
-  }
-
-  // Check if it's already valid
-  if (isValidStageName(stage)) {
-    return stage
-  }
-
-  // Unknown stage - log warning but don't fail
-  console.warn(`[SSE Normalizer] Unknown stage name: ${stage}`)
-  return null
+  return normalizeStageNameFromBackend(stage)
 }
 
 /**
@@ -102,7 +68,11 @@ function normalizeStatus(status: string): StageStatus {
   }
 
   // Unknown status - default to 'running' with warning
-  console.warn(`[SSE Normalizer] Unknown status: ${status}, defaulting to 'running'`)
+  logger.warn('Unknown status received from backend, defaulting to running', {
+    status,
+    validStatuses: VALID_STATUSES,
+    eventType: 'status_normalization',
+  })
   return 'running'
 }
 
@@ -170,7 +140,12 @@ function normalizeCompleteEvent(event: Record<string, unknown>): SSECompleteEven
   // artifact_id is required for complete events
   const artifactId = details.artifact_id || event.artifact_id
   if (!artifactId) {
-    console.warn('[SSE Normalizer] Complete event missing artifact_id')
+    logger.warn('Complete event missing required artifact_id', {
+      analysisId: event.analysis_id,
+      eventType: 'complete',
+      availableFields: Object.keys(event),
+      detailsFields: Object.keys(details),
+    })
   }
 
   return {
@@ -210,7 +185,7 @@ function normalizeErrorEvent(event: Record<string, unknown>): SSEErrorEvent | nu
  * Normalize an SSE event from backend format to frontend types
  *
  * Handles the following transformations:
- * 1. Stage name mapping (e.g., 'supervisor' → 'supervisor_routing')
+ * 1. Stage name mapping using unified registry (e.g., 'supervisor' → 'supervisor_routing')
  * 2. Status normalization (e.g., 'streaming' → 'running')
  * 3. Details extraction (top-level fields → nested details object)
  * 4. Error structure normalization
@@ -221,7 +196,11 @@ function normalizeErrorEvent(event: Record<string, unknown>): SSEErrorEvent | nu
 export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
   // Handle null/undefined
   if (!rawEvent || typeof rawEvent !== 'object') {
-    console.warn('[SSE Normalizer] Invalid event:', rawEvent)
+    logger.warn('Received invalid SSE event structure', {
+      eventType: typeof rawEvent,
+      eventValue: rawEvent,
+      expectedType: 'object',
+    })
     return null
   }
 
@@ -229,7 +208,12 @@ export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
 
   // Check for required fields
   if (!event.type || !event.analysis_id) {
-    console.warn('[SSE Normalizer] Event missing required fields:', event)
+    logger.warn('SSE event missing required fields', {
+      hasType: !!event.type,
+      hasAnalysisId: !!event.analysis_id,
+      availableFields: Object.keys(event),
+      eventData: event,
+    })
     return null
   }
 
@@ -243,7 +227,12 @@ export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
     case 'error':
       return normalizeErrorEvent(event)
     default:
-      console.warn(`[SSE Normalizer] Unknown event type: ${eventType}`)
+      logger.warn('Received unknown SSE event type', {
+        eventType,
+        validTypes: ['progress', 'complete', 'error'],
+        analysisId: event.analysis_id,
+        eventData: event,
+      })
       return null
   }
 }
@@ -251,9 +240,18 @@ export function normalizeSSEEvent(rawEvent: unknown): SSEEvent | null {
 /**
  * Check if an event is from a stage that needs mapping
  * Useful for debugging integration issues
+ *
+ * Uses the unified stage registry to check if backend name differs from frontend name
  */
 export function needsStageMapping(stage: string): boolean {
-  return stage in STAGE_NAME_MAP
+  // If it's already a valid stage name, no mapping needed
+  if (isValidStage(stage)) {
+    return false
+  }
+
+  // If registry can normalize it, it needs mapping
+  const normalized = normalizeStageNameFromBackend(stage)
+  return normalized !== null && normalized !== stage
 }
 
 /**
@@ -266,9 +264,10 @@ export function needsStatusMapping(status: string): boolean {
 
 /**
  * Get the mapped stage name (or original if no mapping needed)
+ * Uses the unified stage registry for all stage transformations
  */
 export function getMappedStageName(stage: string): StageName | null {
-  return normalizeStage(stage)
+  return normalizeStageNameFromBackend(stage)
 }
 
 /**
@@ -276,4 +275,12 @@ export function getMappedStageName(stage: string): StageName | null {
  */
 export function getMappedStatus(status: string): StageStatus {
   return normalizeStatus(status)
+}
+
+/**
+ * Get all valid stage names from the registry
+ * Useful for debugging and validation
+ */
+export function getValidStageNames(): StageName[] {
+  return Array.from(VALID_STAGES)
 }

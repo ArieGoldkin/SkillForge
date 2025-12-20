@@ -9,6 +9,8 @@ Tests cover:
 - Custom weights
 """
 
+import pytest
+
 from app.core.constants import (
     STRUCTURAL_PATH_DEPTH_THRESHOLD,
     STRUCTURAL_WEIGHT_CODE_BLOCK,
@@ -19,9 +21,10 @@ from app.core.constants import (
     STRUCTURAL_WEIGHT_SECTION_PRESENT,
 )
 from app.schemas.search import ChunkMetadata
-from app.services.search.structural_priors import StructuralPriorScorer, StructuralWeights
+from app.shared.services.search.structural_priors import StructuralPriorScorer, StructuralWeights
 
 
+@pytest.mark.unit
 class TestStructuralPriorScorerSectionBoost:
     """Tests for section presence boost."""
 

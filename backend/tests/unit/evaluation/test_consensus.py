@@ -13,6 +13,7 @@ from app.evaluation.validation.consensus import ConsensusAlgorithm, batch_consen
 from app.evaluation.validation.models import Annotation, RelevanceScore
 
 
+@pytest.mark.unit
 class TestConsensusAlgorithm:
     """Tests for consensus decision-making algorithm."""
 

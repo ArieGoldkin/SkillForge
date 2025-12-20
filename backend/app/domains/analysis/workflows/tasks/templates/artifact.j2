@@ -1,0 +1,490 @@
+{# Issue #304: Triple-Purpose Artifact Template #}
+{# Serves: AI Coding Assistants, Tutor System, Human Readers #}
+
+# {{ analysis_metadata.title | default("Technical Analysis Artifact") }}
+
+**Source:** {{ analysis_metadata.url | default("N/A") }}
+**Generated:** {{ analysis_metadata.generated_date | default("N/A") }}
+**Analysis ID:** `{{ analysis_metadata.analysis_id | default("N/A") }}`
+
+---
+
+{# ================================================================ #}
+{# SECTION 1: TL;DR - Human scanning in 10-30 seconds              #}
+{# ================================================================ #}
+
+{% if aggregated_insights.tldr %}
+## TL;DR
+
+{% if aggregated_insights.tldr.summary %}
+{{ aggregated_insights.tldr.summary }}
+{% endif %}
+
+{% if aggregated_insights.tldr.key_takeaways %}
+**Key Takeaways:**
+{% for takeaway in aggregated_insights.tldr.key_takeaways | default([]) %}
+- {{ takeaway }}
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.tldr.time_to_implement %}
+**Time to Implement:** {{ aggregated_insights.tldr.time_to_implement }}
+{% endif %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 2: Quick Reference - Fast scanning for developers        #}
+{# ================================================================ #}
+
+{% if quick_reference %}
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| **Technology** | `{{ quick_reference.primary_technology | default("N/A") }}` |
+| **Complexity** | {{ quick_reference.complexity | default("N/A") }} |
+{% for prereq in quick_reference.prerequisites | default([]) %}
+| **Prerequisite** | {{ prereq }} |
+{% endfor %}
+
+{% if quick_reference.critical_commands %}
+### Critical Commands
+```bash
+{% for cmd in quick_reference.critical_commands | default([]) %}
+{{ cmd }}
+{% endfor %}
+```
+{% endif %}
+
+{% if quick_reference.files_to_modify %}
+### 📁 Suggested File Structure
+<sub>{{ quick_reference.files_disclaimer }}</sub>
+
+{% for file in quick_reference.files_to_modify | default([]) %}
+- `{{ file }}`
+{% endfor %}
+{% endif %}
+
+{% if quick_reference.gotchas %}
+### Gotchas & Quick Fixes
+| Issue | Symptom | Quick Fix |
+|-------|---------|-----------|
+{% for gotcha in quick_reference.gotchas | default([]) %}
+| {{ gotcha.issue | default("N/A") }} | {{ gotcha.symptom | default("N/A") }} | {{ gotcha.quick_fix | default("N/A") }} |
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 3: Executive Summary & Key Findings                      #}
+{# ================================================================ #}
+
+## Executive Summary
+
+{{ aggregated_insights.executive_summary | default("Analysis summary not available.") }}
+
+### Key Findings
+
+{% if aggregated_insights.key_findings %}
+{% for finding in aggregated_insights.key_findings | default([]) %}
+- {{ finding }}
+{% endfor %}
+{% else %}
+- No key findings available.
+{% endif %}
+
+---
+
+{# ================================================================ #}
+{# SECTION 4: AI ASSISTANT PROMPT - For Claude Code, Cursor, etc.  #}
+{# ================================================================ #}
+
+{% if aggregated_insights.ai_assistant_prompt %}
+## AI Assistant Implementation Guide
+
+> **Copy this section** to use with Claude Code, Cursor, Copilot, or Windsurf for accurate code generation.
+
+{% if aggregated_insights.ai_assistant_prompt.context %}
+### Context
+
+{{ aggregated_insights.ai_assistant_prompt.context }}
+{% endif %}
+
+{% if aggregated_insights.ai_assistant_prompt.implementation_steps %}
+### Implementation Steps
+
+{% for step in aggregated_insights.ai_assistant_prompt.implementation_steps | default([]) %}
+{{ loop.index }}. {{ step }}
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.ai_assistant_prompt.code_snippets %}
+### Code Snippets
+
+{% for name, code in (aggregated_insights.ai_assistant_prompt.code_snippets | default({})).items() %}
+#### {{ name | replace('_', ' ') | title }}
+
+```python
+{{ code }}
+```
+
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.ai_assistant_prompt.file_structure %}
+### Expected File Structure
+
+| File | Responsibility |
+|------|---------------|
+{% for path, purpose in (aggregated_insights.ai_assistant_prompt.file_structure | default({})).items() %}
+| `{{ path }}` | {{ purpose | default("N/A") }} |
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.ai_assistant_prompt.success_criteria %}
+### Success Criteria
+
+{% for criterion in aggregated_insights.ai_assistant_prompt.success_criteria | default([]) %}
+- [ ] {{ criterion }}
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 5: VISUAL DIAGRAMS - Mermaid for architecture/flow      #}
+{# ================================================================ #}
+
+{% if aggregated_insights.diagrams %}
+## Architecture & Flow Diagrams
+
+{% for diagram in aggregated_insights.diagrams | default([]) %}
+### {{ diagram.title | default("Diagram") }}
+
+{% if diagram.description %}
+{{ diagram.description }}
+{% endif %}
+
+{% if diagram.mermaid_code %}
+```mermaid
+{{ diagram.mermaid_code }}
+```
+{% endif %}
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 6: TECHNICAL ANALYSIS - Deep dive content               #}
+{# ================================================================ #}
+
+## Technical Analysis
+
+{% if aggregated_insights.synthesis and aggregated_insights.synthesis.technical_analysis %}
+{{ aggregated_insights.synthesis.technical_analysis | normalize_paragraphs }}
+{% else %}
+Technical analysis not available.
+{% endif %}
+
+---
+
+## Implementation Plan
+
+{% if aggregated_insights.synthesis and aggregated_insights.synthesis.implementation_guidance %}
+{{ aggregated_insights.synthesis.implementation_guidance }}
+{% else %}
+Implementation guidance not available.
+{% endif %}
+
+---
+
+## Risk Assessment
+
+{% if aggregated_insights.synthesis and aggregated_insights.synthesis.risk_assessment %}
+{{ aggregated_insights.synthesis.risk_assessment }}
+{% else %}
+Risk assessment not available.
+{% endif %}
+
+---
+
+## Recommendations
+
+{% if aggregated_insights.synthesis and aggregated_insights.synthesis.recommendations %}
+{{ aggregated_insights.synthesis.recommendations | fix_bullets | normalize_paragraphs }}
+{% else %}
+Recommendations not available.
+{% endif %}
+
+---
+
+{# ================================================================ #}
+{# SECTION 7: CORE CONCEPTS - For Tutor System curriculum          #}
+{# ================================================================ #}
+
+{% if aggregated_insights.core_concepts %}
+## Core Concepts
+
+{% for concept in aggregated_insights.core_concepts | default([]) %}
+### {{ concept.name | default("Concept") }}
+
+{% if concept.complexity_level %}
+**Complexity:** {{ concept.complexity_level }}
+{% endif %}
+
+{% if concept.definition %}
+{{ concept.definition }}
+{% endif %}
+
+{% if concept.why_it_matters %}
+**Why It Matters:** {{ concept.why_it_matters }}
+{% endif %}
+
+{% if concept.related_concepts %}
+**Related:** {% for related in concept.related_concepts | default([]) %}[`{{ related }}`](#{{ related | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 8: EXERCISES - Hands-on practice for learners           #}
+{# ================================================================ #}
+
+{% if aggregated_insights.exercises %}
+## Practice Exercises
+
+{% for exercise in aggregated_insights.exercises | default([]) %}
+### {{ exercise.title | default("Exercise") }}
+
+{% if exercise.difficulty %}
+**Difficulty:** {{ exercise.difficulty }}
+{% endif %}
+
+{% if exercise.description %}
+{{ exercise.description }}
+{% endif %}
+
+{% if exercise.hints %}
+<details>
+<summary>Hints (click to expand)</summary>
+
+{% for hint in exercise.hints | default([]) %}
+{{ loop.index }}. {{ hint }}
+{% endfor %}
+
+</details>
+{% endif %}
+
+{% if exercise.solution %}
+<details>
+<summary>Solution (click to expand)</summary>
+
+```python
+{{ exercise.solution }}
+```
+
+</details>
+{% endif %}
+
+{% if exercise.learning_objectives %}
+**Learning Objectives:** {% for obj in exercise.learning_objectives | default([]) %}`{{ obj }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+{% endfor %}
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 9: SELF-ASSESSMENT - Quiz for Tutor System              #}
+{# ================================================================ #}
+
+{% if aggregated_insights.self_assessment %}
+## Self-Assessment
+
+{% if aggregated_insights.self_assessment.quiz_questions %}
+### Knowledge Check
+
+{% for q in aggregated_insights.self_assessment.quiz_questions | default([]) %}
+**Q{{ loop.index }}:** {{ q.question | default("Question") }}
+
+{% for option in q.options | default([]) %}
+- [ ] {{ option }}
+{% endfor %}
+
+<details>
+<summary>Answer</summary>
+
+{% if q.correct_answer %}
+**{{ q.correct_answer }}**
+{% endif %}
+
+{% if q.explanation %}
+{{ q.explanation }}
+{% endif %}
+
+</details>
+
+{% endfor %}
+{% endif %}
+
+{% if aggregated_insights.self_assessment.mastery_checklist %}
+### Mastery Checklist
+
+After completing this content, you should be able to:
+
+{% for skill in aggregated_insights.self_assessment.mastery_checklist | default([]) %}
+- [ ] {{ skill }}
+{% endfor %}
+{% endif %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 10: GLOSSARY - Quick term definitions                   #}
+{# ================================================================ #}
+
+{% if aggregated_insights.glossary %}
+## Glossary
+
+| Term | Definition |
+|------|------------|
+{% for term in aggregated_insights.glossary | default([]) %}
+| <span id="{{ term.term | slugify }}">**{{ term.term | default("N/A") }}**</span> | {{ term.definition | default("N/A") }}{% if term.see_also %} _See also: {% for s in term.see_also | default([]) %}[{{ s }}](#{{ s | slugify }}){% if not loop.last %}, {% endif %}{% endfor %}_{% endif %} |
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 11: AGENT FINDINGS - Detailed per-agent analysis        #}
+{# ================================================================ #}
+
+## Detailed Agent Findings
+
+{% if agent_findings %}
+{% for finding in agent_findings | default([]) %}
+### {{ finding.agent_type | default("Unknown Agent") | replace('_', ' ') | title }}
+
+{% if finding.findings %}
+{% if finding.findings.recommendation %}
+**Recommendation:** {{ finding.findings.recommendation }}
+{% endif %}
+
+{% if finding.findings.primary_tech %}
+**Primary Technology:** `{{ finding.findings.primary_tech }}`
+{% endif %}
+
+{% if finding.findings.alternatives %}
+**Alternatives:** {% for alt in finding.findings.alternatives | default([]) %}`{{ alt }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+{% if finding.findings.security_risks %}
+#### Security Risks
+
+| Risk Type | Severity | Description | Mitigation |
+|-----------|----------|-------------|------------|
+{% for risk in finding.findings.security_risks | default([]) %}
+| {{ risk.risk_type | default("Unknown") }} | **{{ risk.severity | default("unknown") | upper }}** | {{ risk.description | default("N/A") }} | {{ risk.mitigation | default("N/A") }} |
+{% endfor %}
+{% endif %}
+
+{% if finding.findings.prerequisites %}
+**Prerequisites:** {% for prereq in finding.findings.prerequisites | default([]) %}`{{ prereq }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+{% if finding.findings.required_dependencies %}
+#### Required Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+{% for dep in finding.findings.required_dependencies | default([]) %}
+| `{{ dep.name | default("N/A") }}` | `{{ dep.version | default("N/A") }}` | {{ dep.purpose | default("N/A") }} |
+{% endfor %}
+{% endif %}
+
+**Confidence Score:** {{ "%.2f" | format(finding.confidence_score | default(0.0)) }}
+{% else %}
+No findings available for this agent.
+{% endif %}
+
+{% endfor %}
+{% else %}
+No agent findings available.
+{% endif %}
+
+---
+
+{# ================================================================ #}
+{# SECTION 11.5: AGENT EXECUTION STATUS                           #}
+{# ================================================================ #}
+
+{% if agent_statuses %}
+## Agent Execution Status
+
+| Agent | Status | Notes |
+|-------|--------|-------|
+{% for agent_type, status in agent_statuses.items() %}
+| {{ agent_type | replace('_', ' ') | title }} | {% if status == 'failed' %}❌ Failed{% elif status == 'success' %}✅ Success{% else %}⏭️ Skipped{% endif %} | {% if status == 'failed' %}Analysis failed for this agent{% elif status == 'skipped' %}Not selected by supervisor{% else %}Analysis completed successfully{% endif %} |
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 12: CONFLICTS & CROSS-DOMAIN CONNECTIONS                #}
+{# ================================================================ #}
+
+{% if aggregated_insights.conflicts_resolved %}
+## Conflicts Resolved
+
+{% for conflict in aggregated_insights.conflicts_resolved | default([]) %}
+- **{{ conflict.conflict | default("Conflict") }}**
+  - Resolution: {{ conflict.resolution | default("N/A") }}
+  - Priority Agent: {{ conflict.priority_agent | default("N/A") }}
+  - Reasoning: {{ conflict.reasoning | default("N/A") }}
+{% endfor %}
+
+---
+{% endif %}
+
+{% if aggregated_insights.cross_domain_connections %}
+## Cross-Domain Insights
+
+{% for connection in aggregated_insights.cross_domain_connections | default([]) %}
+- **{{ (connection.domains | default([])) | join(' + ') }}**: {{ connection.connection | default("N/A") }}
+  _(Agents: {% for agent in connection.agents_involved | default([]) %}{{ agent }}{% if not loop.last %}, {% endif %}{% endfor %})_
+{% endfor %}
+
+---
+{% endif %}
+
+{# ================================================================ #}
+{# SECTION 13: METADATA & REFERENCES                               #}
+{# ================================================================ #}
+
+## Analysis Metadata
+
+| Property | Value |
+|----------|-------|
+| **Source URL** | {{ analysis_metadata.url | default("N/A") }} |
+| **Analysis Date** | {{ analysis_metadata.generated_date | default("N/A") }} |
+| **Coverage Score** | {{ "%.0f" | format((aggregated_insights.coverage_score | default(0)) * 100) }}% |
+| **Total Agents** | {{ (aggregated_insights.metadata.total_agents if aggregated_insights.metadata else 0) | default(0) }} |
+| **Average Confidence** | {{ "%.2f" | format((aggregated_insights.metadata.confidence_avg if aggregated_insights.metadata else 0.0) | default(0.0)) }} |
+
+{% if aggregated_insights.metadata and aggregated_insights.metadata.agents_executed %}
+**Agents Involved:** {% for agent in aggregated_insights.metadata.agents_executed | default([]) %}`{{ agent }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{% endif %}
+
+---
+
+*This triple-purpose artifact was generated by SkillForge - serving AI assistants, tutoring systems, and human readers from a single source of truth.*

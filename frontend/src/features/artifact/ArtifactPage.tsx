@@ -4,9 +4,9 @@
  * Route: /artifact/:artifactId?analysisId=xxx
  */
 
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, useLocation } from '@tanstack/react-router'
 
-import { MarkdownPreview } from './components'
+import { FeedbackButtons, MarkdownPreview, TableOfContents } from './components'
 import {
   ArtifactEmptyState,
   ArtifactErrorState,
@@ -21,20 +21,46 @@ export default function ArtifactPage() {
 
   const { artifactId } = routeApi.useParams()
   const { analysisId } = routeApi.useSearch()
-  const { content, isLoading, error, download } = useArtifact(artifactId)
+  const location = useLocation()
+  const locationStateTraceId = (location.state as { traceId?: string } | undefined)?.traceId
+  const { content, traceId: apiTraceId, isLoading, error, download } = useArtifact(artifactId)
+
+  // Use API trace_id if available, fallback to location.state for SSE flows
+  const traceId = apiTraceId ?? locationStateTraceId ?? null
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <BackLink analysisId={analysisId} artifactId={artifactId} />
-        <ArtifactHeader showDownload={!!content} onDownload={download} analysisId={analysisId} />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto lg:max-w-none">
+          <BackLink analysisId={analysisId} artifactId={artifactId} />
+          <ArtifactHeader showDownload={!!content} onDownload={download} analysisId={analysisId} />
 
-        {isLoading && <ArtifactLoadingState />}
-        {error && !isLoading && (
-          <ArtifactErrorState message={error.message} analysisId={analysisId} />
-        )}
-        {!artifactId && !isLoading && !error && <ArtifactEmptyState analysisId={analysisId} />}
-        {content && <MarkdownPreview content={content} showMetadata={false} />}
+          {isLoading && <ArtifactLoadingState />}
+          {error && !isLoading && (
+            <ArtifactErrorState message={error.message} analysisId={analysisId} />
+          )}
+          {!artifactId && !isLoading && !error && <ArtifactEmptyState analysisId={analysisId} />}
+
+          {content && (
+            <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[280px_1fr] xl:gap-12">
+              {/* Sticky TOC Sidebar - Desktop only, mobile shows collapsible version at top */}
+              <aside className="lg:sticky lg:top-8 lg:self-start lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
+                <TableOfContents content={content} className="mb-6 lg:mb-0" />
+              </aside>
+
+              {/* Main Content */}
+              <main className="min-w-0">
+                <MarkdownPreview content={content} showMetadata={false} />
+                {/* Feedback section at the bottom of the artifact */}
+                {artifactId && (
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <FeedbackButtons artifactId={artifactId} traceId={traceId} />
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

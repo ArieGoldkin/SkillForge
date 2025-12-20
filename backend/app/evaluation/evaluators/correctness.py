@@ -5,7 +5,7 @@ This module provides task-specific evaluators that measure output accuracy:
 - Agent: analysis correctness (schema compliance + key field accuracy)
 - Synthesis: aggregation correctness (summary quality + cross-domain connections)
 
-All evaluators are compatible with LangSmith's evaluate() method using
+All evaluators are compatible with Langfuse's evaluate() method using
 the Run and Example signature.
 
 Supervisor Routing Metrics (v2.0):
@@ -17,12 +17,12 @@ Supervisor Routing Metrics (v2.0):
 
 from typing import Any
 
-from langsmith.schemas import Example, Run
 from pydantic import ValidationError
 
-from app.workflows.agents.schemas.security_auditor import SecurityAudit
-from app.workflows.agents.schemas.tech_comparator import TechComparison
-from app.workflows.tasks.schemas.aggregated_insights import AggregatedInsights
+from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit
+from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
+from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
+from app.evaluation.types import Example, Run
 
 
 def _calculate_supervisor_metrics(
@@ -89,7 +89,7 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
     while penalizing missing required agents or selecting irrelevant ones.
 
     Args:
-        run: LangSmith run with supervisor output
+        run: Langfuse run with supervisor output
         example: Golden example with expected agents
 
     Returns:
@@ -168,7 +168,7 @@ def supervisor_coverage_evaluator(run: Run, example: Example) -> dict[str, Any]:
     - 0.0: No required agents selected
 
     Args:
-        run: LangSmith run with supervisor output
+        run: Langfuse run with supervisor output
         example: Golden example with expected agents
 
     Returns:
@@ -215,7 +215,7 @@ def supervisor_precision_evaluator(run: Run, example: Example) -> dict[str, Any]
     - 0.0: No selected agents were relevant
 
     Args:
-        run: LangSmith run with supervisor output
+        run: Langfuse run with supervisor output
         example: Golden example with expected/optional agents
 
     Returns:
@@ -275,7 +275,7 @@ def agent_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
     - 0.0: Schema invalid or completely wrong
 
     Args:
-        run: LangSmith run with agent output
+        run: Langfuse run with agent output
         example: Golden example with expected output
 
     Returns:
@@ -397,7 +397,7 @@ def synthesis_correctness_evaluator(run: Run, example: Example) -> dict[str, Any
     - 0.0: Schema invalid
 
     Args:
-        run: LangSmith run with synthesis output
+        run: Langfuse run with synthesis output
         example: Golden example with expected output
 
     Returns:

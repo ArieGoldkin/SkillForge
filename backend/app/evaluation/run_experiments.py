@@ -28,7 +28,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY
@@ -37,31 +37,31 @@ from app.evaluation.datasets import list_datasets, load_dataset
 
 logger = get_logger(__name__)
 
-# Default models to test for each task (December 2025 - Latest Models)
-# Multi-provider support: supervisor_route now accepts model_id parameter
-# for runtime model switching across OpenAI, Anthropic, Google, and xAI
+# Default models to test for each task (December 2025 - Cost-Optimized)
 DEFAULT_MODELS = {
     "supervisor": [
-        "gpt-5-mini",  # OpenAI - Latest balanced model
-        "claude-haiku-3-5-20241022",  # Anthropic - Fast throughput
-        "gemini-2.5-flash",  # Google - Cost-effective, 1M context
-        "grok-3-mini",  # xAI - Affordable alternative
+        "gemini-2.5-flash-lite",  # Google - $0.10/$0.40, 1M ctx, BEST VALUE
+        "deepseek-v3",  # DeepSeek - $0.14/$0.28, cheapest quality
+        "gpt-4o-mini",  # OpenAI - $0.15/$0.60, reliable fallback
+        "claude-haiku-3-5-20241022",  # Anthropic - $0.80/$4.00, quality
     ],
     "agent": [
-        "gpt-5-mini",  # OpenAI - Latest
+        "gemini-2.5-flash",  # Google - $0.30/$2.50, 1M context
         "claude-sonnet-4-20250514",  # Anthropic - SWE-bench leader (72.5%)
-    ],  # Agent analysis still uses env var (TODO: add model_id support)
+        "gpt-5-mini",  # OpenAI - $0.25/$2.00, balanced
+    ],
     "synthesis": [
-        "gpt-5-mini",  # OpenAI - Latest
-        "claude-sonnet-4-20250514",  # Anthropic - Best synthesis
-    ],  # Synthesis still uses env var (TODO: add model_id support)
+        "grok-4.1-fast",  # xAI - $0.20/$0.50, 2M context!
+        "gemini-2.5-flash",  # Google - $0.30/$2.50, 1M context
+        "claude-sonnet-4-20250514",  # Anthropic - quality synthesis
+    ],
 }
 
-# Dataset mappings
+# Dataset mappings (use new folder structure)
 TASK_DATASETS = {
-    "supervisor": "supervisor_golden_v1",
-    "agent": "agent_analysis_golden_v1",
-    "synthesis": "synthesis_golden_v1",
+    "supervisor": "golden/supervisor",
+    "agent": "golden/agent_analysis",
+    "synthesis": "golden/synthesis",
 }
 
 
@@ -189,7 +189,7 @@ def run_preflight_checks(verbose: bool = True) -> tuple[bool, dict[str, Any]]:
 
 async def run_task_experiments(
     benchmark: LLMBenchmark,
-    task_type: str,
+    task_type: Literal["supervisor", "agent", "synthesis"],
     model_ids: list[str] | None = None,
     dry_run: bool = False,
     local_mode: bool = True,
@@ -287,7 +287,7 @@ async def run_all_experiments(
     Args:
         dry_run: If True, validate setup without making API calls
         output_path: Optional path to save results JSON
-        local_mode: If True, run locally without LangSmith dataset sync
+        local_mode: If True, run locally without Langfuse dataset sync
 
     Returns:
         Dictionary with all results and recommendations
@@ -295,7 +295,7 @@ async def run_all_experiments(
     """
     benchmark = LLMBenchmark(project_name="skillforge-eval", local_mode=local_mode)
 
-    results = {
+    results: dict[str, Any] = {
         "timestamp": datetime.now().isoformat(),
         "mode": "dry_run" if dry_run else "live",
         "tasks": {},
@@ -303,7 +303,12 @@ async def run_all_experiments(
     }
 
     # Run experiments for each task type
-    for task_type in ["supervisor", "agent", "synthesis"]:
+    task_types: list[Literal["supervisor", "agent", "synthesis"]] = [
+        "supervisor",
+        "agent",
+        "synthesis",
+    ]
+    for task_type in task_types:
         print(f"\n{'=' * 60}")
         print(f"Running experiments for: {task_type.upper()}")
         print("=" * 60)
@@ -325,9 +330,10 @@ async def run_all_experiments(
         print("EXPERIMENT SUMMARY")
         print("=" * 60)
 
-        for task_type, task_results in results["tasks"].items():
+        tasks_dict = results.get("tasks", {})
+        for task_name, task_results in tasks_dict.items() if isinstance(tasks_dict, dict) else []:
             if task_results.get("status") == "completed":
-                print(f"\n{task_type.upper()}:")
+                print(f"\n{task_name.upper()}:")
                 print(f"  Recommendation: {task_results.get('recommendation')}")
                 print("  Winners by metric:")
                 for metric, winner in task_results.get("winner_by_metric", {}).items():
@@ -418,12 +424,12 @@ Examples:
         "--local",
         action="store_true",
         default=True,
-        help="Run locally without LangSmith dataset sync (default: True)",
+        help="Run locally without Langfuse dataset sync (default: True)",
     )
     parser.add_argument(
-        "--langsmith",
+        "--langfuse",
         action="store_true",
-        help="Use LangSmith for dataset sync and evaluation (requires write permissions)",
+        help="Use Langfuse for dataset sync and evaluation (requires write permissions)",
     )
     parser.add_argument(
         "--output",
@@ -470,7 +476,7 @@ Examples:
         sys.exit(0 if passed else 1)
 
     # Determine local mode
-    local_mode = not args.langsmith
+    local_mode = not args.langfuse
 
     # Run experiments
     if args.all:

@@ -16,7 +16,7 @@ import { ModalContent } from './internal'
 import type { ArtifactPreviewModalProps } from './types'
 
 export function ArtifactPreviewModal(props: ArtifactPreviewModalProps) {
-  const { isOpen, onClose, content, isLoading, error, onDownload, sourceUrl } = props
+  const { isOpen, onClose, content, isLoading, error, onDownload, sourceUrl, artifactId } = props
 
   const handleDownload = () => {
     onDownload?.()
@@ -39,7 +39,12 @@ export function ArtifactPreviewModal(props: ArtifactPreviewModalProps) {
           )}
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <ModalContent content={content} isLoading={isLoading} error={error} />
+          <ModalContent
+            content={content}
+            isLoading={isLoading}
+            error={error}
+            artifactId={artifactId}
+          />
         </div>
         <DialogFooter className="shrink-0 border-t border-border bg-muted/50 px-6 py-4">
           <Button variant="outline" onClick={onClose}>

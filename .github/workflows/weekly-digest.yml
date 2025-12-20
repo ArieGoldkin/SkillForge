@@ -1,0 +1,100 @@
+name: Weekly Digest
+
+on:
+  schedule:
+    # Every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Weekly Digest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Calculate dates
+          WEEK_AGO=$(date -d '7 days ago' +%Y-%m-%d 2>/dev/null || date -v-7d +%Y-%m-%d)
+          TODAY=$(date +%Y-%m-%d)
+
+          # Create digest content
+          cat << EOF > digest.md
+          # 📊 Weekly Project Digest - $TODAY
+
+          ## 🎯 Milestone Progress
+
+          EOF
+
+          # Add milestone progress
+          gh api repos/${{ github.repository }}/milestones | jq -r '
+            .[] |
+            select(.state == "open") |
+            . + {completion: (if (.open_issues + .closed_issues) > 0 then (.closed_issues * 100 / (.open_issues + .closed_issues) | floor) else 0 end)} |
+            "- **\(.title)**: \(.completion)% complete (\(.closed_issues)/\(.open_issues + .closed_issues) issues)"
+          ' >> digest.md
+
+          echo "" >> digest.md
+          echo "## 📈 This Week's Activity" >> digest.md
+          echo "" >> digest.md
+
+          # Issues closed
+          CLOSED_COUNT=$(gh issue list --state closed --search "closed:>=$WEEK_AGO" --json number | jq 'length')
+          echo "- **Issues Closed**: $CLOSED_COUNT" >> digest.md
+
+          # PRs merged
+          MERGED_COUNT=$(gh pr list --state merged --search "merged:>=$WEEK_AGO" --json number | jq 'length')
+          echo "- **PRs Merged**: $MERGED_COUNT" >> digest.md
+
+          # New issues
+          NEW_COUNT=$(gh issue list --search "created:>=$WEEK_AGO" --json number | jq 'length')
+          echo "- **New Issues**: $NEW_COUNT" >> digest.md
+
+          echo "" >> digest.md
+          echo "## 👥 Top Contributors" >> digest.md
+          echo "" >> digest.md
+
+          # Top contributors
+          gh pr list --state merged --search "merged:>=$WEEK_AGO" --json author | \
+            jq -r '.[].author.login' | sort | uniq -c | sort -rn | head -5 | \
+            awk '{print "- @" $2 " (" $1 " PRs)"}' >> digest.md || echo "- No merged PRs this week" >> digest.md
+
+          echo "" >> digest.md
+          echo "## ✅ Completed Issues" >> digest.md
+          echo "" >> digest.md
+
+          # List completed issues
+          gh issue list --state closed --search "closed:>=$WEEK_AGO" --json number,title --limit 10 | \
+            jq -r '.[] | "- #\(.number): \(.title)"' >> digest.md || echo "- No issues completed this week" >> digest.md
+
+          echo "" >> digest.md
+          echo "## 🆕 New Issues" >> digest.md
+          echo "" >> digest.md
+
+          # List new issues
+          gh issue list --search "created:>=$WEEK_AGO" --json number,title,labels --limit 10 | \
+            jq -r '.[] | "- #\(.number): \(.title) [\(.labels | map(.name) | join(", "))]"' >> digest.md || echo "- No new issues this week" >> digest.md
+
+          echo "" >> digest.md
+          echo "---" >> digest.md
+          echo "" >> digest.md
+          echo "*Generated automatically by GitHub Actions*" >> digest.md
+
+      - name: Create Digest Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          gh issue create \
+            --title "📊 Weekly Digest - $TODAY" \
+            --label "digest" \
+            --label "type:docs" \
+            --body-file digest.md \
+            --repo ${{ github.repository }}

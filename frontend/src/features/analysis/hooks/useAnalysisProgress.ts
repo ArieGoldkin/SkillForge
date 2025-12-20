@@ -1,30 +1,37 @@
 /**
  * useAnalysisProgress - Transform SSE events into UI-friendly progress data
+ *
+ * This hook orchestrates 5 composable sub-hooks to transform raw SSE events
+ * into structured data for UI components.
+ *
+ * Architecture (Issue #391):
+ * 1. useStageStatusProcessing - Core event processing, builds stage status map
+ * 2. useAnalysisMetadata - Extracts metadata, skip reasons, success metrics
+ * 3. useProgressSteps - Builds UI-friendly step objects
+ * 4. useActivityFeed - Builds agent activity feed
+ * 5. useProgressCalculation - Calculates overall progress percentage
+ *
+ * @module hooks/useAnalysisProgress
  */
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
-import { isProgressEvent, isCompleteEvent, isErrorEvent } from '@app-types/sse'
-import type { SSEEvent, AgentStageName } from '@app-types/sse'
+import { isErrorEvent } from '@app-types/sse'
+import type { SSEEvent } from '@app-types/sse'
+import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
-import type { AgentActivity } from '../components/activity/AgentActivityFeed'
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'
 
-import {
-  STAGE_CONFIG,
-  TOTAL_STAGES,
-  estimateTimeRemaining,
-  normalizeStageNameFromBackend,
-  isAgentStage,
-  markSkippedAgents,
-  type StageStatusEntry,
-} from './stageConfig'
-import {
-  mapStageStatus,
-  getStageDescription,
-  getAgentName,
-  getActionDescription,
-} from './stageHelpers'
+import { useActivityFeed } from './useActivityFeed'
+import type { AgentActivity } from './useActivityFeed'
+import { useAnalysisMetadata } from './useAnalysisMetadata'
+import { useProgressCalculation } from './useProgressCalculation'
+import { useProgressSteps } from './useProgressSteps'
+import { useStageStatusProcessing } from './useStageStatusProcessing'
+
+// ============================================================================
+// Exported Types
+// ============================================================================
 
 export type ProgressStep = AnalysisStep
 export type { AgentActivity }
@@ -46,139 +53,192 @@ export interface AnalysisProgressData {
   hasError: boolean
   errorMessage?: string
   artifactId?: string
-}
-
-interface ProcessedEvents {
-  isComplete: boolean
-  hasError: boolean
-  errorMessage?: string
-  artifactId?: string
-  stageStatuses: Map<AgentStageName, StageStatusEntry>
-}
-
-function processEvent(
-  event: SSEEvent,
-  stageStatuses: Map<AgentStageName, StageStatusEntry>,
-  state: { isComplete: boolean; artifactId?: string }
-): void {
-  if (isProgressEvent(event) || isCompleteEvent(event)) {
-    const normalizedStage = normalizeStageNameFromBackend(event.stage)
-    if (normalizedStage && isAgentStage(normalizedStage)) {
-      stageStatuses.set(normalizedStage, {
-        status: event.status,
-        timestamp: event.timestamp,
-        details: event.details,
-      })
-    }
-    // Handle completion: workflow or artifact_generation complete marks analysis done
-    if (isCompleteEvent(event)) {
-      if (event.stage === 'workflow' || event.stage === 'artifact_generation') {
-        state.isComplete = true
-      }
-      // Capture artifact_id from either workflow or artifact_generation
-      if (event.artifact_id) {
-        state.artifactId = event.artifact_id
-      }
-    }
+  traceId?: string // Langfuse trace ID for feedback submission
+  hasFailedStages: boolean
+  failedStagesCount: number
+  analysisMetadata?: {
+    title?: string
+    contentType?: 'article' | 'video' | 'repo'
+    url?: string
+    wordCount?: number
   }
-}
-
-function processEvents(events: SSEEvent[]): ProcessedEvents {
-  const stageStatuses = new Map<AgentStageName, StageStatusEntry>()
-  const state = { isComplete: false, artifactId: undefined as string | undefined }
-  let hasError = false
-  let errorMessage: string | undefined
-
-  for (const event of events) {
-    processEvent(event, stageStatuses, state)
-    if (isErrorEvent(event)) {
-      hasError = true
-      errorMessage = event.error ?? event.details?.error
+  skipReasons?: Record<string, string>
+  stageSuccessMetrics?: Map<
+    string,
+    {
+      findingsQuality?: 'high' | 'medium' | 'low'
+      coverage?: 'comprehensive' | 'partial' | 'minimal'
+      keyInsights?: string[]
     }
-  }
-  markSkippedAgents(stageStatuses)
-  return { ...state, hasError, errorMessage, stageStatuses }
+  >
 }
 
-function buildSteps(stageStatuses: ProcessedEvents['stageStatuses']): ProgressStep[] {
-  return Object.entries(STAGE_CONFIG)
-    .sort(([, a], [, b]) => a.order - b.order)
-    .map(([stageName, config]) => {
-      const stageData = stageStatuses.get(stageName as AgentStageName)
-      return {
-        id: stageName,
-        title: config.title,
-        status: stageData ? mapStageStatus(stageData.status) : 'pending',
-        description: stageData
-          ? getStageDescription(stageName as AgentStageName, stageData.status, stageData.details)
-          : 'Waiting...',
-        timestamp: stageData ? new Date(stageData.timestamp) : undefined,
-      }
-    })
-}
+// ============================================================================
+// Main Hook - Orchestrator
+// ============================================================================
 
-function buildActivities(events: SSEEvent[]): AgentActivity[] {
-  return events
-    .filter((e) => isProgressEvent(e) || isCompleteEvent(e))
-    .map((event, index) => {
-      const stage = normalizeStageNameFromBackend(event.stage)
-      const isAgent = stage && isAgentStage(stage)
-      return {
-        id: `${event.stage}-${index}`,
-        agentName: isAgent ? getAgentName(stage, event.details) : event.stage,
-        action: isAgent ? getActionDescription(stage, event.status, event.details) : event.status,
-        timestamp: new Date(event.timestamp),
-      }
-    })
-    .reverse()
-}
-
-function calculateOverallProgress(
-  stageStatuses: ProcessedEvents['stageStatuses'],
-  steps: ProgressStep[],
-  isComplete: boolean
-): OverallProgress {
-  const completedStages = Array.from(stageStatuses.values()).filter(
-    (s) => s.status === 'complete' || s.status === 'skipped'
-  ).length
-  const runningStage = Array.from(stageStatuses.entries()).find(([, s]) => s.status === 'running')
-  const progress = Math.round((completedStages / TOTAL_STAGES) * 100)
-
-  let currentUIStage: AnalysisStage = 'extracting'
-  if (isComplete) {
-    currentUIStage = 'complete'
-  } else if (runningStage) {
-    currentUIStage = STAGE_CONFIG[runningStage[0]]?.uiStage || 'analyzing'
-  } else if (completedStages > 0) {
-    const lastCompleted = steps.filter((s) => s.status === 'completed').pop()
-    if (lastCompleted) {
-      currentUIStage = STAGE_CONFIG[lastCompleted.id as AgentStageName]?.uiStage || 'analyzing'
-    }
-  }
-
-  const currentStepName = runningStage
-    ? STAGE_CONFIG[runningStage[0]]?.title
-    : isComplete
-      ? 'Analysis Complete'
-      : 'Waiting to start...'
-
-  return {
-    stage: currentUIStage,
-    progress: isComplete ? 100 : progress,
-    currentStep: currentStepName,
-    totalSteps: TOTAL_STAGES,
-    completedSteps: completedStages,
-    estimatedTimeRemaining: isComplete ? undefined : estimateTimeRemaining(completedStages),
-  }
-}
-
-/** Transforms raw SSE events into structured data for UI components */
+/**
+ * Transforms raw SSE events into structured data for UI components
+ *
+ * This is the main orchestrator hook that composes 5 sub-hooks:
+ * - Stage status processing for core event handling
+ * - Metadata extraction for analysis info and skip reasons
+ * - Progress steps for step list display
+ * - Activity feed for real-time activity stream
+ * - Progress calculation for overall percentage
+ *
+ * @param events - Array of SSE events from the analysis workflow
+ * @returns Comprehensive analysis progress data for UI rendering
+ *
+ * @example
+ * ```tsx
+ * const { overallProgress, steps, activities, isComplete, artifactId } =
+ *   useAnalysisProgress(events)
+ *
+ * return (
+ *   <>
+ *     <ProgressBar progress={overallProgress.progress} />
+ *     <StepList steps={steps} />
+ *     <ActivityFeed activities={activities} />
+ *     {isComplete && <CompletionCard artifactId={artifactId} />}
+ *   </>
+ * )
+ * ```
+ */
+// eslint-disable-next-line max-lines-per-function -- Orchestrator hook composing 5 sub-hooks + store sync
 export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
-  return useMemo(() => {
-    const { isComplete, hasError, errorMessage, artifactId, stageStatuses } = processEvents(events)
-    const steps = buildSteps(stageStatuses)
-    const activities = buildActivities(events)
-    const overallProgress = calculateOverallProgress(stageStatuses, steps, isComplete)
-    return { overallProgress, steps, activities, isComplete, hasError, errorMessage, artifactId }
+  // ========================================================================
+  // 1. Stage Status Processing - Core event processing
+  // ========================================================================
+  // Builds stage status map, detects completion, captures artifact/trace IDs
+  const { stageStatuses, isComplete, artifactId, traceId, expectedTotalStages } =
+    useStageStatusProcessing(events)
+
+  // ========================================================================
+  // 2. Metadata Extraction - Analysis metadata and skip info
+  // ========================================================================
+  // Extracts metadata from extraction stage, skip reasons from supervisor,
+  // success metrics from agent completions
+  const { analysisMetadata, skipReasons, skippedAgentsInfo, stageSuccessMetrics } =
+    useAnalysisMetadata(events)
+
+  // ========================================================================
+  // 3. Build Progress Steps - UI-friendly step objects
+  // ========================================================================
+  // Transforms stage statuses to ProgressStep objects with status mapping,
+  // skip reasons, success metrics, and error details
+  const steps = useProgressSteps(stageStatuses, skipReasons, stageSuccessMetrics)
+
+  // ========================================================================
+  // 4. Build Activity Feed - Agent activity stream
+  // ========================================================================
+  // Filters and transforms events into AgentActivity objects
+  const activities = useActivityFeed(events)
+
+  // ========================================================================
+  // 5. Calculate Overall Progress - Progress percentage and status
+  // ========================================================================
+  // Complex 8-phase calculation based on expected vs actual stages
+  const overallProgress = useProgressCalculation(
+    stageStatuses,
+    steps,
+    isComplete,
+    expectedTotalStages,
+    skippedAgentsInfo
+  )
+
+  // ========================================================================
+  // 6. Derive Error State - Extract error from error events
+  // ========================================================================
+  const errorInfo = useMemo(() => {
+    const errorEvent = events.find((e) => isErrorEvent(e))
+    if (!errorEvent || !isErrorEvent(errorEvent)) {
+      return { hasError: false, errorMessage: undefined }
+    }
+    return {
+      hasError: true,
+      errorMessage: errorEvent.error ?? errorEvent.details?.error,
+    }
   }, [events])
+
+  // ========================================================================
+  // 7. Calculate Failed Stages Count
+  // ========================================================================
+  const { hasFailedStages, failedStagesCount } = useMemo(() => {
+    const failedCount = Array.from(stageStatuses.values()).filter(
+      (s) => s.status === 'failed'
+    ).length
+    return { hasFailedStages: failedCount > 0, failedStagesCount: failedCount }
+  }, [stageStatuses])
+
+  // ========================================================================
+  // 8. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
+  // ========================================================================
+  // This enables leaf components (GuideButton, TeachMeButton, etc.) to access
+  // derived data directly via selectors instead of through prop chains
+  const setAnalysisMetadata = useSSEStore(selectSetAnalysisMetadata)
+
+  // Store previous values to prevent unnecessary store updates
+  const prevMetadataRef = useRef<{
+    artifactId: string | null
+    traceId: string | null
+    overallProgress: typeof overallProgress
+    hasFailedStages: boolean
+    failedStagesCount: number
+    analysisMetadata: typeof analysisMetadata
+  } | null>(null)
+
+  useEffect(() => {
+    const newMetadata = {
+      artifactId: artifactId ?? null,
+      traceId: traceId ?? null,
+      overallProgress,
+      hasFailedStages,
+      failedStagesCount,
+      analysisMetadata: analysisMetadata || undefined,
+    }
+
+    // Only update store if values actually changed to prevent infinite loops
+    const prevMetadata = prevMetadataRef.current
+    if (
+      !prevMetadata ||
+      prevMetadata.artifactId !== newMetadata.artifactId ||
+      prevMetadata.traceId !== newMetadata.traceId ||
+      prevMetadata.hasFailedStages !== newMetadata.hasFailedStages ||
+      prevMetadata.failedStagesCount !== newMetadata.failedStagesCount ||
+      prevMetadata.analysisMetadata !== newMetadata.analysisMetadata ||
+      // Deep comparison for overallProgress object
+      JSON.stringify(prevMetadata.overallProgress) !== JSON.stringify(newMetadata.overallProgress)
+    ) {
+      setAnalysisMetadata(newMetadata)
+      prevMetadataRef.current = newMetadata
+    }
+  }, [
+    artifactId,
+    traceId,
+    overallProgress,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+    setAnalysisMetadata,
+  ])
+
+  // ========================================================================
+  // Return Comprehensive Progress Data
+  // ========================================================================
+  return {
+    overallProgress,
+    steps,
+    activities,
+    isComplete,
+    hasError: errorInfo.hasError,
+    errorMessage: errorInfo.errorMessage,
+    artifactId,
+    traceId,
+    hasFailedStages,
+    failedStagesCount,
+    analysisMetadata,
+    skipReasons,
+    stageSuccessMetrics,
+  }
 }

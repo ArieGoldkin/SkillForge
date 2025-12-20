@@ -479,6 +479,157 @@ When starting a new project or feature:
 
 ---
 
-**Skill Version**: 1.0.0
-**Last Updated**: 2025-10-31
+## AI/LLM Testing Patterns (v1.1.0)
+
+Testing AI applications requires specialized approaches due to their probabilistic nature.
+
+### Async Timeout Testing
+
+```python
+import pytest
+import asyncio
+
+@pytest.mark.asyncio
+async def test_operation_respects_timeout():
+    """Test that async operations honor timeout limits."""
+    async def slow_operation():
+        await asyncio.sleep(10)  # Simulates slow LLM call
+        return "result"
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with asyncio.timeout(0.1):
+            await slow_operation()
+
+@pytest.mark.asyncio
+async def test_graceful_degradation_on_timeout():
+    """Test fail-open behavior when operation times out."""
+    result = await safe_operation_with_fallback(timeout=0.1)
+    assert result["status"] == "fallback"
+    assert result["error"] == "Operation timed out"
+```
+
+### LLM Mock Patterns
+
+```python
+from unittest.mock import AsyncMock, patch
+
+@pytest.fixture
+def mock_llm_response():
+    """Mock LLM to return predictable structured output."""
+    mock = AsyncMock()
+    mock.return_value = {
+        "content": "Mocked response",
+        "confidence": 0.85,
+        "tokens_used": 150
+    }
+    return mock
+
+@pytest.mark.asyncio
+async def test_synthesis_with_mocked_llm(mock_llm_response):
+    """Test synthesis logic without actual LLM calls."""
+    with patch("app.core.model_factory.get_model", return_value=mock_llm_response):
+        result = await synthesize_findings(sample_findings)
+
+    assert result["executive_summary"] is not None
+    assert mock_llm_response.call_count == 1
+```
+
+### Pydantic v2 Model Testing
+
+```python
+import pytest
+from pydantic import ValidationError
+
+def test_quiz_question_validates_correct_answer():
+    """Test that correct_answer must be in options."""
+    with pytest.raises(ValidationError) as exc_info:
+        QuizQuestion(
+            question="What is 2+2?",
+            options=["3", "4", "5"],
+            correct_answer="6",  # Not in options!
+            explanation="Basic arithmetic"
+        )
+
+    assert "correct_answer" in str(exc_info.value)
+    assert "must be one of" in str(exc_info.value)
+
+def test_quiz_question_accepts_valid_answer():
+    """Test that valid answers pass validation."""
+    q = QuizQuestion(
+        question="What is 2+2?",
+        options=["3", "4", "5"],
+        correct_answer="4",  # Valid!
+        explanation="Basic arithmetic"
+    )
+    assert q.correct_answer == "4"
+```
+
+### Template Rendering Tests
+
+```python
+from jinja2 import Environment, FileSystemLoader
+
+@pytest.fixture
+def jinja_env():
+    return Environment(loader=FileSystemLoader("templates/"))
+
+def test_template_handles_empty_tldr(jinja_env):
+    """Template renders without crashing when tldr is empty."""
+    template = jinja_env.get_template("artifact.j2")
+    result = template.render(aggregated_insights={"tldr": {}})
+    assert "TL;DR" not in result  # Section skipped gracefully
+
+def test_template_handles_missing_nested_field(jinja_env):
+    """Template handles None in nested objects."""
+    template = jinja_env.get_template("artifact.j2")
+    result = template.render(aggregated_insights={
+        "tldr": {"summary": None, "key_takeaways": []}
+    })
+    # Should not crash, should handle gracefully
+    assert isinstance(result, str)
+```
+
+### LLM-as-Judge Evaluator Testing
+
+```python
+@pytest.mark.asyncio
+async def test_quality_evaluator_returns_normalized_score():
+    """Quality scores should be normalized 0.0-1.0."""
+    evaluator = create_quality_evaluator("relevance")
+
+    # Mock the LLM to return a score
+    with patch_evaluator_llm(return_score=8):  # 8/10
+        result = await evaluator.aevaluate_strings(
+            input="Test input",
+            prediction="Test output"
+        )
+
+    assert 0.0 <= result["score"] <= 1.0
+    assert result["score"] == 0.8  # 8/10 normalized
+
+@pytest.mark.asyncio
+async def test_quality_gate_fails_below_threshold():
+    """Quality gate should fail when avg score < threshold."""
+    with patch_quality_scores({"relevance": 0.5, "depth": 0.4, "coherence": 0.5}):
+        result = await quality_gate_node(sample_state)
+
+    assert result["quality_gate_passed"] is False
+    assert result["quality_gate_avg_score"] < 0.7
+```
+
+### Edge Case Identification Strategy
+
+When testing LLM integrations, always test these edge cases:
+- **Empty inputs:** What happens with empty strings or None?
+- **Very long inputs:** Does truncation work correctly?
+- **Timeout scenarios:** Does fail-open work?
+- **Partial responses:** What if LLM returns 90% complete?
+- **Invalid structured output:** What if schema validation fails?
+- **Division by zero:** What if averaging over empty list?
+- **Nested null access:** What if parent object exists but child is None?
+
+---
+
+**Skill Version**: 1.1.0
+**Last Updated**: 2025-12-14
 **Maintained by**: AI Agent Hub Team

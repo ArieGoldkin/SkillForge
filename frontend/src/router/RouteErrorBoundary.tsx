@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
+import { logger } from '@/lib/logger'
+
 import { Button } from '@shared/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -23,7 +25,12 @@ export class RouteErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Route Error Boundary caught an error:', error, errorInfo)
+    logger.error('Route Error Boundary caught an error', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      errorInfo,
+      componentStack: errorInfo?.componentStack,
+    })
   }
 
   handleReload = () => {

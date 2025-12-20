@@ -6,8 +6,8 @@ for dynamic parallel execution based on supervisor decisions.
 
 import pytest
 
-from app.workflows.nodes.agent_router import route_to_agents
-from app.workflows.state import AnalysisState
+from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
+from app.domains.analysis.workflows.state import AnalysisState
 
 
 @pytest.fixture

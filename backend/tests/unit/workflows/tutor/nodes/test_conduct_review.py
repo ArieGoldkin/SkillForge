@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.workflows.tutor.state import TutorState
+from app.domains.tutor.workflows.state import TutorState
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ async def test_conduct_review_creates_quiz(sample_tutor_state_for_review):
     """Test that conduct_review creates a section quiz."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from app.workflows.tutor.nodes.conduct_review import conduct_review
+    from app.domains.tutor.workflows.nodes.conduct_review import conduct_review
 
     mock_response = MagicMock()
     mock_response.content = "Quiz: 1. What is Concept 1? 2. Explain Concept 2..."
@@ -52,10 +52,18 @@ async def test_conduct_review_creates_quiz(sample_tutor_state_for_review):
     mock_model.ainvoke = AsyncMock(return_value=mock_response)
 
     with (
-        patch("app.workflows.tutor.nodes.conduct_review.get_chat_model", return_value=mock_model),
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review.get_chat_model",
+            return_value=mock_model,
+        ),
         patch("app.db.session.get_session_factory") as mock_factory,
-        patch("app.workflows.tutor.nodes.conduct_review.TutorMessageRepository") as mock_repo_class,
-        patch("app.workflows.tutor.nodes.conduct_review._emit_tutor_event", new_callable=AsyncMock),
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review.TutorMessageRepository"
+        ) as mock_repo_class,
+        patch(
+            "app.domains.tutor.workflows.nodes.conduct_review._emit_tutor_event",
+            new_callable=AsyncMock,
+        ),
     ):
         mock_db_session = AsyncMock()
         mock_factory.return_value.__aenter__.return_value = mock_db_session

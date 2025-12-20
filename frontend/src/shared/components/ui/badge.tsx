@@ -30,12 +30,27 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * Badge Props with semantic role support
+ *
+ * WCAG 1.3.1 (Info and Relationships):
+ * - Default role="status" for status badges
+ * - Can be overridden when used decoratively
+ */
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  /**
+   * Semantic role for the badge
+   * - 'status': For status indicators (default)
+   * - 'note': For supplementary information
+   * - undefined: For decorative badges (no semantic meaning)
+   */
+  role?: 'status' | 'note' | undefined
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
+function Badge({ className, variant, role = 'status', ...props }: BadgeProps) {
+  return <div role={role} className={cn(badgeVariants({ variant }), className)} {...props} />
 }
 
 export { Badge, badgeVariants }

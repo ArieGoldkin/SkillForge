@@ -96,9 +96,9 @@ jobs:
         working-directory: ./backend
         run: poetry install --no-interaction --no-root
 
-      - name: Run mypy
+      - name: Run ty type check
         working-directory: ./backend
-        run: poetry run mypy app/ --ignore-missing-imports
+        run: poetry run ty check app/ --exclude "app/evaluation/*"
 
   # ============================================================================
   # Phase 2: UNIT TESTS (2-3 min) - Only run if lint/type pass
@@ -154,10 +154,11 @@ jobs:
         with:
           name: backend-test-reports
           path: backend/coverage.xml
+          compression-level: 9
+          retention-days: 7
           retention-days: 7
           compression-level: 9
           if-no-files-found: warn
-
   # ============================================================================
   # Phase 3: BUILD (3-4 min) - Only run if tests pass, cache for E2E reuse
   # ============================================================================

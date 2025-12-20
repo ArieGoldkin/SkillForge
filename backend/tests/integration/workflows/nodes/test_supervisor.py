@@ -8,7 +8,7 @@ import asyncio
 
 import pytest
 
-from app.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
 
 
 @pytest.fixture

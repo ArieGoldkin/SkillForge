@@ -93,7 +93,7 @@ This document defines the architecture for integrating Model Context Protocol (M
 
 **Context**: Need to integrate MCP tools with existing LangChain/LangGraph agents.
 
-**Decision**: Use official `langchain-mcp-adapters` library (v0.2.1+).
+**Decision**: Use `langchain-mcp-adapters` (current backend pins `^0.1.0` in `backend/pyproject.toml`).
 
 **Rationale**:
 - Official LangChain support (released March 2025)
@@ -760,7 +760,7 @@ def create_structured_agent(
 
     Note:
         ToolStrategy automatically validates output against response_schema.
-        Validation errors are automatically traced by LangSmith when they occur.
+        Validation errors are automatically traced by Langfuse when they occur.
     """
     model = get_chat_model()
     # Prevent multiple parallel tool calls; we expect exactly one structured response
@@ -1262,12 +1262,12 @@ MCP_METRICS = {
 }
 ```
 
-### LangSmith Integration
+### Langfuse Integration
 
-All MCP tool calls are automatically traced via LangChain's built-in LangSmith integration:
+All MCP tool calls are automatically traced via LangChain's built-in Langfuse integration:
 
 ```
-LangSmith Trace:
+Langfuse Trace:
 ├── security_auditor_node
 │   ├── create_tool_enabled_agent
 │   ├── agent.ainvoke

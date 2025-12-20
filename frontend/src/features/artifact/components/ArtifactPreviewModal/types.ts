@@ -17,4 +17,6 @@ export interface ArtifactPreviewModalProps {
   onDownload?: () => void
   /** Optional source URL to display in header */
   sourceUrl?: string
+  /** Artifact ID for feedback buttons */
+  artifactId?: string | null
 }

@@ -43,7 +43,7 @@ TASK_MODELS: dict[str, TaskModelConfig] = {
     # ✓ VALIDATED: Benchmark showed gemini-2.5-flash wins on correctness + cost
     "supervisor": TaskModelConfig(
         primary="gemini-2.5-flash",
-        fallback="gpt-4o-mini",  # Best latency alternative
+        fallback="gemini-2.0-flash",  # Best latency alternative (updated Dec 2025)
         status="validated",
         correctness=0.487,  # 48.7% Jaccard similarity
         cost_per_call=0.00011,  # $0.11 per 1000 calls
@@ -73,11 +73,6 @@ TASK_MODELS: dict[str, TaskModelConfig] = {
         fallback="gpt-5",
         status="hypothesis",
     ),
-}
-
-# Legacy dict format for backwards compatibility
-TASK_MODELS_LEGACY = {
-    task: (config.primary, config.fallback) for task, config in TASK_MODELS.items()
 }
 
 
@@ -163,12 +158,12 @@ SELECTION_RATIONALE = {
 # =============================================================================
 # Raw results from multi-provider supervisor benchmark
 # Run: 2025-12-09T19:21:19 to 2025-12-09T19:25:52
-# Dataset: supervisor_golden_v1 (20 examples)
+# Dataset: golden/supervisor (20 examples)
 # =============================================================================
 
 SUPERVISOR_BENCHMARK_RESULTS = {
     "timestamp": "2025-12-09T19:25:52",
-    "dataset": "supervisor_golden_v1",
+    "dataset": "golden/supervisor",
     "example_count": 20,
     "winner_by_metric": {
         "supervisor_correctness": "gemini-2.5-flash",

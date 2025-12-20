@@ -268,7 +268,7 @@
       "description": "Production features in LangGraph"
     },
     {
-      "id": "q-langsmith-offline",
+      "id": "q-langfuse-offline",
       "query": "golden dataset offline evaluation LLM",
       "modes": [
         "semantic",
@@ -277,14 +277,14 @@
       "category": "specific",
       "difficulty": "easy",
       "expected_chunks": [
-        "langsmith-evaluation/offline"
+        "langfuse-evaluation/offline"
       ],
       "min_score": 0.6,
       "max_score": null,
       "description": "Offline evaluation with datasets"
     },
     {
-      "id": "q-langsmith-monitoring",
+      "id": "q-langfuse-monitoring",
       "query": "production LLM monitoring and alerting",
       "modes": [
         "semantic",
@@ -293,14 +293,14 @@
       "category": "specific",
       "difficulty": "medium",
       "expected_chunks": [
-        "langsmith-evaluation/online"
+        "langfuse-evaluation/online"
       ],
       "min_score": 0.5,
       "max_score": null,
       "description": "Online monitoring in production"
     },
     {
-      "id": "q-langsmith-metrics",
+      "id": "q-langfuse-metrics",
       "query": "LangSmith custom evaluators metrics",
       "modes": [
         "semantic",
@@ -310,7 +310,7 @@
       "category": "specific",
       "difficulty": "easy",
       "expected_chunks": [
-        "langsmith-evaluation/metrics"
+        "langfuse-evaluation/metrics"
       ],
       "min_score": 0.6,
       "max_score": null,
@@ -2071,7 +2071,7 @@
       "description": "ML drift detection"
     },
     {
-      "id": "q-langsmith-tracing",
+      "id": "q-langfuse-tracing",
       "query": "LangSmith distributed tracing LLM chains debugging",
       "modes": [
         "semantic",
@@ -2080,7 +2080,7 @@
       "category": "specific",
       "difficulty": "medium",
       "expected_chunks": [
-        "langsmith-observability-guide/debugging-llm-chains-with-traces"
+        "langfuse-observability-guide/debugging-llm-chains-with-traces"
       ],
       "min_score": 0.6,
       "max_score": null,
@@ -2299,7 +2299,7 @@
       "category": "specific",
       "difficulty": "easy",
       "expected_chunks": [
-        "terraform-infrastructure-as-code/terraform-workflow-and-state-management"
+        "terraform-infrastructure-as-code/terraform-core-concepts-and-workflow"
       ],
       "min_score": 0.6,
       "max_score": null,
@@ -2473,7 +2473,7 @@
       "category": "cross-document",
       "difficulty": "hard",
       "expected_chunks": [
-        "langsmith-observability-guide/production-monitoring-and-alerting",
+        "langfuse-observability-guide/production-monitoring-and-alerting",
         "prometheus-grafana-monitoring/prometheus-architecture-and-data-model",
         "llm-agents-guide/production"
       ],

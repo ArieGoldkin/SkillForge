@@ -1,0 +1,306 @@
+name: Langfuse Experiments
+
+# Issue #428 Phase 4.2: Automated Langfuse experiment execution
+# Runs quality experiments on golden dataset using ExperimentRunner
+
+on:
+  # Run on changes to backend code that affect model quality
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/domains/**/workflows/agents/**"
+      - "backend/app/domains/**/workflows/**"
+      - "backend/app/shared/services/**"
+      - "backend/app/evaluation/**"
+      - ".github/workflows/langfuse-experiments.yml"
+
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/app/domains/**/workflows/agents/**"
+      - "backend/app/domains/**/workflows/**"
+      - "backend/app/shared/services/**"
+      - "backend/app/evaluation/**"
+      - ".github/workflows/langfuse-experiments.yml"
+
+  # Manual trigger with configurable options
+  workflow_dispatch:
+    inputs:
+      dataset_name:
+        description: "Dataset name in Langfuse (default: golden-dataset)"
+        required: false
+        default: "golden-dataset"
+        type: string
+      experiment_name:
+        description: "Experiment name (default: auto-generated from commit)"
+        required: false
+        type: string
+      max_parallel:
+        description: "Max parallel evaluations (default: 10)"
+        required: false
+        default: "10"
+        type: string
+      fail_on_threshold:
+        description: "Fail if success rate < threshold (e.g., 0.8)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: langfuse-experiments-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-experiments:
+    name: Run Langfuse Experiments
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/.venv
+            ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-py3.13-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: poetry install --no-interaction --no-root
+
+      - name: Generate experiment name
+        id: experiment-name
+        run: |
+          # Use input if provided, otherwise generate from Git metadata
+          if [ -n "${{ inputs.experiment_name }}" ]; then
+            NAME="${{ inputs.experiment_name }}"
+          else
+            # Format: ci-{short-sha}-{branch}
+            BRANCH="${{ github.head_ref || github.ref_name }}"
+            BRANCH_CLEAN=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g')
+            SHA_SHORT="${{ github.sha }}"
+            SHA_SHORT="${SHA_SHORT:0:7}"
+            NAME="ci-${SHA_SHORT}-${BRANCH_CLEAN}"
+          fi
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "Generated experiment name: $NAME"
+
+      - name: Run quality experiments
+        id: run-experiments
+        continue-on-error: true
+        working-directory: backend
+        env:
+          # Langfuse configuration
+          # Required secrets: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST
+          LANGFUSE_ENABLED: "true"
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+          LANGFUSE_ANNOTATION_QUEUE_ID: ${{ secrets.LANGFUSE_ANNOTATION_QUEUE_ID }}
+          # Experiment parameters
+          EXPERIMENT_DATASET: ${{ inputs.dataset_name || 'golden-dataset' }}
+          EXPERIMENT_NAME: ${{ steps.experiment-name.outputs.name }}
+          EXPERIMENT_MAX_PARALLEL: ${{ inputs.max_parallel || '10' }}
+          # Git metadata for experiment context
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          GIT_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          # Run experiments and capture output
+          poetry run python scripts/run_langfuse_experiments.py \
+            --dataset "$EXPERIMENT_DATASET" \
+            --experiment "$EXPERIMENT_NAME" \
+            --max-parallel "$EXPERIMENT_MAX_PARALLEL" \
+            --output-file experiment_results.json \
+            2>&1 | tee experiment_output.log
+
+      - name: Parse experiment results
+        id: parse-results
+        if: always()
+        working-directory: backend
+        run: |
+          # Extract key metrics from results JSON
+          if [ -f experiment_results.json ]; then
+            SUCCESS_RATE=$(jq -r '.success_rate // 0' experiment_results.json)
+            TOTAL_ITEMS=$(jq -r '.total_items // 0' experiment_results.json)
+            SUCCESSFUL_RUNS=$(jq -r '.successful_runs // 0' experiment_results.json)
+            FAILED_RUNS=$(jq -r '.failed_runs // 0' experiment_results.json)
+            DURATION_MS=$(jq -r '.total_duration_ms // 0' experiment_results.json)
+            ITEMS_PER_SEC=$(jq -r '.items_per_second // 0' experiment_results.json)
+
+            # Format for display
+            SUCCESS_PCT=$(echo "$SUCCESS_RATE * 100" | bc -l | xargs printf "%.1f")
+            DURATION_SEC=$(echo "$DURATION_MS / 1000" | bc -l | xargs printf "%.2f")
+
+            echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
+            echo "success_pct=$SUCCESS_PCT" >> $GITHUB_OUTPUT
+            echo "total_items=$TOTAL_ITEMS" >> $GITHUB_OUTPUT
+            echo "successful_runs=$SUCCESSFUL_RUNS" >> $GITHUB_OUTPUT
+            echo "failed_runs=$FAILED_RUNS" >> $GITHUB_OUTPUT
+            echo "duration_sec=$DURATION_SEC" >> $GITHUB_OUTPUT
+            echo "items_per_sec=$ITEMS_PER_SEC" >> $GITHUB_OUTPUT
+
+            # Extract average scores
+            SCORES=$(jq -r '.average_scores // {}' experiment_results.json)
+            echo "scores=$SCORES" >> $GITHUB_OUTPUT
+          else
+            echo "No results file found"
+            echo "success_rate=0" >> $GITHUB_OUTPUT
+            echo "success_pct=0.0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check quality threshold
+        if: always() && inputs.fail_on_threshold != ''
+        run: |
+          THRESHOLD="${{ inputs.fail_on_threshold }}"
+          SUCCESS_RATE="${{ steps.parse-results.outputs.success_rate }}"
+
+          echo "Success rate: $SUCCESS_RATE"
+          echo "Threshold: $THRESHOLD"
+
+          # Compare using bc for float comparison
+          if [ $(echo "$SUCCESS_RATE < $THRESHOLD" | bc -l) -eq 1 ]; then
+            echo "::error::Experiment success rate ($SUCCESS_RATE) below threshold ($THRESHOLD)"
+            exit 1
+          else
+            echo "::notice::Experiment success rate ($SUCCESS_RATE) meets threshold ($THRESHOLD)"
+          fi
+
+      - name: Generate experiment report
+        if: always()
+        working-directory: backend
+        run: |
+          # Create markdown report
+          cat > experiment_report.md <<'EOF'
+          # Langfuse Experiment Results
+
+          **Experiment**: `${{ steps.experiment-name.outputs.name }}`
+          **Dataset**: `${{ inputs.dataset_name || 'golden-dataset' }}`
+          **Commit**: `${{ github.sha }}`
+          **Branch**: `${{ github.head_ref || github.ref_name }}`
+
+          ## Summary
+
+          | Metric | Value |
+          |--------|-------|
+          | Total Items | ${{ steps.parse-results.outputs.total_items }} |
+          | Successful Runs | ${{ steps.parse-results.outputs.successful_runs }} |
+          | Failed Runs | ${{ steps.parse-results.outputs.failed_runs }} |
+          | Success Rate | ${{ steps.parse-results.outputs.success_pct }}% |
+          | Duration | ${{ steps.parse-results.outputs.duration_sec }}s |
+          | Throughput | ${{ steps.parse-results.outputs.items_per_sec }} items/sec |
+
+          ## Average Scores
+
+          ```json
+          ${{ steps.parse-results.outputs.scores }}
+          ```
+
+          ## View in Langfuse
+
+          Experiment ID: `${{ steps.parse-results.outputs.experiment_id }}`
+
+          [View Experiment Results →](${{ secrets.LANGFUSE_HOST }})
+
+          ---
+
+          <details>
+          <summary>Execution Log (last 50 lines)</summary>
+
+          ```
+          $(tail -50 experiment_output.log 2>/dev/null || echo "No log file available")
+          ```
+
+          </details>
+          EOF
+
+      - name: Add summary to GitHub Actions
+        if: always()
+        run: |
+          cat backend/experiment_report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with results
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('backend/experiment_report.md', 'utf8');
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('# Langfuse Experiment')
+            );
+
+            const commentBody = `${report}\n\n---\n*Automated from [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*`;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Upload experiment results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: langfuse-experiment-results-${{ github.run_number }}
+          path: |
+            backend/experiment_results.json
+            backend/experiment_report.md
+            backend/experiment_output.log
+          compression-level: 9
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Report final status
+        if: always()
+        run: |
+          if [ "${{ steps.run-experiments.outcome }}" = "success" ]; then
+            echo "::notice::Langfuse experiments completed successfully"
+            exit 0
+          else
+            echo "::error::Langfuse experiments failed or had errors"
+            exit 1
+          fi

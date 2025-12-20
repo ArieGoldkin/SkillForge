@@ -154,6 +154,462 @@ npx vite-bundle-visualizer # Vite
 
 > See `templates/performance-metrics.ts` for Prometheus metrics setup
 
+---
+
+## Database Query Optimization Deep Dive
+
+### N+1 Query Detection
+
+**Symptoms:**
+- One query to get parent records, then N queries for related data
+- Rapid sequential database calls in logs
+- Linear growth in query count with data size
+
+**Example Problem:**
+```python
+# ❌ BAD: N+1 query (1 + 8 queries)
+analyses = await session.execute(select(Analysis).limit(8)).scalars().all()
+for analysis in analyses:
+    # Each iteration hits DB again!
+    chunks = await session.execute(
+        select(Chunk).where(Chunk.analysis_id == analysis.id)
+    ).scalars().all()
+```
+
+**Solution:**
+```python
+# ✅ GOOD: Single query with JOIN (1 query)
+from sqlalchemy.orm import selectinload
+
+analyses = await session.execute(
+    select(Analysis)
+    .options(selectinload(Analysis.chunks))  # Eager load
+    .limit(8)
+).scalars().all()
+
+# Now analyses[0].chunks is already loaded (no extra query)
+```
+
+### Index Selection Strategies
+
+| Index Type | Use Case | Example |
+|------------|----------|---------|
+| **B-tree** | Equality, range queries | `WHERE created_at > '2025-01-01'` |
+| **GIN** | Full-text search, JSONB | `WHERE content_tsvector @@ to_tsquery('python')` |
+| **HNSW** | Vector similarity | `ORDER BY embedding <=> '[0.1, 0.2, ...]'` |
+| **Hash** | Exact equality only | `WHERE id = 'abc123'` (rare) |
+
+**Index Creation Examples:**
+```sql
+-- B-tree for timestamp range queries
+CREATE INDEX idx_analysis_created ON analyses(created_at DESC);
+
+-- GIN for full-text search (pre-computed tsvector)
+CREATE INDEX idx_chunk_tsvector ON chunks USING GIN(content_tsvector);
+
+-- HNSW for vector similarity (pgvector)
+CREATE INDEX idx_chunk_embedding ON chunks
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+
+**SkillForge Impact:**
+- HNSW vs IVFFlat: **17x faster queries** (5ms vs 85ms)
+- Pre-computed tsvector: **5-10x faster** than computing on query
+
+### EXPLAIN ANALYZE Deep Dive
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+SELECT c.* FROM chunks c
+JOIN analyses a ON c.analysis_id = a.id
+WHERE a.status = 'completed'
+ORDER BY c.created_at DESC
+LIMIT 10;
+```
+
+**Key Metrics to Watch:**
+- **Seq Scan** → Add index if cost is high
+- **Execution Time** → Total query duration
+- **Planning Time** → Time spent optimizing query
+- **Buffers (shared hit)** → Cache hit ratio (want high)
+
+**Example Output Analysis:**
+```
+Limit  (cost=0.42..1.89 rows=10) (actual time=0.032..0.156 rows=10)
+  Buffers: shared hit=24
+  ->  Nested Loop  (cost=0.42..61.23 rows=415)
+      ->  Index Scan using idx_analysis_status on analyses
+          Index Cond: (status = 'completed')
+          Buffers: shared hit=8
+      ->  Index Scan using idx_chunk_analysis on chunks
+          Index Cond: (analysis_id = a.id)
+          Buffers: shared hit=16
+```
+✅ **Good signs**: Index scans, low actual time, high buffer hits
+
+### pg_stat_statements Usage
+
+```sql
+-- Enable extension (once)
+CREATE EXTENSION pg_stat_statements;
+
+-- Find top 10 slowest queries
+SELECT
+    LEFT(query, 60) AS short_query,
+    calls,
+    ROUND(mean_exec_time::numeric, 2) AS avg_ms,
+    ROUND(total_exec_time::numeric, 2) AS total_ms
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 10;
+
+-- Find queries with low cache hit ratio
+SELECT
+    LEFT(query, 60),
+    shared_blks_hit,
+    shared_blks_read,
+    ROUND(100.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0), 2) AS cache_hit_ratio
+FROM pg_stat_statements
+WHERE shared_blks_read > 0
+ORDER BY cache_hit_ratio ASC
+LIMIT 10;
+```
+
+---
+
+## Advanced Caching Strategies
+
+### Multi-Level Cache Hierarchy
+
+**SkillForge Implementation:**
+```
+L1: Prompt Caching (Claude native) - 90% cost savings, 0ms latency
+L2: Redis Semantic Cache - 70-85% cost savings, 5-10ms latency
+L3: PostgreSQL Query Cache - materialized views, 50-200ms latency
+L4: CDN Edge Cache - static assets, <50ms global latency
+```
+
+### Redis Caching Patterns
+
+**1. Cache-Aside (Read-Through)**
+```python
+async def get_analysis(analysis_id: str) -> Analysis:
+    # 1. Try cache first
+    cached = await redis.get(f"analysis:{analysis_id}")
+    if cached:
+        return Analysis.parse_raw(cached)
+
+    # 2. Cache miss - fetch from DB
+    analysis = await db.get_analysis(analysis_id)
+
+    # 3. Store in cache (5 min TTL)
+    await redis.setex(
+        f"analysis:{analysis_id}",
+        300,  # 5 minutes
+        analysis.json()
+    )
+
+    return analysis
+```
+
+**2. Write-Through**
+```python
+async def update_analysis(analysis: Analysis):
+    # 1. Write to DB first
+    await db.update(analysis)
+
+    # 2. Update cache immediately
+    await redis.setex(
+        f"analysis:{analysis.id}",
+        300,
+        analysis.json()
+    )
+```
+
+**3. Semantic Cache (Vector Search)**
+```python
+async def get_llm_response(query: str) -> str:
+    # 1. Generate query embedding
+    query_embedding = await embed_text(query)
+
+    # 2. Search for similar cached queries (threshold: 0.92)
+    cached = await semantic_cache.search(query_embedding, threshold=0.92)
+    if cached:
+        return cached.content  # 95% cost savings!
+
+    # 3. Cache miss - call LLM
+    response = await llm.complete(query)
+
+    # 4. Store in semantic cache
+    await semantic_cache.store(query_embedding, response)
+
+    return response
+```
+
+### Cache Invalidation Strategies
+
+| Strategy | Use Case | Example |
+|----------|----------|---------|
+| **TTL** | Time-based expiry | News feed (5 min) |
+| **Write-through** | Immediate consistency | User profile updates |
+| **Event-driven** | Publish/subscribe | Invalidate on data change |
+| **Versioned keys** | Immutable data | `analysis:{id}:v2` |
+
+**SkillForge Cache Warming:**
+```python
+# Warm cache with golden dataset queries at startup
+GOLDEN_QUERIES = [
+    "How to implement RAG with LangChain?",
+    "LangGraph supervisor pattern example",
+    "pgvector HNSW vs IVFFlat performance"
+]
+
+async def warm_cache():
+    for query in GOLDEN_QUERIES:
+        # Pre-compute and cache embeddings + LLM responses
+        await get_llm_response(query)
+```
+
+### HTTP Caching Headers
+
+```python
+from fastapi import Response
+
+@app.get("/api/v1/analyses/{id}")
+async def get_analysis(id: str, response: Response):
+    analysis = await db.get_analysis(id)
+
+    # Enable browser caching (5 minutes)
+    response.headers["Cache-Control"] = "public, max-age=300"
+
+    # ETag for conditional requests
+    etag = hashlib.md5(analysis.json().encode()).hexdigest()
+    response.headers["ETag"] = f'"{etag}"'
+
+    return analysis
+```
+
+---
+
+## Profiling Tools & Techniques
+
+### Python Profiling (py-spy)
+
+```bash
+# Install py-spy
+pip install py-spy
+
+# Profile running FastAPI server (no code changes!)
+py-spy record --pid $(pgrep -f uvicorn) --output profile.svg
+
+# Top functions by time
+py-spy top --pid $(pgrep -f uvicorn)
+
+# Generate flame graph
+py-spy record --pid 12345 --format flamegraph --output flamegraph.svg
+```
+
+**Flame Graph Interpretation:**
+- **Width** = Time spent in function (wider = slower)
+- **Height** = Call stack depth
+- **Hot paths** = Look for wide bars at the top
+
+### Frontend Profiling (Chrome DevTools)
+
+**Performance Tab:**
+1. Open DevTools → Performance
+2. Click Record, interact with app, click Stop
+3. Analyze:
+   - **Main thread activity** (yellow = scripting, purple = rendering)
+   - **Long tasks** (red flag: >50ms blocks main thread)
+   - **Frame drops** (should be 60fps = 16.67ms/frame)
+
+**Memory Tab:**
+1. Take heap snapshot
+2. Interact with app
+3. Take another snapshot
+4. Compare to find leaks
+
+**Example - Finding Memory Leak:**
+```javascript
+// ❌ BAD: Event listener not cleaned up
+useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    // Missing cleanup!
+}, []);
+
+// ✅ GOOD: Cleanup prevents leak
+useEffect(() => {
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+}, []);
+```
+
+### React Profiler
+
+```javascript
+import { Profiler } from 'react';
+
+function onRenderCallback(
+    id,           // Component name
+    phase,        // "mount" or "update"
+    actualDuration, // Time spent rendering
+    baseDuration,   // Estimated time without memoization
+    startTime,
+    commitTime
+) {
+    if (actualDuration > 16) {  // > 16ms = dropped frame
+        console.warn(`Slow render: ${id} took ${actualDuration}ms`);
+    }
+}
+
+<Profiler id="AnalysisCard" onRender={onRenderCallback}>
+    <AnalysisCard analysis={data} />
+</Profiler>
+```
+
+### Bundle Analysis
+
+```bash
+# Vite bundle analyzer
+npm install --save-dev rollup-plugin-visualizer
+# Add to vite.config.ts:
+import { visualizer } from 'rollup-plugin-visualizer';
+plugins: [visualizer({ open: true })]
+
+# Next.js bundle analyzer
+npm install @next/bundle-analyzer
+ANALYZE=true npm run build
+```
+
+---
+
+## Real-World SkillForge Examples
+
+### Example 1: Hybrid Search Optimization
+
+**Problem:** Retrieval pass rate was 87.2%, needed >90%
+
+**Investigation:**
+```python
+# Original: 2x fetch multiplier
+HYBRID_FETCH_MULTIPLIER = 2  # Fetch 20 for top-10
+
+# Analysis showed insufficient coverage for RRF fusion
+# Testing: 2x → 87.2%, 2.5x → 89.7%, 3x → 91.6%
+```
+
+**Solution:**
+```python
+# Increase to 3x fetch multiplier
+HYBRID_FETCH_MULTIPLIER = 3  # Fetch 30 for top-10
+
+# Add metadata boosting
+SECTION_TITLE_BOOST_FACTOR = 1.5  # +7.4% MRR improvement
+DOCUMENT_PATH_BOOST_FACTOR = 1.15
+CODE_BLOCK_BOOST_FACTOR = 1.2
+```
+
+**Results:**
+- Pass rate: 87.2% → **91.6%** (+5.1%)
+- MRR: 0.723 → **0.777** (+7.4%)
+- Query time: 85ms → **5ms** (HNSW index)
+
+### Example 2: LLM Response Caching
+
+**Problem:** LLM costs projected at $35k/year
+
+**Solution:**
+```python
+# Multi-level cache hierarchy
+L1_PROMPT_CACHE_HIT_RATE = 0.90  # Claude native
+L2_SEMANTIC_CACHE_HIT_RATE = 0.75  # Redis vector search
+
+# Cost calculation
+baseline_cost = 35000  # $35k/year
+l1_savings = baseline_cost * 0.90 * 0.90  # $28,350 saved
+l2_savings = (baseline_cost - l1_savings) * 0.75 * 0.80  # $4,650 saved
+total_savings = l1_savings + l2_savings  # $33,000 saved (94%)
+
+final_cost = baseline_cost - total_savings  # $2,100/year
+```
+
+**Results:**
+- Baseline: **$35k/year** → With caching: **$2-5k/year**
+- Cost reduction: **85-95%**
+- Latency: 2000ms → 5-10ms (semantic cache hit)
+
+### Example 3: Vector Index Selection
+
+**Problem:** Vector searches taking 85ms, needed <10ms
+
+**Benchmark (415 chunks):**
+```sql
+-- IVFFlat (lists=10)
+EXPLAIN ANALYZE SELECT * FROM chunks
+ORDER BY embedding <=> '[0.1, 0.2, ...]' LIMIT 10;
+-- Planning: 2ms, Execution: 85ms
+
+-- HNSW (m=16, ef_construction=64)
+EXPLAIN ANALYZE SELECT * FROM chunks
+ORDER BY embedding <=> '[0.1, 0.2, ...]' LIMIT 10;
+-- Planning: 2ms, Execution: 5ms
+```
+
+**Decision Matrix:**
+| Index | Build Time | Query Time | Accuracy | Verdict |
+|-------|------------|------------|----------|---------|
+| IVFFlat | 2s | 85ms | 95% | ❌ Too slow |
+| HNSW | 8s | 5ms | 98% | ✅ **Chosen** |
+
+**Trade-off:** Slower indexing (8s vs 2s) for **17x faster queries**
+
+### Example 4: SSE Event Buffering
+
+**Problem:** Frontend showed 0% progress while backend ran
+
+**Root Cause:**
+```python
+# ❌ BAD: Events published before subscriber connects were lost
+class EventBroadcaster:
+    def publish(self, channel: str, event: dict):
+        self._subscribers[channel].send(event)  # Lost if no subscriber yet!
+```
+
+**Solution:**
+```python
+# ✅ GOOD: Buffer last 100 events per channel
+from collections import deque
+
+class EventBroadcaster:
+    def __init__(self):
+        self._buffers = {}  # channel → deque(maxlen=100)
+
+    def publish(self, channel: str, event: dict):
+        # Store in buffer
+        if channel not in self._buffers:
+            self._buffers[channel] = deque(maxlen=100)
+        self._buffers[channel].append(event)
+
+        # Send to active subscribers
+        for subscriber in self._subscribers.get(channel, []):
+            subscriber.send(event)
+
+    def subscribe(self, channel: str):
+        # Replay buffered events to new subscriber
+        for event in self._buffers.get(channel, []):
+            yield event
+        # Then continue with live events
+```
+
+**Results:**
+- Race condition eliminated
+- Buffered events: last 100 per channel
+- Memory overhead: ~10KB per active channel
+
+---
+
 ## Extended Thinking Triggers
 
 Use Opus 4.5 extended thinking for:

@@ -151,7 +151,7 @@
       "handoff_to": ["code-quality-reviewer", "backend-system-architect"],
       "mcp_tools": {
         "documentation": ["context7"],
-        "observability": ["skillforge-langsmith"],
+        "observability": ["skillforge-langfuse"],
         "discovery": ["mcp-find"]
       }
     },
@@ -816,6 +816,130 @@
         "overview": 400,
         "full": 1500
       }
+    },
+
+    "llm-caching-patterns": {
+      "display_name": "LLM Caching Patterns",
+      "path": ".claude/skills/llm-caching-patterns",
+      "provides": [
+        "semantic-cache",
+        "prompt-cache",
+        "cache-hierarchy",
+        "similarity-threshold",
+        "cache-warming",
+        "cost-optimization",
+        "cache-observability"
+      ],
+      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 800,
+        "full": 3000
+      }
+    },
+
+    "langfuse-observability": {
+      "display_name": "Langfuse Observability",
+      "path": ".claude/skills/langfuse-observability",
+      "provides": [
+        "llm-tracing",
+        "cost-tracking",
+        "prompt-management",
+        "quality-evaluation",
+        "session-tracking",
+        "langfuse-integration"
+      ],
+      "used_by_agents": ["ai-ml-engineer", "code-quality-reviewer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 700,
+        "full": 1500
+      }
+    },
+
+    "langgraph-workflows": {
+      "display_name": "LangGraph Workflows",
+      "path": ".claude/skills/langgraph-workflows",
+      "provides": [
+        "state-management",
+        "supervisor-worker-pattern",
+        "conditional-routing",
+        "checkpoints-persistence",
+        "multi-agent-coordination"
+      ],
+      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 600,
+        "full": 2500
+      }
+    },
+
+    "pgvector-search": {
+      "display_name": "PGVector Hybrid Search",
+      "path": ".claude/skills/pgvector-search",
+      "provides": [
+        "hybrid-search-rrf",
+        "pgvector-indexing",
+        "bm25-integration",
+        "metadata-filtering",
+        "score-boosting"
+      ],
+      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 500,
+        "full": 2000
+      }
+    },
+
+    "golden-dataset-management": {
+      "display_name": "Golden Dataset Management",
+      "path": ".claude/skills/golden-dataset-management",
+      "provides": [
+        "dataset-backup",
+        "dataset-restore",
+        "data-validation",
+        "url-contracts",
+        "embedding-regeneration"
+      ],
+      "used_by_agents": ["backend-system-architect"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1200
+      }
     }
   },
 
@@ -864,7 +988,7 @@
     "on_demand": {
       "testing": ["playwright"],
       "database": ["skillforge-postgres-dev"],
-      "observability": ["skillforge-langsmith"],
+      "observability": ["skillforge-langfuse"],
       "docker": ["MCP_DOCKER"]
     },
     "discovery_tool": "mcp__MCP_DOCKER__mcp-find",

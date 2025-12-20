@@ -1,6 +1,6 @@
 """Comprehensive unit tests for PII detection service.
 
-Tests the PIIDetector class from app.services.pii.detector, covering:
+Tests the PIIDetector class from app.shared.services.pii.detector, covering:
 - Pattern detection for all PII types (email, phone, SSN, credit cards, etc.)
 - Negative cases (clean text, code samples, false positives)
 - Configuration testing (sensitivity levels, enabled/disabled)
@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from app.services.pii.types import PIIResult, PIIType, SensitivityLevel
+from app.shared.services.pii.types import PIIResult, PIIType, SensitivityLevel
 
 if TYPE_CHECKING:
     pass
@@ -139,7 +139,7 @@ class PIIDetector:
                 matches_by_type={},
             )
 
-        from app.services.pii.types import PIIMatch
+        from app.shared.services.pii.types import PIIMatch
 
         matches_by_type: dict[PIIType, list[PIIMatch]] = {}
         types_found: set[PIIType] = set()

@@ -462,10 +462,10 @@ interface Artifact {
 **Endpoint:** `GET /api/v1/library`
 
 **Query Parameters:**
-- `search`: string (keyword search)
-- `content_type`: "all" | "article" | "video" | "repo"
-- `topics`: string[] (comma-separated)
-- `sort`: "recent" | "popular"
+- `query`: string (search query; omit for listing mode)
+- `search_mode`: "hybrid" | "fulltext" | "semantic"
+- `content_type`: string (filter, optional)
+- `status`: string (filter, optional)
 - `limit`: number (default: 20)
 - `offset`: number (default: 0)
 

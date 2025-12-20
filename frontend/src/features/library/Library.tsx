@@ -3,10 +3,13 @@ import { useCallback, useMemo, useState } from 'react'
 import type { AnalysisStatus, SearchMode } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
+import { COMPONENT_CONSTANTS } from '@/lib/constants'
+
 import { Tabs, TabsList, TabsTrigger } from '@shared/components/ui/tabs'
 
 import { ContentGrid } from './components/ContentGrid'
 import { FiltersSidebar } from './components/FiltersSidebar'
+import { LibraryErrorAlert } from './components/LibraryErrorAlert'
 import { LibraryHeader } from './components/LibraryHeader'
 import type { SkillStatus } from './components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from './components/SkillFilters'
@@ -25,7 +28,7 @@ export default function Library() {
     difficulty: [],
     tags: [],
     status: [],
-    durationRange: [0, 1000],
+    durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
   })
   const limit = 15
 
@@ -43,6 +46,9 @@ export default function Library() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    error: searchError,
+    isError,
+    refetch,
   } = useLibrarySearchInfinite({
     query: searchQuery || undefined,
     search_mode: searchMode,
@@ -154,6 +160,11 @@ export default function Library() {
           </span>
         )}
       </div>
+
+      {/* Error state */}
+      {isError && (
+        <LibraryErrorAlert error={searchError} onRetry={refetch} isRetrying={isFetching} />
+      )}
 
       {/* Main content grid with filters */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

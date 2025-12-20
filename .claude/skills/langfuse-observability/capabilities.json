@@ -1,0 +1,77 @@
+{
+  "$schema": "../../schemas/skill-capabilities.schema.json",
+  "name": "langfuse-observability",
+  "version": "1.0.0",
+  "description": "LLM observability with self-hosted Langfuse - tracing, evaluation, monitoring, prompt management, and cost tracking",
+
+  "capabilities": {
+    "tracing": {
+      "keywords": ["langfuse trace", "observe decorator", "distributed tracing", "llm tracing"],
+      "solves": [
+        "How do I trace LLM calls?",
+        "Set up Langfuse tracing",
+        "Debug slow LLM responses"
+      ],
+      "reference_file": "references/tracing-setup.md",
+      "token_cost": 200
+    },
+    "cost-tracking": {
+      "keywords": ["token usage", "llm cost", "cost monitoring", "usage tracking"],
+      "solves": [
+        "How do I track LLM costs?",
+        "Monitor token usage",
+        "Calculate per-user costs"
+      ],
+      "reference_file": "references/cost-tracking.md",
+      "token_cost": 150
+    },
+    "prompt-management": {
+      "keywords": ["prompt versioning", "prompt registry", "prompt deployment"],
+      "solves": [
+        "How do I version prompts?",
+        "Manage prompts in production",
+        "A/B test prompts"
+      ],
+      "reference_file": "references/prompt-management.md",
+      "token_cost": 180
+    },
+    "evaluation": {
+      "keywords": ["llm scores", "quality evaluation", "g-eval", "automated scoring"],
+      "solves": [
+        "How do I evaluate LLM quality?",
+        "Score LLM responses",
+        "Track quality metrics"
+      ],
+      "reference_file": "references/evaluation-scores.md",
+      "token_cost": 150
+    },
+    "session-tracking": {
+      "keywords": ["user sessions", "conversation tracking", "trace grouping"],
+      "solves": [
+        "How do I group related traces?",
+        "Track user sessions",
+        "Analyze conversation flows"
+      ],
+      "reference_file": "references/session-tracking.md",
+      "token_cost": 120
+    }
+  },
+
+  "triggers": {
+    "high_confidence": ["langfuse.*trace", "observe.*decorator", "llm.*cost.*track", "callback.*handler"],
+    "medium_confidence": ["llm.*monitor", "prompt.*version", "trace.*debug", "session.*track"]
+  },
+
+  "integrates_with": ["ai-native-development", "observability-monitoring"],
+
+  "progressive_loading": {
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 700, "sections": ["overview", "core-features", "skillforge-integration"] },
+    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "120-200 each" }
+  },
+
+  "mcp_tools": {
+    "observability": { "tool": "skillforge-langfuse", "use_when": "Querying traces, fetching prompts, analyzing costs" },
+    "documentation": { "tool": "context7", "library_ids": ["/langfuse/langfuse-python"] }
+  }
+}

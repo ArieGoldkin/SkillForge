@@ -1,13 +1,13 @@
 """LLM Benchmark Runner for SkillForge Evaluation Framework.
 
 This module provides tools for benchmarking different LLM models (GPT-4o-mini, Claude Sonnet 4,
-Gemini Flash, Grok-3-mini) across three task types:
+Gemini Flash, DeepSeek V3) across three task types:
 1. Supervisor routing - selecting which agents to run
 2. Agent analysis - generating structured analysis outputs
 3. Synthesis - aggregating multiple agent findings
 
-The benchmark uses LangSmith's evaluate() method to run experiments on golden datasets
-and compare model performance across accuracy, latency, and cost metrics.
+The benchmark uses Langfuse for observability and runs experiments on golden datasets
+to compare model performance across accuracy, latency, and cost metrics.
 
 Example:
     ```python
@@ -24,7 +24,7 @@ Example:
     results = await benchmark.run_experiment(
         task_type="supervisor",
         model_id="gemini-2.5-flash",
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
         evaluators=[
             supervisor_correctness_evaluator,
             latency_evaluator,
@@ -37,7 +37,7 @@ Example:
     comparison = await benchmark.compare_models(
         task_type="supervisor",
         model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-        dataset_name="supervisor_golden_v1",
+        dataset_name="golden/supervisor",
     )
     print(f"Winner by accuracy: {comparison.winner_by_metric['accuracy']}")
     ```
@@ -59,16 +59,16 @@ from datetime import datetime
 from typing import Any, Literal
 
 import tiktoken
-from langsmith import Client
 
 from app.core.config import settings
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
+from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
+from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 from app.evaluation.datasets import load_dataset
-from app.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
-from app.workflows.nodes.supervisor import supervisor_route
-from app.workflows.state import AnalysisState
-from app.workflows.tasks.aggregate_findings import aggregate_findings
 
 logger = get_logger(__name__)
 
@@ -171,7 +171,7 @@ class ExperimentResults:
     """Results from a single experiment run.
 
     Attributes:
-        experiment_id: LangSmith experiment ID
+        experiment_id: Langfuse experiment ID
         model_id: Model identifier used in experiment
         task_type: Type of task (supervisor, agent, synthesis)
         metrics: Dictionary of metric_name -> value (accuracy, latency_p50, cost_total, etc.)
@@ -220,13 +220,13 @@ class ComparisonResults:
 class LLMBenchmark:
     """Benchmark runner for comparing LLM models across tasks.
 
-    This class integrates with LangSmith to run evaluation experiments
+    This class integrates with Langfuse to run evaluation experiments
     on golden datasets and compare model performance.
 
     Attributes:
-        client: LangSmith client for running experiments
-        project_name: LangSmith project name for tracking experiments
-        local_mode: If True, run evaluations locally without LangSmith dataset sync
+        client: Langfuse client for running experiments
+        project_name: Langfuse project name for tracking experiments
+        local_mode: If True, run evaluations locally without Langfuse dataset sync
 
     """
 
@@ -234,20 +234,21 @@ class LLMBenchmark:
         """Initialize benchmark runner.
 
         Args:
-            project_name: LangSmith project name for experiment tracking
-            local_mode: If True, run evaluations locally without LangSmith dataset sync
+            project_name: Langfuse project name for experiment tracking
+            local_mode: If True, run evaluations locally without Langfuse dataset sync
 
         """
         self.local_mode = local_mode
         self.project_name = project_name
 
-        # Initialize LangSmith client with graceful fallback
+        # Initialize Langfuse SDK client via service with graceful fallback
         if not local_mode:
             try:
-                self.client = Client()
+                service = get_langfuse_service()
+                self.client = service.sdk_client if service else None
             except Exception as e:
                 logger.warning(
-                    "langsmith_client_init_failed",
+                    "langfuse_service_init_failed",
                     error=str(e),
                     message="Falling back to local mode",
                 )
@@ -403,7 +404,7 @@ class LLMBenchmark:
             results = await benchmark.run_experiment(
                 task_type="supervisor",
                 model_id="gemini-2.5-flash",
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
                 evaluators=[
                     supervisor_correctness_evaluator,
                     latency_evaluator,
@@ -446,7 +447,7 @@ class LLMBenchmark:
         start_time = time.time()
 
         if self.local_mode:
-            # Local mode: run evaluations without LangSmith dataset sync
+            # Local mode: run evaluations without Langfuse dataset sync
             metrics = await self._run_local_experiment(
                 target_fn=target_fn,
                 dataset=dataset,
@@ -456,9 +457,9 @@ class LLMBenchmark:
                 task_type=task_type,
             )
         else:
-            # LangSmith mode: sync dataset and run via evaluate()
+            # Langfuse mode: sync dataset and run via evaluate()
             try:
-                # Create dataset in LangSmith if it doesn't exist
+                # Create dataset in Langfuse if it doesn't exist
                 ls_dataset_name = f"{dataset_name}_{task_type}"
                 try:
                     ls_dataset = self.client.read_dataset(dataset_name=ls_dataset_name)
@@ -566,7 +567,7 @@ class LLMBenchmark:
             comparison = await benchmark.compare_models(
                 task_type="supervisor",
                 model_ids=["gemini-2.5-flash", "gpt-4o-mini", "claude-sonnet-4-20250514"],
-                dataset_name="supervisor_golden_v1",
+                dataset_name="golden/supervisor",
             )
             print(comparison.recommendation)
             ```
@@ -757,7 +758,7 @@ class LLMBenchmark:
                 "skill_level": "intermediate",
                 "raw_content": content,
                 "extraction_metadata": {},
-                "supervisor_decision": {"agents": [agent_type]},
+                "supervisor_decision": {"agents": [agent_type]},  # type: ignore[typeddict-unknown-key]
             }
 
             # Use thread-safe context variable instead of mutating global settings
@@ -881,7 +882,7 @@ class LLMBenchmark:
         return evaluators
 
     def _extract_metrics(self, experiment_results: Any) -> dict[str, float]:
-        """Extract metrics from LangSmith experiment results.
+        """Extract metrics from Langfuse experiment results.
 
         Args:
             experiment_results: Results object from client.evaluate()
@@ -892,8 +893,8 @@ class LLMBenchmark:
         """
         metrics: dict[str, float] = {}
 
-        # LangSmith returns aggregate statistics
-        # Extract key metrics (exact structure depends on LangSmith version)
+        # Langfuse returns aggregate statistics
+        # Extract key metrics (exact structure depends on Langfuse version)
         try:
             # Get aggregate scores if available
             if hasattr(experiment_results, "aggregate_scores"):
@@ -935,7 +936,7 @@ class LLMBenchmark:
         model_info: Any,
         task_type: str,
     ) -> dict[str, float]:
-        """Run experiment locally without LangSmith dataset sync.
+        """Run experiment locally without Langfuse dataset sync.
 
         This mode runs the target function on each example and collects
         metrics using simplified evaluators.
@@ -954,8 +955,8 @@ class LLMBenchmark:
         """
         from uuid import uuid4
 
-        from langsmith.schemas import Example as LSExample
-        from langsmith.schemas import Run as LSRun
+        from app.evaluation.types import Example as LSExample
+        from app.evaluation.types import Run as LSRun
 
         all_scores: dict[str, list[float]] = {}
         latencies: list[float] = []
@@ -1030,7 +1031,7 @@ class LLMBenchmark:
                     params = list(sig.parameters.keys())
 
                     if "run" in params and "example" in params:
-                        # LangSmith-style evaluator
+                        # Langfuse-style evaluator
                         result = evaluator(mock_run, mock_example)
                     elif len(params) >= 3:
                         # Simple (inputs, outputs, reference_outputs) style

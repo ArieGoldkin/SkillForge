@@ -16,7 +16,7 @@
 │   ═══════════════════════                                                   │
 │                                                                             │
 │   ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌──────────┐   │
-│   │  LangSmith    │  │   GitHub      │  │    arXiv      │  │ Synthetic│   │
+│   │  Langfuse    │  │   GitHub      │  │    arXiv      │  │ Synthetic│   │
 │   │  Traces       │  │   Issues      │  │   Papers      │  │ (Manual) │   │
 │   │  (CI ≥0.85)   │  │   (bugs/edge) │  │   (research)  │  │ (expert) │   │
 │   └───────┬───────┘  └───────┬───────┘  └───────┬───────┘  └─────┬────┘   │
@@ -79,7 +79,7 @@
 │   ═══════════════════                                                      │
 │                                                                             │
 │              ┌──────────────┐        ┌──────────────┐                      │
-│              │  LangSmith   │        │  CI/CD       │                      │
+│              │  Langfuse   │        │  CI/CD       │                      │
 │              │  Sync        │        │  Pipeline    │                      │
 │              └──────┬───────┘        └──────┬───────┘                      │
 │                     │                       │                              │
@@ -108,7 +108,7 @@ Stage 1: INGESTION               Stage 2: NORMALIZATION
 
 ┌────────────────┐                ┌──────────────────┐
 │  Production    │                │                  │
-│  LangSmith     │───────────────▶│   Normalizer     │
+│  Langfuse     │───────────────▶│   Normalizer     │
 │  Traces        │                │   (to v2.0)      │
 └────────────────┘                │                  │
                                   └────────┬─────────┘
@@ -148,7 +148,7 @@ Stage 3: VALIDATION              Stage 4: RELEASE
 │  2 of 3 approve  │                       ▼
 │  quality ≥ 0.7   │              ┌──────────────────┐
 └────────┬─────────┘              │  Upload to       │
-         │                        │  LangSmith       │
+         │                        │  Langfuse       │
     PASS │ FAIL                   └────────┬─────────┘
          │  │                              │
          ▼  ▼                              ▼
@@ -161,14 +161,14 @@ Stage 3: VALIDATION              Stage 4: RELEASE
 
 ---
 
-## Example Data Flow (LangSmith → Validated Dataset)
+## Example Data Flow (Langfuse → Validated Dataset)
 
 ```
    PRODUCTION TRACE                     EXTRACTED EXAMPLE
    ════════════════                     ═════════════════
 
 ┌──────────────────────┐            ┌──────────────────────┐
-│ LangSmith Trace      │            │ id: agent-ls-001     │
+│ Langfuse Trace      │            │ id: agent-ls-001     │
 │ ─────────────────    │            │                      │
 │ trace_id: abc123     │   Extract  │ inputs:              │
 │ confidence: 0.92     │   ───────▶ │   content: "..."     │
@@ -178,7 +178,7 @@ Stage 3: VALIDATION              Stage 4: RELEASE
 │ inputs: {...}        │            │   primary: {...}     │
 │ outputs: {...}       │            │                      │
 └──────────────────────┘            │ provenance:          │
-                                    │   source: langsmith  │
+                                    │   source: langfuse  │
                                     │   trace_id: abc123   │
                                     │                      │
                                     │ validation:          │
@@ -206,7 +206,7 @@ Quality Avg: 0.88                   │   quality_score: 0.88│
 Tag: eval-datasets-v2.1.0           └──────────────────────┘
 Changelog: "Added sec example"                 │
 Archive: Copy to archived/                     │
-Upload: Sync to LangSmith                      ▼
+Upload: Sync to Langfuse                      ▼
                                     ┌──────────────────────┐
                                     │ Ready for Evaluation │
                                     │ - A/B Testing        │
@@ -337,7 +337,7 @@ PENDING_REVIEW → NEEDS_UPDATE:  <2/3 approve
 PENDING_REVIEW → REJECTED:  Critical issues found
 NEEDS_UPDATE → DRAFT:  Author fixes issues
 REJECTED → ARCHIVE:  Permanently rejected
-VALIDATED → RELEASED:  Git tag + LangSmith sync
+VALIDATED → RELEASED:  Git tag + Langfuse sync
 RELEASED → ARCHIVE:  New version released
 ```
 
@@ -372,7 +372,7 @@ backend/app/evaluation/
 │   │       └── synthesis_aggregation_golden_v2.json   ← Validated
 │   │
 │   ├── drafts/                         # Work-in-progress datasets
-│   │   ├── draft_langsmith_20251210.json              ← Draft
+│   │   ├── draft_langfuse_20251210.json              ← Draft
 │   │   ├── draft_github_issues_security.json          ← Draft
 │   │   └── draft_arxiv_ml_security.json               ← Draft
 │   │
@@ -383,7 +383,7 @@ backend/app/evaluation/
 │
 ├── ingestion/                          # Data pipeline ingestion tools
 │   ├── __init__.py
-│   ├── langsmith_extractor.py         # Extract from LangSmith traces
+│   ├── langfuse_extractor.py         # Extract from Langfuse traces
 │   ├── github_importer.py             # Import from GitHub issues
 │   ├── arxiv_importer.py              # Import from arXiv papers
 │   ├── normalizer.py                  # Normalize to v2 schema
@@ -403,7 +403,7 @@ backend/app/evaluation/
 │
 ├── exporters/                          # Export to various formats
 │   ├── __init__.py
-│   ├── langsmith_uploader.py          # Upload to LangSmith
+│   ├── langfuse_uploader.py          # Upload to Langfuse
 │   └── pytest_adapter.py              # Pytest fixtures
 │
 ├── evaluators/                         # Evaluation functions (existing)
@@ -431,7 +431,7 @@ backend/app/evaluation/
      ════════════════              ═════════════════             ══════════
 
 ┌─────────────────┐              ┌─────────────────┐          ┌──────────┐
-│   LangSmith     │              │                 │          │  pytest  │
+│   Langfuse     │              │                 │          │  pytest  │
 │   Production    │─────────────▶│   Dataset v2.0  │─────────▶│  Tests   │
 │   Traces        │   Extract    │   Repository    │  Load    │          │
 └─────────────────┘              │                 │          └──────────┘
@@ -449,7 +449,7 @@ backend/app/evaluation/
 └─────────────────┘                      │                    └──────────┘
                                          │
                                          ▼                    ┌──────────┐
-                              ┌─────────────────┐            │ LangSmith│
+                              ┌─────────────────┐            │ Langfuse│
                               │   Git Version   │───────────▶│ Dataset  │
                               │   Control       │   Sync     │          │
                               │   (tags)        │            └──────────┘
@@ -479,7 +479,7 @@ backend/app/evaluation/
 │  │ Data Sources                                                    │    │
 │  ├─────────────────────────────────────────────────────────────────┤    │
 │  │ Synthetic (manual)         ✓                   ✓               │    │
-│  │ Production traces          ✗                   ✓ (LangSmith)   │    │
+│  │ Production traces          ✗                   ✓ (Langfuse)   │    │
 │  │ Bug reports                ✗                   ✓ (GitHub)      │    │
 │  │ Research papers            ✗                   ✓ (arXiv)       │    │
 │  │ Real user data             ✗                   ✓ (with consent)│    │
@@ -517,7 +517,7 @@ backend/app/evaluation/
 │  ├─────────────────────────────────────────────────────────────────┤    │
 │  │ CI/CD integration          ✗                   ✓ (GitHub Actions)│   │
 │  │ Regression testing         ✗                   ✓               │    │
-│  │ LangSmith sync             Manual              ✓ (automated)   │    │
+│  │ Langfuse sync             Manual              ✓ (automated)   │    │
 │  │ PR validation              ✗                   ✓               │    │
 │  └─────────────────────────────────────────────────────────────────┘    │
 │                                                                          │

@@ -1,0 +1,462 @@
+{
+    "version": "2.0.0",
+    "metadata": {
+        "dataset_name": "agent_analysis_golden_v2",
+        "task_type": "agent",
+        "agent_types": [
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "content_quality_analyst"
+        ],
+        "domains": ["rag", "agents", "prompt_engineering", "api_design", "testing"],
+        "created_at": "2025-12-15T10:59:14Z",
+        "updated_at": "2025-12-17T00:00:00Z",
+        "release_tag": "v2.0.0",
+        "description": "Golden dataset examples for agent analysis evaluation - generated from canonical backup",
+        "maintainers": ["system"]
+    },
+    "examples": [
+        {
+            "id": "rag-survey-001",
+            "inputs": {
+                "content": "RAG Survey - Naive, Advanced, and Modular Paradigms. Research paper covering retrieval-augmented generation architectures.",
+                "content_type": "article",
+                "agent_type": "tech_comparator",
+                "metadata": {
+                    "url": "https://arxiv.org/abs/2312.10997",
+                    "title": "RAG Survey - Naive, Advanced, and Modular Paradigms"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "tech_comparator",
+                    "key_findings": ["RAG architectures", "retrieval patterns", "modular design"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies RAG concepts and architectures"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "arxiv",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://arxiv.org/abs/2312.10997",
+                "arxiv_id": "2312.10997"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["rag", "research", "arxiv"]
+            }
+        },
+        {
+            "id": "agent-scaling-001",
+            "inputs": {
+                "content": "Towards a Science of Scaling Agent Systems. Research on scaling multi-agent architectures.",
+                "content_type": "article",
+                "agent_type": "implementation_planner",
+                "metadata": {
+                    "url": "https://arxiv.org/abs/2512.08296",
+                    "title": "Towards a Science of Scaling Agent Systems"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "implementation_planner",
+                    "key_findings": [
+                        "agent scaling",
+                        "multi-agent systems",
+                        "architecture patterns"
+                    ]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies scaling patterns and implementation strategies"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "arxiv",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://arxiv.org/abs/2512.08296",
+                "arxiv_id": "2512.08296"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "hard",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["agents", "scaling", "research", "arxiv"]
+            }
+        },
+        {
+            "id": "deepcode-001",
+            "inputs": {
+                "content": "DeepCode: Open Agentic Coding. Research on AI-powered code generation agents.",
+                "content_type": "article",
+                "agent_type": "implementation_planner",
+                "metadata": {
+                    "url": "https://arxiv.org/abs/2512.07921",
+                    "title": "DeepCode: Open Agentic Coding"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "implementation_planner",
+                    "key_findings": ["code generation", "agentic systems", "open source"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies code generation and agentic patterns"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "arxiv",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://arxiv.org/abs/2512.07921",
+                "arxiv_id": "2512.07921"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["code-generation", "agents", "research", "arxiv"]
+            }
+        },
+        {
+            "id": "chain-of-thought-001",
+            "inputs": {
+                "content": "Chain-of-Thought Prompting. Foundational research on prompting techniques for improved reasoning.",
+                "content_type": "article",
+                "agent_type": "content_quality_analyst",
+                "metadata": {
+                    "url": "https://arxiv.org/abs/2201.11903",
+                    "title": "Chain-of-Thought Prompting"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "content_quality_analyst",
+                    "key_findings": ["chain-of-thought", "prompting techniques", "reasoning"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies prompting techniques and reasoning patterns"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "arxiv",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://arxiv.org/abs/2201.11903",
+                "arxiv_id": "2201.11903"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "easy",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["prompting", "reasoning", "research", "arxiv"]
+            }
+        },
+        {
+            "id": "tree-of-thoughts-001",
+            "inputs": {
+                "content": "Tree-of-Thoughts Reasoning. Advanced reasoning technique building on chain-of-thought.",
+                "content_type": "article",
+                "agent_type": "content_quality_analyst",
+                "metadata": {
+                    "url": "https://arxiv.org/abs/2305.10601",
+                    "title": "Tree-of-Thoughts Reasoning"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "content_quality_analyst",
+                    "key_findings": ["tree-of-thoughts", "reasoning", "search strategies"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies tree-of-thoughts reasoning patterns"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "arxiv",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://arxiv.org/abs/2305.10601",
+                "arxiv_id": "2305.10601"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["prompting", "reasoning", "research", "arxiv"]
+            }
+        },
+        {
+            "id": "rag-triad-001",
+            "inputs": {
+                "content": "RAG Triad Metrics. Guide to evaluating retrieval-augmented generation systems using context relevance, groundedness, and answer relevance.",
+                "content_type": "article",
+                "agent_type": "content_quality_analyst",
+                "metadata": {
+                    "url": "https://deepeval.com/guides/guides-rag-triad",
+                    "title": "RAG Triad Metrics"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "content_quality_analyst",
+                    "key_findings": ["rag evaluation", "metrics", "quality assessment"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies RAG evaluation metrics"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "github",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://deepeval.com/guides/guides-rag-triad"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["rag", "evaluation", "metrics"]
+            }
+        },
+        {
+            "id": "langgraph-supervisor-001",
+            "inputs": {
+                "content": "LangGraph Multi-Agent Patterns. Tutorial on implementing supervisor patterns for coordinating multiple agents.",
+                "content_type": "tutorial",
+                "agent_type": "implementation_planner",
+                "metadata": {
+                    "url": "https://reference.langchain.com/python/langgraph/supervisor/",
+                    "title": "LangGraph Multi-Agent Patterns"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "implementation_planner",
+                    "key_findings": ["langgraph", "supervisor pattern", "multi-agent coordination"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies LangGraph patterns and implementation details"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "github",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://reference.langchain.com/python/langgraph/supervisor/"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["langgraph", "agents", "patterns", "tutorial"]
+            }
+        },
+        {
+            "id": "langfuse-eval-001",
+            "inputs": {
+                "content": "LangSmith Evaluation Framework. Tutorial on evaluating LLM applications using LangSmith's evaluation tools.",
+                "content_type": "tutorial",
+                "agent_type": "content_quality_analyst",
+                "metadata": {
+                    "url": "https://docs.langchain.com/langfuse/evaluation",
+                    "title": "LangSmith Evaluation Framework"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "content_quality_analyst",
+                    "key_findings": ["langfuse", "evaluation", "testing"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies LangSmith evaluation concepts"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "github",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://docs.langchain.com/langfuse/evaluation"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "medium",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["langfuse", "evaluation", "testing", "tutorial"]
+            }
+        },
+        {
+            "id": "grpc-intro-001",
+            "inputs": {
+                "content": "gRPC Introduction. Tutorial on gRPC protocol, protobuf, and building high-performance APIs.",
+                "content_type": "tutorial",
+                "agent_type": "tech_comparator",
+                "metadata": {
+                    "url": "https://grpc.io/docs/what-is-grpc/introduction/",
+                    "title": "gRPC Introduction"
+                }
+            },
+            "expected_outputs": {
+                "primary": {
+                    "agent_type": "tech_comparator",
+                    "key_findings": ["grpc", "protobuf", "api design"]
+                },
+                "acceptable_alternatives": [],
+                "forbidden_outputs": []
+            },
+            "evaluation_criteria": {
+                "scoring_rubric": {
+                    "correctness": {
+                        "weight": 0.5,
+                        "thresholds": {"perfect": 1.0, "acceptable": 0.7, "failing": 0.5},
+                        "description": "Correctly identifies gRPC concepts and API patterns"
+                    },
+                    "completeness": {
+                        "weight": 0.3,
+                        "required_fields": ["agent_type", "key_findings"]
+                    },
+                    "quality": {"weight": 0.2, "min_length": 50, "max_length": 5000}
+                },
+                "custom_evaluators": []
+            },
+            "provenance": {
+                "source": "github",
+                "created_at": "2025-12-15T10:59:14Z",
+                "created_by": "canonical_backup_generator",
+                "source_url": "https://grpc.io/docs/what-is-grpc/introduction/"
+            },
+            "validation": {"status": "draft", "validated_by": []},
+            "metadata": {
+                "difficulty": "easy",
+                "edge_case": false,
+                "adversarial": false,
+                "tags": ["grpc", "api", "tutorial"]
+            }
+        }
+    ]
+}

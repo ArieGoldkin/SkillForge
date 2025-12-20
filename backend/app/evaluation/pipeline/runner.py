@@ -41,8 +41,8 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.services.embeddings import EmbeddingService
-    from app.services.search.search_service import SearchService
+    from app.shared.services.embeddings.service import EmbeddingService
+    from app.shared.services.search.search_service import SearchService
 
 logger = get_logger(__name__)
 
@@ -234,7 +234,7 @@ class EvaluationRunner:
         self.embedding_service = embedding_service
 
         if search_service is None:
-            from app.services.search.search_service import SearchService
+            from app.shared.services.search.search_service import SearchService
 
             search_service = SearchService(
                 session=session,
@@ -346,10 +346,13 @@ class EvaluationRunner:
             min_score = query.get("min_score")
 
             try:
-                # Run retrieval
+                # Run retrieval with dynamic top_k
+                # Use at least 5, but increase if query expects more chunks
+                # This ensures we don't artificially cap recall for multi-target queries
+                dynamic_top_k = max(5, len(expected_chunks))
                 results = await self.search_service.search(
                     query=query_text,
-                    top_k=5,
+                    top_k=dynamic_top_k,
                     mode=SearchMode.HYBRID,
                 )
 

@@ -138,8 +138,8 @@ jobs:
           path: |
             backend/evaluation_results_real.json
             backend/embeddings_validation_report.md
-          retention-days: 90
           compression-level: 9
+          retention-days: 90
           if-no-files-found: warn
 
       - name: Check for regressions

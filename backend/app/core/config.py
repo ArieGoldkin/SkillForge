@@ -205,6 +205,16 @@ class Settings(BaseSettings):
             "from LLM_MODEL."
         ),
     )
+    LLM_FALLBACK_MODEL: str = Field(
+        default="gemini-2.5-flash",
+        description=(
+            "Fallback LLM model used when primary model fails or times out. "
+            "Should be a lighter/faster model for resilience. "
+            "Used with LangChain's with_fallbacks() pattern for graceful degradation. "
+            "Default: gemini-2.5-flash (fast, cheap, reliable). "
+            "Alternatives: gpt-4o-mini, claude-haiku-3-5-20241022."
+        ),
+    )
     OPENAI_API_KEY: str | None = Field(
         default=None,
         description="OpenAI API key (required when using OpenAI models).",
@@ -252,6 +262,17 @@ class Settings(BaseSettings):
             "Maximum number of retry attempts for LLM API calls. "
             "Uses LangChain's built-in retry mechanism via max_retries parameter. "
             "Defaults to 3. Set to 0 to disable retries."
+        ),
+    )
+
+    # Quality Evaluation Configuration
+    QUALITY_JUDGE_MODEL: str = Field(
+        default="gemini-3-flash-preview",
+        description=(
+            "LLM model for quality evaluation (LLM-as-judge). "
+            "Used by quality gate to score relevance, depth, coherence. "
+            "Defaults to gemini-3-flash-preview (released Dec 17, 2025 - $0.50/$3.00 per 1M tokens). "
+            "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
 
@@ -403,6 +424,114 @@ class Settings(BaseSettings):
         description="Batch size for cleanup operations",
     )
 
+    # Redis Configuration (LLM Caching & Chat History)
+    REDIS_URL: str = Field(
+        default="redis://localhost:6380",
+        description=(
+            "Redis connection URL. Used for semantic caching (LLM responses), "
+            "exact caching (supervisor routing), and chat history (tutor sessions)."
+        ),
+    )
+    REDIS_SEMANTIC_CACHE_TTL: int = Field(
+        default=86400,
+        description="TTL in seconds for semantic cache (24 hours default)",
+    )
+    REDIS_EXACT_CACHE_TTL: int = Field(
+        default=3600,
+        description="TTL in seconds for exact match cache (1 hour default)",
+    )
+    REDIS_CHAT_HISTORY_TTL: int = Field(
+        default=7200,
+        description="TTL in seconds for tutor chat history (2 hours default)",
+    )
+    REDIS_SIMILARITY_THRESHOLD: float = Field(
+        default=0.08,
+        description=(
+            "Distance threshold for semantic cache hits (lower = stricter). "
+            "0.08 means ~92% similarity required for cache hit."
+        ),
+    )
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for establishing Redis connection",
+    )
+    REDIS_SOCKET_TIMEOUT: int = Field(
+        default=5,
+        description="Timeout in seconds for Redis read/write operations",
+    )
+    REDIS_SOCKET_KEEPALIVE: bool = Field(
+        default=True,
+        description="Enable TCP keepalive for Redis connections",
+    )
+    REDIS_MAX_CONNECTIONS: int = Field(
+        default=20,
+        description="Maximum number of connections in the Redis pool",
+    )
+    REDIS_HEALTH_CHECK_INTERVAL: int = Field(
+        default=30,
+        description="Seconds between Redis connection health checks",
+    )
+
+    # Anthropic Prompt Caching Configuration
+    ANTHROPIC_PROMPT_CACHE_TTL: str = Field(
+        default="1h",
+        description="TTL for Anthropic prompt caching: '5m' (default) or '1h' (extended)",
+    )
+
+    # Langfuse Prompt Management Configuration (Issue #379, #418)
+    LANGFUSE_PROMPTS_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable Langfuse Prompt Management. When disabled, uses hardcoded prompts. "
+            "Note: All 8 agents now use PromptManager with automatic fallback to hardcoded "
+            "prompts if Langfuse is unavailable (Issue #418)."
+        ),
+    )
+    LANGFUSE_PROMPTS_L1_TTL: int = Field(
+        default=300,
+        description="L1 in-memory cache TTL in seconds (default: 5 minutes)",
+    )
+    LANGFUSE_PROMPTS_L2_TTL: int = Field(
+        default=900,
+        description="L2 Redis cache TTL in seconds (default: 15 minutes)",
+    )
+    LANGFUSE_PROMPTS_REDIS_ENABLED: bool = Field(
+        default=True,
+        description="Enable Redis L2 cache for prompts (shared across workers)",
+    )
+
+    # Langfuse Annotation Queue Configuration (Issue #382)
+    LANGFUSE_ANNOTATION_QUEUE_ID: str | None = Field(
+        default=None,
+        description=(
+            "Langfuse Annotation Queue ID for human review workflow. "
+            "When set, low-quality artifacts and negative feedback are added to "
+            "this queue for manual review. Get the ID from Langfuse UI Settings → "
+            "Annotation Queues or run: poetry run python scripts/setup_langfuse_annotation_queue.py"
+        ),
+    )
+
+    # Langfuse Observability Configuration (Issue #432)
+    LANGFUSE_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable Langfuse observability. When enabled, requires LANGFUSE_PUBLIC_KEY "
+            "and LANGFUSE_SECRET_KEY to be set."
+        ),
+    )
+    LANGFUSE_PUBLIC_KEY: str | None = Field(
+        default=None,
+        description="Langfuse public API key (required when LANGFUSE_ENABLED=true)",
+    )
+    LANGFUSE_SECRET_KEY: str | None = Field(
+        default=None,
+        description="Langfuse secret API key (required when LANGFUSE_ENABLED=true)",
+    )
+    LANGFUSE_HOST: str = Field(
+        default="http://localhost:3000",
+        description="Langfuse server URL",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
@@ -494,7 +623,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_llm_configuration(self) -> "Settings":
         """Ensure LLM provider/API key configuration is valid."""
-        # Skip validation in development/e2e if API key is not set (allows local dev without API keys)
+        # Skip validation in development/e2e if API key is not set
+        # (allows local dev without API keys)
         if self.is_development() or self.is_e2e():
             return self
 
@@ -506,6 +636,22 @@ class Settings(BaseSettings):
                 "Set it via environment variables or in the .env file."
             )
             raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_langfuse_configuration(self) -> "Settings":
+        """Validate Langfuse configuration consistency (Issue #432).
+
+        When LANGFUSE_ENABLED=true, both LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY
+        must be set. This prevents production systems from running without observability
+        when they expect it to be enabled.
+        """
+        if self.LANGFUSE_ENABLED and (not self.LANGFUSE_PUBLIC_KEY or not self.LANGFUSE_SECRET_KEY):
+            error_msg = (
+                "Langfuse is enabled but credentials are missing. "
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+            )
+            raise ValueError(error_msg)
         return self
 
     def is_development(self) -> bool:

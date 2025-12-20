@@ -8,11 +8,11 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
+from app.db.models.agent_finding import AgentFinding
+from app.db.models.analysis import Analysis
+from app.db.models.artifact import Artifact
+from app.db.models.progress import AnalysisProgress
 from app.main import app
-from app.models.agent_finding import AgentFinding
-from app.models.analysis import Analysis
-from app.models.artifact import Artifact
-from app.models.progress import AnalysisProgress
 
 
 @pytest.mark.asyncio

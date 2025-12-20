@@ -1,6 +1,9 @@
+/* eslint-disable max-lines -- Component includes rich expandable sections for success metrics, skip reasons, and error details which require additional lines */
 import * as React from 'react'
 
-import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Circle, Info, Loader2, XCircle } from 'lucide-react'
+
+import { BUSINESS_CONSTANTS, TIME_CONSTANTS, UI_CONSTANTS } from '@/lib/constants'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -21,6 +24,9 @@ export type AnalysisStepStatus = 'pending' | 'in-progress' | 'completed' | 'fail
  * @property status - Current status of the step
  * @property timestamp - Optional timestamp when step was updated
  * @property duration - Optional duration in milliseconds
+ * @property successMetrics - Optional success metrics for completed stages
+ * @property skipReason - Optional reason why stage was skipped
+ * @property errorDetails - Optional error details for failed stages
  */
 export interface AnalysisStep {
   id: string
@@ -29,6 +35,17 @@ export interface AnalysisStep {
   status: AnalysisStepStatus
   timestamp?: Date
   duration?: number
+  successMetrics?: {
+    findingsQuality?: 'high' | 'medium' | 'low'
+    coverage?: 'comprehensive' | 'partial' | 'minimal'
+    keyInsights?: string[]
+  }
+  skipReason?: string
+  errorDetails?: {
+    error: string
+    errorCode?: string
+    processingTime?: number
+  }
 }
 
 /**
@@ -46,12 +63,13 @@ const formatRelativeTime = (timestamp: Date): string => {
   const now = Date.now()
   const diff = now - timestamp.getTime()
 
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
+  const seconds = Math.floor(diff / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
+  const hours = Math.floor(minutes / TIME_CONSTANTS.MINUTES_PER_HOUR)
 
-  if (seconds < 60) return `${seconds} seconds ago`
-  if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds} seconds ago`
+  if (minutes < TIME_CONSTANTS.MINUTES_PER_HOUR)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
   return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
 }
 
@@ -59,11 +77,11 @@ const formatRelativeTime = (timestamp: Date): string => {
  * Format duration in milliseconds to human-readable string
  */
 const formatDuration = (ms: number): string => {
-  const seconds = Math.floor(ms / 1000)
-  const minutes = Math.floor(seconds / 60)
+  const seconds = Math.floor(ms / BUSINESS_CONSTANTS.MILLISECONDS_PER_SECOND)
+  const minutes = Math.floor(seconds / TIME_CONSTANTS.SECONDS_PER_MINUTE)
 
-  if (seconds < 60) return `${seconds}s`
-  return `${minutes}m ${seconds % 60}s`
+  if (seconds < TIME_CONSTANTS.SECONDS_PER_MINUTE) return `${seconds}s`
+  return `${minutes}m ${seconds % TIME_CONSTANTS.SECONDS_PER_MINUTE}s`
 }
 
 /**
@@ -74,11 +92,9 @@ const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
 
   switch (status) {
     case 'completed':
-      return <CheckCircle2 className={cn(iconClasses, 'text-[oklch(0.6959_0.1491_162.4796)]')} />
+      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} />
     case 'in-progress':
-      return (
-        <Loader2 className={cn(iconClasses, 'animate-spin text-[oklch(0.7686_0.1647_70.0804)]')} />
-      )
+      return <Loader2 className={cn(iconClasses, 'animate-spin text-status-warning')} />
     case 'failed':
       return <XCircle className={cn(iconClasses, 'text-destructive')} />
     case 'skipped':
@@ -111,7 +127,7 @@ const getStatusBadgeVariant = (
 /**
  * Individual step item component
  */
-/* eslint-disable max-lines-per-function -- StepItem requires complete timeline step layout (dot, connecting line, expandable content with button, timestamp/duration, description). Interactive expandable state and conditional rendering necessitate current structure. */
+/* eslint-disable max-lines-per-function, complexity -- StepItem requires complete timeline step layout (dot, connecting line, expandable content with button, timestamp/duration, description). Interactive expandable state and conditional rendering with success metrics, skip reasons, and error details necessitate current structure. */
 const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isLast }) => {
   const [isExpanded, setIsExpanded] = React.useState(false)
 
@@ -125,7 +141,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
         <div
           className={cn(
             'absolute left-[9px] top-6 bottom-0 w-0.5',
-            step.status === 'completed' ? 'bg-[oklch(0.6959_0.1491_162.4796)]/30' : 'bg-border'
+            step.status === 'completed' ? 'bg-status-success/30' : 'bg-border'
           )}
         />
       )}
@@ -142,7 +158,9 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
         >
-          <div className="flex items-start justify-between gap-2 mb-1">
+          <div
+            className={`${UI_CONSTANTS.FLEX_START} ${UI_CONSTANTS.FLEX_BETWEEN} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.MARGIN_BOTTOM_SM}`}
+          >
             <h4 className="font-medium text-sm">{step.title}</h4>
             <Badge variant={getStatusBadgeVariant(step.status)} className="text-xs">
               {step.status === 'in-progress' ? 'Running' : step.status}
@@ -150,7 +168,9 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
           </div>
 
           {/* Timestamp and duration */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div
+            className={`${UI_CONSTANTS.FLEX_ITEMS_CENTER} ${UI_CONSTANTS.FLEX_GAP_SM} ${UI_CONSTANTS.FONT_SIZE_XS} ${UI_CONSTANTS.TEXT_COLOR_MUTED}`}
+          >
             {step.timestamp && <span>{formatRelativeTime(step.timestamp)}</span>}
             {step.duration && step.status === 'completed' && (
               <>
@@ -159,12 +179,119 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
               </>
             )}
           </div>
+
+          {/* Error preview (collapsed) - Show brief error message */}
+          {step.status === 'failed' && step.errorDetails && !isExpanded && (
+            <div className="mt-1 text-xs text-destructive truncate">{step.errorDetails.error}</div>
+          )}
+
+          {/* Skip reason preview (collapsed) */}
+          {step.status === 'skipped' && step.skipReason && !isExpanded && (
+            <div className="mt-1 text-xs text-muted-foreground italic truncate">
+              {step.skipReason}
+            </div>
+          )}
         </button>
 
-        {/* Expandable description */}
+        {/* Expandable description with rich details */}
         {isExpanded && (
-          <div className="mt-2 text-sm text-muted-foreground animate-in slide-in-from-top-2 duration-200">
-            {step.description}
+          <div className="mt-2 space-y-3 text-sm animate-in slide-in-from-top-2 duration-200">
+            {/* Main description */}
+            <p className="text-muted-foreground">{step.description}</p>
+
+            {/* Success metrics for completed stages */}
+            {step.status === 'completed' && step.successMetrics && (
+              <div className="rounded-md bg-green-500/10 border border-green-500/20 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
+                  <span className="font-medium">Success Metrics</span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  {step.successMetrics.findingsQuality && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Quality:</span>
+                      <Badge
+                        variant={
+                          step.successMetrics.findingsQuality === 'high'
+                            ? 'success'
+                            : step.successMetrics.findingsQuality === 'medium'
+                              ? 'default'
+                              : 'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {step.successMetrics.findingsQuality}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.successMetrics.coverage && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Coverage:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {step.successMetrics.coverage}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.successMetrics.keyInsights &&
+                    step.successMetrics.keyInsights.length > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">Key Insights:</span>
+                        <ul className="mt-1 ml-4 list-disc space-y-0.5">
+                          {step.successMetrics.keyInsights.slice(0, 3).map((insight, idx) => (
+                            // eslint-disable-next-line react/no-array-index-key -- Limited to 3 items, stable order
+                            <li key={idx} className="text-muted-foreground">
+                              {insight}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* Skip reason for skipped stages */}
+            {step.status === 'skipped' && step.skipReason && (
+              <div className="rounded-md bg-muted border border-border p-3">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Info className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
+                  <span className="font-medium">Skip Reason</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{step.skipReason}</p>
+              </div>
+            )}
+
+            {/* Error details for failed stages */}
+            {step.status === 'failed' && step.errorDetails && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />
+                  <span className="font-medium">Error Details</span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Error:</span>
+                    <p className="mt-0.5 text-destructive break-words">{step.errorDetails.error}</p>
+                  </div>
+                  {step.errorDetails.errorCode && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Code:</span>
+                      <Badge variant="destructive" className="text-xs">
+                        {step.errorDetails.errorCode}
+                      </Badge>
+                    </div>
+                  )}
+                  {step.errorDetails.processingTime !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="text-muted-foreground">
+                        {formatDuration(step.errorDetails.processingTime)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -202,7 +329,6 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
  * />
  * ```
  */
-
 export const AnalysisStepList: React.FC<AnalysisStepListProps> = ({ steps, className }) => {
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>

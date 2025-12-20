@@ -257,6 +257,7 @@ service-account.json
 *_api_key.txt
 api_keys/
 secrets/
+.secrets/
 
 # SSL Certificates (if self-signed for dev)
 *.pem
@@ -307,9 +308,15 @@ artifact_*.md
 # Uploads (user-uploaded content)
 uploads/
 
-# Vector embeddings (can be large)
-embeddings/
-vectors/
+# Vector embeddings data (can be large)
+# Note: Use leading slash to only match at root level, not app/shared/services/embeddings/
+/embeddings/
+/vectors/
+# Also ignore embedding data files anywhere
+*.embedding
+*.embeddings
+embeddings.bin
+embeddings.pkl
 
 # ============================================================================
 # Build and Deployment
@@ -370,6 +377,8 @@ site/
 !.env.example
 !backend/.env.example
 !frontend/.env.example
+!.mcp.json.example
+!.mcp.env.example
 
 # Keep README files
 !README.md

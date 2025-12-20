@@ -1,16 +1,29 @@
-import type { SSEProgressEvent, SSECompleteEvent, SSEErrorEvent } from '@app-types/sse'
-import { useSSEStore } from '@stores/sseStore'
-import { render, screen, waitFor } from '@testing-library/react'
+import type { SSEProgressEvent, SSEErrorEvent } from '@app-types/sse'
+import { useSSEStore, useShouldShowProgress, useLoadingState } from '@stores/sseStore'
+import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProgressTracker, WORKING_STAGES } from '../'
 import { normalizeSSEEvent, getMappedStageName, getMappedStatus } from '../sseNormalizer'
 
+// Valid UUIDs for testing
+const TEST_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
+const TEST_ARTIFACT_ID = '987fcdeb-51a2-43d7-8f9e-123456789abc'
+
+// Mock the hooks
+vi.mock('@stores/sseStore', () => ({
+  useSSEStore: vi.fn(),
+  useShouldShowProgress: vi.fn(),
+  useLoadingState: vi.fn(),
+}))
+
+const mockUseSSEStore = vi.mocked(useSSEStore)
+const mockUseShouldShowProgress = vi.mocked(useShouldShowProgress)
+const mockUseLoadingState = vi.mocked(useLoadingState)
+
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
  */
-let mockInstance: MockEventSource | null = null
-
 class MockEventSource {
   url: string
   onopen: (() => void) | null = null
@@ -20,8 +33,6 @@ class MockEventSource {
 
   constructor(url: string) {
     this.url = url
-    // eslint-disable-next-line @typescript-eslint/no-this-alias -- Required for mock instance tracking
-    mockInstance = this
 
     setTimeout(() => {
       this.readyState = 1
@@ -50,16 +61,19 @@ class MockEventSource {
   }
 }
 
-function getMockEventSource(): MockEventSource | null {
-  return mockInstance
-}
-
-describe('ProgressTracker Component', () => {
+describe('ProgressTracker Component @unit @component', () => {
   beforeEach(() => {
-    mockInstance = null
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubEnv('VITE_API_URL', 'http://localhost:8000')
-    useSSEStore.getState().reset()
+
+    // Mock the hooks
+    mockUseShouldShowProgress.mockReturnValue(true)
+    mockUseLoadingState.mockReturnValue({ type: 'disconnected' } as LoadingState)
+    mockUseSSEStore.mockReturnValue({
+      events: [],
+      error: null,
+      isComplete: false,
+    })
   })
 
   afterEach(() => {
@@ -69,31 +83,31 @@ describe('ProgressTracker Component', () => {
 
   describe('Initial Rendering', () => {
     it('renders with all stages by default', () => {
-      render(<ProgressTracker analysisId="test-123" />)
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} />)
 
       expect(screen.getByText('Analysis Progress')).toBeInTheDocument()
       expect(screen.getByText('Content Extraction')).toBeInTheDocument()
-      expect(screen.getByText('Agent Routing')).toBeInTheDocument()
-      expect(screen.getByText('Technology Comparison')).toBeInTheDocument()
+      expect(screen.getByText('Routing to Agents')).toBeInTheDocument()
+      expect(screen.getByText('Tech Comparison')).toBeInTheDocument()
     })
 
     it('renders with only WORKING_STAGES when specified', () => {
-      render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
 
       expect(screen.getByText('Content Extraction')).toBeInTheDocument()
-      expect(screen.getByText('Agent Routing')).toBeInTheDocument()
-      expect(screen.queryByText('Technology Comparison')).not.toBeInTheDocument()
+      expect(screen.getByText('Routing to Agents')).toBeInTheDocument()
+      expect(screen.queryByText('Tech Comparison')).not.toBeInTheDocument()
     })
 
     it('shows all stages as pending initially', () => {
-      render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
 
       const pendingBadges = screen.getAllByText('Pending')
       expect(pendingBadges.length).toBe(WORKING_STAGES.length)
     })
 
     it('displays connection status indicator', () => {
-      render(<ProgressTracker analysisId="test-123" />)
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} />)
 
       // Initially disconnected until connection opens
       expect(screen.getByText('Disconnected')).toBeInTheDocument()
@@ -101,158 +115,164 @@ describe('ProgressTracker Component', () => {
   })
 
   describe('SSE Connection', () => {
-    it('connects to SSE endpoint on mount', async () => {
-      render(<ProgressTracker analysisId="test-123" />)
-
-      await waitFor(() => {
-        expect(getMockEventSource()?.url).toContain('test-123')
+    it('shows connected status when connection opens', () => {
+      mockUseShouldShowProgress.mockReturnValue(false) // Connection status should show even when not showing progress
+      mockUseLoadingState.mockReturnValue({ type: 'connected' } as LoadingState)
+      mockUseSSEStore.mockReturnValue({
+        events: [],
+        error: null,
+        isComplete: false,
       })
-    })
 
-    it('shows connected status when connection opens', async () => {
-      render(<ProgressTracker analysisId="test-123" />)
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} />)
 
-      await waitFor(() => {
-        expect(screen.getByText('Connected')).toBeInTheDocument()
-      })
+      expect(screen.getByText('Connected')).toBeInTheDocument()
     })
   })
 
   describe('Event Processing', () => {
-    it('updates stage status on progress event', async () => {
-      render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
-
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
-
+    it('updates stage status on progress event', () => {
       const event: SSEProgressEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'running',
         timestamp: new Date().toISOString(),
       }
 
-      getMockEventSource()?.simulateEvent('progress', event)
-
-      await waitFor(() => {
-        expect(screen.getByText('Running')).toBeInTheDocument()
+      mockUseShouldShowProgress.mockReturnValue(true)
+      mockUseSSEStore.mockReturnValue({
+        events: [event],
+        error: null,
+        isComplete: false,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
+
+      expect(screen.getByText('Running')).toBeInTheDocument()
     })
 
-    it('shows complete status when stage completes', async () => {
-      render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
-
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
-
+    it('shows complete status when stage completes', () => {
       const event: SSEProgressEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'complete',
         timestamp: new Date().toISOString(),
       }
 
-      getMockEventSource()?.simulateEvent('progress', event)
-
-      await waitFor(() => {
-        expect(screen.getByText('Complete')).toBeInTheDocument()
+      mockUseShouldShowProgress.mockReturnValue(true)
+      mockUseSSEStore.mockReturnValue({
+        events: [event],
+        error: null,
+        isComplete: false,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
+
+      expect(screen.getByText('Complete')).toBeInTheDocument()
     })
   })
 
   describe('Completion', () => {
-    it('shows completion message when analysis completes', async () => {
-      render(<ProgressTracker analysisId="test-123" />)
-
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
-
-      // Simulate complete event
-      const completeEvent: SSECompleteEvent = {
-        type: 'complete',
-        analysis_id: 'test-123',
-        stage: 'artifact_generation',
-        status: 'complete',
-        timestamp: new Date().toISOString(),
-        artifact_id: 'artifact-456',
-      }
-
-      getMockEventSource()?.simulateEvent('complete', completeEvent)
-
-      await waitFor(() => {
-        expect(screen.getByText('Analysis Complete')).toBeInTheDocument()
+    it('shows completion message when analysis completes', () => {
+      mockUseSSEStore.mockReturnValue({
+        events: [],
+        error: null,
+        isComplete: true,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} />)
+
+      expect(screen.getByText('Analysis Complete')).toBeInTheDocument()
     })
 
-    it('calls onComplete callback with artifact ID', async () => {
+    it('calls onComplete callback with artifact ID', () => {
       const onComplete = vi.fn()
-      render(<ProgressTracker analysisId="test-123" onComplete={onComplete} />)
 
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
+      // Mock events that would trigger onComplete
+      const mockEvents = [
+        {
+          type: 'complete',
+          analysis_id: TEST_ANALYSIS_ID,
+          stage: 'artifact_generation',
+          status: 'complete',
+          timestamp: new Date().toISOString(),
+          artifact_id: TEST_ARTIFACT_ID,
+        },
+      ]
 
-      const completeEvent: SSECompleteEvent = {
+      mockUseShouldShowProgress.mockReturnValue(true)
+      mockUseLoadingState.mockReturnValue({
         type: 'complete',
-        analysis_id: 'test-123',
-        stage: 'artifact_generation',
-        status: 'complete',
-        timestamp: new Date().toISOString(),
-        artifact_id: 'artifact-456',
-      }
-
-      getMockEventSource()?.simulateEvent('complete', completeEvent)
-
-      await waitFor(() => {
-        expect(onComplete).toHaveBeenCalledWith('artifact-456')
+        artifactId: TEST_ARTIFACT_ID,
+      } as LoadingState)
+      mockUseSSEStore.mockReturnValue({
+        events: mockEvents,
+        error: null,
+        isComplete: true,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} onComplete={onComplete} />)
+
+      expect(onComplete).toHaveBeenCalledWith(TEST_ARTIFACT_ID)
     })
   })
 
   describe('Error Handling', () => {
-    it('displays error message on stage failure', async () => {
-      render(<ProgressTracker analysisId="test-123" stages={WORKING_STAGES} />)
-
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
-
+    it('displays error message on stage failure', () => {
       const errorEvent: SSEErrorEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
         timestamp: new Date().toISOString(),
         details: { error: 'Failed to extract content' },
       }
 
-      getMockEventSource()?.simulateEvent('error', errorEvent)
-
-      await waitFor(() => {
-        expect(screen.getByText(/Failed to extract content/)).toBeInTheDocument()
+      mockUseShouldShowProgress.mockReturnValue(true)
+      mockUseLoadingState.mockReturnValue({
+        type: 'analyzing',
+        progress: 50,
+      } as LoadingState)
+      mockUseSSEStore.mockReturnValue({
+        events: [errorEvent],
+        error: null, // No global error for stage validation errors
+        isComplete: false,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} stages={WORKING_STAGES} />)
+
+      // Should show stage-specific error, not global error
+      expect(screen.getByText(/Failed to extract content/)).toBeInTheDocument()
     })
 
-    it('calls onError callback', async () => {
+    it('calls onError callback', () => {
       const onError = vi.fn()
-      render(<ProgressTracker analysisId="test-123" onError={onError} />)
-
-      await waitFor(() => expect(getMockEventSource()).toBeTruthy())
 
       const errorEvent: SSEErrorEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
         timestamp: new Date().toISOString(),
         details: { error: 'Test error' },
       }
 
-      getMockEventSource()?.simulateEvent('error', errorEvent)
-
-      await waitFor(() => {
-        expect(onError).toHaveBeenCalledWith('Test error')
+      mockUseSSEStore.mockReturnValue({
+        events: [errorEvent],
+        error: new Error('Test error'),
+        isComplete: false,
       })
+
+      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} onError={onError} />)
+
+      expect(onError).toHaveBeenCalledWith('Test error')
     })
   })
 })
 
-describe('SSE Event Normalizer', () => {
+describe('SSE Event Normalizer @unit @util', () => {
   describe('Stage Name Mapping', () => {
     it('maps supervisor to supervisor_routing', () => {
       expect(getMappedStageName('supervisor')).toBe('supervisor_routing')
@@ -285,7 +305,7 @@ describe('SSE Event Normalizer', () => {
     it('normalizes progress event with backend stage name', () => {
       const rawEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'supervisor',
         status: 'running',
         timestamp: '2025-01-01T00:00:00Z',
@@ -304,7 +324,7 @@ describe('SSE Event Normalizer', () => {
     it('normalizes event with streaming status', () => {
       const rawEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'supervisor',
         status: 'streaming',
         timestamp: '2025-01-01T00:00:00Z',
@@ -321,7 +341,7 @@ describe('SSE Event Normalizer', () => {
     it('extracts top-level details fields', () => {
       const rawEvent = {
         type: 'progress',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'complete',
         timestamp: '2025-01-01T00:00:00Z',
@@ -341,7 +361,7 @@ describe('SSE Event Normalizer', () => {
     it('handles error events with top-level error fields', () => {
       const rawEvent = {
         type: 'error',
-        analysis_id: 'test-123',
+        analysis_id: TEST_ANALYSIS_ID,
         stage: 'extraction',
         status: 'failed',
         timestamp: '2025-01-01T00:00:00Z',

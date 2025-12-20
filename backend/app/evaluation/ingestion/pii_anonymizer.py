@@ -1,7 +1,7 @@
 """PII Anonymizer for evaluation dataset ingestion.
 
 This module provides PII anonymization capabilities for text content
-extracted from LangSmith traces and GitHub issues. It builds on the
+extracted from Langfuse traces and GitHub issues. It builds on the
 existing PII detection patterns while adding replacement functionality.
 
 SECURITY:
@@ -24,8 +24,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
-from app.services.pii.patterns import PII_PATTERNS, SENSITIVITY_PATTERNS
-from app.services.pii.types import PIIType, SensitivityLevel
+from app.shared.services.pii.patterns import PII_PATTERNS, SENSITIVITY_PATTERNS
+from app.shared.services.pii.types import PIIType, SensitivityLevel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
