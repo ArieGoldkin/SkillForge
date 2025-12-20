@@ -181,8 +181,54 @@ export const UI_CONSTANTS = {
   PADDING_MD: 'p-4', // 16px
   PADDING_LG: 'p-6', // 24px
 
+  PADDING_Y_LG: 'py-20', // 80px section padding
+  PADDING_X_MD: 'px-8', // 32px horizontal padding
+  PADDING_Y_MD: 'py-16', // 64px section padding
+
   MARGIN_BOTTOM_SM: 'mb-3', // 12px
+  MARGIN_BOTTOM_LG: 'mb-16', // 64px
+  MARGIN_BOTTOM_MD: 'mb-12', // 48px
   MARGIN_Y_XS: 'my-1', // 4px
+
+  // Dimensions
+  WIDTH_XS: 'w-3', // 12px
+  WIDTH_XS_MEDIUM: 'w-3.5', // 14px
+  WIDTH_SM: 'w-4', // 16px
+  WIDTH_MD: 'w-12', // 48px
+  WIDTH_LG: 'w-16', // 64px
+
+  HEIGHT_XS: 'h-3', // 12px
+  HEIGHT_XS_MEDIUM: 'h-3.5', // 14px
+  HEIGHT_SM: 'h-4', // 16px
+  HEIGHT_MD: 'h-6', // 24px
+  HEIGHT_LG: 'h-12', // 48px
+  HEIGHT_XL: 'h-14', // 56px
+  HEIGHT_2XL: 'h-16', // 64px
+
+  // Specific component dimensions
+  ICON_SIZE_MD: 'w-12 h-12', // 48px icon
+  ICON_SIZE_LG: 'w-16 h-16', // 64px icon
+
+  // Button styles
+  BUTTON_PADDING: 'px-4 py-2',
+  BUTTON_GAP: 'gap-2',
+  BUTTON_HOVER: 'hover:scale-105',
+  BUTTON_TRANSITION: 'transition-all',
+
+  // Flexbox utilities
+  FLEX_START: 'flex items-start',
+  FLEX_BETWEEN: 'justify-between',
+  FLEX_CENTER: 'items-center',
+  FLEX_GAP_SM: 'gap-2',
+  FLEX_GAP_MD: 'gap-3',
+
+  // Layout utilities
+  FLEX_CENTER: 'flex items-center justify-center',
+  TEXT_CENTER: 'text-center',
+  SHRINK_NONE: 'shrink-0',
+
+  // Background utilities
+  BG_MUTED_OPACITY: 'bg-muted/50',
 
   // Section padding
   SECTION_PADDING_Y: '5rem', // py-20
@@ -231,6 +277,31 @@ export const UI_CONSTANTS = {
   // Layout constraints (Tailwind CSS)
   LAYOUT_MAX_WIDTH_7XL: 'max-w-7xl',
   LAYOUT_MARGIN_X_AUTO: 'mx-auto',
+} as const
+
+// ============================================================================
+// STAGE ORDER CONSTANTS
+// ============================================================================
+
+export const STAGE_ORDER_CONSTANTS = {
+  // Pipeline stages (1-17)
+  STAGE_EXTRACTION: 1,
+  STAGE_CHUNKING: 2,
+  STAGE_EMBEDDING: 3,
+  STAGE_AGENT_CONTENT_ANALYSIS: 4,
+  STAGE_AGENT_TECHNICAL_WRITER: 5,
+  STAGE_AGENT_SECURITY_AUDITOR: 6,
+  STAGE_AGENT_IMPLEMENTATION_PLANNER: 7,
+  STAGE_AGENT_CODE_QUALITY: 8,
+  STAGE_AGENT_PERFORMANCE_OPTIMIZER: 9,
+  STAGE_AGENT_TESTING_STRATEGIST: 10,
+  STAGE_QUALITY_AGGREGATION: 11,
+  STAGE_QUALITY_VALIDATION: 12,
+  STAGE_QUALITY_GENERATION: 13,
+  STAGE_ARTIFACT_CHUNKING: 14,
+  STAGE_ARTIFACT_WORKFLOW: 15,
+  STAGE_ARTIFACT_PATTERN_COMPARISON: 16,
+  STAGE_ARTIFACT_METRICS: 17,
 } as const
 
 // ============================================================================
@@ -340,6 +411,8 @@ export const COMPONENT_CONSTANTS = {
   // UI element limits
   MAX_ITEMS_DEFAULT: 10,
   MAX_VISIBLE_ACTIVITIES: 10,
+  MAX_VISIBLE_ITEMS_50: 50,
+  MAX_VISIBLE_ITEMS_100: 100,
 
   // Debounce delays
   SEARCH_DEBOUNCE_MS: 300,
@@ -348,4 +421,24 @@ export const COMPONENT_CONSTANTS = {
   // Animation durations
   TRANSITION_DURATION: 200, // milliseconds
   HOVER_SCALE_DURATION: 200, // milliseconds
+
+  // Size limits
+  SIZE_LIMIT_500: 500,
+  SIZE_LIMIT_1000: 1000,
+
+  // Percentage limits
+  PERCENTAGE_80: 80,
+  PERCENTAGE_90: 90,
+  PERCENTAGE_95: 95,
+
+  // Time limits
+  TIME_LIMIT_60: 60, // seconds
+  TIME_LIMIT_30: 30, // seconds
+
+  // Dimension values
+  DIMENSION_12: 12,
+  DIMENSION_16: 16,
+  DIMENSION_20: 20,
+  DIMENSION_48: 48,
+  DIMENSION_80: 80,
 } as const

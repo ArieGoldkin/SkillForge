@@ -3,6 +3,7 @@ import type * as React from 'react'
 import { FileText, Loader2 } from 'lucide-react'
 
 import { cn } from '../../../../lib/utils'
+import { UI_CONSTANTS } from '@/lib/constants'
 import type { LoadingState } from '../../../../types/loading'
 
 interface LoadingStateDisplayProps {
@@ -30,7 +31,7 @@ const getWaitingContent = () => ({
  * Get display content for extracting state
  */
 const getExtractingContent = (wordCount?: number) => ({
-  icon: <FileText className="h-4 w-4" />,
+  icon: <FileText className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />,
   text: 'Extracting content...',
   subtitle: wordCount
     ? `Processing ${wordCount.toLocaleString()} words`
