@@ -21,6 +21,7 @@ if (import.meta.env.DEV) {
   // Wrap createElement to track render stats in development
   // Using 'as any' to bypass strict type checking for monkey-patching
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Required for React monkey-patching in tests
   ;(React as any).createElement = function (type: unknown, props: unknown, ...children: unknown[]) {
     if (
       typeof type === 'function' &&
@@ -43,6 +44,7 @@ if (import.meta.env.DEV) {
       }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: Required for React monkey-patching in tests
     return (originalCreateElement as any).call(this, type, props, ...children)
   }
 }

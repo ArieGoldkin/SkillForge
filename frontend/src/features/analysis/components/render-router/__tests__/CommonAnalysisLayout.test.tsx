@@ -22,7 +22,7 @@ vi.mock('../../TimeoutWarningBanner', () => ({
   }) =>
     showTimeoutWarning ? (
       <div data-testid="timeout-warning-banner">
-        <button onClick={onDismiss} data-testid="dismiss-timeout">
+        <button type="button" onClick={onDismiss} data-testid="dismiss-timeout">
           Dismiss
         </button>
       </div>

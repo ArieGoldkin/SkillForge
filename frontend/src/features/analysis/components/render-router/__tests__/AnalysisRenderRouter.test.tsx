@@ -134,7 +134,7 @@ describe('AnalysisRenderRouter', () => {
       expect(screen.getByTestId('loading-state-display')).toBeInTheDocument()
       expect(screen.getByText(loadingType)).toBeInTheDocument()
 
-      rerender(<></>) // Clear for next test
+      rerender(null) // Clear for next test
     })
   })
 

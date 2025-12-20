@@ -106,26 +106,6 @@ export function extractAnalysisProps(props: {
     isConnected: props.isConnected,
     completionRef: props.completionRef,
   }
-  return {
-    id: props.id,
-    analysisMetadata: props.analysisMetadata,
-    isComplete: props.isComplete,
-    hasFailedStages: props.hasFailedStages,
-    error: props.error,
-    hasError: props.hasError,
-    statusError: props.statusError,
-    isFailed: props.isFailed,
-    effectiveError: props.effectiveError,
-    isFatalError: props.isFatalError,
-    overallProgress: props.overallProgress,
-    steps: props.steps,
-    failedStagesCount: props.failedStagesCount,
-    resolvedArtifactId: props.resolvedArtifactId,
-    artifactId: props.artifactId,
-    activities: props.activities,
-    isConnected: props.isConnected,
-    completionRef: props.completionRef,
-  }
 }
 
 /**
