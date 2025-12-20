@@ -1,157 +1,203 @@
 /**
- * Environment Detection Utilities for Test Infrastructure (2025 Best Practices)
+ * Test Environment Detection & Configuration
  *
- * Provides centralized environment capability detection for conditional test execution.
- * Enables environment-aware test skipping and tagging based on runtime capabilities.
+ * Centralizes environment detection for intelligent test execution.
+ * Follows 2025 testing best practices for environment-aware testing.
  */
 
-/**
- * Environment capability detection for conditional test execution.
- * Centralizes environment checks to enable smart test skipping.
- */
-export const environmentCapabilities = {
-  /** E2E tests require full application environment (backend, database, etc.) */
-  get e2eReady(): boolean {
-    return Boolean(
-      process.env.E2E_READY === 'true' ||
-        process.env.CI === 'true' ||
-        process.env.NODE_ENV === 'test-e2e'
-    )
-  },
+export interface TestEnvironmentConfig {
+  // Execution Modes
+  isCI: boolean
+  isE2EReady: boolean
+  isDevelopment: boolean
+  isProduction: boolean
 
-  /** CI environment has full infrastructure available */
-  get isCI(): boolean {
-    return Boolean(
-      process.env.CI === 'true' ||
-        process.env.GITHUB_ACTIONS === 'true' ||
-        process.env.CIRCLECI === 'true' ||
-        process.env.JENKINS_HOME
-    )
-  },
+  // Infrastructure Availability
+  hasDatabase: boolean
+  hasRedis: boolean
+  hasExternalAPIs: boolean
+  hasBrowser: boolean
 
-  /** Development environment with local services */
-  get isDev(): boolean {
-    return process.env.NODE_ENV === 'development'
-  },
+  // Performance Settings
+  slowTestThreshold: number
+  testTimeout: number
 
-  /** Production environment (limited test execution) */
-  get isProd(): boolean {
-    return process.env.NODE_ENV === 'production'
-  },
-
-  /** Browser environment for Playwright tests */
-  get isBrowser(): boolean {
-    return typeof window !== 'undefined'
-  },
-
-  /** Node.js environment for unit tests */
-  get isNode(): boolean {
-    return typeof window === 'undefined'
-  },
-
-  /** Performance testing enabled */
-  get performanceEnabled(): boolean {
-    return Boolean(process.env.PERFORMANCE_TESTING === 'true' || process.env.CI === 'true')
-  },
-
-  /** Slow tests allowed (CI environments typically) */
-  get slowTestsAllowed(): boolean {
-    return Boolean(process.env.RUN_SLOW_TESTS === 'true' || this.isCI)
-  },
-
-  /** Manual tests (require human interaction) */
-  get manualTestsAllowed(): boolean {
-    return Boolean(
-      process.env.RUN_MANUAL_TESTS === 'true' && !this.isCI // Never run manual tests in CI
-    )
-  },
-} as const
-
-/**
- * Test execution profiles for different environments.
- * Provides predefined configurations for common testing scenarios.
- */
-export const testProfiles = {
-  /** Unit tests only (fast, isolated) */
-  unit: {
-    e2e: false,
-    integration: false,
-    slow: false,
-    manual: false,
-  },
-
-  /** Integration tests (requires services) */
-  integration: {
-    e2e: false,
-    integration: true,
-    slow: true,
-    manual: false,
-  },
-
-  /** End-to-end tests (full application) */
-  e2e: {
-    e2e: true,
-    integration: true,
-    slow: true,
-    manual: false,
-  },
-
-  /** CI environment (comprehensive but automated) */
-  ci: {
-    e2e: true,
-    integration: true,
-    slow: true,
-    manual: false,
-  },
-
-  /** Development environment (flexible) */
-  dev: {
-    e2e: environmentCapabilities.e2eReady,
-    integration: true,
-    slow: true,
-    manual: true,
-  },
-} as const
-
-/**
- * Get the current test execution profile based on environment.
- */
-export function getCurrentTestProfile(): keyof typeof testProfiles {
-  if (environmentCapabilities.isCI) return 'ci'
-  if (environmentCapabilities.isDev) return 'dev'
-
-  // Default to unit tests in unknown environments
-  return 'unit'
+  // Feature Flags
+  enablePerformanceMonitoring: boolean
+  enableVisualRegression: boolean
+  enableA11yTesting: boolean
 }
 
 /**
- * Check if a specific test type should run in the current environment.
+ * Centralized test environment detection
+ * Automatically detects available infrastructure and execution context
  */
-export function shouldRunTestType(testType: keyof typeof testProfiles.unit): boolean {
-  const profile = getCurrentTestProfile()
-  return testProfiles[profile][testType]
+export const TestEnvironment: TestEnvironmentConfig = {
+  // Execution context detection
+  isCI: process.env.CI === 'true',
+  isE2EReady: process.env.E2E_READY === 'true',
+  isDevelopment: process.env.NODE_ENV !== 'production',
+  isProduction: process.env.NODE_ENV === 'production',
+
+  // Infrastructure detection
+  hasDatabase: Boolean(process.env.DATABASE_URL),
+  hasRedis: Boolean(process.env.REDIS_URL),
+  hasExternalAPIs: Boolean(process.env.API_BASE_URL),
+  hasBrowser: typeof window !== 'undefined' || process.env.VITEST_BROWSER === 'true',
+
+  // Performance thresholds (CI vs local)
+  slowTestThreshold: process.env.CI ? 5000 : 2000,
+  testTimeout: process.env.CI ? 10000 : 5000,
+
+  // Feature flags
+  enablePerformanceMonitoring: process.env.PERFORMANCE_MONITORING !== 'false',
+  enableVisualRegression: process.env.VISUAL_REGRESSION === 'true',
+  enableA11yTesting: process.env.A11Y_TESTING === 'true',
 }
 
 /**
- * Environment-aware test skipping utilities.
- * Provides semantic functions for common test skipping scenarios.
+ * Environment-aware test utilities
+ * Provides conditional test execution based on environment capabilities
  */
-export const testSkipConditions = {
-  /** Skip E2E tests when environment is not ready */
-  skipE2E: () => !environmentCapabilities.e2eReady,
+export const conditionalTest = {
+  /**
+   * Only run test in E2E environment
+   * @param name Test name
+   * @param fn Test function
+   * @returns Conditional test runner
+   */
+  e2e: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.isE2EReady ? it(name, fn) : (it.skip(name, fn) as void)
+  },
 
-  /** Skip slow tests in fast environments */
-  skipSlow: () => !environmentCapabilities.slowTestsAllowed,
+  /**
+   * Only run test with database available
+   */
+  withDatabase: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.hasDatabase ? it(name, fn) : it.skip(name, fn)
+  },
 
-  /** Skip manual tests in automated environments */
-  skipManual: () => !environmentCapabilities.manualTestsAllowed,
+  /**
+   * Only run test with external APIs available
+   */
+  withExternalAPIs: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.hasExternalAPIs ? it(name, fn) : it.skip(name, fn)
+  },
 
-  /** Skip performance tests when not enabled */
-  skipPerformance: () => !environmentCapabilities.performanceEnabled,
+  /**
+   * Performance tests (skip in CI unless explicitly enabled)
+   */
+  performance: (name: string, fn: () => void | Promise<void>) => {
+    const shouldRun = !TestEnvironment.isCI || process.env.RUN_PERFORMANCE_TESTS === 'true'
+    return shouldRun ? it(name, fn) : it.skip(name, fn)
+  },
 
-  /** Skip browser-only tests in Node environment */
-  skipBrowserOnly: () => !environmentCapabilities.isBrowser,
+  /**
+   * Browser-dependent tests
+   */
+  browser: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.hasBrowser ? it(name, fn) : it.skip(name, fn)
+  },
 
-  /** Skip Node-only tests in browser environment */
-  skipNodeOnly: () => !environmentCapabilities.isNode,
-} as const
+  /**
+   * Development-only tests (skip in CI)
+   */
+  devOnly: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.isDevelopment ? it(name, fn) : it.skip(name, fn)
+  },
+
+  /**
+   * CI-only tests (skip in development)
+   */
+  ciOnly: (name: string, fn: () => void | Promise<void>) => {
+    return TestEnvironment.isCI ? it(name, fn) : it.skip(name, fn)
+  },
+}
+
+/**
+ * Test metadata for advanced reporting
+ */
+export interface TestMetadata {
+  category: 'unit' | 'integration' | 'e2e' | 'performance'
+  estimatedDuration: number // milliseconds
+  requires: string[] // Required services/environments
+  flaky: boolean // Known to be unreliable
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  tags: string[] // Additional tags
+}
+
+/**
+ * Performance monitoring utilities
+ */
+export const PerformanceMonitor = {
+  /**
+   * Check for performance regressions
+   */
+  checkRegression: (testName: string, duration: number, baseline?: number) => {
+    if (!baseline) return
+
+    const regressionThreshold = 1.2 // 20% regression
+    if (duration > baseline * regressionThreshold) {
+      console.warn(
+        `🐌 Performance regression in ${testName}: ${duration}ms vs ${baseline}ms baseline`
+      )
+      if (TestEnvironment.isCI) {
+        throw new Error(`Performance regression detected in ${testName}`)
+      }
+    }
+  },
+
+  /**
+   * Mark slow tests
+   */
+  markSlowTest: (testName: string, duration: number) => {
+    if (duration > TestEnvironment.slowTestThreshold) {
+      console.warn(`🐌 Slow test detected: ${testName} (${duration}ms)`)
+    }
+  },
+}
+
+/**
+ * Test data factories with environment awareness
+ */
+export const createTestData = {
+  /**
+   * Create user data based on environment
+   */
+  user: () => ({
+    id: TestEnvironment.isE2EReady ? 'real-user-123' : 'mock-user-123',
+    email: TestEnvironment.isE2EReady ? process.env.TEST_USER_EMAIL : 'test@example.com',
+    name: 'Test User',
+    token: TestEnvironment.isE2EReady ? process.env.TEST_API_TOKEN : 'mock-token',
+  }),
+
+  /**
+   * Create analysis data
+   */
+  analysis: () => ({
+    id: 'test-analysis-id',
+    url: 'https://example.com',
+    title: 'Test Analysis',
+    status: 'completed',
+    wordCount: 1200,
+  }),
+
+  /**
+   * Create API response mocks
+   */
+  apiResponse: (overrides: Record<string, unknown> = {}) => ({
+    success: true,
+    data: {},
+    timestamp: new Date().toISOString(),
+    ...overrides,
+  }),
+}
+
+// Environment validation for CI
+if (TestEnvironment.isCI) {
+  console.log('🧪 CI Test Environment Detected')
+  console.log(`  E2E Ready: ${TestEnvironment.isE2EReady}`)
+  console.log(`  Database: ${TestEnvironment.hasDatabase}`)
+  console.log(`  External APIs: ${TestEnvironment.hasExternalAPIs}`)
+  console.log(`  Timeout: ${TestEnvironment.testTimeout}ms`)
+}

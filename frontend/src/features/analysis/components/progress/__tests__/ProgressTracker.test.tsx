@@ -1,6 +1,6 @@
 import type { SSEProgressEvent, SSEErrorEvent } from '@app-types/sse'
 import { useSSEStore, useShouldShowProgress, useLoadingState } from '@stores/sseStore'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProgressTracker, WORKING_STAGES } from '../'
@@ -24,8 +24,6 @@ const mockUseLoadingState = vi.mocked(useLoadingState)
 /**
  * Mock EventSource - Class-based mock for browser EventSource API
  */
-let mockInstance: MockEventSource | null = null
-
 class MockEventSource {
   url: string
   onopen: (() => void) | null = null
@@ -35,8 +33,6 @@ class MockEventSource {
 
   constructor(url: string) {
     this.url = url
-    // eslint-disable-next-line @typescript-eslint/no-this-alias -- Required for mock instance tracking
-    mockInstance = this
 
     setTimeout(() => {
       this.readyState = 1
@@ -65,13 +61,8 @@ class MockEventSource {
   }
 }
 
-function getMockEventSource(): MockEventSource | null {
-  return mockInstance
-}
-
-describe('ProgressTracker Component', () => {
+describe('ProgressTracker Component @unit @component', () => {
   beforeEach(() => {
-    mockInstance = null
     vi.stubGlobal('EventSource', MockEventSource)
     vi.stubEnv('VITE_API_URL', 'http://localhost:8000')
 
@@ -124,16 +115,6 @@ describe('ProgressTracker Component', () => {
   })
 
   describe('SSE Connection', () => {
-    it.skip('connects to SSE endpoint on mount', async () => {
-      // TODO: Move to AnalyzeResult integration tests
-      // ProgressTracker no longer manages SSE connections
-      render(<ProgressTracker analysisId={TEST_ANALYSIS_ID} />)
-
-      await waitFor(() => {
-        expect(getMockEventSource()?.url).toContain(TEST_ANALYSIS_ID)
-      })
-    })
-
     it('shows connected status when connection opens', () => {
       mockUseShouldShowProgress.mockReturnValue(false) // Connection status should show even when not showing progress
       mockUseLoadingState.mockReturnValue({ type: 'connected' } as LoadingState)
@@ -291,7 +272,7 @@ describe('ProgressTracker Component', () => {
   })
 })
 
-describe('SSE Event Normalizer', () => {
+describe('SSE Event Normalizer @unit @util', () => {
   describe('Stage Name Mapping', () => {
     it('maps supervisor to supervisor_routing', () => {
       expect(getMappedStageName('supervisor')).toBe('supervisor_routing')

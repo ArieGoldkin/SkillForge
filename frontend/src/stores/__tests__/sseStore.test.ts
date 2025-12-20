@@ -56,7 +56,7 @@ function getMockEventSource(): MockEventSource | null {
   return mockInstance
 }
 
-describe('SSE Store', () => {
+describe('SSE Store @unit @store', () => {
   beforeEach(() => {
     mockInstance = null
     vi.stubGlobal('EventSource', MockEventSource)
