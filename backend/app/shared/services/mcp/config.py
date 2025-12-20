@@ -168,7 +168,7 @@ def _create_default_servers() -> dict[str, MCPServerConfig]:
             transport=MCPTransport.STDIO,
             command="npx",
             args=["-y", "mcp-server-npm"],
-            enabled=True,
+            enabled=False,  # Disabled: mcp-server-npm package doesn't exist
             timeout=20.0,
         ),
         "pypi": MCPServerConfig(
@@ -176,7 +176,7 @@ def _create_default_servers() -> dict[str, MCPServerConfig]:
             transport=MCPTransport.STDIO,
             command="uvx",
             args=["mcp-server-pypi"],
-            enabled=True,
+            enabled=False,  # Disabled: mcp-server-pypi package doesn't exist
             timeout=20.0,
         ),
     }

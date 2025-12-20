@@ -141,12 +141,13 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
 # Agent-specific factory functions (for clean API and type safety)
 
 
-async def create_tech_comparator_agent_with_few_shot(
+async def create_tech_comparator_agent_with_few_shot(  # noqa: PLR0913
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
     analysis_id: AnalysisID,
     session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
 ) -> Runnable:
     """Create tech comparator agent with optional few-shot prompting.
 
@@ -156,6 +157,7 @@ async def create_tech_comparator_agent_with_few_shot(
         response_schema: Expected output schema (TechComparison)
         analysis_id: Analysis UUID
         session: Database session
+        tools: Optional MCP tools for enhanced analysis
 
     Returns:
         Runnable: Tech comparator agent instance
@@ -168,6 +170,7 @@ async def create_tech_comparator_agent_with_few_shot(
         response_schema=response_schema,
         analysis_id=analysis_id,
         session=session,
+        tools=tools,
     )
 
 
@@ -205,12 +208,13 @@ async def create_security_auditor_agent_with_few_shot(  # noqa: PLR0913 - Factor
     )
 
 
-async def create_implementation_planner_agent_with_few_shot(
+async def create_implementation_planner_agent_with_few_shot(  # noqa: PLR0913
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
     analysis_id: AnalysisID,
     session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
 ) -> Runnable:
     """Create implementation planner agent with optional few-shot prompting.
 
@@ -220,6 +224,7 @@ async def create_implementation_planner_agent_with_few_shot(
         response_schema: Expected output schema (ImplementationPlan)
         analysis_id: Analysis UUID
         session: Database session
+        tools: Optional MCP tools for enhanced analysis
 
     Returns:
         Runnable: Implementation planner agent instance
@@ -232,6 +237,7 @@ async def create_implementation_planner_agent_with_few_shot(
         response_schema=response_schema,
         analysis_id=analysis_id,
         session=session,
+        tools=tools,
     )
 
 
