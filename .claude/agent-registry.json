@@ -1054,9 +1054,9 @@
     "secure-api-endpoint": {
       "description": "Create a secure API endpoint with authentication, validation, and tests",
       "composes_skills": [
-        "api-design-framework/references/endpoint-patterns.md",
-        "security-checklist/references/api-security.md",
-        "testing-strategy-builder/templates/api-test.md"
+        "api-design-framework/references/rest-patterns.md",
+        "security-checklist/references/owasp-mitigations.md",
+        "testing-strategy-builder/templates/test-case-template.md"
       ],
       "primary_agent": "backend-system-architect",
       "validation_agent": "code-quality-reviewer",
@@ -1065,9 +1065,9 @@
     "full-stack-feature": {
       "description": "Build a complete feature with backend API and frontend UI",
       "composes_skills": [
-        "api-design-framework/references/endpoint-patterns.md",
+        "api-design-framework/references/rest-patterns.md",
         "react-server-components-framework/references/data-fetching.md",
-        "type-safety-validation/templates/shared-types.md"
+        "type-safety-validation/templates/zod-schema.ts"
       ],
       "orchestrator": "studio-coach",
       "agents": ["backend-system-architect", "frontend-ui-developer"],
@@ -1077,8 +1077,8 @@
       "description": "Add AI/LLM capabilities to the application",
       "composes_skills": [
         "ai-native-development/references/rag-patterns.md",
-        "streaming-api-patterns/references/sse-patterns.md",
-        "observability-monitoring/references/llm-tracing.md"
+        "streaming-api-patterns/references/sse-deep-dive.md",
+        "observability-monitoring/references/distributed-tracing.md"
       ],
       "primary_agent": "ai-ml-engineer",
       "validation_agent": "code-quality-reviewer",
