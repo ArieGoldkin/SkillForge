@@ -381,13 +381,13 @@ def generate_validation_report(results: dict[str, ValidationResult]) -> str:
             lines.append("")
             lines.append("**Errors:**")
             for error in result.errors:
-                lines.append(f"- ❌ {error}")
+                lines.append(f"- ❌ {error}")  # noqa: PERF401
 
         if result.warnings:
             lines.append("")
             lines.append("**Warnings:**")
             for warning in result.warnings:
-                lines.append(f"- ⚠️ {warning}")
+                lines.append(f"- ⚠️ {warning}")  # noqa: PERF401
 
         lines.append("")
 

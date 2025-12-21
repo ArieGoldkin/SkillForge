@@ -14,12 +14,28 @@ import { z } from 'zod'
  * - complete: Stage finished successfully
  * - failed: Stage encountered an error
  * - skipped: Stage was skipped (not selected by supervisor)
+ * - synthesizing: Aggregation stage is synthesizing findings
+ * - detecting_conflicts: Aggregation stage detecting conflicts
+ * - static_fallback: Using static fallback due to errors
  */
-export const StageStatusSchema = z.enum(['pending', 'running', 'complete', 'failed', 'skipped'])
+export const StageStatusSchema = z.enum([
+  'pending',
+  'running',
+  'complete',
+  'failed',
+  'skipped',
+  // Extended statuses for aggregation stage
+  'synthesizing',
+  'detecting_conflicts',
+  'static_fallback',
+])
 
 /**
  * Agent stage names - represent individual processing stages
  * These match backend stage names from AGENT_REGISTRY (backend/app/core/agent_config.py)
+ *
+ * Backend sends these exact stage names via SSE events.
+ * DO NOT add backwards-compatible aliases - this is FORWARD-ONLY.
  */
 export const AgentStageNameSchema = z.enum([
   // Core workflow stages (always present)
@@ -27,7 +43,6 @@ export const AgentStageNameSchema = z.enum([
   'embedding',
   'supervisor_routing',
   'aggregation',
-  'quality_validation',
   'artifact_generation',
   // Agent stages (dynamically selected by supervisor, 0-8 agents)
   'tech_comparison',
@@ -39,6 +54,9 @@ export const AgentStageNameSchema = z.enum([
   'dependencies_analysis',
   // Optional stages
   'chunking', // Only if ENABLE_COARSE_TO_FINE=true
+  // Quality gate stages (emitted during quality validation)
+  'quality_gate',
+  'quality_validation',
 ])
 
 /**

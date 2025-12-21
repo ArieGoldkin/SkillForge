@@ -178,8 +178,7 @@ async def _fetch_agent_memory(agent_type: str, content_summary: str) -> str:
             )
 
             # Format for injection
-            memory_context = format_memory_context(snippets)
-            return memory_context
+            return format_memory_context(snippets)
 
     except ValueError as e:
         # Missing OPENAI_API_KEY or other config issues

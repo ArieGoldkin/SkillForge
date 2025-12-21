@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from sqlalchemy.exc import IntegrityError
 
 from app.core.logging import get_logger
-from app.core.types import AnalysisID
-from app.db.repositories.chunk_repository import ChunkRepository
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from app.core.types import AnalysisID
+    from app.db.repositories.chunk_repository import ChunkRepository
 
 logger = get_logger(__name__)
 

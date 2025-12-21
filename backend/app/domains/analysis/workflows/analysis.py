@@ -220,23 +220,22 @@ async def _wrapped_ainvoke(*args, **kwargs):
             )
             # Return the result - workflow completed successfully
             return result
-        else:
-            # GeneratorExit during execution - this is a real error
-            logger.error(
-                "workflow_execution_generator_exit",
-                error_type="GeneratorExit",
-                error_message=str(gen_exit),
-                exc_info=True,
-                traceback=traceback.format_exc(),
-                context="workflow_ainvoke_wrapper_execution",
-                note=(
-                    "GeneratorExit caught during workflow execution (before completion). "
-                    "This indicates the workflow was interrupted or cancelled. "
-                    "Check LangGraph streaming and timeout configuration."
-                ),
-            )
-            # Re-raise GeneratorExit (it's a BaseException, not Exception)
-            raise
+        # GeneratorExit during execution - this is a real error
+        logger.error(
+            "workflow_execution_generator_exit",
+            error_type="GeneratorExit",
+            error_message=str(gen_exit),
+            exc_info=True,
+            traceback=traceback.format_exc(),
+            context="workflow_ainvoke_wrapper_execution",
+            note=(
+                "GeneratorExit caught during workflow execution (before completion). "
+                "This indicates the workflow was interrupted or cancelled. "
+                "Check LangGraph streaming and timeout configuration."
+            ),
+        )
+        # Re-raise GeneratorExit (it's a BaseException, not Exception)
+        raise
     except RuntimeError as runtime_err:
         # Python converts GeneratorExit in async functions to RuntimeError
         # Check if this is a converted GeneratorExit
@@ -260,27 +259,25 @@ async def _wrapped_ainvoke(*args, **kwargs):
                 )
                 # Return the result - workflow completed successfully
                 return result
-            else:
-                # GeneratorExit during execution (converted to RuntimeError) - real error
-                logger.error(
-                    "workflow_execution_generator_exit",
-                    error_type="RuntimeError",
-                    error_message=str(runtime_err),
-                    exc_info=True,
-                    traceback=traceback.format_exc(),
-                    context="workflow_ainvoke_wrapper_execution",
-                    note=(
-                        "GeneratorExit caught during workflow execution "
-                        "(converted to RuntimeError, before completion). "
-                        "This indicates the workflow was interrupted or cancelled. "
-                        "Check LangGraph streaming and timeout configuration."
-                    ),
-                )
-                # Re-raise RuntimeError
-                raise
-        else:
-            # Not a GeneratorExit - re-raise as normal RuntimeError
+            # GeneratorExit during execution (converted to RuntimeError) - real error
+            logger.error(
+                "workflow_execution_generator_exit",
+                error_type="RuntimeError",
+                error_message=str(runtime_err),
+                exc_info=True,
+                traceback=traceback.format_exc(),
+                context="workflow_ainvoke_wrapper_execution",
+                note=(
+                    "GeneratorExit caught during workflow execution "
+                    "(converted to RuntimeError, before completion). "
+                    "This indicates the workflow was interrupted or cancelled. "
+                    "Check LangGraph streaming and timeout configuration."
+                ),
+            )
+            # Re-raise RuntimeError
             raise
+        # Not a GeneratorExit - re-raise as normal RuntimeError
+        raise
     except BaseException as base_exc:
         # Catch other BaseExceptions (SystemExit, KeyboardInterrupt) for logging
         if isinstance(base_exc, GeneratorExit):

@@ -7,6 +7,7 @@ real-time data lookup (CVE databases, npm registry, etc.).
 Architecture:
     - MCPClientPool: Connection pool for MCP servers with lazy init
     - MCPServerConfig: Configuration for MCP server connections
+    - MCPCallbacks: Real-time callbacks for tool execution (Langfuse, SSE, logging)
     - ToolRegistry: Manages which tools each agent can access
     - MCPConnectionError: Exception for connection failures
 
@@ -34,6 +35,10 @@ from app.shared.services.mcp.batch import (
     batch_check_vulnerabilities,
     execute_batch,
 )
+from app.shared.services.mcp.callbacks import (
+    MCPCallbacks,
+    create_mcp_callbacks,
+)
 from app.shared.services.mcp.client import (
     MCP_RETRY_ATTEMPTS,
     MCP_RETRY_MAX_WAIT,
@@ -56,6 +61,14 @@ from app.shared.services.mcp.exceptions import (
     MCPTimeoutError,
     MCPToolError,
 )
+from app.shared.services.mcp.interceptors import (
+    AuthInterceptor,
+    InterceptorConfig,
+    LoggingInterceptor,
+    ResultEnrichmentInterceptor,
+    RetryInterceptor,
+    create_default_interceptors,
+)
 from app.shared.services.mcp.registry import (
     AGENT_TOOL_CONFIGS,
     ARTIFACT_LOAD_CAPABILITY,
@@ -74,8 +87,12 @@ __all__ = [
     "MCP_RETRY_MULTIPLIER",
     "ActionableError",
     "AgentToolConfig",
+    "AuthInterceptor",
     "BatchResult",
     "FailedItem",
+    "InterceptorConfig",
+    "LoggingInterceptor",
+    "MCPCallbacks",
     "MCPClientPool",
     "MCPConfigurationError",
     "MCPConnectionError",
@@ -86,12 +103,16 @@ __all__ = [
     "MCPToolError",
     "MCPTransport",
     "PackageInfo",
+    "ResultEnrichmentInterceptor",
+    "RetryInterceptor",
     "SuccessItem",
     "ToolCapability",
     "ToolRegistry",
     "VulnerabilityInfo",
     "batch_check_dependencies",
     "batch_check_vulnerabilities",
+    "create_default_interceptors",
+    "create_mcp_callbacks",
     "create_mcp_retry_decorator",
     "execute_batch",
     "execute_with_timeout",

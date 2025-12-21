@@ -84,6 +84,8 @@ WORKFLOW_TIMEOUT: float = 900.0  # 900 seconds (15 minutes) - entire workflow sh
 
 def create_runnable_config(
     thread_id: str | None = None,
+    metadata: dict[str, str] | None = None,
+    tags: list[str] | None = None,
 ) -> RunnableConfig:
     """Create RunnableConfig for LangGraph execution.
 
@@ -96,13 +98,21 @@ def create_runnable_config(
 
     Args:
         thread_id: Optional thread ID for checkpointing
+        metadata: Optional metadata dict for tracing (e.g., agent_type, analysis_id)
+        tags: Optional list of tags for categorization (e.g., ["agent", "tech_comparator"])
 
     Returns:
-        RunnableConfig with thread_id and Langfuse callbacks if enabled
+        RunnableConfig with thread_id, metadata, tags, and Langfuse callbacks if enabled
 
     Example:
-        >>> config = create_runnable_config(thread_id="abc-123")
+        >>> config = create_runnable_config(
+        ...     thread_id="abc-123",
+        ...     metadata={"agent_type": "tech_comparator", "analysis_id": "abc-123"},
+        ...     tags=["agent", "tech_comparator"],
+        ... )
         >>> config["configurable"]["thread_id"]  # "abc-123"
+        >>> config["metadata"]["agent_type"]  # "tech_comparator"
+        >>> config["tags"]  # ["agent", "tech_comparator"]
         >>> # If Langfuse enabled, config["callbacks"] contains CallbackHandler
 
     """
@@ -114,6 +124,12 @@ def create_runnable_config(
     callback = get_langfuse_callback_handler()
     if callback:
         config["callbacks"] = [callback]
+
+    if metadata:
+        config["metadata"] = metadata
+
+    if tags:
+        config["tags"] = tags
 
     if thread_id:
         config["configurable"] = {"thread_id": thread_id}

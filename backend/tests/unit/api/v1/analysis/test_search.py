@@ -58,11 +58,11 @@ async def test_search_similar_analyses_success(mock_repo, override_get_repo):
 
 
 @pytest.mark.asyncio
-async def test_search_similar_analyses_empty_query(mock_repo, override_get_repo):
-    """Test search with empty query."""
+async def test_search_similar_analyses_empty_query(client: TestClient):
+    """Test search with empty query returns 422 validation error."""
     response = client.get("/api/v1/search/similar?query=")
-    assert response.status_code == 400
-    assert "cannot be empty" in response.json()["detail"]
+    # FastAPI's min_length=1 validation returns 422, not 400
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

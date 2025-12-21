@@ -1,0 +1,46 @@
+{
+  "configs": [
+    {
+      "name": "quality",
+      "type": "NUMERIC",
+      "min_value": 0,
+      "max_value": 10,
+      "description": "G-Eval quality score (0-10) for analysis depth and accuracy",
+      "note": "Configure in Langfuse UI: Settings \u2192 Scores \u2192 Add Score Config"
+    },
+    {
+      "name": "depth_score",
+      "type": "NUMERIC",
+      "min_value": 0,
+      "max_value": 10,
+      "description": "Analysis depth score (0-10)",
+      "note": "Configure in Langfuse UI: Settings \u2192 Scores \u2192 Add Score Config"
+    },
+    {
+      "name": "accuracy_score",
+      "type": "NUMERIC",
+      "min_value": 0,
+      "max_value": 10,
+      "description": "Technical accuracy score (0-10)",
+      "note": "Configure in Langfuse UI: Settings \u2192 Scores \u2192 Add Score Config"
+    },
+    {
+      "name": "relevance_score",
+      "type": "NUMERIC",
+      "min_value": 0,
+      "max_value": 10,
+      "description": "Relevance to user goals score (0-10)",
+      "note": "Configure in Langfuse UI: Settings \u2192 Scores \u2192 Add Score Config"
+    },
+    {
+      "name": "coherence_score",
+      "type": "NUMERIC",
+      "min_value": 0,
+      "max_value": 10,
+      "description": "Output coherence score (0-10)",
+      "note": "Configure in Langfuse UI: Settings \u2192 Scores \u2192 Add Score Config"
+    }
+  ],
+  "count": 5,
+  "note": "These must be configured manually in Langfuse UI (Settings \u2192 Scores)"
+}

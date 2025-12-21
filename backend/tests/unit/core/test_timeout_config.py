@@ -175,6 +175,83 @@ class TestCreateRunnableConfig:
             # Verify structure
             assert config.get("configurable", {}).get("thread_id") == "type-check"
 
+    @pytest.mark.unit
+    def test_includes_metadata_when_provided(self):
+        """When metadata provided, should include in config."""
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
+            mock_handler.return_value = None
+
+            from app.core.timeout_config import create_runnable_config
+
+            metadata = {"agent_type": "tech_comparator", "analysis_id": "abc-123"}
+            config = create_runnable_config(metadata=metadata)
+
+            assert "metadata" in config
+            assert config["metadata"]["agent_type"] == "tech_comparator"
+            assert config["metadata"]["analysis_id"] == "abc-123"
+
+    @pytest.mark.unit
+    def test_includes_tags_when_provided(self):
+        """When tags provided, should include in config."""
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
+            mock_handler.return_value = None
+
+            from app.core.timeout_config import create_runnable_config
+
+            tags = ["agent", "tech_comparator", "analysis:abc-123"]
+            config = create_runnable_config(tags=tags)
+
+            assert "tags" in config
+            assert config["tags"] == tags
+
+    @pytest.mark.unit
+    def test_metadata_none_no_metadata_key(self):
+        """When metadata is None, should not add metadata key."""
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
+            mock_handler.return_value = None
+
+            from app.core.timeout_config import create_runnable_config
+
+            config = create_runnable_config(metadata=None)
+
+            assert "metadata" not in config
+
+    @pytest.mark.unit
+    def test_tags_none_no_tags_key(self):
+        """When tags is None, should not add tags key."""
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
+            mock_handler.return_value = None
+
+            from app.core.timeout_config import create_runnable_config
+
+            config = create_runnable_config(tags=None)
+
+            assert "tags" not in config
+
+    @pytest.mark.unit
+    def test_all_parameters_combined(self):
+        """Should handle thread_id, metadata, tags, and callback together."""
+        mock_callback = MagicMock()
+
+        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
+            mock_handler.return_value = mock_callback
+
+            from app.core.timeout_config import create_runnable_config
+
+            metadata = {"agent_type": "supervisor", "task": "routing"}
+            tags = ["supervisor", "routing"]
+            config = create_runnable_config(
+                thread_id="full-test-789", metadata=metadata, tags=tags
+            )
+
+            # Should have all components
+            assert config["configurable"]["thread_id"] == "full-test-789"
+            assert config["metadata"]["agent_type"] == "supervisor"
+            assert config["metadata"]["task"] == "routing"
+            assert config["tags"] == tags
+            assert "callbacks" in config
+            assert mock_callback in config["callbacks"]
+
 
 class TestIntegration:
     """Integration tests for timeout_config module."""

@@ -34,6 +34,12 @@ import sys
 from pathlib import Path
 
 import httpx
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 # Add app to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))

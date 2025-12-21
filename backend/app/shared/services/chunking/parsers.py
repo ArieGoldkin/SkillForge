@@ -155,7 +155,7 @@ class TextParser:
         """Return supported content types for plain text."""
         return ["text/plain", "txt", "text"]
 
-    def parse(self, content: str, content_type: str | None = None) -> list[ParsedSection]:
+    def parse(self, content: str, _content_type: str | None = None) -> list[ParsedSection]:
         r"""Parse plain text into paragraph sections.
 
         Splits on double newlines (\n\n), strips whitespace, and filters empty sections.
@@ -180,7 +180,7 @@ class TextParser:
             for para in paragraphs
         ]
 
-    def can_parse(self, content: str, content_type: str | None = None) -> bool:
+    def can_parse(self, _content: str, _content_type: str | None = None) -> bool:
         """Return True - default parser accepts all content."""
         return True
 
@@ -223,7 +223,7 @@ class MarkdownParser:
         """Return supported content types for Markdown."""
         return ["text/markdown", "md", "markdown"]
 
-    def parse(self, content: str, content_type: str | None = None) -> list[ParsedSection]:
+    def parse(self, content: str, _content_type: str | None = None) -> list[ParsedSection]:
         """Parse Markdown into sections by headers.
 
         Splits on header lines (#, ##, etc.), preserving content under each header
@@ -421,7 +421,7 @@ class HTMLParser:
         """Return supported content types for HTML."""
         return ["text/html", "html", "htm"]
 
-    def parse(self, content: str, content_type: str | None = None) -> list[ParsedSection]:
+    def parse(self, content: str, _content_type: str | None = None) -> list[ParsedSection]:
         """Parse HTML into semantic sections.
 
         Extracts content from semantic tags while skipping non-content elements.
@@ -452,7 +452,7 @@ class HTMLParser:
                 self.current_text: list[str] = []
                 self.skip_depth = 0
 
-            def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
                 self.tag_stack.append(tag)
                 if tag in skip_tags:
                     self.skip_depth += 1

@@ -16,8 +16,8 @@ import {
 
 describe('stageConfig', () => {
   describe('STAGE_CONFIG', () => {
-    it('contains all 17 stages with correct structure', () => {
-      expect(TOTAL_STAGES).toBe(17)
+    it('contains all 18 stages with correct structure', () => {
+      expect(TOTAL_STAGES).toBe(18)
 
       // Verify each stage has required properties
       Object.entries(STAGE_CONFIG).forEach(([_stageName, config]) => {
@@ -36,8 +36,9 @@ describe('stageConfig', () => {
         .map(([name]) => name)
 
       expect(orderedStages[0]).toBe('extraction')
-      // artifact_generation is order 13, but optional stages come after (up to order 17)
-      expect(orderedStages[12]).toBe('artifact_generation') // 13th stage (index 12)
+      // artifact_generation is order 13, position depends on quality_gate/quality_validation (both order 12)
+      // With 18 stages total, artifact_generation should be at index 13 (14th position)
+      expect(orderedStages[13]).toBe('artifact_generation')
       expect(orderedStages[orderedStages.length - 1]).toBe('metrics') // Last optional stage
     })
   })
@@ -56,6 +57,7 @@ describe('stageConfig', () => {
         'trends_analysis',
         'dependencies_analysis',
         'aggregation',
+        'quality_gate',
         'quality_validation',
         'artifact_generation',
         'chunking',
@@ -116,13 +118,16 @@ describe('stageConfig', () => {
     })
 
     it('returns ~1 minute when mid-way through', () => {
-      expect(estimateTimeRemaining(11)).toBe('~1 minute')
+      // With 18 total stages: 18-12=6, 18-13=5, 18-14=4 all fall in "<=6" range
+      expect(estimateTimeRemaining(12)).toBe('~1 minute')
       expect(estimateTimeRemaining(13)).toBe('~1 minute')
+      expect(estimateTimeRemaining(14)).toBe('~1 minute')
     })
 
     it('returns ~30 seconds when almost complete', () => {
-      expect(estimateTimeRemaining(14)).toBe('~30 seconds')
+      // With 18 total stages: 18-15=3, 18-16=2 fall in "<=3" range
       expect(estimateTimeRemaining(15)).toBe('~30 seconds')
+      expect(estimateTimeRemaining(16)).toBe('~30 seconds')
     })
   })
 })

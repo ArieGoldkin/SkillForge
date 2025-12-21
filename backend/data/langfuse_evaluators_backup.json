@@ -1,0 +1,524 @@
+{
+  "metadata": {
+    "backup_timestamp": "2025-12-21T08:29:44.949819+00:00",
+    "score_config_count": 17,
+    "prompt_count": 15,
+    "langfuse_host": "http://localhost:3000",
+    "description": "Backup of Langfuse configurations for LLM-as-a-Judge evaluation. Score configs define score types/ranges. Prompts define evaluation prompts. Evaluator functions are Python code in app/shared/services/g_eval/."
+  },
+  "score_configs": [
+    {
+      "id": "e3a0e310-e3dd-41c5-a009-ca0c7fba690c",
+      "name": "cost_usd",
+      "isArchived": false,
+      "description": "Estimated cost in USD for LLM calls",
+      "createdAt": "2025-12-21T07:30:57.467Z",
+      "updatedAt": "2025-12-21T07:30:57.467Z",
+      "projectId": "skillforge",
+      "maxValue": null,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "61b980e7-1a01-4279-a3a6-f17bfdb0db0d",
+      "name": "token_count_total",
+      "isArchived": false,
+      "description": "Total token count (input + output)",
+      "createdAt": "2025-12-21T07:30:57.462Z",
+      "updatedAt": "2025-12-21T07:30:57.462Z",
+      "projectId": "skillforge",
+      "maxValue": null,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "be8e901b-bb7b-4141-9222-54f189219be0",
+      "name": "token_count_output",
+      "isArchived": false,
+      "description": "Output token count for LLM calls",
+      "createdAt": "2025-12-21T07:30:57.458Z",
+      "updatedAt": "2025-12-21T07:30:57.458Z",
+      "projectId": "skillforge",
+      "maxValue": null,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "011d97de-b884-4d6f-91f1-ec16e9892dfc",
+      "name": "token_count_input",
+      "isArchived": false,
+      "description": "Input token count for LLM calls",
+      "createdAt": "2025-12-21T07:30:57.452Z",
+      "updatedAt": "2025-12-21T07:30:57.452Z",
+      "projectId": "skillforge",
+      "maxValue": null,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "17e56e58-e99d-474f-ba3c-666f69c50059",
+      "name": "cache_hit",
+      "isArchived": false,
+      "description": "Whether the result was served from cache (1=hit, 0=miss)",
+      "createdAt": "2025-12-21T07:30:57.447Z",
+      "updatedAt": "2025-12-21T07:30:57.447Z",
+      "projectId": "skillforge",
+      "dataType": "BOOLEAN",
+      "maxValue": null,
+      "minValue": null,
+      "categories": [
+        {
+          "label": "True",
+          "value": 1
+        },
+        {
+          "label": "False",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "38f2de11-ed73-4375-a62d-392e95e97ba5",
+      "name": "latency_seconds",
+      "isArchived": false,
+      "description": "Execution latency in seconds",
+      "createdAt": "2025-12-21T07:30:57.443Z",
+      "updatedAt": "2025-12-21T07:30:57.443Z",
+      "projectId": "skillforge",
+      "maxValue": null,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "aeabf39e-c37e-4f9c-a840-85648aec69e1",
+      "name": "g_eval_overall",
+      "isArchived": false,
+      "description": "G-Eval overall quality score (weighted average, 0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.439Z",
+      "updatedAt": "2025-12-21T07:30:57.439Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "8879f3bc-c490-475d-b987-76da7e75e0be",
+      "name": "g_eval_completeness",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for content completeness (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.435Z",
+      "updatedAt": "2025-12-21T07:30:57.435Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "a4620d73-4acf-43f4-a78c-db6fe6c0b3d8",
+      "name": "g_eval_actionability",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for practical actionability (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.432Z",
+      "updatedAt": "2025-12-21T07:30:57.432Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "78d737bb-bb21-4cfe-a058-da674bcf6c75",
+      "name": "g_eval_coherence",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for logical coherence (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.428Z",
+      "updatedAt": "2025-12-21T07:30:57.428Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "fd0d7f88-7abb-43ef-ac54-8db758c2151c",
+      "name": "g_eval_depth",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for analytical depth (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.425Z",
+      "updatedAt": "2025-12-21T07:30:57.425Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "45d9b4b0-5dff-4f41-b7ce-ddb93e974fa0",
+      "name": "g_eval_relevance",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for content relevance (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.422Z",
+      "updatedAt": "2025-12-21T07:30:57.422Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "d345134e-b8d7-48f9-a1e6-debfa2d71fbc",
+      "name": "quality_avg",
+      "isArchived": false,
+      "description": "Average of all G-Eval quality scores (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.419Z",
+      "updatedAt": "2025-12-21T07:30:57.419Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "60b54f9e-5b3d-4302-a4cb-6180db86fc78",
+      "name": "quality_coherence",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for content coherence and structure (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.415Z",
+      "updatedAt": "2025-12-21T07:30:57.415Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "5ce64aad-ae1c-41b6-b9d2-c08b93da926d",
+      "name": "quality_depth",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for content depth and detail (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.412Z",
+      "updatedAt": "2025-12-21T07:30:57.412Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "c78314dd-7e99-4b8c-8164-191850aacc7a",
+      "name": "quality_relevance",
+      "isArchived": false,
+      "description": "G-Eval LLM-as-a-Judge score for content relevance (0.0 to 1.0)",
+      "createdAt": "2025-12-21T07:30:57.409Z",
+      "updatedAt": "2025-12-21T07:30:57.409Z",
+      "projectId": "skillforge",
+      "maxValue": 1,
+      "minValue": 0,
+      "dataType": "NUMERIC",
+      "categories": null
+    },
+    {
+      "id": "c6139b78-d0b9-4ab4-9637-c9e8db5be441",
+      "name": "user_feedback",
+      "isArchived": false,
+      "description": "Human annotation feedback from users (thumbs up/down, 0=negative 1=positive)",
+      "createdAt": "2025-12-21T07:30:57.403Z",
+      "updatedAt": "2025-12-21T07:30:57.403Z",
+      "projectId": "skillforge",
+      "dataType": "BOOLEAN",
+      "maxValue": null,
+      "minValue": null,
+      "categories": [
+        {
+          "label": "True",
+          "value": 1
+        },
+        {
+          "label": "False",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "prompts": [
+    {
+      "name": "analysis-agent-code-quality-critic",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.157Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-dependency-mapper",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.132Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-implementation-planner",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.097Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-integration-feasibility",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.148Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-performance-analyst",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.115Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-research-analyst",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.165Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-security-auditor",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.107Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-tech-comparator",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.124Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-agent-trend-validator",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.141Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "analysis-supervisor-routing",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.079Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "evaluator-quality-accuracy",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.190Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "evaluator-quality-coherence",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.200Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "evaluator-quality-depth",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.181Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "evaluator-quality-overall",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.210Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    },
+    {
+      "name": "evaluator-quality-relevance",
+      "tags": [],
+      "lastUpdatedAt": "2025-12-21T07:31:17.174Z",
+      "versions": [
+        1
+      ],
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "type": "text",
+      "lastConfig": {}
+    }
+  ],
+  "evaluator_functions": {
+    "note": "Evaluator functions are Python code, not stored in Langfuse",
+    "source_files": [
+      "app/shared/services/g_eval/langfuse_evaluators.py",
+      "app/shared/services/g_eval/rubrics.py",
+      "app/shared/services/g_eval/scorer.py"
+    ],
+    "standard_evaluators": {
+      "description": "Generated by get_standard_evaluators(agent_type)",
+      "criteria": [
+        "completeness",
+        "accuracy",
+        "coherence",
+        "depth"
+      ],
+      "score_names": [
+        "g_eval_completeness",
+        "g_eval_accuracy",
+        "g_eval_coherence",
+        "g_eval_depth",
+        "g_eval_overall"
+      ]
+    },
+    "run_evaluators": {
+      "description": "Generated by get_standard_run_evaluators()",
+      "evaluators": [
+        {
+          "name": "average_g_eval_score_evaluator",
+          "output_score": "avg_g_eval_overall",
+          "description": "Calculates average G-Eval overall score across all items"
+        },
+        {
+          "name": "criterion_average_evaluator",
+          "output_scores": [
+            "avg_g_eval_completeness",
+            "avg_g_eval_accuracy",
+            "avg_g_eval_coherence",
+            "avg_g_eval_depth"
+          ],
+          "description": "Calculates average per criterion"
+        },
+        {
+          "name": "quality_threshold_evaluator",
+          "output_score": "quality_pass_rate",
+          "default_threshold": 0.6,
+          "description": "Counts items passing quality threshold"
+        }
+      ]
+    },
+    "agent_types": [
+      "tech_comparator",
+      "security_auditor",
+      "implementation_planner",
+      "integration_analyst",
+      "performance_profiler",
+      "code_reviewer",
+      "documentation_specialist",
+      "test_strategist"
+    ],
+    "llm_model": "gemini-2.5-flash",
+    "llm_model_note": "Configured in backend/.env as LLM_MODEL"
+  }
+}

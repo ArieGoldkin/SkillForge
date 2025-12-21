@@ -12,12 +12,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.logging import get_logger
 from app.shared.services.memory.agent_memory_service import AgentMemoryService, MemorySnippet
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     from app.shared.services.embeddings.service import EmbeddingService
 
 logger = get_logger(__name__)

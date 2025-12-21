@@ -259,18 +259,9 @@ async def create_few_shot_agent(  # noqa: PLR0913 - Factory function needs multi
             agent_type=agent_type,
             variant=variant,
         )
-        try:
-            return base_agent_factory(**factory_kwargs)
-        except Exception as e:
-            logger.error(
-                "few_shot_factory_base_agent_creation_failed",
-                agent_type=agent_type,
-                variant=variant,
-                error=str(e),
-                error_type=type(e).__name__,
-                exc_info=True,
-            )
-            raise
+        # Create base agent - errors propagate naturally (no manual try/catch)
+        # LCEL chains in base_agent_factory already have retry + fallback
+        return base_agent_factory(**factory_kwargs)
 
     # Treatment variant: retrieve examples and inject into prompt
     start_time = time.perf_counter()
@@ -364,14 +355,5 @@ async def create_few_shot_agent(  # noqa: PLR0913 - Factory function needs multi
         )
 
         # Return base agent without examples
-        try:
-            return base_agent_factory(**factory_kwargs)
-        except Exception as base_error:
-            logger.error(
-                "few_shot_factory_fallback_failed",
-                agent_type=agent_type,
-                error=str(base_error),
-                error_type=type(base_error).__name__,
-                exc_info=True,
-            )
-            raise
+        # LCEL chains in base_agent_factory already have retry + fallback
+        return base_agent_factory(**factory_kwargs)

@@ -282,7 +282,7 @@ async def generate_artifact(
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
+    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
         pass
 
     logger.info(

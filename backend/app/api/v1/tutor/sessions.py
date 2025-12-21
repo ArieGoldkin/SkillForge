@@ -4,8 +4,9 @@ import asyncio
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
 from app.domains.tutor.repositories import ITutorRepository, get_tutor_repository
 from app.domains.tutor.schemas.api import (
@@ -34,7 +35,14 @@ def _format_messages(messages: list) -> list[dict[str, object]]:
     ]
 
 
-@router.post("/tutor/sessions", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tutor/sessions",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Failed to create session"},
+    },
+)
 async def create_session(
     request: CreateSessionRequest,
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
@@ -114,9 +122,15 @@ async def create_session(
         ) from e
 
 
-@router.get("/tutor/sessions/{session_id}")
+@router.get(
+    "/tutor/sessions/{session_id}",
+    responses={
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def get_session(
-    session_id: uuid.UUID,
+    session_id: Annotated[uuid.UUID, Path(description="Tutor session UUID")],
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> GetSessionResponse:
     """Get tutoring session with conversation history (for resume).
@@ -161,9 +175,16 @@ async def get_session(
         ) from e
 
 
-@router.patch("/tutor/sessions/{session_id}")
+@router.patch(
+    "/tutor/sessions/{session_id}",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid status value"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def update_session(
-    session_id: uuid.UUID,
+    session_id: Annotated[uuid.UUID, Path(description="Tutor session UUID")],
     request: UpdateSessionRequest,
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> dict[str, object]:

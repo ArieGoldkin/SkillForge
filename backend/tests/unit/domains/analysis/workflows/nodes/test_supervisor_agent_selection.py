@@ -44,10 +44,12 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.7,
         )
 
-        mock_structured_model = MagicMock()
-        mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         # Mock filter_agents_by_content_type to simulate filtering down to 1 agent
         def mock_filter(agents, content_type):
@@ -94,10 +96,12 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.8,
         )
 
-        mock_structured_model = MagicMock()
-        mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         # Mock filter to simulate filtering down to 2 agents
         def mock_filter(agents, content_type):
@@ -143,10 +147,12 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.85,
         )
 
-        mock_structured_model = MagicMock()
-        mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         # Mock filter to keep all 3 agents (no filtering)
         def mock_filter(agents, content_type):
@@ -197,10 +203,12 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.9,
         )
 
-        mock_structured_model = MagicMock()
-        mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         # Mock filter to simulate all agents being filtered out
         def mock_filter(agents, content_type):
@@ -246,10 +254,12 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.7,
         )
 
-        mock_structured_model = MagicMock()
-        mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         # Content with code patterns (has imports + framework = code detected)
         content_with_imports = """
@@ -380,9 +390,11 @@ class TestSupervisorMinimumAgentEnforcement:
             confidence=0.9,
         )
 
-        mock_structured_model = MagicMock()
+        mock_lcel_chain = MagicMock()
+        mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+        mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
         mock_model = MagicMock()
-        mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+        mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
         with (
             patch(
@@ -399,7 +411,7 @@ class TestSupervisorMinimumAgentEnforcement:
             ),
         ):
             # Test SHORT content
-            mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection_short)
+            mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection_short)
             result_short = await supervisor_route(
                 content="x" * 500,  # Short content
                 content_type="article",
@@ -409,7 +421,7 @@ class TestSupervisorMinimumAgentEnforcement:
             assert len(result_short["supervisor_decision"]["agents"]) >= 3
 
             # Test COMPREHENSIVE content
-            mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection_comprehensive)
+            mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection_comprehensive)
             result_comp = await supervisor_route(
                 content="x" * 5000,  # Comprehensive content
                 content_type="article",

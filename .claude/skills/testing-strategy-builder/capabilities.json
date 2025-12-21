@@ -75,14 +75,37 @@
   "integrates_with": ["code-review-playbook", "evidence-verification"],
 
   "progressive_loading": {
-    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
-    "tier_2_overview": { "file": "SKILL.md", "tokens": 500, "sections": ["overview", "testing-philosophy"] },
-    "tier_3_specific": { "files": "references/code-examples.md#*", "tokens": "150-200 each" },
-    "tier_4_generate": { "files": "templates/*.md", "tokens": "200-300 each" }
+    "tier_1_discovery": {
+      "file": "capabilities.json",
+      "tokens": 100,
+      "use_when": "Initial task analysis - determine if testing strategy skill is relevant"
+    },
+    "tier_2_overview": {
+      "file": "SKILL.md",
+      "tokens": 500,
+      "use_when": "Skill confirmed relevant - need testing philosophy and coverage targets"
+    },
+    "tier_3_specific": {
+      "files": "references/code-examples.md#*",
+      "tokens": "150-200 each",
+      "use_when": "Need specific test implementation examples (unit, integration, E2E, performance)"
+    },
+    "tier_4_generate": {
+      "files": "templates/*.md",
+      "tokens": "200-300 each",
+      "use_when": "Ready to generate test plans or test case documentation"
+    }
   },
 
   "mcp_tools": {
-    "browser_testing": { "tool": "playwright", "use_when": "E2E testing needed" },
-    "documentation": { "tool": "context7", "library_ids": ["/vitest-dev/vitest", "/jestjs/jest"] }
+    "browser_testing": {
+      "tool": "playwright",
+      "use_when": "E2E testing needed for browser automation"
+    },
+    "documentation_lookup": {
+      "tool": "context7",
+      "library_ids": ["/vitest-dev/vitest", "/jestjs/jest", "/microsoft/playwright"],
+      "use_when": "Need current testing framework specific patterns"
+    }
   }
 }

@@ -1,0 +1,115 @@
+{
+  "prompts": [
+    {
+      "name": "analysis-agent-code-quality-critic",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-dependency-mapper",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-implementation-planner",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-integration-feasibility",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-performance-analyst",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-research-analyst",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-security-auditor",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-tech-comparator",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-agent-trend-validator",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    },
+    {
+      "name": "analysis-supervisor-routing",
+      "version": 1,
+      "prompt": "",
+      "config": {},
+      "labels": [
+        "latest",
+        "production"
+      ],
+      "tags": []
+    }
+  ],
+  "count": 10
+}

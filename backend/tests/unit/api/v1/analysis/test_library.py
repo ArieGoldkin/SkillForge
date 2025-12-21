@@ -588,12 +588,11 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_empty_query_returns_400(self, mock_repo, override_get_repo):
-        """Test empty query string returns 400 error."""
+        """Test empty query string returns 422 validation error."""
         response = client.get("/api/v1/library", params={"query": ""})
 
-        assert response.status_code == 400
-        data = response.json()
-        assert "empty string" in data["detail"].lower()
+        # FastAPI's min_length=1 validation returns 422, not 400
+        assert response.status_code == 422
 
     @pytest.mark.asyncio
     async def test_whitespace_query_returns_400(self, mock_repo, override_get_repo):

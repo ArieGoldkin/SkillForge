@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SuccessMetrics } from '@/schemas/sse'
 
-import type { StageStatusEntry } from '../useProgressSteps'
+import type { StageStatusEntry } from '../stageConfig'
 import { useProgressSteps } from '../useProgressSteps'
 
 // Valid UUIDs for testing

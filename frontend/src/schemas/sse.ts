@@ -70,57 +70,66 @@ export const ProgressEventDetailsSchema = z
 /**
  * Progress Event Schema
  * Sent during analysis workflow execution to report stage progress
+ *
+ * Uses .passthrough() to allow additional unknown fields from backend
+ * (e.g., agent_type, processing_time_ms, quality_warning, etc.)
  */
-export const SSEProgressEventSchema = z.object({
-  type: z.literal('progress'),
-  analysis_id: z.string().uuid(),
-  stage: StageNameSchema,
-  status: StageStatusSchema,
-  timestamp: z.string(), // ISO 8601 format but allowing flexibility
-  expected_total_stages: z.number().int().positive().optional(),
-  findings_summary: z.string().optional(),
-  insights_count: z.number().int().nonnegative().optional(),
-  confidence_score: z.number().min(0).max(1).optional(),
-  analysis_metadata: AnalysisMetadataSchema.optional(),
-  skip_reasons: z.record(z.string(), z.string()).optional(),
-  success_metrics: SuccessMetricsSchema.optional(),
-  details: ProgressEventDetailsSchema.optional(),
-})
+export const SSEProgressEventSchema = z
+  .object({
+    type: z.literal('progress'),
+    analysis_id: z.string().uuid(),
+    stage: StageNameSchema,
+    status: StageStatusSchema,
+    timestamp: z.string(), // ISO 8601 format but allowing flexibility
+    expected_total_stages: z.number().int().positive().optional(),
+    findings_summary: z.string().optional(),
+    insights_count: z.number().int().nonnegative().optional(),
+    confidence_score: z.number().min(0).max(1).optional(),
+    analysis_metadata: AnalysisMetadataSchema.optional(),
+    skip_reasons: z.record(z.string(), z.string()).optional(),
+    success_metrics: SuccessMetricsSchema.optional(),
+    details: ProgressEventDetailsSchema.optional(),
+  })
+  .passthrough() // Allow additional fields like agent_type, processing_time_ms
 
 /**
  * Complete Event Schema
  * Sent when the entire analysis workflow completes successfully
  */
-export const SSECompleteEventSchema = z.object({
-  type: z.literal('complete'),
-  analysis_id: z.string().uuid(),
-  stage: z.enum(['artifact_generation', 'workflow']),
-  status: z.literal('complete'),
-  timestamp: z.string(),
-  trace_id: z.string().optional(), // Langfuse trace ID for feedback submission
-  artifact_id: z.string().uuid().optional(),
-  details: z.record(z.string(), z.unknown()).optional(),
-})
+export const SSECompleteEventSchema = z
+  .object({
+    type: z.literal('complete'),
+    analysis_id: z.string().uuid(),
+    stage: z.enum(['artifact_generation', 'workflow']),
+    status: z.literal('complete'),
+    timestamp: z.string(),
+    trace_id: z.string().optional(), // Langfuse trace ID for feedback submission
+    artifact_id: z.string().uuid().optional(),
+    details: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough() // Allow additional fields from backend
 
 /**
  * Error Event Schema
  * Sent when an analysis stage fails
  */
-export const SSEErrorEventSchema = z.object({
-  type: z.literal('error'),
-  analysis_id: z.string().uuid(),
-  stage: z.string(), // Can be any stage name, allowing flexibility for error events
-  status: z.literal('failed'),
-  timestamp: z.string(),
-  error: z.string().optional(), // Backend sends error at top level
-  details: z
-    .object({
-      error: z.string().optional(),
-      error_code: z.string().optional(),
-    })
-    .catchall(z.unknown())
-    .optional(),
-})
+export const SSEErrorEventSchema = z
+  .object({
+    type: z.literal('error'),
+    analysis_id: z.string().uuid(),
+    stage: z.string(), // Can be any stage name, allowing flexibility for error events
+    status: z.literal('failed'),
+    timestamp: z.string(),
+    error: z.string().optional(), // Backend sends error at top level
+    details: z
+      .object({
+        error: z.string().optional(),
+        error_code: z.string().optional(),
+      })
+      .catchall(z.unknown())
+      .optional(),
+  })
+  .passthrough() // Allow additional fields from backend
 
 /**
  * Unified SSE Event Schema - Discriminated Union

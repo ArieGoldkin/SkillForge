@@ -650,7 +650,7 @@ class TestLangfuseQueueIntegration:
                     artifact_id=artifact_id,
                     trace_id=trace_id,
                     reason="low_quality",
-                    metadata={"quality_scores": {"relevance": 0.5}},
+                    _metadata={"quality_scores": {"relevance": 0.5}},
                 )
 
         # Should succeed
@@ -675,7 +675,7 @@ class TestLangfuseQueueIntegration:
                 artifact_id=artifact_id,
                 trace_id=None,  # No trace_id
                 reason="low_quality",
-                metadata=None,
+                _metadata=None,
             )
 
         # Should return False because Langfuse requires trace_id for TRACE objectType
@@ -694,7 +694,7 @@ class TestLangfuseQueueIntegration:
                 artifact_id=artifact_id,
                 trace_id="trace-123",
                 reason="low_quality",
-                metadata=None,
+                _metadata=None,
             )
 
         # Should return False gracefully
@@ -716,7 +716,7 @@ class TestLangfuseQueueIntegration:
                 artifact_id=artifact_id,
                 trace_id="trace-123",
                 reason="low_quality",
-                metadata=None,
+                _metadata=None,
             )
 
         # Should return False gracefully
@@ -740,7 +740,7 @@ class TestLangfuseQueueIntegration:
                 artifact_id=artifact_id,
                 trace_id="trace-123",
                 reason="low_quality",
-                metadata=None,
+                _metadata=None,
             )
 
         # Should return False gracefully
@@ -773,7 +773,7 @@ class TestLangfuseQueueIntegration:
                     artifact_id=artifact_id,
                     trace_id="trace-123",
                     reason="low_quality",
-                    metadata=None,
+                    _metadata=None,
                 )
 
         # Should return False (graceful degradation, no exception)
@@ -811,5 +811,5 @@ class TestLangfuseQueueIntegration:
             artifact_id=artifact_id,
             trace_id=trace_id,
             reason="negative_feedback",
-            metadata={"comment": "Not helpful"},
+            _metadata={"comment": "Not helpful"},
         )

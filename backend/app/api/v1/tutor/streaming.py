@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 @router.get("/tutor/sessions/{session_id}/stream")
 async def stream_tutor_progress(
     session_id: uuid.UUID,
-    request: Request,
+    request: Request,  # noqa: ARG001 - Required by SSE framework for disconnect detection
 ) -> EventSourceResponse:
     """Stream real-time tutor progress via Server-Sent Events (SSE).
 

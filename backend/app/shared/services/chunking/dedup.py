@@ -8,10 +8,13 @@ Provides two levels of deduplication:
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from app.shared.services.chunking.chunker import ChunkText
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from app.shared.services.chunking.chunker import ChunkText
 
 
 @dataclass

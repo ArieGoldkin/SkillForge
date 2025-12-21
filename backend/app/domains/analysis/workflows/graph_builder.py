@@ -347,7 +347,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
         for aspect, value in quality_scores_raw.items():
             if isinstance(value, dict) and "score" in value:
                 # Type checker needs explicit cast to understand value is dict[str, Any]
-                value_dict = cast(dict[str, Any], value)
+                value_dict = cast("dict[str, Any]", value)
                 score_val = value_dict.get("score")
                 if isinstance(score_val, (int, float)):
                     quality_scores_flat[aspect] = float(score_val)
@@ -364,11 +364,13 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     )
 
     # Emit SSE warning event (not error - we're continuing)
+    # Status must be valid enum: pending, running, complete, failed, skipped
     await emit_streaming_event(
         "progress",
         analysis_id=analysis_id,
         stage="quality_gate",
-        status="low_quality",
+        status="complete",  # Gate completed (with low quality warning in details)
+        quality_warning="low_quality",  # Preserve warning info in details
         message=(
             f"Quality below threshold after {retry_count} retries "
             f"(score: {avg_score:.2f}). Generating artifact anyway."

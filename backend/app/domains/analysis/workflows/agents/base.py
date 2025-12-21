@@ -7,12 +7,11 @@ SSE event emission.
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
@@ -26,6 +25,9 @@ from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
 from app.db.models.agent_finding import AgentFinding
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+
+if TYPE_CHECKING:
+    from langchain_core.language_models.chat_models import BaseChatModel
 
 logger = get_logger(__name__)
 
@@ -137,8 +139,8 @@ def create_structured_agent(
 
     # Note: ToolStrategy handles schema validation internally
     # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths
-    agent = create_agent(
-        cast(BaseChatModel, bound_model),
+    return create_agent(
+        cast("BaseChatModel", bound_model),
         tools=tools or [],
         system_prompt=system_message,
         response_format=ToolStrategy(response_schema),
@@ -148,8 +150,6 @@ def create_structured_agent(
     # Validation errors are automatically captured by LangChain and traced by Langfuse.
     # We don't need to wrap invoke here as ToolStrategy handles validation internally.
     # The validation errors will appear in Langfuse traces automatically.
-
-    return agent
 
 
 def _build_tool_enhanced_prompt(
@@ -276,14 +276,12 @@ def create_tool_enabled_agent(
 
     # Note: ToolStrategy handles schema validation internally
     # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths
-    agent = create_agent(
-        cast(BaseChatModel, bound_model),
+    return create_agent(
+        cast("BaseChatModel", bound_model),
         tools=list(tools),
         system_prompt=system_message,
         response_format=ToolStrategy(response_schema),
     )
-
-    return agent
 
 
 async def save_agent_finding(  # noqa: PLR0913

@@ -380,11 +380,9 @@ class GitHubImporter:
                         state=item["state"],
                         reactions_count=total_reactions,
                         comments_count=item.get("comments", 0),
-                        created_at=datetime.fromisoformat(
-                            item["created_at"].replace("Z", "+00:00")
-                        ),
+                        created_at=datetime.fromisoformat(item["created_at"]),
                         closed_at=(
-                            datetime.fromisoformat(item["closed_at"].replace("Z", "+00:00"))
+                            datetime.fromisoformat(item["closed_at"])
                             if item.get("closed_at")
                             else None
                         ),
@@ -511,12 +509,11 @@ class GitHubImporter:
         # Map score to difficulty
         if score >= 4:
             return "expert"
-        elif score >= 3:
+        if score >= 3:
             return "hard"
-        elif score >= 1:
+        if score >= 1:
             return "medium"
-        else:
-            return "easy"
+        return "easy"
 
     def _convert_to_example(
         self,

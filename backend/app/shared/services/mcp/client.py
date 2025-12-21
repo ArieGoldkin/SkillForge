@@ -24,7 +24,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -39,13 +38,16 @@ from tenacity import (
 )
 
 from app.core.logging import get_logger
-from app.shared.services.mcp.config import MCPServerConfig
+from app.shared.services.mcp.callbacks import MCPCallbacks
 from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
+from app.shared.services.mcp.interceptors import create_default_interceptors
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Awaitable, Callable
 
     from langchain_core.tools import BaseTool
+
+    from app.shared.services.mcp.config import MCPServerConfig, MCPSettings
 
 logger = get_logger(__name__)
 
@@ -244,12 +246,25 @@ class MCPClientPool:
 
     """
 
-    def __init__(self, server_configs: dict[str, MCPServerConfig]) -> None:
+    def __init__(
+        self,
+        server_configs: dict[str, MCPServerConfig],
+        *,
+        settings: MCPSettings | None = None,
+        analysis_id: str | None = None,
+        enable_interceptors: bool = True,
+        enable_callbacks: bool = True,
+    ) -> None:
         """Initialize pool with server configurations.
 
         Args:
             server_configs: Mapping of server names to their configurations.
                           Only enabled servers will be used.
+            settings: Optional MCP settings for interceptor configuration.
+                     Required if enable_interceptors is True.
+            analysis_id: Optional analysis ID for SSE callback routing.
+            enable_interceptors: Whether to use 0.2 interceptors (auth, retry, etc.)
+            enable_callbacks: Whether to use 0.2 callbacks (progress, logging)
 
         """
         # Filter to only enabled servers
@@ -259,17 +274,30 @@ class MCPClientPool:
         self._client: MultiServerMCPClient | None = None
         self._closed = False
 
+        # 0.2 features configuration
+        self._settings = settings
+        self._analysis_id = analysis_id
+        self._enable_interceptors = enable_interceptors
+        self._enable_callbacks = enable_callbacks
+
         logger.info(
             "mcp_client_pool_initialized",
             server_count=len(self._configs),
             servers=list(self._configs.keys()),
+            interceptors_enabled=enable_interceptors,
+            callbacks_enabled=enable_callbacks,
         )
 
     async def _ensure_client(self) -> MultiServerMCPClient:
-        """Lazily create the MCP client.
+        """Lazily create the MCP client with 0.2 features.
 
         Creates a MultiServerMCPClient with all configured servers.
         The client handles actual MCP protocol communication.
+
+        0.2 Features:
+            - use_tool_name_prefix=True: Tools prefixed with server name
+            - tool_interceptors: Auth, retry, logging, enrichment chain
+            - callbacks: Progress and logging notifications from MCP servers
 
         Returns:
             Initialized MultiServerMCPClient
@@ -289,11 +317,48 @@ class MCPClientPool:
                 for name, cfg in self._configs.items():
                     client_config[name] = cfg.to_langchain_config()
 
-                self._client = MultiServerMCPClient(client_config)
+                # Build 0.2 features
+                interceptors = None
+                callbacks = None
+
+                # Create interceptors chain if enabled and settings provided
+                if self._enable_interceptors and self._settings:
+                    # Use defaults: all interceptors enabled, log_arguments=False for privacy
+                    interceptors = create_default_interceptors(self._settings)
+                    logger.debug(
+                        "mcp_interceptors_configured",
+                        interceptor_count=len(interceptors),
+                    )
+
+                # Create callbacks if enabled
+                if self._enable_callbacks:
+                    mcp_callbacks = MCPCallbacks.create(
+                        analysis_id=self._analysis_id,
+                        enable_langfuse=True,
+                        enable_sse=bool(self._analysis_id),  # Only SSE if we have analysis_id
+                        enable_logging=True,
+                    )
+                    callbacks = mcp_callbacks.to_callbacks()
+                    logger.debug(
+                        "mcp_callbacks_configured",
+                        analysis_id=self._analysis_id,
+                    )
+
+                # Create client with 0.2 features
+                # use_tool_name_prefix=True: Tools get prefixed with server name (e.g., github_get_repo)
+                self._client = MultiServerMCPClient(
+                    client_config,
+                    use_tool_name_prefix=True,  # 0.2 feature: built-in server prefixing
+                    tool_interceptors=interceptors,  # 0.2 feature: interceptor chain
+                    callbacks=callbacks,  # 0.2 feature: progress/logging notifications
+                )
 
                 logger.info(
                     "mcp_client_created",
                     servers=list(self._configs.keys()),
+                    use_tool_name_prefix=True,
+                    interceptors_enabled=interceptors is not None,
+                    callbacks_enabled=callbacks is not None,
                 )
             except Exception as e:
                 logger.exception(
@@ -419,9 +484,9 @@ class MCPClientPool:
 
             # Load tools with timeout enforcement
             async def _do_load() -> list[BaseTool]:
-                async with client:  # type: ignore[attr-defined]
-                    tools: list[BaseTool] = client.get_tools()  # type: ignore[misc]
-                    return tools
+                # Use new 0.2.1 API: get_tools(server_name=...)
+                tools: list[BaseTool] = await client.get_tools(server_name=conn.server_name)
+                return tools
 
             tools = await execute_with_timeout(
                 _do_load(),
@@ -430,20 +495,10 @@ class MCPClientPool:
                 server_name=conn.server_name,
             )
 
-            # Filter to tools from this specific server
-            # Tool names are typically prefixed with server name
-            server_tools = [
-                t
-                for t in tools
-                if t.name.startswith(f"{conn.server_name}_")
-                or conn.server_name in getattr(t, "metadata", {}).get("server", "")
-            ]
-
-            # If no prefix filtering works, use all tools for this server
-            if not server_tools:
-                server_tools = list(tools)
-
-            return server_tools
+            # With use_tool_name_prefix=True (0.2 feature), tools are already
+            # prefixed with server name (e.g., github_get_repo) by the client.
+            # No manual filtering needed - just return the tools.
+            return list(tools)
 
         try:
             conn.tools = await _load_with_retry()
@@ -625,21 +680,10 @@ class MCPClientPool:
         self._connections.clear()
 
         # Close the underlying client
+        # Note: langchain-mcp-adapters 0.2.1 doesn't require explicit cleanup
+        # The client handles its own lifecycle internally
         if self._client is not None:
-            try:
-                # Note: Check langchain-mcp-adapters for proper cleanup method
-                if hasattr(self._client, "close"):
-                    await self._client.close()  # type: ignore[misc]
-                elif hasattr(self._client, "__aexit__"):
-                    await self._client.__aexit__(None, None, None)  # type: ignore[misc]
-            except (OSError, RuntimeError) as e:
-                # OSError for network/process issues, RuntimeError for event loop issues
-                logger.warning(
-                    "mcp_client_close_error",
-                    error=str(e),
-                )
-            finally:
-                self._client = None
+            self._client = None
 
         logger.info("mcp_client_pool_closed")
 

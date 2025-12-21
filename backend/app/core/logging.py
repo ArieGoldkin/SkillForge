@@ -69,7 +69,7 @@ def setup_logging() -> None:
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             level=logging.INFO,
         )
-        logging.error(f"Failed to setup structlog: {e}", exc_info=True)
+        logging.error(f"Failed to setup structlog: {e}", exc_info=True)  # noqa: LOG015 - Fallback before logger setup
         raise
 
 

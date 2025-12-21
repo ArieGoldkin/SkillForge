@@ -8,8 +8,9 @@ This module provides endpoints for:
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.annotation_service import AnnotationService, get_annotation_service
 from app.core.logging import get_logger
 from app.db.repositories.annotation_repository import (
@@ -33,7 +34,12 @@ router = APIRouter(prefix="/annotations", tags=["annotations"])
 logger = get_logger(__name__)
 
 
-@router.post("/feedback")
+@router.post(
+    "/feedback",
+    responses={
+        500: {"model": ErrorResponse, "description": "Feedback submission failed"},
+    },
+)
 async def submit_feedback(
     request: SubmitFeedbackRequest,
     service: Annotated[AnnotationService, Depends(get_annotation_service)],
@@ -87,7 +93,14 @@ async def submit_feedback(
         ) from None
 
 
-@router.post("/flag", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/flag",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        409: {"model": ErrorResponse, "description": "Artifact already queued"},
+        500: {"model": ErrorResponse, "description": "Failed to queue artifact"},
+    },
+)
 async def flag_for_review(
     request: FlagForReviewRequest,
     repository: Annotated[AnnotationRepository, Depends(get_annotation_repository)],
@@ -149,11 +162,22 @@ async def flag_for_review(
         ) from None
 
 
-@router.get("/queue")
+@router.get(
+    "/queue",
+    responses={
+        500: {"model": ErrorResponse, "description": "Failed to retrieve queue"},
+    },
+)
 async def get_annotation_queue(
     repository: Annotated[AnnotationRepository, Depends(get_annotation_repository)],
-    limit: Annotated[int, Query(ge=1, le=100, description="Max items to return")] = 20,
-    offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=100, description="Max items to return", examples=[20]),
+    ] = 20,
+    offset: Annotated[
+        int,
+        Query(ge=0, description="Items to skip", examples=[0]),
+    ] = 0,
 ) -> AnnotationQueueListResponse:
     """Get pending annotation queue entries.
 
@@ -198,9 +222,15 @@ async def get_annotation_queue(
         ) from None
 
 
-@router.patch("/queue/{queue_id}/reviewed")
+@router.patch(
+    "/queue/{queue_id}/reviewed",
+    responses={
+        404: {"model": ErrorResponse, "description": "Queue entry not found"},
+        500: {"model": ErrorResponse, "description": "Failed to mark as reviewed"},
+    },
+)
 async def mark_as_reviewed(
-    queue_id: int,
+    queue_id: Annotated[int, Path(description="Queue entry ID", ge=1)],
     repository: Annotated[AnnotationRepository, Depends(get_annotation_repository)],
 ) -> AnnotationQueueItemResponse:
     """Mark an annotation queue entry as reviewed.

@@ -102,7 +102,7 @@ def analyze_experiment_results(results: dict[str, Any]) -> dict[str, TaskConfig]
             cost_score = metrics.get("cost_usd", 0.0)
             latency_score = metrics.get("latency_ms", 0.0)
 
-            # Normalize and weight (60% correctness, 25% cost, 15% latency)
+            # Normalize and weight (60% correctness, 25% cost, 15% latency)  # noqa: ERA001
             # Lower cost and latency are better, so invert them
             weighted = (
                 0.60 * correctness

@@ -24,10 +24,12 @@ Example:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
-from langchain_core.tools import BaseTool
+from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 logger = get_logger(__name__)
 
@@ -152,13 +154,18 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
             MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="npm",
-                tool_name="get_package",
-                description="Get npm package metadata and dependencies",
+                tool_name="get-npm-package-details",
+                description="Get npm package metadata, dependencies, and versions",
+            ),
+            ToolCapability(
+                server="npm",
+                tool_name="search-npm-packages",
+                description="Search npm registry for packages",
             ),
             ToolCapability(
                 server="pypi",
-                tool_name="get_package",
-                description="Get PyPI package metadata and dependencies",
+                tool_name="get-pypi-package-details",
+                description="Get PyPI package metadata, dependencies, and versions",
             ),
             ToolCapability(
                 server="github",
@@ -177,8 +184,8 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
             MEMORY_SEARCH_CAPABILITY,
             ToolCapability(
                 server="npm",
-                tool_name="get_package",
-                description="Get npm package stats for comparison",
+                tool_name="get-npm-package-details",
+                description="Get npm package stats, versions, and download data for comparison",
             ),
             ToolCapability(
                 server="github",

@@ -68,8 +68,6 @@ class ScopedState(dict):
 
     """
 
-    pass
-
 
 # Agent scope configurations
 # Each agent specifies exactly which state fields it needs
@@ -374,7 +372,7 @@ def _count_finding_items(finding_data: dict[str, object]) -> int:
     return total
 
 
-def _summarize_finding(finding_data: dict[str, object], agent_type: str) -> str:
+def _summarize_finding(finding_data: dict[str, object], _agent_type: str) -> str:
     """Create a one-line summary of a finding.
 
     Args:

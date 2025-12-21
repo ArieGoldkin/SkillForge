@@ -8,6 +8,7 @@
 import type { StageName, SSEEvent } from '@app-types/sse'
 import type { SSEStore } from '@stores/sseStore'
 
+import { shallowEqual } from '@/lib/utils'
 import type { ComputedLoadingStates, LoadingState } from '@/types/loading'
 
 import { ALL_STAGES, isWorkflowStage, getStageOrder } from '@features/analysis/config/stageRegistry'
@@ -179,28 +180,43 @@ function getTerminalLoadingState(state: SSEStore): LoadingState | null {
   return null
 }
 
+// Cache for stable loading state references
+let cachedLoadingState: LoadingState | null = null
+
+/**
+ * Cache and return loading state, ensuring stable references to prevent infinite re-renders
+ */
+function getCachedOrNew(newState: LoadingState): LoadingState {
+  if (cachedLoadingState && shallowEqual(cachedLoadingState, newState)) {
+    return cachedLoadingState
+  }
+  cachedLoadingState = newState
+  return newState
+}
+
 /**
  * Derive loading state from SSE store state
- * This is the core logic that computes granular loading states from existing data
+ * Returns stable references to prevent infinite re-renders in React 18's useSyncExternalStore
  */
 export function deriveLoadingState(state: SSEStore): LoadingState {
-  // Check terminal states first (complete/error take precedence over everything)
+  // Check terminal states first (complete/error take precedence)
   const terminalState = getTerminalLoadingState(state)
-  if (terminalState) return terminalState
+  if (terminalState) return getCachedOrNew(terminalState)
 
   // Check analysis states (ongoing work)
   const analysisState = getAnalysisLoadingState(state)
-  if (analysisState) return analysisState
+  if (analysisState) return getCachedOrNew(analysisState)
 
   // Check connection states
   const connectionState = getConnectionLoadingState(state)
-  if (connectionState) return connectionState
+  if (connectionState) return getCachedOrNew(connectionState)
 
   // Fallback states
   if (state.isConnected) {
-    return { type: 'connected' }
+    return getCachedOrNew({ type: 'connected' })
   }
 
+  // Don't cache connecting state - startTime changes each call
   return { type: 'connecting', startTime: Date.now() }
 }
 

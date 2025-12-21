@@ -4,14 +4,16 @@ Extracts state building logic from API endpoints.
 """
 
 import uuid
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from app.core.logging import get_logger
 from app.db.models.tutoring import TutoringSession
 from app.domains.tutor.repositories import ITutorRepository
 from app.domains.tutor.workflows.graph_builder import tutor_workflow
 from app.domains.tutor.workflows.state import TutorState
-from app.shared.types import TutorMessage
+
+if TYPE_CHECKING:
+    from app.shared.types import TutorMessage
 
 logger = get_logger(__name__)
 
@@ -44,7 +46,7 @@ async def load_state_from_session(
     _, messages = await repo.get_session_with_messages(session_id)
     conversation_history: list[TutorMessage] = [
         cast(
-            TutorMessage,
+            "TutorMessage",
             {
                 "role": msg.role,
                 "content": msg.content,

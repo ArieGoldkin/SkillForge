@@ -24,7 +24,6 @@ import json
 import math
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
@@ -38,6 +37,7 @@ from app.schemas.search import SearchMode
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -449,7 +449,7 @@ class EvaluationRunner:
             hits = sum(1 for doc_id in top_k if doc_id in expected_set)
             recall = hits / len(expected_set)
 
-        # MRR = 1 / rank_of_first_relevant
+        # MRR = 1 / rank_of_first_relevant  # noqa: ERA001
         mrr = 0.0
         for i, doc_id in enumerate(retrieved_ids, start=1):
             if doc_id in expected_set:

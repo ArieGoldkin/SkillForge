@@ -377,9 +377,7 @@ class SearchService:
 
         # Apply metadata-based boosts for improved ranking
         # This boosts results where query terms match section titles or document paths
-        results = self._apply_metadata_boosts(results, query)
-
-        return results
+        return self._apply_metadata_boosts(results, query)
 
     def _generate_snippet(
         self,
@@ -472,14 +470,12 @@ class SearchService:
         pattern = r"\b(" + "|".join(re.escape(term) for term in query_terms) + r")\b"
 
         # Replace matches with highlighted version
-        highlighted = re.sub(
+        return re.sub(
             pattern,
             r"<mark>\1</mark>",
             text,
             flags=re.IGNORECASE,
         )
-
-        return highlighted
 
     def _chunk_to_result(
         self,
@@ -529,7 +525,7 @@ class SearchService:
         )
 
         # Create SearchResult
-        result = SearchResult(
+        return SearchResult(
             chunk_id=str(chunk.id),
             analysis_id=str(chunk.analysis_id),
             content=content_str,
@@ -538,8 +534,6 @@ class SearchService:
             metadata=metadata,
             created_at=chunk.created_at,  # type: ignore[arg-type]
         )
-
-        return result
 
     def _filters_to_dict(self, filters: SearchFilters) -> dict[str, str]:
         """Convert SearchFilters Pydantic model to dict for repository.

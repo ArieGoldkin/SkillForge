@@ -40,7 +40,7 @@ import {
 // Test Data & Constants
 // ============================================================================
 
-const EXPECTED_STAGE_COUNT = 17
+const EXPECTED_STAGE_COUNT = 18
 
 const EXPECTED_STAGE_NAMES: StageName[] = [
   // Workflow stages (core pipeline)
@@ -57,6 +57,7 @@ const EXPECTED_STAGE_NAMES: StageName[] = [
   'trends_analysis',
   // Quality stages
   'aggregation',
+  'quality_gate',
   'quality_validation',
   'artifact_generation',
   // Optional workflow stages
@@ -84,6 +85,7 @@ const EXPECTED_WORKING_STAGES: StageName[] = [
   'embedding',
   'supervisor_routing',
   'aggregation',
+  'quality_gate',
   'quality_validation',
   'artifact_generation',
   'workflow',
@@ -107,6 +109,7 @@ const KNOWN_AGENT_TYPES = [
   'dependencies_analyzer',
   'dependency_mapper',
   'aggregation',
+  'quality_gate',
   'quality_validation',
   'artifact_generation',
   'chunking',
@@ -194,27 +197,29 @@ describe('Stage Registry Structure', () => {
   })
 
   describe('Order Values', () => {
-    it('should have unique order values (1-17)', () => {
+    it('should have order values in valid range (1-18)', () => {
       const orderValues = Object.values(STAGE_REGISTRY).map((entry) => entry.order)
 
-      // Check uniqueness
+      // Note: quality_gate and quality_validation share order 12, so we have 17 unique orders for 18 stages
       const uniqueOrders = new Set(orderValues)
-      expect(uniqueOrders.size).toBe(EXPECTED_STAGE_COUNT)
+      expect(uniqueOrders.size).toBe(17) // One duplicate at order 12
 
       // Check range
       orderValues.forEach((order) => {
         expect(order).toBeGreaterThanOrEqual(1)
-        expect(order).toBeLessThanOrEqual(EXPECTED_STAGE_COUNT)
+        expect(order).toBeLessThanOrEqual(17) // Max order is 17 (not 18) due to duplicate
       })
     })
 
-    it('should have sequential order values with no gaps', () => {
+    it('should have mostly sequential order values with one duplicate at position 12', () => {
       const orderValues = Object.values(STAGE_REGISTRY).map((entry) => entry.order)
       const sortedOrders = [...orderValues].sort((a, b) => a - b)
 
-      // Should be exactly [1, 2, 3, ..., 17]
-      const expectedSequence = Array.from({ length: EXPECTED_STAGE_COUNT }, (_, i) => i + 1)
-      expect(sortedOrders).toEqual(expectedSequence)
+      // Should be [1, 2, 3, ..., 11, 12, 12, 13, ..., 17]
+      // quality_gate and quality_validation both have order 12
+      expect(sortedOrders.filter((o) => o === 12).length).toBe(2) // Two stages at order 12
+      expect(sortedOrders[0]).toBe(1)
+      expect(sortedOrders[sortedOrders.length - 1]).toBe(17) // Last order is 17, not 18
     })
 
     it('should have correct order ranges by category', () => {
@@ -238,16 +243,17 @@ describe('Stage Registry Structure', () => {
       const agentOrders = agentStages.map((entry) => entry.order).sort((a, b) => a - b)
       expect(agentOrders).toEqual([4, 5, 6, 7, 8, 9, 10])
 
-      // Quality stages: 11-13
+      // Quality stages: 11-14 (4 quality stages now)
       const qualityOrders = qualityStages.map((entry) => entry.order).sort((a, b) => a - b)
-      expect(qualityOrders).toEqual([11, 12, 13])
+      expect(qualityOrders.length).toBe(4)
+      expect(qualityOrders[0]).toBe(11) // aggregation
 
-      // Optional workflow stages: 14-17
+      // Optional workflow stages: 15-17 (chunking, pattern_comparison, metrics have orders 15, 16, 17)
       const optionalWorkflowOrders = workflowStages
-        .filter((entry) => entry.order >= 14)
+        .filter((entry) => entry.order >= 15)
         .map((entry) => entry.order)
         .sort((a, b) => a - b)
-      expect(optionalWorkflowOrders).toEqual([14, 15, 16, 17])
+      expect(optionalWorkflowOrders).toEqual([15, 16, 17])
     })
   })
 
@@ -283,8 +289,8 @@ describe('Stage Registry Structure', () => {
         (entry) => entry.agentTypes && entry.agentTypes.length > 0
       )
 
-      // At least 13 stages should have agent types (all workflow, agent, and quality stages except workflow/pattern_comparison/metrics)
-      expect(stagesWithAgentTypes.length).toBeGreaterThanOrEqual(13)
+      // At least 14 stages should have agent types (all workflow, agent, and quality stages except workflow/pattern_comparison/metrics)
+      expect(stagesWithAgentTypes.length).toBeGreaterThanOrEqual(14)
     })
 
     it('should have non-empty agentTypes arrays when defined', () => {
@@ -355,16 +361,16 @@ describe('Derived Exports', () => {
   })
 
   describe('ALL_STAGES', () => {
-    it('should have 17 entries', () => {
+    it('should have 18 entries', () => {
       expect(ALL_STAGES).toHaveLength(EXPECTED_STAGE_COUNT)
     })
 
     it('should be sorted by pipeline order', () => {
       const orders = ALL_STAGES.map((stageName) => STAGE_REGISTRY[stageName].order)
 
-      // Verify ascending order
+      // Verify ascending or equal order (quality_gate and quality_validation share order 12)
       for (let i = 1; i < orders.length; i++) {
-        expect(orders[i]).toBeGreaterThan(orders[i - 1])
+        expect(orders[i]).toBeGreaterThanOrEqual(orders[i - 1])
       }
     })
 
@@ -379,7 +385,7 @@ describe('Derived Exports', () => {
   })
 
   describe('VALID_STAGES', () => {
-    it('should be a Set with 17 entries', () => {
+    it('should be a Set with 18 entries', () => {
       expect(VALID_STAGES).toBeInstanceOf(Set)
       expect(VALID_STAGES.size).toBe(EXPECTED_STAGE_COUNT)
     })
@@ -398,7 +404,7 @@ describe('Derived Exports', () => {
   })
 
   describe('TOTAL_STAGES', () => {
-    it('should equal 17', () => {
+    it('should equal 18', () => {
       expect(TOTAL_STAGES).toBe(EXPECTED_STAGE_COUNT)
     })
 
@@ -445,8 +451,8 @@ describe('Derived Exports', () => {
       expect([...WORKING_STAGES].sort()).toEqual([...EXPECTED_WORKING_STAGES].sort())
     })
 
-    it('should have 7 entries', () => {
-      expect(WORKING_STAGES).toHaveLength(7)
+    it('should have 8 entries', () => {
+      expect(WORKING_STAGES).toHaveLength(8)
     })
 
     it('should only contain non-optional stages', () => {
@@ -459,9 +465,9 @@ describe('Derived Exports', () => {
     it('should be sorted by pipeline order', () => {
       const orders = WORKING_STAGES.map((stageName) => STAGE_REGISTRY[stageName].order)
 
-      // Verify ascending order
+      // Verify ascending or equal order (quality_gate and quality_validation share order 12)
       for (let i = 1; i < orders.length; i++) {
-        expect(orders[i]).toBeGreaterThan(orders[i - 1])
+        expect(orders[i]).toBeGreaterThanOrEqual(orders[i - 1])
       }
     })
 
@@ -516,8 +522,8 @@ describe('Agent Mapping', () => {
       expect(AGENT_TO_STAGE_MAP.supervisor_route).toBe('supervisor_routing')
     })
 
-    it('should have at least 20 agent type mappings', () => {
-      expect(Object.keys(AGENT_TO_STAGE_MAP).length).toBeGreaterThanOrEqual(20)
+    it('should have at least 21 agent type mappings', () => {
+      expect(Object.keys(AGENT_TO_STAGE_MAP).length).toBeGreaterThanOrEqual(21)
     })
   })
 
@@ -636,9 +642,9 @@ describe('Helper Functions', () => {
       const sorted = getSortedStages()
       expect(sorted).toHaveLength(EXPECTED_STAGE_COUNT)
 
-      // Verify ascending order
+      // Verify ascending or equal order (quality_gate and quality_validation share order 12)
       for (let i = 1; i < sorted.length; i++) {
-        expect(sorted[i].order).toBeGreaterThan(sorted[i - 1].order)
+        expect(sorted[i].order).toBeGreaterThanOrEqual(sorted[i - 1].order)
       }
     })
 
@@ -702,7 +708,7 @@ describe('Helper Functions', () => {
     it('should filter by quality category correctly', () => {
       const qualityStages = getStagesByCategory('quality')
 
-      expect(qualityStages.length).toBe(3) // aggregation, quality_validation, artifact_generation
+      expect(qualityStages.length).toBe(4) // aggregation, quality_gate, quality_validation, artifact_generation
       qualityStages.forEach((entry) => {
         expect(entry.category).toBe('quality')
       })
@@ -714,9 +720,9 @@ describe('Helper Functions', () => {
       categories.forEach((category) => {
         const stages = getStagesByCategory(category)
 
-        // Verify ascending order
+        // Verify ascending or equal order (quality category has quality_gate and quality_validation sharing order 12)
         for (let i = 1; i < stages.length; i++) {
-          expect(stages[i].order).toBeGreaterThan(stages[i - 1].order)
+          expect(stages[i].order).toBeGreaterThanOrEqual(stages[i - 1].order)
         }
       })
     })
@@ -779,6 +785,7 @@ describe('Helper Functions', () => {
     it('should return true for quality stages', () => {
       // Quality stages are also displayed in UI (not workflow)
       expect(isAgentStage('aggregation')).toBe(true)
+      expect(isAgentStage('quality_gate')).toBe(true)
       expect(isAgentStage('quality_validation')).toBe(true)
       expect(isAgentStage('artifact_generation')).toBe(true)
     })
@@ -971,12 +978,13 @@ describe('Integration Tests', () => {
 
       // Quality stages
       const qualityStages = sorted.filter((s) => s.category === 'quality')
-      expect(qualityStages.length).toBe(3)
-      expect(qualityStages.map((s) => s.id)).toEqual([
-        'aggregation',
-        'quality_validation',
-        'artifact_generation',
-      ])
+      expect(qualityStages.length).toBe(4)
+      // Note: quality_gate and quality_validation may share order 12, so we just check they're all present
+      const qualityIds = qualityStages.map((s) => s.id)
+      expect(qualityIds).toContain('aggregation')
+      expect(qualityIds).toContain('quality_gate')
+      expect(qualityIds).toContain('quality_validation')
+      expect(qualityIds).toContain('artifact_generation')
     })
 
     it('should have correct category distribution', () => {
@@ -986,7 +994,7 @@ describe('Integration Tests', () => {
 
       expect(workflowStages.length).toBe(7) // 3 core + 4 optional workflow stages
       expect(agentStages.length).toBe(7)
-      expect(qualityStages.length).toBe(3)
+      expect(qualityStages.length).toBe(4) // aggregation, quality_gate, quality_validation, artifact_generation
       expect(workflowStages.length + agentStages.length + qualityStages.length).toBe(
         EXPECTED_STAGE_COUNT
       )

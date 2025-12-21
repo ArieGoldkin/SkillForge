@@ -311,9 +311,9 @@ async def _attempt_synthesis(  # noqa: PLR0913
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
     analysis_id: AnalysisID,
-    model: str,
+    _model: str,
     response_schema: type[BaseModel],
-    timeout: int,
+    timeout: int,  # noqa: ASYNC109
     system_prompt: str | None = None,
 ) -> dict[str, Any]:
     """Attempt synthesis with specific model and schema.
@@ -367,9 +367,7 @@ async def _attempt_synthesis(  # noqa: PLR0913
     )
 
     # Extract structured response
-    structured_response = extract_structured_response(final_result, "aggregation")
-
-    return structured_response
+    return extract_structured_response(final_result, "aggregation")
 
 
 MINIMAL_SYSTEM_PROMPT = """You are an expert technical analyst creating a MINIMAL emergency synthesis.

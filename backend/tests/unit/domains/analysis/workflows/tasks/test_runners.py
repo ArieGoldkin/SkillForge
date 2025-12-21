@@ -109,8 +109,9 @@ async def test_run_tech_comparator_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Tech comparator now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -169,8 +170,9 @@ async def test_run_implementation_planner_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Implementation planner now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -226,8 +228,9 @@ async def test_run_performance_analyst_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Performance analyst now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -255,8 +258,9 @@ async def test_run_code_quality_critic_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Code quality critic now passes tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 

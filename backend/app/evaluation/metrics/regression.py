@@ -25,11 +25,13 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
 from app.evaluation.pipeline.thresholds import Difficulty
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = get_logger(__name__)
 
@@ -175,7 +177,7 @@ class RegressionReport:
                     ]
                 )
                 for change in degradations:
-                    lines.append(
+                    lines.append(  # noqa: PERF401
                         f"| {change['difficulty']} | "
                         f"{change['baseline_status']} | "
                         f"{change['current_status']} |"
@@ -193,7 +195,7 @@ class RegressionReport:
                 ]
             )
             for reg in self.regressions:
-                lines.append(
+                lines.append(  # noqa: PERF401
                     f"| {reg['difficulty']:10} | "
                     f"{reg['metric_name']:10} | "
                     f"{reg['baseline_value']:.3f} | "
@@ -213,7 +215,7 @@ class RegressionReport:
                 ]
             )
             for imp in self.improvements:
-                lines.append(
+                lines.append(  # noqa: PERF401
                     f"| {imp['difficulty']:10} | "
                     f"{imp['metric_name']:10} | "
                     f"{imp['baseline_value']:.3f} | "

@@ -9,7 +9,6 @@ violations from synthetic analysis_ids that don't exist in the analyses table.
 
 import asyncio
 import uuid
-from typing import TYPE_CHECKING
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -17,9 +16,6 @@ from app.core.logging import get_logger
 from app.core.types import EventData
 from app.db.models.progress import AnalysisProgress
 from app.db.session import AsyncSessionLocal
-
-if TYPE_CHECKING:
-    pass
 
 logger = get_logger(__name__)
 
@@ -92,7 +88,6 @@ def _handle_progress_task_completion(task: asyncio.Task[None]) -> None:
             "progress_persistence_task_failed",
             error_type=type(exception).__name__,
             error_message=str(exception),
-            exc_info=True,
             context="progress_persistence_task_done_callback",
         )
 

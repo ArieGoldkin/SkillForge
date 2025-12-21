@@ -405,7 +405,7 @@ class AnnotationService:
             artifact_id=artifact_id,
             trace_id=trace_id,
             reason=reason,
-            metadata=metadata,
+            _metadata=metadata,
         )
 
     async def _add_to_langfuse_queue(
@@ -413,7 +413,7 @@ class AnnotationService:
         artifact_id: uuid.UUID,
         trace_id: str | None,
         reason: QueueReason,
-        metadata: dict[str, object] | None = None,
+        _metadata: dict[str, object] | None = None,
     ) -> bool:
         """Add item to Langfuse Annotation Queue for UI-based review.
 
@@ -458,7 +458,7 @@ class AnnotationService:
             return False
 
         # Type guard: Validation ensures trace_id is not None
-        assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"
+        assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"  # noqa: S101 - Type guard for validation
 
         try:
             # Use LangfuseService which handles annotation queue REST API

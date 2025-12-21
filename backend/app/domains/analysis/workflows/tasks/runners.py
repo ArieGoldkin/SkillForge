@@ -15,13 +15,13 @@ for backward compatibility.
 """
 
 import time
+from typing import TYPE_CHECKING
 
-from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
-from app.core.tracing import get_current_trace_id, robust_traceable
+from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.api import ArtifactSection
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
@@ -36,6 +36,9 @@ from app.domains.analysis.workflows.agents import (
     run_trend_validator,
 )
 from app.domains.analysis.workflows.state import AnalysisState
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 # Note: AsyncSessionLocal is imported lazily inside each function to avoid
 # DATABASE_URL validation at import time (required for CI without database)
@@ -185,12 +188,6 @@ async def _load_content_from_artifact(
         return fallback_content
 
 
-@robust_traceable(
-    name="run_tech_comparator",
-    run_type="agent",
-    tags=["agent", "tech_comparator", "analysis"],
-    metadata={"agent_type": "tech_comparator"},
-)
 async def run_tech_comparator_with_session(
     content: str,
     content_type: str,
@@ -205,6 +202,38 @@ async def run_tech_comparator_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for tech_comparator if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("tech_comparator"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("tech_comparator")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_tech_comparator",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="tech_comparator",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -216,7 +245,7 @@ async def run_tech_comparator_with_session(
             )
 
             return await run_tech_comparator(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         # GeneratorExit occurs when timeout cancels the task - handle gracefully
@@ -249,12 +278,6 @@ async def run_tech_comparator_with_session(
         return {}  # Return empty dict on error to allow other agents to continue
 
 
-@robust_traceable(
-    name="run_integration_feasibility",
-    run_type="agent",
-    tags=["agent", "integration_feasibility", "analysis"],
-    metadata={"agent_type": "integration_feasibility"},
-)
 async def run_integration_feasibility_with_session(
     content: str,
     content_type: str,
@@ -312,12 +335,6 @@ async def run_integration_feasibility_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_implementation_planner",
-    run_type="agent",
-    tags=["agent", "implementation_planner", "analysis"],
-    metadata={"agent_type": "implementation_planner"},
-)
 async def run_implementation_planner_with_session(
     content: str,
     content_type: str,
@@ -332,6 +349,38 @@ async def run_implementation_planner_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for implementation_planner if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("implementation_planner"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("implementation_planner")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_implementation_planner",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="implementation_planner",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -343,7 +392,7 @@ async def run_implementation_planner_with_session(
             )
 
             return await run_implementation_planner(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -375,12 +424,6 @@ async def run_implementation_planner_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_security_auditor",
-    run_type="agent",
-    tags=["agent", "security_auditor", "analysis"],
-    metadata={"agent_type": "security_auditor"},
-)
 async def run_security_auditor_with_session(
     content: str,
     content_type: str,
@@ -404,7 +447,11 @@ async def run_security_auditor_with_session(
         if registry.is_tool_enabled("security_auditor"):
             settings = get_mcp_settings()
             if settings.enabled:
-                pool = MCPClientPool(settings.get_enabled_servers())
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
                 capabilities = registry.get_capabilities("security_auditor")
                 tools = await pool.get_tools_for_capabilities(capabilities)
                 logger.info(
@@ -466,12 +513,6 @@ async def run_security_auditor_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_performance_analyst",
-    run_type="agent",
-    tags=["agent", "performance_analyst", "analysis"],
-    metadata={"agent_type": "performance_analyst"},
-)
 async def run_performance_analyst_with_session(
     content: str,
     content_type: str,
@@ -486,6 +527,38 @@ async def run_performance_analyst_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for performance_analyst if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("performance_analyst"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("performance_analyst")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_performance_analyst",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="performance_analyst",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -497,7 +570,7 @@ async def run_performance_analyst_with_session(
             )
 
             return await run_performance_analyst(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -529,12 +602,6 @@ async def run_performance_analyst_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_code_quality_critic",
-    run_type="agent",
-    tags=["agent", "code_quality_critic", "analysis"],
-    metadata={"agent_type": "code_quality_critic"},
-)
 async def run_code_quality_critic_with_session(
     content: str,
     content_type: str,
@@ -549,6 +616,38 @@ async def run_code_quality_critic_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for code_quality_critic if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("code_quality_critic"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("code_quality_critic")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_code_quality_critic",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="code_quality_critic",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -560,7 +659,7 @@ async def run_code_quality_critic_with_session(
             )
 
             return await run_code_quality_critic(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -592,12 +691,6 @@ async def run_code_quality_critic_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_trend_validator",
-    run_type="agent",
-    tags=["agent", "trend_validator", "analysis"],
-    metadata={"agent_type": "trend_validator"},
-)
 async def run_trend_validator_with_session(
     content: str,
     content_type: str,
@@ -648,7 +741,7 @@ async def run_trend_validator_with_session(
         )
         return {}
     except Exception as e:
-        duration: int | float = time.time() - start_time
+        duration = time.time() - start_time
         logger.error(
             "agent_failed",
             agent_type="trend_validator",
@@ -664,12 +757,6 @@ async def run_trend_validator_with_session(
         return {}
 
 
-@robust_traceable(
-    name="run_dependency_mapper",
-    run_type="agent",
-    tags=["agent", "dependency_mapper", "analysis"],
-    metadata={"agent_type": "dependency_mapper"},
-)
 async def run_dependency_mapper_with_session(
     content: str,
     content_type: str,
@@ -693,7 +780,11 @@ async def run_dependency_mapper_with_session(
         if registry.is_tool_enabled("dependency_mapper"):
             settings = get_mcp_settings()
             if settings.enabled:
-                pool = MCPClientPool(settings.get_enabled_servers())
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
                 capabilities = registry.get_capabilities("dependency_mapper")
                 tools = await pool.get_tools_for_capabilities(capabilities)
                 logger.info(

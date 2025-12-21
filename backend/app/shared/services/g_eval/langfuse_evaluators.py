@@ -104,8 +104,8 @@ def create_g_eval_evaluator(
         *,
         input: dict[str, Any] | str,
         output: Any,
-        expected_output: dict[str, Any] | str | None = None,
-        **kwargs: Any,
+        _expected_output: dict[str, Any] | str | None = None,
+        **_kwargs: Any,
     ):
         """G-Eval criterion evaluator for Langfuse experiments.
 
@@ -160,14 +160,13 @@ def create_g_eval_evaluator(
                         "criterion": criterion,
                     },
                 )
-            else:
-                return evaluation_cls(
-                    name=f"g_eval_{criterion}",
-                    value=0.5,
-                    data_type="NUMERIC",
-                    comment=f"No score returned for {criterion}",
-                    metadata={"error": "missing_score", "agent_type": agent_type},
-                )
+            return evaluation_cls(
+                name=f"g_eval_{criterion}",
+                value=0.5,
+                data_type="NUMERIC",
+                comment=f"No score returned for {criterion}",
+                metadata={"error": "missing_score", "agent_type": agent_type},
+            )
 
         except Exception as e:
             logger.exception(
@@ -236,8 +235,8 @@ def create_g_eval_overall_evaluator(
         *,
         input: dict[str, Any] | str,
         output: Any,
-        expected_output: dict[str, Any] | str | None = None,
-        **kwargs: Any,
+        _expected_output: dict[str, Any] | str | None = None,
+        **_kwargs: Any,
     ):
         """G-Eval overall evaluator for Langfuse experiments.
 
@@ -332,7 +331,7 @@ def create_g_eval_overall_evaluator(
 # ============================================================================
 
 
-def average_g_eval_score_evaluator(*, item_results: list, **kwargs: Any):
+def average_g_eval_score_evaluator(*, item_results: list, **_kwargs: Any):
     """Run-level evaluator that calculates average G-Eval score across all items.
 
     This evaluator aggregates the 'g_eval_overall' scores from all experiment items
@@ -364,7 +363,7 @@ def average_g_eval_score_evaluator(*, item_results: list, **kwargs: Any):
     for item in item_results:
         for eval_obj in getattr(item, "evaluations", []):
             if eval_obj.name == "g_eval_overall" and eval_obj.value is not None:
-                overall_scores.append(eval_obj.value)
+                overall_scores.append(eval_obj.value)  # noqa: PERF401
 
     if not overall_scores:
         return evaluation_cls(
@@ -415,7 +414,7 @@ def criterion_average_evaluator(criterion: str):
     """
     evaluation_cls = _get_langfuse_evaluation_class()
 
-    def evaluator(*, item_results: list, **kwargs: Any):
+    def evaluator(*, item_results: list, **_kwargs: Any):
         if evaluation_cls is None:
             return None
 
@@ -425,7 +424,7 @@ def criterion_average_evaluator(criterion: str):
         for item in item_results:
             for eval_obj in getattr(item, "evaluations", []):
                 if eval_obj.name == score_name and eval_obj.value is not None:
-                    scores.append(eval_obj.value)
+                    scores.append(eval_obj.value)  # noqa: PERF401
 
         if not scores:
             return evaluation_cls(
@@ -477,7 +476,7 @@ def quality_threshold_evaluator(threshold: float = 0.6):
     """
     evaluation_cls = _get_langfuse_evaluation_class()
 
-    def evaluator(*, item_results: list, **kwargs: Any):
+    def evaluator(*, item_results: list, **_kwargs: Any):
         if evaluation_cls is None:
             return None
 
@@ -597,9 +596,8 @@ def get_standard_run_evaluators(
     config = get_agent_rubrics(agent_type)
     criteria = config.get("criteria", ["completeness", "accuracy", "coherence", "depth"])
 
-    run_evaluators = [
+    return [
         average_g_eval_score_evaluator,
         *[criterion_average_evaluator(criterion) for criterion in criteria],
         quality_threshold_evaluator(quality_threshold),
     ]
-    return run_evaluators

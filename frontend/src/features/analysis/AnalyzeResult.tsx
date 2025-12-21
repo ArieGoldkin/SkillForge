@@ -9,6 +9,7 @@ import {
   useShouldShowProgress,
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
+import { useShallow } from 'zustand/react/shallow'
 
 import { BUSINESS_CONSTANTS } from '@/lib/constants'
 
@@ -78,20 +79,22 @@ const useSSELifecycle = ({
 const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
 
 // Check if truly complete (all stages passed, 100% progress)
+// Uses primitive values to avoid object reference issues in React dependency arrays
 const checkIsTrulyComplete = (params: {
   hasFailedStages: boolean
   completed?: boolean
   urlArtifactId?: string
   resolvedStatus?: string
   isComplete: boolean
-  overallProgress: { stage: string; progress: number }
+  progressStage: string
+  progressPercent: number
 }) =>
   !params.hasFailedStages &&
   ((params.completed && Boolean(params.urlArtifactId)) ||
     isStatusComplete(params.resolvedStatus) ||
     (params.isComplete &&
-      params.overallProgress.stage === 'complete' &&
-      params.overallProgress.progress === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
+      params.progressStage === 'complete' &&
+      params.progressPercent === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
 
 /**
  * Custom hook for managing focus when analysis completes
@@ -135,9 +138,10 @@ export default function AnalyzeResult() {
   const { completed, artifactId: urlArtifactId } = routeApi.useSearch()
 
   // Consolidated selectors for optimal performance (3 instead of 7 subscriptions)
+  // Using useShallow for object-returning selectors to prevent infinite re-renders
   const events = useSSEStore(selectEvents)
-  const { isConnected, connect, disconnect } = useSSEStore(selectConnectionState)
-  const { isComplete, error, reset } = useSSEStore(selectAnalysisState)
+  const { isConnected, connect, disconnect } = useSSEStore(useShallow(selectConnectionState))
+  const { isComplete, error, reset } = useSSEStore(useShallow(selectAnalysisState))
 
   // New computed loading states (Issue #399)
   const loadingState = useLoadingState()
@@ -190,7 +194,8 @@ export default function AnalyzeResult() {
       urlArtifactId,
       resolvedStatus,
       isComplete,
-      overallProgress,
+      progressStage: overallProgress.stage,
+      progressPercent: overallProgress.progress,
     })
 
     const isResolvedComplete = isTrulyComplete
@@ -207,6 +212,7 @@ export default function AnalyzeResult() {
       isFailed,
       effectiveError,
     }
+    // Issue #438: Use primitives from overallProgress to prevent infinite re-renders
   }, [
     artifactId,
     urlArtifactId,
@@ -216,7 +222,9 @@ export default function AnalyzeResult() {
     error,
     errorMessage,
     completed,
-    overallProgress,
+    // Only include the specific properties we use from overallProgress
+    overallProgress.stage,
+    overallProgress.progress,
     hasFailedStages,
   ])
 

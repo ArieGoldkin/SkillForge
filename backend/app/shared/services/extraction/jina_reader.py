@@ -169,7 +169,7 @@ class JinaReader:
                 url=url,
                 error=str(e),
                 error_type=type(e).__name__,
-                exc_info=True,
+                # exc_info is implicit when exception context is available
             )
             raise JinaReaderError(error_msg) from e
 

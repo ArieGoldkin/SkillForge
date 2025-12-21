@@ -13,12 +13,15 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
 
 from app.core.logging import get_logger
 from app.evaluation.validation.models import AgreementReport, Annotation
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 logger = get_logger(__name__)
 

@@ -55,7 +55,7 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
+    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
         pass
 
     logger.info("workflow_embedding_started", content_length=len(content))
@@ -123,7 +123,7 @@ async def generate_embeddings_batch(
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
+    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
         pass
 
     embedding_service = EmbeddingService()

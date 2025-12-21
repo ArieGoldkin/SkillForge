@@ -73,7 +73,7 @@ def fix_tables(markdown: str) -> str:  # noqa: PLR0912 - complexity justified fo
             if last_was_table_row and next_is_table:
                 # Blank line between table rows - skip it (handles multiple blank lines)
                 continue
-            elif last_was_table_row and not next_is_table:
+            if last_was_table_row and not next_is_table:
                 # Blank line after table ends - keep it for later
                 if not pending_blank_line:  # Only set once to avoid multiple pending
                     pending_blank_line = True
@@ -197,6 +197,4 @@ def sanitize_markdown(markdown: str) -> str:
 
     # Apply sanitizers in order
     result = fix_tables(markdown)
-    result = fix_lists(result)
-
-    return result
+    return fix_lists(result)

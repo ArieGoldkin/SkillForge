@@ -327,12 +327,12 @@ def _format_compressed_findings(findings: list[dict[str, Any]]) -> str:
 
         parts.append("Key Insights:")
         for insight in f.get("key_insights", []):
-            parts.append(f"  - {insight}")
+            parts.append(f"  - {insight}")  # noqa: PERF401
 
         if f.get("critical_warnings"):
             parts.append("⚠️ Warnings:")
             for warning in f["critical_warnings"]:
-                parts.append(f"  - {warning}")
+                parts.append(f"  - {warning}")  # noqa: PERF401
 
         parts.append("")  # Blank line between agents
 

@@ -139,6 +139,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // 5. Calculate Overall Progress - Progress percentage and status
   // ========================================================================
   // Complex 8-phase calculation based on expected vs actual stages
+  // Note: useProgressCalculation already memoizes the result, so we can use it directly
   const overallProgress = useProgressCalculation(
     stageStatuses,
     steps,
@@ -200,6 +201,22 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
 
     // Only update store if values actually changed to prevent infinite loops
     const prevMetadata = prevMetadataRef.current
+
+    // Helper to compare overallProgress objects shallowly
+    const overallProgressChanged = () => {
+      if (!prevMetadata?.overallProgress) return true
+      const prev = prevMetadata.overallProgress
+      const curr = newMetadata.overallProgress
+      return (
+        prev.stage !== curr.stage ||
+        prev.progress !== curr.progress ||
+        prev.currentStep !== curr.currentStep ||
+        prev.totalSteps !== curr.totalSteps ||
+        prev.completedSteps !== curr.completedSteps ||
+        prev.estimatedTimeRemaining !== curr.estimatedTimeRemaining
+      )
+    }
+
     if (
       !prevMetadata ||
       prevMetadata.artifactId !== newMetadata.artifactId ||
@@ -207,8 +224,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       prevMetadata.hasFailedStages !== newMetadata.hasFailedStages ||
       prevMetadata.failedStagesCount !== newMetadata.failedStagesCount ||
       prevMetadata.analysisMetadata !== newMetadata.analysisMetadata ||
-      // Deep comparison for overallProgress object
-      JSON.stringify(prevMetadata.overallProgress) !== JSON.stringify(newMetadata.overallProgress)
+      overallProgressChanged()
     ) {
       setAnalysisMetadata(newMetadata)
       prevMetadataRef.current = newMetadata

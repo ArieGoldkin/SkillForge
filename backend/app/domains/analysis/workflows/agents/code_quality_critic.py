@@ -2,12 +2,14 @@
 
 This agent reviews code patterns, identifies antipatterns and code smells,
 and provides recommendations for maintainability, best practices, and refactoring.
-
-Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.domains.analysis.schemas.agents.code_quality_critic import CodeQualityReview
 from app.domains.analysis.workflows.agents.base import create_structured_agent
@@ -18,16 +20,19 @@ from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.utils.content_signals import get_threshold_for_expectation
 
+logger = get_logger(__name__)
+
 # Prompt is fetched from Langfuse via PromptManager (with hardcoded fallback)
 PROMPT_NAME = "analysis-agent-code-quality-critic"
 
 
-async def run_code_quality_critic(
+async def run_code_quality_critic(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run code quality critic agent to assess code quality and maintainability.
 
@@ -37,6 +42,7 @@ async def run_code_quality_critic(
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced code quality analysis
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -70,10 +76,20 @@ async def run_code_quality_critic(
     full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent with structured output
+    # Handles both tool-enabled and non-tool variants
     agent = create_structured_agent(
         system_prompt=full_prompt,
         response_schema=CodeQualityReview,
+        tools=tools,
     )
+
+    if tools:
+        logger.info(
+            "code_quality_critic_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis

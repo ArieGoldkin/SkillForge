@@ -67,10 +67,8 @@ def reciprocal_rank_fusion[T](
             rrf_scores[item] += 1.0 / (k + rank)
 
     # Convert to list of tuples and sort by RRF score (descending)
-    fused_results = sorted(
+    return sorted(
         rrf_scores.items(),
         key=lambda x: x[1],
         reverse=True,
     )
-
-    return fused_results

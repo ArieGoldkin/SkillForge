@@ -15,6 +15,19 @@
       "template_file": "templates/adr-template.md",
       "token_cost": 150
     },
+    "adr-best-practices": {
+      "keywords": ["when to write adr", "adr lifecycle", "adr workflow", "adr process", "adr review", "quantify impact"],
+      "solves": [
+        "When should I write an ADR?",
+        "How do I manage ADR lifecycle?",
+        "What's the ADR review process?",
+        "How to quantify decision impact?",
+        "ADR anti-patterns to avoid",
+        "Link related ADRs"
+      ],
+      "reference_file": "references/adr-best-practices.md",
+      "token_cost": 400
+    },
     "tradeoff-analysis": {
       "keywords": ["tradeoff", "pros cons", "alternatives", "comparison", "evaluate options"],
       "solves": [
@@ -48,5 +61,7 @@
     "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
     "tier_2_overview": { "file": "SKILL.md", "tokens": 300, "sections": ["overview", "nygard-format"] },
     "tier_3_generate": { "files": "templates/*.md", "tokens": "150 each" }
-  }
+  },
+
+  "mcp_tools": []
 }

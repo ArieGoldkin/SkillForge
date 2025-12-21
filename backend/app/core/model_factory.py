@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from langchain.chat_models import init_chat_model
 from langchain_anthropic import ChatAnthropic
-from langchain_core.language_models.chat_models import BaseChatModel
 
 from app.core.config import _infer_provider_from_model, _split_provider_from_model, settings
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY
+
+if TYPE_CHECKING:
+    from langchain_core.language_models.chat_models import BaseChatModel
 
 logger = get_logger(__name__)
 
@@ -199,6 +203,10 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
         max_retries = settings.LLM_MAX_RETRIES
     if max_retries is not None:
         init_kwargs["max_retries"] = max_retries  # type: ignore[assignment]
+
+    # Enable streaming usage metadata (LangChain-Core 1.2.4+)
+    # This allows usage_metadata extraction from streaming chunks
+    init_kwargs["stream_options"] = {"include_usage": True}  # type: ignore[typeddict-item]
 
     # Remove provider prefix when LangChain expects bare model names
     if _should_strip_provider_prefix(provider):

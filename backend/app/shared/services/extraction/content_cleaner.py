@@ -201,9 +201,7 @@ def clean_extracted_content(content: str) -> str:
         )
 
     # Sanitize UTF-8 for PostgreSQL compatibility (must be last step)
-    cleaned = sanitize_utf8(cleaned)
-
-    return cleaned
+    return sanitize_utf8(cleaned)
 
 
 def extract_main_content(content: str, min_paragraph_length: int = 100) -> str:

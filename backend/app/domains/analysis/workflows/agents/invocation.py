@@ -35,7 +35,7 @@ async def invoke_agent(
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float = AGENT_TIMEOUT,  # For logging/reference; step_timeout handles actual timeout
+    timeout: float = AGENT_TIMEOUT,  # For logging/reference; step_timeout handles actual timeout  # noqa: ASYNC109 - Parameter for logging, not timeout control
 ) -> dict[str, object]:
     """Invoke agent using ainvoke - timeout handled by LangGraph's step_timeout.
 
@@ -89,6 +89,19 @@ async def invoke_agent(
             async with asyncio.timeout(timeout):
                 result = await agent.ainvoke(input_messages, config=config)
             duration = time.time() - start_time
+
+            # Extract usage metadata (LangChain-Core 1.2.4+ feature)
+            if hasattr(result, "usage_metadata") and result.usage_metadata:
+                usage = result.usage_metadata
+                logger.info(
+                    "agent_token_usage",
+                    agent_type=agent_type,
+                    analysis_id=str(analysis_id),
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    total_tokens=usage.get("total_tokens", 0),
+                )
+
             logger.info(
                 "agent_invocation_success",
                 agent_type=agent_type,
@@ -97,7 +110,7 @@ async def invoke_agent(
                 duration_seconds=duration,
                 trace_id=trace_id,
             )
-            return cast(dict[str, object], result)
+            return cast("dict[str, object]", result)
         except TimeoutError:
             # Issue #299-304: Explicit timeout - convert to TimeoutError for with_fallbacks()
             duration = time.time() - start_time
@@ -135,7 +148,7 @@ async def invoke_agent(
         try:
             async with asyncio.timeout(timeout):
                 result = await asyncio.to_thread(agent.invoke, input_messages)
-            return cast(dict[str, object], result)
+            return cast("dict[str, object]", result)
         except Exception as e:
             duration = time.time() - start_time
             logger.error(

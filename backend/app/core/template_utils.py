@@ -89,9 +89,7 @@ def normalize_paragraphs(text: str) -> str:
     # Add paragraph break after bold headers with colons
     # Pattern: **Title:** followed by whitespace (but not already double newline)
     # Markdown bold with colon: **text:**
-    text = re.sub(r"(\*\*[^*]+:\*\*)\s+", r"\1\n\n", text)
-
-    return text
+    return re.sub(r"(\*\*[^*]+:\*\*)\s+", r"\1\n\n", text)
 
 
 # Base directory for templates (relative to this file)

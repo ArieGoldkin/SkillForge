@@ -8,8 +8,12 @@ Reference: Sprint 11 - Context Engineering (#247)
 
 from __future__ import annotations
 
-from app.domains.analysis.services.context.compaction import CompactionConfig
+from typing import TYPE_CHECKING
+
 from app.domains.analysis.services.context.compiler import ContextCompiler
+
+if TYPE_CHECKING:
+    from app.domains.analysis.services.context.compaction import CompactionConfig
 
 # Tutor workflow system prompt
 TUTOR_SYSTEM_PROMPT = """You are an expert Socratic tutor helping students learn new concepts.

@@ -32,13 +32,8 @@
       "command": "npx",
       "args": [
         "-y",
-        "mcp-server-langfuse@latest"
-      ],
-      "env": {
-        "LANGFUSE_PUBLIC_KEY": "pk-lf-...",
-        "LANGFUSE_SECRET_KEY": "sk-lf-...",
-        "LANGFUSE_BASEURL": "http://localhost:3000"
-      }
+        "@langfuse/mcp-server"
+      ]
     }
   }
 }

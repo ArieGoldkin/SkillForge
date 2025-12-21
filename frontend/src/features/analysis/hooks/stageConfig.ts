@@ -11,7 +11,7 @@
  * @see ../config/stageRegistry.ts for the complete stage registry
  */
 
-import type { StageName } from '@app-types/sse'
+import type { StageName, StageStatus } from '@app-types/sse'
 
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
@@ -31,7 +31,7 @@ export {
 
 /** Stage status entry for the status map */
 export interface StageStatusEntry {
-  status: 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
+  status: StageStatus
   timestamp: string
   details?: Record<string, unknown>
 }

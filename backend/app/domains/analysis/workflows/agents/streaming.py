@@ -11,17 +11,13 @@ GeneratorExit during LangGraph cleanup.
 import inspect
 import time
 from contextlib import aclosing
-from typing import TYPE_CHECKING, cast, overload
+from typing import cast, overload
 
 from langchain_core.runnables import Runnable
 
-from app.core.tracing import get_current_trace_id
-
-if TYPE_CHECKING:
-    pass
-
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT, create_runnable_config
+from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.streaming_helpers import emit_progress_if_needed
 
@@ -61,12 +57,12 @@ def _process_chunk(
 # Removed _cleanup_stream - aclosing() context manager handles cleanup automatically
 
 
-async def stream_agent_response(
+async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming logic
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float,  # Kept for logging/reference, but step_timeout handles actual timeout
+    timeout: float,  # Kept for logging/reference, but step_timeout handles actual timeout  # noqa: ASYNC109 - Parameter for logging, not timeout control
 ) -> dict[str, object]:
     """Stream agent execution - timeout handled by LangGraph's step_timeout and model-level timeout.
 
@@ -104,6 +100,11 @@ async def stream_agent_response(
     last_event_time = 0.0
     last_event_chars = 0
 
+    # Token usage tracking (LangChain-Core 1.2.4+)
+    total_tokens = 0
+    input_tokens = 0
+    output_tokens = 0
+
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
@@ -126,7 +127,7 @@ async def stream_agent_response(
                 while True:
                     try:
                         chunk = await stream_iter.__anext__()
-                        chunk = cast(dict[str, object], chunk)
+                        chunk = cast("dict[str, object]", chunk)
                     except StopAsyncIteration:
                         break
                     except (AttributeError, GeneratorExit, RuntimeError) as exc:
@@ -146,6 +147,14 @@ async def stream_agent_response(
                     final_result, accumulated_content, should_break = _process_chunk(
                         chunk, final_result, accumulated_content, analysis_id, agent_type
                     )
+
+                    # Extract usage metadata from streaming chunks (LangChain-Core 1.2.4+)
+                    if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                        metadata = chunk.usage_metadata
+                        # Accumulate token counts from streaming chunks
+                        input_tokens = getattr(metadata, "input_tokens", input_tokens)
+                        output_tokens += getattr(metadata, "output_tokens", 0)
+                        total_tokens = input_tokens + output_tokens
 
                     if should_break:
                         break
@@ -192,6 +201,18 @@ async def stream_agent_response(
             exc_info=True,  # Include full stack trace
         )
         raise
+
+    # Log final token usage if any tokens were consumed
+    if total_tokens > 0:
+        logger.info(
+            "streaming_llm_usage",
+            agent_type=agent_type,
+            analysis_id=str(analysis_id),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            trace_id=trace_id,
+        )
 
     # If we have a result, return it; otherwise return empty dict for graceful degradation
     if final_result is None:

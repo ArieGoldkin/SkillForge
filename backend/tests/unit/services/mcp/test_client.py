@@ -290,6 +290,11 @@ class TestMCPClientPoolAsync:
 
     @pytest.mark.asyncio
     async def test_pool_close_cleans_up_resources(self, server_configs, mock_client):
+        """Test that close() cleans up all resources.
+
+        Note: langchain-mcp-adapters 0.2+ handles cleanup internally,
+        so we just verify state is cleared, not explicit close calls.
+        """
         pool = MCPClientPool(server_configs)
         pool._client = mock_client
         conn = pool._get_or_create_connection("github")
@@ -300,21 +305,22 @@ class TestMCPClientPoolAsync:
         assert pool._closed is True
         assert len(pool._connections) == 0
         assert pool._client is None
-        mock_client.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_pool_close_handles_client_without_close(self, server_configs):
+    async def test_pool_close_handles_any_client(self, server_configs):
+        """Test that close() works with any client type.
+
+        Note: langchain-mcp-adapters 0.2+ handles cleanup internally,
+        so we just verify the pool closes without errors.
+        """
         pool = MCPClientPool(server_configs)
-        # Create mock without close method to test fallback to __aexit__
-        mock_client_without_close = MagicMock()
-        del mock_client_without_close.close  # Remove close to trigger __aexit__ fallback
-        mock_client_without_close.__aexit__ = AsyncMock()
-        pool._client = mock_client_without_close
+        mock_client = MagicMock()
+        pool._client = mock_client
 
         await pool.close()
 
         assert pool._closed is True
-        mock_client_without_close.__aexit__.assert_called_once()
+        assert pool._client is None
 
     @pytest.mark.asyncio
     async def test_pool_close_handles_cleanup_errors(self, server_configs, mock_client):
@@ -328,12 +334,10 @@ class TestMCPClientPoolAsync:
         assert pool._client is None
 
     @pytest.mark.asyncio
-    async def test_load_tools_does_not_await_list(self, server_configs):
-        """Test that _load_tools correctly handles synchronous get_tools() method.
+    async def test_load_tools_with_async_get_tools(self, server_configs):
+        """Test that _load_tools correctly handles async get_tools() method.
 
-        Regression test for bug where client.get_tools() was incorrectly awaited.
-        The MultiServerMCPClient.get_tools() method returns list[BaseTool] directly,
-        not a coroutine, so it should not be awaited.
+        langchain-mcp-adapters 0.2+ uses async get_tools(server_name=...).
         """
         from langchain_core.tools import BaseTool
 
@@ -342,11 +346,11 @@ class TestMCPClientPoolAsync:
         mock_tool.name = "github_test_tool"
         mock_tools = [mock_tool]
 
-        # Create mock client that returns tools synchronously (not async)
+        # Create mock client with async get_tools (0.2 API)
         mock_client = MagicMock()
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
-        mock_client.get_tools = MagicMock(return_value=mock_tools)  # Synchronous method
+        mock_client.get_tools = AsyncMock(return_value=mock_tools)  # Async method (0.2+)
 
         pool = MCPClientPool(server_configs)
         conn = pool._get_or_create_connection("github")
@@ -354,7 +358,6 @@ class TestMCPClientPoolAsync:
         with patch("app.shared.services.mcp.client.MultiServerMCPClient") as mock_client_class:
             mock_client_class.return_value = mock_client
 
-            # This should NOT raise "object list can't be used in 'await' expression"
             await pool._load_tools(conn)
 
             # Verify tools were loaded correctly
@@ -362,5 +365,5 @@ class TestMCPClientPoolAsync:
             assert len(conn.tools) == 1
             assert conn.tools[0].name == "github_test_tool"
 
-            # Verify get_tools was called (synchronously, not awaited)
-            mock_client.get_tools.assert_called_once()
+            # Verify get_tools was called with server_name parameter (0.2 API)
+            mock_client.get_tools.assert_called_once_with(server_name="github")

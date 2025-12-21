@@ -36,6 +36,4 @@ def normalize_vector(vector: EmbeddingVector) -> EmbeddingVector:
         return vector
 
     # Normalize
-    normalized = [x / norm for x in vector]
-
-    return normalized
+    return [x / norm for x in vector]

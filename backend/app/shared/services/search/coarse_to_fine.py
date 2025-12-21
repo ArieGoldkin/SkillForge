@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from app.db.models.analysis_chunk import AnalysisChunk
-from app.db.repositories.chunk_repository import ChunkRepository
+
+if TYPE_CHECKING:
+    from app.db.repositories.chunk_repository import ChunkRepository
 
 
 async def retrieve_coarse_to_fine(

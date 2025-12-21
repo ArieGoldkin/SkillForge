@@ -11,11 +11,12 @@ from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status as http_status
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.repositories.library_repository import ILibraryRepository, get_library_repository
@@ -42,17 +43,39 @@ class SearchMode(str, Enum):
     semantic = "semantic"
 
 
-@router.get("/library")
+@router.get(
+    "/library",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid query parameters"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
     repo: Annotated[ILibraryRepository, Depends(get_library_repository)],
-    query: Annotated[str | None, Query(description="Search query")] = None,
+    query: Annotated[
+        str | None,
+        Query(
+            description="Search query string",
+            min_length=1,
+            max_length=500,
+            examples=["React hooks", "async/await patterns"],
+        ),
+    ] = None,
     content_type: Annotated[
         str | None,
-        Query(description="Filter by content type (article, video, repo)"),
+        Query(
+            description="Filter by content type",
+            pattern="^(article|video|repo)$",
+            examples=["article"],
+        ),
     ] = None,
     status: Annotated[
         str | None,
-        Query(description="Filter by analysis status (pending, running, complete, failed)"),
+        Query(
+            description="Filter by analysis status",
+            pattern="^(pending|running|complete|failed)$",
+            examples=["complete"],
+        ),
     ] = None,
     search_mode: Annotated[
         SearchMode,
@@ -60,11 +83,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
     ] = SearchMode.hybrid,
     limit: Annotated[
         int,
-        Query(ge=1, le=100, description="Results per page"),
+        Query(ge=1, le=100, description="Results per page", examples=[20]),
     ] = 20,
     offset: Annotated[
         int,
-        Query(ge=0, description="Pagination offset"),
+        Query(ge=0, description="Pagination offset", examples=[0]),
     ] = 0,
 ) -> LibraryListResponse:
     """Get library contents with optional search and filtering.
@@ -236,59 +259,58 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
             )
 
         # Listing mode: no query provided
-        else:
-            logger.info(
-                "library_list_start",
-                content_type=content_type,
-                status_filter=status,
-                limit=limit,
-                offset=offset,
-            )
+        logger.info(
+            "library_list_start",
+            content_type=content_type,
+            status_filter=status,
+            limit=limit,
+            offset=offset,
+        )
 
-            # Build filters
-            filters = LibraryFilters(
-                content_type=content_type,
-                status=status,
-            )
+        # Build filters
+        filters = LibraryFilters(
+            content_type=content_type,
+            status=status,
+        )
 
-            # Get paginated list with total count
-            analyses, total = await repo.list_analyses(
-                filters=filters,
-                limit=limit,
-                offset=offset,
-            )
+        # Get paginated list with total count
+        analyses, total = await repo.list_analyses(
+            filters=filters,
+            limit=limit,
+            offset=offset,
+        )
 
-            # Build response items
-            # Type casts needed: SQLAlchemy Column types to Python types
-            items = [
-                LibrarySearchResult(
-                    analysis_id=str(analysis.id),  # type: ignore[arg-type]
-                    url=str(analysis.url),
-                    title=str(analysis.title) if analysis.title else None,
-                    content_type=str(analysis.content_type),
-                    status=str(analysis.status),
-                    snippet=None,  # No snippet in listing mode
-                    rank=0.0,  # No ranking in listing mode
-                    created_at=analysis.created_at.isoformat() if analysis.created_at else "",
-                )
-                for analysis in analyses
-            ]
-
-            logger.info(
-                "library_list_complete",
-                filters=filters.model_dump(),
-                limit=limit,
-                offset=offset,
-                total=total,
-                results_count=len(items),
+        # Build response items
+        # Type casts needed: SQLAlchemy Column types to Python types
+        items = [
+            LibrarySearchResult(
+                analysis_id=str(analysis.id),  # type: ignore[arg-type]
+                url=str(analysis.url),
+                title=str(analysis.title) if analysis.title else None,
+                content_type=str(analysis.content_type),
+                status=str(analysis.status),
+                snippet=None,  # No snippet in listing mode
+                rank=0.0,  # No ranking in listing mode
+                created_at=analysis.created_at.isoformat() if analysis.created_at else "",
             )
+            for analysis in analyses
+        ]
 
-            return LibraryListResponse(
-                items=items,
-                total=total,
-                limit=limit,
-                offset=offset,
-            )
+        logger.info(
+            "library_list_complete",
+            filters=filters.model_dump(),
+            limit=limit,
+            offset=offset,
+            total=total,
+            results_count=len(items),
+        )
+
+        return LibraryListResponse(
+            items=items,
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
 
     except HTTPException:
         # Re-raise HTTP exceptions without modification
@@ -310,9 +332,16 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
         ) from e
 
 
-@router.delete("/analyses/{analysis_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/analyses/{analysis_id}",
+    status_code=http_status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def delete_analysis(
-    analysis_id: UUID,
+    analysis_id: Annotated[UUID, Path(description="Analysis UUID to delete")],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete an analysis and cascading related data.

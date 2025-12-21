@@ -12,13 +12,14 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.models.agent_memory import AgentMemory, MemoryType
 from app.shared.services.embeddings.service import EmbeddingService
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     from app.core.types import EmbeddingVector
 
 logger = get_logger(__name__)
@@ -218,7 +219,7 @@ class AgentMemoryService:
             )
 
             for result in results:
-                snippets.append(
+                snippets.append(  # noqa: PERF401 - Complex object construction
                     MemorySnippet(
                         content=str(result.memory.content),
                         memory_type=str(result.memory.memory_type),

@@ -322,7 +322,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
+    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
         pass
 
     # Emit SSE event: aggregation started

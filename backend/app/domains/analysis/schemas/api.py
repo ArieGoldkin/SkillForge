@@ -343,5 +343,5 @@ class LoadArtifactResponse(BaseModel):
 
     content: str = Field(..., description="Loaded content or section")
     section: ArtifactSection = Field(..., description="Section that was loaded")
-    truncated: bool = Field(False, description="Whether content was truncated")
+    truncated: bool = Field(default=False, description="Whether content was truncated")
     original_size: int = Field(..., description="Original content size")

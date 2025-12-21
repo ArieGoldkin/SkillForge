@@ -151,13 +151,22 @@ class TestMCPSettings:
         assert settings.servers["npm"].env["NPM_TOKEN"] == "npm_test456"
 
     def test_get_enabled_servers_all_enabled(self):
+        """Test that get_enabled_servers returns only enabled servers.
+
+        Note: Default config has only github enabled (npm/pypi disabled).
+        """
         settings = MCPSettings()
         enabled = settings.get_enabled_servers()
-        assert len(enabled) >= 3
+        # Only github is enabled by default
+        assert len(enabled) >= 1
+        assert "github" in enabled
         assert all(config.enabled for config in enabled.values())
 
     def test_get_enabled_servers_some_disabled(self):
+        """Test that disabling a server removes it from get_enabled_servers."""
         settings = MCPSettings()
+        # Enable npm first so we can test disabling github
+        settings.servers["npm"].enabled = True
         settings.servers["github"].enabled = False
         enabled = settings.get_enabled_servers()
         assert "github" not in enabled

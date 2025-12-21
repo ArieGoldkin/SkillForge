@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 async def stream_analysis_progress(
     analysis_id: uuid.UUID,
-    request: Request,
+    request: Request,  # noqa: ARG001 - Required by SSE framework for disconnect detection
 ) -> EventSourceResponse:
     """Stream real-time analysis progress via Server-Sent Events (SSE).
 

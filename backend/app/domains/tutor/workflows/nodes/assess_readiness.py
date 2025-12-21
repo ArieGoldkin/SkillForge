@@ -5,6 +5,7 @@ This node evaluates user understanding using LLM-based assessment.
 
 import json
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from langchain_core.output_parsers import JsonOutputParser
 
@@ -21,8 +22,10 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
-from app.shared.types import TutorMessage
 from app.shared.workflows.context_compiler import create_workflow_compiler
+
+if TYPE_CHECKING:
+    from app.shared.types import TutorMessage
 
 logger = get_logger(__name__)
 

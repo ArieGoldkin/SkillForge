@@ -67,7 +67,12 @@ async def check_database() -> dict[str, str] | None:
         return {"status": "connected"}
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    responses={
+        500: {"model": HealthStatus, "description": "Service unhealthy"},
+    },
+)
 async def health_check() -> HealthStatus:
     """Health check endpoint for monitoring and deployment verification."""
     database_status = await check_database()
