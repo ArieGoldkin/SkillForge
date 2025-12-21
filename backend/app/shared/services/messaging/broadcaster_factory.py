@@ -201,7 +201,7 @@ def _create_memory_broadcaster() -> BroadcasterProtocol:
     from app.shared.services.messaging.broadcaster import EventBroadcaster
 
     logger.debug("broadcaster_factory_create_memory")
-    return EventBroadcaster()
+    return EventBroadcaster()  # type: ignore[return-value]
 
 
 async def _create_redis_broadcaster(*, required: bool = True) -> BroadcasterProtocol:
@@ -222,7 +222,7 @@ async def _create_redis_broadcaster(*, required: bool = True) -> BroadcasterProt
 
     try:
         logger.debug("broadcaster_factory_create_redis")
-        return await RedisEventBroadcaster.create()
+        return await RedisEventBroadcaster.create()  # type: ignore[return-value]
     except (OSError, ConnectionError, TimeoutError) as e:
         logger.exception(
             "broadcaster_factory_redis_failed",
@@ -257,7 +257,7 @@ async def reset_broadcaster() -> None:
             # Close Redis connection if applicable
             if hasattr(_broadcaster, "close") and callable(_broadcaster.close):
                 try:
-                    await _broadcaster.close()
+                    await _broadcaster.close()  # type: ignore[misc]
                 except Exception as e:  # noqa: BLE001 - Cleanup must not fail
                     logger.warning(
                         "broadcaster_factory_reset_close_error",

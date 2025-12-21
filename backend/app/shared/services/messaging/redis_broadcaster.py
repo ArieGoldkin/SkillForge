@@ -218,7 +218,7 @@ class RedisEventBroadcaster:
 
             # Replay buffered events
             try:
-                buffered = await self._redis.lrange(buffer_key, 0, -1)
+                buffered = await self._redis.lrange(buffer_key, 0, -1)  # type: ignore[misc]
                 buffered_count = len(buffered)
 
                 for event_json in buffered:
