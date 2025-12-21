@@ -90,7 +90,7 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, undefined, undefined)
       )
 
-      // Should show pending stages (17 total stages)
+      // Should show pending stages (18 total stages)
       expect(result.current.currentStep).toContain('pending')
       expect(result.current.progress).toBe(0)
       expect(result.current.stage).toBe('extracting')
@@ -110,7 +110,7 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, 8, undefined)
       )
 
-      // Should use expectedTotalStages (8) not TOTAL_STAGES (17)
+      // Should use expectedTotalStages (8) not TOTAL_STAGES (18)
       expect(result.current.totalSteps).toBe(8)
     })
 
@@ -123,8 +123,8 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, undefined, undefined)
       )
 
-      // Should use TOTAL_STAGES (17)
-      expect(result.current.totalSteps).toBe(17)
+      // Should use TOTAL_STAGES (18)
+      expect(result.current.totalSteps).toBe(18)
     })
 
     it('handles expectedTotalStages of 0', () => {
@@ -158,7 +158,7 @@ describe('useProgressCalculation', () => {
 
       // When a stage is running, currentStep shows the running stage title (not status breakdown)
       expect(result.current.currentStep).toBe('Embedding Generation')
-      // But there should be pending stages (17 total - 2 in map = 15 pending)
+      // But there should be pending stages (18 total - 2 in map = 16 pending)
       expect(result.current.progress).toBeLessThan(100)
     })
 
@@ -176,6 +176,7 @@ describe('useProgressCalculation', () => {
         ['trends_analysis', { status: 'skipped', timestamp: '2024-01-01T00:03:00Z' }],
         ['dependencies_analysis', { status: 'skipped', timestamp: '2024-01-01T00:03:00Z' }],
         ['aggregation', { status: 'complete', timestamp: '2024-01-01T00:04:00Z' }],
+        ['quality_gate', { status: 'complete', timestamp: '2024-01-01T00:04:30Z' }],
         ['quality_validation', { status: 'complete', timestamp: '2024-01-01T00:05:00Z' }],
         ['artifact_generation', { status: 'complete', timestamp: '2024-01-01T00:06:00Z' }],
         ['chunking', { status: 'skipped', timestamp: '2024-01-01T00:03:00Z' }],
@@ -185,7 +186,7 @@ describe('useProgressCalculation', () => {
       ])
 
       const { result } = renderHook(() =>
-        useProgressCalculation(stageStatuses, [], true, 17, undefined)
+        useProgressCalculation(stageStatuses, [], true, 18, undefined)
       )
 
       // Should not show pending stages
