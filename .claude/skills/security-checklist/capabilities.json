@@ -132,7 +132,13 @@
     "dependency_scan": {
       "tool": "Bash",
       "commands": ["npm audit --json", "pip-audit --format=json"],
-      "evidence_capture": true
+      "evidence_capture": true,
+      "use_when": "Need to scan dependencies for vulnerabilities and record evidence"
+    },
+    "documentation_lookup": {
+      "tool": "context7",
+      "library_ids": ["/OWASP/CheatSheetSeries"],
+      "use_when": "Need current security best practices and OWASP guidance"
     }
   }
 }

@@ -5,6 +5,17 @@
   "description": "Comprehensive API design patterns, versioning strategies, error handling conventions, and OpenAPI templates",
 
   "capabilities": {
+    "rest-design": {
+      "keywords": ["rest", "restful", "http", "endpoint", "route", "path", "resource", "CRUD"],
+      "solves": [
+        "How do I design RESTful APIs?",
+        "REST endpoint patterns and conventions",
+        "HTTP methods and status codes",
+        "API versioning and pagination"
+      ],
+      "reference_file": "references/rest-patterns.md",
+      "token_cost": 600
+    },
     "endpoint-design": {
       "keywords": ["endpoint", "route", "path", "resource", "CRUD"],
       "solves": [
@@ -12,7 +23,7 @@
         "What's the best URL pattern for this resource?",
         "RESTful endpoint naming conventions"
       ],
-      "reference_file": "references/endpoint-patterns.md",
+      "reference_file": "references/rest-patterns.md#resource-modeling",
       "token_cost": 150
     },
     "pagination": {
@@ -22,7 +33,7 @@
         "Cursor vs offset pagination",
         "Pagination best practices"
       ],
-      "reference_file": "references/pagination.md",
+      "reference_file": "references/rest-patterns.md#pagination",
       "token_cost": 120
     },
     "versioning": {
@@ -32,7 +43,7 @@
         "When to create a new API version",
         "URL vs header versioning"
       ],
-      "reference_file": "references/versioning.md",
+      "reference_file": "references/rest-patterns.md#api-versioning",
       "token_cost": 100
     },
     "error-handling": {
@@ -42,7 +53,7 @@
         "Which HTTP status codes to use",
         "Error message best practices"
       ],
-      "reference_file": "references/error-handling.md",
+      "reference_file": "references/rest-patterns.md#error-response-format",
       "token_cost": 130
     },
     "rate-limiting": {
@@ -52,8 +63,18 @@
         "Rate limit headers and responses",
         "Tiered rate limiting strategies"
       ],
-      "reference_file": "references/rate-limiting.md",
+      "reference_file": "references/rest-patterns.md#rate-limiting",
       "token_cost": 110
+    },
+    "skillforge-api": {
+      "keywords": ["skillforge", "analysis api", "artifact api", "sse endpoint"],
+      "solves": [
+        "How does SkillForge API work?",
+        "SkillForge endpoint design decisions",
+        "Real-world API design examples"
+      ],
+      "example_file": "examples/skillforge-api-design.md",
+      "token_cost": 650
     },
     "authentication": {
       "keywords": ["auth", "authentication", "bearer", "jwt", "oauth", "api key"],

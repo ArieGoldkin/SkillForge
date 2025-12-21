@@ -1,0 +1,8 @@
+{
+  "backup_timestamp": "2025-12-21T07:47:02.677129+00:00",
+  "langfuse_host": "http://localhost:3000",
+  "prompts_count": 10,
+  "datasets_count": 0,
+  "score_configs_count": 5,
+  "llm_connections_count": 3
+}

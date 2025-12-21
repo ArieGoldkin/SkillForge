@@ -1,0 +1,28 @@
+{
+  "connections": [
+    {
+      "name": "OpenAI GPT-4o-mini",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "use_case": "Main agent LLM for cost efficiency",
+      "note": "Configure in Langfuse UI: Settings \u2192 LLM API Keys \u2192 OpenAI"
+    },
+    {
+      "name": "Anthropic Claude 3.5 Sonnet",
+      "provider": "anthropic",
+      "model": "claude-3-5-sonnet-20241022",
+      "use_case": "High-quality analysis and reasoning",
+      "note": "Configure in Langfuse UI: Settings \u2192 LLM API Keys \u2192 Anthropic"
+    },
+    {
+      "name": "Google Gemini 2.0 Flash",
+      "provider": "google",
+      "model": "gemini-2.0-flash-exp",
+      "use_case": "G-Eval quality scoring",
+      "note": "Configure in Langfuse UI: Settings \u2192 LLM API Keys \u2192 Google"
+    }
+  ],
+  "count": 3,
+  "warning": "DO NOT commit API keys - configure manually in Langfuse UI",
+  "note": "This documents the required connections, not the actual credentials"
+}

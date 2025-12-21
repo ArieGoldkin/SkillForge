@@ -6,54 +6,78 @@
 
   "capabilities": {
     "zod-schemas": {
-      "keywords": ["zod", "schema", "validation", "parse", "safeParse", "infer"],
+      "keywords": ["zod", "schema", "validation", "parse", "safeParse", "infer", "refine", "transform"],
       "solves": [
         "How do I validate input with Zod?",
         "Create runtime validation schema",
-        "Infer TypeScript types from Zod"
+        "Infer TypeScript types from Zod",
+        "Transform and refine data with Zod",
+        "Handle Zod validation errors"
       ],
-      "reference_file": "SKILL.md#zod-validation",
-      "token_cost": 180
+      "reference_file": "references/zod-patterns.md",
+      "template_file": "templates/zod-schema.ts",
+      "token_cost": 350
     },
     "trpc": {
-      "keywords": ["trpc", "type-safe api", "procedure", "router", "mutation", "query"],
+      "keywords": ["trpc", "type-safe api", "procedure", "router", "mutation", "query", "context", "middleware"],
       "solves": [
         "How do I set up tRPC?",
         "Type-safe API calls",
-        "tRPC with React Query"
+        "tRPC with React Query",
+        "tRPC authentication middleware",
+        "tRPC error handling"
       ],
-      "reference_file": "SKILL.md#trpc-patterns",
-      "token_cost": 200
+      "reference_file": "references/trpc-setup.md",
+      "template_file": "templates/trpc-router.ts",
+      "token_cost": 400
     },
     "prisma-types": {
-      "keywords": ["prisma", "orm", "generated types", "model", "client"],
+      "keywords": ["prisma", "orm", "generated types", "model", "client", "payload", "validator"],
       "solves": [
         "How do I use Prisma types?",
         "Type-safe database queries",
-        "Prisma schema to TypeScript"
+        "Prisma schema to TypeScript",
+        "Extract types from Prisma queries",
+        "Extend Prisma models with custom fields"
       ],
-      "reference_file": "SKILL.md#prisma-integration",
-      "token_cost": 150
+      "reference_file": "references/prisma-types.md",
+      "token_cost": 320
     },
-    "shared-types": {
-      "keywords": ["shared types", "dto", "contract", "api types", "monorepo types"],
+    "typescript-5-features": {
+      "keywords": ["typescript 5", "const parameters", "satisfies", "decorators", "template literals", "inferred predicates"],
       "solves": [
-        "Share types between frontend and backend",
-        "Create API contracts",
-        "Monorepo type sharing"
+        "Use TypeScript 5.x features",
+        "Const type parameters",
+        "Satisfies operator",
+        "Modern TypeScript patterns",
+        "Branded types and template literals"
       ],
-      "template_file": "templates/shared-types.ts",
-      "token_cost": 120
+      "reference_file": "references/typescript-5-features.md",
+      "token_cost": 380
     },
-    "typescript-strict": {
-      "keywords": ["strict mode", "strictNullChecks", "noImplicitAny", "tsconfig"],
+    "skillforge-integration": {
+      "keywords": ["skillforge", "pydantic", "fastapi", "openapi", "backend types", "frontend types"],
       "solves": [
-        "Configure TypeScript strict mode",
-        "Fix strict mode errors",
-        "TypeScript best practices"
+        "How can SkillForge use Zod with FastAPI?",
+        "Convert Pydantic to Zod schemas",
+        "Share types between Python and TypeScript",
+        "Validate API responses in frontend",
+        "Generate types from OpenAPI spec"
       ],
-      "reference_file": "SKILL.md#typescript-strict-mode",
-      "token_cost": 100
+      "reference_file": "examples/skillforge-type-safety.md",
+      "token_cost": 420
+    },
+    "implementation-checklist": {
+      "keywords": ["checklist", "type safety", "validation", "testing", "deployment"],
+      "solves": [
+        "What steps to implement type safety?",
+        "Type safety checklist",
+        "Validation best practices",
+        "Type safety testing strategy",
+        "Production deployment checklist"
+      ],
+      "reference_file": "checklists/type-safety-checklist.md",
+      "token_cost": 280
     }
   },
 
@@ -65,10 +89,28 @@
   "integrates_with": ["api-design-framework", "database-schema-designer"],
 
   "progressive_loading": {
-    "tier_1_discovery": { "file": "capabilities.json", "tokens": 100 },
-    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "core-patterns"] },
-    "tier_3_specific": { "files": "SKILL.md#*", "tokens": "100-200 each" },
-    "tier_4_generate": { "files": "templates/*.ts", "tokens": "120-150 each" }
+    "tier_1_discovery": { "file": "capabilities.json", "tokens": 150 },
+    "tier_2_overview": { "file": "SKILL.md", "tokens": 400, "sections": ["overview", "core-stack"] },
+    "tier_3_references": {
+      "files": "references/*.md",
+      "tokens": "280-420 each",
+      "note": "Load specific reference based on capability match"
+    },
+    "tier_4_templates": {
+      "files": "templates/*.ts",
+      "tokens": "300-400 each",
+      "note": "Use for code generation and examples"
+    },
+    "tier_5_examples": {
+      "files": "examples/*.md",
+      "tokens": 420,
+      "note": "SkillForge-specific integration examples"
+    },
+    "tier_6_checklists": {
+      "files": "checklists/*.md",
+      "tokens": 280,
+      "note": "Implementation and testing checklists"
+    }
   },
 
   "mcp_tools": {
