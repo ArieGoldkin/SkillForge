@@ -181,25 +181,36 @@ async def test_graph_execution_with_mocks(
 
 @pytest.mark.asyncio
 async def test_graph_handles_extraction_error(sample_state: AnalysisState) -> None:
-    """Test graph handles extraction errors correctly."""
+    """Test graph handles extraction errors gracefully with abort signal."""
+    from app.core.exceptions import ExtractionErrorCode
     from app.shared.services.extraction.jina_reader import JinaReaderError
 
     mock_jina = MagicMock()
-    mock_jina.extract_article = AsyncMock(side_effect=JinaReaderError("Extraction failed"))
+    mock_jina.extract_article = AsyncMock(
+        side_effect=JinaReaderError("Extraction failed", error_code=ExtractionErrorCode.UNKNOWN)
+    )
     mock_jina.close = AsyncMock()
 
-    with (
-        patch(
-            "app.domains.analysis.workflows.tasks.extract_content.JinaReader",
-            return_value=mock_jina,
-        ),
-        pytest.raises(JinaReaderError, match="Extraction failed"),
+    with patch(
+        "app.domains.analysis.workflows.tasks.extract_content.JinaReader",
+        return_value=mock_jina,
     ):
         graph = build_analysis_graph()
-        await graph.ainvoke(
+        result = await graph.ainvoke(
             sample_state,
             config={"configurable": {"thread_id": "test-thread"}},
         )
+
+    # Issue #441: Extraction errors now set abort signals instead of raising
+    assert result.get("should_abort") is True
+    assert result.get("extraction_status") == "failed"
+    assert "Extraction failed" in result.get("abort_reason", "")
+    # Verify workflow terminated at workflow_failed node
+    # The workflow_status and final_error fields are set by workflow_failed node
+    assert result.get("workflow_status") == "failed", (
+        f"Expected 'failed', got {result.get('workflow_status')}. Keys: {list(result.keys())}"
+    )
+    assert result.get("final_error") == "Extraction failed"
 
 
 @pytest.mark.asyncio

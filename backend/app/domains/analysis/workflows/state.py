@@ -71,6 +71,8 @@ class AnalysisState(TypedDict, total=False):
         abort_reason: Human-readable error message if workflow aborted (Issue #441)
         extraction_status: Status of extraction node - pending/success/failed (Issue #441)
         extraction_error_code: Error code if extraction failed (Issue #441)
+        workflow_status: Final workflow status - running/completed/failed (Issue #441)
+        final_error: Final error message if workflow failed (Issue #441)
 
     Note:
         agent_findings uses operator.add reducer to allow parallel agent nodes
@@ -121,3 +123,5 @@ class AnalysisState(TypedDict, total=False):
     extraction_error_code: (
         str | None
     )  # Error code from ExtractionErrorCode enum if extraction failed
+    workflow_status: Literal["running", "completed", "failed"]  # Final workflow status
+    final_error: str | None  # Final error message if workflow failed
