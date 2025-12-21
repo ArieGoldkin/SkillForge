@@ -612,7 +612,7 @@ class Settings(BaseSettings):
                     raise ValueError(error_msg)
 
         # Validate HOST is not 0.0.0.0 in production (security risk)
-        if self.HOST == "0.0.0.0":
+        if self.HOST == "0.0.0.0":  # noqa: S104 - Intentionally checking for security risk
             error_msg = (
                 "SECURITY: HOST=0.0.0.0 is not allowed in production. "
                 "Use 127.0.0.1 or a specific IP address with proper firewall rules."

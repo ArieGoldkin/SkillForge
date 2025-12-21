@@ -192,7 +192,7 @@ async def run_task_experiments(
     task_type: Literal["supervisor", "agent", "synthesis"],
     model_ids: list[str] | None = None,
     dry_run: bool = False,
-    local_mode: bool = True,
+    _local_mode: bool = True,
 ) -> dict[str, Any]:
     """Run experiments for a specific task type.
 
@@ -345,7 +345,7 @@ async def run_all_experiments(
     if output_path:
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, "w") as f:
+        with open(output_file, "w") as f:  # noqa: ASYNC230
             json.dump(results, f, indent=2, default=str)
         print(f"\nResults saved to: {output_path}")
 

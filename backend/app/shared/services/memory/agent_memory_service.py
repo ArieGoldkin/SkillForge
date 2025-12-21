@@ -219,7 +219,7 @@ class AgentMemoryService:
             )
 
             for result in results:
-                snippets.append(
+                snippets.append(  # noqa: PERF401 - Complex object construction
                     MemorySnippet(
                         content=str(result.memory.content),
                         memory_type=str(result.memory.memory_type),

@@ -62,7 +62,7 @@ class VariantSelector:
         )
         return "treatment"
 
-    def is_treatment(self, analysis_id: str, technique: str) -> bool:
+    def is_treatment(self, _analysis_id: str, _technique: str) -> bool:
         """Check if analysis should receive treatment variant.
 
         Always returns True as all features are enabled.

@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 async def continue_workflow_after_message(
     session_id: uuid.UUID,
     state: TutorState,
-    repo: ITutorRepository,
+    _repo: ITutorRepository,
 ) -> None:
     """Continue workflow after user sends message.
 

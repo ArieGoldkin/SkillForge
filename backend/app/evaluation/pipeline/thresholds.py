@@ -30,7 +30,7 @@ class ThresholdStatus(str, Enum):
     FAIL: Metrics below warning margin
     """
 
-    PASS = "pass"
+    PASS = "pass"  # noqa: S105
     WARN = "warn"
     FAIL = "fail"
 

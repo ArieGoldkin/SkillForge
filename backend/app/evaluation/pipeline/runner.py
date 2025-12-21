@@ -449,7 +449,7 @@ class EvaluationRunner:
             hits = sum(1 for doc_id in top_k if doc_id in expected_set)
             recall = hits / len(expected_set)
 
-        # MRR = 1 / rank_of_first_relevant
+        # MRR = 1 / rank_of_first_relevant  # noqa: ERA001
         mrr = 0.0
         for i, doc_id in enumerate(retrieved_ids, start=1):
             if doc_id in expected_set:

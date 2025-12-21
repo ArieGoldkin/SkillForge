@@ -46,7 +46,7 @@ setup_logging()
 logger = get_logger(__name__)
 
 
-def _background_task_exception_handler(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+def _background_task_exception_handler(_loop: asyncio.AbstractEventLoop, context: dict) -> None:
     """Global exception handler for unhandled exceptions in background tasks.
 
     This catches exceptions (including GeneratorExit) that occur in background tasks

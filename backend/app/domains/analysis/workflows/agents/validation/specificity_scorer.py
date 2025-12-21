@@ -139,7 +139,7 @@ class SpecificityScorer:
         "percentage": r"\d+[\d,.]*\s*%",
         # Comparisons
         "comparison": r"[<>≤≥]\s*\d+[\d,.]*",
-        # Ranges (hyphen or en-dash)
+        # Ranges (hyphen or en-dash)  # noqa: ERA001
         "range": r"\d+[\d,.]*\s*[-\u2013]\s*\d+[\d,.]*",
         # Estimates with tilde
         "estimate": r"~\s*\d+[\d,.]*",

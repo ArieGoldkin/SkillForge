@@ -50,7 +50,7 @@ class TTLCleaner:
             "pending": 1,  # Likely stuck workflows
             "failed": 30,
             "error": 30,
-            # "complete": None,  # Never expire completed analyses
+            # "complete": None,  # Never expire completed analyses  # noqa: ERA001
         }
 
     def set_ttl_policy(self, status: str, days: int | None) -> None:
@@ -79,7 +79,7 @@ class TTLCleaner:
     async def find_expired_analyses(
         self,
         status: str | None = None,
-        dry_run: bool = True,
+        _dry_run: bool = True,
     ) -> list[tuple[uuid.UUID, str, datetime]]:
         """Find analyses that have expired based on TTL policies.
 

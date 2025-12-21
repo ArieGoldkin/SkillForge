@@ -13,7 +13,7 @@ from typing import Any
 from app.evaluation.types import Example, Run
 
 
-def latency_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def latency_evaluator(run: Run, _example: Example) -> dict[str, Any]:
     """Evaluate response latency.
 
     Measures total execution time from the Langfuse run object.
@@ -54,7 +54,7 @@ def latency_evaluator(run: Run, example: Example) -> dict[str, Any]:
     }
 
 
-def ttft_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def ttft_evaluator(run: Run, _example: Example) -> dict[str, Any]:
     """Evaluate time to first token (for streaming responses).
 
     Measures how quickly the first token is returned for streaming LLM calls.

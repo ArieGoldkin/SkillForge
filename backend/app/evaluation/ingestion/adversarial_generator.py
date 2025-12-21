@@ -462,7 +462,7 @@ class AdversarialGenerator:
 
         # Add category-specific metadata from kwargs
         for key, value in kwargs.items():
-            metadata[key] = value
+            metadata[key] = value  # noqa: PERF403
 
         return {
             "id": example_id,

@@ -57,12 +57,12 @@ def _process_chunk(
 # Removed _cleanup_stream - aclosing() context manager handles cleanup automatically
 
 
-async def stream_agent_response(
+async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming logic
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float,  # Kept for logging/reference, but step_timeout handles actual timeout
+    timeout: float,  # Kept for logging/reference, but step_timeout handles actual timeout  # noqa: ASYNC109 - Parameter for logging, not timeout control
 ) -> dict[str, object]:
     """Stream agent execution - timeout handled by LangGraph's step_timeout and model-level timeout.
 

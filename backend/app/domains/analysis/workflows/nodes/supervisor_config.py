@@ -122,7 +122,7 @@ Examples:
   "confidence": 0.8}}
 - API quickstart → {{"agents": ["implementation_planner", "security_auditor"],
   "reasoning": "API setup needs implementation and security basics",
-  "confidence": 0.9}}"""
+  "confidence": 0.9}}"""  # noqa: S608
 
 
 # Supervisor prompt (built from registry at module load time)

@@ -163,7 +163,7 @@ def build_claude_code_prompt(
         prompt_parts.append("## Key Findings")
         for finding in key_findings[:5]:  # Limit to top 5
             if isinstance(finding, str):
-                prompt_parts.append(f"- {finding}")
+                prompt_parts.append(f"- {finding}")  # noqa: PERF401
         prompt_parts.append("")
 
     if implementation:

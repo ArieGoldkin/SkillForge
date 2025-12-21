@@ -329,7 +329,7 @@ class LLMBenchmark:
         # Get git commit hash (short)
         try:
             result = subprocess.run(
-                ["git", "rev-parse", "--short", "HEAD"],
+                ["git", "rev-parse", "--short", "HEAD"],  # noqa: S607
                 capture_output=True,
                 text=True,
                 check=True,
@@ -342,7 +342,7 @@ class LLMBenchmark:
         # Get git branch name
         try:
             result = subprocess.run(
-                ["git", "branch", "--show-current"],
+                ["git", "branch", "--show-current"],  # noqa: S607
                 capture_output=True,
                 text=True,
                 check=True,
@@ -1178,7 +1178,7 @@ class LLMBenchmark:
 
     def _generate_recommendation(
         self,
-        experiments: list[ExperimentResults],
+        _experiments: list[ExperimentResults],
         winners: dict[str, str],
         task_type: str,
         cost_savings: dict[str, float],

@@ -241,7 +241,7 @@ class PIIAnonymizer:
 
         for pattern_name, pattern in self.active_patterns.items():
             for match in pattern.finditer(text):
-                all_matches.append((pattern_name, match))
+                all_matches.append((pattern_name, match))  # noqa: PERF401
 
         # Sort by start position (for proper replacement)
         all_matches.sort(key=lambda x: x[1].start())

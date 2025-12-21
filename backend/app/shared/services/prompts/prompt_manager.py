@@ -1144,7 +1144,7 @@ class PromptManager:
         # Cache in L1 (in-memory)
         self.l1_cache.set(key, prompt)
 
-        # Cache in L2 (Redis)
+        # Cache in L2 (Redis)  # noqa: ERA001
         if self.redis_client:
             try:
                 self.redis_client.setex(

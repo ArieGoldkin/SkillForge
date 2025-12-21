@@ -124,22 +124,22 @@ class Ok(Result[T, E]):
         msg = "Called unwrap_err on Ok value"
         raise UnwrapError(msg)
 
-    def unwrap_or(self, default: T) -> T:
+    def unwrap_or(self, _default: T) -> T:
         return self._value  # type: ignore[return-value]
 
-    def unwrap_or_else(self, op: Callable[[E], T]) -> T:
+    def unwrap_or_else(self, _op: Callable[[E], T]) -> T:
         return self._value  # type: ignore[return-value]
 
     def map(self, op: Callable[[T], U]) -> Result[U, E]:
         return Ok(op(self._value))  # type: ignore[arg-type]
 
-    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
+    def map_err(self, _op: Callable[[E], U]) -> Result[T, U]:
         return Ok(self._value)  # type: ignore
 
     def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         return op(self._value)  # type: ignore[arg-type]
 
-    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:
+    def or_else(self, _op: Callable[[E], Result[T, U]]) -> Result[T, U]:
         return Ok(self._value)  # type: ignore
 
 
@@ -169,13 +169,13 @@ class Err(Result[T, E]):
     def unwrap_or_else(self, op: Callable[[E], T]) -> T:
         return op(self._value)  # type: ignore[arg-type]
 
-    def map(self, op: Callable[[T], U]) -> Result[U, E]:
+    def map(self, _op: Callable[[T], U]) -> Result[U, E]:
         return Err(self._value)  # type: ignore
 
     def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         return Err(op(self._value))  # type: ignore
 
-    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
+    def and_then(self, _op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         return Err(self._value)  # type: ignore
 
     def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:

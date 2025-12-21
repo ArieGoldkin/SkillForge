@@ -274,9 +274,7 @@ class ArtifactStore:
         if analysis.content_sections:
             sections = ContentSections.model_validate(analysis.content_sections)
             if sections.code_blocks:
-                blocks: list[str] = []
-                for block in sections.code_blocks:
-                    blocks.append(content[block.start : block.end])
+                blocks = [content[block.start : block.end] for block in sections.code_blocks]
                 return "\n\n".join(blocks)
 
         # Fallback: extract fresh

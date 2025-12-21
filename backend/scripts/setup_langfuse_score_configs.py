@@ -16,6 +16,7 @@ G-Eval Criterion Scores:
 - g_eval_actionability: NUMERIC (0.0 to 1.0) - G-Eval criterion score for actionability
 - g_eval_completeness: NUMERIC (0.0 to 1.0) - G-Eval criterion score for completeness
 - g_eval_overall: NUMERIC (0.0 to 1.0) - G-Eval weighted average score
+- g_eval_hallucination: NUMERIC (0.0 to 1.0) - G-Eval hallucination detection score (higher = fewer hallucinations)
 
 Performance Metrics:
 - latency_seconds: NUMERIC - Execution latency in seconds
@@ -149,6 +150,13 @@ SCORE_CONFIGS = [
         "name": "g_eval_overall",
         "dataType": "NUMERIC",
         "description": "G-Eval overall quality score (weighted average, 0.0 to 1.0)",
+        "minValue": 0.0,
+        "maxValue": 1.0,
+    },
+    {
+        "name": "g_eval_hallucination",
+        "dataType": "NUMERIC",
+        "description": "G-Eval hallucination detection score (0.0 to 1.0, higher = fewer hallucinations)",
         "minValue": 0.0,
         "maxValue": 1.0,
     },
@@ -516,6 +524,7 @@ Score Configs:
     - g_eval_actionability: NUMERIC (0.0 to 1.0) - practical actionability
     - g_eval_completeness: NUMERIC (0.0 to 1.0) - content completeness
     - g_eval_overall: NUMERIC (0.0 to 1.0) - weighted average
+    - g_eval_hallucination: NUMERIC (0.0 to 1.0) - hallucination detection (higher = fewer hallucinations)
 
     Performance Metrics:
     - latency_seconds: NUMERIC - execution latency in seconds
@@ -544,14 +553,12 @@ Score Configs:
     args = parser.parse_args()
 
     # Run async setup
-    exit_code = asyncio.run(
+    return asyncio.run(
         setup_score_configs(
             dry_run=args.dry_run,
             force=args.force,
         )
     )
-
-    return exit_code
 
 
 if __name__ == "__main__":
