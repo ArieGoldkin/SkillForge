@@ -95,9 +95,20 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     After extraction, creates content_ref for lightweight agent state passing.
     Agents load content on-demand via ArtifactStore instead of receiving full content.
 
+    Issue #441: Initializes abort signal fields to default values.
+
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
     analysis_id = state.get("analysis_id")
+
+    # Issue #441: Initialize abort signal fields with default values
+    # This ensures all workflows start with consistent state
+    base_result: dict[str, object] = {
+        "should_abort": False,
+        "abort_reason": None,
+        "extraction_status": "pending",
+        "extraction_error_code": None,
+    }
 
     # Passthrough mode: Skip extraction if raw_content is already provided
     # This enables regeneration scripts to inject fixture content directly
@@ -119,10 +130,12 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
         )
 
         return {
+            **base_result,
             "raw_content": raw_content,
             "extraction_metadata": get_extraction_metadata(state),
             "content_type": content_type,
             "content_ref": content_ref,
+            "extraction_status": "success",
         }
 
     # Normal mode: Extract content from URL via JinaReader
@@ -140,10 +153,12 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
     # Return only updated fields, not entire state
     return {
+        **base_result,
         "raw_content": raw_content,
         "extraction_metadata": result["extraction_metadata"],
         "content_type": content_type,
         "content_ref": content_ref,
+        "extraction_status": "success",
     }
 
 

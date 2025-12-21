@@ -36,6 +36,10 @@ class Analysis(Base):
     search_vector = Column(TSVECTOR)
     extraction_metadata = Column(JSONB)  # Metadata from content extraction
     status = Column(String(50), nullable=False, default="pending", index=True)
+    # Error tracking fields (Issue #441)
+    error_code = Column(String(50), nullable=True, index=True)
+    error_message = Column(Text, nullable=True)
+    failed_at_stage = Column(String(50), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(
         DateTime(timezone=True),

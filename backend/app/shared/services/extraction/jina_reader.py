@@ -20,12 +20,47 @@ from app.core.constants import (
     RETRY_MIN_WAIT_JINA_TEST,
     RETRY_MULTIPLIER_JINA,
 )
-from app.core.exceptions import JinaReaderError
+from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.types import ExtractionResult
 from app.shared.services.extraction.content_cleaner import clean_extracted_content
 
 logger = get_logger(__name__)
+
+
+def _is_error_page(title: str | None, content: str | None = None) -> bool:  # noqa: ARG001
+    """Detect if extracted content is an error page.
+
+    Args:
+        title: Page title from extraction
+        content: Optional page content for additional checks
+
+    Returns:
+        True if the page appears to be an error page
+
+    """
+    if not title:
+        return False
+
+    title_lower = title.lower()
+
+    # Common error page indicators in titles
+    error_indicators = [
+        "404",
+        "not found",
+        "page not found",
+        "error",
+        "access denied",
+        "forbidden",
+        "unauthorized",
+        "redirecting",
+        "moved permanently",
+        "bad gateway",
+        "service unavailable",
+        "internal server error",
+    ]
+
+    return any(indicator in title_lower for indicator in error_indicators)
 
 
 class JinaReader:
@@ -91,7 +126,7 @@ class JinaReader:
                     status_code=HTTP_NOT_FOUND,
                     response_preview=response_preview,
                 )
-                raise JinaReaderError(error_msg)
+                raise JinaReaderError(error_msg, error_code=ExtractionErrorCode.HTTP_404)
 
             # Handle other HTTP errors
             if response.status_code >= HTTP_ERROR_THRESHOLD:
@@ -106,7 +141,7 @@ class JinaReader:
                     response_preview=response_preview,
                     response_headers=dict(response.headers),
                 )
-                raise JinaReaderError(error_msg)
+                raise JinaReaderError(error_msg, error_code=ExtractionErrorCode.HTTP_5XX)
 
             # Jina returns markdown content
             raw_content = response.text
@@ -156,7 +191,7 @@ class JinaReader:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-            raise JinaReaderError(error_msg) from e
+            raise JinaReaderError(error_msg, error_code=ExtractionErrorCode.TIMEOUT) from e
 
         except JinaReaderError:
             # Re-raise JinaReaderError without modification

@@ -8,7 +8,7 @@ Agents use load_artifact tool to retrieve content sections on-demand.
 """
 
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from app.core.types import AnalysisID, EmbeddingVector
 from app.domains.analysis.workflows.state_types import (
@@ -67,6 +67,10 @@ class AnalysisState(TypedDict, total=False):
         artifact_id: UUID of generated artifact (Issue #72)
         evaluation_results: Agent quality evaluation results (NEW)
         metrics: Performance and quality metrics (NEW)
+        should_abort: Flag to signal workflow should stop early (Issue #441)
+        abort_reason: Human-readable error message if workflow aborted (Issue #441)
+        extraction_status: Status of extraction node - pending/success/failed (Issue #441)
+        extraction_error_code: Error code if extraction failed (Issue #441)
 
     Note:
         agent_findings uses operator.add reducer to allow parallel agent nodes
@@ -77,6 +81,11 @@ class AnalysisState(TypedDict, total=False):
         raw_content is deprecated. Use content_ref instead.
         Agents should call load_artifact(uri, section) to get content.
         Available sections: summary, full, first_n, code_blocks, headings.
+
+    Abort Signal (Issue #441):
+        Nodes can set should_abort=True to signal early termination.
+        Subsequent nodes should check should_abort and skip processing if True.
+        abort_reason provides user-facing error message for debugging.
 
     """
 
@@ -105,3 +114,10 @@ class AnalysisState(TypedDict, total=False):
     quality_gate_passed: bool  # Whether quality gate passed
     quality_gate_retry_count: int  # Number of synthesis retries
     quality_gate_error: str  # Error message if gate evaluation failed
+    # Issue #441: Workflow abort signal fields
+    should_abort: bool  # True if workflow should stop early (e.g., extraction failed)
+    abort_reason: str | None  # Human-readable error message explaining why workflow aborted
+    extraction_status: Literal["pending", "success", "failed"]  # Track extraction node status
+    extraction_error_code: (
+        str | None
+    )  # Error code from ExtractionErrorCode enum if extraction failed
