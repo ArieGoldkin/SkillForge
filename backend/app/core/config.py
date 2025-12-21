@@ -429,7 +429,20 @@ class Settings(BaseSettings):
         default="redis://localhost:6380",
         description=(
             "Redis connection URL. Used for semantic caching (LLM responses), "
-            "exact caching (supervisor routing), and chat history (tutor sessions)."
+            "exact caching (supervisor routing), chat history (tutor sessions), "
+            "and SSE event broadcasting (multi-instance deployments)."
+        ),
+    )
+
+    # Event Broadcaster Configuration (Issue #444)
+    BROADCASTER_BACKEND: str = Field(
+        default="auto",
+        description=(
+            "Event broadcaster backend for SSE events. Options: "
+            "'memory' (in-memory, single instance only), "
+            "'redis' (Redis Pub/Sub, multi-instance), "
+            "'auto' (try Redis, fallback to memory). "
+            "Use 'redis' or 'auto' for production with multiple backend replicas."
         ),
     )
     REDIS_SEMANTIC_CACHE_TTL: int = Field(
@@ -577,6 +590,17 @@ class Settings(BaseSettings):
             msg = f"ENVIRONMENT must be one of {allowed}"
             raise ValueError(msg)
         return v
+
+    @field_validator("BROADCASTER_BACKEND")
+    @classmethod
+    def validate_broadcaster_backend(cls, v: str) -> str:
+        """Validate broadcaster backend is one of allowed values (Issue #444)."""
+        allowed = {"memory", "redis", "auto"}
+        normalized = v.strip().lower()
+        if normalized not in allowed:
+            msg = f"BROADCASTER_BACKEND must be one of {allowed}, got: {v}"
+            raise ValueError(msg)
+        return normalized
 
     @field_validator("LLM_MODEL")
     @classmethod

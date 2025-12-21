@@ -212,7 +212,3 @@ class EventBroadcaster:
                     channel=channel,
                     events_cleared=cleared_count,
                 )
-
-
-# Global broadcaster instance
-broadcaster = EventBroadcaster()

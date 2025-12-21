@@ -2,6 +2,8 @@
 
 These tests require .env.test with real API keys (JINA_API_KEY, etc.)
 and will be skipped if .env.test doesn't exist or keys are missing.
+
+Issue #444: Updated to use broadcaster factory for multi-instance support.
 """
 
 import asyncio
@@ -18,7 +20,10 @@ from app.api.v1.analysis.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.analysis.workflows.analysis import analysis_workflow
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
 
 # Check if .env.test exists
 TEST_ENV_FILE = Path(__file__).parent.parent.parent / ".env.test"
@@ -37,6 +42,9 @@ def requires_test_env():
 
 async def _run_workflow_task(analysis_id: str, channel: str) -> None:
     """Run workflow and emit SSE events."""
+    # Issue #444: Get broadcaster from factory (uses in-memory for tests)
+    broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
     try:
         await analysis_workflow.ainvoke(
             {
