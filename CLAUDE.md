@@ -178,19 +178,22 @@ poetry run ty check app/ --exclude "app/evaluation/*"  # Type check (ty - Rust-b
 
 # Frontend (TypeScript) - from frontend/ directory:
 cd frontend
-npm run lint               # ENTIRE codebase
-npm run typecheck          # Type checking
+npm run format:check       # ⚠️ Biome formatting - CI RUNS THIS!
+npm run lint               # ESLint - ENTIRE codebase
+npm run typecheck          # TypeScript type checking
 ```
 
 **Why this matters:**
 - CI runs BOTH `ruff format --check` AND `ruff check` - running only one will miss issues!
+- CI runs BOTH `npm run format:check` (Biome) AND `npm run lint` (ESLint) for frontend!
 - CI runs lint on the FULL codebase, not just changed files
 - Changing one file can cause lint errors in importing files
 
 **Common mistakes to NEVER make:**
 - ❌ Running only `ruff check` without `ruff format --check`
+- ❌ Running only `npm run lint` without `npm run format:check` (Biome!)
 - ❌ `ruff check app/services/embeddings.py` (only checks one file)
-- ✅ Run ALL three commands above (format, lint, ty check)
+- ✅ Run ALL commands above (backend: format, lint, ty | frontend: format, lint, typecheck)
 
 
 ## 🛑 ABSOLUTE: Git Branch & PR Workflow (NEVER VIOLATE)

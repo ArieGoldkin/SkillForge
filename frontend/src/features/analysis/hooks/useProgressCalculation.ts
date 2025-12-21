@@ -190,48 +190,30 @@ export function useProgressCalculation(
     }
 
     // ========================================================================
-    // PHASE 5: Calculate progress percentage
+    // PHASE 5: Calculate progress percentage (Issue #439: Display-only)
     // ========================================================================
-    // Progress = finished / expected_total_stages (not TOTAL_STAGES)
-    // This ensures progress reflects actual workflow completion, not just all possible stages
-    // Cap at 99% if there are failures, running stages, or unfinished expected stages
+    // IMPORTANT: Progress % is for UI DISPLAY ONLY, not completion gating.
+    // Completion is determined by artifact existence (see AnalyzeResult.tsx).
+    //
+    // When isComplete is true: The backend has finished and artifact exists.
+    // We show 100% to align with the completion state, regardless of stage counts.
+    // This prevents the desync where 0% progress shows alongside "Complete" badge.
 
     let progress: number
 
-    // Check if truly complete: all expected stages finished, no failures, no running
-    // Note: truePendingCount includes stages not in expected workflow (from STAGE_CONFIG but not selected)
-    // So we only check if expected stages are finished, not all possible stages
-    const allExpectedStagesFinished = finishedStages >= progressTotalStages
-
-    // Only check for pending stages that are part of the expected workflow
-    // If isComplete is true, the backend has finished, so pending stages are likely not part of expected workflow
-    const hasUnfinishedExpectedStages = runningStages > 0 || (truePendingCount > 0 && !isComplete)
-
-    const isTrulyComplete =
-      isComplete && failedStages === 0 && !hasUnfinishedExpectedStages && allExpectedStagesFinished
-
-    if (isTrulyComplete) {
-      // Only show 100% if truly complete with no failures and all expected stages finished
+    if (isComplete) {
+      // Issue #439: Backend says complete → show 100% for consistent UI
+      // The artifact exists, so the analysis is done regardless of stage counts.
+      // hasFailedStages is handled separately in the completion card (error badge).
       progress = 100
     } else {
-      // Calculate actual progress: finished stages / expected_total_stages
+      // In-progress: Calculate actual progress from finished stages
       // Guard: Ensure division is safe (progressTotalStages guaranteed >= 1 from Phase 2)
-      // Guard: Ensure finishedStages is a number (could be NaN from failed calculations)
       const safeFinishedStages = Number.isFinite(finishedStages) ? finishedStages : 0
       progress = Math.round((safeFinishedStages / progressTotalStages) * 100)
 
-      // Guard: Ensure progress is within valid bounds (0-100)
-      progress = Math.max(0, Math.min(100, progress))
-
-      // Cap at 99% if there are failures, running, or unfinished expected stages
-      if (failedStages > 0 || hasUnfinishedExpectedStages) {
-        progress = Math.min(progress, 99) // Cap at 99% when not fully complete
-      }
-
-      // Safety: if finished exceeds expected total but there are unfinished stages, cap at 99%
-      if (finishedStages > progressTotalStages && hasUnfinishedExpectedStages) {
-        progress = 99
-      }
+      // Guard: Ensure progress is within valid bounds (0-99 while in progress)
+      progress = Math.max(0, Math.min(99, progress))
     }
 
     // ========================================================================
@@ -270,10 +252,11 @@ export function useProgressCalculation(
     // Guard: Ensure finishedStages is a valid number
     const safeFinishedStages = Number.isFinite(finishedStages) ? finishedStages : 0
 
-    if (runningStage) {
+    if (isComplete) {
+      // Issue #439: When complete, show expected total (artifact exists)
+      currentStepNumber = progressTotalStages
+    } else if (runningStage) {
       currentStepNumber = safeFinishedStages + 1 // Currently running a stage
-    } else if (isComplete && failedStages === 0 && !hasUnfinishedExpectedStages) {
-      currentStepNumber = progressTotalStages // Fully complete - show expected total
     } else {
       currentStepNumber = safeFinishedStages + 1 // Next step to be processed
     }
@@ -288,9 +271,10 @@ export function useProgressCalculation(
     // Enhanced status messages with detailed breakdown of completed/failed/skipped/running/pending stages
 
     const buildStatusMessage = (): string => {
-      // Check if truly complete (same logic as progress calculation)
-      if (isComplete && failedStages === 0 && !hasUnfinishedExpectedStages) {
-        return 'Analysis Complete'
+      // Issue #439: When isComplete is true, artifact exists → analysis done
+      // The completion card handles showing "Complete with Errors" badge
+      if (isComplete) {
+        return failedStages > 0 ? 'Analysis Complete (with errors)' : 'Analysis Complete'
       }
 
       if (runningStage) {
