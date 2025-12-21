@@ -27,7 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
-@observe(as_type="agent", name="tech_comparator")
+@observe(as_type="agent", name="tech_comparator", capture_input=True, capture_output=True)
 async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
     """Tech comparator agent node.
 

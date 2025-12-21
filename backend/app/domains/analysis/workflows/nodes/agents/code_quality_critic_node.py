@@ -11,6 +11,8 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
+from langfuse import observe
+
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -25,6 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
+@observe(as_type="agent", name="code_quality_critic", capture_input=True, capture_output=True)
 async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
     """Code quality critic agent node.
 

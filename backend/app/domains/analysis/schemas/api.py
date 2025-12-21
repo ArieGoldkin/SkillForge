@@ -107,6 +107,26 @@ class AnalyzeStatusResponse(BaseModel):
     updated_at: str = Field(..., description="Timestamp when analysis was last updated")
 
 
+class ProgressEventResponse(BaseModel):
+    """Response schema for a single progress event."""
+
+    stage: str = Field(..., description="Workflow stage name")
+    status: str = Field(
+        ..., description="Stage status (pending, running, complete, failed, skipped)"
+    )
+    progress_data: dict | None = Field(None, description="Stage-specific progress data")
+    timestamp: str = Field(..., description="Event timestamp")
+
+
+class AnalysisProgressResponse(BaseModel):
+    """Response schema for analysis progress events."""
+
+    analysis_id: str = Field(..., description="Analysis identifier")
+    events: list[ProgressEventResponse] = Field(
+        ..., description="Progress events ordered by timestamp"
+    )
+
+
 class ErrorResponse(BaseModel):
     """Error response schema for API errors.
 

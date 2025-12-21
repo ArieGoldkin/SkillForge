@@ -102,12 +102,15 @@ class RedisEventBroadcaster:
         url = redis_url or settings.REDIS_URL
 
         try:
-            # Create async Redis client with connection pool
+            # Create async Redis client with connection pool and keepalive
+            # Issue #442: Add socket_keepalive for long-lived SSE pubsub connections
+            # Without keepalive, OS/firewall drops idle connections after ~5 min
             client = aioredis.from_url(
                 url,
                 decode_responses=True,  # Return strings, not bytes
                 socket_connect_timeout=settings.REDIS_SOCKET_CONNECT_TIMEOUT,
                 socket_timeout=settings.REDIS_SOCKET_TIMEOUT,
+                socket_keepalive=settings.REDIS_SOCKET_KEEPALIVE,
                 health_check_interval=settings.REDIS_HEALTH_CHECK_INTERVAL,
             )
 
@@ -189,7 +192,7 @@ class RedisEventBroadcaster:
             )
             raise
 
-    async def subscribe(self, channel: ChannelName) -> AsyncIterator[EventData]:
+    async def subscribe(self, channel: ChannelName) -> AsyncIterator[EventData]:  # noqa: PLR0912
         """Subscribe to channel with buffer replay.
 
         Yields events in order:
@@ -251,20 +254,32 @@ class RedisEventBroadcaster:
                 # Continue with live events even if buffer read fails
 
             # Yield live events from Pub/Sub
-            async for message in pubsub.listen():
-                if message["type"] == "message":
-                    try:
-                        event = json.loads(message["data"])
-                        # Remove internal timestamp before yielding
-                        event.pop("_buffered_at", None)
-                        yield event
-                    except json.JSONDecodeError:
-                        logger.warning(
-                            "redis_pubsub_invalid_json",
-                            channel=channel,
-                            data=str(message["data"])[:100],
-                        )
+            # Issue #442: Handle read timeouts gracefully - idle periods are normal during analysis
+            while True:
+                try:
+                    message = await pubsub.get_message(
+                        ignore_subscribe_messages=True,
+                        timeout=30.0,  # 30 second timeout, then check for cancellation
+                    )
+                    if message is None:
+                        # Timeout - no message received, continue waiting
                         continue
+                    if message["type"] == "message":
+                        try:
+                            event = json.loads(message["data"])
+                            # Remove internal timestamp before yielding
+                            event.pop("_buffered_at", None)
+                            yield event
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                "redis_pubsub_invalid_json",
+                                channel=channel,
+                                data=str(message["data"])[:100],
+                            )
+                            continue
+                except TimeoutError:
+                    # Redis timeout - continue listening (idle periods are normal)
+                    continue
 
         except asyncio.CancelledError:
             logger.debug("redis_subscribe_cancelled", channel=channel)

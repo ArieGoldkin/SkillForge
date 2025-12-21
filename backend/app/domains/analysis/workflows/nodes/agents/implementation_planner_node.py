@@ -27,7 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
-@observe(as_type="agent", name="implementation_planner")
+@observe(as_type="agent", name="implementation_planner", capture_input=True, capture_output=True)
 async def implementation_planner_node(state: AnalysisState) -> dict[str, object]:
     """Execute implementation planning analysis.
 
