@@ -102,14 +102,20 @@ async def run_dependency_mapper(  # noqa: PLR0913 - All parameters required for 
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
 
-    # Issue #299-304: Get content signals for comparison-aware thresholds
+    # Issue #299-304, #442: Get content signals for comparison/research-aware thresholds
     content_signals_dict: dict[str, object] = state.get("content_signals", {})  # type: ignore[assignment]
     has_comparisons = bool(content_signals_dict.get("has_comparisons", False))
+    # Issue #442: Detect research/conceptual content for very low thresholds
+    detected_genre = str(content_signals_dict.get("detected_genre", "unknown"))
+    is_research = detected_genre == "research"
+    is_conceptual = bool(content_signals_dict.get("has_conceptual_only", False))
 
     specificity_threshold = get_threshold_for_expectation(
         expectation_str=str(expectation) if expectation is not None else None,
         agent_name="dependency_mapper",
         has_comparisons=has_comparisons,
+        is_research=is_research,
+        is_conceptual=is_conceptual,
     )
 
     # Issue #418: Fetch prompt from Langfuse via PromptManager

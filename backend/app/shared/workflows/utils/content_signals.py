@@ -517,6 +517,19 @@ COMPARISON_THRESHOLDS = {
     "dependency_mapper": 0.65,  # Dependencies are still specific even in comparisons
 }
 
+# Research/academic content thresholds (Issue #442)
+# Academic papers and research content are inherently qualitative - they discuss
+# concepts, frameworks, and ideas rather than implementations with numeric metrics.
+# Very low thresholds prevent false rejections of valid qualitative analysis.
+RESEARCH_THRESHOLDS = {
+    "performance_analyst": 0.15,  # Research discusses concepts, not latency numbers
+    "implementation_planner": 0.15,  # No implementation steps in theoretical papers
+    "trend_validator": 0.25,  # Trends can still have some structure
+    "security_auditor": 0.20,  # Security concepts without CVSS scores
+    "tech_comparator": 0.30,  # Comparisons can be qualitative
+    "dependency_mapper": 0.25,  # Mentioned libraries, not specific versions
+}
+
 
 def get_adjusted_specificity_threshold(
     agent_name: str,
@@ -527,6 +540,9 @@ def get_adjusted_specificity_threshold(
     Issue #299-304: Adjust threshold based on what's expected for this agent
     given the content signals. Agents with OPPORTUNISTIC expectations get
     lower thresholds since they're expected to work with limited data.
+
+    Issue #442: Research/academic content gets very low thresholds since
+    such content is qualitative by nature and won't contain numeric metrics.
 
     Additionally, comparison content gets special treatment - since comparisons
     are inherently broad (covering multiple technologies side-by-side) rather
@@ -552,9 +568,36 @@ def get_adjusted_specificity_threshold(
         True
         >>> get_adjusted_specificity_threshold("tech_comparator", signals_comparison)
         0.5  # Lowered for comparison content
+        >>> signals_research = detect_content_signals("Abstract: This paper explores...")
+        >>> signals_research.detected_genre
+        ContentGenre.RESEARCH
+        >>> get_adjusted_specificity_threshold("performance_analyst", signals_research)
+        0.15  # Very low for research content
 
     """
-    # Priority 1: Check for comparison content
+    # Priority 1: Check for research/academic content (Issue #442)
+    # Research papers are qualitative - don't require numeric specificity
+    if signals.detected_genre == ContentGenre.RESEARCH and agent_name in RESEARCH_THRESHOLDS:
+        logger.debug(
+            "using_research_threshold",
+            agent_name=agent_name,
+            threshold=RESEARCH_THRESHOLDS[agent_name],
+            genre=signals.detected_genre.value,
+        )
+        return RESEARCH_THRESHOLDS[agent_name]
+
+    # Priority 2: Check for conceptual-only content (no code, no tutorials, no benchmarks)
+    # Use research thresholds as fallback for conceptual content
+    if signals.has_conceptual_only and agent_name in RESEARCH_THRESHOLDS:
+        logger.debug(
+            "using_conceptual_threshold",
+            agent_name=agent_name,
+            threshold=RESEARCH_THRESHOLDS[agent_name],
+            has_conceptual_only=signals.has_conceptual_only,
+        )
+        return RESEARCH_THRESHOLDS[agent_name]
+
+    # Priority 3: Check for comparison content
     if signals.has_comparisons and agent_name in COMPARISON_THRESHOLDS:
         logger.debug(
             "using_comparison_threshold",
@@ -563,7 +606,7 @@ def get_adjusted_specificity_threshold(
         )
         return COMPARISON_THRESHOLDS[agent_name]
 
-    # Priority 2: Use expectation-based threshold
+    # Priority 4: Use expectation-based threshold
     expectation = signals.agent_expectations.get(agent_name, AgentExpectation.OPPORTUNISTIC)
 
     return THRESHOLD_BY_EXPECTATION.get(expectation, DEFAULT_SPECIFICITY_THRESHOLD)
@@ -573,6 +616,8 @@ def get_threshold_for_expectation(
     expectation_str: str | None,
     agent_name: str | None = None,
     has_comparisons: bool = False,
+    is_research: bool = False,
+    is_conceptual: bool = False,
 ) -> float:
     """Get specificity threshold from expectation string.
 
@@ -580,12 +625,15 @@ def get_threshold_for_expectation(
     Use this when you have the expectation value from supervisor_decision.
 
     Issue #299-304: Added comparison-aware threshold support.
+    Issue #442: Added research/conceptual-aware threshold support.
 
     Args:
         expectation_str: Expectation value string (e.g., "full_analysis", "partial", "opportunistic")
             or None if not available.
         agent_name: Optional agent name for comparison threshold lookup
         has_comparisons: Whether content contains comparison patterns (from content_signals)
+        is_research: Whether content is research/academic (detected_genre == RESEARCH)
+        is_conceptual: Whether content is conceptual-only (has_conceptual_only == True)
 
     Returns:
         Adjusted specificity threshold (0.0-1.0)
@@ -601,9 +649,30 @@ def get_threshold_for_expectation(
         >>> # Comparison content gets special treatment
         >>> get_threshold_for_expectation("full_analysis", "tech_comparator", has_comparisons=True)
         0.5  # Lowered for comparison content
+        >>> # Research content gets very low thresholds
+        >>> get_threshold_for_expectation("full_analysis", "performance_analyst", is_research=True)
+        0.15  # Very low for research content
 
     """
-    # Priority 1: Check for comparison content
+    # Priority 1: Check for research/academic content (Issue #442)
+    if is_research and agent_name and agent_name in RESEARCH_THRESHOLDS:
+        logger.debug(
+            "using_research_threshold",
+            agent_name=agent_name,
+            threshold=RESEARCH_THRESHOLDS[agent_name],
+        )
+        return RESEARCH_THRESHOLDS[agent_name]
+
+    # Priority 2: Check for conceptual-only content (Issue #442)
+    if is_conceptual and agent_name and agent_name in RESEARCH_THRESHOLDS:
+        logger.debug(
+            "using_conceptual_threshold",
+            agent_name=agent_name,
+            threshold=RESEARCH_THRESHOLDS[agent_name],
+        )
+        return RESEARCH_THRESHOLDS[agent_name]
+
+    # Priority 3: Check for comparison content
     if has_comparisons and agent_name and agent_name in COMPARISON_THRESHOLDS:
         logger.debug(
             "using_comparison_threshold",
@@ -612,7 +681,7 @@ def get_threshold_for_expectation(
         )
         return COMPARISON_THRESHOLDS[agent_name]
 
-    # Priority 2: Use expectation-based threshold
+    # Priority 4: Use expectation-based threshold
     if expectation_str is None:
         return DEFAULT_SPECIFICITY_THRESHOLD
 

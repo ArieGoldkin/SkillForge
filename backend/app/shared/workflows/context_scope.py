@@ -79,7 +79,13 @@ class ScopedState(dict):
 # - raw_content NOT included: use content_ref exclusively (Issue #299-304)
 AGENT_SCOPES: dict[str, ContextScope] = {
     "security_auditor": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #442: Need content_signals for research-aware thresholds
         inject_memory=True,
         include_other_findings=False,
     ),
@@ -137,7 +143,13 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         include_other_findings=False,
     ),
     "performance_analyst": ContextScope(
-        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Issue #442: Need content_signals for research-aware thresholds
         inject_memory=False,
         include_other_findings=False,
     ),
