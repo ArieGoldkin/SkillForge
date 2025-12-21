@@ -231,7 +231,7 @@ async def _submit_artifact_quality_scores(
         "task_type": "artifact_generation",
     },
 )
-async def generate_artifact(
+async def generate_artifact(  # noqa: PLR0915
     state: AnalysisState,
 ) -> dict[str, object]:
     """Generate markdown artifact from aggregated insights.
@@ -340,6 +340,30 @@ async def generate_artifact(
 
         # Extract metadata (topics, complexity)
         artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
+
+        # Issue #442: Add quality metadata to artifact for frontend display
+        quality_gate_passed = state.get("quality_gate_passed", True)
+        quality_gate_avg_score = state.get("quality_gate_avg_score", 1.0)
+        quality_warnings_raw = state.get("quality_warnings", [])
+        quality_scores_raw = state.get("quality_scores", {})
+
+        # Flatten quality_scores to {aspect: score} format
+        quality_scores_flat: dict[str, float] = {}
+        if quality_scores_raw and isinstance(quality_scores_raw, dict):
+            for aspect, value in quality_scores_raw.items():
+                if isinstance(value, dict) and "score" in value:
+                    score_val = value.get("score")
+                    if isinstance(score_val, (int, float)):
+                        quality_scores_flat[aspect] = float(score_val)
+                elif isinstance(value, (int, float)):
+                    quality_scores_flat[aspect] = float(value)
+
+        artifact_metadata["quality"] = {
+            "passed": bool(quality_gate_passed),
+            "avg_score": float(quality_gate_avg_score) if quality_gate_avg_score else 0.0,
+            "scores": quality_scores_flat,
+            "warnings": list(quality_warnings_raw) if quality_warnings_raw else [],
+        }
 
         # Get current trace ID for Langfuse feedback linking
         from app.core.tracing import get_current_trace_id

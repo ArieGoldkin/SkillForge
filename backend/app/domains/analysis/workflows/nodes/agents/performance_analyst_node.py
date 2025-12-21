@@ -11,6 +11,8 @@ with fallback to raw_content for backward compatibility.
 
 import time
 
+from langfuse import observe
+
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -25,6 +27,7 @@ from app.domains.analysis.workflows.tasks.runners import (
 logger = get_logger(__name__)
 
 
+@observe(as_type="agent", name="performance_analyst", capture_input=True, capture_output=True)
 async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
     """Execute performance analysis.
 
@@ -54,7 +57,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         logger.warning(
             "agent_node_skipped_no_content",
             agent_type="performance_analyst",
-            analysis_id=analysis_id,
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             has_content_ref=bool(state.get("content_ref")),
             has_raw_content=bool(state.get("raw_content")),
         )
@@ -78,8 +81,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
     logger.info(
         "agent_node_started",
         agent_type="performance_analyst",
-        analysis_id=analysis_id,
-        state=state,
+        analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
         trace_id=trace_id,
     )
 
@@ -89,7 +91,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         result = await run_performance_analyst_with_session(
             content=get_fallback_content(state),
             content_type=content_type,
-            analysis_id=analysis_id,
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             state=state,
         )
 
@@ -97,8 +99,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         logger.info(
             "agent_node_complete",
             agent_type="performance_analyst",
-            analysis_id=analysis_id,
-            state=state,
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             duration_seconds=duration,
             trace_id=trace_id,
         )
@@ -112,8 +113,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         logger.warning(
             "agent_node_cancelled",
             agent_type="performance_analyst",
-            analysis_id=analysis_id,
-            state=state,
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             exception_type="GeneratorExit",
             duration_seconds=duration,
             step_timeout=STEP_TIMEOUT,
@@ -182,8 +182,7 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         logger.error(
             "agent_node_failed",
             agent_type="performance_analyst",
-            analysis_id=analysis_id,
-            state=state,
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             error_type=type(e).__name__,
             error=str(e),
             duration_seconds=duration,

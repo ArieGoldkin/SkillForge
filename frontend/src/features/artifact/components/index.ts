@@ -12,3 +12,4 @@ export {
 export { TableOfContents, type TableOfContentsProps } from './TableOfContents'
 export { FeedbackButtons } from './FeedbackButtons'
 export { CommentDialog } from './CommentDialog'
+export { QualityWarningBanner, type QualityWarningBannerProps } from './QualityWarningBanner'

@@ -121,11 +121,20 @@ async def run_performance_analyst(  # noqa: PLR0913 - All parameters required fo
     # Issue #300: Get proactive context from state
     proactive_context = state.get("proactive_context", "")
 
-    # Issue #299-304: Get content-aware specificity threshold
+    # Issue #299-304, #442: Get content-aware specificity threshold
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
+    # Issue #442: Get content signals for research/conceptual-aware thresholds
+    content_signals_dict: dict[str, object] = state.get("content_signals", {})  # type: ignore[assignment]
+    detected_genre = str(content_signals_dict.get("detected_genre", "unknown"))
+    is_research = detected_genre == "research"
+    is_conceptual = bool(content_signals_dict.get("has_conceptual_only", False))
+
     specificity_threshold = get_threshold_for_expectation(
-        str(expectation) if expectation is not None else None
+        expectation_str=str(expectation) if expectation is not None else None,
+        agent_name="performance_analyst",
+        is_research=is_research,
+        is_conceptual=is_conceptual,
     )
 
     # Issue #418: Fetch prompt from Langfuse via PromptManager

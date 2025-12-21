@@ -355,7 +355,7 @@ async def emit_agent_progress(
     stage_name = get_stage_name(agent_type)
     await emit_streaming_event(
         "progress",
-        analysis_id=analysis_id,
+        analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
         stage=stage_name,
         status=status,
         agent_type=agent_type,  # Keep agent_type in details for debugging

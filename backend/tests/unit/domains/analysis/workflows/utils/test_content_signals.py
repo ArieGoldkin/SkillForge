@@ -591,15 +591,16 @@ class TestThresholdAdjustment:
         threshold = get_adjusted_specificity_threshold("performance_analyst", signals)
         assert threshold == 0.55  # PARTIAL threshold
 
-    def test_get_adjusted_specificity_threshold_opportunistic(self) -> None:
-        """OPPORTUNISTIC expectation should use lowest threshold (0.45)."""
+    def test_get_adjusted_specificity_threshold_conceptual(self) -> None:
+        """Conceptual content gets very low research thresholds (Issue #442)."""
         from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
-        # Conceptual content = opportunistic for performance_analyst
+        # Conceptual content now gets research thresholds (0.15 for performance_analyst)
         content = "This is a discussion about AI concepts and theory."
         signals = detect_content_signals(content)
         threshold = get_adjusted_specificity_threshold("performance_analyst", signals)
-        assert threshold == 0.45  # OPPORTUNISTIC threshold
+        # Issue #442: Research/conceptual content uses very low thresholds
+        assert threshold == 0.15  # RESEARCH threshold for conceptual content
 
     def test_get_threshold_for_expectation_full_analysis(self) -> None:
         """get_threshold_for_expectation with 'full_analysis' returns 0.70."""
@@ -631,20 +632,61 @@ class TestThresholdAdjustment:
 
         assert get_threshold_for_expectation("invalid_expectation") == 0.70
 
-    def test_trend_validator_always_full_analysis(self) -> None:
-        """trend_validator should always get FULL_ANALYSIS threshold."""
+    def test_trend_validator_conceptual_content(self) -> None:
+        """trend_validator gets low threshold for conceptual content (Issue #442)."""
         from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
-        # Even conceptual content gives trend_validator full_analysis expectation
+        # Conceptual content now gets research thresholds which are very low
         content = "This is a conceptual discussion about AI."
         signals = detect_content_signals(content)
         threshold = get_adjusted_specificity_threshold("trend_validator", signals)
-        assert threshold == 0.70  # trend_validator always expects full_analysis
+        # Issue #442: Conceptual content uses research thresholds (0.25)
+        assert threshold == 0.25  # trend_validator with conceptual content
 
-    def test_security_auditor_with_security_patterns(self) -> None:
-        """security_auditor gets FULL_ANALYSIS when security patterns present."""
+    def test_trend_validator_with_code_content(self) -> None:
+        """trend_validator gets FULL_ANALYSIS threshold with implementation content."""
         from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
+        # Non-conceptual content (has code) gets standard expectation-based thresholds
+        content = """
+        def hello_world():
+            print("Hello World")
+
+        import asyncio
+        async def main():
+            await hello_world()
+        """
+        signals = detect_content_signals(content)
+        threshold = get_adjusted_specificity_threshold("trend_validator", signals)
+        assert threshold == 0.70  # trend_validator with code = full_analysis
+
+    def test_security_auditor_with_security_and_code_patterns(self) -> None:
+        """security_auditor gets FULL_ANALYSIS when security + code patterns present."""
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
+
+        # Security content with multiple code patterns - must be unindented to match regex
+        content = """import hashlib
+from fastapi import OAuth2PasswordBearer
+from bcrypt import hashpw
+
+def authenticate(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+class AuthMiddleware:
+    async def __call__(self, request):
+        token = request.headers.get("Authorization")
+        return await self.validate_jwt(token)
+"""
+        signals = detect_content_signals(content)
+        # With code patterns, it's no longer conceptual-only
+        threshold = get_adjusted_specificity_threshold("security_auditor", signals)
+        assert threshold == 0.70  # FULL_ANALYSIS for security + code content
+
+    def test_security_auditor_conceptual_security_content(self) -> None:
+        """security_auditor gets low threshold for conceptual security content (Issue #442)."""
+        from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
+
+        # Conceptual security discussion without code
         content = """
         OAuth2 authentication with JWT tokens.
         Password hashing with bcrypt.
@@ -652,16 +694,18 @@ class TestThresholdAdjustment:
         """
         signals = detect_content_signals(content)
         threshold = get_adjusted_specificity_threshold("security_auditor", signals)
-        assert threshold == 0.70  # FULL_ANALYSIS for security content
+        # Issue #442: Conceptual content uses research thresholds (0.20)
+        assert threshold == 0.20  # Conceptual security gets research threshold
 
     def test_security_auditor_without_security_patterns(self) -> None:
-        """security_auditor gets OPPORTUNISTIC when no security patterns."""
+        """security_auditor gets low threshold for conceptual content without security."""
         from app.shared.workflows.utils.content_signals import get_adjusted_specificity_threshold
 
         content = "This is a simple hello world tutorial."
         signals = detect_content_signals(content)
         threshold = get_adjusted_specificity_threshold("security_auditor", signals)
-        assert threshold == 0.45  # OPPORTUNISTIC - no security content
+        # Issue #442: Conceptual content uses research thresholds (0.20)
+        assert threshold == 0.20  # Conceptual content = research threshold
 
 
 class TestAgentStateFlowIntegration:

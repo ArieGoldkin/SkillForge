@@ -88,9 +88,12 @@ def robust_traceable(
 
             # Apply Langfuse @observe decorator
             # Note: tags and metadata are applied at runtime via update_current_trace
+            # Explicitly enable input/output capture for better tracing visibility
             observed_func = observe(
                 name=trace_name,
                 as_type=span_type,
+                capture_input=True,
+                capture_output=True,
             )(func)
 
             # If we have tags or metadata, wrap to apply them at runtime

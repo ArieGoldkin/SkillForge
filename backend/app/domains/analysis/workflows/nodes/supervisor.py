@@ -584,7 +584,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             # Content signals for downstream agents and synthesis
             "content_signals": {
                 "richness_score": content_signals.content_richness_score,
-                "genre": content_signals.detected_genre.value,
+                "detected_genre": content_signals.detected_genre.value,  # Issue #442: Must match agent reads
                 "word_count": content_signals.word_count,
                 "coverage_summary": content_signals.get_coverage_summary(),
                 "has_code": content_signals.has_code_patterns,

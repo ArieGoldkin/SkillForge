@@ -1003,11 +1003,18 @@ describe('parseSSEEvent helper function', () => {
 
       parseSSEEvent(invalidEvent)
 
+      // The logger.error call includes eventType, validationErrors, and receivedData
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[ERROR] SSE event validation failed',
         expect.objectContaining({
-          dataType: 'object',
+          eventType: 'progress',
           receivedData: invalidEvent,
+          validationErrors: expect.arrayContaining([
+            expect.objectContaining({
+              code: 'invalid_format',
+              path: ['analysis_id'],
+            }),
+          ]),
         })
       )
     })

@@ -19,9 +19,11 @@ from app.core.utils import normalize_analysis_id_to_uuid
 from app.db.repositories.analysis_repository import IAnalysisRepository, get_analysis_repository
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
 from app.domains.analysis.schemas.api import (
+    AnalysisProgressResponse,
     AnalyzeCreateResponse,
     AnalyzeRequest,
     AnalyzeStatusResponse,
+    ProgressEventResponse,
 )
 from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
 
@@ -307,4 +309,63 @@ async def get_analysis(
         artifact_id=str(artifact.id) if artifact else None,
         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
         updated_at=analysis.updated_at.isoformat() if analysis.updated_at else "",
+    )
+
+
+@router.get(
+    "/analyze/{analysis_id}/progress",
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def get_analysis_progress(
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
+) -> AnalysisProgressResponse:
+    """Get stored progress events for a completed analysis.
+
+    Returns all progress events stored in the analysis_progress table,
+    allowing reconstruction of the analysis timeline for completed analyses.
+    This endpoint is used by the frontend to display stage progress when
+    loading a completed analysis (no active SSE connection).
+
+    Args:
+        analysis_id: UUID of the analysis
+        analysis_repo: Analysis repository dependency
+
+    Returns:
+        AnalysisProgressResponse with all progress events
+
+    Raises:
+        HTTPException: 404 if analysis not found
+
+    """
+    # Verify analysis exists
+    analysis = await analysis_repo.get_by_id(analysis_id)
+    if not analysis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Analysis {analysis_id} not found",
+        )
+
+    # Fetch all progress events
+    progress_records = await analysis_repo.get_progress_events(analysis_id)
+
+    # Convert to response schema
+    events = [
+        ProgressEventResponse(
+            stage=str(record.stage),
+            status=str(record.status),
+            progress_data=(
+                dict(record.progress_data) if isinstance(record.progress_data, dict) else None
+            ),
+            timestamp=record.created_at.isoformat() if record.created_at else "",
+        )
+        for record in progress_records
+    ]
+
+    return AnalysisProgressResponse(
+        analysis_id=str(analysis_id),
+        events=events,
     )

@@ -61,11 +61,8 @@ def mock_redis_client() -> AsyncMock:
     mock_pubsub.unsubscribe = AsyncMock()
     mock_pubsub.close = AsyncMock()
 
-    async def mock_listen():
-        yield {"type": "subscribe", "channel": "test:channel", "data": 1}
-        await asyncio.Event().wait()
-
-    mock_pubsub.listen = mock_listen
+    # Mock get_message for the new timeout-resilient implementation
+    mock_pubsub.get_message = AsyncMock(return_value=None)
     client.pubsub = Mock(return_value=mock_pubsub)
     client._mock_pubsub = mock_pubsub  # Store for test access
 
@@ -183,11 +180,8 @@ async def test_subscribe_replays_buffered_events(
     ]
     mock_redis_client.lrange = AsyncMock(return_value=buffered_events)
 
-    async def mock_listen_no_events():
-        yield {"type": "subscribe", "channel": channel, "data": 1}
-        await asyncio.sleep(10)
-
-    mock_pubsub.listen = mock_listen_no_events
+    # Mock get_message to return None (no live events after buffer replay)
+    mock_pubsub.get_message = AsyncMock(return_value=None)
 
     received = []
 
@@ -233,18 +227,13 @@ async def test_subscribe_receives_live_events(
 
     mock_redis_client.lrange = AsyncMock(return_value=[])
 
-    live_events = [
-        {"type": "subscribe", "channel": channel, "data": 1},
+    # Mock get_message to return live events sequentially
+    live_messages = [
         {"type": "message", "channel": channel, "data": json.dumps({"type": "live1", "_buffered_at": "2025-01-01T00:00:00Z"})},
         {"type": "message", "channel": channel, "data": json.dumps({"type": "live2", "_buffered_at": "2025-01-01T00:00:01Z"})},
+        None,  # End of messages
     ]
-
-    async def mock_listen_live():
-        for event in live_events:
-            yield event
-        await asyncio.sleep(10)
-
-    mock_pubsub.listen = mock_listen_live
+    mock_pubsub.get_message = AsyncMock(side_effect=live_messages)
 
     received = []
 
@@ -407,11 +396,8 @@ async def test_invalid_json_in_buffer_skipped(
     ]
     mock_redis_client.lrange = AsyncMock(return_value=buffered_events)
 
-    async def mock_listen_no_events():
-        yield {"type": "subscribe", "channel": channel, "data": 1}
-        await asyncio.sleep(10)
-
-    mock_pubsub.listen = mock_listen_no_events
+    # Mock get_message to return None (no live events after buffer replay)
+    mock_pubsub.get_message = AsyncMock(return_value=None)
 
     received = []
 
@@ -448,19 +434,14 @@ async def test_invalid_json_in_pubsub_skipped(
 
     mock_redis_client.lrange = AsyncMock(return_value=[])
 
-    live_events = [
-        {"type": "subscribe", "channel": channel, "data": 1},
+    # Mock get_message to return live events sequentially with invalid JSON mixed in
+    live_messages = [
         {"type": "message", "channel": channel, "data": json.dumps({"type": "valid1"})},
         {"type": "message", "channel": channel, "data": "invalid json"},
         {"type": "message", "channel": channel, "data": json.dumps({"type": "valid2"})},
+        None,  # End of messages
     ]
-
-    async def mock_listen_invalid():
-        for event in live_events:
-            yield event
-        await asyncio.sleep(10)
-
-    mock_pubsub.listen = mock_listen_invalid
+    mock_pubsub.get_message = AsyncMock(side_effect=live_messages)
 
     received = []
 
@@ -502,11 +483,8 @@ async def test_subscribe_cleanup_on_cancel(
 
     mock_redis_client.lrange = AsyncMock(return_value=[])
 
-    async def mock_listen_forever():
-        yield {"type": "subscribe", "channel": channel, "data": 1}
-        await asyncio.sleep(100)
-
-    mock_pubsub.listen = mock_listen_forever
+    # Mock get_message to raise CancelledError (simulating task cancellation)
+    mock_pubsub.get_message = AsyncMock(side_effect=asyncio.CancelledError)
 
     async def subscribe_task():
         async for _ in broadcaster.subscribe(channel):

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
+from app.db.models.progress import AnalysisProgress
 from app.db.session import get_db
 
 # Embedding dimensions constant (OpenAI text-embedding-3-small)
@@ -74,6 +75,10 @@ class IAnalysisRepository(Protocol):
         failed_at_stage: str = "extraction",
     ) -> None:
         """Mark an analysis as failed with error details."""
+        ...
+
+    async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
+        """Get all progress events for an analysis."""
         ...
 
 
@@ -300,7 +305,8 @@ class AnalysisRepository:
         )
         result = await self.session.execute(stmt)
 
-        if result.rowcount == 0:
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 
@@ -312,6 +318,26 @@ class AnalysisRepository:
             error_code=error_code,
             failed_at_stage=failed_at_stage,
         )
+
+    async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
+        """Get all progress events for an analysis, ordered by creation time.
+
+        Returns the stored SSE events from the analysis_progress table,
+        allowing reconstruction of the analysis timeline for completed analyses.
+
+        Args:
+            analysis_id: UUID of the analysis
+
+        Returns:
+            List of AnalysisProgress records ordered by created_at
+
+        """
+        result = await self.session.execute(
+            select(AnalysisProgress)
+            .where(AnalysisProgress.analysis_id == analysis_id)
+            .order_by(AnalysisProgress.created_at)
+        )
+        return list(result.scalars().all())
 
 
 def get_analysis_repository(

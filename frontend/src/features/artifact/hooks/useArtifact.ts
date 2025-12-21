@@ -14,6 +14,9 @@ import { downloadMarkdown } from './downloadMarkdown'
 export interface UseArtifactState {
   content: string | null
   traceId: string | null
+  qualityWarnings: string[]
+  qualityPassed: boolean | null
+  qualityScore: number | null
   isLoading: boolean
   error: Error | null
 }
@@ -45,9 +48,18 @@ export function useArtifact(artifactId: string | undefined): UseArtifactReturn {
     }
   }, [data, artifactId])
 
+  // Extract quality metadata from artifact_metadata
+  const qualityMetadata = data?.artifact_metadata
+  const qualityWarnings = qualityMetadata?.quality_warnings ?? []
+  const qualityPassed = qualityMetadata?.quality_passed ?? null
+  const qualityScore = qualityMetadata?.quality_gate_avg_score ?? null
+
   return {
     content: data?.markdown_content ?? null,
     traceId: data?.trace_id ?? null,
+    qualityWarnings,
+    qualityPassed,
+    qualityScore,
     isLoading,
     error: artifactId ? (error as Error | null) : new Error('No artifact ID provided'),
     download,

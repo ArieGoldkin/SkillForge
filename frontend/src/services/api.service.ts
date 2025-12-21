@@ -5,6 +5,7 @@
 
 import type {
   Analysis,
+  AnalysisProgressResponse,
   AnalysisStatusResponse,
   AnalyzeRequest,
   AnalyzeResponse,
@@ -74,6 +75,14 @@ export const analyzeAPI = {
    */
   getAnalysisStatus: async (id: string): Promise<AnalysisStatusResponse> => {
     return apiFetch<AnalysisStatusResponse>(`/api/v1/analyze/${id}`)
+  },
+
+  /**
+   * Get progress events for a completed analysis
+   * GET /api/v1/analyze/{id}/progress
+   */
+  getAnalysisProgress: async (id: string): Promise<AnalysisProgressResponse> => {
+    return apiFetch<AnalysisProgressResponse>(`/api/v1/analyze/${id}/progress`)
   },
 
   /**

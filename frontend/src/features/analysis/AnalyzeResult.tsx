@@ -6,6 +6,7 @@ import {
   useLoadingState,
   useShowTimeoutWarning,
   useShouldShowProgress,
+  selectSetAnalysisMetadata,
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
@@ -137,6 +138,8 @@ export default function AnalyzeResult() {
   const events = useSSEStore(selectEvents)
   const { isConnected, connect, disconnect } = useSSEStore(useShallow(selectConnectionState))
   const { isComplete, error, reset } = useSSEStore(useShallow(selectAnalysisState))
+  // Issue #452: Get setAnalysisMetadata to sync API data to store for completed analyses
+  const setAnalysisMetadata = useSSEStore(selectSetAnalysisMetadata)
 
   // New computed loading states (Issue #399)
   const loadingState = useLoadingState()
@@ -151,6 +154,33 @@ export default function AnalyzeResult() {
     setTimeoutWarningDismissed(true)
   }, [])
 
+  // First, get artifact ID from SSE events (for active analyses)
+  // This is needed before calling useAnalysisStatus to avoid circular dependency
+  const sseArtifactId = useMemo((): string | undefined => {
+    // Extract artifact ID from SSE events if available
+    const completeEvent = events.find(
+      (e) => e.type === 'complete' || (e.type === 'progress' && e.artifact_id)
+    )
+    return (completeEvent?.artifact_id as string | undefined) ?? undefined
+  }, [events])
+
+  const statusState = useAnalysisStatus({
+    analysisId: id,
+    completedParam: Boolean(completed),
+    sseState: { eventsLength: events.length, isComplete, artifactId: sseArtifactId },
+  })
+
+  // Merge SSE events with fetched progress events for completed analyses
+  // If no SSE events exist (page loaded for completed analysis), use fetched progress events
+  const mergedEvents = useMemo(() => {
+    if (events.length > 0) {
+      // Active analysis or SSE events exist - use SSE events
+      return events
+    }
+    // No SSE events - use fetched progress events from database
+    return statusState.progressEvents
+  }, [events, statusState.progressEvents])
+
   // Focus management for accessibility
   const completionRef = useCompletionFocus(isComplete)
   // Issue #396: traceId no longer needed here - leaf components get it from store
@@ -164,12 +194,7 @@ export default function AnalyzeResult() {
     hasFailedStages,
     failedStagesCount,
     analysisMetadata,
-  } = useAnalysisProgress(events)
-  const statusState = useAnalysisStatus({
-    analysisId: id,
-    completedParam: Boolean(completed),
-    sseState: { eventsLength: events.length, isComplete, artifactId },
-  })
+  } = useAnalysisProgress(mergedEvents)
 
   useSSELifecycle({
     analysisId: id,
@@ -206,6 +231,18 @@ export default function AnalyzeResult() {
     }
     // Issue #439: Simplified dependencies - no longer depends on progress stage/percent
   }, [artifactId, urlArtifactId, statusState, isComplete, hasError, error, errorMessage])
+
+  // Issue #452: Sync artifact ID from API to store for completed analyses
+  // This ensures CompleteCardContent can display the artifact when page loads
+  // for already-completed analyses (no SSE events to populate the store)
+  useEffect(() => {
+    // Only sync if we have artifact ID from API but not from SSE events
+    if (statusState.resolvedArtifactId && !artifactId) {
+      setAnalysisMetadata({
+        artifactId: statusState.resolvedArtifactId,
+      })
+    }
+  }, [statusState.resolvedArtifactId, artifactId, setAnalysisMetadata])
 
   // 🎯 DECLARATIVE RENDER ROUTER - Replaces 100+ lines of complex conditionals
   // All routing logic is now handled by the AnalysisRenderRouter component

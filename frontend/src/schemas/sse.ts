@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- SSE schemas require comprehensive type definitions for all event types */
 /**
  * SSE Event Schemas for SkillForge Analysis Workflow
  * Provides runtime validation for Server-Sent Events using Zod
@@ -73,6 +74,10 @@ export const ProgressEventDetailsSchema = z
  *
  * Uses .passthrough() to allow additional unknown fields from backend
  * (e.g., agent_type, processing_time_ms, quality_warning, etc.)
+ *
+ * Issue #442: Progress events can have status: "failed" for individual agents
+ * that fail while the workflow continues (fail-open behavior). These events
+ * include error and error_code fields at the top level.
  */
 export const SSEProgressEventSchema = z
   .object({
@@ -89,8 +94,21 @@ export const SSEProgressEventSchema = z
     skip_reasons: z.record(z.string(), z.string()).optional(),
     success_metrics: SuccessMetricsSchema.optional(),
     details: ProgressEventDetailsSchema.optional(),
+    // Issue #442: Error fields for failed stages (fail-open - workflow continues)
+    error: z.string().optional(),
+    error_code: z.string().optional(),
+    agent_type: z.string().optional(),
+    // Issue #442: Quality metadata for transparency
+    quality_warning: z.string().optional(),
+    artifact_id: z.string().uuid().optional(),
+    markdown_length: z.number().int().nonnegative().optional(),
+    // Backend aggregation phase sends these fields
+    message: z.string().optional(),
+    elapsed_seconds: z.number().optional(),
+    // Processing metadata from various stages
+    processing_time_ms: z.number().optional(),
   })
-  .passthrough() // Allow additional fields like agent_type, processing_time_ms
+  .passthrough() // Allow additional fields from backend
 
 /**
  * Complete Event Schema
@@ -160,15 +178,17 @@ export type SuccessMetrics = z.infer<typeof SuccessMetricsSchema>
  * Parse and validate SSE event data with detailed error logging
  * Returns validated event or null if validation fails
  *
+ * Zod v4 workaround: Instead of using discriminated union, manually check
+ * type field and validate against the appropriate schema
+ *
  * @param data - Raw parsed JSON data from SSE event
  * @returns Validated SSEEvent or null if invalid
  */
+// eslint-disable-next-line max-lines-per-function -- Each case requires schema validation with error logging
 export function parseSSEEvent(data: unknown): SSEEvent | null {
-  const result = SSEEventSchema.safeParse(data)
-
-  if (!result.success) {
-    logger.error('SSE event validation failed', {
-      validationErrors: result.error.format(),
+  // Pre-check: Ensure data is an object with a 'type' field
+  if (typeof data !== 'object' || data === null || !('type' in data)) {
+    logger.error('SSE event validation failed: Invalid data structure', {
       receivedData:
         typeof data === 'string' ? data.substring(0, COMPONENT_CONSTANTS.SIZE_LIMIT_500) : data,
       dataType: typeof data,
@@ -176,7 +196,53 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
     return null
   }
 
-  return result.data
+  const eventType = (data as { type?: unknown }).type
+
+  // Select the appropriate schema and validate based on type field
+  switch (eventType) {
+    case 'progress': {
+      const result = SSEProgressEventSchema.safeParse(data)
+      if (!result.success) {
+        logger.error('SSE event validation failed', {
+          eventType,
+          validationErrors: result.error.issues,
+          receivedData: data,
+        })
+        return null
+      }
+      return result.data
+    }
+    case 'complete': {
+      const result = SSECompleteEventSchema.safeParse(data)
+      if (!result.success) {
+        logger.error('SSE event validation failed', {
+          eventType,
+          validationErrors: result.error.issues,
+          receivedData: data,
+        })
+        return null
+      }
+      return result.data
+    }
+    case 'error': {
+      const result = SSEErrorEventSchema.safeParse(data)
+      if (!result.success) {
+        logger.error('SSE event validation failed', {
+          eventType,
+          validationErrors: result.error.issues,
+          receivedData: data,
+        })
+        return null
+      }
+      return result.data
+    }
+    default:
+      logger.error('SSE event validation failed: Unknown event type', {
+        eventType,
+        receivedData: data,
+      })
+      return null
+  }
 }
 
 /**

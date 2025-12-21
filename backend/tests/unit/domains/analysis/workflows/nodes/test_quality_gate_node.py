@@ -78,7 +78,7 @@ def mock_evaluator_timeout():
 
 @pytest.mark.asyncio
 async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
-    """Test single evaluator timeout - should use default 0.7 score."""
+    """Test single evaluator timeout - should use default 0.5 score (Issue #442)."""
     # Mock create_quality_evaluator to return timeout evaluator for one aspect
     with (
         patch(
@@ -123,14 +123,14 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
 
         result = await quality_gate_node(base_state)
 
-        # Verify default score of 0.7 was used for timeout
+        # Verify default score of 0.5 was used for timeout (Issue #442 changed from 0.7)
         assert "quality_scores" in result
         scores = result["quality_scores"]
         assert isinstance(scores, dict)
         assert len(scores) == 3  # relevance, depth, coherence
 
-        # Check that at least one score is the default 0.7 (timeout)
-        timeout_scores = [s for s in scores.values() if isinstance(s, dict) and s["score"] == 0.7]
+        # Check that at least one score is the default 0.5 (timeout) - Issue #442 changed from 0.7 to 0.5
+        timeout_scores = [s for s in scores.values() if isinstance(s, dict) and s["score"] == 0.5]
         assert len(timeout_scores) == 1
 
         # Verify timeout was logged
@@ -139,7 +139,7 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
         timeout_logs = [call for call in warning_calls if call[0][0] == "quality_evaluator_timeout"]
         assert len(timeout_logs) == 1
 
-        # Gate should still pass (0.7 + 0.8 + 0.8) / 3 = 0.77 > 0.7
+        # Gate should still pass (0.5 + 0.8 + 0.8) / 3 = 0.7 > 0.7 (threshold)
         assert result["quality_gate_passed"] is True
         avg_score = result["quality_gate_avg_score"]
         assert isinstance(avg_score, float)
@@ -175,24 +175,23 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
 
         result = await quality_gate_node(base_state)
 
-        # All scores should be default 0.7
+        # All scores should be default 0.5 (Issue #442 changed from 0.7)
         assert "quality_scores" in result
         scores = result["quality_scores"]
         assert isinstance(scores, dict)
         assert len(scores) == 3
-        assert all(isinstance(s, dict) and s["score"] == 0.7 for s in scores.values())
+        assert all(isinstance(s, dict) and s["score"] == 0.5 for s in scores.values())
         assert all(isinstance(s, dict) and "timed out" in s["comment"] for s in scores.values())
 
-        # Average should be approximately 0.7 (threshold)
+        # Average should be approximately 0.5 (all timeouts use 0.5, Issue #442)
         # Use approximate comparison due to floating point precision
         avg_score = result["quality_gate_avg_score"]
         assert isinstance(avg_score, float)
-        assert abs(avg_score - 0.7) < 0.001
+        assert abs(avg_score - 0.5) < 0.001
 
-        # Gate should pass (fail open) - note: due to floating point precision,
-        # 0.6999999999999998 < 0.7, so gate may fail, but that's still acceptable behavior
+        # Gate should fail (0.5 < 0.7 threshold) - this is expected behavior
         # The important part is that we get valid scores, not exceptions
-        assert avg_score >= 0.69  # Close enough to threshold
+        assert avg_score < QUALITY_THRESHOLD  # 0.5 < 0.7
 
         # Verify all timeouts were logged
         warning_calls = list(mock_logger.warning.call_args_list)
@@ -247,18 +246,18 @@ async def test_quality_gate_partial_timeout(base_state: AnalysisState):
         assert isinstance(scores, dict)
         score_values = [s["score"] for s in scores.values() if isinstance(s, dict)]
 
-        # Should have one 0.9 and two 0.7 scores
+        # Should have one 0.9 and two 0.5 scores (timeouts use 0.5, Issue #442)
         assert 0.9 in score_values
-        assert score_values.count(0.7) == 2
+        assert score_values.count(0.5) == 2
 
-        # Average: (0.9 + 0.7 + 0.7) / 3 = 0.767
-        expected_avg = (0.9 + 0.7 + 0.7) / 3
+        # Average: (0.9 + 0.5 + 0.5) / 3 = 0.633
+        expected_avg = (0.9 + 0.5 + 0.5) / 3
         avg_score = result["quality_gate_avg_score"]
         assert isinstance(avg_score, float)
         assert abs(avg_score - expected_avg) < 0.001
 
-        # Gate should pass
-        assert result["quality_gate_passed"] is True
+        # Gate should fail (0.633 < 0.7 threshold) - this is expected with timeouts
+        assert result["quality_gate_passed"] is False
 
 
 @pytest.mark.asyncio
@@ -335,7 +334,7 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
         assert kwargs["analysis_id"] == "test-analysis-123"
         assert kwargs["aspect"] in ["relevance", "depth", "coherence"]
         assert kwargs["timeout_seconds"] == 30
-        assert "evaluator timed out" in kwargs["message"]
+        assert "timed out" in kwargs["message"] or "Evaluation timed out" in kwargs["message"]
 
 
 @pytest.mark.asyncio
@@ -380,8 +379,8 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
         # but that's acceptable - the important part is the SSE event was emitted
         # Note: "complete" is used for passed gates, "failed" for failed gates (not "passed")
         assert kwargs["status"] in ["complete", "failed"]
-        # Average score should be approximately 0.7
-        assert abs(kwargs["avg_score"] - 0.7) < 0.001
+        # Average score should be approximately 0.5 (all timeouts use 0.5, Issue #442)
+        assert abs(kwargs["avg_score"] - 0.5) < 0.001
         assert kwargs["threshold"] == QUALITY_THRESHOLD
         assert kwargs["retry_count"] == 0
 
@@ -389,7 +388,7 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
         assert "scores" in kwargs
         scores = kwargs["scores"]
         assert len(scores) == 3
-        assert all(s["score"] == 0.7 for s in scores.values())
+        assert all(s["score"] == 0.5 for s in scores.values())  # Issue #442: timeouts use 0.5
 
 
 @pytest.mark.asyncio

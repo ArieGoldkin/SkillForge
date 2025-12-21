@@ -85,11 +85,31 @@ export interface AnalysisStatusResponse {
   artifact_id?: string | null
 }
 
+export interface ProgressEventResponse {
+  stage: string
+  status: string
+  progress_data: Record<string, unknown> | null
+  timestamp: string
+}
+
+export interface AnalysisProgressResponse {
+  analysis_id: string
+  events: ProgressEventResponse[]
+}
+
+export interface QualityMetadata {
+  quality_passed?: boolean
+  quality_scores?: Record<string, { score: number; comment: string }>
+  quality_warnings?: string[]
+  quality_gate_avg_score?: number
+}
+
 export interface ArtifactMetadataResponse {
   analysis_id: string
   artifact_id: string
   markdown_content?: string | null
   metadata?: Record<string, unknown>
+  artifact_metadata?: QualityMetadata & Record<string, unknown>
   trace_id?: string | null
   download_count?: number
   created_at?: string
