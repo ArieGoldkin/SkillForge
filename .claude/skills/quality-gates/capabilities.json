@@ -1,240 +1,110 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "quality-gates",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Complexity scoring (1-5 scale), blocking thresholds, gate validation, stuck detection, requirements completeness, and LLM-as-judge quality patterns",
 
   "capabilities": {
     "complexity-scoring": {
-      "keywords": ["complexity", "score", "difficulty", "estimate", "sizing", "1-5 scale", "level 1", "level 5", "complexity assessment"],
+      "keywords": ["complexity", "score", "difficulty", "estimate", "sizing", "1-5 scale"],
       "solves": [
         "How complex is this task?",
         "Score task complexity on 1-5 scale",
-        "Assess implementation difficulty and effort",
-        "Determine if task needs breakdown",
-        "Estimate lines of code and duration"
+        "Assess implementation difficulty"
       ],
-      "reference_file": "references/complexity-scoring.md",
+      "reference_file": "SKILL.md#1-complexity-scoring-1-5-scale",
       "token_cost": 140
     },
-    "complexity-levels": {
-      "keywords": ["level 1", "level 2", "level 3", "level 4", "level 5", "trivial", "simple", "moderate", "complex", "very complex"],
-      "solves": [
-        "What defines each complexity level?",
-        "Level 1: <50 lines, <30 min, 1 file",
-        "Level 2: 50-200 lines, 0.5-2 hours, 1-3 files",
-        "Level 3: 200-500 lines, 2-8 hours, 3-10 files",
-        "Level 4: 500-1500 lines, 1-3 days, 10-25 files",
-        "Level 5: 1500+ lines, 3+ days, 25+ files"
-      ],
-      "reference_file": "references/complexity-scoring.md",
-      "token_cost": 130
-    },
     "blocking-thresholds": {
-      "keywords": ["blocking", "threshold", "gate", "stop", "escalate", "block task", "cannot proceed", "critical questions"],
+      "keywords": ["blocking", "threshold", "gate", "stop", "escalate", "cannot proceed"],
       "solves": [
         "When should I block progress?",
-        "Define blocking quality thresholds",
-        "Understand escalation criteria",
         ">3 critical questions = BLOCK",
         "Missing dependencies = BLOCK",
         "3+ failed attempts = BLOCK"
       ],
-      "reference_file": "references/blocking-thresholds.md",
+      "reference_file": "SKILL.md#2-quality-gate-thresholds",
       "token_cost": 150
     },
     "critical-questions": {
-      "keywords": ["critical questions", "unanswered", "unknowns", "requirements unclear", "clarify requirements"],
+      "keywords": ["critical questions", "unanswered", "unknowns", "clarify"],
       "solves": [
         "What are critical questions?",
-        "Identify questions that block progress",
         "Count unanswered critical questions",
-        "Know when to ask for clarification",
         "Block if >3 questions unanswered"
       ],
-      "reference_file": "references/blocking-thresholds.md#critical-questions",
+      "reference_file": "SKILL.md#critical-questions-must-answer-before-proceeding",
       "token_cost": 110
     },
     "stuck-detection": {
-      "keywords": ["stuck", "failed attempts", "retry", "blocked", "help", "3 attempts", "escalate", "same error"],
+      "keywords": ["stuck", "failed attempts", "retry", "3 attempts", "escalate"],
       "solves": [
         "How do I detect when stuck?",
-        "After 3 failed attempts, escalate to user",
-        "Automatic stuck detection and escalation",
-        "Track attempt history in context",
-        "Know when to ask for human guidance"
+        "After 3 failed attempts, escalate",
+        "Track attempt history"
       ],
-      "reference_file": "references/stuck-detection.md",
+      "reference_file": "SKILL.md#workflow-2-stuck-detection--escalation",
       "token_cost": 120
     },
-    "attempt-tracking": {
-      "keywords": ["track attempts", "attempt count", "attempt history", "what was tried", "failure log"],
-      "solves": [
-        "How do I track failed attempts?",
-        "Record each approach and outcome",
-        "Store attempt history in context",
-        "Document what didn't work",
-        "Prevent repeating same failed approach"
-      ],
-      "reference_file": "references/stuck-detection.md#attempt-tracking",
-      "token_cost": 100
-    },
     "gate-validation": {
-      "keywords": ["validate", "gate", "pass", "fail", "criteria", "gate check", "quality gate", "gate status"],
+      "keywords": ["validate", "gate check", "pass", "fail", "gate status"],
       "solves": [
         "How do I validate quality gates?",
-        "Check if task passes all gates",
         "Run pre-task gate validation",
-        "Use quality gate checklist",
         "Determine PASS/WARNING/BLOCKED status"
       ],
-      "template_file": "templates/gate-validation-checklist.md",
+      "template_file": "templates/gate-check-template.md",
       "token_cost": 130
     },
     "pre-task-gate-check": {
-      "keywords": ["pre-task", "before starting", "gate check", "task validation", "can proceed"],
+      "keywords": ["pre-task", "before starting", "can proceed"],
       "solves": [
         "How do I check gates before starting?",
-        "Run pre-task gate validation workflow",
         "Assess complexity before proceeding",
-        "Identify blockers early",
-        "Avoid wasting work on blocked tasks"
+        "Identify blockers early"
       ],
-      "template_file": "templates/pre-task-gate-check.md",
+      "reference_file": "SKILL.md#workflow-1-pre-task-gate-validation",
       "token_cost": 140
     },
     "complexity-breakdown": {
-      "keywords": ["breakdown", "decompose", "subtasks", "split task", "level 4", "level 5", "task breakdown"],
+      "keywords": ["breakdown", "decompose", "subtasks", "split task"],
       "solves": [
         "How do I break down complex tasks?",
-        "Split Level 4-5 tasks into Level 1-3 subtasks",
-        "Create task breakdown with dependencies",
-        "Validate breakdown completeness",
-        "Ensure all subtasks are manageable"
+        "Split Level 4-5 into Level 1-3 subtasks",
+        "Create task breakdown with dependencies"
       ],
-      "template_file": "templates/complexity-breakdown.md",
+      "template_file": "templates/complexity-assessment.md",
       "token_cost": 160
     },
     "requirements-completeness": {
-      "keywords": ["requirements", "incomplete", "functional requirements", "technical requirements", "acceptance criteria"],
+      "keywords": ["requirements", "incomplete", "acceptance criteria"],
       "solves": [
         "Are requirements complete enough?",
-        "Check functional requirements defined",
-        "Verify technical requirements specified",
-        "Count critical unknowns",
+        "Check functional requirements",
         "Block if requirements too vague"
       ],
-      "reference_file": "references/requirements-completeness.md",
+      "template_file": "templates/requirements-checklist.md",
       "token_cost": 140
     },
-    "dependency-check": {
-      "keywords": ["dependencies", "blocked by", "requires", "depends on", "missing dependency", "prerequisite"],
-      "solves": [
-        "How do I check dependencies?",
-        "Identify task dependencies",
-        "Verify dependencies are ready",
-        "Block if dependencies missing",
-        "Document dependency blockers"
-      ],
-      "reference_file": "references/blocking-thresholds.md#dependencies",
-      "token_cost": 100
-    },
     "escalation-protocol": {
-      "keywords": ["escalate", "escalation", "ask user", "need help", "stuck escalation", "human guidance"],
+      "keywords": ["escalate", "ask user", "need help", "human guidance"],
       "solves": [
         "When and how to escalate?",
         "Escalate after 3 failed attempts",
-        "Escalate when >3 critical questions",
-        "Create escalation message template",
-        "Document what needs user guidance"
+        "Create escalation message"
       ],
-      "template_file": "templates/escalation-message.md",
+      "reference_file": "SKILL.md#template-2-stuck-escalation",
       "token_cost": 120
     },
     "llm-as-judge": {
-      "keywords": ["llm as judge", "quality validation", "g-eval", "aspect scoring", "relevance", "depth", "coherence", "accuracy"],
+      "keywords": ["llm as judge", "g-eval", "aspect scoring", "quality validation"],
       "solves": [
-        "How do I use LLM-as-judge for quality?",
-        "Evaluate relevance, depth, coherence, accuracy",
-        "Implement quality gate with aspect scoring",
-        "Set quality thresholds (0.0-1.0 scale)",
-        "Retry synthesis if quality too low"
+        "How do I use LLM-as-judge?",
+        "Evaluate relevance, depth, coherence",
+        "Set quality thresholds (0.0-1.0)"
       ],
-      "reference_file": "references/llm-as-judge.md",
+      "reference_file": "references/gate-patterns.md",
       "token_cost": 180
-    },
-    "quality-aspects": {
-      "keywords": ["quality aspects", "relevance", "depth", "coherence", "accuracy", "completeness", "aspect scoring"],
-      "solves": [
-        "What aspects to evaluate for quality?",
-        "Relevance: output matches input topic",
-        "Depth: thorough and detailed analysis",
-        "Coherence: well-structured and clear",
-        "Accuracy: facts and code are correct",
-        "Completeness: all required sections present"
-      ],
-      "reference_file": "references/llm-as-judge.md#quality-aspects",
-      "token_cost": 130
-    },
-    "retry-logic": {
-      "keywords": ["retry", "retry synthesis", "max retries", "retry count", "retry threshold", "re-run"],
-      "solves": [
-        "How do I implement retry logic?",
-        "Set MAX_RETRIES threshold (usually 2)",
-        "Re-run synthesis if quality below threshold",
-        "Track retry count in state",
-        "Fail open after max retries reached"
-      ],
-      "reference_file": "references/llm-as-judge.md#retry-logic",
-      "token_cost": 110
-    },
-    "fail-open-fail-closed": {
-      "keywords": ["fail open", "fail closed", "graceful degradation", "timeout handling", "error handling"],
-      "solves": [
-        "Should I fail open or fail closed?",
-        "Fail open: allow workflow on validation error",
-        "Fail closed: block workflow on validation error",
-        "Use fail-open for most cases (partial > none)",
-        "Use fail-closed for critical paths (payments, security)"
-      ],
-      "reference_file": "references/llm-as-judge.md#fail-open-vs-fail-closed",
-      "token_cost": 120
-    },
-    "triple-consumer-artifacts": {
-      "keywords": ["triple consumer", "ai coding assistant", "tutor system", "human readable", "multi-consumer", "artifact design"],
-      "solves": [
-        "How do I design artifacts for multiple consumers?",
-        "AI assistants: structured context, code snippets, implementation steps",
-        "Tutors: exercises, quiz questions, mastery checklists",
-        "Humans: TL;DR, diagrams, glossary, scannable summaries",
-        "Validate each consumer's quality requirements"
-      ],
-      "reference_file": "references/triple-consumer-artifacts.md",
-      "token_cost": 170
-    },
-    "pydantic-validation": {
-      "keywords": ["pydantic", "schema validation", "model validator", "field validation", "quiz validation", "artifact schema"],
-      "solves": [
-        "How do I validate artifact schemas?",
-        "Use Pydantic v2 for schema validation",
-        "Add @model_validator for cross-field checks",
-        "Validate quiz correct_answer in options",
-        "Ensure min_length/max_length constraints"
-      ],
-      "reference_file": "references/triple-consumer-artifacts.md#pydantic-validation",
-      "token_cost": 130
-    },
-    "gate-context-integration": {
-      "keywords": ["context integration", "quality_gates", "store gates", "gate history", "context.json"],
-      "solves": [
-        "How do I store gates in context?",
-        "Add quality_gates array to context",
-        "Record gate status (pass/warning/blocked)",
-        "Track complexity scores and attempt counts",
-        "Link gates to evidence in context"
-      ],
-      "reference_file": "references/context-integration.md",
-      "token_cost": 110
     }
   },
 
@@ -243,16 +113,13 @@
       "quality.*gate",
       "block.*task",
       "complexity.*score",
-      "assess.*complexity",
-      "task.*too.*complex",
-      "break.*down.*task"
+      "assess.*complexity"
     ],
     "medium_confidence": [
       "stuck",
       "escalate",
       "threshold",
-      "requirements.*unclear",
-      "need.*clarification"
+      "requirements.*unclear"
     ]
   },
 
@@ -265,37 +132,18 @@
   "progressive_loading": {
     "tier_1_discovery": {
       "file": "capabilities.json",
-      "tokens": 100,
-      "use_when": "Initial task analysis - determine if quality gates needed"
+      "tokens": 100
     },
     "tier_2_overview": {
       "file": "SKILL.md",
       "tokens": 800,
-      "use_when": "Skill confirmed relevant - need gate philosophy and core concepts"
+      "sections": ["overview", "core-concepts"]
     },
     "tier_3_specific": {
-      "files": "references/*.md",
-      "tokens": "100-180 each",
-      "use_when": "Need specific gate patterns (complexity, blocking, LLM-as-judge)"
-    },
-    "tier_4_generate": {
-      "files": "templates/*.md",
-      "tokens": "110-170 each",
-      "use_when": "Ready to generate gate checklists or escalation messages"
+      "files": ["references/gate-patterns.md", "templates/*.md"],
+      "tokens": "100-180 each"
     }
   },
 
-  "mcp_tools": {
-    "documentation_lookup": {
-      "tool": "context7",
-      "library_ids": ["/pydantic/pydantic", "/langchain-ai/langgraph"],
-      "use_when": "Need current Pydantic validation or LangGraph conditional edge patterns"
-    }
-  },
-
-  "auto_trigger": {
-    "on_agent": "studio-coach",
-    "when": "planning complex multi-agent tasks or validating LLM outputs",
-    "action": "score complexity, set gates, and validate quality with LLM-as-judge"
-  }
+  "mcp_tools": []
 }

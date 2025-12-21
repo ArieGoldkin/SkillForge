@@ -53,7 +53,7 @@
         "Which HTTP status codes to use",
         "Error message best practices"
       ],
-      "reference_file": "references/rest-patterns.md#error-response-format",
+      "reference_file": "references/rest-patterns.md",
       "token_cost": 130
     },
     "rate-limiting": {
@@ -63,7 +63,7 @@
         "Rate limit headers and responses",
         "Tiered rate limiting strategies"
       ],
-      "reference_file": "references/rest-patterns.md#rate-limiting",
+      "reference_file": "references/rest-patterns.md",
       "token_cost": 110
     },
     "skillforge-api": {
@@ -83,7 +83,7 @@
         "JWT vs API key authentication",
         "OAuth2 flow for APIs"
       ],
-      "reference_file": "references/authentication.md",
+      "reference_file": "SKILL.md#authentication-patterns",
       "token_cost": 180
     },
     "openapi-spec": {
@@ -93,7 +93,7 @@
         "Generate OpenAPI specification",
         "API documentation best practices"
       ],
-      "template_file": "templates/openapi-spec.yaml",
+      "template_file": "templates/openapi-template.yaml",
       "token_cost": 200
     }
   },
