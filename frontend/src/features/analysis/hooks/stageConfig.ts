@@ -98,12 +98,21 @@ export function markSkippedAgents(
  *
  * This function contains business logic for time estimation based on
  * empirical analysis workflow duration data.
+ *
+ * @param completedStages - Number of stages that have completed
+ * @param totalStages - Dynamic total stages from supervisor (Issue #443)
+ *                      Falls back to TOTAL_STAGES constant for backwards compatibility
  */
-export function estimateTimeRemaining(completedStages: number): string | undefined {
+export function estimateTimeRemaining(
+  completedStages: number,
+  totalStages?: number
+): string | undefined {
   if (completedStages === 0) {
     return '~2-3 minutes'
   }
-  const remaining = TOTAL_STAGES - completedStages
+  // Issue #443: Use dynamic totalStages from backend when available
+  const effectiveTotalStages = totalStages ?? TOTAL_STAGES
+  const remaining = effectiveTotalStages - completedStages
   if (remaining >= COMPONENT_CONSTANTS.TIME_ESTIMATION_HIGH_REMAINING_THRESHOLD) {
     return '~1-2 minutes'
   }

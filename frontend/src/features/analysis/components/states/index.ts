@@ -5,7 +5,7 @@
 
 export { AnalysisCompleteCard } from './AnalysisCompleteCard'
 export { CompletedAnalysisView } from './CompletedAnalysisView'
-export { CompletedProgressColumn } from './CompletedProgressColumn'
+// CompletedProgressColumn removed - dead code (Issue #443)
 export { ErrorAlert } from './ErrorAlert'
 export { LoadingState } from './LoadingState'
 export { LoadingStateDisplay } from './LoadingStateDisplay'

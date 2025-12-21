@@ -322,8 +322,11 @@ export function useProgressCalculation(
       currentStep: currentStepName,
       totalSteps: progressTotalStages, // Use expected_total_stages for "Step X of Y" display
       completedSteps: currentStepNumber, // Current step number for "Step X of Y" display
-      // Guard: Pass safeFinishedStages to estimateTimeRemaining to prevent issues
-      estimatedTimeRemaining: isComplete ? undefined : estimateTimeRemaining(safeFinishedStages),
+      // Guard: Pass safeFinishedStages and progressTotalStages to estimateTimeRemaining
+      // Issue #443: Use dynamic totalStages from backend for accurate time estimation
+      estimatedTimeRemaining: isComplete
+        ? undefined
+        : estimateTimeRemaining(safeFinishedStages, progressTotalStages),
     }
   }, [stageStatuses, steps, isComplete, expectedTotalStages, skippedAgentsInfo])
 }

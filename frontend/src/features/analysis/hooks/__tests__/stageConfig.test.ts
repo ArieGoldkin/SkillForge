@@ -108,26 +108,73 @@ describe('stageConfig', () => {
   })
 
   describe('estimateTimeRemaining', () => {
-    it('returns ~2-3 minutes when no stages completed', () => {
-      expect(estimateTimeRemaining(0)).toBe('~2-3 minutes')
+    describe('with default TOTAL_STAGES (backward compatibility)', () => {
+      it('returns ~2-3 minutes when no stages completed', () => {
+        expect(estimateTimeRemaining(0)).toBe('~2-3 minutes')
+      })
+
+      it('returns ~1-2 minutes when few stages completed', () => {
+        expect(estimateTimeRemaining(1)).toBe('~1-2 minutes')
+        expect(estimateTimeRemaining(5)).toBe('~1-2 minutes')
+      })
+
+      it('returns ~1 minute when mid-way through', () => {
+        // With 18 total stages: 18-12=6, 18-13=5, 18-14=4 all fall in "<=6" range
+        expect(estimateTimeRemaining(12)).toBe('~1 minute')
+        expect(estimateTimeRemaining(13)).toBe('~1 minute')
+        expect(estimateTimeRemaining(14)).toBe('~1 minute')
+      })
+
+      it('returns ~30 seconds when almost complete', () => {
+        // With 18 total stages: 18-15=3, 18-16=2 fall in "<=3" range
+        expect(estimateTimeRemaining(15)).toBe('~30 seconds')
+        expect(estimateTimeRemaining(16)).toBe('~30 seconds')
+      })
     })
 
-    it('returns ~1-2 minutes when few stages completed', () => {
-      expect(estimateTimeRemaining(1)).toBe('~1-2 minutes')
-      expect(estimateTimeRemaining(5)).toBe('~1-2 minutes')
-    })
+    describe('with dynamic totalStages (Issue #443)', () => {
+      it('uses dynamic totalStages when provided', () => {
+        // With 8 total stages, 5 completed = 3 remaining → "~30 seconds"
+        expect(estimateTimeRemaining(5, 8)).toBe('~30 seconds')
 
-    it('returns ~1 minute when mid-way through', () => {
-      // With 18 total stages: 18-12=6, 18-13=5, 18-14=4 all fall in "<=6" range
-      expect(estimateTimeRemaining(12)).toBe('~1 minute')
-      expect(estimateTimeRemaining(13)).toBe('~1 minute')
-      expect(estimateTimeRemaining(14)).toBe('~1 minute')
-    })
+        // With 8 total stages, 2 completed = 6 remaining → "~1 minute"
+        expect(estimateTimeRemaining(2, 8)).toBe('~1 minute')
+      })
 
-    it('returns ~30 seconds when almost complete', () => {
-      // With 18 total stages: 18-15=3, 18-16=2 fall in "<=3" range
-      expect(estimateTimeRemaining(15)).toBe('~30 seconds')
-      expect(estimateTimeRemaining(16)).toBe('~30 seconds')
+      it('calculates correctly for small dynamic totals', () => {
+        // Supervisor selected only 3 agents → 5 + 3 = 8 total stages
+        const dynamicTotal = 8
+
+        // 0 completed → ~2-3 minutes
+        expect(estimateTimeRemaining(0, dynamicTotal)).toBe('~2-3 minutes')
+
+        // 5 completed, 3 remaining → ~30 seconds
+        expect(estimateTimeRemaining(5, dynamicTotal)).toBe('~30 seconds')
+
+        // 6 completed, 2 remaining → ~30 seconds
+        expect(estimateTimeRemaining(6, dynamicTotal)).toBe('~30 seconds')
+      })
+
+      it('calculates correctly for large dynamic totals', () => {
+        // Supervisor selected 8 agents → 5 + 8 = 13 total stages
+        const dynamicTotal = 13
+
+        // 1 completed, 12 remaining → ~1-2 minutes (>= threshold)
+        expect(estimateTimeRemaining(1, dynamicTotal)).toBe('~1-2 minutes')
+
+        // 7 completed, 6 remaining → ~1 minute
+        expect(estimateTimeRemaining(7, dynamicTotal)).toBe('~1 minute')
+
+        // 10 completed, 3 remaining → ~30 seconds
+        expect(estimateTimeRemaining(10, dynamicTotal)).toBe('~30 seconds')
+      })
+
+      it('falls back to TOTAL_STAGES when totalStages is undefined', () => {
+        // Without totalStages param, should use TOTAL_STAGES (18)
+        // Same behavior as original tests
+        expect(estimateTimeRemaining(15, undefined)).toBe('~30 seconds')
+        expect(estimateTimeRemaining(12, undefined)).toBe('~1 minute')
+      })
     })
   })
 })
