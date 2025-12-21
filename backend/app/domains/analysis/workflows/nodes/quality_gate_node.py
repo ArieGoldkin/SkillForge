@@ -81,6 +81,9 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
 
+    # Issue #442: Track quality warnings for fail-open transparency
+    quality_warnings: list[str] = []
+
     # Start timing at the very beginning
     start_time = time.time()
 
@@ -114,6 +117,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             "quality_scores": {},
             "quality_gate_retry_count": retry_count,
             "quality_gate_passed": True,
+            "quality_warnings": [],
         }
 
     # Update Langfuse trace metadata
@@ -196,17 +200,20 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                         "comment": result.get("comment", ""),
                     }
             except TimeoutError:
-                # Timeout occurred - assign default passing score (fail open)
+                # Issue #442: Timeout - use neutral score (0.5) and track warning
+                warning_msg = f"Evaluation timed out for {aspect}"
+                quality_warnings.append(warning_msg)
                 logger.warning(
                     "quality_evaluator_timeout",
                     analysis_id=analysis_id,
                     aspect=aspect,
                     timeout_seconds=30,
-                    message="evaluator timed out, using default passing score",
+                    message=warning_msg,
                 )
                 quality_scores[aspect] = {
-                    "score": 0.7,  # Default passing score
+                    "score": 0.5,  # Neutral score - reflects uncertainty
                     "comment": "Evaluation timed out after 30 seconds",
+                    "timeout": True,
                 }
 
             logger.debug(
@@ -422,6 +429,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             "quality_gate_avg_score": avg_score,
             "quality_gate_passed": gate_passed,
             "quality_gate_retry_count": retry_count,
+            "quality_warnings": quality_warnings,
         }
 
     except Exception as e:
@@ -456,14 +464,16 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             except Exception as score_error:  # noqa: BLE001 - Graceful degradation
                 logger.debug("latency_score_failed_on_error", error=str(score_error))
 
-        # On error, pass the gate (fail open) to avoid blocking workflow
-        # but log the failure for investigation
+        # Issue #442: On error, pass gate (fail open) but track warning
+        # This ensures workflow continues while providing transparency
+        error_warning = f"Quality evaluation failed: {type(e).__name__}: {e!s}"
         return {
             "quality_scores": {},
             "quality_gate_avg_score": 0.0,
             "quality_gate_passed": True,  # Fail open
             "quality_gate_retry_count": retry_count,
             "quality_gate_error": str(e),
+            "quality_warnings": [error_warning],
         }
 
 

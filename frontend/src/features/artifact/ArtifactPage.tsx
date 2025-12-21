@@ -6,7 +6,12 @@
 
 import { getRouteApi, useLocation } from '@tanstack/react-router'
 
-import { FeedbackButtons, MarkdownPreview, TableOfContents } from './components'
+import {
+  FeedbackButtons,
+  MarkdownPreview,
+  QualityWarningBanner,
+  TableOfContents,
+} from './components'
 import {
   ArtifactEmptyState,
   ArtifactErrorState,
@@ -16,16 +21,70 @@ import {
 } from './components/internal'
 import { useArtifact } from './hooks'
 
+interface ArtifactContentProps {
+  content: string
+  artifactId: string
+  traceId: string | null
+  qualityWarnings: string[]
+  qualityPassed: boolean | null
+  qualityScore: number | null
+}
+
+function ArtifactContent({
+  content,
+  artifactId,
+  traceId,
+  qualityWarnings,
+  qualityPassed,
+  qualityScore,
+}: ArtifactContentProps) {
+  const showQualityBanner = qualityWarnings.length > 0 || qualityPassed === false
+
+  return (
+    <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[280px_1fr] xl:gap-12">
+      <aside className="lg:sticky lg:top-8 lg:self-start lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
+        <TableOfContents content={content} className="mb-6 lg:mb-0" />
+      </aside>
+
+      <main className="min-w-0">
+        {showQualityBanner && (
+          <div className="mb-6">
+            <QualityWarningBanner
+              warnings={qualityWarnings}
+              avgScore={qualityScore ?? undefined}
+              passed={qualityPassed ?? undefined}
+            />
+          </div>
+        )}
+
+        <MarkdownPreview content={content} showMetadata={false} />
+
+        <div className="mt-8 pt-6 border-t border-border">
+          <FeedbackButtons artifactId={artifactId} traceId={traceId} />
+        </div>
+      </main>
+    </div>
+  )
+}
+
 export default function ArtifactPage() {
   const routeApi = getRouteApi('/artifact/$artifactId')
-
   const { artifactId } = routeApi.useParams()
   const { analysisId } = routeApi.useSearch()
   const location = useLocation()
   const locationStateTraceId = (location.state as { traceId?: string } | undefined)?.traceId
-  const { content, traceId: apiTraceId, isLoading, error, download } = useArtifact(artifactId)
 
-  // Use API trace_id if available, fallback to location.state for SSE flows
+  const {
+    content,
+    traceId: apiTraceId,
+    qualityWarnings,
+    qualityPassed,
+    qualityScore,
+    isLoading,
+    error,
+    download,
+  } = useArtifact(artifactId)
+
   const traceId = apiTraceId ?? locationStateTraceId ?? null
 
   return (
@@ -41,24 +100,15 @@ export default function ArtifactPage() {
           )}
           {!artifactId && !isLoading && !error && <ArtifactEmptyState analysisId={analysisId} />}
 
-          {content && (
-            <div className="lg:grid lg:grid-cols-[250px_1fr] lg:gap-8 xl:grid-cols-[280px_1fr] xl:gap-12">
-              {/* Sticky TOC Sidebar - Desktop only, mobile shows collapsible version at top */}
-              <aside className="lg:sticky lg:top-8 lg:self-start lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
-                <TableOfContents content={content} className="mb-6 lg:mb-0" />
-              </aside>
-
-              {/* Main Content */}
-              <main className="min-w-0">
-                <MarkdownPreview content={content} showMetadata={false} />
-                {/* Feedback section at the bottom of the artifact */}
-                {artifactId && (
-                  <div className="mt-8 pt-6 border-t border-border">
-                    <FeedbackButtons artifactId={artifactId} traceId={traceId} />
-                  </div>
-                )}
-              </main>
-            </div>
+          {content && artifactId && (
+            <ArtifactContent
+              content={content}
+              artifactId={artifactId}
+              traceId={traceId}
+              qualityWarnings={qualityWarnings}
+              qualityPassed={qualityPassed}
+              qualityScore={qualityScore}
+            />
           )}
         </div>
       </div>
