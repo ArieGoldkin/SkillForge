@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from fastapi.responses import Response
 
 from app.api.schemas.errors import ErrorResponse
@@ -24,7 +24,7 @@ logger = get_logger(__name__)
     },
 )
 async def get_artifact_by_analysis(
-    analysis_id: uuid.UUID,
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> ArtifactMetadataResponse:
     """Retrieve the latest artifact for an analysis (metadata + markdown)."""
@@ -56,7 +56,7 @@ async def get_artifact_by_analysis(
     },
 )
 async def get_artifact_by_id(
-    artifact_id: uuid.UUID,
+    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> ArtifactMetadataResponse:
     """Retrieve artifact metadata by artifact ID.
@@ -105,7 +105,7 @@ async def get_artifact_by_id(
     },
 )
 async def download_artifact(
-    artifact_id: uuid.UUID,
+    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> Response:
     """Download artifact as markdown file.

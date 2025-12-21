@@ -203,6 +203,18 @@ async def compress_single_finding(
     async with asyncio.timeout(30.0):
         result = await llm.ainvoke(messages)
 
+    # Extract usage metadata (LangChain-Core 1.2.4+)
+    if hasattr(result, "usage_metadata") and result.usage_metadata:
+        usage = result.usage_metadata
+        logger.info(
+            "compression_token_usage",
+            agent_name=agent_name,
+            analysis_id=analysis_id,
+            input_tokens=getattr(usage, "input_tokens", 0),
+            output_tokens=getattr(usage, "output_tokens", 0),
+            total_tokens=getattr(usage, "total_tokens", 0),
+        )
+
     # Extract structured response
     # The LLM has structured output bound, so result should be CompressedFinding
     # Cast result to dict for Pydantic model construction
@@ -328,6 +340,11 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
 
     config = create_runnable_config()
 
+    # Token usage tracking for batch processing
+    batch_total_tokens = 0
+    batch_input_tokens = 0
+    batch_output_tokens = 0
+
     try:
         # LangChain's abatch() processes all inputs in parallel
         # Type checker doesn't see list[BaseMessage] as valid Sequence[BaseMessage]
@@ -366,6 +383,13 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
     compressed_findings: list[CompressedFinding] = []
     for i, result in enumerate(results):
         agent_name = agent_names[i]
+
+        # Extract usage metadata from each result (LangChain-Core 1.2.4+)
+        if hasattr(result, "usage_metadata") and result.usage_metadata:
+            usage = result.usage_metadata
+            batch_input_tokens += getattr(usage, "input_tokens", 0)
+            batch_output_tokens += getattr(usage, "output_tokens", 0)
+
         if isinstance(result, Exception):
             # Compression failed for this agent - create fallback
             logger.error(
@@ -410,6 +434,18 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
         else:
             # Already a CompressedFinding from structured output
             compressed_findings.append(result)  # type: ignore[arg-type]
+
+    # Calculate total tokens and log batch usage
+    batch_total_tokens = batch_input_tokens + batch_output_tokens
+    if batch_total_tokens > 0:
+        logger.info(
+            "batch_compression_token_usage",
+            analysis_id=analysis_id,
+            agent_count=len(agent_findings),
+            input_tokens=batch_input_tokens,
+            output_tokens=batch_output_tokens,
+            total_tokens=batch_total_tokens,
+        )
 
     logger.info(
         "compress_all_findings_complete",

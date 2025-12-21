@@ -4,7 +4,7 @@ import asyncio
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
@@ -130,7 +130,7 @@ async def create_session(
     },
 )
 async def get_session(
-    session_id: uuid.UUID,
+    session_id: Annotated[uuid.UUID, Path(description="Tutor session UUID")],
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> GetSessionResponse:
     """Get tutoring session with conversation history (for resume).
@@ -184,7 +184,7 @@ async def get_session(
     },
 )
 async def update_session(
-    session_id: uuid.UUID,
+    session_id: Annotated[uuid.UUID, Path(description="Tutor session UUID")],
     request: UpdateSessionRequest,
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> dict[str, object]:

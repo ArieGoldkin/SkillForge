@@ -568,3 +568,113 @@ async def batch_embeddings(
     )
 
     return embeddings
+
+
+async def batch_chat_completions(
+    messages_list: list[list[dict[str, str]]],
+    model: str = "gpt-4o-mini",
+    temperature: float | None = None,
+    max_tokens: int | None = None,
+) -> list[str]:
+    """Batch process chat completions with 50% cost savings.
+
+    High-level helper function for chat completion generation using Batch API.
+    Ideal for evaluation runs, experiments, and batch processing.
+
+    Cost Comparison:
+        - Real-time API: $0.150/$0.600 per 1M tokens (gpt-4o-mini)
+        - Batch API:     $0.075/$0.300 per 1M tokens (50% savings)
+
+    Trade-offs:
+        - ✅ 50% cost savings
+        - ✅ No rate limiting concerns
+        - ❌ 24 hour completion window (not real-time)
+        - ❌ More complex error handling
+
+    Args:
+        messages_list: List of message arrays (each for one completion)
+        model: OpenAI chat model (default: gpt-4o-mini)
+        temperature: Sampling temperature (0.0-2.0)
+        max_tokens: Maximum tokens in response
+
+    Returns:
+        List of completion texts (same order as input messages)
+
+    Raises:
+        ValueError: If messages_list is empty
+        TimeoutError: If batch doesn't complete within 24 hours
+        Exception: If batch processing fails
+
+    Example:
+        >>> messages_list = [
+        ...     [{"role": "user", "content": "What is 2+2?"}],
+        ...     [{"role": "user", "content": "What is 3+3?"}],
+        ... ]
+        >>> completions = await batch_chat_completions(messages_list)
+        >>> print(completions[0])
+        "2+2 equals 4."
+
+    """
+    if not messages_list:
+        msg = "Cannot generate batch completions for empty messages list"
+        raise ValueError(msg)
+
+    client = get_batch_client()
+
+    # Create batch requests
+    requests = []
+    for messages in messages_list:
+        request_body = {"model": model, "messages": messages}
+        if temperature is not None:
+            request_body["temperature"] = temperature
+        if max_tokens is not None:
+            request_body["max_tokens"] = max_tokens
+        requests.append(request_body)
+
+    logger.info(
+        "batch_completions_started",
+        request_count=len(messages_list),
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+
+    # Create and upload batch file
+    file_id = await client.create_batch_file(requests, endpoint="/v1/chat/completions")
+
+    # Submit batch job
+    batch_id = await client.submit_batch(
+        file_id,
+        endpoint="/v1/chat/completions",
+        metadata={
+            "operation": "chat_completions",
+            "model": model,
+            "count": str(len(messages_list)),
+        },
+    )
+
+    # Wait for completion
+    await client.wait_for_completion(batch_id)
+
+    # Get results
+    results = await client.get_batch_results(batch_id)
+
+    # Extract completions in original order
+    completions = []
+    for result in sorted(results, key=lambda r: int(r["custom_id"].split("-")[1])):
+        if "error" in result:
+            msg = f"Completion failed for request {result['custom_id']}: {result['error']}"
+            raise RuntimeError(msg)
+
+        completion_text = result["response"]["body"]["choices"][0]["message"]["content"]
+        completions.append(completion_text)
+
+    logger.info(
+        "batch_completions_completed",
+        request_count=len(messages_list),
+        completion_count=len(completions),
+        model=model,
+        batch_id=batch_id,
+    )
+
+    return completions

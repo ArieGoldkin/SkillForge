@@ -81,13 +81,15 @@ async def test_supervisor_uses_strict_structured_output():
         confidence=0.9,
     )
 
-    # Mock the structured model
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model to capture with_structured_output call
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -106,19 +108,25 @@ async def test_supervisor_uses_strict_structured_output():
         )
 
         # Verify with_structured_output was called with strict=True
-        mock_model.with_structured_output.assert_called_once_with(AgentSelection, strict=True)
+        # Note: Called twice - once for primary model, once for fallback model
+        assert mock_model.with_structured_output.call_count == 2
+        for call in mock_model.with_structured_output.call_args_list:
+            assert call[0][0] == AgentSelection
+            assert call[1]["strict"] is True
 
 
 @pytest.mark.asyncio
 async def test_supervisor_route_success(mock_agent_selection):
     """Test supervisor_route with successful agent selection."""
-    # Mock the structured model that with_structured_output returns
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -174,13 +182,15 @@ async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_min
     ISSUE #299-304: This test verifies the fix that prevents poor artifact quality
     by ensuring at least 3 agents are always selected for diverse analysis.
     """
-    # Mock the structured model that with_structured_output returns
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_minimal)
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection_minimal)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -222,13 +232,15 @@ async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_min
 @pytest.mark.asyncio
 async def test_supervisor_route_error_handling():
     """Test supervisor_route handles errors gracefully."""
-    # Mock the structured model that with_structured_output returns
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(side_effect=Exception("Model invocation failed"))
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(side_effect=Exception("Model invocation failed"))
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -263,13 +275,15 @@ async def test_supervisor_route_content_dynamic_sizing():
         reasoning="Test",
         confidence=0.8,
     )
-    # Mock the structured model that with_structured_output returns
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Create content of different sizes
     small_content = "x" * 3000  # <5K: use all
@@ -292,7 +306,7 @@ async def test_supervisor_route_content_dynamic_sizing():
             content_type="article",
             analysis_id="test-small",
         )
-        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        call_args = mock_lcel_chain.ainvoke.call_args[0][0]
         assert len(call_args) > 3000  # Includes prompt + all content
 
         # Test medium content (truncated to 10K)
@@ -301,7 +315,7 @@ async def test_supervisor_route_content_dynamic_sizing():
             content_type="article",
             analysis_id="test-medium",
         )
-        call_args = mock_structured_model.ainvoke.call_args[0][0]
+        call_args = mock_lcel_chain.ainvoke.call_args[0][0]
         # Should contain ~10K chars of content (plus prompt)
         assert "Content Type: article" in call_args
 
@@ -309,13 +323,15 @@ async def test_supervisor_route_content_dynamic_sizing():
 @pytest.mark.asyncio
 async def test_supervisor_route_decision_structure(mock_agent_selection):
     """Test that supervisor decision has correct structure."""
-    # Mock the structured model that with_structured_output returns
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection)
+    # Mock the LCEL chain (structured model with retry and fallback support)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model that get_chat_model returns
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -355,10 +371,12 @@ async def test_supervisor_auto_activates_dependency_mapper_with_imports():
         confidence=0.8,
     )
 
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content with import statements
     content_with_imports = """
@@ -404,10 +422,12 @@ async def test_supervisor_auto_activates_dependency_mapper_with_package_files():
         confidence=0.85,
     )
 
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content mentioning package files
     content_with_package = """
@@ -446,10 +466,12 @@ async def test_supervisor_auto_activates_dependency_mapper_with_install_commands
         confidence=0.9,
     )
 
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content with installation commands
     content_with_install = """
@@ -516,10 +538,12 @@ async def test_supervisor_auto_activates_performance_analyst():
     )
 
     # Mock models
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content with performance keywords AND benchmark patterns (required for signal detection)
     content = """
@@ -553,10 +577,12 @@ async def test_supervisor_auto_activates_security_auditor():
     )
 
     # Mock models
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content with security keywords
     content = "Use python-jose to decode the JWT token."
@@ -590,10 +616,12 @@ async def test_supervisor_auto_activates_tech_comparator():
     )
 
     # Mock models
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Content with comparison indicators (FastAPI vs Django)
     content = "Should we migrate from Django to FastAPI for better performance?"

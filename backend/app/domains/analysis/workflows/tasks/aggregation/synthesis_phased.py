@@ -325,6 +325,18 @@ async def _synthesize_core(
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
+
+        # Extract usage metadata (LangChain-Core 1.2.4+)
+        if hasattr(structured_response, "usage_metadata") and structured_response.usage_metadata:
+            usage = structured_response.usage_metadata
+            logger.info(
+                "synthesis_phase1_core_token_usage",
+                analysis_id=analysis_id,
+                input_tokens=getattr(usage, "input_tokens", 0),
+                output_tokens=getattr(usage, "output_tokens", 0),
+                total_tokens=getattr(usage, "total_tokens", 0),
+            )
+
         logger.info(
             "synthesis_phase1_core_complete",
             analysis_id=analysis_id,
@@ -423,6 +435,18 @@ async def _synthesize_learning(
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
+
+        # Extract usage metadata (LangChain-Core 1.2.4+)
+        if hasattr(structured_response, "usage_metadata") and structured_response.usage_metadata:
+            usage = structured_response.usage_metadata
+            logger.info(
+                "synthesis_phase2_learning_token_usage",
+                analysis_id=analysis_id,
+                input_tokens=getattr(usage, "input_tokens", 0),
+                output_tokens=getattr(usage, "output_tokens", 0),
+                total_tokens=getattr(usage, "total_tokens", 0),
+            )
+
         logger.info(
             "synthesis_phase2_learning_complete",
             analysis_id=analysis_id,
@@ -528,6 +552,18 @@ async def _synthesize_docs(
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
+
+        # Extract usage metadata (LangChain-Core 1.2.4+)
+        if hasattr(structured_response, "usage_metadata") and structured_response.usage_metadata:
+            usage = structured_response.usage_metadata
+            logger.info(
+                "synthesis_phase3_docs_token_usage",
+                analysis_id=analysis_id,
+                input_tokens=getattr(usage, "input_tokens", 0),
+                output_tokens=getattr(usage, "output_tokens", 0),
+                total_tokens=getattr(usage, "total_tokens", 0),
+            )
+
         logger.info(
             "synthesis_phase3_docs_complete",
             analysis_id=analysis_id,

@@ -532,6 +532,31 @@ class Settings(BaseSettings):
         description="Langfuse server URL",
     )
 
+    # OpenAI Batch API Configuration (50% cost savings)
+    OPENAI_BATCH_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable OpenAI Batch API for async operations (50% cost savings). "
+            "When enabled, batch processing is used for embeddings and completions "
+            "in non-time-sensitive operations like golden dataset generation and "
+            "evaluation runs. Requires 24h completion window."
+        ),
+    )
+    OPENAI_BATCH_COMPLETION_WINDOW: str = Field(
+        default="24h",
+        description=(
+            "Completion window for OpenAI Batch API requests. Currently only '24h' is "
+            "supported by OpenAI. Batch jobs complete within this window."
+        ),
+    )
+    OPENAI_BATCH_MIN_SIZE: int = Field(
+        default=10,
+        description=(
+            "Minimum batch size for OpenAI Batch API. Smaller batches use real-time API. "
+            "Batch API overhead makes it inefficient for very small request counts."
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",

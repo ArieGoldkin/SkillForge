@@ -99,82 +99,58 @@ async def _invoke_supervisor_with_retry(
     model: Runnable,
     prompt: str,
     analysis_id: AnalysisID,
-    max_attempts: int = 3,
 ) -> AgentSelection:
-    """Invoke supervisor model with retry logic - timeout handled by step_timeout.
+    """Invoke supervisor model with LCEL retry and fallback.
 
-    Timeout handling is managed by LangGraph's `step_timeout` on the compiled graph.
-    This avoids nested timeout conflicts and PEP 789 violations.
-
-    Retry strategy:
-    - Attempt 1: First attempt
-    - Attempt 2: Retry if first fails
-    - Attempt 3: Final attempt
+    Uses LCEL `.with_retry()` and `.with_fallbacks()` to replace manual retry loop.
+    This provides automatic retry with fallback model on failure.
 
     Args:
-        model: Chat model with structured output
+        model: Chat model with structured output (already bound)
         prompt: User prompt with content
         analysis_id: Analysis ID for logging
-        max_attempts: Maximum retry attempts
 
     Returns:
         AgentSelection with selected agents
 
     Raises:
-        Exception: If all attempts fail (timeout handled by step_timeout)
+        Exception: If both primary and fallback fail
 
     """
-    for attempt in range(max_attempts):
-        # Create RunnableConfig (timeout handled by step_timeout on graph)
-        config = create_runnable_config(
-            metadata={
-                "analysis_id": str(analysis_id),
-                "agent_type": "supervisor",
-                "task_type": "agent_routing",
-                "attempt": str(attempt + 1),
-            },
-            tags=["supervisor", "agent_routing", f"analysis:{analysis_id}"],
+    # Create RunnableConfig
+    config = create_runnable_config(
+        metadata={
+            "analysis_id": str(analysis_id),
+            "agent_type": "supervisor",
+            "task_type": "agent_routing",
+        },
+        tags=["supervisor", "agent_routing", f"analysis:{analysis_id}"],
+    )
+
+    logger.debug(
+        "supervisor_invoking_with_lcel_chain",
+        analysis_id=analysis_id,
+    )
+
+    # Invoke model (LCEL chain already has retry + fallback)
+    result = await model.ainvoke(prompt, config=config)
+
+    # Extract usage metadata (LangChain-Core 1.2.4+)
+    if hasattr(result, "usage_metadata") and result.usage_metadata:
+        usage = result.usage_metadata
+        logger.info(
+            "supervisor_token_usage",
+            analysis_id=str(analysis_id),
+            input_tokens=getattr(usage, "input_tokens", 0),
+            output_tokens=getattr(usage, "output_tokens", 0),
+            total_tokens=getattr(usage, "total_tokens", 0),
         )
 
-        try:
-            logger.debug(
-                "supervisor_attempt",
-                analysis_id=analysis_id,
-                attempt=attempt + 1,
-                max_attempts=max_attempts,
-            )
-
-            # Invoke model - no timeout wrapper (step_timeout handles it)
-            result = await model.ainvoke(prompt, config=config)
-
-            # Type assertion: structured output guarantees AgentSelection
-            if not isinstance(result, AgentSelection):
-                msg = f"Supervisor returned unexpected type: {type(result)}"
-                raise TypeError(msg)
-            return result
-        except Exception as e:
-            # Retry on any error (timeout will be handled by step_timeout)
-            if attempt == max_attempts - 1:
-                logger.warning(
-                    "supervisor_failed_all_attempts",
-                    analysis_id=analysis_id,
-                    max_attempts=max_attempts,
-                    error=str(e),
-                )
-                raise
-
-            logger.warning(
-                "supervisor_error_retry",
-                analysis_id=analysis_id,
-                attempt=attempt + 1,
-                max_attempts=max_attempts,
-                error=str(e),
-            )
-            # Continue to next attempt
-
-    # Should never reach here
-    msg = "Retry loop exhausted without success"
-    raise RuntimeError(msg)
+    # Type assertion: structured output guarantees AgentSelection
+    if not isinstance(result, AgentSelection):
+        msg = f"Supervisor returned unexpected type: {type(result)}"
+        raise TypeError(msg)
+    return result
 
 
 def _generate_supervisor_cache_key(content: str, content_type: str) -> str:
@@ -244,7 +220,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
+    except Exception:  # noqa: BLE001, S110 - Langfuse may not be available
         pass
 
     # Emit SSE event: supervisor started
@@ -413,12 +389,29 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         )
         # Only apply task routing if no explicit model_id is provided
         task_type_to_use = None if model_id else "supervisor"
-        model = get_chat_model(config=model_config, task_type=task_type_to_use)
+        primary_model = get_chat_model(config=model_config, task_type=task_type_to_use)
+
+        # Create fallback model
+        fallback_model = get_chat_model(
+            config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
+        )
+
         # LangChain 1.2.x: Use strict mode for exact schema compliance
         # Supervisor routing is critical path - must always return valid agent selection
-        structured_model = model.with_structured_output(AgentSelection, strict=True)
+        # Build LCEL chain with retry and fallback
+        structured_model = (
+            primary_model.with_structured_output(AgentSelection, strict=True)
+            .with_retry(
+                stop_after_attempt=3,  # Retry up to 3 times before fallback
+                wait_exponential_jitter=True,
+            )
+            .with_fallbacks(
+                [fallback_model.with_structured_output(AgentSelection, strict=True)],
+                exceptions_to_handle=(Exception, TimeoutError),
+            )
+        )
 
-        # Invoke with progressive timeout retry
+        # Invoke with LCEL chain (retry + fallback built-in)
         selection = await _invoke_supervisor_with_retry(
             structured_model,
             user_prompt,

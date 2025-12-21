@@ -8,7 +8,7 @@ This module provides endpoints for:
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from app.api.schemas.errors import ErrorResponse
 from app.core.annotation_service import AnnotationService, get_annotation_service
@@ -230,7 +230,7 @@ async def get_annotation_queue(
     },
 )
 async def mark_as_reviewed(
-    queue_id: int,
+    queue_id: Annotated[int, Path(description="Queue entry ID", ge=1)],
     repository: Annotated[AnnotationRepository, Depends(get_annotation_repository)],
 ) -> AnnotationQueueItemResponse:
     """Mark an annotation queue entry as reviewed.

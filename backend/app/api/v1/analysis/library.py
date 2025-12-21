@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status as http_status
@@ -332,9 +332,16 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
         ) from e
 
 
-@router.delete("/analyses/{analysis_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/analyses/{analysis_id}",
+    status_code=http_status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def delete_analysis(
-    analysis_id: UUID,
+    analysis_id: Annotated[UUID, Path(description="Analysis UUID to delete")],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete an analysis and cascading related data.

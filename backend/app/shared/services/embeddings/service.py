@@ -2,6 +2,7 @@
 
 This service provides:
 - Single text embedding generation
+- Batch embedding generation with optional Batch API support (50% cost savings)
 - L2 normalization for cosine similarity search
 - Retry logic with exponential backoff
 - Comprehensive error handling
@@ -14,6 +15,7 @@ Architecture:
 - Returns normalized vectors for pgvector cosine similarity
 - Records metrics via MetricsService for observability
 - Integrates error tracking and rate limiting for resilience
+- Optionally uses Batch API for 50% cost savings on non-time-sensitive operations
 """
 
 import time
@@ -186,7 +188,11 @@ class EmbeddingService:
                 tiktoken.encoding_for_model, "text-embedding-3-small"
             )
 
-        assert self._encoding is not None
+        # Encoding should always be initialized at this point
+        # as we called asyncio.to_thread above
+        if self._encoding is None:
+            msg = "Encoding failed to initialize"
+            raise RuntimeError(msg)
         tokens = self._encoding.encode(text)
         original_token_count = len(tokens)
         truncated = False
@@ -334,16 +340,19 @@ class EmbeddingService:
         texts: list[str],
         normalize: bool = True,
         batch_size: int | None = None,
+        use_batch_api: bool | None = None,
     ) -> list[tuple[EmbeddingVector, float]]:
         """Generate embeddings for multiple texts using batch API.
 
         Uses OpenAI's multi-input embedding API for efficiency.
-        Returns embeddings in the same order as input texts.
+        Optionally uses OpenAI Batch API for 50% cost savings on large batches.
 
         Args:
             texts: List of texts to embed
             normalize: If True, apply L2 normalization (default: True)
             batch_size: Optional batch size override. Uses adaptive batch sizer if None.
+            use_batch_api: If True, uses Batch API for 50% savings (24h window).
+                          If None, uses settings.OPENAI_BATCH_ENABLED.
 
         Returns:
             List of tuples (embedding_vector, latency_ms) in same order as input
@@ -356,6 +365,23 @@ class EmbeddingService:
         if not texts:
             return []
 
+        # Determine if we should use Batch API
+        should_use_batch_api = (
+            use_batch_api
+            if use_batch_api is not None
+            else settings.OPENAI_BATCH_ENABLED and len(texts) >= settings.OPENAI_BATCH_MIN_SIZE
+        )
+
+        if should_use_batch_api:
+            logger.info(
+                "using_batch_api_for_embeddings",
+                text_count=len(texts),
+                cost_savings="50%",
+                completion_window=settings.OPENAI_BATCH_COMPLETION_WINDOW,
+            )
+            return await self._generate_embeddings_batch_api(texts, normalize)
+
+        # Use real-time API (existing implementation)
         # Use adaptive batch size from backpressure system if not specified
         if batch_size is None:
             batch_size = self._batch_sizer.current_size
@@ -393,6 +419,76 @@ class EmbeddingService:
         )
 
         return results
+
+    async def _generate_embeddings_batch_api(
+        self,
+        texts: list[str],
+        normalize: bool = True,
+    ) -> list[tuple[EmbeddingVector, float]]:
+        """Generate embeddings using OpenAI Batch API for 50% cost savings.
+
+        This method uses the Batch API which has a 24h completion window but
+        provides 50% cost savings. Suitable for golden dataset generation,
+        evaluation runs, and other non-time-sensitive operations.
+
+        Args:
+            texts: List of texts to embed
+            normalize: If True, apply L2 normalization (default: True)
+
+        Returns:
+            List of tuples (embedding_vector, latency_ms) in same order as input
+
+        Raises:
+            EmbeddingError: If batch processing fails
+
+        """
+        from app.shared.services.batch.openai_batch import batch_embeddings
+
+        start_time = time.perf_counter()
+
+        try:
+            # Use batch_embeddings helper from openai_batch.py
+            embeddings = await batch_embeddings(texts, model=self.model)
+
+            # Normalize if requested
+            if normalize:
+                embeddings = [normalize_vector(emb) for emb in embeddings]
+
+            # Calculate total latency
+            total_latency_ms = (time.perf_counter() - start_time) * 1000
+            per_text_latency = total_latency_ms / len(texts)
+
+            # Record success metrics
+            self._metrics.record_batch_embedding(
+                batch_count=len(texts),
+                total_latency_ms=total_latency_ms,
+                avg_batch_size=len(texts),
+            )
+
+            logger.info(
+                "batch_api_embeddings_complete",
+                text_count=len(texts),
+                total_latency_ms=total_latency_ms,
+                cost_savings="50%",
+            )
+
+            # Return in expected format: list of (embedding, latency) tuples
+            return [(emb, per_text_latency) for emb in embeddings]
+
+        except Exception as e:
+            logger.exception(
+                "batch_api_embeddings_failed",
+                error=str(e),
+                text_count=len(texts),
+            )
+            # Fall back to real-time API
+            logger.warning(
+                "batch_api_fallback_to_realtime",
+                reason="Batch API failed, using real-time API",
+            )
+            return await self.generate_embeddings_batch(
+                texts, normalize=normalize, use_batch_api=False
+            )
 
     async def _embed_batch(
         self,
@@ -480,12 +576,12 @@ class EmbeddingService:
 
         except APIStatusError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
-            self._handle_api_status_error(e, latency_ms, 0, False)
+            self._handle_api_status_error(e, latency_ms, token_count=0, truncated=False)
             error_msg = f"Batch embedding generation failed: {e!s}"
             raise EmbeddingError(error_msg) from e
 
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
-            self._handle_generic_error(e, latency_ms, 0, False)
+            self._handle_generic_error(e, latency_ms, token_count=0, truncated=False)
             error_msg = f"Batch embedding generation failed: {e!s}"
             raise EmbeddingError(error_msg) from e

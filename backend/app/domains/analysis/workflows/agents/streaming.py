@@ -100,6 +100,11 @@ async def stream_agent_response(
     last_event_time = 0.0
     last_event_chars = 0
 
+    # Token usage tracking (LangChain-Core 1.2.4+)
+    total_tokens = 0
+    input_tokens = 0
+    output_tokens = 0
+
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
@@ -145,12 +150,11 @@ async def stream_agent_response(
 
                     # Extract usage metadata from streaming chunks (LangChain-Core 1.2.4+)
                     if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
-                        logger.info(
-                            "streaming_token_usage",
-                            agent_type=agent_type,
-                            analysis_id=str(analysis_id),
-                            tokens=chunk.usage_metadata,
-                        )
+                        metadata = chunk.usage_metadata
+                        # Accumulate token counts from streaming chunks
+                        input_tokens = getattr(metadata, "input_tokens", input_tokens)
+                        output_tokens += getattr(metadata, "output_tokens", 0)
+                        total_tokens = input_tokens + output_tokens
 
                     if should_break:
                         break
@@ -197,6 +201,18 @@ async def stream_agent_response(
             exc_info=True,  # Include full stack trace
         )
         raise
+
+    # Log final token usage if any tokens were consumed
+    if total_tokens > 0:
+        logger.info(
+            "streaming_llm_usage",
+            agent_type=agent_type,
+            analysis_id=str(analysis_id),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            trace_id=trace_id,
+        )
 
     # If we have a result, return it; otherwise return empty dict for graceful degradation
     if final_result is None:

@@ -4,7 +4,7 @@ import asyncio
 import uuid
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
@@ -30,7 +30,7 @@ logger = get_logger(__name__)
     },
 )
 async def send_message(
-    session_id: uuid.UUID,
+    session_id: Annotated[uuid.UUID, Path(description="Tutor session UUID")],
     request: SendMessageRequest,
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> dict[str, object]:

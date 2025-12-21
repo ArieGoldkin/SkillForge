@@ -40,13 +40,15 @@ def mock_agent_selection_8_agents():
 @pytest.mark.asyncio
 async def test_supervisor_emits_expected_total_stages_3_agents(mock_agent_selection_3_agents):
     """Test supervisor emits expected_total_stages with 3 agents (expect 8 total stages)."""
-    # Mock the structured model
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_3_agents)
+    # Mock the LCEL chain
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection_3_agents)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(
@@ -83,13 +85,15 @@ async def test_supervisor_emits_expected_total_stages_8_agents(mock_agent_select
     may be selected. The test verifies that expected_total_stages is calculated
     correctly based on the actual filtered agents.
     """
-    # Mock the structured model
-    mock_structured_model = MagicMock()
-    mock_structured_model.ainvoke = AsyncMock(return_value=mock_agent_selection_8_agents)
+    # Mock the LCEL chain
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection_8_agents)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
 
     # Mock the base model
     mock_model = MagicMock()
-    mock_model.with_structured_output = MagicMock(return_value=mock_structured_model)
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     with (
         patch(

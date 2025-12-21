@@ -5,7 +5,7 @@ import os
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
@@ -76,9 +76,15 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
             )
 
 
-@router.get("/analyze/{analysis_id}/stream")
+@router.get(
+    "/analyze/{analysis_id}/stream",
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def stream_analysis_progress_endpoint(
-    analysis_id: uuid.UUID,
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
     request: Request,
 ):
     """Stream real-time analysis progress via Server-Sent Events (SSE).
@@ -223,7 +229,7 @@ async def create_analysis(
     },
 )
 async def get_analysis(
-    analysis_id: uuid.UUID,
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
     artifact_repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> AnalyzeStatusResponse:
