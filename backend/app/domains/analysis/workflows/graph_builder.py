@@ -364,11 +364,13 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     )
 
     # Emit SSE warning event (not error - we're continuing)
+    # Status must be valid enum: pending, running, complete, failed, skipped
     await emit_streaming_event(
         "progress",
         analysis_id=analysis_id,
         stage="quality_gate",
-        status="low_quality",
+        status="complete",  # Gate completed (with low quality warning in details)
+        quality_warning="low_quality",  # Preserve warning info in details
         message=(
             f"Quality below threshold after {retry_count} retries "
             f"(score: {avg_score:.2f}). Generating artifact anyway."

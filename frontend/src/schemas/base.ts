@@ -14,8 +14,21 @@ import { z } from 'zod'
  * - complete: Stage finished successfully
  * - failed: Stage encountered an error
  * - skipped: Stage was skipped (not selected by supervisor)
+ * - synthesizing: Aggregation stage is synthesizing findings
+ * - detecting_conflicts: Aggregation stage detecting conflicts
+ * - static_fallback: Using static fallback due to errors
  */
-export const StageStatusSchema = z.enum(['pending', 'running', 'complete', 'failed', 'skipped'])
+export const StageStatusSchema = z.enum([
+  'pending',
+  'running',
+  'complete',
+  'failed',
+  'skipped',
+  // Extended statuses for aggregation stage
+  'synthesizing',
+  'detecting_conflicts',
+  'static_fallback',
+])
 
 /**
  * Agent stage names - represent individual processing stages
@@ -39,6 +52,8 @@ export const AgentStageNameSchema = z.enum([
   'dependencies_analysis',
   // Optional stages
   'chunking', // Only if ENABLE_COARSE_TO_FINE=true
+  // Quality gate stages (emitted during quality validation)
+  'quality_gate',
 ])
 
 /**

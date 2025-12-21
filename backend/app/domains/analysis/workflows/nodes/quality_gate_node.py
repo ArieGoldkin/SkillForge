@@ -289,14 +289,15 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
         await emit_streaming_event(
-            "quality_gate",
+            "progress",  # Must be "progress", "complete", or "error" for frontend schema
             analysis_id=analysis_id,
             stage="quality_validation",
-            status="passed" if gate_passed else "failed",
+            status="complete" if gate_passed else "failed",  # "passed" not valid, use "complete"
             avg_score=avg_score,
             threshold=QUALITY_THRESHOLD,
             retry_count=retry_count,
             scores=quality_scores,
+            gate_passed=gate_passed,  # Preserve pass/fail info in details
         )
 
         # Submit quality scores to Langfuse for analytics
