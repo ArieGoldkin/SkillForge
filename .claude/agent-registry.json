@@ -47,7 +47,10 @@
         "streaming-api-patterns",
         "observability-monitoring",
         "performance-optimization",
-        "devops-deployment"
+        "devops-deployment",
+        "golden-dataset-management",
+        "edge-computing-patterns",
+        "github-cli"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -93,7 +96,8 @@
         "react-server-components-framework",
         "design-system-starter",
         "type-safety-validation",
-        "testing-strategy-builder"
+        "testing-strategy-builder",
+        "webapp-testing"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -141,7 +145,12 @@
         "streaming-api-patterns",
         "observability-monitoring",
         "performance-optimization",
-        "database-schema-designer"
+        "database-schema-designer",
+        "langfuse-observability",
+        "langgraph-workflows",
+        "llm-caching-patterns",
+        "pgvector-search",
+        "browser-content-capture"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch"],
       "boundaries": {
@@ -186,7 +195,8 @@
         "code-review-playbook",
         "security-checklist",
         "testing-strategy-builder",
-        "evidence-verification"
+        "evidence-verification",
+        "webapp-testing"
       ],
       "tools": ["Read", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -224,7 +234,9 @@
       ],
       "skills_used": [
         "quality-gates",
-        "evidence-verification"
+        "evidence-verification",
+        "brainstorming",
+        "ascii-visualizer"
       ],
       "tools": ["Task", "Write", "Read"],
       "is_orchestrator": true,
@@ -332,7 +344,10 @@
         "Identify blocking dependencies",
         "Create a release roadmap"
       ],
-      "skills_used": [],
+      "skills_used": [
+        "github-cli",
+        "brainstorming"
+      ],
       "tools": ["Write", "Read", "TodoWrite"],
       "handoff_to": ["studio-coach"],
       "mcp_tools": {
@@ -396,7 +411,10 @@
         "Add hover micro-interactions",
         "Create an easter egg for power users"
       ],
-      "skills_used": [],
+      "skills_used": [
+        "design-system-starter",
+        "ascii-visualizer"
+      ],
       "tools": ["Read", "Edit", "MultiEdit"],
       "handoff_to": ["code-quality-reviewer"],
       "mcp_tools": {
@@ -939,6 +957,95 @@
         "discovery": 100,
         "overview": 400,
         "full": 1200
+      }
+    },
+
+    "github-cli": {
+      "display_name": "GitHub CLI",
+      "path": ".claude/skills/github-cli",
+      "provides": [
+        "gh-issues",
+        "gh-pull-requests",
+        "gh-projects",
+        "gh-automation",
+        "gh-releases"
+      ],
+      "used_by_agents": ["backend-system-architect", "sprint-prioritizer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "browser-content-capture": {
+      "display_name": "Browser Content Capture",
+      "path": ".claude/skills/browser-content-capture",
+      "provides": [
+        "playwright-capture",
+        "spa-extraction",
+        "auth-handling",
+        "multi-page-crawl"
+      ],
+      "used_by_agents": ["ai-ml-engineer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "webapp-testing": {
+      "display_name": "Web App Testing",
+      "path": ".claude/skills/webapp-testing",
+      "provides": [
+        "playwright-testing",
+        "test-agents",
+        "e2e-patterns",
+        "visual-regression"
+      ],
+      "used_by_agents": ["code-quality-reviewer", "frontend-ui-developer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 400,
+        "full": 1500
+      }
+    },
+
+    "ascii-visualizer": {
+      "display_name": "ASCII Visualizer",
+      "path": ".claude/skills/ascii-visualizer",
+      "provides": [
+        "ascii-diagrams",
+        "architecture-viz",
+        "workflow-viz",
+        "progress-bars"
+      ],
+      "used_by_agents": ["studio-coach", "whimsy-injector"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 300,
+        "full": 800
       }
     }
   },
