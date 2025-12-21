@@ -287,10 +287,12 @@ describe('useProgressCalculation', () => {
   })
 
   // ==========================================================================
-  // PHASE 5: Progress Percentage Capping at 99% with Failures
+  // PHASE 5: Progress Percentage (Issue #439: Display-only)
   // ==========================================================================
-  describe('Phase 5: Progress percentage capping with failures', () => {
-    it('caps progress at 99% when failures exist', () => {
+  describe('Phase 5: Progress percentage (artifact-based completion)', () => {
+    it('shows 100% when isComplete=true even with failures (Issue #439)', () => {
+      // Issue #439: When isComplete=true (artifact exists), progress = 100%
+      // hasFailedStages is for UI display (error badge), NOT progress capping
       const stageStatuses = new Map<StageName, StageStatusEntry>([
         ['extraction', { status: 'complete', timestamp: '2024-01-01T00:00:00Z' }],
         ['embedding', { status: 'complete', timestamp: '2024-01-01T00:01:00Z' }],
@@ -304,9 +306,9 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], true, 6, undefined)
       )
 
-      // Should cap at 99% due to failures, even if all stages finished
-      expect(result.current.progress).toBeLessThan(100)
-      expect(result.current.progress).toBeGreaterThanOrEqual(50) // Should be reasonable
+      // Issue #439: Backend says complete → show 100% for consistent UI
+      // The completion card handles showing "Complete with Errors" badge
+      expect(result.current.progress).toBe(100)
       expect(result.current.currentStep).toContain('with errors')
     })
 
@@ -360,9 +362,9 @@ describe('useProgressCalculation', () => {
   })
 
   // ==========================================================================
-  // PHASE 6: Progress at 100% Only When Truly Complete
+  // PHASE 6: Progress at 100% When Backend Says Complete (Issue #439)
   // ==========================================================================
-  describe('Phase 6: Progress at 100% only when truly complete', () => {
+  describe('Phase 6: Progress reflects backend completion state (Issue #439)', () => {
     it('shows 100% when isComplete=true, no failures, no running, no pending', () => {
       const stageStatuses = new Map<StageName, StageStatusEntry>([
         ['extraction', { status: 'complete', timestamp: '2024-01-01T00:00:00Z' }],
@@ -382,7 +384,9 @@ describe('useProgressCalculation', () => {
       expect(result.current.currentStep).toBe('Analysis Complete')
     })
 
-    it('shows less than 100% when isComplete=true but has failures', () => {
+    it('shows 100% when isComplete=true even with failures (Issue #439)', () => {
+      // Issue #439: Artifact-based completion means progress = 100% when complete
+      // The error badge on completion card handles showing failures
       const stageStatuses = new Map<StageName, StageStatusEntry>([
         ['extraction', { status: 'complete', timestamp: '2024-01-01T00:00:00Z' }],
         ['tech_comparison', { status: 'failed', timestamp: '2024-01-01T00:01:00Z' }],
@@ -393,12 +397,15 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], true, 3, undefined)
       )
 
-      // Should cap at 99% even when isComplete=true due to failures
-      expect(result.current.progress).toBeLessThan(100)
+      // Issue #439: Backend says complete → show 100%
+      // Error state is shown via "(with errors)" in status message and error badge
+      expect(result.current.progress).toBe(100)
       expect(result.current.currentStep).toContain('with errors')
     })
 
-    it('shows less than 100% when isComplete=true but has running stages', () => {
+    it('shows 100% when isComplete=true even with running stages (edge case)', () => {
+      // Edge case: isComplete=true with running stages shouldn't happen in practice
+      // but if it does, we trust the backend completion signal
       const stageStatuses = new Map<StageName, StageStatusEntry>([
         ['extraction', { status: 'complete', timestamp: '2024-01-01T00:00:00Z' }],
         ['tech_comparison', { status: 'running', timestamp: '2024-01-01T00:01:00Z' }],
@@ -409,8 +416,8 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], true, 3, undefined)
       )
 
-      // Should cap at 99% when running stages exist
-      expect(result.current.progress).toBeLessThan(100)
+      // Issue #439: isComplete=true → progress = 100% (trust backend)
+      expect(result.current.progress).toBe(100)
     })
 
     it('shows less than 100% when finished exceeds expected but unfinished stages exist', () => {

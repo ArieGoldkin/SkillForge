@@ -19,16 +19,25 @@ import type { RenderRoute, AnalysisProps } from './types'
  *
  * Routes are evaluated in order of priority (highest first).
  * The first route whose condition returns true will be used.
+ *
+ * Issue #439: Artifact-based completion model
+ * ============================================
+ * Completion is determined by artifact existence (single source of truth).
+ * - isResolvedComplete = Boolean(resolvedArtifactId) from AnalyzeResult.tsx
+ * - This eliminates state desync between SSE, progress calc, and router
+ * - hasFailedStages is for UI display (error badge), not completion gating
  */
 const RENDER_ROUTES: RenderRoute[] = [
   // Priority 100: Legacy completion (highest priority - backwards compatibility)
+  // Used when navigating directly to a completed analysis via URL params
   {
     priority: BUSINESS_CONSTANTS.PRIORITY_LEGACY_COMPLETION,
     condition: ({ completed, urlArtifactId }) => Boolean(completed && urlArtifactId),
     render: (props) => <CompletedAnalysisView {...extractCompletionProps(props)} />,
   },
 
-  // Priority 90: Modern completion (SSE-based completion)
+  // Priority 90: Modern completion (artifact-based - Issue #439)
+  // Artifact existence is the single source of truth for completion
   {
     priority: ROUTING_PRIORITIES.MODERN_COMPLETION,
     condition: ({ isResolvedComplete, resolvedArtifactId }) =>

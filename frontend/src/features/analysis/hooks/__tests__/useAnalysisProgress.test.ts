@@ -155,7 +155,9 @@ describe('Progress calculation logic', () => {
       expect(techStep?.status).toBe('failed') // Should still be failed, not completed
     })
 
-    it('progress should not be forced to 100% when stages have failed', () => {
+    it('progress shows 100% when complete even with failures (Issue #439)', () => {
+      // Issue #439: Artifact-based completion means progress = 100% when isComplete=true
+      // hasFailedStages is tracked separately for UI display (error badge)
       const events: SSEEvent[] = [
         {
           type: 'progress',
@@ -192,12 +194,12 @@ describe('Progress calculation logic', () => {
 
       const { result } = renderHook(() => useAnalysisProgress(events))
 
-      // Verify progress is not 100% when there are failures
-      // 2 completed + 1 failed = 3 out of 8 = 37.5% (rounded to 38%)
-      // But since workflow is complete with failures, should cap at 99%
+      // Issue #439: When isComplete=true (artifact exists), show 100% for consistent UI
+      // The completion card handles showing "Complete with Errors" badge
       expect(result.current.isComplete).toBe(true)
-      expect(result.current.overallProgress.progress).toBeLessThan(100)
-      expect(result.current.overallProgress.progress).toBeGreaterThanOrEqual(37)
+      expect(result.current.overallProgress.progress).toBe(100)
+      // Failures are tracked separately via hasFailedStages
+      expect(result.current.hasFailedStages).toBe(true)
     })
 
     it('progress should be 100% only when complete with no failures', () => {
@@ -284,7 +286,9 @@ describe('Progress calculation logic', () => {
       expect(codeQualityStep?.description).toContain('Skipped')
     })
 
-    it('never shows 100% progress when failures exist, even if artifact_generation completes', () => {
+    it('shows 100% progress with failures when artifact_generation completes (Issue #439)', () => {
+      // Issue #439: Artifact-based completion shows 100% when isComplete=true
+      // Failures are communicated via hasFailedStages and status message
       const events: SSEEvent[] = [
         {
           type: 'progress',
@@ -305,11 +309,12 @@ describe('Progress calculation logic', () => {
 
       const { result } = renderHook(() => useAnalysisProgress(events))
 
-      // Even though artifact_generation completed (isComplete = true), progress should be capped at 99% due to failures
-      expect(result.current.overallProgress.progress).toBeLessThan(100)
-      expect(result.current.overallProgress.currentStep).toContain('failed')
+      // Issue #439: When isComplete=true, progress shows 100% for consistent UI
+      // Failures are shown via "(with errors)" in status message and error badge
+      expect(result.current.overallProgress.progress).toBe(100)
       expect(result.current.overallProgress.currentStep).toContain('errors')
-      expect(result.current.isComplete).toBe(true) // Completion detected, but with errors
+      expect(result.current.isComplete).toBe(true)
+      expect(result.current.hasFailedStages).toBe(true) // Failures tracked separately
     })
 
     it('detects completion from progress event with status complete for artifact_generation', () => {

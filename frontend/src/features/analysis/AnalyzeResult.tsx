@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- Component handles complex state management, error handling, SSE lifecycle, and multiple view states which require extensive logic */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
@@ -10,8 +9,6 @@ import {
 } from '@stores/sseStore'
 import { getRouteApi } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-
-import { BUSINESS_CONSTANTS } from '@/lib/constants'
 
 import { AnalysisRenderRouter } from './components/render-router/AnalysisRenderRouter'
 import { useAnalysisProgress } from './hooks/useAnalysisProgress'
@@ -75,26 +72,26 @@ const useSSELifecycle = ({
   }, [analysisId, shouldConnect, connect, disconnect, reset])
 }
 
-// Check if status indicates completion
-const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
-
-// Check if truly complete (all stages passed, 100% progress)
-// Uses primitive values to avoid object reference issues in React dependency arrays
+/**
+ * Single Source of Truth: Artifact-based completion check (Issue #439)
+ *
+ * BEFORE: Triple-check pattern requiring isComplete + progressStage + progressPercent
+ *         This caused desync when supervisor routed to fewer stages than expected.
+ *
+ * AFTER: Artifact existence is the definitive completion signal.
+ *        - Artifact is ONLY created after successful workflow completion
+ *        - Backend validates artifact before setting status="complete"
+ *        - hasFailedStages is for UI display (error badge), not completion gate
+ *
+ * @param artifactId - The artifact ID from SSE complete event or URL params
+ * @returns true if analysis has completed (artifact exists)
+ */
 const checkIsTrulyComplete = (params: {
-  hasFailedStages: boolean
-  completed?: boolean
-  urlArtifactId?: string
-  resolvedStatus?: string
-  isComplete: boolean
-  progressStage: string
-  progressPercent: number
-}) =>
-  !params.hasFailedStages &&
-  ((params.completed && Boolean(params.urlArtifactId)) ||
-    isStatusComplete(params.resolvedStatus) ||
-    (params.isComplete &&
-      params.progressStage === 'complete' &&
-      params.progressPercent === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
+  artifactId: string | null | undefined
+}): boolean => {
+  // Single source of truth: artifact exists = analysis complete
+  return Boolean(params.artifactId)
+}
 
 /**
  * Custom hook for managing focus when analysis completes
@@ -185,17 +182,14 @@ export default function AnalyzeResult() {
   })
 
   const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useMemo(() => {
+    // Issue #439: Single source of truth - artifact ID determines completion
     const resolvedArtifactId = artifactId || statusState.resolvedArtifactId || urlArtifactId
     const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'completed' : undefined)
 
+    // Issue #439: Artifact-based completion check (single source of truth)
+    // No longer depends on progressStage or progressPercent which could desync
     const isTrulyComplete = checkIsTrulyComplete({
-      hasFailedStages,
-      completed,
-      urlArtifactId,
-      resolvedStatus,
-      isComplete,
-      progressStage: overallProgress.stage,
-      progressPercent: overallProgress.progress,
+      artifactId: resolvedArtifactId,
     })
 
     const isResolvedComplete = isTrulyComplete
@@ -212,7 +206,7 @@ export default function AnalyzeResult() {
       isFailed,
       effectiveError,
     }
-    // Issue #438: Use primitives from overallProgress to prevent infinite re-renders
+    // Issue #439: Simplified dependencies - no longer depends on progress stage/percent
   }, [
     artifactId,
     urlArtifactId,
@@ -221,11 +215,6 @@ export default function AnalyzeResult() {
     hasError,
     error,
     errorMessage,
-    completed,
-    // Only include the specific properties we use from overallProgress
-    overallProgress.stage,
-    overallProgress.progress,
-    hasFailedStages,
   ])
 
   // 🎯 DECLARATIVE RENDER ROUTER - Replaces 100+ lines of complex conditionals
