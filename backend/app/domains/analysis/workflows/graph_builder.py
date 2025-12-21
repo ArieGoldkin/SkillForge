@@ -5,6 +5,7 @@ parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
+import uuid
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -14,6 +15,7 @@ from app.core.config import settings
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.db.repositories.analysis_repository import AnalysisRepository
 from app.db.repositories.chunk_repository import ChunkRepository
 from app.db.session import get_session_factory
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
@@ -385,13 +387,10 @@ def _route_after_extraction(state: AnalysisState) -> str:
 
 
 async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
-    """Handle workflow failure by emitting error event.
+    """Handle workflow failure by persisting error to database.
 
     Issue #441: This node is reached when extraction fails or error page is detected.
-    It emits an SSE error event with details and marks analysis as complete (failed).
-
-    Note: Database update (mark_failed) is called separately via repository.
-    This node just handles the state for proper graph termination.
+    It persists the failure to the database and returns state for proper graph termination.
     """
     analysis_id = state.get("analysis_id")
     abort_reason = state.get("abort_reason", "Unknown error")
@@ -404,8 +403,28 @@ async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
         error_code=error_code,
     )
 
-    # Return state indicating workflow has failed
-    # The SSE handler will read these fields to emit proper error event
+    # Persist failure to database
+    try:
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            repo = AnalysisRepository(session)
+            await repo.mark_failed(
+                analysis_id=uuid.UUID(str(analysis_id)),
+                error_code=error_code,
+                error_message=abort_reason,
+                failed_at_stage="extraction",
+            )
+        logger.info(
+            "workflow_failure_persisted",
+            analysis_id=analysis_id,
+            error_code=error_code,
+        )
+    except Exception:
+        logger.exception(
+            "workflow_failure_persistence_error",
+            analysis_id=analysis_id,
+        )
+
     return {
         "workflow_status": "failed",
         "final_error": abort_reason,
