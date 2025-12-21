@@ -83,3 +83,4 @@ class SessionMetadata(TypedDict, total=False):
     total_messages: int
     topics_covered: list[str]
     completion_percentage: float
+

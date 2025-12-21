@@ -100,3 +100,4 @@ class DocsSynthesisResult(TypedDict, total=False):
     ai_assistant_prompt: str
     diagrams: list[str]
     glossary: dict[str, str]
+
