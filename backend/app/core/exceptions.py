@@ -13,6 +13,20 @@ Exception Hierarchy:
     └── DatabaseError (database operation failures)
 """
 
+from enum import Enum
+
+
+class ExtractionErrorCode(str, Enum):
+    """Error codes for content extraction failures."""
+
+    HTTP_404 = "HTTP_404"
+    HTTP_5XX = "HTTP_5XX"
+    TIMEOUT = "TIMEOUT"
+    ERROR_PAGE = "ERROR_PAGE"
+    REDIRECT_LOOP = "REDIRECT_LOOP"
+    NETWORK_ERROR = "NETWORK_ERROR"
+    UNKNOWN = "UNKNOWN"
+
 
 class SkillForgeException(Exception):  # noqa: N818
     """Base exception for all SkillForge application errors.
@@ -49,7 +63,22 @@ class JinaReaderError(ServiceException):
     - HTTP errors occur during extraction
     - Timeout occurs during extraction
     - Other extraction-related errors occur
+
+    Attributes:
+        error_code: Categorized error code for programmatic handling
+
     """
+
+    def __init__(self, message: str, error_code: ExtractionErrorCode | None = None):
+        """Initialize JinaReaderError with message and optional error code.
+
+        Args:
+            message: Human-readable error message
+            error_code: Categorized error code, defaults to UNKNOWN
+
+        """
+        super().__init__(message)
+        self.error_code = error_code or ExtractionErrorCode.UNKNOWN
 
 
 class WorkflowError(SkillForgeException):

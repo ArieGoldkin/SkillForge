@@ -5,14 +5,17 @@ parallel execution patterns using fan-out and fan-in with Send API.
 """
 
 import os
+import uuid
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
 from app.core.config import settings
+from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
+from app.db.repositories.analysis_repository import AnalysisRepository
 from app.db.repositories.chunk_repository import ChunkRepository
 from app.db.session import get_session_factory
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
@@ -45,6 +48,7 @@ from app.domains.analysis.workflows.tasks import (
     log_chunking_metrics,
     store_embeddings,
 )
+from app.shared.services.extraction.jina_reader import _is_error_page
 
 # Try to import PostgresSaver dynamically to avoid hard dependency in lint
 try:
@@ -95,9 +99,20 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     After extraction, creates content_ref for lightweight agent state passing.
     Agents load content on-demand via ArtifactStore instead of receiving full content.
 
+    Issue #441: Initializes abort signal fields to default values.
+
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
     analysis_id = state.get("analysis_id")
+
+    # Issue #441: Initialize abort signal fields with default values
+    # This ensures all workflows start with consistent state
+    base_result: dict[str, object] = {
+        "should_abort": False,
+        "abort_reason": None,
+        "extraction_status": "pending",
+        "extraction_error_code": None,
+    }
 
     # Passthrough mode: Skip extraction if raw_content is already provided
     # This enables regeneration scripts to inject fixture content directly
@@ -119,17 +134,54 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
         )
 
         return {
+            **base_result,
             "raw_content": raw_content,
             "extraction_metadata": get_extraction_metadata(state),
             "content_type": content_type,
             "content_ref": content_ref,
+            "extraction_status": "success",
         }
 
     # Normal mode: Extract content from URL via JinaReader
     url = state["url"]
-    result = await extract_content(url, str(analysis_id or ""))
+
+    # Issue #441: Wrap extraction in try/except to catch JinaReaderError
+    try:
+        result = await extract_content(url, str(analysis_id or ""))
+    except JinaReaderError as e:
+        logger.warning(
+            "extraction_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            error_code=e.error_code.value if e.error_code else None,
+        )
+        return {
+            "should_abort": True,
+            "abort_reason": str(e),
+            "extraction_status": "failed",
+            "extraction_error_code": e.error_code.value
+            if e.error_code
+            else ExtractionErrorCode.UNKNOWN.value,
+        }
+
     raw_content = result["raw_content"]
     content_type = result["extraction_metadata"].get("content_type", "article")
+    title = result["extraction_metadata"].get("title", "")
+
+    # Issue #441: Check if extracted content is an error page BEFORE storing
+    if _is_error_page(title, raw_content):
+        logger.warning(
+            "extraction_error_page_detected",
+            analysis_id=analysis_id,
+            title=title,
+        )
+        return {
+            "should_abort": True,
+            "abort_reason": f"Error page detected: {title}",
+            "extraction_status": "failed",
+            "extraction_error_code": ExtractionErrorCode.ERROR_PAGE.value,
+            # Don't include raw_content or extraction_metadata to avoid storing error page data
+        }
 
     # Create content_ref for Handle Pattern (Issue #299-304)
     content_ref = await _create_content_ref(
@@ -140,10 +192,12 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
     # Return only updated fields, not entire state
     return {
+        **base_result,
         "raw_content": raw_content,
         "extraction_metadata": result["extraction_metadata"],
         "content_type": content_type,
         "content_ref": content_ref,
+        "extraction_status": "success",
     }
 
 
@@ -195,6 +249,11 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("generate_embedding_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     content = state["raw_content"]
     analysis_id = state["analysis_id"]
     embedding = await generate_embedding(content, analysis_id)
@@ -211,6 +270,11 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
     it returns empty results without doing any work (preserving the legacy
     single-embedding behavior).
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("chunk_and_embed_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     # Gate: Skip chunking if coarse-to-fine is disabled
     if not getattr(settings, "ENABLE_COARSE_TO_FINE", False):
         return {
@@ -286,6 +350,11 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("supervisor_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     content = state["raw_content"]
     content_type = state["content_type"]
     analysis_id = state["analysis_id"]
@@ -297,6 +366,69 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
             "supervisor_decision": supervisor_decision,
         }
     return {}
+
+
+def _route_after_extraction(state: AnalysisState) -> str:
+    """Route after extraction based on abort signal.
+
+    Issue #441: If extraction failed or error page detected, route to
+    workflow_failed node instead of continuing to embedding generation.
+    """
+    should_abort = state.get("should_abort")
+    logger.debug(
+        "route_after_extraction_decision",
+        analysis_id=state.get("analysis_id"),
+        should_abort=should_abort,
+        route="workflow_failed" if should_abort else "embedding",
+    )
+    if should_abort:
+        return "workflow_failed"
+    return "embedding"
+
+
+async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
+    """Handle workflow failure by persisting error to database.
+
+    Issue #441: This node is reached when extraction fails or error page is detected.
+    It persists the failure to the database and returns state for proper graph termination.
+    """
+    analysis_id = state.get("analysis_id")
+    abort_reason: str = state.get("abort_reason") or "Unknown error"
+    error_code: str = state.get("extraction_error_code") or "UNKNOWN"
+
+    logger.error(
+        "workflow_aborted",
+        analysis_id=analysis_id,
+        abort_reason=abort_reason,
+        error_code=error_code,
+    )
+
+    # Persist failure to database
+    try:
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            repo = AnalysisRepository(session)
+            await repo.mark_failed(
+                analysis_id=uuid.UUID(str(analysis_id)),
+                error_code=error_code,
+                error_message=abort_reason,
+                failed_at_stage="extraction",
+            )
+        logger.info(
+            "workflow_failure_persisted",
+            analysis_id=analysis_id,
+            error_code=error_code,
+        )
+    except Exception:
+        logger.exception(
+            "workflow_failure_persistence_error",
+            analysis_id=analysis_id,
+        )
+
+    return {
+        "workflow_status": "failed",
+        "final_error": abort_reason,
+    }
 
 
 async def _increment_retry_node(state: AnalysisState) -> dict[str, object]:
@@ -390,20 +522,25 @@ def build_analysis_graph():
 
     Workflow structure:
     1. Extract content (sequential)
-    2. Fan-out: Embedding + Supervisor + Inject Context (parallel)
-    3. Fan-out: Selected agents (native LangGraph parallel via Send API)
-    4. Fan-in: Aggregate findings (waits for all agent nodes)
-    5. Quality gate validation (with retry loop)
+    2. Generate embedding (sequential)
+    3. Fan-out: Chunk + Embed, Inject Context, Supervisor (parallel)
+    4. Fan-out: Selected agents (native LangGraph parallel via Send API)
+    5. Fan-in: Aggregate findings (waits for all agent nodes)
+    6. Quality gate validation (with retry loop)
        - If quality < threshold and retries available: increment_retry -> aggregate
        - If quality passes or max retries: continue -> generate_artifact
-    6. Generate artifact
-    7. End
+    7. Generate artifact
+    8. End
 
-    Issue #300: inject_context node runs in parallel with embedding and supervisor
+    Issue #300: inject_context node runs in parallel with chunk_and_embed and supervisor
     to fetch relevant memories from past analyses and make them available to agents.
 
     Issue #301: quality_gate node validates synthesis quality using LLM-as-judge
     evaluators and triggers retry if quality falls below threshold (up to 2 retries).
+
+    Issue #441: If extraction fails (should_abort=True), workflow routes to workflow_failed
+    node which terminates the workflow early. The conditional edge ensures parallel nodes
+    only execute when extraction succeeds.
 
     Returns:
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
@@ -423,6 +560,7 @@ def build_analysis_graph():
     graph.add_node("quality_gate", quality_gate_node)
     graph.add_node("increment_retry", _increment_retry_node)
     graph.add_node("quality_gate_fail", _quality_gate_fail_node)
+    graph.add_node("workflow_failed", _workflow_failed_node)
     graph.add_node("generate_artifact", generate_artifact)
 
     # Add all agent nodes (each executes independently in parallel)
@@ -439,11 +577,25 @@ def build_analysis_graph():
     # Sequential: extract must complete first
     graph.set_entry_point("extract")
 
-    # Fan-out: embedding, chunk_and_embed, inject_context, and supervisor run in parallel after extract
-    graph.add_edge("extract", "embedding")
-    graph.add_edge("extract", "chunk_and_embed")
-    graph.add_edge("extract", "inject_context")
-    graph.add_edge("extract", "supervisor")
+    # Issue #441: Conditional routing after extraction
+    # If extraction failed (should_abort=True), route to workflow_failed
+    # Otherwise continue to normal workflow (embedding)
+    graph.add_conditional_edges(
+        "extract",
+        _route_after_extraction,
+        {
+            "embedding": "embedding",
+            "workflow_failed": "workflow_failed",
+        },
+    )
+
+    # Fan-out: chunk_and_embed, inject_context, and supervisor run in parallel after embedding
+    # Issue #441: These nodes must run AFTER embedding (not after extract) to respect abort signal
+    # The conditional edge above routes to workflow_failed when should_abort=True,
+    # so these nodes only execute when extraction succeeds
+    graph.add_edge("embedding", "chunk_and_embed")
+    graph.add_edge("embedding", "inject_context")
+    graph.add_edge("embedding", "supervisor")
 
     # Fan-out: Supervisor routes to selected agents dynamically using Send API
     # Conditional edge returns list[Send] objects for parallel execution
@@ -506,6 +658,9 @@ def build_analysis_graph():
     # Issue #299-304: Always generate artifact even with low quality
     # Users prefer getting something over nothing
     graph.add_edge("quality_gate_fail", "generate_artifact")
+
+    # Issue #441: Workflow failed -> END (extraction failure terminates workflow)
+    graph.add_edge("workflow_failed", END)
 
     # Sequential: generate_artifact -> end
     graph.add_edge("generate_artifact", END)
