@@ -12,10 +12,16 @@ class TestEmitTutorEvent:
     """Tests for emit_tutor_event function."""
 
     @pytest.mark.asyncio
-    @patch("app.domains.tutor.workflows.nodes.sse_helpers.broadcaster")
-    async def test_emit_event_publishes_to_correct_channel(self, mock_broadcaster):
+    @patch("app.domains.tutor.workflows.nodes.sse_helpers.get_broadcaster")
+    async def test_emit_event_publishes_to_correct_channel(self, mock_get_broadcaster):
         """Test that event is published to correct channel."""
+        # Create mock broadcaster
+        mock_broadcaster = AsyncMock()
         mock_broadcaster.publish = AsyncMock()
+
+        # Make get_broadcaster return the mock
+        mock_get_broadcaster.return_value = mock_broadcaster
+
         session_id = "test-session-123"
 
         await emit_tutor_event(
@@ -30,10 +36,15 @@ class TestEmitTutorEvent:
         assert call_args[0][0] == f"tutor:{session_id}"
 
     @pytest.mark.asyncio
-    @patch("app.domains.tutor.workflows.nodes.sse_helpers.broadcaster")
-    async def test_emit_event_includes_required_fields(self, mock_broadcaster):
+    @patch("app.domains.tutor.workflows.nodes.sse_helpers.get_broadcaster")
+    async def test_emit_event_includes_required_fields(self, mock_get_broadcaster):
         """Test that event data includes all required fields."""
+        # Create mock broadcaster
+        mock_broadcaster = AsyncMock()
         mock_broadcaster.publish = AsyncMock()
+
+        # Make get_broadcaster return the mock
+        mock_get_broadcaster.return_value = mock_broadcaster
 
         await emit_tutor_event(
             session_id="test-123",
@@ -50,10 +61,15 @@ class TestEmitTutorEvent:
         assert "timestamp" in event_data
 
     @pytest.mark.asyncio
-    @patch("app.domains.tutor.workflows.nodes.sse_helpers.broadcaster")
-    async def test_emit_event_includes_extra_kwargs(self, mock_broadcaster):
+    @patch("app.domains.tutor.workflows.nodes.sse_helpers.get_broadcaster")
+    async def test_emit_event_includes_extra_kwargs(self, mock_get_broadcaster):
         """Test that extra kwargs are included in event data."""
+        # Create mock broadcaster
+        mock_broadcaster = AsyncMock()
         mock_broadcaster.publish = AsyncMock()
+
+        # Make get_broadcaster return the mock
+        mock_get_broadcaster.return_value = mock_broadcaster
 
         await emit_tutor_event(
             session_id="test-123",
@@ -69,10 +85,15 @@ class TestEmitTutorEvent:
         assert event_data["score"] == 0.85
 
     @pytest.mark.asyncio
-    @patch("app.domains.tutor.workflows.nodes.sse_helpers.broadcaster")
-    async def test_emit_event_timestamp_format(self, mock_broadcaster):
+    @patch("app.domains.tutor.workflows.nodes.sse_helpers.get_broadcaster")
+    async def test_emit_event_timestamp_format(self, mock_get_broadcaster):
         """Test that timestamp is in ISO format."""
+        # Create mock broadcaster
+        mock_broadcaster = AsyncMock()
         mock_broadcaster.publish = AsyncMock()
+
+        # Make get_broadcaster return the mock
+        mock_get_broadcaster.return_value = mock_broadcaster
 
         await emit_tutor_event(
             session_id="test-123",
@@ -87,10 +108,15 @@ class TestEmitTutorEvent:
         assert "T" in timestamp
 
     @pytest.mark.asyncio
-    @patch("app.domains.tutor.workflows.nodes.sse_helpers.broadcaster")
-    async def test_emit_error_event(self, mock_broadcaster):
+    @patch("app.domains.tutor.workflows.nodes.sse_helpers.get_broadcaster")
+    async def test_emit_error_event(self, mock_get_broadcaster):
         """Test emitting an error event."""
+        # Create mock broadcaster
+        mock_broadcaster = AsyncMock()
         mock_broadcaster.publish = AsyncMock()
+
+        # Make get_broadcaster return the mock
+        mock_get_broadcaster.return_value = mock_broadcaster
 
         await emit_tutor_event(
             session_id="test-123",
