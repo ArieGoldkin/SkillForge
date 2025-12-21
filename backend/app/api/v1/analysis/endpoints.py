@@ -357,7 +357,9 @@ async def get_analysis_progress(
         ProgressEventResponse(
             stage=str(record.stage),
             status=str(record.status),
-            progress_data=record.progress_data if record.progress_data is not None else None,
+            progress_data=(
+                dict(record.progress_data) if isinstance(record.progress_data, dict) else None
+            ),
             timestamp=record.created_at.isoformat() if record.created_at else "",
         )
         for record in progress_records

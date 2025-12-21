@@ -156,12 +156,12 @@ export default function AnalyzeResult() {
 
   // First, get artifact ID from SSE events (for active analyses)
   // This is needed before calling useAnalysisStatus to avoid circular dependency
-  const sseArtifactId = useMemo(() => {
+  const sseArtifactId = useMemo((): string | undefined => {
     // Extract artifact ID from SSE events if available
     const completeEvent = events.find(
       (e) => e.type === 'complete' || (e.type === 'progress' && e.artifact_id)
     )
-    return completeEvent?.artifact_id
+    return (completeEvent?.artifact_id as string | undefined) ?? undefined
   }, [events])
 
   const statusState = useAnalysisStatus({

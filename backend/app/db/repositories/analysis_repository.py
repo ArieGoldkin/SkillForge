@@ -305,7 +305,8 @@ class AnalysisRepository:
         )
         result = await self.session.execute(stmt)
 
-        if result.rowcount == 0:
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 

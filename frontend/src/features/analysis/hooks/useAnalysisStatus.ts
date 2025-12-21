@@ -16,24 +16,33 @@ export const IDLE_RECHECK_MS = 15000
  * Allows reusing existing SSE event processing logic for completed analyses
  */
 function convertProgressEventsToSSE(progressResponse: AnalysisProgressResponse): SSEEvent[] {
-  return progressResponse.events.map((event) => ({
-    type: 'progress' as const,
-    analysis_id: progressResponse.analysis_id,
-    stage: event.stage,
-    status: event.status as SSEEvent['status'],
-    timestamp: event.timestamp,
-    details: event.progress_data || undefined,
-    // Map common progress_data fields to top-level SSE fields
-    ...(event.progress_data?.analysis_metadata && {
-      analysis_metadata: event.progress_data.analysis_metadata,
-    }),
-    ...(event.progress_data?.artifact_id && {
-      artifact_id: event.progress_data.artifact_id as string,
-    }),
-    ...(event.progress_data?.trace_id && {
-      trace_id: event.progress_data.trace_id as string,
-    }),
-  }))
+  return progressResponse.events.map((event) => {
+    // Ensure progress_data is an object before spreading
+    const progressData =
+      event.progress_data && typeof event.progress_data === 'object' ? event.progress_data : null
+
+    return {
+      type: 'progress' as const,
+      analysis_id: progressResponse.analysis_id,
+      stage: event.stage as SSEEvent['stage'],
+      status: event.status as SSEEvent['status'],
+      timestamp: event.timestamp,
+      details: progressData || undefined,
+      // Map common progress_data fields to top-level SSE fields
+      ...(progressData &&
+        'analysis_metadata' in progressData && {
+          analysis_metadata: progressData.analysis_metadata,
+        }),
+      ...(progressData &&
+        'artifact_id' in progressData && {
+          artifact_id: progressData.artifact_id as string,
+        }),
+      ...(progressData &&
+        'trace_id' in progressData && {
+          trace_id: progressData.trace_id as string,
+        }),
+    } as SSEEvent
+  })
 }
 
 interface SSEState {
