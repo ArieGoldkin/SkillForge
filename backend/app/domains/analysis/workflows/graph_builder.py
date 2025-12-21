@@ -393,8 +393,8 @@ async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
     It persists the failure to the database and returns state for proper graph termination.
     """
     analysis_id = state.get("analysis_id")
-    abort_reason = state.get("abort_reason", "Unknown error")
-    error_code = state.get("extraction_error_code", "UNKNOWN")
+    abort_reason: str = state.get("abort_reason") or "Unknown error"
+    error_code: str = state.get("extraction_error_code") or "UNKNOWN"
 
     logger.error(
         "workflow_aborted",
