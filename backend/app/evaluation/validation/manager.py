@@ -13,17 +13,20 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from app.core.logging import get_logger
 from app.evaluation.validation.agreement import AgreementCalculator
 from app.evaluation.validation.consensus import ConsensusAlgorithm
-from app.evaluation.validation.models import (
-    AgreementReport,
-    Annotation,
-    ConsensusResult,
-)
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from app.evaluation.validation.models import (
+        AgreementReport,
+        Annotation,
+        ConsensusResult,
+    )
 
 logger = get_logger(__name__)
 

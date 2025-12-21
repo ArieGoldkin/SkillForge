@@ -21,8 +21,6 @@ class SkillForgeException(Exception):  # noqa: N818
     centralized exception handling in middleware and error handlers.
     """
 
-    pass
-
 
 class ServiceException(SkillForgeException):
     """Base exception for service layer errors.
@@ -30,8 +28,6 @@ class ServiceException(SkillForgeException):
     Used for errors that occur in business logic services (extraction,
     embedding, etc.). Specific service errors should inherit from this.
     """
-
-    pass
 
 
 class EmbeddingError(ServiceException):
@@ -44,8 +40,6 @@ class EmbeddingError(ServiceException):
     - Other embedding-related errors occur
     """
 
-    pass
-
 
 class JinaReaderError(ServiceException):
     """Exception raised when Jina Reader content extraction fails.
@@ -57,8 +51,6 @@ class JinaReaderError(ServiceException):
     - Other extraction-related errors occur
     """
 
-    pass
-
 
 class WorkflowError(SkillForgeException):
     """Exception raised when workflow execution fails.
@@ -68,8 +60,6 @@ class WorkflowError(SkillForgeException):
     - Workflow state is invalid
     - Workflow orchestration errors occur
     """
-
-    pass
 
 
 class DatabaseError(SkillForgeException):
@@ -81,5 +71,3 @@ class DatabaseError(SkillForgeException):
     - Transaction errors occur
     - Other database-related errors occur
     """
-
-    pass

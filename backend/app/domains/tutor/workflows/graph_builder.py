@@ -93,11 +93,10 @@ def _route_after_assessment(state: TutorState) -> str:
                     if isinstance(lessons, list) and current_lesson >= len(lessons) - 1:
                         # Last lesson in section, move to section review
                         return "section_review"
-                    else:
-                        # More lessons in section - Phase 3: will add next_lesson node
-                        return "end"  # Phase 3: For now end, will add next_lesson node
+                    # More lessons in section - Phase 3: will add next_lesson node
+                    return "end"  # Phase 3: For now end, will add next_lesson node
         return "end"  # No more sections/lessons
-    elif attempts >= max_attempts:
+    if attempts >= max_attempts:
         # Max attempts reached, move on anyway
         logger.warning(
             "tutor_max_attempts_reached",
@@ -114,9 +113,8 @@ def _route_after_assessment(state: TutorState) -> str:
                     if isinstance(lessons, list) and current_lesson >= len(lessons) - 1:
                         return "section_review"
         return "end"
-    else:
-        # Not ready, but attempts < 3 - try rephrasing
-        return "rephrase_explain"
+    # Not ready, but attempts < 3 - try rephrasing
+    return "rephrase_explain"
 
 
 def _route_after_review(state: TutorState) -> str:
@@ -140,9 +138,8 @@ def _route_after_review(state: TutorState) -> str:
         if isinstance(sections, list) and current_section >= len(sections) - 1:
             # Last section, move to final challenge
             return "final_challenge"
-        else:
-            # More sections - Phase 3: will add next_section logic
-            return "end"  # Phase 3: For now end, will add next_section node
+        # More sections - Phase 3: will add next_section logic
+        return "end"  # Phase 3: For now end, will add next_section node
 
     return "end"
 

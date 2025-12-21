@@ -76,11 +76,11 @@ def _get_content_for_supervisor(
     if content_len <= CONTENT_SIZE_SMALL:
         # Small content: use all
         return content
-    elif content_len <= CONTENT_SIZE_MEDIUM:
+    if content_len <= CONTENT_SIZE_MEDIUM:
         # Medium: use 8K-10K (balanced)
         target = min(10000, content_len)
         return content[:target]
-    elif content_len <= CONTENT_SIZE_LARGE:
+    if content_len <= CONTENT_SIZE_LARGE:
         # Large: use 12K-15K (comprehensive)
         target = min(15000, content_len)
         # For articles: first 10K + middle section highlights
@@ -90,10 +90,9 @@ def _get_content_for_supervisor(
             middle_part = content[middle_start : middle_start + 2000]
             return f"{first_part}\n\n[... middle section ...]\n\n{middle_part}"
         return content[:target]
-    else:
-        # Very large: smart truncation
-        # First 12K chars (simplified for now)
-        return content[:12000]
+    # Very large: smart truncation
+    # First 12K chars (simplified for now)
+    return content[:12000]
 
 
 async def _invoke_supervisor_with_retry(
@@ -127,7 +126,15 @@ async def _invoke_supervisor_with_retry(
     """
     for attempt in range(max_attempts):
         # Create RunnableConfig (timeout handled by step_timeout on graph)
-        config = create_runnable_config()
+        config = create_runnable_config(
+            metadata={
+                "analysis_id": str(analysis_id),
+                "agent_type": "supervisor",
+                "task_type": "agent_routing",
+                "attempt": str(attempt + 1),
+            },
+            tags=["supervisor", "agent_routing", f"analysis:{analysis_id}"],
+        )
 
         try:
             logger.debug(

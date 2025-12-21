@@ -80,7 +80,7 @@ class TutorMessageRepository:
             .order_by(TutoringMessage.created_at)
         )
         # Type cast: SQLAlchemy returns correct type but mypy can't infer it
-        messages = cast(list[TutoringMessage], list(result.scalars().all()))
+        messages = cast("list[TutoringMessage]", list(result.scalars().all()))
 
         return session, messages
 

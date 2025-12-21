@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import wraps
@@ -43,7 +42,7 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 from app.core.logging import get_logger
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
+    from collections.abc import Awaitable, Callable
 
 logger = get_logger(__name__)
 

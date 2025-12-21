@@ -6,6 +6,7 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import Response
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
 from app.domains.analysis.schemas.api import ArtifactMetadataResponse
@@ -15,7 +16,13 @@ router = APIRouter(tags=["artifacts"])
 logger = get_logger(__name__)
 
 
-@router.get("/analyze/{analysis_id}/artifact")
+@router.get(
+    "/analyze/{analysis_id}/artifact",
+    responses={
+        404: {"model": ErrorResponse, "description": "Artifact not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def get_artifact_by_analysis(
     analysis_id: uuid.UUID,
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
@@ -32,16 +39,22 @@ async def get_artifact_by_analysis(
     return ArtifactMetadataResponse(
         artifact_id=str(artifact.id),
         analysis_id=str(artifact.analysis_id),
-        markdown_content=str(cast(str | None, artifact.markdown_content) or ""),
-        artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
+        markdown_content=str(cast("str | None", artifact.markdown_content) or ""),
+        artifact_metadata=cast("dict[str, object] | None", artifact.artifact_metadata)
         if artifact.artifact_metadata
         else None,
-        trace_id=cast(str | None, artifact.trace_id) if artifact.trace_id else None,
+        trace_id=cast("str | None", artifact.trace_id) if artifact.trace_id else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 
 
-@router.get("/artifacts/{artifact_id}")
+@router.get(
+    "/artifacts/{artifact_id}",
+    responses={
+        404: {"model": ErrorResponse, "description": "Artifact not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def get_artifact_by_id(
     artifact_id: uuid.UUID,
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
@@ -70,16 +83,27 @@ async def get_artifact_by_id(
     return ArtifactMetadataResponse(
         artifact_id=str(artifact.id),
         analysis_id=str(artifact.analysis_id),
-        markdown_content=str(cast(str | None, artifact.markdown_content) or ""),
-        artifact_metadata=cast(dict[str, object] | None, artifact.artifact_metadata)
+        markdown_content=str(cast("str | None", artifact.markdown_content) or ""),
+        artifact_metadata=cast("dict[str, object] | None", artifact.artifact_metadata)
         if artifact.artifact_metadata
         else None,
-        trace_id=cast(str | None, artifact.trace_id) if artifact.trace_id else None,
+        trace_id=cast("str | None", artifact.trace_id) if artifact.trace_id else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 
 
-@router.get("/artifacts/{artifact_id}/download")
+@router.get(
+    "/artifacts/{artifact_id}/download",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "Artifact markdown file",
+            "content": {"text/markdown": {}},
+        },
+        404: {"model": ErrorResponse, "description": "Artifact not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def download_artifact(
     artifact_id: uuid.UUID,
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],

@@ -11,17 +11,13 @@ GeneratorExit during LangGraph cleanup.
 import inspect
 import time
 from contextlib import aclosing
-from typing import TYPE_CHECKING, cast, overload
+from typing import cast, overload
 
 from langchain_core.runnables import Runnable
 
-from app.core.tracing import get_current_trace_id
-
-if TYPE_CHECKING:
-    pass
-
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT, create_runnable_config
+from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.streaming_helpers import emit_progress_if_needed
 
@@ -126,7 +122,7 @@ async def stream_agent_response(
                 while True:
                     try:
                         chunk = await stream_iter.__anext__()
-                        chunk = cast(dict[str, object], chunk)
+                        chunk = cast("dict[str, object]", chunk)
                     except StopAsyncIteration:
                         break
                     except (AttributeError, GeneratorExit, RuntimeError) as exc:
@@ -146,6 +142,15 @@ async def stream_agent_response(
                     final_result, accumulated_content, should_break = _process_chunk(
                         chunk, final_result, accumulated_content, analysis_id, agent_type
                     )
+
+                    # Extract usage metadata from streaming chunks (LangChain-Core 1.2.4+)
+                    if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                        logger.info(
+                            "streaming_token_usage",
+                            agent_type=agent_type,
+                            analysis_id=str(analysis_id),
+                            tokens=chunk.usage_metadata,
+                        )
 
                     if should_break:
                         break

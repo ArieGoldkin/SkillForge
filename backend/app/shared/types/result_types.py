@@ -185,8 +185,6 @@ class Err(Result[T, E]):
 class UnwrapError(Exception):
     """Exception raised when unwrapping a Result fails."""
 
-    pass
-
 
 # Convenience functions for creating Results
 def ok(value: T) -> Result[T, E]:  # type: ignore
@@ -215,5 +213,4 @@ def match(result: Result[T, E]) -> tuple[bool, T | E]:
     """Return (is_ok, value_or_error) for pattern matching."""
     if result.is_ok():
         return True, result.unwrap()
-    else:
-        return False, result.unwrap_err()
+    return False, result.unwrap_err()

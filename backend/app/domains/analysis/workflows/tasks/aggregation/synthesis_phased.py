@@ -15,7 +15,7 @@ Phases 2-3 failures result in graceful degradation (empty but valid structures).
 
 import asyncio
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
@@ -24,10 +24,10 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import SYNTHESIS_TIMEOUT
 from app.core.types import AnalysisID
-from app.domains.analysis.workflows.agents.base import create_structured_agent
-from app.domains.analysis.workflows.agents.invocation import invoke_agent
-from app.domains.analysis.workflows.agents.response_processing import extract_structured_response
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+
+if TYPE_CHECKING:
+    from app.shared.types import SynthesisMetadata
 
 logger = get_logger(__name__)
 
@@ -186,7 +186,6 @@ async def synthesize_with_llm_phased(
         result = _merge_phase_results(core_result, learning_result, docs_result)
 
         # Add metadata about synthesis method (typed)
-        from app.shared.types import SynthesisMetadata
 
         synthesis_meta: SynthesisMetadata = {
             "synthesis_method": "multi_phase_parallel",
@@ -241,9 +240,12 @@ async def _synthesize_core(
     confidence_scores: dict[str, float],
     analysis_id: str,
 ) -> dict:  # CoreSynthesisSchema dict
-    """Phase 1: Generate core synthesis (REQUIRED).
+    """Phase 1: Generate core synthesis (REQUIRED) using LCEL chains.
 
-    Uses CORE_SYNTHESIS_PROMPT with compressed findings to generate:
+    Uses LCEL `.with_fallbacks()` to replace manual try/catch fallback logic.
+    Automatically retries with fallback model on any failure.
+
+    Generates:
     - executive_summary
     - key_findings
     - synthesis (technical_analysis, implementation_guidance, etc.)
@@ -289,49 +291,51 @@ async def _synthesize_core(
             conflicts=conflicts,
         )
 
-        # Create synthesis agent with CoreSynthesisSchema
-        synthesis_agent = create_structured_agent(
-            system_prompt="You are synthesizing technical analysis findings into a core synthesis.",
-            response_schema=CoreSynthesisSchema,
-        )
-
-        # Create fallback model with strict output (LangChain 1.2.x)
+        # Create LCEL chain with automatic fallback and retry
+        primary_model = get_chat_model()
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        # LangChain 1.2.x: Use strict mode for exact schema compliance
-        fallback_with_structure = fallback_model.with_structured_output(
-            CoreSynthesisSchema, strict=True
+
+        # LCEL chain: primary with retry → fallback on failure
+        chain = (
+            primary_model.with_structured_output(CoreSynthesisSchema, strict=True)
+            .with_retry(
+                stop_after_attempt=2,  # Retry once before fallback
+                wait_exponential_jitter=True,
+            )
+            .with_fallbacks(
+                [fallback_model.with_structured_output(CoreSynthesisSchema, strict=True)],
+                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
+            )
         )
 
-        # Attach fallback chain
-        synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(
-            fallbacks=[fallback_with_structure],
-            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-        )
+        # Invoke LCEL chain directly
+        from langchain_core.messages import HumanMessage, SystemMessage
 
-        # Invoke agent
-        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
+        messages = [
+            SystemMessage(
+                content="You are synthesizing technical analysis findings into a core synthesis."
+            ),
+            HumanMessage(content=user_prompt),
+        ]
 
-        final_result = await invoke_agent(
-            agent=synthesis_agent_with_fallback,
-            input_messages=input_messages,
-            analysis_id=analysis_id,
-            agent_type="synthesis_phase1_core",
-            timeout=SYNTHESIS_TIMEOUT // 3,  # Each phase gets 1/3 of total timeout
-        )
-
-        # Extract structured response
-        structured_response = extract_structured_response(final_result, "synthesis_phase1_core")
+        # Use asyncio.timeout for explicit timeout control
+        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+            structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
         logger.info(
             "synthesis_phase1_core_complete",
             analysis_id=analysis_id,
             phase_elapsed=round(phase_elapsed, 2),
+            method="lcel_chain",
         )
 
-        return structured_response
+        # Convert to dict if needed
+        if isinstance(structured_response, dict):
+            return structured_response
+        return structured_response.model_dump()
 
     except Exception as e:
         phase_elapsed = time.time() - phase_start
@@ -349,9 +353,12 @@ async def _synthesize_learning(
     compressed_findings: list,  # CompressedFinding from compress_findings
     analysis_id: str,
 ) -> dict | None:  # LearningSynthesisSchema dict or None
-    """Phase 2: Generate learning content (OPTIONAL).
+    """Phase 2: Generate learning content (OPTIONAL) using LCEL chains.
 
-    Uses LEARNING_SYNTHESIS_PROMPT with compressed findings to generate:
+    Uses LCEL `.with_fallbacks()` for automatic fallback handling.
+    Returns None on failure for graceful degradation.
+
+    Generates:
     - core_concepts
     - exercises
     - self_assessment
@@ -384,49 +391,49 @@ async def _synthesize_learning(
         # Build phase prompt
         user_prompt = build_learning_prompt(compressed_findings=findings_dicts)
 
-        # Create synthesis agent with LearningSynthesisSchema
-        synthesis_agent = create_structured_agent(
-            system_prompt="You are creating educational content from technical analysis.",
-            response_schema=LearningSynthesisSchema,
-        )
-
-        # Create fallback model with strict output (LangChain 1.2.x)
+        # Create LCEL chain with automatic fallback and retry
+        primary_model = get_chat_model()
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        # LangChain 1.2.x: Use strict mode for exact schema compliance
-        fallback_with_structure = fallback_model.with_structured_output(
-            LearningSynthesisSchema, strict=True
+
+        # LCEL chain: primary with retry → fallback on failure
+        chain = (
+            primary_model.with_structured_output(LearningSynthesisSchema, strict=True)
+            .with_retry(
+                stop_after_attempt=2,
+                wait_exponential_jitter=True,
+            )
+            .with_fallbacks(
+                [fallback_model.with_structured_output(LearningSynthesisSchema, strict=True)],
+                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
+            )
         )
 
-        # Attach fallback chain
-        synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(
-            fallbacks=[fallback_with_structure],
-            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-        )
+        # Invoke LCEL chain directly
+        from langchain_core.messages import HumanMessage, SystemMessage
 
-        # Invoke agent
-        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
+        messages = [
+            SystemMessage(content="You are creating educational content from technical analysis."),
+            HumanMessage(content=user_prompt),
+        ]
 
-        final_result = await invoke_agent(
-            agent=synthesis_agent_with_fallback,
-            input_messages=input_messages,
-            analysis_id=analysis_id,
-            agent_type="synthesis_phase2_learning",
-            timeout=SYNTHESIS_TIMEOUT // 3,  # Each phase gets 1/3 of total timeout
-        )
-
-        # Extract structured response
-        structured_response = extract_structured_response(final_result, "synthesis_phase2_learning")
+        # Use asyncio.timeout for explicit timeout control
+        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+            structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
         logger.info(
             "synthesis_phase2_learning_complete",
             analysis_id=analysis_id,
             phase_elapsed=round(phase_elapsed, 2),
+            method="lcel_chain",
         )
 
-        return structured_response
+        # Convert to dict if needed
+        if isinstance(structured_response, dict):
+            return structured_response
+        return structured_response.model_dump()
 
     except (ValidationError, TimeoutError, ValueError, KeyError, TypeError) as e:
         phase_elapsed = time.time() - phase_start
@@ -445,9 +452,12 @@ async def _synthesize_docs(
     compressed_findings: list,  # CompressedFinding from compress_findings
     analysis_id: str,
 ) -> dict | None:  # DocsSynthesisSchema dict or None
-    """Phase 3: Generate documentation content (OPTIONAL).
+    """Phase 3: Generate documentation content (OPTIONAL) using LCEL chains.
 
-    Uses DOCS_SYNTHESIS_PROMPT with compressed findings to generate:
+    Uses LCEL `.with_fallbacks()` for automatic fallback handling.
+    Returns None on failure for graceful degradation.
+
+    Generates:
     - tldr
     - ai_assistant_prompt
     - diagrams
@@ -484,49 +494,51 @@ async def _synthesize_docs(
         # Build phase prompt
         user_prompt = build_docs_prompt(compressed_findings=findings_dicts)
 
-        # Create synthesis agent with DocsSynthesisSchema
-        synthesis_agent = create_structured_agent(
-            system_prompt="You are creating documentation for developers and AI assistants.",
-            response_schema=DocsSynthesisSchema,
-        )
-
-        # Create fallback model with strict output (LangChain 1.2.x)
+        # Create LCEL chain with automatic fallback and retry
+        primary_model = get_chat_model()
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
-        # LangChain 1.2.x: Use strict mode for exact schema compliance
-        fallback_with_structure = fallback_model.with_structured_output(
-            DocsSynthesisSchema, strict=True
+
+        # LCEL chain: primary with retry → fallback on failure
+        chain = (
+            primary_model.with_structured_output(DocsSynthesisSchema, strict=True)
+            .with_retry(
+                stop_after_attempt=2,
+                wait_exponential_jitter=True,
+            )
+            .with_fallbacks(
+                [fallback_model.with_structured_output(DocsSynthesisSchema, strict=True)],
+                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
+            )
         )
 
-        # Attach fallback chain
-        synthesis_agent_with_fallback = synthesis_agent.with_fallbacks(
-            fallbacks=[fallback_with_structure],
-            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-        )
+        # Invoke LCEL chain directly
+        from langchain_core.messages import HumanMessage, SystemMessage
 
-        # Invoke agent
-        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
+        messages = [
+            SystemMessage(
+                content="You are creating documentation for developers and AI assistants."
+            ),
+            HumanMessage(content=user_prompt),
+        ]
 
-        final_result = await invoke_agent(
-            agent=synthesis_agent_with_fallback,
-            input_messages=input_messages,
-            analysis_id=analysis_id,
-            agent_type="synthesis_phase3_docs",
-            timeout=SYNTHESIS_TIMEOUT // 3,  # Each phase gets 1/3 of total timeout
-        )
-
-        # Extract structured response
-        structured_response = extract_structured_response(final_result, "synthesis_phase3_docs")
+        # Use asyncio.timeout for explicit timeout control
+        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+            structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
         logger.info(
             "synthesis_phase3_docs_complete",
             analysis_id=analysis_id,
             phase_elapsed=round(phase_elapsed, 2),
+            method="lcel_chain",
         )
 
-        return structured_response
+        # Convert to dict if needed
+        if isinstance(structured_response, dict):
+            return structured_response
+        return structured_response.model_dump()
 
     except (ValidationError, TimeoutError, ValueError, KeyError, TypeError) as e:
         phase_elapsed = time.time() - phase_start

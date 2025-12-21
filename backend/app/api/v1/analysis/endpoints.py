@@ -7,6 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
     stream_analysis_progress as stream_analysis_progress_handler,
 )
@@ -26,11 +27,8 @@ from app.shared.services.extraction.content_type import ContentTypeError, detect
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
 
-# Store background task references to prevent garbage collection
-_background_tasks: set[asyncio.Task] = set()
 
-
-def _handle_task_completion(task: asyncio.Task) -> None:
+def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task]) -> None:
     """Handle background task completion and check for exceptions.
 
     This callback checks for exceptions (including GeneratorExit) that occur
@@ -39,8 +37,13 @@ def _handle_task_completion(task: asyncio.Task) -> None:
     GeneratorExit during cleanup after successful workflow completion is
     logged at DEBUG level (normal behavior). GeneratorExit during execution
     is logged at ERROR level (real error).
+
+    Args:
+        task: The completed background task
+        background_tasks: Set of active background tasks to update
+
     """
-    _background_tasks.discard(task)
+    background_tasks.discard(task)
 
     # Check for exceptions that occurred during task execution or cleanup
     exception = task.exception()
@@ -54,7 +57,6 @@ def _handle_task_completion(task: asyncio.Task) -> None:
                 "background_task_generator_exit",
                 error_type="GeneratorExit",
                 error_message=str(exception),
-                exc_info=True,
                 context="background_task_done_callback",
                 note=(
                     "GeneratorExit caught in background task done callback. "
@@ -70,7 +72,6 @@ def _handle_task_completion(task: asyncio.Task) -> None:
                 "background_task_exception",
                 error_type=type(exception).__name__,
                 error_message=str(exception),
-                exc_info=True,
                 context="background_task_done_callback",
             )
 
@@ -87,9 +88,17 @@ async def stream_analysis_progress_endpoint(
     return await stream_analysis_progress_handler(analysis_id, request)
 
 
-@router.post("/analyze", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/analyze",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        422: {"model": ErrorResponse, "description": "Validation error"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def create_analysis(
     request: AnalyzeRequest,
+    fastapi_request: Request,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
 ) -> AnalyzeCreateResponse:
     """Create a new analysis and start the workflow.
@@ -101,6 +110,7 @@ async def create_analysis(
 
     Args:
         request: AnalyzeRequest containing URL and optional analysis_id
+        fastapi_request: FastAPI Request object for accessing app.state
         analysis_repo: Repository for analysis persistence operations
 
     Returns:
@@ -186,8 +196,12 @@ async def create_analysis(
         task: asyncio.Task[None] = asyncio.create_task(
             run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
         )
-        _background_tasks.add(task)
-        task.add_done_callback(_handle_task_completion)
+        background_tasks = fastapi_request.app.state.background_tasks
+        background_tasks.add(task)
+        # Use functools.partial to bind background_tasks to callback
+        from functools import partial
+
+        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"
@@ -201,7 +215,13 @@ async def create_analysis(
     )
 
 
-@router.get("/analyze/{analysis_id}")
+@router.get(
+    "/analyze/{analysis_id}",
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def get_analysis(
     analysis_id: uuid.UUID,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],

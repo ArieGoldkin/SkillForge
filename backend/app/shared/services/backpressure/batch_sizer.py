@@ -10,10 +10,12 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import structlog
 
-from app.shared.services.backpressure.error_tracker import ErrorTracker
+if TYPE_CHECKING:
+    from app.shared.services.backpressure.error_tracker import ErrorTracker
 
 logger = structlog.get_logger(__name__)
 

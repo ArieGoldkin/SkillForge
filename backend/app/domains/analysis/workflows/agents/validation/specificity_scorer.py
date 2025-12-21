@@ -279,10 +279,9 @@ class SpecificityScorer:
                 new_key = f"{parent_key}.{key}" if parent_key else key
                 parts.append(f"{new_key}: {self._flatten_output(value, new_key)}")
             return " | ".join(parts)
-        elif isinstance(data, list):
+        if isinstance(data, list):
             return " | ".join(self._flatten_output(item, parent_key) for item in data)
-        else:
-            return str(data)
+        return str(data)
 
     def _detect_vague_phrases(self, text: str) -> list[VaguePhrase]:
         """Detect vague phrases in text.
@@ -324,7 +323,7 @@ class SpecificityScorer:
         """
         numeric_values = []
 
-        for _pattern_name, compiled_pattern in self._compiled_numeric.items():
+        for compiled_pattern in self._compiled_numeric.values():
             for match in compiled_pattern.finditer(text):
                 # Extract value and unit
                 matched_text = match.group()
@@ -373,17 +372,17 @@ class SpecificityScorer:
             metrics = agent_output.get("performance_metrics", [])
             return len(metrics) * 2 + 5  # +5 for other fields
 
-        elif agent_type == "implementation_planner":
+        if agent_type == "implementation_planner":
             # Steps should have time estimates
             steps = agent_output.get("steps", [])
             return len(steps) + 3  # +3 for total time and other estimates
 
-        elif agent_type == "security_auditor":
+        if agent_type == "security_auditor":
             # Security risks should have CVSS scores
             risks = agent_output.get("security_risks", [])
             return len(risks) + 5  # +5 for remediation times
 
-        elif agent_type == "dependency_mapper":
+        if agent_type == "dependency_mapper":
             # Dependencies should have version numbers
             deps = agent_output.get("dependencies", [])
             return len(deps) + 3

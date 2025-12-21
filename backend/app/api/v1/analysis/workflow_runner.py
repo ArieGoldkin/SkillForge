@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import TYPE_CHECKING
 
 from app.core.config import settings
@@ -14,7 +13,7 @@ from app.domains.analysis.workflows.analysis import analysis_workflow
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 if TYPE_CHECKING:
-    pass
+    import uuid
 
 logger = get_logger(__name__)
 
@@ -226,7 +225,6 @@ async def _handle_workflow_exception(
                 analysis_id=str(analysis_id),
                 error_type=type(exc).__name__,
                 error_message=str(exc),
-                exc_info=True,
                 context="workflow_task_runner_cleanup",
                 note=(
                     "GeneratorExit caught at workflow task level during cleanup. "
@@ -237,42 +235,38 @@ async def _handle_workflow_exception(
             )
             # Don't re-raise - this is expected cleanup behavior
             return
-        else:
-            # Execution GeneratorExit - real error, handle it
-            logger.error(
-                "workflow_task_execution_generator_exit",
-                analysis_id=str(analysis_id),
-                error_type=type(exc).__name__,
-                error_message=str(exc),
-                exc_info=True,
-                context="workflow_task_runner_execution",
-                note=(
-                    "GeneratorExit caught at workflow task level during execution. "
-                    "This typically occurs when LangGraph's pregel module closes "
-                    "an async generator during timeout or cancellation. "
-                    "Check LangGraph streaming and timeout configuration."
-                ),
-            )
-            # Update status and emit error event before re-raising
-            await _update_analysis_status(analysis_id, "failed")
-            await _emit_workflow_error(analysis_id, exc)
-            # Re-raise to propagate (explicit re-raise for ruff PLE0704)
-            raise exc
-    else:
-        # Other exception - handle as error
+        # Execution GeneratorExit - real error, handle it
         logger.error(
-            "workflow_task_failed",
+            "workflow_task_execution_generator_exit",
             analysis_id=str(analysis_id),
-            error=str(exc),
             error_type=type(exc).__name__,
-            exc_info=True,
-            context="workflow_task_runner",
+            error_message=str(exc),
+            context="workflow_task_runner_execution",
+            note=(
+                "GeneratorExit caught at workflow task level during execution. "
+                "This typically occurs when LangGraph's pregel module closes "
+                "an async generator during timeout or cancellation. "
+                "Check LangGraph streaming and timeout configuration."
+            ),
         )
         # Update status and emit error event before re-raising
         await _update_analysis_status(analysis_id, "failed")
         await _emit_workflow_error(analysis_id, exc)
         # Re-raise to propagate (explicit re-raise for ruff PLE0704)
         raise exc
+    # Other exception - handle as error
+    logger.error(
+        "workflow_task_failed",
+        analysis_id=str(analysis_id),
+        error=str(exc),
+        error_type=type(exc).__name__,
+        context="workflow_task_runner",
+    )
+    # Update status and emit error event before re-raising
+    await _update_analysis_status(analysis_id, "failed")
+    await _emit_workflow_error(analysis_id, exc)
+    # Re-raise to propagate (explicit re-raise for ruff PLE0704)
+    raise exc
 
 
 @robust_traceable(
@@ -330,7 +324,16 @@ async def run_workflow_task(  # noqa: PLR0915 - Orchestrator function with valid
 
         # Create config with thread_id for checkpointing
         # Note: Workflow-level timeout is handled by step_timeout on graph
-        config = create_runnable_config(thread_id=str(analysis_id))
+        config = create_runnable_config(
+            thread_id=str(analysis_id),
+            metadata={
+                "analysis_id": str(analysis_id),
+                "url": url,
+                "task_type": "analysis_workflow",
+                "skill_level": skill_level,
+            },
+            tags=["workflow", "analysis", f"analysis:{analysis_id}"],
+        )
 
         # Issue #384: Verify Langfuse callback handler is present for graph visualization
         # The callback handler enables automatic graph structure inference in Langfuse UI

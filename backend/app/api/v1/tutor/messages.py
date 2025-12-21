@@ -2,23 +2,33 @@
 
 import asyncio
 import uuid
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
 from app.domains.tutor.repositories import ITutorRepository, get_tutor_repository
 from app.domains.tutor.schemas.api import SendMessageRequest
 from app.domains.tutor.services.state_service import load_state_from_session
 from app.domains.tutor.services.workflow_service import continue_workflow_after_message
-from app.domains.tutor.workflows.state import TutorState
-from app.shared.types import TutorMessage
+
+if TYPE_CHECKING:
+    from app.domains.tutor.workflows.state import TutorState
+    from app.shared.types import TutorMessage
 
 router = APIRouter()
 logger = get_logger(__name__)
 
 
-@router.post("/tutor/sessions/{session_id}/messages")
+@router.post(
+    "/tutor/sessions/{session_id}/messages",
+    responses={
+        400: {"model": ErrorResponse, "description": "Session not active"},
+        404: {"model": ErrorResponse, "description": "Session not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def send_message(
     session_id: uuid.UUID,
     request: SendMessageRequest,

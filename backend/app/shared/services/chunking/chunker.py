@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import tiktoken
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from app.shared.services.chunking.parsers import ContentParser
 
 DEFAULT_SHORT_WINDOW = 900

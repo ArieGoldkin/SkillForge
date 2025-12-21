@@ -250,9 +250,17 @@ class EmbeddingService:
                 input=text,
             )
 
+            # Log usage metadata if available (OpenAI SDK 1.0+)
+            if hasattr(response, "usage") and response.usage:
+                logger.info(
+                    "embedding_token_usage",
+                    total_tokens=response.usage.total_tokens,
+                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
+                )
+
             # Extract embedding from response
             # Type cast needed because OpenAI SDK types embedding as Any
-            embedding = cast(EmbeddingVector, response.data[0].embedding)
+            embedding = cast("EmbeddingVector", response.data[0].embedding)
 
             if not embedding:
                 error_msg = "No embedding in API response"
@@ -430,10 +438,19 @@ class EmbeddingService:
             latency_ms = (time.perf_counter() - start_time) * 1000
             per_text_latency = latency_ms / len(prepared_texts)
 
+            # Log usage metadata if available (OpenAI SDK 1.0+)
+            if hasattr(response, "usage") and response.usage:
+                logger.info(
+                    "batch_embedding_token_usage",
+                    total_tokens=response.usage.total_tokens,
+                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
+                    batch_size=len(prepared_texts),
+                )
+
             # Extract embeddings and maintain order
             results: list[tuple[EmbeddingVector, float]] = []
             for data in response.data:
-                embedding = cast(EmbeddingVector, data.embedding)
+                embedding = cast("EmbeddingVector", data.embedding)
 
                 if len(embedding) != self.expected_dimensions:
                     error_msg = (

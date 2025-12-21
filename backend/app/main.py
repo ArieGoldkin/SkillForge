@@ -11,7 +11,7 @@ import structlog
 from dotenv import dotenv_values, load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, ORJSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # CRITICAL: Load .env and override system env vars BEFORE any LangChain imports
@@ -66,7 +66,6 @@ def _background_task_exception_handler(loop: asyncio.AbstractEventLoop, context:
                 error_message=str(exception),
                 task_name=task.get_name() if task else "unknown",
                 message=message,
-                exc_info=True,
                 context="global_background_task_handler",
                 note=(
                     "GeneratorExit caught by global background task exception handler. "
@@ -84,7 +83,6 @@ def _background_task_exception_handler(loop: asyncio.AbstractEventLoop, context:
                 error_message=str(exception),
                 task_name=task.get_name() if task else "unknown",
                 message=message,
-                exc_info=True,
                 context="global_background_task_handler",
             )
     else:
@@ -101,6 +99,9 @@ def _background_task_exception_handler(loop: asyncio.AbstractEventLoop, context:
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
+    # Initialize app.state for background task tracking
+    app.state.background_tasks = set()
+
     # Set up global exception handler for background tasks
     # This catches exceptions (including GeneratorExit) that escape other handlers
     try:
@@ -276,6 +277,7 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     lifespan=lifespan,
+    default_response_class=ORJSONResponse,  # 2-3x faster JSON serialization
 )
 
 # CORS Middleware
@@ -303,7 +305,6 @@ async def skillforge_exception_handler(request: Request, exc: SkillForgeExceptio
         path=request.url.path,
         error=str(exc),
         exception_type=type(exc).__name__,
-        exc_info=True,
     )
     return JSONResponse(
         status_code=500,
@@ -326,7 +327,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         request_id=request_id,
         path=request.url.path,
         error=str(exc),
-        exc_info=True,
     )
     return JSONResponse(
         status_code=500,

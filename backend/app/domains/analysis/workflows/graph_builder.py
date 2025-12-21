@@ -347,7 +347,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
         for aspect, value in quality_scores_raw.items():
             if isinstance(value, dict) and "score" in value:
                 # Type checker needs explicit cast to understand value is dict[str, Any]
-                value_dict = cast(dict[str, Any], value)
+                value_dict = cast("dict[str, Any]", value)
                 score_val = value_dict.get("score")
                 if isinstance(score_val, (int, float)):
                     quality_scores_flat[aspect] = float(score_val)

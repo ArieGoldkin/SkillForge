@@ -52,11 +52,10 @@ import subprocess
 import sys
 import time
 import uuid
-from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import tiktoken
 
@@ -66,9 +65,13 @@ from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
 from app.domains.analysis.workflows.nodes.agents.tech_comparator_node import tech_comparator_node
 from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
-from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
 from app.evaluation.datasets import load_dataset
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from app.domains.analysis.workflows.state import AnalysisState
 
 logger = get_logger(__name__)
 
@@ -145,7 +148,7 @@ def _estimate_tokens(text: str, model: str) -> int:
     try:
         # Map model IDs to tiktoken encoding names
         # OpenAI models use specific encodings
-        if model.startswith("gpt-4o") or model.startswith("gpt-4-"):
+        if model.startswith(("gpt-4o", "gpt-4-")):
             encoding = tiktoken.encoding_for_model("gpt-4o")
         elif model.startswith("gpt-3.5"):
             encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -668,13 +671,12 @@ class LLMBenchmark:
         """
         if task_type == "supervisor":
             return self._create_supervisor_target(model_id)
-        elif task_type == "agent":
+        if task_type == "agent":
             return self._create_agent_target(model_id)
-        elif task_type == "synthesis":
+        if task_type == "synthesis":
             return self._create_synthesis_target(model_id)
-        else:
-            msg = f"Unknown task type: {task_type}"
-            raise ValueError(msg)
+        msg = f"Unknown task type: {task_type}"
+        raise ValueError(msg)
 
     def _create_supervisor_target(self, model_id: str) -> Callable:
         """Create target function for supervisor routing task.

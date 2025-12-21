@@ -367,9 +367,7 @@ async def _attempt_synthesis(  # noqa: PLR0913
     )
 
     # Extract structured response
-    structured_response = extract_structured_response(final_result, "aggregation")
-
-    return structured_response
+    return extract_structured_response(final_result, "aggregation")
 
 
 MINIMAL_SYSTEM_PROMPT = """You are an expert technical analyst creating a MINIMAL emergency synthesis.

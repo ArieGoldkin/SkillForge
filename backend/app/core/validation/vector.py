@@ -29,8 +29,6 @@ logger = structlog.get_logger(__name__)
 class VectorValidationError(ValueError):
     """Exception raised when vector validation fails."""
 
-    pass
-
 
 @dataclass
 class ValidationResult:

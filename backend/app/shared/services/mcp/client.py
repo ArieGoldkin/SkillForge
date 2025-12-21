@@ -24,7 +24,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -40,14 +39,15 @@ from tenacity import (
 
 from app.core.logging import get_logger
 from app.shared.services.mcp.callbacks import MCPCallbacks
-from app.shared.services.mcp.config import MCPServerConfig, MCPSettings
 from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
 from app.shared.services.mcp.interceptors import create_default_interceptors
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Awaitable, Callable
 
     from langchain_core.tools import BaseTool
+
+    from app.shared.services.mcp.config import MCPServerConfig, MCPSettings
 
 logger = get_logger(__name__)
 

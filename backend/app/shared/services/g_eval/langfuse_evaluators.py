@@ -160,14 +160,13 @@ def create_g_eval_evaluator(
                         "criterion": criterion,
                     },
                 )
-            else:
-                return evaluation_cls(
-                    name=f"g_eval_{criterion}",
-                    value=0.5,
-                    data_type="NUMERIC",
-                    comment=f"No score returned for {criterion}",
-                    metadata={"error": "missing_score", "agent_type": agent_type},
-                )
+            return evaluation_cls(
+                name=f"g_eval_{criterion}",
+                value=0.5,
+                data_type="NUMERIC",
+                comment=f"No score returned for {criterion}",
+                metadata={"error": "missing_score", "agent_type": agent_type},
+            )
 
         except Exception as e:
             logger.exception(
@@ -597,9 +596,8 @@ def get_standard_run_evaluators(
     config = get_agent_rubrics(agent_type)
     criteria = config.get("criteria", ["completeness", "accuracy", "coherence", "depth"])
 
-    run_evaluators = [
+    return [
         average_g_eval_score_evaluator,
         *[criterion_average_evaluator(criterion) for criterion in criteria],
         quality_threshold_evaluator(quality_threshold),
     ]
-    return run_evaluators

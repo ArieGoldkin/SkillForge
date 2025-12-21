@@ -191,5 +191,3 @@ class MCPConfigurationError(MCPError):
     - Missing URL for HTTP transport
 
     """
-
-    pass

@@ -1,14 +1,15 @@
-"""Agent factory wrappers with few-shot prompting integration.
+"""Agent factory wrappers with few-shot prompting and LCEL chains.
 
-This module provides factory functions that wrap agent creation with
-few-shot prompting capabilities. Each factory:
-- Injects relevant examples via semantic search
-- Uses quality filtering for example selection
-- Falls back gracefully to baseline agents on errors
+This module provides factory functions that wrap agent creation with:
+- Few-shot prompting via semantic search
+- LCEL chains with automatic fallback (replaces manual try/catch)
+- Retry handling for transient failures
+- Quality filtering for example selection
 
-Architecture (Dec 2025 - all features enabled by default):
-- Few-shot prompting is always enabled
-- Example retrieval via semantic search with quality filtering
+Architecture (Dec 2025 - LangChain performance features):
+- Few-shot prompting always enabled
+- LCEL `.with_fallbacks()` for automatic model fallback
+- LCEL `.with_retry()` for transient failure handling
 - Graceful degradation: Falls back to baseline on any errors
 
 Example:
@@ -31,8 +32,10 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.feature_flags import get_technique_config
 from app.core.logging import get_logger
+from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import (
     ToolCallConfig,
@@ -44,6 +47,92 @@ from app.shared.services.agents.few_shot_factory import create_few_shot_agent
 from app.shared.services.embeddings.service import EmbeddingService
 
 logger = get_logger(__name__)
+
+
+def create_agent_with_lcel_fallback(
+    agent_type: str,
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    tools: Sequence[BaseTool] | None = None,
+    tool_call_config: ToolCallConfig | None = None,
+    primary_model: str | None = None,
+    fallback_model: str | None = None,
+) -> Runnable:
+    """Create agent with LCEL chain and automatic fallback.
+
+    Replaces manual try/catch fallback logic with LangChain's LCEL `.with_fallbacks()`.
+    This provides automatic model fallback on any exception, with proper async handling.
+
+    Args:
+        agent_type: Type of agent (for logging)
+        system_prompt: System prompt for the agent
+        response_schema: Pydantic model defining expected output structure
+        tools: Optional MCP tools for tool-enabled agents
+        tool_call_config: Optional tool call configuration
+        primary_model: Optional primary model override (defaults to settings.LLM_MODEL)
+        fallback_model: Optional fallback model override (defaults to settings.LLM_FALLBACK_MODEL)
+
+    Returns:
+        Runnable: Agent with LCEL fallback chain
+
+    Note:
+        The LCEL chain automatically retries with fallback model on:
+        - TimeoutError
+        - Model API errors (rate limits, server errors)
+        - Validation errors
+        - Any other exceptions during invocation
+
+    """
+    # Use settings defaults if not specified
+    primary_model = primary_model or settings.LLM_MODEL
+    fallback_model = fallback_model or settings.LLM_FALLBACK_MODEL
+
+    logger.info(
+        "creating_lcel_agent_with_fallback",
+        agent_type=agent_type,
+        primary_model=primary_model,
+        fallback_model=fallback_model,
+        has_tools=tools is not None,
+    )
+
+    # Create primary model
+    primary = get_chat_model(config={"configurable": {"model": primary_model}})
+    primary_with_structure = primary.with_structured_output(response_schema, strict=True)
+
+    # Create fallback model
+    fallback = get_chat_model(config={"configurable": {"model": fallback_model}})
+    fallback_with_structure = fallback.with_structured_output(response_schema, strict=True)
+
+    # Bind tools if provided
+    if tools:
+        primary_with_structure = primary_with_structure.bind_tools(
+            list(tools),
+            tool_choice="auto",
+            parallel_tool_calls=tool_call_config.parallel_tool_calls if tool_call_config else True,
+        )
+        fallback_with_structure = fallback_with_structure.bind_tools(
+            list(tools),
+            tool_choice="auto",
+            parallel_tool_calls=tool_call_config.parallel_tool_calls if tool_call_config else True,
+        )
+
+    # LCEL chain with automatic fallback and retry
+    chain = primary_with_structure.with_retry(
+        stop_after_attempt=3,  # Retry up to 3 times for transient failures
+        wait_exponential_jitter=True,  # Exponential backoff with jitter
+    ).with_fallbacks(
+        [fallback_with_structure],
+        exceptions_to_handle=(Exception,),  # Handle all exceptions
+    )
+
+    logger.info(
+        "lcel_agent_created",
+        agent_type=agent_type,
+        has_retry=True,
+        has_fallback=True,
+    )
+
+    return chain
 
 
 async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs all params

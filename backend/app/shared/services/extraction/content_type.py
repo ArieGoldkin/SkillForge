@@ -13,8 +13,6 @@ from app.core.exceptions import ServiceException
 class ContentTypeError(ServiceException):
     """Exception raised when content type detection fails."""
 
-    pass
-
 
 def detect_content_type(url: str) -> str:
     """Detect content type from URL patterns.

@@ -146,7 +146,7 @@ def run_preflight_checks(verbose: bool = True) -> tuple[bool, dict[str, Any]]:
     if verbose:
         print("\n📁 Dataset Validation:")
 
-    for _task_type, dataset_name in TASK_DATASETS.items():
+    for dataset_name in TASK_DATASETS.values():
         try:
             dataset = load_dataset(dataset_name)
             results["datasets"][dataset_name] = {

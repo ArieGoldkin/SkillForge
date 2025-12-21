@@ -46,6 +46,4 @@ def extract_structured_response(
         msg = f"Agent {agent_type} structured_response is not a Pydantic model"
         raise TypeError(msg)
     # Pydantic's model_dump() returns dict[str, Any] but we know it's dict[str, object]
-    findings = cast(dict[str, object], structured_response.model_dump())  # type: ignore[attr-defined]
-
-    return findings
+    return cast("dict[str, object]", structured_response.model_dump())  # type: ignore[attr-defined]

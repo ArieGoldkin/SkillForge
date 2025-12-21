@@ -24,10 +24,12 @@ Example:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
-from langchain_core.tools import BaseTool
+from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 logger = get_logger(__name__)
 

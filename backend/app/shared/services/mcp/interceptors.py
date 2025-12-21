@@ -47,7 +47,6 @@ from tenacity import (
 )
 
 from app.core.logging import get_logger
-from app.shared.services.mcp.config import MCPSettings
 from app.shared.services.mcp.exceptions import MCPConnectionError, MCPTimeoutError
 
 if TYPE_CHECKING:
@@ -58,6 +57,8 @@ if TYPE_CHECKING:
         MCPToolCallResult,
         ToolCallInterceptor,
     )
+
+    from app.shared.services.mcp.config import MCPSettings
 
 logger = get_logger(__name__)
 

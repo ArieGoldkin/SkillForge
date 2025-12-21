@@ -24,7 +24,6 @@ import json
 import math
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
@@ -38,6 +37,7 @@ from app.schemas.search import SearchMode
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from sqlalchemy.ext.asyncio import AsyncSession
 

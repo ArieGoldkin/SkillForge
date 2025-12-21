@@ -684,11 +684,10 @@ class LangfuseService:
 
         """
         try:
-            result = await self._request(
+            return await self._request(
                 "GET",
                 f"/api/public/v2/datasets/{dataset_name}",
             )
-            return result
         except LangfuseServiceError:
             logger.warning(
                 "langfuse_dataset_not_found",

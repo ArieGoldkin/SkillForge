@@ -31,13 +31,14 @@ Source: https://medium.com/elementor-engineers/building-tools-that-actually-work
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from langchain_core.tools import BaseTool
 
     from app.shared.services.mcp.client import MCPClientPool

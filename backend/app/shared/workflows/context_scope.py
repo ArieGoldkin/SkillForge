@@ -68,8 +68,6 @@ class ScopedState(dict):
 
     """
 
-    pass
-
 
 # Agent scope configurations
 # Each agent specifies exactly which state fields it needs

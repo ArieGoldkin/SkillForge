@@ -3,6 +3,8 @@
 This node conducts a section quiz with feedback to evaluate understanding.
 """
 
+from typing import TYPE_CHECKING
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
@@ -14,8 +16,10 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
-from app.shared.types import TutorMessage
 from app.shared.workflows.context_compiler import create_workflow_compiler
+
+if TYPE_CHECKING:
+    from app.shared.types import TutorMessage
 
 logger = get_logger(__name__)
 

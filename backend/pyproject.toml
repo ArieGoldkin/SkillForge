@@ -40,6 +40,7 @@ jinja2 = "^3.1.0"
 pypdf = "^5.1.0"
 # Langfuse observability (replaces LangSmith - Issue #372)
 langfuse = "^3.0.0"
+orjson = "^3.11.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
@@ -67,6 +68,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = [
+    # Core quality checks (existing)
     "E",      # pycodestyle errors
     "F",      # Pyflakes
     "W",      # pycodestyle warnings
@@ -86,17 +88,44 @@ select = [
     "BLE",    # flake8-blind-except (blind exceptions)
     "FAST",   # FastAPI-specific rules
     "RUF",    # Ruff-specific rules
+    
+    # NEW - CRITICAL QUALITY CHECKS (2025 modernization)
+    "S",      # flake8-bandit (security) - catches SQL injection, hardcoded secrets, etc.
+    "ASYNC",  # flake8-async - async/await correctness
+    "PERF",   # Perflint - performance anti-patterns
+    "LOG",    # flake8-logging - structured logging best practices
+    "DTZ",    # flake8-datetimez - timezone-aware datetime usage
+    "TC",     # flake8-type-checking - optimize TYPE_CHECKING imports
+    "T20",    # flake8-print - ban print() in production code
+    
+    # NEW - MEDIUM PRIORITY QUALITY CHECKS
+    "G",      # flake8-logging-format - logging argument formatting
+    "ARG",    # flake8-unused-arguments - detect dead parameters
+    "RET",    # flake8-return - simplify return statements
+    "PIE",    # flake8-pie - miscellaneous code improvements
+    "ERA",    # eradicate - find commented-out code
+    "FURB",   # refurb - Python modernization patterns
+    "FBT003", # boolean-positional-value-in-call only (not FBT001/FBT002)
 ]
 ignore = [
+    # Line length and docstring conflicts (existing)
     "E501",   # Line too long (handled by formatter)
     "D203",   # 1 blank line required before class docstring (conflicts with D211)
     "D213",   # Multi-line summary should start at second line (conflicts with D212)
-    # Overly pedantic rules for production code:
+    
+    # Overly pedantic rules for production code (existing)
     "PLC0415",  # Import at non-top-level (valid for TYPE_CHECKING, lazy imports)
     "TRY301",   # Abstract raise to inner function (overly pedantic)
     "SIM105",   # Use contextlib.suppress (try/except is clearer)
     "SIM117",   # Combine with statements (readability preference)
     "TRY300",   # Consider moving to else block (stylistic)
+    
+    # NEW - Appropriate ignores for new rules
+    "G201",   # logger.error(exc_info=True) OK with structlog (instead of logger.exception)
+    "S311",   # Non-cryptographic random OK for UUIDs/testing
+    "G004",   # f-strings OK with structlog (structured logging)
+    "FBT001", # Boolean positional args OK internally (not public API)
+    "FBT002", # Boolean default values OK internally (not public API)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -114,6 +143,11 @@ ignore = [
     "EM101",    # Exception string literal - acceptable in test mocks
     "F841",     # Unused variable - test fixtures may define for documentation
     "TRY003",   # Long exception message - acceptable in test error scenarios
+    # NEW - Test-specific ignores for new rules
+    "S101",     # assert OK in tests (required for pytest)
+    "ARG001",   # Unused args OK (pytest fixtures)
+    "T201",     # print() OK in tests for debugging
+    "S311",     # Non-crypto random OK in tests
 ]
 # Diagnostic scripts can have more complex error handling
 "scripts/**/*.py" = [
@@ -121,6 +155,9 @@ ignore = [
     "BLE001",   # Blind exception catching - diagnostic scripts need broad error handling
     "PLR2004",  # Magic values - common in CLI argument parsing
     "D401",     # Imperative mood - acceptable for main() functions
+    # NEW - Script-specific ignores
+    "T201",     # print() OK in CLI scripts
+    "DTZ005",   # datetime.now() without tz OK for local timestamps
 ]
 # Alembic migration files have specific format requirements
 "alembic/versions/**/*.py" = [
@@ -141,6 +178,7 @@ ignore = [
     "UP047",  # Generic function should use type parameters - conflicts with clean API design
     "D102",   # Missing method docstring - type utilities prioritize clean API over verbose docs
     "D105",   # Missing magic method docstring - __repr__ is self-documenting
+    "TC003",  # Callable import needed at runtime for Result type system
 ]
 # Evaluation framework - experimental benchmarking code with complex logic
 "app/evaluation/**/*.py" = [
@@ -163,6 +201,9 @@ ignore = [
     "RUF100",   # Unused noqa - keep for clarity
     "SIM108",   # Ternary operator - readability preference
     "F841",     # Unused variable - valid for future use patterns
+    # NEW - Evaluation-specific ignores
+    "T201",     # print() OK in benchmark/evaluation scripts
+    "DTZ005",   # datetime.now() without tz OK for benchmark timestamps
 ]
 
 [tool.ruff.format]
@@ -231,4 +272,71 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
     "@abstractmethod",
+]
+# API endpoints - request parameter required by FastAPI but not always used
+"app/api/v1/**/sse_handler.py" = [
+    "ARG001",  # Request parameter required by FastAPI for SSE endpoints
+]
+"app/api/v1/tutor/streaming.py" = [
+    "ARG001",  # Request parameter required by FastAPI for SSE endpoints
+]
+# Agent tools - content parameter required by LangChain tool schema
+"app/domains/analysis/workflows/nodes/agent_tools.py" = [
+    "ARG001",  # Tool parameters required by LangChain schema even if unused
+]
+# Agent factories - system_prompt for future LCEL fallback implementation
+"app/domains/analysis/workflows/agents/factories.py" = [
+    "ARG001",  # system_prompt reserved for future LCEL fallback
+]
+# Annotation service - metadata for future annotation features
+"app/core/annotation_service.py" = [
+    "ARG002",  # metadata reserved for future annotation features
+    "S101",    # assert used as type guard after validation
+]
+# Result type system - unused parameters required by Monad interface
+"app/shared/types/result_types.py" = [
+    "ARG002",  # Monad interface requires parameters even if unused in Err case
+]
+# Tracing module - intentional silent failures for optional Langfuse
+"app/core/tracing.py" = [
+    "S110",    # Silent pass OK - Langfuse is optional, failures are acceptable
+]
+# Workflow tasks - intentional silent failures for optional Langfuse
+"app/domains/analysis/workflows/tasks/*.py" = [
+    "S110",    # Silent pass OK - Langfuse tracing is optional
+]
+"app/domains/analysis/workflows/nodes/supervisor.py" = [
+    "S110",    # Silent pass OK - Langfuse tracing is optional
+]
+# Supervisor config - S608 false positive (LLM prompt, not SQL)
+"app/domains/analysis/workflows/nodes/supervisor_config.py" = [
+    "S608",    # False positive - f-string is LLM prompt, not SQL
+]
+# Config validation - S104 false positive (validating AGAINST 0.0.0.0)
+"app/core/config.py" = [
+    "S104",    # False positive - validating that HOST is NOT 0.0.0.0
+]
+# Evaluation thresholds - S105 false positive (enum values, not passwords)
+"app/evaluation/pipeline/thresholds.py" = [
+    "S105",    # False positive - "pass"/"fail" are enum values, not passwords
+]
+# PII types - S105 false positive (enum values, not passwords)
+"app/shared/services/pii/types.py" = [
+    "S105",    # False positive - "github_token" is enum value, not password
+]
+# Embedding service - S101 used as type guard
+"app/shared/services/embeddings/service.py" = [
+    "S101",    # assert used as type guard after validation
+]
+# Cost tracker - S101 used as type guard for singleton
+"app/shared/services/g_eval/cost_tracker.py" = [
+    "S101",    # assert used as type guard for singleton pattern
+]
+# ArXiv extractor - S110 intentional best-effort parsing
+"app/shared/services/extraction/arxiv_pdf_extractor.py" = [
+    "S110",    # Silent pass OK - best-effort title extraction
+]
+# Context scope - ARG001 agent_type reserved for future feature
+"app/shared/workflows/context_scope.py" = [
+    "ARG001",  # agent_type reserved for future agent-specific summarization
 ]

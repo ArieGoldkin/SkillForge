@@ -15,6 +15,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
 from app.db.repositories.analysis_repository import IAnalysisRepository, get_analysis_repository
 from app.db.session import get_db
@@ -26,11 +27,28 @@ router = APIRouter(tags=["search"])
 logger = get_logger(__name__)
 
 
-@router.get("/search/similar")
+@router.get(
+    "/search/similar",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid query parameters"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def search_similar_analyses(
     repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
-    query: Annotated[str, Query(description="Search query text")],
-    limit: Annotated[int, Query(ge=1, le=50, description="Number of results")] = 5,
+    query: Annotated[
+        str,
+        Query(
+            description="Search query text",
+            min_length=1,
+            max_length=500,
+            examples=["React hooks tutorial"],
+        ),
+    ],
+    limit: Annotated[
+        int,
+        Query(ge=1, le=50, description="Number of results", examples=[5]),
+    ] = 5,
 ) -> list[dict[str, object]]:
     """Search for similar analyses using semantic similarity.
 
@@ -111,7 +129,13 @@ async def search_similar_analyses(
         ) from e
 
 
-@router.post("/search")
+@router.post(
+    "/search",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid request parameters"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
 async def search_chunks(
     request: SearchRequest,
     session: Annotated[AsyncSession, Depends(get_db)],

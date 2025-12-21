@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from app.core.logging import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 logger = get_logger(__name__)
 

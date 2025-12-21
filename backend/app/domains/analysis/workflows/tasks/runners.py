@@ -15,8 +15,8 @@ for backward compatibility.
 """
 
 import time
+from typing import TYPE_CHECKING
 
-from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -36,6 +36,9 @@ from app.domains.analysis.workflows.agents import (
     run_trend_validator,
 )
 from app.domains.analysis.workflows.state import AnalysisState
+
+if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
 
 # Note: AsyncSessionLocal is imported lazily inside each function to avoid
 # DATABASE_URL validation at import time (required for CI without database)
