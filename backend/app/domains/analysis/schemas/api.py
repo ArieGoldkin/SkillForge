@@ -53,6 +53,7 @@ class AnalyzeCreateResponse(BaseModel):
         content_type: Detected content type (article, video, repo)
         status: Analysis status (always "pending" at creation)
         sse_endpoint: URL endpoint for streaming progress updates
+        existing: True if returning an existing analysis for this URL (idempotency)
 
     Example:
         ```python
@@ -62,6 +63,7 @@ class AnalyzeCreateResponse(BaseModel):
             content_type="article",
             status="pending",
             sse_endpoint="/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+            existing=False,
         )
         ```
 
@@ -74,6 +76,9 @@ class AnalyzeCreateResponse(BaseModel):
         default="pending", description="Analysis status (pending, running, complete, failed)"
     )
     sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")
+    existing: bool = Field(
+        default=False, description="True if returning an existing analysis for this URL"
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -83,6 +88,7 @@ class AnalyzeCreateResponse(BaseModel):
                 "content_type": "article",
                 "status": "pending",
                 "sse_endpoint": "/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+                "existing": False,
             }
         }
     }
