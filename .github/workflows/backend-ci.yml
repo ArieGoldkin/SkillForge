@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, dev]
     paths:
-      - "backend/**"
-      - ".github/workflows/backend-ci.yml"
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
     branches: [main, dev]
     paths:
-      - "backend/**"
-      - ".github/workflows/backend-ci.yml"
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -157,7 +157,6 @@ jobs:
           compression-level: 9
           retention-days: 7
           if-no-files-found: warn
-
   # ============================================================================
   # Phase 3: BUILD (3-4 min) - Only run if tests pass, cache for E2E reuse
   # ============================================================================
