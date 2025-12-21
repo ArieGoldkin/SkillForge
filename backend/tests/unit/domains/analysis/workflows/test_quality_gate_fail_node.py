@@ -86,7 +86,8 @@ async def test_quality_gate_fail_node_emits_progress_event():
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == TEST_UUID_2
         assert kwargs["stage"] == "quality_gate"
-        assert kwargs["status"] == "low_quality"  # Not "failed"
+        assert kwargs["status"] == "complete"  # Gate completed (standardized SSE schema)
+        assert kwargs["quality_warning"] == "low_quality"  # Warning in details field
         assert "score: 0.45" in kwargs["message"]
 
         # Verify quality scores are included

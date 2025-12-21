@@ -291,27 +291,30 @@ class TestLangfuseScoreSubmission:
         """Test that G-Eval scores are submitted to Langfuse."""
         from app.shared.services.g_eval.scorer import g_eval_score
 
+        # Create mock cache that returns pre-populated scores to avoid LLM calls
         with (
-            patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
+            patch("app.shared.services.g_eval.scorer.get_cache") as mock_cache_factory,
             patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
         ):
-            # Mock criterion scores
-            mock_score.side_effect = [
-                CriterionScore(
-                    criterion="completeness",
-                    score=4,
-                    normalized=0.75,
-                    confidence=0.85,
-                    reasoning="Good completeness",
-                ),
-                CriterionScore(
-                    criterion="accuracy",
-                    score=5,
-                    normalized=1.0,
-                    confidence=0.9,
-                    reasoning="Excellent accuracy",
-                ),
-            ]
+            # Mock cache to return scores (simulates cache hits)
+            mock_cache = MagicMock()
+
+            # Create mock cached score objects with required attributes
+            completeness_cached = MagicMock()
+            completeness_cached.score = 4
+            completeness_cached.normalized = 0.75
+            completeness_cached.confidence = 0.85
+            completeness_cached.reasoning = "Good completeness"
+
+            accuracy_cached = MagicMock()
+            accuracy_cached.score = 5
+            accuracy_cached.normalized = 1.0
+            accuracy_cached.confidence = 0.9
+            accuracy_cached.reasoning = "Excellent accuracy"
+
+            # Return cached scores to avoid LLM calls
+            mock_cache.get.side_effect = [completeness_cached, accuracy_cached]
+            mock_cache_factory.return_value = mock_cache
 
             result = await g_eval_score(
                 input_content="Test input",
@@ -322,8 +325,8 @@ class TestLangfuseScoreSubmission:
             )
 
             # Verify scores were submitted to Langfuse
-            # Should submit 3 scores: 2 criteria + 1 overall
-            assert mock_submit.call_count == 3
+            # Cache hits submit analytics: 2 cache hit scores + 2 criteria scores + 1 overall = 5
+            assert mock_submit.call_count == 5
 
             # Verify individual criterion scores
             calls = mock_submit.call_args_list
@@ -349,20 +352,29 @@ class TestLangfuseScoreSubmission:
         from app.shared.services.g_eval.scorer import g_eval_score
 
         with (
-            patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score,
+            patch("app.shared.services.g_eval.scorer.get_cache") as mock_cache_factory,
             patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
+            patch("app.shared.services.g_eval.scorer.get_agent_rubrics") as mock_rubrics,
         ):
+            # Mock agent rubrics to return only the criteria we're testing
+            mock_rubrics.return_value = {
+                "criteria": ["completeness"],
+                "weights": {"completeness": 1.0},
+            }
+
+            # Mock cache to return score (avoid LLM calls)
+            mock_cache = MagicMock()
+            completeness_cached = MagicMock()
+            completeness_cached.score = 4
+            completeness_cached.normalized = 0.75
+            completeness_cached.confidence = 0.85
+            completeness_cached.reasoning = "Good completeness"
+
+            mock_cache.get.return_value = completeness_cached
+            mock_cache_factory.return_value = mock_cache
+
             # Mock Langfuse failure
             mock_submit.side_effect = Exception("Langfuse connection error")
-
-            # Mock criterion scores
-            mock_score.return_value = CriterionScore(
-                criterion="completeness",
-                score=4,
-                normalized=0.75,
-                confidence=0.85,
-                reasoning="Good completeness",
-            )
 
             # Should still complete successfully despite Langfuse failure
             result = await g_eval_score(
@@ -375,6 +387,7 @@ class TestLangfuseScoreSubmission:
 
             # Result should still be valid
             assert result.overall > 0
+            assert result.overall == 0.75  # normalized score from mock
             assert "completeness" in result.criteria_scores
             # Error should be caught and logged, not propagated
             assert result.error is None
@@ -423,14 +436,26 @@ class TestSelfConsistencyIntegration:
         """Test g_eval_score with default self_consistency=False."""
         from app.shared.services.g_eval.scorer import g_eval_score
 
-        with patch("app.shared.services.g_eval.scorer._score_criterion") as mock_score:
-            mock_score.return_value = CriterionScore(
-                criterion="completeness",
-                score=4,
-                normalized=0.75,
-                confidence=0.85,
-                reasoning="Good",
-            )
+        with (
+            patch("app.shared.services.g_eval.scorer.get_cache") as mock_cache_factory,
+            patch("app.shared.services.g_eval.scorer.get_agent_rubrics") as mock_rubrics,
+        ):
+            # Mock agent rubrics to return only the criteria we're testing
+            mock_rubrics.return_value = {
+                "criteria": ["completeness"],
+                "weights": {"completeness": 1.0},
+            }
+
+            # Mock cache to return score (simulates scoring without self-consistency)
+            mock_cache = MagicMock()
+            completeness_cached = MagicMock()
+            completeness_cached.score = 4
+            completeness_cached.normalized = 0.75
+            completeness_cached.confidence = 0.85
+            completeness_cached.reasoning = "Good"
+
+            mock_cache.get.return_value = completeness_cached
+            mock_cache_factory.return_value = mock_cache
 
             result = await g_eval_score(
                 input_content="Test input",
@@ -443,5 +468,6 @@ class TestSelfConsistencyIntegration:
             # Should NOT have voting distributions
             assert result.voting_distribution is None
 
-            # Should call standard scorer only once per criterion
-            assert mock_score.call_count == 1
+            # Verify result came from cache (standard mode, not self-consistency)
+            assert result.overall == 0.75
+            assert result.criteria_scores["completeness"].score == 4

@@ -222,12 +222,16 @@ async def score_criterion_with_self_consistency(  # noqa: PLR0913 - Function nee
             sample_scores=[s.score for s in samples],
         )
         # Fallback: use first sample or create neutral score
-        final_sample = samples[0] if samples else CriterionScore(
-            criterion=criterion,
-            score=3,
-            normalized=0.5,
-            confidence=0.0,
-            reasoning="No winning samples found in self-consistency voting",
+        final_sample = (
+            samples[0]
+            if samples
+            else CriterionScore(
+                criterion=criterion,
+                score=3,
+                normalized=0.5,
+                confidence=0.0,
+                reasoning="No winning samples found in self-consistency voting",
+            )
         )
     else:
         final_sample = max(winning_samples, key=lambda s: s.confidence)

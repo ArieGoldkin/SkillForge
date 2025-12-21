@@ -371,13 +371,15 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
         call_args = mock_emit.call_args
 
         # Check event type and basic fields
-        assert call_args[0][0] == "quality_gate"
+        # Event type must be "progress" per frontend SSE schema (see quality_gate_node.py:292)
+        assert call_args[0][0] == "progress"
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == "test-analysis-123"
         assert kwargs["stage"] == "quality_validation"
         # Status may be "failed" due to floating point precision (0.6999... < 0.7)
         # but that's acceptable - the important part is the SSE event was emitted
-        assert kwargs["status"] in ["passed", "failed"]
+        # Note: "complete" is used for passed gates, "failed" for failed gates (not "passed")
+        assert kwargs["status"] in ["complete", "failed"]
         # Average score should be approximately 0.7
         assert abs(kwargs["avg_score"] - 0.7) < 0.001
         assert kwargs["threshold"] == QUALITY_THRESHOLD
