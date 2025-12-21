@@ -412,7 +412,10 @@ site/
 # Local Session Data (Claude Code, Squad orchestration)
 # ============================================================================
 .squad/
-.claude/
+
+# Claude Code: Track config but ignore session-specific files
+.claude/plans/
+.claude/context/session.json
 backend/.claude/
 
 # Test coverage JSON
