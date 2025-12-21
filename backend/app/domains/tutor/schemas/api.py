@@ -86,3 +86,38 @@ class UpdateSessionRequest(BaseModel):
     """
 
     status: str = Field(..., description="Session status: active, completed, abandoned")
+
+
+class TutoringTopic(BaseModel):
+    """A topic available for tutoring.
+
+    Attributes:
+        id: Unique identifier for the topic
+        name: Display name of the topic
+        description: Detailed description of what will be covered
+        complexity: Difficulty level of the topic
+
+    """
+
+    id: str = Field(..., description="Topic identifier")
+    name: str = Field(..., description="Topic display name")
+    description: str = Field(default="", description="Topic description")
+    complexity: str = Field(
+        default="intermediate",
+        description="Topic complexity: beginner, intermediate, advanced",
+    )
+
+
+class TopicsResponse(BaseModel):
+    """Response containing topics for a tutoring session.
+
+    Attributes:
+        analysis_id: The analysis these topics were extracted from
+        analysis_title: Title of the analysis
+        topics: List of available topics for tutoring
+
+    """
+
+    analysis_id: UUID = Field(..., description="Analysis ID")
+    analysis_title: str = Field(..., description="Analysis title")
+    topics: list[TutoringTopic] = Field(default_factory=list, description="Available topics")
