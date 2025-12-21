@@ -14,6 +14,7 @@ import type { StageName } from '@app-types/sse'
 
 import type { SuccessMetrics } from '@/schemas/sse'
 
+import type { StageStatusEntry } from './stageConfig'
 import { STAGE_CONFIG } from './stageConfig'
 import { mapStageStatus, getStageDescription } from './stageHelpers'
 
@@ -21,23 +22,7 @@ import { mapStageStatus, getStageDescription } from './stageHelpers'
 // Types
 // ============================================================================
 
-/**
- * Stage status information from SSE events
- */
-export interface StageStatusEntry {
-  status: 'pending' | 'running' | 'complete' | 'failed' | 'skipped'
-  timestamp: string
-  details?: {
-    findings_summary?: string
-    insights_count?: number
-    confidence_score?: number
-    error?: string
-    error_code?: string
-    processing_time_ms?: number
-    skip_reason?: string
-    [key: string]: unknown
-  }
-}
+// StageStatusEntry is imported from ./stageConfig for type consistency
 
 /**
  * UI-friendly progress step representation
@@ -83,6 +68,7 @@ const STAGE_TO_AGENT_MAP: Record<StageName, string> = {
   supervisor_routing: 'supervisor_routing',
   aggregation: 'aggregation',
   artifact_generation: 'artifact_generation',
+  quality_gate: 'quality_gate',
   quality_validation: 'quality_validation',
   chunking: 'chunking',
   workflow: 'workflow',

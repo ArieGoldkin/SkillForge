@@ -48,6 +48,17 @@ export function formatStatus(status: StageStatus): string {
       return 'Skipped'
     case 'pending':
       return 'Pending'
+    case 'synthesizing':
+      return 'Synthesizing'
+    case 'detecting_conflicts':
+      return 'Detecting Conflicts'
+    case 'static_fallback':
+      return 'Fallback Mode'
+    default: {
+      // Exhaustive check - if this errors, a new status was added
+      const _exhaustiveCheck: never = status
+      return String(_exhaustiveCheck)
+    }
   }
 }
 
@@ -71,13 +82,23 @@ export function getStatusBadgeVariant(
     case 'complete':
       return 'success'
     case 'running':
+    case 'synthesizing':
+    case 'detecting_conflicts':
       return 'warning'
     case 'failed':
+    case 'static_fallback':
       return 'destructive'
     case 'skipped':
       return 'secondary'
     case 'pending':
       return 'default'
+    default: {
+      // Exhaustive check - TypeScript will error here if a new status is added
+      const exhaustiveCheck: never = status
+      // Return default as fallback (unreachable if all cases handled)
+      void exhaustiveCheck
+      return 'default'
+    }
   }
 }
 

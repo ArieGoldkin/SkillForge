@@ -165,13 +165,21 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
     category: 'quality',
     agentTypes: ['aggregation'],
   },
+  quality_gate: {
+    id: 'quality_gate',
+    title: 'Quality Gate',
+    order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_VALIDATION,
+    uiStage: 'generating',
+    category: 'quality',
+    agentTypes: ['quality_gate'],
+  },
   quality_validation: {
     id: 'quality_validation',
     title: 'Quality Validation',
     order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_VALIDATION,
     uiStage: 'generating',
     category: 'quality',
-    agentTypes: ['quality_validation', 'quality_gate'], // quality_gate is an alias for the same stage
+    agentTypes: ['quality_validation'],
   },
   artifact_generation: {
     id: 'artifact_generation',
