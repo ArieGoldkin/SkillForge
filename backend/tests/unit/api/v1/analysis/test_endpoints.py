@@ -176,28 +176,48 @@ class TestCreateAnalysis:
         mock_normalize_id.assert_called_once_with("custom-id-123")
         assert response.analysis_id == str(analysis_uuid)
 
+    @pytest.mark.asyncio
     @patch("app.api.v1.analysis.endpoints.detect_content_type")
     @patch("app.api.v1.analysis.endpoints.normalize_analysis_id_to_uuid")
-    def test_create_analysis_invalid_custom_id(
+    async def test_create_analysis_invalid_custom_id(
         self,
         mock_normalize_id,
         mock_detect_type,
-        client: TestClient,
     ):
         """Test that invalid custom analysis_id returns 422."""
+        from fastapi import HTTPException
+
+        from app.api.v1.analysis.endpoints import create_analysis
+        from app.domains.analysis.schemas.api import AnalyzeRequest
+
         mock_detect_type.return_value = "article"
         mock_normalize_id.side_effect = ValueError("Invalid UUID format")
 
-        response = client.post(
-            "/api/v1/analyze",
-            json={
-                "url": "https://example.com/article",
-                "analysis_id": "invalid-id",
-            },
+        # Create mocked repository (no real DB connection needed for unit tests)
+        mock_repo = create_mock_analysis_repo()
+
+        request = AnalyzeRequest(
+            url="https://example.com/article",
+            analysis_id="invalid-id",
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-        assert "Invalid analysis_id format" in response.json()["detail"]
+        # Mock FastAPI Request for app.state.background_tasks
+        mock_fastapi_request = MagicMock()
+        mock_fastapi_request.app.state.background_tasks = set()
+
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_analysis(
+                request,
+                fastapi_request=mock_fastapi_request,
+                response=mock_response,
+                analysis_repo=mock_repo,
+            )
+
+        assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        assert "Invalid analysis_id format" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
