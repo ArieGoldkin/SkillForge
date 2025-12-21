@@ -11,7 +11,6 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from app.domains.analysis.workflows.agents.factories import create_agent_with_lcel_fallback
@@ -60,9 +59,7 @@ class TestLCELAgentFactory:
         assert mock_chat_model.with_fallbacks.called
 
     @patch("app.domains.analysis.workflows.agents.factories.get_chat_model")
-    async def test_lcel_fallback_triggers_on_primary_failure(
-        self, mock_get_chat_model, mock_chat_model
-    ):
+    async def test_lcel_fallback_triggers_on_primary_failure(self, mock_get_chat_model):
         """Test fallback model is used when primary model fails."""
         # Primary model fails
         primary_mock = MagicMock()
