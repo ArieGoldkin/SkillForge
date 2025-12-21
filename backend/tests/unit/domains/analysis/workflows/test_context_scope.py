@@ -509,12 +509,12 @@ class TestContentSignalsInjection:
             },
         )
 
-        # security_auditor scope does NOT include content_signals
+        # security_auditor scope NOW includes content_signals (Issue #442 fix)
         scoped = build_scoped_context(state, "security_auditor")
 
-        # Should NOT include content_signals
-        assert "content_signals" not in scoped, (
-            "content_signals should NOT be injected for security_auditor"
+        # Should include content_signals (fixed in Issue #442)
+        assert "content_signals" in scoped, (
+            "content_signals should be injected for security_auditor (Issue #442)"
         )
 
     def test_agents_with_content_signals_in_scope(self) -> None:
