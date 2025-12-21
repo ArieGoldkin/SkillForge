@@ -11,6 +11,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
 from app.core.config import settings
+from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.db.repositories.chunk_repository import ChunkRepository
@@ -45,6 +46,7 @@ from app.domains.analysis.workflows.tasks import (
     log_chunking_metrics,
     store_embeddings,
 )
+from app.shared.services.extraction.jina_reader import _is_error_page
 
 # Try to import PostgresSaver dynamically to avoid hard dependency in lint
 try:
@@ -140,9 +142,44 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
     # Normal mode: Extract content from URL via JinaReader
     url = state["url"]
-    result = await extract_content(url, str(analysis_id or ""))
+
+    # Issue #441: Wrap extraction in try/except to catch JinaReaderError
+    try:
+        result = await extract_content(url, str(analysis_id or ""))
+    except JinaReaderError as e:
+        logger.warning(
+            "extraction_failed",
+            analysis_id=analysis_id,
+            error=str(e),
+            error_code=e.error_code.value if e.error_code else None,
+        )
+        return {
+            "should_abort": True,
+            "abort_reason": str(e),
+            "extraction_status": "failed",
+            "extraction_error_code": e.error_code.value
+            if e.error_code
+            else ExtractionErrorCode.UNKNOWN.value,
+        }
+
     raw_content = result["raw_content"]
     content_type = result["extraction_metadata"].get("content_type", "article")
+    title = result["extraction_metadata"].get("title", "")
+
+    # Issue #441: Check if extracted content is an error page BEFORE storing
+    if _is_error_page(title, raw_content):
+        logger.warning(
+            "extraction_error_page_detected",
+            analysis_id=analysis_id,
+            title=title,
+        )
+        return {
+            "should_abort": True,
+            "abort_reason": f"Error page detected: {title}",
+            "extraction_status": "failed",
+            "extraction_error_code": ExtractionErrorCode.ERROR_PAGE.value,
+            # Don't include raw_content or extraction_metadata to avoid storing error page data
+        }
 
     # Create content_ref for Handle Pattern (Issue #299-304)
     content_ref = await _create_content_ref(
@@ -314,6 +351,45 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     return {}
 
 
+def _route_after_extraction(state: AnalysisState) -> str:
+    """Route after extraction based on abort signal.
+
+    Issue #441: If extraction failed or error page detected, route to
+    workflow_failed node instead of continuing to embedding generation.
+    """
+    if state.get("should_abort"):
+        return "workflow_failed"
+    return "embedding"
+
+
+async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
+    """Handle workflow failure by emitting error event.
+
+    Issue #441: This node is reached when extraction fails or error page is detected.
+    It emits an SSE error event with details and marks analysis as complete (failed).
+
+    Note: Database update (mark_failed) is called separately via repository.
+    This node just handles the state for proper graph termination.
+    """
+    analysis_id = state.get("analysis_id")
+    abort_reason = state.get("abort_reason", "Unknown error")
+    error_code = state.get("extraction_error_code", "UNKNOWN")
+
+    logger.error(
+        "workflow_aborted",
+        analysis_id=analysis_id,
+        abort_reason=abort_reason,
+        error_code=error_code,
+    )
+
+    # Return state indicating workflow has failed
+    # The SSE handler will read these fields to emit proper error event
+    return {
+        "workflow_status": "failed",
+        "final_error": abort_reason,
+    }
+
+
 async def _increment_retry_node(state: AnalysisState) -> dict[str, object]:
     """Increment quality gate retry counter.
 
@@ -438,6 +514,7 @@ def build_analysis_graph():
     graph.add_node("quality_gate", quality_gate_node)
     graph.add_node("increment_retry", _increment_retry_node)
     graph.add_node("quality_gate_fail", _quality_gate_fail_node)
+    graph.add_node("workflow_failed", _workflow_failed_node)
     graph.add_node("generate_artifact", generate_artifact)
 
     # Add all agent nodes (each executes independently in parallel)
@@ -454,8 +531,20 @@ def build_analysis_graph():
     # Sequential: extract must complete first
     graph.set_entry_point("extract")
 
-    # Fan-out: embedding, chunk_and_embed, inject_context, and supervisor run in parallel after extract
-    graph.add_edge("extract", "embedding")
+    # Issue #441: Conditional routing after extraction
+    # If extraction failed (should_abort=True), route to workflow_failed
+    # Otherwise continue to normal workflow (embedding)
+    graph.add_conditional_edges(
+        "extract",
+        _route_after_extraction,
+        {
+            "embedding": "embedding",
+            "workflow_failed": "workflow_failed",
+        },
+    )
+
+    # Fan-out: chunk_and_embed, inject_context, and supervisor run in parallel after extract
+    # Note: embedding is now handled by conditional edge above
     graph.add_edge("extract", "chunk_and_embed")
     graph.add_edge("extract", "inject_context")
     graph.add_edge("extract", "supervisor")
@@ -521,6 +610,9 @@ def build_analysis_graph():
     # Issue #299-304: Always generate artifact even with low quality
     # Users prefer getting something over nothing
     graph.add_edge("quality_gate_fail", "generate_artifact")
+
+    # Issue #441: Workflow failed -> END (extraction failure terminates workflow)
+    graph.add_edge("workflow_failed", END)
 
     # Sequential: generate_artifact -> end
     graph.add_edge("generate_artifact", END)

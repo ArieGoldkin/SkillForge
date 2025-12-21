@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Annotated, Protocol
 
 from fastapi import Depends
 from pgvector.sqlalchemy import BIT, Vector  # type: ignore[import-untyped]
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -63,6 +64,16 @@ class IAnalysisRepository(Protocol):
         limit: int | None = None,
     ) -> "AsyncIterator[Analysis]":
         """Stream all analyses using server-side cursor."""
+        ...
+
+    async def mark_failed(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        failed_at_stage: str = "extraction",
+    ) -> None:
+        """Mark an analysis as failed with error details."""
         ...
 
 
@@ -254,6 +265,53 @@ class AnalysisRepository:
         async with self.session.stream_scalars(query) as result:  # type: ignore[attr-defined]
             async for analysis in result:
                 yield analysis
+
+    async def mark_failed(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        failed_at_stage: str = "extraction",
+    ) -> None:
+        """Mark an analysis as failed with error details.
+
+        Updates the analysis status to 'failed' and records error information
+        for debugging and user-facing error messages.
+
+        Args:
+            analysis_id: UUID of the analysis to mark as failed
+            error_code: Error code from ExtractionErrorCode enum (e.g., "HTTP_404")
+            error_message: Human-readable error description
+            failed_at_stage: Workflow stage where failure occurred (default: "extraction")
+
+        Raises:
+            NoResultFound: If analysis_id doesn't exist
+
+        """
+        stmt = (
+            update(Analysis)
+            .where(Analysis.id == analysis_id)
+            .values(
+                status="failed",
+                error_code=error_code,
+                error_message=error_message,
+                failed_at_stage=failed_at_stage,
+            )
+        )
+        result = await self.session.execute(stmt)
+
+        if result.rowcount == 0:
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        await self.session.commit()
+
+        logger.info(
+            "analysis_marked_failed",
+            analysis_id=str(analysis_id),
+            error_code=error_code,
+            failed_at_stage=failed_at_stage,
+        )
 
 
 def get_analysis_repository(
