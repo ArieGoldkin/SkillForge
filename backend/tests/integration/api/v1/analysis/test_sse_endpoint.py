@@ -1,10 +1,14 @@
-"""Tests for SSE endpoint with sse-starlette 3.0.3 features."""
+"""Tests for SSE endpoint with sse-starlette 3.0.3 features.
+
+Issue #444: Updated to use broadcaster factory for multi-instance support.
+"""
 
 import asyncio
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import pytest_asyncio
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sse_starlette.sse import EventSourceResponse
@@ -12,7 +16,19 @@ from sse_starlette.sse import EventSourceResponse
 from app.api.v1.analysis.endpoints import router
 from app.api.v1.analysis.sse_handler import stream_analysis_progress
 from app.main import app
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
+
+
+@pytest_asyncio.fixture
+async def broadcaster():
+    """Get broadcaster from factory for tests.
+
+    Issue #444: Use factory pattern instead of direct singleton import.
+    """
+    return await get_broadcaster(BroadcasterBackend.MEMORY)
 
 
 @pytest.mark.asyncio
@@ -37,7 +53,7 @@ async def test_sse_endpoint_returns_eventsourceresponse():
 
 
 @pytest.mark.asyncio
-async def test_sse_event_generator_streams_events():
+async def test_sse_event_generator_streams_events(broadcaster):
     """Test event generator streams events from broadcaster."""
     analysis_id = uuid.uuid4()
     channel = f"workflow:{analysis_id}"
@@ -63,7 +79,7 @@ async def test_sse_event_generator_streams_events():
 
 
 @pytest.mark.asyncio
-async def test_sse_complete_event_closes_generator():
+async def test_sse_complete_event_closes_generator(broadcaster):
     """Test that complete event causes generator to break and close."""
     analysis_id = uuid.uuid4()
     channel = f"workflow:{analysis_id}"
@@ -89,7 +105,7 @@ async def test_sse_complete_event_closes_generator():
 
 
 @pytest.mark.asyncio
-async def test_sse_no_manual_disconnect_check():
+async def test_sse_no_manual_disconnect_check(broadcaster):
     """Test that manual disconnect checks are removed, relying on automatic detection."""
     analysis_id = uuid.uuid4()
     channel = f"workflow:{analysis_id}"
@@ -114,47 +130,64 @@ async def test_sse_no_manual_disconnect_check():
 
 
 @pytest.mark.asyncio
-async def test_sse_error_handling_connection_error():
+async def test_sse_error_handling_connection_error(broadcaster):
     """Test ConnectionError is handled and sent as structured error event."""
     analysis_id = uuid.uuid4()
 
     mock_request = MagicMock()
 
-    # Simulate ConnectionError by patching broadcaster
+    # Simulate ConnectionError by patching broadcaster's subscribe method
     with patch.object(broadcaster, "subscribe", side_effect=ConnectionError("Connection lost")):
-        response = await stream_analysis_progress(analysis_id, mock_request)
-        assert isinstance(response, EventSourceResponse)
+        # Patch factory to return our mocked broadcaster
+        with patch(
+            "app.api.v1.analysis.sse_handler.get_broadcaster",
+            return_value=broadcaster,
+        ):
+            response = await stream_analysis_progress(analysis_id, mock_request)
+            assert isinstance(response, EventSourceResponse)
 
-        # Event generator should yield error event on ConnectionError
-        # Tested indirectly via response creation (no crash)
+            # Event generator should yield error event on ConnectionError
+            # Tested indirectly via response creation (no crash)
 
 
 @pytest.mark.asyncio
-async def test_sse_error_handling_timeout_error():
+async def test_sse_error_handling_timeout_error(broadcaster):
     """Test TimeoutError is handled and sent as structured error event."""
     analysis_id = uuid.uuid4()
 
     mock_request = MagicMock()
 
+    # Simulate TimeoutError by patching broadcaster's subscribe method
     with patch.object(broadcaster, "subscribe", side_effect=TimeoutError("Operation timed out")):
-        response = await stream_analysis_progress(analysis_id, mock_request)
-        assert isinstance(response, EventSourceResponse)
+        # Patch factory to return our mocked broadcaster
+        with patch(
+            "app.api.v1.analysis.sse_handler.get_broadcaster",
+            return_value=broadcaster,
+        ):
+            response = await stream_analysis_progress(analysis_id, mock_request)
+            assert isinstance(response, EventSourceResponse)
 
-        # Error should be handled gracefully
+            # Error should be handled gracefully
 
 
 @pytest.mark.asyncio
-async def test_sse_error_handling_generic_exception():
+async def test_sse_error_handling_generic_exception(broadcaster):
     """Test generic exceptions are handled and sent as error events."""
     analysis_id = uuid.uuid4()
 
     mock_request = MagicMock()
 
+    # Simulate ValueError by patching broadcaster's subscribe method
     with patch.object(broadcaster, "subscribe", side_effect=ValueError("Unexpected error")):
-        response = await stream_analysis_progress(analysis_id, mock_request)
-        assert isinstance(response, EventSourceResponse)
+        # Patch factory to return our mocked broadcaster
+        with patch(
+            "app.api.v1.analysis.sse_handler.get_broadcaster",
+            return_value=broadcaster,
+        ):
+            response = await stream_analysis_progress(analysis_id, mock_request)
+            assert isinstance(response, EventSourceResponse)
 
-        # Error should be handled gracefully
+            # Error should be handled gracefully
 
 
 @pytest.mark.asyncio
@@ -177,7 +210,7 @@ async def test_sse_cancelled_error_propagates():
 
 
 @pytest.mark.asyncio
-async def test_sse_multiple_events():
+async def test_sse_multiple_events(broadcaster):
     """Test SSE endpoint handles multiple sequential events."""
     analysis_id = uuid.uuid4()
     channel = f"workflow:{analysis_id}"
@@ -254,7 +287,7 @@ async def test_sse_send_timeout_configured():
 
 
 @pytest.mark.asyncio
-async def test_sse_event_generator_cleanup():
+async def test_sse_event_generator_cleanup(broadcaster):
     """Test that event generator properly cleans up resources in finally block."""
     analysis_id = uuid.uuid4()
     channel = f"workflow:{analysis_id}"

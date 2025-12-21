@@ -1,4 +1,7 @@
-"""Integration tests for tutor API endpoints and SSE stream."""
+"""Integration tests for tutor API endpoints and SSE stream.
+
+Issue #444: Updated to use broadcaster factory for multi-instance support.
+"""
 
 import asyncio
 import uuid
@@ -11,7 +14,10 @@ from httpx import ASGITransport, AsyncClient
 
 from app.domains.tutor.repositories import get_tutor_repository
 from app.main import app
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
 
 
 @pytest.fixture
@@ -195,6 +201,9 @@ async def test_send_message_and_stream(
     async_client: AsyncClient, stub_tutor_workflow: None
 ) -> None:
     """Send a message and observe SSE stream output."""
+    # Issue #444: Get broadcaster from factory (uses in-memory for tests)
+    broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
     create_resp = await async_client.post(
         "/api/v1/tutor/sessions",
         json={"analysis_id": None, "user_level": "intermediate"},

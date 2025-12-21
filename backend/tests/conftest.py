@@ -41,7 +41,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.main import app
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster import EventBroadcaster
+from app.shared.services.messaging.broadcaster_factory import reset_broadcaster
 
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
 # to avoid DATABASE_URL validation errors in CI environments without database config
@@ -518,7 +519,10 @@ async def cleanup_event_broadcaster():
     """Clean up event broadcaster after each test.
 
     Leverages pytest 9.0.1's improved async fixture lifecycle management.
-    Clears all channels, subscriptions, and event buffers to prevent:
+    Issue #444: Uses reset_broadcaster() from factory pattern to properly
+    clean up both in-memory and Redis broadcasters.
+
+    This prevents:
     - Hanging tests from lingering event broadcaster queues
     - Flaky tests from previous test's buffered events being replayed
 
@@ -527,16 +531,12 @@ async def cleanup_event_broadcaster():
     No need for try/finally - automatic cleanup handles it.
 
     Note: Event buffers were added in commit 9430387 (SSE race condition fix).
-    This cleanup must clear buffers to prevent test pollution.
+    This cleanup must reset the broadcaster to prevent test pollution.
     """
     yield
-    # Clear all channels and subscriptions
-    # pytest 9.0.1 automatically ensures this cleanup runs even if test fails
-    broadcaster._channels.clear()
-    # CRITICAL: Also clear buffers to prevent test pollution
-    # Without this, buffered events from previous tests are replayed to new subscribers
-    # This caused flakiness in test_emit_streaming_event_with_kwargs
-    broadcaster._buffers.clear()
+    # Issue #444: Reset broadcaster factory singleton to ensure clean state
+    # This handles both in-memory and Redis broadcasters properly
+    await reset_broadcaster()
 
 
 @pytest_asyncio.fixture

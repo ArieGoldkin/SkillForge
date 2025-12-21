@@ -1,4 +1,8 @@
-"""Streaming endpoints for tutor (SSE)."""
+"""Streaming endpoints for tutor (SSE).
+
+Issue #444: Updated to use broadcaster factory for multi-instance support.
+Uses Redis Pub/Sub when available, falls back to in-memory broadcaster.
+"""
 
 import asyncio
 import json
@@ -10,11 +14,22 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Request
 from sse_starlette.sse import EventSourceResponse
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+def _get_broadcaster_backend() -> BroadcasterBackend:
+    """Get broadcaster backend from settings."""
+    settings = get_settings()
+    backend_str = settings.BROADCASTER_BACKEND.lower()
+    return BroadcasterBackend(backend_str)
 
 
 @router.get("/tutor/sessions/{session_id}/stream")
@@ -48,8 +63,14 @@ async def stream_tutor_progress(
 
         Uses aclosing() to ensure proper cleanup of the broadcaster subscription
         even if streaming is interrupted.
+
+        Issue #444: Uses broadcaster factory for multi-instance support.
+        Redis broadcaster shares events across all backend instances.
         """
         try:
+            # Issue #444: Get broadcaster from factory (Redis or in-memory based on config)
+            broadcaster = await get_broadcaster(_get_broadcaster_backend())
+
             # Use aclosing() to ensure proper cleanup of async generator
             # Type ignore: broadcaster.subscribe returns AsyncIterator which supports aclose()
             async with aclosing(broadcaster.subscribe(channel)) as subscription:  # type: ignore[type-var]

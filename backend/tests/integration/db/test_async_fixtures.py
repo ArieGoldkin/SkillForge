@@ -1,9 +1,15 @@
-"""Tests for pytest 9.0.1 async fixture improvements."""
+"""Tests for pytest 9.0.1 async fixture improvements.
+
+Issue #444: Updated to use broadcaster factory for multi-instance support.
+"""
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
 
 
 @pytest.mark.asyncio

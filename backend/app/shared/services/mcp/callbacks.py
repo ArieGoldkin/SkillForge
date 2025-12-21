@@ -3,6 +3,9 @@
 Provides integration between langchain-mcp-adapters 0.2 callbacks and SkillForge's
 observability stack (Langfuse, structlog, SSE broadcasting).
 
+Issue #444: Updated to use broadcaster factory for multi-instance support.
+Uses Redis Pub/Sub when available, falls back to in-memory broadcaster.
+
 Architecture:
     MCP Server Tool Execution
             |
@@ -14,7 +17,7 @@ Architecture:
             |
             +-- Langfuse observability (trace/observation updates)
             +-- Structlog (structured logging)
-            +-- EventBroadcaster (SSE for frontend progress)
+            +-- BroadcasterFactory (Redis/in-memory SSE for frontend progress)
 
 Features:
     - Real-time progress updates during MCP tool execution
@@ -43,10 +46,22 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.shared.services.messaging.broadcaster import broadcaster
+from app.shared.services.messaging.broadcaster_factory import (
+    BroadcasterBackend,
+    get_broadcaster,
+)
 
 logger = get_logger(__name__)
+
+
+def _get_broadcaster_backend() -> BroadcasterBackend:
+    """Get broadcaster backend from settings."""
+    settings = get_settings()
+    backend_str = settings.BROADCASTER_BACKEND.lower()
+    return BroadcasterBackend(backend_str)
+
 
 # ============================================================================
 # Import MCP Callback Types
@@ -418,6 +433,9 @@ class MCPCallbacks:
                 "percent": round(percent, 1) if percent is not None else None,
                 "message": message or f"{server_name} progress update",
             }
+
+            # Issue #444: Get broadcaster from factory (Redis or in-memory based on config)
+            broadcaster = await get_broadcaster(_get_broadcaster_backend())
 
             # Publish to analysis-specific channel
             channel = f"workflow:{self.analysis_id}"
