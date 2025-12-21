@@ -188,6 +188,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     analysisMetadata: typeof analysisMetadata
   } | null>(null)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Issue #438 - Using primitives instead of object reference to prevent infinite loops. The overallProgressChanged() comparison handles deep equality.
   useEffect(() => {
     const newMetadata = {
       artifactId: artifactId ?? null,
@@ -228,11 +229,10 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       setAnalysisMetadata(newMetadata)
       prevMetadataRef.current = newMetadata
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Break down overallProgress to primitives to prevent infinite loops (Issue #438). We use individual properties instead of the whole object to ensure stable references.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Issue #438: Use primitives to prevent infinite loops
   }, [
     artifactId,
     traceId,
-    // Break down overallProgress to primitives to prevent infinite loops
     overallProgress.stage,
     overallProgress.progress,
     overallProgress.currentStep,

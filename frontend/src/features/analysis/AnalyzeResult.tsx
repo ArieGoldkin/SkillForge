@@ -79,20 +79,22 @@ const useSSELifecycle = ({
 const isStatusComplete = (status?: string) => status === 'completed' || status === 'complete'
 
 // Check if truly complete (all stages passed, 100% progress)
+// Uses primitive values to avoid object reference issues in React dependency arrays
 const checkIsTrulyComplete = (params: {
   hasFailedStages: boolean
   completed?: boolean
   urlArtifactId?: string
   resolvedStatus?: string
   isComplete: boolean
-  overallProgress: { stage: string; progress: number }
+  progressStage: string
+  progressPercent: number
 }) =>
   !params.hasFailedStages &&
   ((params.completed && Boolean(params.urlArtifactId)) ||
     isStatusComplete(params.resolvedStatus) ||
     (params.isComplete &&
-      params.overallProgress.stage === 'complete' &&
-      params.overallProgress.progress === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
+      params.progressStage === 'complete' &&
+      params.progressPercent === BUSINESS_CONSTANTS.PROGRESS_COMPLETE_PERCENTAGE))
 
 /**
  * Custom hook for managing focus when analysis completes
@@ -192,7 +194,8 @@ export default function AnalyzeResult() {
       urlArtifactId,
       resolvedStatus,
       isComplete,
-      overallProgress,
+      progressStage: overallProgress.stage,
+      progressPercent: overallProgress.progress,
     })
 
     const isResolvedComplete = isTrulyComplete
@@ -209,7 +212,7 @@ export default function AnalyzeResult() {
       isFailed,
       effectiveError,
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Break down overallProgress to primitives (Issue #438)
+    // Issue #438: Use primitives from overallProgress to prevent infinite re-renders
   }, [
     artifactId,
     urlArtifactId,
