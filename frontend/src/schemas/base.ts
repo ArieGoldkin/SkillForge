@@ -33,6 +33,9 @@ export const StageStatusSchema = z.enum([
 /**
  * Agent stage names - represent individual processing stages
  * These match backend stage names from AGENT_REGISTRY (backend/app/core/agent_config.py)
+ *
+ * Backend sends these exact stage names via SSE events.
+ * DO NOT add backwards-compatible aliases - this is FORWARD-ONLY.
  */
 export const AgentStageNameSchema = z.enum([
   // Core workflow stages (always present)
@@ -40,7 +43,6 @@ export const AgentStageNameSchema = z.enum([
   'embedding',
   'supervisor_routing',
   'aggregation',
-  'quality_validation',
   'artifact_generation',
   // Agent stages (dynamically selected by supervisor, 0-8 agents)
   'tech_comparison',
@@ -54,6 +56,7 @@ export const AgentStageNameSchema = z.enum([
   'chunking', // Only if ENABLE_COARSE_TO_FINE=true
   // Quality gate stages (emitted during quality validation)
   'quality_gate',
+  'quality_validation',
 ])
 
 /**

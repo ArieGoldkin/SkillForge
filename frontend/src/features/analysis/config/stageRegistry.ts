@@ -64,6 +64,7 @@ export interface StageRegistryEntry {
  */
 export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   // ===== WORKFLOW STAGES (Core Pipeline Flow) =====
+  // Backend sends these exact stage names
   extraction: {
     id: 'extraction',
     title: 'Content Extraction',
@@ -170,7 +171,7 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
     order: STAGE_ORDER_CONSTANTS.STAGE_QUALITY_VALIDATION,
     uiStage: 'generating',
     category: 'quality',
-    agentTypes: ['quality_validation'],
+    agentTypes: ['quality_validation', 'quality_gate'], // quality_gate is an alias for the same stage
   },
   artifact_generation: {
     id: 'artifact_generation',

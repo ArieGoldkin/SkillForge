@@ -144,6 +144,7 @@ export function getAgentName(stage: StageName, details?: Record<string, unknown>
     embedding: 'Embedding Generator',
     supervisor_routing: 'Supervisor',
     aggregation: 'Aggregator',
+    quality_gate: 'Quality Validator', // Alias for quality_validation
     quality_validation: 'Quality Validator',
     artifact_generation: 'Report Generator',
     // Agent stages
@@ -170,6 +171,7 @@ const RUNNING_ACTIONS: Record<StageName, string> = {
   embedding: 'Generating embeddings...',
   supervisor_routing: 'Routing analysis to specialized agents...',
   aggregation: 'Aggregating agent results...',
+  quality_gate: 'Validating quality standards...', // Alias for quality_validation
   quality_validation: 'Validating quality standards...',
   artifact_generation: 'Generating implementation guide...',
   // Agent stages

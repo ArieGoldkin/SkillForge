@@ -116,9 +116,31 @@ describe('SSE Event Schemas - Valid Events', () => {
         'workflow',
         'pattern_comparison',
         'metrics',
+        'quality_gate',
       ]
 
       stages.forEach((stage) => {
+        const event = {
+          type: 'progress',
+          analysis_id: VALID_ANALYSIS_ID,
+          stage,
+          status: 'running',
+          timestamp: VALID_TIMESTAMP,
+        }
+
+        const result = SSEProgressEventSchema.safeParse(event)
+        expect(result.success).toBe(true)
+      })
+    })
+
+    it('should validate progress events with backend stage names', () => {
+      const backendStages = [
+        'extraction', // Backend stage name
+        'embedding', // Backend stage name
+        'supervisor_routing', // Backend stage name
+      ]
+
+      backendStages.forEach((stage) => {
         const event = {
           type: 'progress',
           analysis_id: VALID_ANALYSIS_ID,
