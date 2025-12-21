@@ -369,20 +369,23 @@ NEW WAY (semantic discovery):
 
 ## 📚 Claude Code Skills
 
-**23 specialized knowledge modules** installed in `.claude/skills/` directory:
+**27 specialized knowledge modules** installed in `.claude/skills/` directory:
 
 | Skill | Use When |
 |-------|----------|
 | **ai-native-development** | Building RAG pipelines, embeddings, vector DBs, LLM integration |
 | **api-design-framework** | Designing REST/GraphQL/gRPC APIs |
 | **architecture-decision-record** | Documenting architectural decisions (ADRs) |
+| **ascii-visualizer** | Creating ASCII diagrams for architecture, workflows, progress (new Dec 2025) |
 | **brainstorming** | Refining rough ideas through Socratic questioning (expanded Dec 2025) |
+| **browser-content-capture** | Capturing JS-rendered pages, auth-protected content via Playwright (new Dec 2025) |
 | **code-review-playbook** | Conducting code reviews with conventional comments |
 | **database-schema-designer** | Designing SQL/NoSQL schemas and migrations |
 | **design-system-starter** | Creating design systems, tokens, components |
 | **devops-deployment** | CI/CD pipelines, Docker, Kubernetes, GitOps (expanded Dec 2025) |
 | **edge-computing-patterns** | Deploying to Cloudflare Workers, Vercel Edge, Deno Deploy |
 | **evidence-verification** | Collecting quality evidence (v3.5.0) |
+| **github-cli** | GitHub CLI mastery for issues, PRs, Projects v2, automation (new Dec 2025) |
 | **golden-dataset-management** | Backup/restore for test datasets, data validation (new Dec 2025) |
 | **langfuse-observability** | Self-hosted LLM observability, replaces LangSmith (new Dec 2025) |
 | **langgraph-workflows** | Multi-agent workflow orchestration with LangGraph (new Dec 2025) |
@@ -396,6 +399,7 @@ NEW WAY (semantic discovery):
 | **streaming-api-patterns** | SSE, WebSockets, ReadableStream, real-time APIs |
 | **testing-strategy-builder** | Building test plans and coverage strategies |
 | **type-safety-validation** | End-to-end type safety with Zod, tRPC, Prisma |
+| **webapp-testing** | Playwright testing with autonomous test agents (new Dec 2025) |
 
 **How to use skills (v4.0 - Progressive Loading):**
 1. **FIRST**: Read `.claude/skills/<skill-name>/capabilities.json` (~100 tokens)
@@ -523,6 +527,8 @@ poetry run python scripts/backup_golden_dataset.py restore
 
 ---
 *💡 This CLAUDE.md uses directive language patterns from Anthropic best practices (2025) to ensure proactive agent activation and context awareness while saving ~80% tokens through on-demand instruction loading.*
+
+*📦 v4.2.0 (Dec 2025): Complete skills ecosystem - 27 skills fully wired to agents with gold-standard structure (SKILL.md, capabilities.json, references/, templates/, examples/, checklists/). Added: ascii-visualizer, browser-content-capture, github-cli, webapp-testing. All skills now have valid file references and proper agent mappings.*
 
 *📦 v4.1.0 (Dec 2025): Expanded skills ecosystem - 5 new skills (LLM caching, Langfuse observability, LangGraph workflows, PGVector search, golden dataset management) + 4 major skill expansions (brainstorming, performance, devops, observability).*
 
