@@ -110,8 +110,7 @@ def _format_findings_for_compression(findings_data: Any) -> str:
                 if isinstance(value, list):
                     lines.append(f"{key}: {len(value)} items")
                     # Show first 2 items as examples
-                    for item in value[:2]:
-                        lines.append(f"  - {_format_value(item)}")
+                    lines.extend(f"  - {_format_value(item)}" for item in value[:2])
                 else:
                     lines.append(f"{key}: {_format_value(value)}")
             else:
@@ -253,7 +252,7 @@ async def compress_single_finding(
     tags=["compression", "aggregation", "parallel", "abatch"],
     metadata={"service": "finding_compression"},
 )
-async def compress_all_findings(
+async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing logic
     agent_findings: dict[str, dict[str, Any]],
     analysis_id: str,
 ) -> list[CompressedFinding]:
@@ -308,16 +307,16 @@ async def compress_all_findings(
 
     # Prepare batch inputs for parallel processing with abatch()
     # Each input is a list of messages for one agent's findings
-    from langchain_core.messages import HumanMessage, SystemMessage
+    from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
-    batch_inputs: list[list[SystemMessage | HumanMessage]] = []
+    batch_inputs: list[list[BaseMessage]] = []
     agent_names: list[str] = []
 
     for agent_name, finding in agent_findings.items():
         agent_names.append(agent_name)
         user_prompt = build_compression_user_prompt(agent_name, finding)
 
-        messages: list[SystemMessage | HumanMessage] = [
+        messages: list[BaseMessage] = [
             SystemMessage(content=COMPRESSION_SYSTEM_PROMPT),
             HumanMessage(content=user_prompt),
         ]
@@ -331,8 +330,9 @@ async def compress_all_findings(
 
     try:
         # LangChain's abatch() processes all inputs in parallel
+        # Type checker doesn't see list[BaseMessage] as valid Sequence[BaseMessage]
         results = await llm_with_structure.abatch(
-            batch_inputs,
+            batch_inputs,  # type: ignore[arg-type]
             config=config,
             max_concurrency=5,  # Prevent rate limit violations
         )

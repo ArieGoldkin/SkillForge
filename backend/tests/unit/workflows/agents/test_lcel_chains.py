@@ -51,7 +51,6 @@ class TestLCELAgentFactory:
 
         agent = create_agent_with_lcel_fallback(
             agent_type="test_agent",
-            system_prompt="Test prompt",
             response_schema=MockResponseSchema,
         )
 
@@ -87,7 +86,6 @@ class TestLCELAgentFactory:
 
         agent = create_agent_with_lcel_fallback(
             agent_type="test_agent",
-            system_prompt="Test prompt",
             response_schema=MockResponseSchema,
             fallback_model="fallback-model",
         )
@@ -102,7 +100,6 @@ class TestLCELAgentFactory:
 
         create_agent_with_lcel_fallback(
             agent_type="test_agent",
-            system_prompt="Test prompt",
             response_schema=MockResponseSchema,
         )
 

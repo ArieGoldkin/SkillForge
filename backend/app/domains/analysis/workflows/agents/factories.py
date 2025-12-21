@@ -49,9 +49,8 @@ from app.shared.services.embeddings.service import EmbeddingService
 logger = get_logger(__name__)
 
 
-def create_agent_with_lcel_fallback(
+def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
     agent_type: str,
-    system_prompt: str,
     response_schema: type[BaseModel],
     tools: Sequence[BaseTool] | None = None,
     tool_call_config: ToolCallConfig | None = None,
@@ -65,7 +64,6 @@ def create_agent_with_lcel_fallback(
 
     Args:
         agent_type: Type of agent (for logging)
-        system_prompt: System prompt for the agent
         response_schema: Pydantic model defining expected output structure
         tools: Optional MCP tools for tool-enabled agents
         tool_call_config: Optional tool call configuration
@@ -104,13 +102,14 @@ def create_agent_with_lcel_fallback(
     fallback_with_structure = fallback.with_structured_output(response_schema, strict=True)
 
     # Bind tools if provided
+    # Note: Type checker doesn't see bind_tools on Runnable, but it exists at runtime
     if tools:
-        primary_with_structure = primary_with_structure.bind_tools(
+        primary_with_structure = primary_with_structure.bind_tools(  # type: ignore[attr-defined]
             list(tools),
             tool_choice="auto",
             parallel_tool_calls=tool_call_config.parallel_tool_calls if tool_call_config else True,
         )
-        fallback_with_structure = fallback_with_structure.bind_tools(
+        fallback_with_structure = fallback_with_structure.bind_tools(  # type: ignore[attr-defined]
             list(tools),
             tool_choice="auto",
             parallel_tool_calls=tool_call_config.parallel_tool_calls if tool_call_config else True,

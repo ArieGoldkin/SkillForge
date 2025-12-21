@@ -237,7 +237,7 @@ async def synthesize_with_llm_phased(
 async def _synthesize_core(
     compressed_findings: list,  # CompressedFinding from compress_findings
     conflicts: list[dict[str, str]],
-    confidence_scores: dict[str, float],
+    confidence_scores: dict[str, float],  # noqa: ARG001 - Reserved for future use
     analysis_id: str,
 ) -> dict:  # CoreSynthesisSchema dict
     """Phase 1: Generate core synthesis (REQUIRED) using LCEL chains.
