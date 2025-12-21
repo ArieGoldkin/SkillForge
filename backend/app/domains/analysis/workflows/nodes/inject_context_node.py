@@ -36,6 +36,11 @@ async def inject_context_node(state: AnalysisState) -> dict[str, object]:
         Dictionary with proactive_context field containing formatted memory context
 
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("inject_context_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     analysis_id = state["analysis_id"]
     raw_content = state.get("raw_content", "")
 

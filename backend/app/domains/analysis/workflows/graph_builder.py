@@ -247,6 +247,11 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("generate_embedding_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     content = state["raw_content"]
     analysis_id = state["analysis_id"]
     embedding = await generate_embedding(content, analysis_id)
@@ -263,6 +268,11 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
     it returns empty results without doing any work (preserving the legacy
     single-embedding behavior).
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("chunk_and_embed_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     # Gate: Skip chunking if coarse-to-fine is disabled
     if not getattr(settings, "ENABLE_COARSE_TO_FINE", False):
         return {
@@ -338,6 +348,11 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
 
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
+    # Issue #441: Skip if workflow is aborting
+    if state.get("should_abort"):
+        logger.debug("supervisor_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
     content = state["raw_content"]
     content_type = state["content_type"]
     analysis_id = state["analysis_id"]
@@ -357,7 +372,14 @@ def _route_after_extraction(state: AnalysisState) -> str:
     Issue #441: If extraction failed or error page detected, route to
     workflow_failed node instead of continuing to embedding generation.
     """
-    if state.get("should_abort"):
+    should_abort = state.get("should_abort")
+    logger.debug(
+        "route_after_extraction_decision",
+        analysis_id=state.get("analysis_id"),
+        should_abort=should_abort,
+        route="workflow_failed" if should_abort else "embedding",
+    )
+    if should_abort:
         return "workflow_failed"
     return "embedding"
 
@@ -481,20 +503,25 @@ def build_analysis_graph():
 
     Workflow structure:
     1. Extract content (sequential)
-    2. Fan-out: Embedding + Supervisor + Inject Context (parallel)
-    3. Fan-out: Selected agents (native LangGraph parallel via Send API)
-    4. Fan-in: Aggregate findings (waits for all agent nodes)
-    5. Quality gate validation (with retry loop)
+    2. Generate embedding (sequential)
+    3. Fan-out: Chunk + Embed, Inject Context, Supervisor (parallel)
+    4. Fan-out: Selected agents (native LangGraph parallel via Send API)
+    5. Fan-in: Aggregate findings (waits for all agent nodes)
+    6. Quality gate validation (with retry loop)
        - If quality < threshold and retries available: increment_retry -> aggregate
        - If quality passes or max retries: continue -> generate_artifact
-    6. Generate artifact
-    7. End
+    7. Generate artifact
+    8. End
 
-    Issue #300: inject_context node runs in parallel with embedding and supervisor
+    Issue #300: inject_context node runs in parallel with chunk_and_embed and supervisor
     to fetch relevant memories from past analyses and make them available to agents.
 
     Issue #301: quality_gate node validates synthesis quality using LLM-as-judge
     evaluators and triggers retry if quality falls below threshold (up to 2 retries).
+
+    Issue #441: If extraction fails (should_abort=True), workflow routes to workflow_failed
+    node which terminates the workflow early. The conditional edge ensures parallel nodes
+    only execute when extraction succeeds.
 
     Returns:
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
@@ -543,11 +570,13 @@ def build_analysis_graph():
         },
     )
 
-    # Fan-out: chunk_and_embed, inject_context, and supervisor run in parallel after extract
-    # Note: embedding is now handled by conditional edge above
-    graph.add_edge("extract", "chunk_and_embed")
-    graph.add_edge("extract", "inject_context")
-    graph.add_edge("extract", "supervisor")
+    # Fan-out: chunk_and_embed, inject_context, and supervisor run in parallel after embedding
+    # Issue #441: These nodes must run AFTER embedding (not after extract) to respect abort signal
+    # The conditional edge above routes to workflow_failed when should_abort=True,
+    # so these nodes only execute when extraction succeeds
+    graph.add_edge("embedding", "chunk_and_embed")
+    graph.add_edge("embedding", "inject_context")
+    graph.add_edge("embedding", "supervisor")
 
     # Fan-out: Supervisor routes to selected agents dynamically using Send API
     # Conditional edge returns list[Send] objects for parallel execution
