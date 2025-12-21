@@ -452,7 +452,7 @@ class HTMLParser:
                 self.current_text: list[str] = []
                 self.skip_depth = 0
 
-            def handle_starttag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
+            def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:  # noqa: ARG002
                 self.tag_stack.append(tag)
                 if tag in skip_tags:
                     self.skip_depth += 1

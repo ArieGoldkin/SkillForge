@@ -22,15 +22,18 @@ def mock_request():
     return request
 
 
-@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.get_broadcaster")
 @patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_success(
     mock_logger,
-    mock_broadcaster,
+    mock_get_broadcaster,
     mock_analysis_id,
     mock_request,
 ):
     """Test successful SSE streaming."""
+
+    # Create mock broadcaster with subscribe method
+    mock_broadcaster = MagicMock()
 
     # Mock broadcaster to yield events
     async def mock_subscribe(channel):
@@ -39,6 +42,9 @@ async def test_stream_analysis_progress_success(
         yield {"type": "complete", "stage": "artifact_generation"}
 
     mock_broadcaster.subscribe = mock_subscribe
+
+    # Make get_broadcaster return the mock (it's an async function)
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Call the function
     response = await stream_analysis_progress(mock_analysis_id, mock_request)
@@ -57,15 +63,18 @@ async def test_stream_analysis_progress_success(
     assert len(events) >= 3
 
 
-@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.get_broadcaster")
 @patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_client_disconnect(
     mock_logger,
-    mock_broadcaster,
+    mock_get_broadcaster,
     mock_analysis_id,
     mock_request,
 ):
     """Test SSE streaming when client disconnects."""
+    # Create mock broadcaster with subscribe method
+    mock_broadcaster = MagicMock()
+
     # Mock broadcaster to yield events
     call_count = {"count": 0}
 
@@ -78,6 +87,9 @@ async def test_stream_analysis_progress_client_disconnect(
 
     mock_broadcaster.subscribe = mock_subscribe
 
+    # Make get_broadcaster return the mock (it's an async function)
+    mock_get_broadcaster.return_value = mock_broadcaster
+
     # Call the function - should handle disconnect gracefully
     response = await stream_analysis_progress(mock_analysis_id, mock_request)
 
@@ -86,15 +98,17 @@ async def test_stream_analysis_progress_client_disconnect(
     assert response is not None
 
 
-@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.get_broadcaster")
 @patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_error(
     mock_logger,
-    mock_broadcaster,
+    mock_get_broadcaster,
     mock_analysis_id,
     mock_request,
 ):
     """Test SSE streaming with error handling."""
+    # Create mock broadcaster with subscribe method
+    mock_broadcaster = MagicMock()
 
     # Mock broadcaster to raise an error
     async def mock_subscribe(channel):
@@ -103,6 +117,9 @@ async def test_stream_analysis_progress_error(
         raise ConnectionError(msg)
 
     mock_broadcaster.subscribe = mock_subscribe
+
+    # Make get_broadcaster return the mock (it's an async function)
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Call the function - should handle error gracefully
     response = await stream_analysis_progress(mock_analysis_id, mock_request)
@@ -117,15 +134,17 @@ async def test_stream_analysis_progress_error(
     assert response is not None
 
 
-@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.get_broadcaster")
 @patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_complete_event(
     mock_logger,
-    mock_broadcaster,
+    mock_get_broadcaster,
     mock_analysis_id,
     mock_request,
 ):
     """Test SSE streaming with complete event closes connection."""
+    # Create mock broadcaster with subscribe method
+    mock_broadcaster = MagicMock()
 
     # Mock broadcaster to yield complete event
     async def mock_subscribe(channel):
@@ -133,6 +152,9 @@ async def test_stream_analysis_progress_complete_event(
         yield {"type": "complete", "stage": "artifact_generation"}
 
     mock_broadcaster.subscribe = mock_subscribe
+
+    # Make get_broadcaster return the mock (it's an async function)
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Call the function
     response = await stream_analysis_progress(mock_analysis_id, mock_request)
@@ -156,16 +178,19 @@ async def test_stream_analysis_progress_complete_event(
     assert len(events) >= 1
 
 
-@patch("app.api.v1.analysis.sse_handler.broadcaster")
+@patch("app.api.v1.analysis.sse_handler.get_broadcaster")
 @patch("app.api.v1.analysis.sse_handler.logger")
 async def test_stream_analysis_progress_cancelled(
     mock_logger,
-    mock_broadcaster,
+    mock_get_broadcaster,
     mock_analysis_id,
     mock_request,
 ):
     """Test SSE streaming with cancellation."""
     import asyncio
+
+    # Create mock broadcaster with subscribe method
+    mock_broadcaster = MagicMock()
 
     # Mock broadcaster to raise CancelledError
     async def mock_subscribe(channel):
@@ -173,6 +198,9 @@ async def test_stream_analysis_progress_cancelled(
         raise asyncio.CancelledError()
 
     mock_broadcaster.subscribe = mock_subscribe
+
+    # Make get_broadcaster return the mock (it's an async function)
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Call the function - should handle CancelledError gracefully
     response = await stream_analysis_progress(mock_analysis_id, mock_request)

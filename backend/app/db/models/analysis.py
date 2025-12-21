@@ -25,7 +25,7 @@ class Analysis(Base):
     __tablename__ = "analyses"
 
     id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    url = Column(Text, nullable=False, index=True)
+    url = Column(Text, nullable=False, unique=True, index=True)
     content_type = Column(String(50), nullable=False)  # 'article', 'video', 'repo'
     title = Column(Text)
     raw_content = Column(Text)

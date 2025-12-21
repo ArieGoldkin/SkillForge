@@ -288,9 +288,9 @@ class OpenAIBatchClient:
                 "id": batch.id,
                 "status": batch.status,
                 "request_counts": {
-                    "total": batch.request_counts.total,
-                    "completed": batch.request_counts.completed,
-                    "failed": batch.request_counts.failed,
+                    "total": batch.request_counts.total if batch.request_counts else 0,
+                    "completed": batch.request_counts.completed if batch.request_counts else 0,
+                    "failed": batch.request_counts.failed if batch.request_counts else 0,
                 },
                 "output_file_id": batch.output_file_id,
                 "error_file_id": batch.error_file_id,

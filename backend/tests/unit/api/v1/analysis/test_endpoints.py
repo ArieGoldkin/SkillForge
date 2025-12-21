@@ -4,7 +4,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import status
+from fastapi import Response, status
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,7 +39,15 @@ def create_mock_analysis_repo() -> AsyncMock:
     """Create a mocked analysis repository for unit tests."""
     mock_repo = AsyncMock()
     mock_repo.create_analysis = AsyncMock()
+    mock_repo.get_by_url = AsyncMock(return_value=None)  # Default: no existing analysis
+    mock_repo.session = AsyncMock()
+    mock_repo.session.rollback = AsyncMock()
     return mock_repo
+
+
+def create_mock_response() -> Response:
+    """Create a mock FastAPI Response for status code manipulation."""
+    return Response()
 
 
 class TestCreateAnalysis:
@@ -73,11 +81,17 @@ class TestCreateAnalysis:
         mock_fastapi_request = MagicMock()
         mock_fastapi_request.app.state.background_tasks = set()
 
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
         # Mock UUID generation
         with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
             # Call endpoint directly with mocked database session
             response = await create_analysis(
-                request, fastapi_request=mock_fastapi_request, analysis_repo=mock_repo
+                request,
+                fastapi_request=mock_fastapi_request,
+                response=mock_response,
+                analysis_repo=mock_repo,
             )
 
         # Assertions
@@ -149,35 +163,61 @@ class TestCreateAnalysis:
         mock_fastapi_request = MagicMock()
         mock_fastapi_request.app.state.background_tasks = set()
 
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
         response = await create_analysis(
-            request, fastapi_request=mock_fastapi_request, analysis_repo=mock_repo
+            request,
+            fastapi_request=mock_fastapi_request,
+            response=mock_response,
+            analysis_repo=mock_repo,
         )
 
         mock_normalize_id.assert_called_once_with("custom-id-123")
         assert response.analysis_id == str(analysis_uuid)
 
+    @pytest.mark.asyncio
     @patch("app.api.v1.analysis.endpoints.detect_content_type")
     @patch("app.api.v1.analysis.endpoints.normalize_analysis_id_to_uuid")
-    def test_create_analysis_invalid_custom_id(
+    async def test_create_analysis_invalid_custom_id(
         self,
         mock_normalize_id,
         mock_detect_type,
-        client: TestClient,
     ):
         """Test that invalid custom analysis_id returns 422."""
+        from fastapi import HTTPException
+
+        from app.api.v1.analysis.endpoints import create_analysis
+        from app.domains.analysis.schemas.api import AnalyzeRequest
+
         mock_detect_type.return_value = "article"
         mock_normalize_id.side_effect = ValueError("Invalid UUID format")
 
-        response = client.post(
-            "/api/v1/analyze",
-            json={
-                "url": "https://example.com/article",
-                "analysis_id": "invalid-id",
-            },
+        # Create mocked repository (no real DB connection needed for unit tests)
+        mock_repo = create_mock_analysis_repo()
+
+        request = AnalyzeRequest(
+            url="https://example.com/article",
+            analysis_id="invalid-id",
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-        assert "Invalid analysis_id format" in response.json()["detail"]
+        # Mock FastAPI Request for app.state.background_tasks
+        mock_fastapi_request = MagicMock()
+        mock_fastapi_request.app.state.background_tasks = set()
+
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_analysis(
+                request,
+                fastapi_request=mock_fastapi_request,
+                response=mock_response,
+                analysis_repo=mock_repo,
+            )
+
+        assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        assert "Invalid analysis_id format" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     @patch("app.api.v1.analysis.endpoints.asyncio.create_task")
@@ -204,11 +244,16 @@ class TestCreateAnalysis:
         for url, expected_type in test_cases:
             # Generate unique UUID for each test case
             test_uuid = uuid.uuid4()
+            # Create fresh mock response for each iteration
+            mock_response = create_mock_response()
             with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=test_uuid):
                 mock_detect_type.return_value = expected_type
                 request = AnalyzeRequest(url=url)
                 response = await create_analysis(
-                    request, fastapi_request=mock_fastapi_request, analysis_repo=mock_repo
+                    request,
+                    fastapi_request=mock_fastapi_request,
+                    response=mock_response,
+                    analysis_repo=mock_repo,
                 )
                 assert response.content_type == expected_type
 
@@ -235,9 +280,15 @@ class TestCreateAnalysis:
         mock_fastapi_request = MagicMock()
         mock_fastapi_request.app.state.background_tasks = set()
 
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
         with pytest.raises(HTTPException) as exc_info:
             await create_analysis(
-                request, fastapi_request=mock_fastapi_request, analysis_repo=mock_repo
+                request,
+                fastapi_request=mock_fastapi_request,
+                response=mock_response,
+                analysis_repo=mock_repo,
             )
 
         # Should raise 500 for database errors
@@ -269,9 +320,15 @@ class TestCreateAnalysis:
         mock_fastapi_request = MagicMock()
         mock_fastapi_request.app.state.background_tasks = set()
 
+        # Create mock response for status code manipulation
+        mock_response = create_mock_response()
+
         with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
             response = await create_analysis(
-                request, fastapi_request=mock_fastapi_request, analysis_repo=mock_repo
+                request,
+                fastapi_request=mock_fastapi_request,
+                response=mock_response,
+                analysis_repo=mock_repo,
             )
 
         assert response.sse_endpoint.startswith("/api/v1/analyze/")

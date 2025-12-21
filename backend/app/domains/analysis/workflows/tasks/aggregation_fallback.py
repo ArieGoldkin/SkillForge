@@ -311,7 +311,7 @@ async def _attempt_synthesis(  # noqa: PLR0913
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
     analysis_id: AnalysisID,
-    _model: str,
+    model: str,  # noqa: ARG001 - Parameter reserved for future model selection
     response_schema: type[BaseModel],
     timeout: int,  # noqa: ASYNC109
     system_prompt: str | None = None,

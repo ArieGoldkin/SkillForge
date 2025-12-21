@@ -5,7 +5,8 @@ import os
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
+from sqlalchemy.exc import IntegrityError
 
 from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
@@ -105,6 +106,7 @@ async def stream_analysis_progress_endpoint(
 async def create_analysis(
     request: AnalyzeRequest,
     fastapi_request: Request,
+    response: Response,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
 ) -> AnalyzeCreateResponse:
     """Create a new analysis and start the workflow.
@@ -114,13 +116,18 @@ async def create_analysis(
     immediately with the analysis_id, allowing clients to connect to the SSE
     endpoint for real-time progress updates.
 
+    Implements idempotency: if an analysis already exists for the URL, returns
+    the existing analysis with HTTP 200 instead of creating a duplicate.
+
     Args:
         request: AnalyzeRequest containing URL and optional analysis_id
         fastapi_request: FastAPI Request object for accessing app.state
+        response: FastAPI Response object for setting status code
         analysis_repo: Repository for analysis persistence operations
 
     Returns:
-        AnalyzeCreateResponse with analysis_id, URL, content_type, status, and SSE endpoint
+        AnalyzeCreateResponse with analysis_id, URL, content_type, status, SSE endpoint,
+        and existing flag indicating if analysis was newly created or already existed
 
     Raises:
         HTTPException: 422 if URL validation fails or content type detection fails
@@ -142,6 +149,25 @@ async def create_analysis(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Invalid URL format: {e!s}",
         ) from e
+
+    # Check for existing analysis by URL (idempotency)
+    existing_analysis = await analysis_repo.get_by_url(url_str)
+    if existing_analysis:
+        logger.info(
+            "analysis_exists_returning_cached",
+            analysis_id=str(existing_analysis.id),
+            url=url_str,
+        )
+        response.status_code = status.HTTP_200_OK
+        sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{existing_analysis.id}/stream"
+        return AnalyzeCreateResponse(
+            analysis_id=str(existing_analysis.id),
+            url=url_str,
+            content_type=str(existing_analysis.content_type),
+            status=str(existing_analysis.status),
+            sse_endpoint=sse_endpoint,
+            existing=True,
+        )
 
     # Generate or normalize analysis_id
     if request.analysis_id:
@@ -175,6 +201,33 @@ async def create_analysis(
             url=url_str,
             content_type=content_type,
         )
+    except IntegrityError as integrity_err:
+        # Race condition: another request created this URL between our check and insert
+        # Need to access session through the repository implementation
+        if hasattr(analysis_repo, "session"):
+            await analysis_repo.session.rollback()  # type: ignore[attr-defined]
+        existing_analysis = await analysis_repo.get_by_url(url_str)
+        if existing_analysis:
+            logger.info(
+                "analysis_race_condition_returning_existing",
+                analysis_id=str(existing_analysis.id),
+                url=url_str,
+            )
+            response.status_code = status.HTTP_200_OK
+            sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{existing_analysis.id}/stream"
+            return AnalyzeCreateResponse(
+                analysis_id=str(existing_analysis.id),
+                url=url_str,
+                content_type=str(existing_analysis.content_type),
+                status=str(existing_analysis.status),
+                sse_endpoint=sse_endpoint,
+                existing=True,
+            )
+        # If we still can't find it, something is seriously wrong
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create or retrieve analysis",
+        ) from integrity_err
     except Exception as e:
         logger.error(
             "analysis_creation_failed",
@@ -218,6 +271,7 @@ async def create_analysis(
         content_type=content_type,
         status="pending",
         sse_endpoint=sse_endpoint,
+        existing=False,
     )
 
 

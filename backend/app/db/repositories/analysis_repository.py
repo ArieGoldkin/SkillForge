@@ -44,6 +44,10 @@ class IAnalysisRepository(Protocol):
         """Create a new analysis record."""
         ...
 
+    async def get_by_url(self, url: str) -> Analysis | None:
+        """Get an existing analysis by URL."""
+        ...
+
     async def find_similar_analyses(
         self,
         query_embedding: list[float],
@@ -100,6 +104,11 @@ class AnalysisRepository:
         await self.session.commit()
         await self.session.refresh(analysis)
         return analysis
+
+    async def get_by_url(self, url: str) -> Analysis | None:
+        """Get analysis by URL for idempotency check."""
+        result = await self.session.execute(select(Analysis).where(Analysis.url == url))
+        return result.scalar_one_or_none()
 
     async def find_similar_analyses(
         self,
