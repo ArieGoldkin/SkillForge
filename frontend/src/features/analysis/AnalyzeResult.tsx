@@ -86,9 +86,7 @@ const useSSELifecycle = ({
  * @param artifactId - The artifact ID from SSE complete event or URL params
  * @returns true if analysis has completed (artifact exists)
  */
-const checkIsTrulyComplete = (params: {
-  artifactId: string | null | undefined
-}): boolean => {
+const checkIsTrulyComplete = (params: { artifactId: string | null | undefined }): boolean => {
   // Single source of truth: artifact exists = analysis complete
   return Boolean(params.artifactId)
 }
@@ -207,15 +205,7 @@ export default function AnalyzeResult() {
       effectiveError,
     }
     // Issue #439: Simplified dependencies - no longer depends on progress stage/percent
-  }, [
-    artifactId,
-    urlArtifactId,
-    statusState,
-    isComplete,
-    hasError,
-    error,
-    errorMessage,
-  ])
+  }, [artifactId, urlArtifactId, statusState, isComplete, hasError, error, errorMessage])
 
   // 🎯 DECLARATIVE RENDER ROUTER - Replaces 100+ lines of complex conditionals
   // All routing logic is now handled by the AnalysisRenderRouter component
