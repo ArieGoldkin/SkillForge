@@ -287,8 +287,8 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
 
     # SSE: chunking started
     from app.shared.services.messaging.sse_helpers import (
-        emit_streaming_event,
-    )  # local import to avoid cycles
+        emit_streaming_event,  # local import to avoid cycles
+    )
 
     await emit_streaming_event(
         "progress",

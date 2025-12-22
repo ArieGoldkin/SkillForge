@@ -218,4 +218,3 @@ async def test_orchestrator_sets_analysis_failed_when_result_incomplete(
     assert analysis_failed_call is not None, "Expected status to be set to analysis_failed"
     assert analysis_failed_call[0][0] == mock_analysis_id
     assert analysis_failed_call[0][1] == AnalysisStatus.ANALYSIS_FAILED.value
-

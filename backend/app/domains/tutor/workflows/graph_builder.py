@@ -27,9 +27,7 @@ from app.domains.tutor.workflows.state_accessors import get_syllabus
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
-    from langgraph.checkpoint.postgres import (  # type: ignore[unresolved-import]
-        PostgresSaver,
-    )
+    from langgraph.checkpoint.postgres import PostgresSaver  # type: ignore[unresolved-import]
 except ImportError:
     PostgresSaver = None  # type: ignore[assignment, misc]
 

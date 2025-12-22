@@ -19,9 +19,7 @@ from app.domains.analysis.workflows.state_accessors import (
     get_quality_scores,
 )
 from app.domains.analysis.workflows.state_types import AggregatedInsights
-from app.evaluation.evaluators.quality import (
-    create_quality_evaluator,
-)
+from app.evaluation.evaluators.quality import create_quality_evaluator
 
 logger = get_logger(__name__)
 
