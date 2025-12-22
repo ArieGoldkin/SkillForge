@@ -61,5 +61,8 @@
     "--config-file",
     "${workspaceFolder}/backend/pyproject.toml"
   ],
-  "mypy-type-checker.cwd": "${workspaceFolder}/backend"
+  "mypy-type-checker.cwd": "${workspaceFolder}/backend",
+  "cSpell.words": [
+    "skillforge"
+  ]
 }
