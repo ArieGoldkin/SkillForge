@@ -355,6 +355,10 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         )
 
         # Build agent_statuses dict: compare selected_agents vs agent_types
+        # Emit error events for agents that were selected but produced no findings
+        from app.core.agent_config import get_stage_name
+        from app.shared.services.messaging.sse_helpers import emit_error_event
+
         agent_statuses: dict[str, str] = {}
         for agent_type in selected_agents:
             if agent_type in agent_types:
@@ -362,6 +366,14 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             else:
                 # Selected but no findings = failed
                 agent_statuses[agent_type] = "failed"
+                # Emit error event for agent failure
+                await emit_error_event(
+                    analysis_id=analysis_id,
+                    stage=get_stage_name(agent_type),
+                    error=f"Agent {agent_type} was selected but produced no findings",
+                    error_code="AGENT_FAILED",
+                    agent_type=agent_type,
+                )
         # Note: Skipped agents (not in selected_agents) are not included in agent_statuses
 
         if not validated_findings:

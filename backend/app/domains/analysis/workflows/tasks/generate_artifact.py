@@ -26,7 +26,10 @@ from app.domains.analysis.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
     extract_artifact_metadata,
 )
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 from app.shared.services.utils.markdown import sanitize_markdown
 
 logger = get_logger(__name__)
@@ -301,6 +304,12 @@ async def generate_artifact(  # noqa: PLR0915
         # Validate aggregated_insights exists
         if not aggregated_insights or not isinstance(aggregated_insights, dict):
             error_msg = "aggregated_insights is missing or invalid"
+            await emit_error_event(
+                analysis_id=analysis_id,
+                stage=get_stage_name("artifact_generation"),
+                error=error_msg,
+                error_code="ARTIFACT_GENERATION_FAILED",
+            )
             logger.error(
                 "workflow_artifact_generation_missing_insights",
                 analysis_id=analysis_id,
@@ -436,12 +445,10 @@ async def generate_artifact(  # noqa: PLR0915
         return {"artifact_id": artifact_id}
 
     except Exception as e:
-        # Emit SSE event: artifact generation failed
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        await emit_error_event(
             analysis_id=analysis_id,
             stage=get_stage_name("artifact_generation"),
-            status="failed",
             error=str(e),
             error_code="ARTIFACT_GENERATION_FAILED",
         )

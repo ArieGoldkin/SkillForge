@@ -31,7 +31,10 @@ from app.domains.analysis.workflows.nodes.supervisor_config import (
 )
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
 from app.shared.services.cache import get_exact_cache
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 from app.shared.services.prompts import get_prompt_manager
 from app.shared.workflows.utils.content_signals import (
     detect_content_signals,
@@ -665,12 +668,10 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # Emit SSE event: supervisor failed
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        await emit_error_event(
             analysis_id=analysis_id,
             stage=get_stage_name("supervisor"),
-            status="failed",
             error=str(e),
             error_code="SUPERVISOR_FAILED",
         )

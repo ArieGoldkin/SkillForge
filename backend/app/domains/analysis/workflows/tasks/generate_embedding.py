@@ -8,7 +8,10 @@ from app.core.types import AnalysisID, EmbeddingVector
 from app.shared.services.chunking.chunker import ChunkText
 from app.shared.services.chunking.summaries import SummaryChunk
 from app.shared.services.embeddings.service import EmbeddingService
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 
 logger = get_logger(__name__)
 
@@ -77,12 +80,10 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             embedding_dimensions=len(embedding),
         )
     except Exception as e:
-        # Emit SSE event: embedding failed
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        await emit_error_event(
             analysis_id=analysis_id,
             stage=get_stage_name("embedding"),
-            status="failed",
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )
@@ -149,11 +150,10 @@ async def generate_embeddings_batch(
             normalize=normalize,
         )
     except Exception as e:
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        await emit_error_event(
             analysis_id=analysis_id,
             stage=get_stage_name("embedding"),
-            status="failed",
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )

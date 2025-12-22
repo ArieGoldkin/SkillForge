@@ -32,7 +32,7 @@ async def test_status_updater_update_success(mock_analysis_id):
 
     with patch("app.domains.analysis.services.persistence.status_updater.AsyncSessionLocal", return_value=mock_db_session):
         updater = StatusUpdater()
-        await updater.update(mock_analysis_id, "complete")
+        await updater.update(mock_analysis_id, "extracting")
 
     # Verify status was updated
     assert mock_analysis.status == "complete"
@@ -52,7 +52,7 @@ async def test_status_updater_update_analysis_not_found(mock_analysis_id):
     with patch("app.domains.analysis.services.persistence.status_updater.AsyncSessionLocal", return_value=mock_db_session):
         updater = StatusUpdater()
         # Should not raise - missing analysis is handled gracefully
-        await updater.update(mock_analysis_id, "complete")
+        await updater.update(mock_analysis_id, "extracting")
 
     # Verify commit was not called (no analysis to update)
     mock_db_session.commit.assert_not_called()
@@ -69,7 +69,7 @@ async def test_status_updater_update_database_error(mock_analysis_id):
     with patch("app.domains.analysis.services.persistence.status_updater.AsyncSessionLocal", return_value=mock_db_session):
         updater = StatusUpdater()
         # Should not raise - errors are logged but don't propagate
-        await updater.update(mock_analysis_id, "complete")
+        await updater.update(mock_analysis_id, "extracting")
 
     # Verify commit was not called (error occurred)
     mock_db_session.commit.assert_not_called()
