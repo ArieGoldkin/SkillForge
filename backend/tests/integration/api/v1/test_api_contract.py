@@ -57,16 +57,15 @@ async def test_analyze_response_schema_validation():
     content_type = "article"
     sse_endpoint = f"/api/v1/analyze/{analysis_id}/stream"
 
-    response_data = {
-        "analysis_id": analysis_id,
-        "url": url,
-        "content_type": content_type,
-        "status": "pending",
-        "sse_endpoint": sse_endpoint,
-    }
-
     # Validate against schema
-    response = AnalyzeCreateResponse(**response_data)
+    response = AnalyzeCreateResponse(
+        analysis_id=analysis_id,
+        url=url,
+        content_type=content_type,
+        status="pending",
+        sse_endpoint=sse_endpoint,
+        existing=False,
+    )
 
     assert response.analysis_id == analysis_id
     assert response.url == url
@@ -83,7 +82,6 @@ async def test_api_response_matches_schema(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
@@ -300,7 +298,6 @@ async def test_content_type_values_match_schema(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch(
         "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
@@ -334,7 +331,6 @@ async def test_sse_endpoint_path_format(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
@@ -368,7 +364,6 @@ async def test_uuid_format_in_responses(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),

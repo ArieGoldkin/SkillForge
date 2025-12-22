@@ -12,7 +12,7 @@ from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import DataPersister, StatusUpdater
 from app.domains.analysis.services.workflow import handle_workflow_exception
-from app.domains.analysis.services.workflow.validator import validate_workflow_result
+from app.domains.analysis.services.workflow.validator import WorkflowResultValidator
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)
@@ -133,41 +133,114 @@ class WorkflowOrchestrator:
                 analysis_id=str(analysis_id),
             )
 
-            # Persist workflow data to analysis record (Issue #168)
-            # This enables full-text search (search_vector trigger) and semantic search
-            if isinstance(result, dict):
-                missing_fields = validate_workflow_result(result)
-                if missing_fields:
+            # Check workflow status before validation
+            workflow_status = result.get("workflow_status") if isinstance(result, dict) else None
+
+            if workflow_status == "failed":
+                # Failed workflow - skip validation (expected incomplete)
+                logger.debug(
+                    "workflow_failed",
+                    analysis_id=str(analysis_id),
+                    message="Workflow failed, skipping validation",
+                )
+                # Status and error already set by workflow_failed node
+                return
+
+            if workflow_status == "completed":
+                # Completed workflow - validate all fields
+                if not isinstance(result, dict):
                     logger.error(
-                        "workflow_result_incomplete",
+                        "workflow_result_not_dict",
                         analysis_id=str(analysis_id),
-                        missing_fields=missing_fields,
-                        message="Workflow result missing required fields",
+                        result_type=type(result).__name__,
                     )
                     await self.status_updater.update(
                         analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
                     )
                     await self.event_emitter.emit_error(
                         analysis_id,
-                        ValueError(f"Workflow result incomplete: missing {missing_fields}"),
+                        TypeError(f"Workflow result must be dict, got {type(result)}"),
                     )
                     return
 
-                persist_success = await self.data_persister.persist(analysis_id, result)
-                if not persist_success:
+                validator = WorkflowResultValidator()
+                validated_result, errors = validator.validate(result, "completed")
+
+                if errors:
+                    # Validation failed - this is unexpected for completed workflows
                     logger.error(
-                        "workflow_persistence_failed",
+                        "workflow_result_validation_failed",
                         analysis_id=str(analysis_id),
-                        message="Failed to persist workflow data, marking as failed",
+                        errors=errors,
+                        message="Completed workflow has invalid data",
                     )
                     await self.status_updater.update(
                         analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
                     )
                     await self.event_emitter.emit_error(
                         analysis_id,
-                        RuntimeError("Workflow data persistence failed"),
+                        ValueError(f"Data validation failed: {errors}"),
                     )
                     return
+
+                # Validation passed - persist validated data
+                if validated_result is None:
+                    # Should not happen, but handle gracefully
+                    logger.error(
+                        "workflow_result_validation_returned_none",
+                        analysis_id=str(analysis_id),
+                        message="Validator returned None despite no errors",
+                    )
+                    await self.status_updater.update(
+                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
+                    )
+                    await self.event_emitter.emit_error(
+                        analysis_id,
+                        ValueError("Validation returned None unexpectedly"),
+                    )
+                    return
+
+                try:
+                    await self.data_persister.persist(analysis_id, validated_result.model_dump())
+                except ValueError as validation_error:
+                    # Persister validation failed (shouldn't happen, but handle gracefully)
+                    logger.exception(
+                        "persister_validation_failed",
+                        analysis_id=str(analysis_id),
+                        error=str(validation_error),
+                    )
+                    await self.status_updater.update(
+                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
+                    )
+                    await self.event_emitter.emit_error(analysis_id, validation_error)
+                    return
+                except RuntimeError as db_error:
+                    # Database error
+                    logger.exception(
+                        "workflow_persistence_failed",
+                        analysis_id=str(analysis_id),
+                        error=str(db_error),
+                    )
+                    await self.status_updater.update(
+                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
+                    )
+                    await self.event_emitter.emit_error(analysis_id, db_error)
+                    return
+
+            else:
+                # Invalid or missing workflow status
+                logger.error(
+                    "invalid_workflow_status",
+                    analysis_id=str(analysis_id),
+                    status=workflow_status,
+                    message="Workflow returned invalid or missing status",
+                )
+                await self.status_updater.update(analysis_id, AnalysisStatus.ANALYSIS_FAILED.value)
+                await self.event_emitter.emit_error(
+                    analysis_id,
+                    ValueError(f"Invalid workflow status: {workflow_status}"),
+                )
+                return
 
             # Validate artifact exists before marking analysis complete
             # This ensures data integrity - analyses should not be marked complete without artifacts

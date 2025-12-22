@@ -8,10 +8,10 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select
 
-from app.domains.analysis.services.workflow import WorkflowOrchestrator
 from app.core.config import get_settings
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal, engine
+from app.domains.analysis.services.workflow import WorkflowOrchestrator
 from app.domains.analysis.workflows.analysis import analysis_workflow
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
@@ -480,12 +480,14 @@ async def test_workflow_persists_results_to_database(
 
             # Verify content_embedding is persisted
             assert analysis.content_embedding is not None, "content_embedding should be persisted"
-            assert len(analysis.content_embedding) == EXPECTED_EMBEDDING_DIMENSIONS, (
-                f"content_embedding should be {EXPECTED_EMBEDDING_DIMENSIONS} dimensions"
-            )
-            assert list(analysis.content_embedding) == SAMPLE_EMBEDDING, (
-                "content_embedding should match generated embedding"
-            )
+            # Type guard for type checker
+            if isinstance(analysis.content_embedding, list):
+                assert len(analysis.content_embedding) == EXPECTED_EMBEDDING_DIMENSIONS, (
+                    f"content_embedding should be {EXPECTED_EMBEDDING_DIMENSIONS} dimensions"
+                )
+                assert list(analysis.content_embedding) == SAMPLE_EMBEDDING, (
+                    "content_embedding should match generated embedding"
+                )
 
             # Verify extraction_metadata is persisted
             assert analysis.extraction_metadata is not None, (

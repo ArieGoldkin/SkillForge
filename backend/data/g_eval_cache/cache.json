@@ -1,102 +1,6 @@
 {
   "entries": [
     {
-      "score": 3,
-      "normalized": 0.5,
-      "confidence": 0.9,
-      "reasoning": "The output follows a highly structured template for a technical implementation guide, including metadata, TL;DR, quick reference, executive summary, AI assistant guide, architectural diagrams, technical analysis, implementation plan, risk assessment, core concepts, and practice exercises. \n\nHowever, there are several significant completeness issues:\n1. **Placeholder/Thin Content in Key Sections:** The \"Technical Analysis\" and \"Implementation Plan\" sections\u2014which are critical for an implementatio",
-      "timestamp": "2025-12-21T12:59:38.111714+00:00",
-      "cache_key": "38bf71ce6c291beb4015bdb6d123ade01222b099fa479429a142c3500cf41b3c"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output exhibits significant organizational and logical issues that undermine its coherence. \n\n1.  **Topical Inconsistency:** The document starts with a title for \"TanStack Query React Docs,\" but the subsequent content primarily focuses on a \"DocsSynthesisSchema\" (a Python dataclass-based documentation structure). These are two entirely different subjects.\n2.  **Internal Contradictions:** The \"Executive Summary\" and \"Technical Analysis\" sections claim there is \"insufficient data\" to provide s",
-      "timestamp": "2025-12-21T12:59:42.167514+00:00",
-      "cache_key": "c19552548e245987263dec70160255d7d44e418b4481115ae1d12205692bd3ee"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The generated output follows a professional structure for a technical guide, including sections like \"Quick Reference,\" \"Architecture,\" and \"Core Concepts.\" However, the depth is significantly hampered by the fact that the generator claims it has \"insufficient data\" to provide a detailed analysis of the specific project. \n\n1. **Implementation Details:** The \"Implementation Plan\" is extremely superficial, listing basic steps like \"Set up a React development environment\" and \"Ensure Node.js is ins",
-      "timestamp": "2025-12-21T12:59:46.217121+00:00",
-      "cache_key": "4d15098e69cfab8ed9c6324285c715d28a22d4dd811f308eefeec9aeb9760971"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The generated output lacks practical actionability for several reasons:\n\n1.  **Contextual Mismatch and Hallucination**: The title suggests a guide for \"TanStack Query,\" but the content focuses on a \"DocsSynthesisSchema\" and general React performance concepts. This discrepancy makes the guide confusing and potentially irrelevant to a user seeking help with TanStack Query.\n2.  **Lack of Specific Code Samples**: Despite claiming to be a technical implementation guide for a \"Python dataclass-based s",
-      "timestamp": "2025-12-21T12:59:50.267684+00:00",
-      "cache_key": "815b9a661582d5d3f54fcbb2b95026817359224dd5b7bc9dce89805ffdfab670"
-    },
-    {
-      "score": 4,
-      "normalized": 0.75,
-      "confidence": 0.9,
-      "reasoning": "The generated output is a highly structured and multi-faceted implementation guide. I evaluated it based on the following criteria:\n\n1.  **Structure and Overview:** The output is excellently structured, containing almost every section expected in a technical guide: TL;DR, Quick Reference, Executive Summary, Implementation Guide, Architecture Diagrams, Technical Analysis, Implementation Plan, Risk Assessment, Recommendations, and a Glossary.\n2.  **Implementation Steps:** There are two sections ad",
-      "timestamp": "2025-12-21T13:12:52.743923+00:00",
-      "cache_key": "1a1d621ed579c62b6e21ff6682a936a765ae49a300c444e1b6a4ce478239a8fb"
-    },
-    {
-      "score": 4,
-      "normalized": 0.75,
-      "confidence": 0.9,
-      "reasoning": "The output is highly structured and follows a logical progression typical of professional technical documentation. It begins with high-level summaries (TL;DR, Executive Summary), moves into actionable implementation details (Quick Reference, File Structure, Implementation Guide), provides visual aids (Mermaid diagram), and concludes with deep-dive analysis, risk assessments, and a glossary.\n\nStrengths:\n- **Logical Flow:** The transition from summary to implementation to technical risks is very c",
-      "timestamp": "2025-12-21T13:12:56.813306+00:00",
-      "cache_key": "ca29be0a310921cb0abd77dff141ed218b8a3e0ad93871e3a661e33d4d7b9c6a"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output is a technical summary of an Anthropic engineering blog post regarding AI Agents. However, it suffers from a significant \"meta-hallucination\" where it confuses the structure of the documentation (the \"DocsSynthesisSchema\") with the technical subject matter (Building AI Agents).\n\n1.  **Technical Depth**: The \"Technical Analysis\" and \"Recommendations\" sections provide basic conceptual coverage of agentic patterns such as routing, parallelization, and orchestration-worker models. These a",
-      "timestamp": "2025-12-21T13:13:00.871237+00:00",
-      "cache_key": "fa680630c8d83f3a0b16329004b8e33dac7a3dbeef2b6f35c55768bdcd19eeb8"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output provides a clear structure and a professional layout for a technical implementation guide, including a TL;DR, executive summary, and architectural diagrams. However, it falls short on practical actionability for the following reasons:\n\n1. **Lack of Functional Code:** While the guide lists Python as a prerequisite, it does not provide any actual Python code snippets to implement the mentioned \"orchestration logic,\" \"DocsSynthesisSchema,\" or \"routing service.\" The only \"code\" provided i",
-      "timestamp": "2025-12-21T13:13:04.927249+00:00",
-      "cache_key": "d24351ae89ffc14fbfb73cd693ef4ca7c7095660828bffab33bca7e43a16b3e1"
-    },
-    {
-      "score": 3,
-      "normalized": 0.5,
-      "confidence": 0.9,
-      "reasoning": "The generated output follows a highly structured template (DocsSynthesisSchema) and includes a variety of sections such as a TL;DR, Quick Reference, Executive Summary, AI Assistant Implementation Guide, Architecture Diagrams, Technical Analysis, Implementation Plan, Risk Assessment, Recommendations, and Core Concepts.\n\nHowever, there are significant issues regarding the relevance and depth of the content:\n1. **Content Alignment:** The \"AI Assistant Implementation Guide\" and the \"Architecture\" se",
-      "timestamp": "2025-12-21T13:13:14.060065+00:00",
-      "cache_key": "6bf89ce0dae0aa3a502161bd3064801213bb8f188cd38960910561937d88d597"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output demonstrates poor coherence due to a significant lack of logical flow and disconnected sections. While the formatting is professional (using Markdown headers, tables, and Mermaid diagrams), the content itself is a \"Frankenstein\" of three unrelated topics:\n\n1.  **Documentation Meta-content:** The TL;DR and AI Assistant Implementation sections focus on how to use a specific schema (`DocsSynthesisSchema`) to create documentation. This is \"meta\" content about the structure of the document",
-      "timestamp": "2025-12-21T13:13:18.126516+00:00",
-      "cache_key": "d9f4bdaf3894c1aabbc5ad4c182f50c8d13ec3ae2fabdb995f37ce432270e679"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output follows a structured template for a technical guide, including sections for TL;DR, Quick Reference, Executive Summary, Implementation Guide, Architecture, and Risk Assessment. However, the depth of the actual technical content is quite low and inconsistent:\n\n1.  **Lack of Implementation Code:** Despite being a \"Technical Implementation Guide,\" there is no actual code (e.g., Python) provided to implement the `DocsSynthesisSchema`. The \"Implementation Steps\" are high-level instructions ",
-      "timestamp": "2025-12-21T13:13:22.179601+00:00",
-      "cache_key": "fdd9ca99845156fa93635d8302902cb6ee2b392eba48a6b3c3b6c6b63f131363"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 0.9,
-      "reasoning": "The output is structured as a technical guide, but it lacks the specific, actionable details required for a high score. \n\n1. **Lack of Runnable Code:** There are no actual Python code snippets provided to implement the \"DocsSynthesisSchema\" or the agent application mentioned. The \"AI Assistant Implementation Guide\" gives high-level steps (e.g., \"Instantiate the DocsSynthesisSchema class\") but does not show the code to do so, nor does it define where the `default_api` library comes from.\n2. **Inv",
-      "timestamp": "2025-12-21T13:13:26.231422+00:00",
-      "cache_key": "18a3d68ec3264da7a68bcaf48a15a27086ff63bfcf4e93ab1b4bcf794c64bedc"
-    },
-    {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
@@ -127,7 +31,135 @@
       "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
       "timestamp": "2025-12-22T11:09:39.348418+00:00",
       "cache_key": "4bb7780e81b4b846b360c407d73adbdfaf787f17d3e5fbfdf62dd1b6baa8fcf8"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-22T18:05:20.157324+00:00",
+      "cache_key": "2a75fa39fce1f95d6e3acd59955af76c912c2937b5ea99f5c026a5159ba4f617"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-22T18:05:24.225544+00:00",
+      "cache_key": "c37eee1e269b4f532e5588d1fa8f528c0c27231f1bf0aa44ce6f41bef637ff4c"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-22T18:05:28.291268+00:00",
+      "cache_key": "f0a80e987e877626fcfc789d6c5a1fc052ff84d27942203fd8efe1119590c1dd"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-22T18:05:32.352207+00:00",
+      "cache_key": "15540d5b1ae99ae9d40f3571be83079837b4569d6553d83212c54a98762b6208"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-22T18:06:12.104964+00:00",
+      "cache_key": "62be721053398b489efe30a21a8e66a059b2e952e84c0e7255880467c614c143"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-22T18:06:16.177173+00:00",
+      "cache_key": "ee90e822a03513425b30899fd0cf63f6844e6f401dab60a652b262eaa1afe59b"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-22T18:06:20.271968+00:00",
+      "cache_key": "2421636bd77834c372ae561c44cebded0d7e9a1415b3ac504f5ab438f2a06e1d"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-22T18:06:24.355242+00:00",
+      "cache_key": "85ecce2565257611115cc2a4ffcd12d5a709bac3ae0111fb526da2ede93df745"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-22T18:09:09.764484+00:00",
+      "cache_key": "a88d703dc59d7965439df7502ce3636ddc5e490dcb1c2a7a0922d07561353345"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-22T18:09:13.822190+00:00",
+      "cache_key": "b7f36365f64f360fd579f85801d45dcbc7503ca69af7a9398aad872a61744228"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-22T18:09:17.873008+00:00",
+      "cache_key": "db1a23b372605274062954f449539817a6238f90e0c52fc3492c150c7178efa6"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-22T18:09:21.932203+00:00",
+      "cache_key": "da794ecaf7c60f587ef3e7ee3a38f993fed28e2aff11b108551a0e1f783287a4"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-22T18:11:01.821628+00:00",
+      "cache_key": "88740ffc1579af7b4151660a80b9baa8fedb293495b5a1a726b3cc639e02e153"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-22T18:11:05.874287+00:00",
+      "cache_key": "9321804640c5583ef8468af696a4d135992b2121e95f15871253b4419ff6e8c5"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-22T18:11:09.945392+00:00",
+      "cache_key": "46200790b331e23b49f876350d5cc425a7fa61018e213f0ae1a3bacab4aec06f"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-22T18:11:14.016249+00:00",
+      "cache_key": "37ac3be2821a60edadbcf715246cf0e83a33e1d2422082e959a2efb464e39aa0"
     }
   ],
-  "saved_at": "2025-12-22T11:09:39.349306+00:00"
+  "saved_at": "2025-12-22T18:11:14.016405+00:00"
 }

@@ -99,9 +99,7 @@ async def test_raw_content_read_write_with_compression(
         assert compression == "lz4", f"Expected lz4 compression, got {compression}"
 
         # Read
-        result = await session.execute(
-            select(Analysis).where(Analysis.id == analysis.id)
-        )
+        result = await session.execute(select(Analysis).where(Analysis.id == analysis.id))
         retrieved = result.scalar_one()
 
         # Verify content is identical (decompression works correctly)
@@ -120,7 +118,7 @@ async def test_lz4_compression_storage_type(
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             text("""
-                SELECT 
+                SELECT
                     attname,
                     attstorage
                 FROM pg_attribute
@@ -152,9 +150,14 @@ async def test_lz4_compression_with_existing_data(
         if existing_analysis is None:
             pytest.skip("No existing analyses with raw_content to test")
 
+        # Type guard: existing_analysis is not None after the check above
+        assert existing_analysis is not None, "existing_analysis should not be None"
+
         # Verify we can read it
         assert existing_analysis.raw_content is not None
-        assert len(existing_analysis.raw_content) > 0
+        # Type guard for type checker
+        if isinstance(existing_analysis.raw_content, str):
+            assert len(existing_analysis.raw_content) > 0
 
         # Verify compression is enabled
         result = await session.execute(

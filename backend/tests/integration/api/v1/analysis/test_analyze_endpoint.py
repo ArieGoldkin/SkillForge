@@ -23,7 +23,6 @@ async def test_post_analyze_creates_record(requires_database, reset_engine_conne
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
@@ -61,7 +60,6 @@ async def test_post_analyze_workflow_executes(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
@@ -88,7 +86,6 @@ async def test_post_analyze_sse_events(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
@@ -120,7 +117,6 @@ async def test_post_analyze_error_handling(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
@@ -156,7 +152,6 @@ async def test_post_analyze_concurrent_requests(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch(
         "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
@@ -202,7 +197,6 @@ async def test_post_analyze_content_types(reset_engine_connections):
     # Mock run_workflow_task to be a no-op async function
     async def mock_run_workflow_task(analysis_id, url):
         """Mock workflow task that does nothing."""
-        pass
 
     with patch(
         "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",

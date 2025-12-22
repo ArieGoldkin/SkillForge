@@ -244,7 +244,6 @@ async def test_api_accepts_non_uuid_analysis_id(reset_engine_connections):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with patch(
         "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
@@ -276,7 +275,6 @@ async def test_api_content_type_detection_article(reset_engine_connections):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
@@ -304,7 +302,6 @@ async def test_api_content_type_detection_video(reset_engine_connections):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
@@ -332,7 +329,6 @@ async def test_api_content_type_detection_repo(reset_engine_connections):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),
@@ -363,7 +359,6 @@ async def test_api_concurrent_requests(reset_engine_connections, db_session):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with patch(
         "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
@@ -494,7 +489,6 @@ async def test_api_request_id_header(reset_engine_connections):
 
     async def mock_workflow(*args, **kwargs):
         """Mock workflow that does nothing."""
-        pass
 
     with (
         patch("app.api.v1.analyze.uuid.uuid4", return_value=analysis_uuid),

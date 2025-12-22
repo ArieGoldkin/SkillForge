@@ -51,6 +51,9 @@ CONTENT_TYPE_REPO = "repo"
 # Default Values
 DEFAULT_TITLE = "Untitled"  # Default title when extraction fails to find one
 
+# Embedding Dimensions
+EMBEDDING_DIMENSIONS = 1536  # OpenAI text-embedding-3-small dimensions
+
 # UUID Configuration
 UUID_NAMESPACE_DNS = (
     "6ba7b810-9dad-11d1-80b4-00c04fd430c8"  # DNS namespace for deterministic UUID generation

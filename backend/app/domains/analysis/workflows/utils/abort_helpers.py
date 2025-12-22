@@ -33,7 +33,7 @@ def check_should_abort(state: AnalysisState) -> dict | None:
             abort_result = check_should_abort(state)
             if abort_result is None:
                 return {}  # Skip execution
-            
+
             # Continue with normal execution
             # ...
         ```

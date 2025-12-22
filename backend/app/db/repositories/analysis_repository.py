@@ -13,13 +13,11 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import EMBEDDING_DIMENSIONS
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.models.progress import AnalysisProgress
 from app.db.session import get_db
-
-# Embedding dimensions constant (OpenAI text-embedding-3-small)
-EMBEDDING_DIMENSIONS = 1536
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -30,8 +28,8 @@ logger = get_logger(__name__)
 class IAnalysisRepository(Protocol):
     """Protocol interface for analysis repository operations."""
 
-    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
-        """Get a single analysis by ID."""
+    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+        """Get a single analysis by ID with optional validation."""
         ...
 
     async def create_analysis(
@@ -94,10 +92,67 @@ class AnalysisRepository:
         """
         self.session = session
 
-    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
-        """Get analysis by ID."""
+    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+        """Get analysis by ID with optional validation.
+
+        Args:
+            analysis_id: UUID of the analysis
+            validate: Whether to validate data integrity (default: True)
+
+        Returns:
+            Analysis if found, None otherwise
+
+        """
         result = await self.session.execute(select(Analysis).where(Analysis.id == analysis_id))
-        return result.scalar_one_or_none()
+        analysis = result.scalar_one_or_none()
+
+        if not analysis:
+            return None
+
+        if validate:
+            # Validate data integrity
+            errors = self._validate_analysis_data(analysis)
+            if errors:
+                logger.warning(
+                    "read_validation_warning",
+                    analysis_id=str(analysis_id),
+                    status=analysis.status,
+                    errors=errors,
+                    message="Analysis data integrity issues detected",
+                )
+                # Don't fail - return data with warning
+
+        return analysis
+
+    def _validate_analysis_data(self, analysis: Analysis) -> list[str]:
+        """Validate analysis data against expected schema.
+
+        Args:
+            analysis: Analysis model instance
+
+        Returns:
+            List of validation error messages (empty if valid)
+
+        """
+        errors: list[str] = []
+
+        # Status-specific validation
+        if analysis.status == "complete":
+            if not analysis.raw_content:
+                errors.append("complete analysis missing raw_content")
+            if not analysis.content_embedding:
+                errors.append("complete analysis missing embedding")
+            if not analysis.extraction_metadata:
+                errors.append("complete analysis missing metadata")
+            if analysis.content_embedding is not None:
+                # Type guard: content_embedding is a list when not None
+                embedding_list = analysis.content_embedding
+                if isinstance(embedding_list, list) and len(embedding_list) != EMBEDDING_DIMENSIONS:
+                    errors.append(
+                        f"embedding has {len(embedding_list)} dims, expected {EMBEDDING_DIMENSIONS}"
+                    )
+
+        return errors
 
     async def create_analysis(
         self,

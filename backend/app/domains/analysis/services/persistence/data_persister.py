@@ -1,96 +1,116 @@
-"""Data persistence service for analysis records."""
+"""Data persistence service for analysis records.
+
+Production-grade persister with validation before write and fail-fast error handling.
+"""
 
 import uuid
 
 from sqlalchemy import select
 
-from app.core.constants import DEFAULT_TITLE
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
+from app.domains.analysis.schemas.workflow_result import WorkflowResult
+from app.domains.analysis.services.workflow.validator import WorkflowResultValidator
 
 logger = get_logger(__name__)
 
 
 class DataPersister:
-    """Service for persisting workflow results to analysis records."""
+    """Service for persisting workflow results to analysis records.
 
-    async def persist(self, analysis_id: uuid.UUID, workflow_result: dict) -> bool:
+    Validates data before persistence and fails fast on invalid data.
+    No silent degradation - exceptions raised for invalid data.
+    """
+
+    def __init__(self) -> None:
+        """Initialize persister with validator."""
+        self.validator = WorkflowResultValidator()
+
+    async def persist(
+        self,
+        analysis_id: uuid.UUID,
+        workflow_result: dict | WorkflowResult,
+        validate: bool = True,
+    ) -> bool:
         """Persist workflow results to the analysis record.
 
-        Updates the analysis with extracted content, title, and embedding data.
-        This enables full-text search (via search_vector trigger) and semantic search.
+        Validates data before persistence and fails fast on invalid data.
+        Accepts either dict (validated) or WorkflowResult (used directly).
 
         Args:
             analysis_id: UUID of the analysis to update
-            workflow_result: Dictionary containing workflow state with:
-                - raw_content: Extracted text content
-                - extraction_metadata: Metadata dict with title, word_count, etc.
-                - content_embedding: Vector embedding (1536 dimensions)
+            workflow_result: Dictionary or WorkflowResult containing workflow state
+            validate: Whether to validate dict before persistence (default: True)
 
         Returns:
-            bool: True if data was persisted successfully, False otherwise
+            bool: True if data was persisted successfully
 
         Raises:
+            ValueError: If validation fails or analysis not found
             RuntimeError: If persistence fails due to database error
 
         """
+        # Validate dict if provided, use WorkflowResult directly
+        validated_workflow_result: WorkflowResult
+        if isinstance(workflow_result, dict):
+            if validate:
+                validated, errors = self.validator.validate(workflow_result, "completed")
+                if errors:
+                    error_msg = f"Invalid workflow result: {errors}"
+                    raise ValueError(error_msg)
+                if validated is None:
+                    error_msg = "Validation returned None unexpectedly"
+                    raise ValueError(error_msg)
+                validated_workflow_result = validated
+            else:
+                # If validation disabled, still need to convert to WorkflowResult
+                # This is for edge cases where caller knows data is valid
+                try:
+                    validated_workflow_result = WorkflowResult.model_validate(workflow_result)
+                except Exception as e:
+                    error_msg = (
+                        f"Invalid workflow result (validation disabled but conversion failed): {e}"
+                    )
+                    raise ValueError(error_msg) from e
+        elif isinstance(workflow_result, WorkflowResult):
+            validated_workflow_result = workflow_result
+        else:
+            type_error_msg = (
+                f"workflow_result must be dict or WorkflowResult, got {type(workflow_result)}"
+            )
+            raise TypeError(type_error_msg)
+
         try:
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
-                    select(Analysis).where(Analysis.id == analysis_id)
+                    select(Analysis).where(Analysis.id == analysis_id).with_for_update()
                 )
                 analysis = result.scalar_one_or_none()
 
                 if not analysis:
-                    logger.warning(
-                        "persist_analysis_data_not_found",
-                        analysis_id=str(analysis_id),
-                    )
-                    return False
+                    error_msg = f"Analysis {analysis_id} not found"
+                    raise ValueError(error_msg)
 
-                # Persist raw content
-                raw_content = workflow_result.get("raw_content")
-                if raw_content:
-                    analysis.raw_content = raw_content  # type: ignore[assignment]
-                else:
-                    logger.warning(
-                        "persist_missing_raw_content",
-                        analysis_id=str(analysis_id),
-                        message="Workflow result missing raw_content",
-                    )
+                # Persist validated data (type-safe)
+                analysis.raw_content = validated_workflow_result.raw_content
+                analysis.extraction_metadata = (
+                    validated_workflow_result.extraction_metadata.model_dump()
+                )
+                analysis.content_embedding = validated_workflow_result.content_embedding
 
-                # Extract and persist title from extraction_metadata
-                extraction_metadata = workflow_result.get("extraction_metadata")
-                if extraction_metadata and isinstance(extraction_metadata, dict):
-                    analysis.extraction_metadata = extraction_metadata  # type: ignore[assignment]
-                    title = extraction_metadata.get("title")
-                    if title:
-                        analysis.title = title  # type: ignore[assignment]
-                    else:
-                        # Always persist a title - use default if extraction failed
-                        analysis.title = DEFAULT_TITLE  # type: ignore[assignment]
-                        logger.warning(
-                            "persist_default_title",
-                            analysis_id=str(analysis_id),
-                            message=f"Title missing, using default: {DEFAULT_TITLE}",
-                        )
+                # Extract title from validated metadata
+                if validated_workflow_result.extraction_metadata.title:
+                    analysis.title = validated_workflow_result.extraction_metadata.title
                 else:
-                    logger.warning(
-                        "persist_missing_extraction_metadata",
-                        analysis_id=str(analysis_id),
-                        message="Workflow result missing extraction_metadata",
-                    )
+                    # This should not happen if validation passed, but handle gracefully
+                    from app.core.constants import DEFAULT_TITLE
 
-                # Persist content embedding
-                content_embedding = workflow_result.get("content_embedding")
-                if content_embedding:
-                    analysis.content_embedding = content_embedding  # type: ignore[assignment]
-                else:
+                    analysis.title = DEFAULT_TITLE
                     logger.warning(
-                        "persist_missing_content_embedding",
+                        "persist_default_title_used",
                         analysis_id=str(analysis_id),
-                        message="Workflow result missing content_embedding",
+                        message="Title missing in validated metadata, using default",
                     )
 
                 await db_session.commit()
@@ -98,13 +118,16 @@ class DataPersister:
                 logger.info(
                     "persist_analysis_data_success",
                     analysis_id=str(analysis_id),
-                    has_raw_content=raw_content is not None,
+                    has_raw_content=validated_workflow_result.raw_content is not None,
                     has_title=analysis.title is not None,
-                    has_embedding=content_embedding is not None,
-                    raw_content_length=len(raw_content) if raw_content else 0,
+                    has_embedding=validated_workflow_result.content_embedding is not None,
+                    raw_content_length=len(validated_workflow_result.raw_content),
                 )
                 return True
 
+        except ValueError:
+            # Re-raise ValueError (validation errors, missing analysis)
+            raise
         except Exception as db_error:
             logger.error(
                 "persist_analysis_data_failed",

@@ -70,7 +70,7 @@ def mock_embedding_service():
         return embedding
 
     service.generate_embedding = AsyncMock(side_effect=generate_unique_embedding)
-    return cast(EmbeddingService, service)
+    return cast("EmbeddingService", service)
 
 
 class TestAgentMemoryStorageIntegration:
@@ -141,12 +141,14 @@ class TestAgentMemoryStorageIntegration:
         )
 
         # Verify both have embeddings
-        assert len(memory1.embedding) == 1536
-        assert len(memory2.embedding) == 1536
+        # Type guard for type checker
+        if isinstance(memory1.embedding, list) and isinstance(memory2.embedding, list):
+            assert len(memory1.embedding) == 1536
+            assert len(memory2.embedding) == 1536
 
-        # Verify embeddings are different (unique content)
-        # Use list comparison since numpy arrays can't use != directly
-        assert list(memory1.embedding) != list(memory2.embedding)
+            # Verify embeddings are different (unique content)
+            # Use list comparison since numpy arrays can't use != directly
+            assert list(memory1.embedding) != list(memory2.embedding)
 
     async def test_memory_type_constraint_enforced_by_database(
         self,
@@ -190,7 +192,7 @@ class TestSemanticSearchIntegration:
     async def test_semantic_search_returns_similar_memories(
         self,
         db_session,
-        requires_llm,
+        _requires_llm,
     ):
         """Test that pgvector cosine similarity search works correctly.
 
@@ -235,7 +237,7 @@ class TestSemanticSearchIntegration:
     async def test_semantic_search_filters_by_memory_type(
         self,
         db_session,
-        requires_llm,
+        _requires_llm,
     ):
         """Test that search correctly filters by memory_type.
 
@@ -273,7 +275,7 @@ class TestSemanticSearchIntegration:
     async def test_semantic_search_respects_threshold(
         self,
         db_session,
-        requires_llm,
+        _requires_llm,
     ):
         """Test that search only returns results above similarity threshold.
 
@@ -312,7 +314,7 @@ class TestProactiveRecallIntegration:
     async def test_proactive_recall_retrieves_relevant_memories(
         self,
         db_session,
-        requires_llm,
+        _requires_llm,
     ):
         """Test end-to-end proactive recall flow.
 
@@ -359,7 +361,7 @@ class TestProactiveRecallIntegration:
     async def test_fetch_proactive_context_formats_correctly(
         self,
         db_session,
-        requires_llm,
+        _requires_llm,
     ):
         """Test that fetch_proactive_context returns properly formatted snippets.
 

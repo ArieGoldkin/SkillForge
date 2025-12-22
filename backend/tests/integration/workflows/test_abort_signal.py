@@ -55,7 +55,9 @@ async def test_abort_signal_stops_subsequent_nodes(requires_database):
     # Mock Jina to raise JinaReaderError (simulating extraction failure)
     mock_jina = MagicMock()
     mock_jina.extract_article = AsyncMock(
-        side_effect=JinaReaderError("Extraction failed", error_code=ExtractionErrorCode.NETWORK_ERROR)
+        side_effect=JinaReaderError(
+            "Extraction failed", error_code=ExtractionErrorCode.NETWORK_ERROR
+        )
     )
     mock_jina.close = AsyncMock()
 
@@ -140,8 +142,12 @@ async def test_abort_signal_stops_subsequent_nodes(requires_database):
 
         # Verify subsequent nodes were NOT called
         assert nodes_called["embedding"] is False, "Embedding node should be skipped when aborting"
-        assert nodes_called["supervisor"] is False, "Supervisor node should be skipped when aborting"
-        assert nodes_called["quality_gate"] is False, "Quality gate node should be skipped when aborting"
+        assert nodes_called["supervisor"] is False, (
+            "Supervisor node should be skipped when aborting"
+        )
+        assert nodes_called["quality_gate"] is False, (
+            "Quality gate node should be skipped when aborting"
+        )
         assert nodes_called["aggregate"] is False, "Aggregate node should be skipped when aborting"
         assert nodes_called["artifact"] is False, "Artifact node should be skipped when aborting"
 
@@ -174,11 +180,15 @@ async def test_abort_signal_routes_to_workflow_failed(requires_database):
     # Mock Jina to raise error
     mock_jina = MagicMock()
     mock_jina.extract_article = AsyncMock(
-        side_effect=JinaReaderError("Extraction failed", error_code=ExtractionErrorCode.NETWORK_ERROR)
+        side_effect=JinaReaderError(
+            "Extraction failed", error_code=ExtractionErrorCode.NETWORK_ERROR
+        )
     )
     mock_jina.close = AsyncMock()
 
-    with patch("app.domains.analysis.workflows.tasks.extract_content.JinaReader") as mock_jina_class:
+    with patch(
+        "app.domains.analysis.workflows.tasks.extract_content.JinaReader"
+    ) as mock_jina_class:
         mock_jina_class.return_value = mock_jina
 
         input_state: dict[str, str] = {

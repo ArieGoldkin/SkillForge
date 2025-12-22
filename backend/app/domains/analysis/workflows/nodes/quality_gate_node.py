@@ -298,10 +298,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Emit SSE event for quality gate result
-        from app.shared.services.messaging.sse_helpers import (
-            emit_error_event,
-            emit_streaming_event,
-        )
+        from app.shared.services.messaging.sse_helpers import emit_error_event, emit_streaming_event
 
         if gate_passed:
             # Gate passed - emit progress event with complete status
@@ -318,9 +315,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             )
         else:
             # Gate failed - emit error event
-            error_message = (
-                f"Quality gate failed - average score {avg_score:.2f} below threshold {effective_threshold:.2f}"
-            )
+            error_message = f"Quality gate failed - average score {avg_score:.2f} below threshold {effective_threshold:.2f}"
             if failed_aspects:
                 error_message += f". Failed aspects: {', '.join(failed_aspects)}"
 
