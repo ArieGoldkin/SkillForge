@@ -1,5 +1,7 @@
+/* eslint-disable max-lines -- E2E tests require comprehensive test coverage */
 import { test, expect } from '@playwright/test';
 
+// eslint-disable-next-line max-lines-per-function -- E2E tests require comprehensive test coverage
 test.describe('Error Handling Tests', () => {
   test('should display 404 for unknown routes', async ({ page }) => {
     // With storageState, direct navigation is optimized (reuses browser state)
@@ -182,9 +184,9 @@ test.describe('Error Handling Tests', () => {
     // Valid outcomes: at least one of the checks succeeded (status === 'fulfilled')
     const anySucceeded = outcomes.some(outcome => outcome.status === 'fulfilled');
 
-    // Log for debugging in CI
+    // Log for debugging in CI (using console.warn which is allowed)
     if (!anySucceeded) {
-      console.log('No valid outcome detected. Outcomes:', outcomes.map((o, i) =>
+      console.warn('No valid outcome detected. Outcomes:', outcomes.map((o, i) =>
         `${i}: ${o.status}${o.status === 'rejected' ? ` (${(o as PromiseRejectedResult).reason?.message || 'unknown'})` : ''}`
       ));
     }
@@ -254,7 +256,7 @@ test.describe('Error Handling Tests', () => {
     const didNavigate = currentUrl !== initialUrl || result.type === 'navigated';
 
     // Try to check button state (might not exist if navigated)
-    let buttonState = { exists: false, disabled: false };
+    const buttonState = { exists: false, disabled: false };
     try {
       const buttonVisible = await submitButton.isVisible({ timeout: 2000 });
       if (buttonVisible) {
