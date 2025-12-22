@@ -142,6 +142,7 @@ SkillForge is an intelligent learning integration platform that analyzes technic
 - `pgvector>=0.4.1` - Vector similarity search (latest)
 - `sqlalchemy==2.0.36` - ORM
 - `alembic==1.13.3` - Database migrations
+- **PostgreSQL 17** with LZ4 compression for `raw_content` column (2-3x faster than default)
 
 **Content Extraction:**
 - `httpx[brotli,zstd]>=0.28.1` - Async HTTP client with compression

@@ -37,6 +37,12 @@ async def list_analyses(db: AsyncSession) -> list[Analysis]:
 - Index names follow `ix_<table>_<column>`
 - Verify `alembic upgrade head` + `alembic downgrade -1` locally
 
+**3. Database Storage Optimization**
+- PostgreSQL 17 LZ4 compression for large text columns (`raw_content`)
+- Automatic TOAST compression for values > 2KB
+- 2-3x faster compression/decompression vs default pglz
+- Transparent to application layer (no code changes needed)
+
 **3. Structured Logging with Context**
 ```python
 import structlog
