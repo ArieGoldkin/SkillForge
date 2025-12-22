@@ -351,8 +351,10 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
     # Issue #441: Skip if workflow is aborting
-    if state.get("should_abort"):
-        logger.debug("supervisor_skipped_abort", analysis_id=state.get("analysis_id"))
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
         return {}
 
     content = state["raw_content"]

@@ -339,14 +339,14 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
 
 @pytest.mark.asyncio
 async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
-    """Test SSE event is emitted even when evaluators timeout."""
+    """Test error event is emitted when gate fails due to evaluator timeouts."""
     with (
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
         ) as mock_create,
         patch(
-            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
-        ) as mock_emit,
+            "app.shared.services.messaging.sse_helpers.emit_error_event", new_callable=AsyncMock
+        ) as mock_error_event,
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
@@ -365,26 +365,24 @@ async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
 
         result = await quality_gate_node(base_state)
 
-        # Verify SSE event was emitted
-        mock_emit.assert_called_once()
-        call_args = mock_emit.call_args
+        # Gate should fail (avg score 0.5 < threshold 0.7)
+        assert result["quality_gate_passed"] is False
 
-        # Check event type and basic fields
-        # Event type must be "progress" per frontend SSE schema (see quality_gate_node.py:292)
-        assert call_args[0][0] == "progress"
+        # Verify error event was emitted (not progress event)
+        mock_error_event.assert_called_once()
+        call_args = mock_error_event.call_args
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == "test-analysis-123"
         assert kwargs["stage"] == "quality_validation"
-        # Status may be "failed" due to floating point precision (0.6999... < 0.7)
-        # but that's acceptable - the important part is the SSE event was emitted
-        # Note: "complete" is used for passed gates, "failed" for failed gates (not "passed")
-        assert kwargs["status"] in ["complete", "failed"]
+        assert kwargs["error_code"] == "QUALITY_GATE_FAILED"
+        assert "Quality gate failed" in kwargs["error"]
         # Average score should be approximately 0.5 (all timeouts use 0.5, Issue #442)
         assert abs(kwargs["avg_score"] - 0.5) < 0.001
         assert kwargs["threshold"] == QUALITY_THRESHOLD
         assert kwargs["retry_count"] == 0
+        assert kwargs["gate_passed"] is False
 
-        # Verify scores in SSE event
+        # Verify scores in error event
         assert "scores" in kwargs
         scores = kwargs["scores"]
         assert len(scores) == 3
@@ -646,8 +644,8 @@ async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state
             "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
         ) as mock_create,
         patch(
-            "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
-        ),
+            "app.shared.services.messaging.sse_helpers.emit_error_event", new_callable=AsyncMock
+        ) as mock_error_event,
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
@@ -666,6 +664,15 @@ async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state
         # Should FAIL with normal threshold (0.6 < 0.7)
         assert result["quality_gate_passed"] is False
         assert result["quality_gate_avg_score"] == 0.6
+
+        # Verify error event was emitted (not progress event)
+        assert mock_error_event.called
+        call_args = mock_error_event.call_args
+        assert call_args.kwargs["analysis_id"] == high_coverage_state["analysis_id"]
+        assert call_args.kwargs["stage"] == "quality_validation"
+        assert call_args.kwargs["error_code"] == "QUALITY_GATE_FAILED"
+        assert "Quality gate failed" in call_args.kwargs["error"]
+        assert call_args.kwargs["gate_passed"] is False
 
 
 @pytest.mark.asyncio

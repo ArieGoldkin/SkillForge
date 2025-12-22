@@ -15,7 +15,10 @@ from app.shared.services.messaging.broadcaster_factory import (
     get_broadcaster,
     reset_broadcaster,
 )
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -204,3 +207,195 @@ async def test_emit_streaming_event_persistence_non_blocking(mock_persist):
     assert messages[0]["type"] == "progress"
     # Verify persistence was attempted
     assert mock_persist.called
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emit_error_event():
+    """Test emitting an error event."""
+    analysis_id = str(uuid.uuid4())
+    channel = f"workflow:{analysis_id}"
+
+    with patch(
+        "app.shared.services.messaging.sse_helpers._get_broadcaster_backend",
+        return_value=BroadcasterBackend.MEMORY,
+    ):
+        broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
+        messages = []
+
+        async def subscriber():
+            async for message in broadcaster.subscribe(channel):
+                messages.append(message)
+                break
+
+        sub_task = asyncio.create_task(subscriber())
+        await asyncio.sleep(0.1)
+
+        await emit_error_event(
+            analysis_id=analysis_id,
+            stage="extraction",
+            error="Failed to extract content",
+            error_code="EXTRACTION_FAILED",
+        )
+
+        await sub_task
+
+    assert len(messages) == 1
+    event = messages[0]
+    assert event["type"] == "error"
+    assert event["analysis_id"] == analysis_id
+    assert event["stage"] == "extraction"
+    assert event["status"] == "failed"
+    assert event["error"] == "Failed to extract content"
+    assert event["error_code"] == "EXTRACTION_FAILED"
+    assert "timestamp" in event
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emit_error_event_with_exception():
+    """Test emitting error event with Exception object."""
+    analysis_id = str(uuid.uuid4())
+    channel = f"workflow:{analysis_id}"
+
+    with patch(
+        "app.shared.services.messaging.sse_helpers._get_broadcaster_backend",
+        return_value=BroadcasterBackend.MEMORY,
+    ):
+        broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
+        messages = []
+
+        async def subscriber():
+            async for message in broadcaster.subscribe(channel):
+                messages.append(message)
+                break
+
+        sub_task = asyncio.create_task(subscriber())
+        await asyncio.sleep(0.1)
+
+        exception = ValueError("Invalid URL format")
+        await emit_error_event(
+            analysis_id=analysis_id,
+            stage="extraction",
+            error=exception,
+            error_code="EXTRACTION_FAILED",
+        )
+
+        await sub_task
+
+    assert len(messages) == 1
+    event = messages[0]
+    assert event["type"] == "error"
+    assert event["error"] == "Invalid URL format"
+    assert event["error_code"] == "EXTRACTION_FAILED"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emit_error_event_without_error_code():
+    """Test emitting error event without error_code."""
+    analysis_id = str(uuid.uuid4())
+    channel = f"workflow:{analysis_id}"
+
+    with patch(
+        "app.shared.services.messaging.sse_helpers._get_broadcaster_backend",
+        return_value=BroadcasterBackend.MEMORY,
+    ):
+        broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
+        messages = []
+
+        async def subscriber():
+            async for message in broadcaster.subscribe(channel):
+                messages.append(message)
+                break
+
+        sub_task = asyncio.create_task(subscriber())
+        await asyncio.sleep(0.1)
+
+        await emit_error_event(
+            analysis_id=analysis_id,
+            stage="extraction",
+            error="Generic error",
+        )
+
+        await sub_task
+
+    assert len(messages) == 1
+    event = messages[0]
+    assert event["type"] == "error"
+    assert event["error"] == "Generic error"
+    assert "error_code" not in event
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emit_error_event_with_additional_kwargs():
+    """Test emitting error event with additional context."""
+    analysis_id = str(uuid.uuid4())
+    channel = f"workflow:{analysis_id}"
+
+    with patch(
+        "app.shared.services.messaging.sse_helpers._get_broadcaster_backend",
+        return_value=BroadcasterBackend.MEMORY,
+    ):
+        broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
+
+        messages = []
+
+        async def subscriber():
+            async for message in broadcaster.subscribe(channel):
+                messages.append(message)
+                break
+
+        sub_task = asyncio.create_task(subscriber())
+        await asyncio.sleep(0.1)
+
+        await emit_error_event(
+            analysis_id=analysis_id,
+            stage="quality_validation",
+            error="Quality gate failed",
+            error_code="QUALITY_GATE_FAILED",
+            avg_score=0.5,
+            threshold=0.7,
+            scores={"depth": 0.4, "clarity": 0.6},
+        )
+
+        await sub_task
+
+    assert len(messages) == 1
+    event = messages[0]
+    assert event["type"] == "error"
+    assert event["error_code"] == "QUALITY_GATE_FAILED"
+    assert event["avg_score"] == 0.5
+    assert event["threshold"] == 0.7
+    assert event["scores"] == {"depth": 0.4, "clarity": 0.6}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@patch("app.shared.services.messaging.sse_helpers.persist_progress_event_async")
+async def test_emit_error_event_persists_to_database(mock_persist):
+    """Test that emit_error_event triggers progress persistence."""
+    analysis_id = str(uuid.uuid4())
+
+    await emit_error_event(
+        analysis_id=analysis_id,
+        stage="extraction",
+        error="Test error",
+        error_code="EXTRACTION_FAILED",
+    )
+
+    assert mock_persist.called
+    call_args = mock_persist.call_args[0]
+    event_data = call_args[0]
+
+    assert event_data["type"] == "error"
+    assert event_data["analysis_id"] == analysis_id
+    assert event_data["stage"] == "extraction"
+    assert event_data["status"] == "failed"
+    assert event_data["error"] == "Test error"
+    assert event_data["error_code"] == "EXTRACTION_FAILED"
+    assert "timestamp" in event_data

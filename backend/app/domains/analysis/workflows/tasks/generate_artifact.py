@@ -250,6 +250,13 @@ async def generate_artifact(  # noqa: PLR0915
         Exception: If database operation fails
 
     """
+    # Issue #441: Skip if workflow is aborting
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
+        return {}
+
     analysis_id = state["analysis_id"]
     aggregated_insights = get_aggregated_insights(state)
     agent_findings = get_agent_findings(state)

@@ -75,6 +75,13 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         Dictionary with quality_scores and retry_count fields
 
     """
+    # Issue #441: Skip if workflow is aborting
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
+        return {}
+
     analysis_id = state["analysis_id"]
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
@@ -291,19 +298,44 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Emit SSE event for quality gate result
-        from app.shared.services.messaging.sse_helpers import emit_streaming_event
-
-        await emit_streaming_event(
-            "progress",  # Must be "progress", "complete", or "error" for frontend schema
-            analysis_id=analysis_id,
-            stage="quality_validation",
-            status="complete" if gate_passed else "failed",  # "passed" not valid, use "complete"
-            avg_score=avg_score,
-            threshold=QUALITY_THRESHOLD,
-            retry_count=retry_count,
-            scores=quality_scores,
-            gate_passed=gate_passed,  # Preserve pass/fail info in details
+        from app.shared.services.messaging.sse_helpers import (
+            emit_error_event,
+            emit_streaming_event,
         )
+
+        if gate_passed:
+            # Gate passed - emit progress event with complete status
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage="quality_validation",
+                status="complete",
+                avg_score=avg_score,
+                threshold=effective_threshold,
+                retry_count=retry_count,
+                scores=quality_scores,
+                gate_passed=True,
+            )
+        else:
+            # Gate failed - emit error event
+            error_message = (
+                f"Quality gate failed - average score {avg_score:.2f} below threshold {effective_threshold:.2f}"
+            )
+            if failed_aspects:
+                error_message += f". Failed aspects: {', '.join(failed_aspects)}"
+
+            await emit_error_event(
+                analysis_id=analysis_id,
+                stage="quality_validation",
+                error=error_message,
+                error_code="QUALITY_GATE_FAILED",
+                avg_score=avg_score,
+                threshold=effective_threshold,
+                retry_count=retry_count,
+                scores=quality_scores,
+                gate_passed=False,
+                failed_aspects=failed_aspects if failed_aspects else None,
+            )
 
         # Submit quality scores to Langfuse for analytics
         # Issue #432: Submit G-Eval scores using direct Langfuse SDK API

@@ -113,15 +113,26 @@ test.describe('Analysis Page - Progress Tracking', () => {
   test('should display analysis metadata', async ({ page, request }) => {
     test.skip(!!process.env.CI, 'Requires backend LLM processing');
 
-    // Get any analysis (completed or in-progress)
+    // Get a completed analysis (more likely to have metadata)
     const completed = await getCompletedAnalysis(request);
-    const analysisId = completed?.analysis_id || (await createAnalysis(request)).analysis_id;
+    
+    if (!completed) {
+      test.skip(true, 'No completed analysis available - create one first');
+    }
 
     const analyzePage = new AnalyzePage(page);
-    await analyzePage.goto(analysisId);
+    await analyzePage.goto(completed!.analysis_id);
+
+    // Wait for the page to load - progress bar indicates page is ready
+    await expect(analyzePage.progressBar).toBeVisible();
+
+    // Wait for completion state to ensure page is fully loaded
+    await analyzePage.waitForComplete();
 
     // The page should show the analysis heading
-    await expect(page.getByRole('heading', { name: /content analysis/i })).toBeVisible();
+    // Check for h1 with "Content Analysis" text - this is more reliable
+    // The h1 element should always be present when AnalysisHeader renders
+    await expect(page.locator('h1').filter({ hasText: /content analysis/i })).toBeVisible();
   });
 
   test('should track real-time progress updates', async ({ page, request }) => {
