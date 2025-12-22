@@ -47,6 +47,7 @@ export interface AnalysisProps {
   activities: AgentActivity[]
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
 
   // Error states
@@ -83,5 +84,6 @@ export interface ProgressProps {
   steps: AnalysisStep[]
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
 }

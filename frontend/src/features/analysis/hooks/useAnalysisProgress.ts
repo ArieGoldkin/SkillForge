@@ -22,6 +22,7 @@ import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'
 
+import { collectErrorCodesFromEvents, collectErrorCodesFromStages } from './errorCodeCollection'
 import { useActivityFeed } from './useActivityFeed'
 import type { AgentActivity } from './useActivityFeed'
 import { useAnalysisMetadata } from './useAnalysisMetadata'
@@ -56,6 +57,7 @@ export interface AnalysisProgressData {
   traceId?: string // Langfuse trace ID for feedback submission
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: {
     title?: string
     contentType?: 'article' | 'video' | 'repo'
@@ -163,11 +165,11 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   }, [events])
 
   // ========================================================================
-  // 7. Calculate Failed Stages Count
+  // 7. Calculate Failed Stages Count and Collect Error Codes
   // ========================================================================
   // Count failures from both error events and failed progress events
   // This ensures we detect all failures regardless of how the backend emits them
-  const { hasFailedStages, failedStagesCount } = useMemo(() => {
+  const { hasFailedStages, failedStagesCount, failedStageErrorCodes } = useMemo(() => {
     // Count failed stages from stageStatuses (progress events with status="failed")
     const failedFromStatuses = Array.from(stageStatuses.values()).filter(
       (s) => s.status === 'failed'
@@ -181,7 +183,16 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     // stageStatuses might not have been updated yet but error events exist
     const failedCount = Math.max(failedFromStatuses, totalFailed)
 
-    return { hasFailedStages: failedCount > 0, failedStagesCount: failedCount }
+    // Collect error codes from failed stages and events
+    const errorCodes = new Set<string>()
+    collectErrorCodesFromStages(stageStatuses).forEach((code) => errorCodes.add(code))
+    collectErrorCodesFromEvents(events).forEach((code) => errorCodes.add(code))
+
+    return {
+      hasFailedStages: failedCount > 0,
+      failedStagesCount: failedCount,
+      failedStageErrorCodes: Array.from(errorCodes),
+    }
   }, [events, stageStatuses])
 
   // ========================================================================
@@ -208,6 +219,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       overallProgress,
       hasFailedStages,
       failedStagesCount,
+      failedStageErrorCodes: failedStageErrorCodes.length > 0 ? failedStageErrorCodes : undefined,
       analysisMetadata: analysisMetadata || undefined,
     }
 
@@ -247,6 +259,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     overallProgress,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
     setAnalysisMetadata,
   ])
@@ -265,6 +278,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     traceId,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
     skipReasons,
     stageSuccessMetrics,

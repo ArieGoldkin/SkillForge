@@ -21,6 +21,16 @@ function handleProgressEvent(
     status: event.status,
     agent: event.details?.agent as string | undefined,
     timestamp: event.timestamp,
+    // Extract error details for failed progress events
+    error:
+      event.status === 'failed'
+        ? (event.error as string | undefined) || (event.details?.error as string | undefined)
+        : undefined,
+    errorCode:
+      event.status === 'failed'
+        ? (event.error_code as string | undefined) ||
+          (event.details?.error_code as string | undefined)
+        : undefined,
   }
 }
 
@@ -38,11 +48,12 @@ function handleErrorEvent(
     stageStates[stageIndex] = {
       ...stageStates[stageIndex],
       status: 'failed',
-      error: event.details?.error,
+      error: event.error ?? event.details?.error,
+      errorCode: event.details?.error_code as string | undefined,
     }
   }
-  if (event.details?.error) {
-    onError?.(event.details.error)
+  if (event.error ?? event.details?.error) {
+    onError?.(event.error ?? event.details?.error ?? 'Unknown error')
   }
 }
 

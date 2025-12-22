@@ -193,6 +193,7 @@ export default function AnalyzeResult() {
     artifactId,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
   } = useAnalysisProgress(mergedEvents)
 
@@ -277,6 +278,7 @@ export default function AnalyzeResult() {
     activities,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
 
     // Error states

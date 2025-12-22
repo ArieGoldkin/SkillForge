@@ -19,6 +19,7 @@ export interface StageState {
   agent?: string
   timestamp?: string
   error?: string
+  errorCode?: string
 }
 
 /**

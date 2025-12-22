@@ -10,6 +10,8 @@ import { Progress } from '@shared/components/ui/progress'
 
 import { cn } from '@lib/utils'
 
+import { formatErrorCode } from '../../utils/errorCodeFormatter'
+
 /**
  * Analysis stage type representing the current processing state
  */
@@ -40,6 +42,7 @@ export interface AnalysisProgressCardProps {
   wordCount?: number
   hasFailedStages?: boolean
   failedStagesCount?: number
+  failedStageErrorCodes?: string[]
   className?: string
 }
 
@@ -122,6 +125,7 @@ export const AnalysisProgressCard = memo(function AnalysisProgressCard({
   wordCount,
   hasFailedStages = false,
   failedStagesCount = 0,
+  failedStageErrorCodes = [],
   className,
 }: AnalysisProgressCardProps) {
   const stageConfig = getStageConfig(stage, hasFailedStages)
@@ -203,7 +207,7 @@ export const AnalysisProgressCard = memo(function AnalysisProgressCard({
 
         {/* Error Summary */}
         {isComplete && hasFailedStages && (
-          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 space-y-2">
             <div className="flex items-start gap-2">
               <div className="flex-1">
                 <p className="text-sm font-medium text-destructive">
@@ -214,6 +218,17 @@ export const AnalysisProgressCard = memo(function AnalysisProgressCard({
                 </p>
               </div>
             </div>
+            {/* Error Codes */}
+            {failedStageErrorCodes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-destructive/20">
+                <span className="text-xs text-muted-foreground">Error codes:</span>
+                {failedStageErrorCodes.map((errorCode) => (
+                  <Badge key={errorCode} variant="destructive" className="text-xs">
+                    {formatErrorCode(errorCode)}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
