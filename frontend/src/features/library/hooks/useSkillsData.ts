@@ -18,8 +18,17 @@ export function useSkillsData(analyses: Analysis[] | undefined) {
     duration: 25,
     difficulty: 'intermediate' as const,
     tags: [analysis.content_type, analysis.status],
-    progress: analysis.status === 'complete' ? 100 : 65,
-    status: analysis.status === 'complete' ? ('completed' as const) : ('in-progress' as const),
+    progress: analysis.status === 'complete' || analysis.status === 'completed' ? 100 : 65,
+    status:
+      analysis.status === 'complete' || analysis.status === 'completed'
+        ? ('completed' as const)
+        : analysis.status === 'failed' ||
+            analysis.status === 'extraction_failed' ||
+            analysis.status === 'analysis_failed' ||
+            analysis.status === 'artifact_failed' ||
+            analysis.status === 'quality_gate_failed'
+          ? ('failed' as const)
+          : ('in-progress' as const),
     onSelect: (id: string) => {
       navigate({ to: '/analyze/$id', params: { id } })
     },

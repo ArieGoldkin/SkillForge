@@ -21,19 +21,27 @@ def test_url():
     return "https://example.com/article"
 
 
+@patch("app.shared.services.persistence.progress.persist_progress_event_async")
+@patch("app.shared.services.messaging.sse_helpers.get_broadcaster", new_callable=AsyncMock)
 @patch("app.core.tracing.get_current_trace_id")
 @patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 @patch("app.domains.analysis.services.persistence.data_persister.DataPersister.persist")
 @patch("app.domains.analysis.services.persistence.status_updater.StatusUpdater.update")
-@patch("app.db.repositories.artifact_repository.ArtifactRepository")
-@patch("app.db.session.AsyncSessionLocal")
+@patch("app.domains.analysis.services.workflow.orchestrator.ArtifactRepository")
+@patch("app.domains.analysis.services.persistence.status_updater.AsyncSessionLocal")
+@patch("app.domains.analysis.services.persistence.data_persister.AsyncSessionLocal")
+@patch("app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal")
 async def test_orchestrator_sets_artifact_failed_when_no_artifact(
-    mock_session_local,
+    mock_status_updater_session,
+    mock_data_persister_session,
+    mock_orchestrator_session,
     mock_repo_class,
     mock_update_status,
     mock_persist,
     mock_workflow,
     mock_get_trace_id,
+    mock_get_broadcaster,
+    mock_persist_progress,
     mock_analysis_id,
     test_url,
 ):
@@ -55,11 +63,19 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=None)
     mock_repo_class.return_value = mock_repo_instance
 
-    # Mock database session
+    # Mock database session for all AsyncSessionLocal calls
     mock_session = AsyncMock()
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
-    mock_session_local.return_value = mock_session
+    # Configure all session mocks to return the same session
+    mock_orchestrator_session.return_value = mock_session
+    mock_data_persister_session.return_value = mock_session
+    mock_status_updater_session.return_value = mock_session
+
+    # Mock broadcaster factory
+    mock_broadcaster = AsyncMock()
+    mock_broadcaster.publish = AsyncMock()
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Mock trace_id
     mock_get_trace_id.return_value = "test-trace-id"
@@ -84,19 +100,27 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     assert artifact_failed_call[0][1] == AnalysisStatus.ARTIFACT_FAILED.value
 
 
+@patch("app.shared.services.persistence.progress.persist_progress_event_async")
+@patch("app.shared.services.messaging.sse_helpers.get_broadcaster", new_callable=AsyncMock)
 @patch("app.core.tracing.get_current_trace_id")
 @patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 @patch("app.domains.analysis.services.persistence.data_persister.DataPersister.persist")
 @patch("app.domains.analysis.services.persistence.status_updater.StatusUpdater.update")
-@patch("app.db.repositories.artifact_repository.ArtifactRepository")
-@patch("app.db.session.AsyncSessionLocal")
+@patch("app.domains.analysis.services.workflow.orchestrator.ArtifactRepository")
+@patch("app.domains.analysis.services.persistence.status_updater.AsyncSessionLocal")
+@patch("app.domains.analysis.services.persistence.data_persister.AsyncSessionLocal")
+@patch("app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal")
 async def test_orchestrator_sets_complete_when_artifact_exists(
-    mock_session_local,
+    mock_status_updater_session,
+    mock_data_persister_session,
+    mock_orchestrator_session,
     mock_repo_class,
     mock_update_status,
     mock_persist,
     mock_workflow,
     mock_get_trace_id,
+    mock_get_broadcaster,
+    mock_persist_progress,
     mock_analysis_id,
     test_url,
 ):
@@ -122,11 +146,19 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
     mock_repo_class.return_value = mock_repo_instance
 
-    # Mock database session
+    # Mock database session for all AsyncSessionLocal calls
     mock_session = AsyncMock()
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
-    mock_session_local.return_value = mock_session
+    # Configure all session mocks to return the same session
+    mock_orchestrator_session.return_value = mock_session
+    mock_data_persister_session.return_value = mock_session
+    mock_status_updater_session.return_value = mock_session
+
+    # Mock broadcaster factory
+    mock_broadcaster = AsyncMock()
+    mock_broadcaster.publish = AsyncMock()
+    mock_get_broadcaster.return_value = mock_broadcaster
 
     # Mock trace_id
     mock_get_trace_id.return_value = "test-trace-id"

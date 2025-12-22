@@ -27,7 +27,8 @@ async def test_post_analyze_creates_record(requires_database, reset_engine_conne
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
-            "app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task
+            "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+            new=mock_run_workflow_task,
         ):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -64,7 +65,8 @@ async def test_post_analyze_workflow_executes(reset_engine_connections):
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
-            "app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task
+            "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+            new=mock_run_workflow_task,
         ):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -90,7 +92,8 @@ async def test_post_analyze_sse_events(reset_engine_connections):
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
-            "app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task
+            "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+            new=mock_run_workflow_task,
         ):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -121,7 +124,8 @@ async def test_post_analyze_error_handling(reset_engine_connections):
 
     with patch("app.api.v1.analysis.endpoints.uuid.uuid4", return_value=analysis_uuid):
         with patch(
-            "app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task
+            "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+            new=mock_run_workflow_task,
         ):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -154,7 +158,10 @@ async def test_post_analyze_concurrent_requests(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+        new=mock_run_workflow_task,
+    ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             # Create multiple analyses concurrently
@@ -197,7 +204,10 @@ async def test_post_analyze_content_types(reset_engine_connections):
         """Mock workflow task that does nothing."""
         pass
 
-    with patch("app.api.v1.analysis.workflow_runner.run_workflow_task", new=mock_run_workflow_task):
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.WorkflowOrchestrator.run",
+        new=mock_run_workflow_task,
+    ):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             for url, expected_type in test_cases:
@@ -264,7 +274,7 @@ async def test_workflow_status_updates_to_complete(
     requires_database, reset_engine_connections, db_session
 ):
     """Test that workflow status is updated to 'complete' after successful execution."""
-    from app.api.v1.analysis.workflow_runner import run_workflow_task
+    from app.domains.analysis.services.workflow import WorkflowOrchestrator
     from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()
@@ -303,7 +313,8 @@ async def test_workflow_status_updates_to_complete(
 
     with patch.object(analysis_workflow, "ainvoke", new=mock_workflow_ainvoke):
         # Run workflow task
-        await run_workflow_task(analysis_uuid, "https://example.com/article")
+        orchestrator = WorkflowOrchestrator()
+        await orchestrator.run(analysis_uuid, "https://example.com/article")
 
         # Wait a bit for status update
         await asyncio.sleep(0.1)
@@ -318,7 +329,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     requires_database, reset_engine_connections, db_session
 ):
     """Test that workflow status is updated to 'failed' when GeneratorExit occurs."""
-    from app.api.v1.analysis.workflow_runner import run_workflow_task
+    from app.domains.analysis.services.workflow import WorkflowOrchestrator
     from app.domains.analysis.workflows.analysis import analysis_workflow
 
     analysis_uuid = uuid.uuid4()
@@ -343,7 +354,8 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
         # Run workflow task - expect RuntimeError (converted from GeneratorExit)
         # The workflow runner should catch it and update status to failed
         with pytest.raises(RuntimeError, match="coroutine ignored GeneratorExit"):
-            await run_workflow_task(analysis_uuid, "https://example.com/article")
+            orchestrator = WorkflowOrchestrator()
+        await orchestrator.run(analysis_uuid, "https://example.com/article")
 
         # Wait a bit for status update (status update happens in exception handler)
         await asyncio.sleep(0.1)

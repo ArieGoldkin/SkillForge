@@ -33,8 +33,36 @@ export default function Library() {
   const limit = 15
 
   const mapAnalysisStatusToSkillStatus = useCallback((status: AnalysisStatus): SkillStatus => {
-    if (status === 'complete') return 'completed'
-    if (status === 'failed') return 'failed'
+    // Complete status
+    if (status === 'complete' || status === 'completed') return 'completed'
+
+    // All failure statuses map to 'failed'
+    if (
+      status === 'failed' ||
+      status === 'extraction_failed' ||
+      status === 'analysis_failed' ||
+      status === 'artifact_failed' ||
+      status === 'quality_gate_failed'
+    ) {
+      return 'failed'
+    }
+
+    // All lifecycle states map to 'in-progress'
+    if (
+      status === 'pending' ||
+      status === 'extracting' ||
+      status === 'analyzing' ||
+      status === 'generating_artifact' ||
+      status === 'running' ||
+      status === 'in-progress'
+    ) {
+      return 'in-progress'
+    }
+
+    // Cancelled maps to 'not-started' (user action)
+    if (status === 'cancelled') return 'not-started'
+
+    // Default to in-progress for unknown statuses
     return 'in-progress'
   }, [])
 
@@ -66,7 +94,12 @@ export default function Library() {
 
     return items.map((item) => {
       const tags = item.tags?.length ? item.tags : [item.content_type]
-      const isFailed = item.status === 'failed'
+      const isFailed =
+        item.status === 'failed' ||
+        item.status === 'extraction_failed' ||
+        item.status === 'analysis_failed' ||
+        item.status === 'artifact_failed' ||
+        item.status === 'quality_gate_failed'
       return {
         id: item.analysis_id,
         title: normalizeTitle(item.title),

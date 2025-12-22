@@ -6,6 +6,63 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
+class AnalysisStatus(str, Enum):
+    """Analysis status values with semantic meaning.
+
+    Status values accurately describe the current state of an analysis.
+    The 'complete' status is ONLY set when artifact exists and is valid.
+    """
+
+    # Lifecycle states
+    PENDING = "pending"
+    EXTRACTING = "extracting"
+    ANALYZING = "analyzing"
+    GENERATING_ARTIFACT = "generating_artifact"
+    COMPLETE = "complete"  # Only when artifact exists and is valid!
+
+    # Failure states
+    EXTRACTION_FAILED = "extraction_failed"
+    ANALYSIS_FAILED = "analysis_failed"
+    ARTIFACT_FAILED = "artifact_failed"  # Workflow done, but no artifact
+    QUALITY_GATE_FAILED = "quality_gate_failed"
+    FAILED = "failed"  # Generic fallback
+
+    # User actions
+    CANCELLED = "cancelled"
+
+    @classmethod
+    def is_failure(cls, status: str) -> bool:
+        """Check if status represents a failure state.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status is a failure state, False otherwise
+
+        """
+        return status in {
+            cls.EXTRACTION_FAILED,
+            cls.ANALYSIS_FAILED,
+            cls.ARTIFACT_FAILED,
+            cls.QUALITY_GATE_FAILED,
+            cls.FAILED,
+        }
+
+    @classmethod
+    def is_complete(cls, status: str) -> bool:
+        """Check if status represents successful completion.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status is 'complete', False otherwise
+
+        """
+        return status == cls.COMPLETE
+
+
 class AnalyzeRequest(BaseModel):
     """Request schema for creating a new analysis.
 

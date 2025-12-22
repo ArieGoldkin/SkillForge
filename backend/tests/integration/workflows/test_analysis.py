@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select
 
-from app.api.v1.analysis.workflow_runner import run_workflow_task
+from app.domains.analysis.services.workflow import WorkflowOrchestrator
 from app.core.config import get_settings
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal, engine
@@ -203,7 +203,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         assert title is not None, "Title should be present in extraction_metadata"
         assert title == "Test Article", "Title should match the extracted value"
         # Verify the structure matches what _persist_analysis_data expects
-        # (from workflow_runner.py line 102-104)
+        # (from orchestrator data_persister.persist)
         assert isinstance(title, str), "Title should be a string"
     finally:
         # Ensure engine connections are disposed
@@ -385,7 +385,7 @@ async def test_workflow_persists_results_to_database(
     """
     from sqlalchemy import select
 
-    from app.api.v1.analysis.workflow_runner import run_workflow_task
+    from app.domains.analysis.services.workflow import WorkflowOrchestrator
 
     # Use a simple test URL
     test_url = "https://react.dev"
@@ -452,8 +452,9 @@ async def test_workflow_persists_results_to_database(
                 return_value=mock_artifact_repo,
             ),
         ):
-            # Run full workflow via run_workflow_task (this calls _persist_analysis_data)
-            await run_workflow_task(
+            # Run full workflow via orchestrator (this calls data_persister.persist)
+            orchestrator = WorkflowOrchestrator()
+            await orchestrator.run(
                 analysis_id=analysis_id,
                 url=test_url,
                 skill_level="intermediate",
@@ -511,7 +512,7 @@ async def test_workflow_persists_results_to_database(
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(150)
-@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
+@patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 async def test_workflow_fails_when_required_fields_missing(
     mock_workflow,
     requires_database,
@@ -542,7 +543,8 @@ async def test_workflow_fails_when_required_fields_missing(
     )
 
     # Run workflow task
-    await run_workflow_task(
+    orchestrator = WorkflowOrchestrator()
+    await orchestrator.run(
         analysis_id=analysis_id,
         url=test_url,
         skill_level="intermediate",

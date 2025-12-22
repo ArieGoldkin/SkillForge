@@ -147,13 +147,22 @@ export function useAnalysisStatus({
     [sseState.artifactId, statusData?.artifact_id]
   )
 
-  const shouldConnect = Boolean(
-    analysisId &&
-      !completedParam &&
-      resolvedStatus !== 'completed' &&
-      resolvedStatus !== 'complete' &&
-      resolvedStatus !== 'failed'
-  )
+  // Don't connect SSE if analysis is complete or failed
+  const isCompleteOrFailed = useMemo(() => {
+    if (!resolvedStatus) return false
+    return (
+      resolvedStatus === 'completed' ||
+      resolvedStatus === 'complete' ||
+      resolvedStatus === 'failed' ||
+      resolvedStatus === 'extraction_failed' ||
+      resolvedStatus === 'analysis_failed' ||
+      resolvedStatus === 'artifact_failed' ||
+      resolvedStatus === 'quality_gate_failed' ||
+      resolvedStatus === 'cancelled'
+    )
+  }, [resolvedStatus])
+
+  const shouldConnect = Boolean(analysisId && !completedParam && !isCompleteOrFailed)
 
   return {
     resolvedStatus,

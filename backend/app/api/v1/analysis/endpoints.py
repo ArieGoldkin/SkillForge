@@ -12,7 +12,6 @@ from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
     stream_analysis_progress as stream_analysis_progress_handler,
 )
-from app.api.v1.analysis.workflow_runner import run_workflow_task
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
@@ -25,6 +24,7 @@ from app.domains.analysis.schemas.api import (
     AnalyzeStatusResponse,
     ProgressEventResponse,
 )
+from app.domains.analysis.services.workflow import WorkflowOrchestrator
 from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
@@ -254,8 +254,9 @@ async def create_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
+        orchestrator = WorkflowOrchestrator()
         task: asyncio.Task[None] = asyncio.create_task(
-            run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
+            orchestrator.run(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
         )
         background_tasks = fastapi_request.app.state.background_tasks
         background_tasks.add(task)
