@@ -209,10 +209,16 @@ export function getEventMemoryStats(events: SSEEvent[]) {
  */
 function handleOpen(store: StoreAPI): () => void {
   return () => {
+    // Stop polling if SSE reconnects successfully
+    if (store.getState().isPolling) {
+      store.getState().stopPolling()
+    }
     store.setState({
       _reconnectAttempts: 0,
       isConnected: true,
+      isPolling: false,
       error: null,
+      connectionState: 'connected',
     })
   }
 }
@@ -428,17 +434,19 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
         _reconnectTimeoutId: timeoutId,
       })
     } else {
-      logger.error('SSE max reconnection attempts reached', {
+      logger.error('SSE max reconnection attempts reached, starting polling fallback', {
         analysisId,
         maxAttempts: MAX_RECONNECT_ATTEMPTS,
         totalAttempts: attempts + 1,
         reason: 'persistent_connection_failure',
       })
+      // Start polling fallback instead of permanently failing
+      store.getState().startPolling(analysisId)
       store.setState({
-        _permanentlyFailed: true,
-        error: new Error('Connection failed after multiple attempts. Please refresh to retry.'),
+        error: new Error(
+          'SSE connection failed. Using polling fallback to continue receiving updates.'
+        ),
       })
-      store.getState().disconnect()
     }
   }
 }

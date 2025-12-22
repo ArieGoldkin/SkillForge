@@ -5,6 +5,7 @@
 
 export { ProgressTracker, type ProgressTrackerProps } from './ProgressTracker'
 export { ProgressColumn } from './ProgressColumn'
+export { SSEConnectionStatus } from './SSEConnectionStatus'
 
 // Stage data from registry
 export { ALL_STAGES, STAGE_CONFIG, WORKING_STAGES } from '../../config/stageRegistry'

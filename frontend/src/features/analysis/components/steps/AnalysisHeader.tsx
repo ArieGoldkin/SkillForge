@@ -9,6 +9,8 @@ import { Badge } from '@shared/components/ui/badge'
 
 import { cn } from '@lib/utils'
 
+import { SSEConnectionStatus } from '../progress/SSEConnectionStatus'
+
 interface AnalysisHeaderProps {
   title?: string | null
   url?: string
@@ -63,6 +65,7 @@ export const AnalysisHeader = memo(function AnalysisHeader({
             {contentTypeConfig.label}
           </Badge>
         )}
+        <SSEConnectionStatus />
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         {isGoldenDataset && documentName ? (
