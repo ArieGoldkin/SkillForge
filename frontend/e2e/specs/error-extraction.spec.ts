@@ -17,7 +17,7 @@ import { test, expect } from '@playwright/test';
 import { AnalyzePage } from '../page-objects';
 import { createAnalysis, getAnalysis } from '../utils/api-helpers';
 
-// eslint-disable-next-line max-lines-per-function -- E2E tests require comprehensive test coverage
+ 
 test.describe('Extraction Error Handling', () => {
   test('should handle extraction failure with invalid URL', async ({ page, request }) => {
     test.skip(!!process.env.CI, 'Requires backend LLM processing');

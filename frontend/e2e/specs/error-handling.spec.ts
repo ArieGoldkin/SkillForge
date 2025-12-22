@@ -1,7 +1,9 @@
-/* eslint-disable max-lines -- E2E tests require comprehensive test coverage */
+ 
 import { test, expect } from '@playwright/test';
 
-// eslint-disable-next-line max-lines-per-function -- E2E tests require comprehensive test coverage
+import { logger } from '../utils';
+
+ 
 test.describe('Error Handling Tests', () => {
   test('should display 404 for unknown routes', async ({ page }) => {
     // With storageState, direct navigation is optimized (reuses browser state)
@@ -184,11 +186,12 @@ test.describe('Error Handling Tests', () => {
     // Valid outcomes: at least one of the checks succeeded (status === 'fulfilled')
     const anySucceeded = outcomes.some(outcome => outcome.status === 'fulfilled');
 
-    // Log for debugging in CI (using console.warn which is allowed)
+    // Log for debugging in CI
     if (!anySucceeded) {
-      console.warn('No valid outcome detected. Outcomes:', outcomes.map((o, i) =>
+      const outcomeDetails = outcomes.map((o, i) =>
         `${i}: ${o.status}${o.status === 'rejected' ? ` (${(o as PromiseRejectedResult).reason?.message || 'unknown'})` : ''}`
-      ));
+      );
+      logger.warn('No valid outcome detected', { outcomes: outcomeDetails });
     }
 
     expect(anySucceeded).toBe(true);

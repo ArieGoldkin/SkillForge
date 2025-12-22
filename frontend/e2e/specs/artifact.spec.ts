@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+
 import { ArtifactPage } from '../page-objects';
 import { getCompletedAnalysis } from '../utils/api-helpers';
 

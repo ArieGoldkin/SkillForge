@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+
 import { TutorPage } from '../page-objects';
 import {
   getCompletedAnalysis,
@@ -7,6 +8,7 @@ import {
   sendTutorMessage,
   waitForAssistantResponse,
   sendMessageAndWaitForResponse,
+  logger,
 } from '../utils';
 
 // SKIP: Tutor UI is currently using mock data (mockTutoringAPI), not the real backend API.
@@ -144,7 +146,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     // Typing indicator might be visible briefly while LLM generates response
     // We check if it exists in the DOM within a short window
     const typingIndicator = tutorPage.typingIndicator;
-    const isVisible = await typingIndicator.isVisible().catch(() => false);
+    await typingIndicator.isVisible().catch(() => false);
 
     // Either typing indicator shows or response comes quickly
     // Both are valid outcomes, so test passes if no errors occurred
@@ -211,7 +213,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     } else {
       // LLM response timed out - this is acceptable for this test
       // The test still passes as it verifies the system handles slow responses gracefully
-      console.log('LLM response timed out - this may be expected in CI environments');
+      logger.warn('LLM response timed out - this may be expected in CI environments');
     }
 
     // Page should remain functional regardless of LLM response

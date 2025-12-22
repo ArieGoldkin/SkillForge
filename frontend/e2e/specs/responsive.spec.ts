@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+
 import { mockAllAPIs, setMobileViewport, setTabletViewport, setDesktopViewport } from '../utils';
 
 test.describe('Responsive Design Tests', () => {

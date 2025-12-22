@@ -18,6 +18,7 @@
 import { test, expect } from '@playwright/test';
 
 import { langfuseConfig, getArtifactUrl } from '../config/langfuse.config';
+import { logTestStep, logger } from '../utils';
 
 // Configuration from dynamic config
 const ARTIFACT_URL = getArtifactUrl();
@@ -67,7 +68,10 @@ async function verifyScoreInLangfuseAPI(
       );
 
       if (!response.ok) {
-        console.log(`Langfuse API returned ${response.status}, retrying...`);
+        logger.warn('Langfuse API returned non-OK status, retrying', {
+          status: response.status,
+          elapsed: Math.floor((Date.now() - startTime) / 1000),
+        });
         await new Promise(resolve => setTimeout(resolve, 2000));
         continue;
       }
@@ -80,15 +84,24 @@ async function verifyScoreInLangfuseAPI(
       );
 
       if (matchingScore) {
-        console.log(`Found user_feedback score with value ${expectedValue} via API`);
-        console.log(`  Score ID: ${matchingScore.id}`);
-        console.log(`  Trace ID: ${matchingScore.traceId}`);
+        logger.info('Found user_feedback score via API', {
+          scoreId: matchingScore.id,
+          traceId: matchingScore.traceId,
+          value: expectedValue,
+        });
         return { score: matchingScore, found: true };
       }
 
-      console.log(`Score not found yet (${data.meta.totalItems} total scores), waiting... (${Math.floor((Date.now() - startTime) / 1000)}s elapsed)`);
+      logger.debug('Score not found yet, waiting', {
+        totalScores: data.meta.totalItems,
+        elapsed: Math.floor((Date.now() - startTime) / 1000),
+        expectedValue,
+      });
     } catch (error) {
-      console.log(`Langfuse API error: ${error}, retrying...`);
+      logger.warn('Langfuse API error, retrying', {
+        error: error instanceof Error ? error.message : String(error),
+        elapsed: Math.floor((Date.now() - startTime) / 1000),
+      });
     }
 
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -114,9 +127,10 @@ test.describe('Langfuse Feedback Integration E2E', () => {
   // Locally: Requires Langfuse dev stack running + credentials exported
 
   test('should submit thumbs-up feedback and verify in Langfuse', async ({ page }) => {
-    console.log('\n=== Step 1: Navigate to Artifact Page ===');
-    console.log(`Artifact URL: ${ARTIFACT_URL}`);
-    console.log(`Trace ID for verification: ${TRACE_ID}`);
+    logTestStep('Navigate to Artifact Page', {
+      artifactUrl: ARTIFACT_URL,
+      traceId: TRACE_ID,
+    });
 
     // With storageState, direct navigation to artifact URL is faster (skips baseURL navigation)
     await page.goto(ARTIFACT_URL);
@@ -124,9 +138,9 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // Verify page loaded
     await expect(page.getByTestId('markdown-preview')).toBeVisible({ timeout: 15000 });
-    console.log('Artifact page loaded successfully');
+    logger.info('Artifact page loaded successfully');
 
-    console.log('\n=== Step 2: Submit Thumbs-Up Feedback ===');
+    logTestStep('Submit Thumbs-Up Feedback');
 
     // Scroll to bottom to find feedback section (it's below the markdown content)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -142,16 +156,16 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // Click thumbs-up
     await thumbsUpButton.click();
-    console.log('Clicked thumbs-up button');
+    logger.info('Clicked thumbs-up button');
 
     // Wait for feedback to be submitted
     await page.waitForTimeout(2000);
 
     // Verify button is now selected
     const isSelected = await thumbsUpButton.getAttribute('aria-pressed');
-    console.log(`Thumbs-up button aria-pressed: ${isSelected}`);
+    logger.info('Thumbs-up button state', { ariaPressed: isSelected });
 
-    console.log('\n=== Step 3: Verify Score in Langfuse via API ===');
+    logTestStep('Verify Score in Langfuse via API');
 
     // Use API verification instead of brittle UI scraping
     const { score, found } = await verifyScoreInLangfuseAPI(1, TRACE_ID, 15000);
@@ -160,18 +174,20 @@ test.describe('Langfuse Feedback Integration E2E', () => {
       throw new Error(`User feedback score with value 1 not found in Langfuse for trace ${TRACE_ID}`);
     }
 
-    console.log('\n=== Test Summary ===');
-    console.log('✅ Step 1: Navigated to artifact page');
-    console.log('✅ Step 2: Submitted thumbs-up feedback');
-    console.log(`✅ Step 3: Verified score in Langfuse via API`);
-    console.log(`   Score ID: ${score?.id}`);
-    console.log(`   Trace ID: ${score?.traceId}`);
+    logger.info('Test summary', {
+      step1: 'Navigated to artifact page',
+      step2: 'Submitted thumbs-up feedback',
+      step3: 'Verified score in Langfuse via API',
+      scoreId: score?.id,
+      traceId: score?.traceId,
+    });
   });
 
   test('should submit thumbs-down with comment and verify in Langfuse', async ({ page }) => {
-    console.log('\n=== Test: Thumbs-Down with Comment ===');
-    console.log(`Artifact URL: ${ARTIFACT_URL}`);
-    console.log(`Trace ID for verification: ${TRACE_ID}`);
+    logTestStep('Thumbs-Down with Comment', {
+      artifactUrl: ARTIFACT_URL,
+      traceId: TRACE_ID,
+    });
 
     // Navigate to artifact page
     await page.goto(ARTIFACT_URL);
@@ -188,22 +204,22 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // Click thumbs-down
     await thumbsDownButton.click();
-    console.log('Clicked thumbs-down button');
+    logger.info('Clicked thumbs-down button');
 
     // Comment dialog should appear
     const commentDialog = page.locator('[role="dialog"]');
     await expect(commentDialog).toBeVisible({ timeout: 5000 });
-    console.log('Comment dialog appeared');
+    logger.info('Comment dialog appeared');
 
     // Enter comment
     const commentInput = page.getByPlaceholder(/what could we improve/i).or(page.locator('textarea')).first();
     await commentInput.fill('E2E test comment - testing negative feedback flow');
-    console.log('Entered comment text');
+    logger.info('Entered comment text');
 
     // Submit comment
     const submitButton = page.getByRole('button', { name: /submit|send/i });
     await submitButton.click();
-    console.log('Submitted comment');
+    logger.info('Submitted comment');
 
     // Dialog should close
     await expect(commentDialog).not.toBeVisible({ timeout: 5000 });
@@ -211,7 +227,7 @@ test.describe('Langfuse Feedback Integration E2E', () => {
     // Wait for submission
     await page.waitForTimeout(2000);
 
-    console.log('\n=== Verify Score in Langfuse via API ===');
+    logTestStep('Verify Score in Langfuse via API');
 
     // Use API verification
     const { score, found } = await verifyScoreInLangfuseAPI(0, TRACE_ID, 15000);
@@ -220,11 +236,12 @@ test.describe('Langfuse Feedback Integration E2E', () => {
       throw new Error(`User feedback score with value 0 not found in Langfuse for trace ${TRACE_ID}`);
     }
 
-    console.log('\n=== Test Summary ===');
-    console.log('✅ Submitted thumbs-down feedback with comment');
-    console.log(`✅ Verified score in Langfuse via API`);
-    console.log(`   Score ID: ${score?.id}`);
-    console.log(`   Trace ID: ${score?.traceId}`);
-    console.log(`   Comment: ${score?.comment || '(none)'}`);
+    logger.info('Test summary', {
+      step1: 'Submitted thumbs-down feedback with comment',
+      step2: 'Verified score in Langfuse via API',
+      scoreId: score?.id,
+      traceId: score?.traceId,
+      comment: score?.comment || '(none)',
+    });
   });
 });

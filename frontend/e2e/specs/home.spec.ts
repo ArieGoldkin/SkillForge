@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+
 import { HomePage } from '../page-objects';
 import { getApiBaseUrl, getCompletedAnalysis } from '../utils';
 

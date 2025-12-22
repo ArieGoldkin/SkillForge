@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 import { AnalyzePage } from '../page-objects';
 import { createAnalysis } from '../utils/api-helpers';
 
-// eslint-disable-next-line max-lines-per-function -- E2E tests require comprehensive test coverage
+ 
 test.describe('Frontend Error Detection', () => {
   test('should detect errors from both error and progress events', async ({ page, request }) => {
     test.skip(!!process.env.CI, 'Requires backend LLM processing');
