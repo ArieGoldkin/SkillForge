@@ -18,7 +18,9 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
+    // Test environment ports (5174 for frontend, 8501 for backend)
+    // Dev environment uses 5173/8500
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5174',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -47,13 +49,13 @@ export default defineConfig({
     },
   ],
 
-  // When PLAYWRIGHT_BASE_URL is provided (e.g., docker-compose E2E), we assume the
+  // When PLAYWRIGHT_BASE_URL is provided (e.g., docker-compose test environment), we assume the
   // frontend is already running and skip starting a local dev server.
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
         command: 'npm run dev',
-        url: 'http://localhost:5173',
+        url: 'http://localhost:5174',
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
       },

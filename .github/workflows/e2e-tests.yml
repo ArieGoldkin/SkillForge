@@ -85,7 +85,7 @@ jobs:
               - 'backend/poetry.lock'
               - 'backend/alembic/**'
               - '.github/workflows/e2e-tests.yml'
-              - 'docker-compose.e2e.yml'
+              - 'docker-compose.test.yml'
               - 'Dockerfile*'
               # Explicitly exclude docs
               - '!**/*.md'
@@ -191,26 +191,27 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Build and start E2E stack (lightweight mode)
+      - name: Build and start test environment (lightweight mode)
         run: |
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
 
-          # Start services WITHOUT API keys - workflow disabled
-          docker compose -f docker-compose.e2e.yml up -d --build \
-            postgres backend-migrate backend backend-seed frontend-e2e
+          # Start test environment WITHOUT API keys - workflow disabled
+          # Note: backend-seed loads golden dataset, langfuse-restore restores config
+          docker compose -f docker-compose.test.yml up -d --build \
+            postgres redis backend frontend backend-seed langfuse-web langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup langfuse-restore
 
-      - name: Wait for E2E stack to be ready
+      - name: Wait for test environment to be ready
         run: |
           echo "Waiting for backend health check..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:8500/api/v1/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:8501/api/v1/health >/dev/null 2>&1; then
               echo "✓ Backend healthy after $i attempts"
               break
             fi
             if [ $i -eq 60 ]; then
               echo "✗ Backend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs backend
+              docker compose -f docker-compose.test.yml logs backend
               exit 1
             fi
             sleep 2
@@ -224,18 +225,18 @@ jobs:
             fi
             if [ $i -eq 30 ]; then
               echo "✗ Frontend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs frontend-e2e
+              docker compose -f docker-compose.test.yml logs frontend
               exit 1
             fi
             sleep 2
           done
 
-      - name: Run Playwright E2E tests (lightweight)
+      - name: Run Playwright tests (lightweight)
         working-directory: ./frontend
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:5174
-          API_BASE_URL: http://localhost:8500
+          API_BASE_URL: http://localhost:8501
           # Signal to tests that LLM is disabled
           E2E_LLM_DISABLED: "true"
         run: npx playwright test --project=chromium
@@ -263,14 +264,14 @@ jobs:
       - name: Collect Docker logs on failure
         if: failure()
         run: |
-          echo "## Docker Compose Logs (Lightweight E2E)" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Compose Logs (Test Environment)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          docker compose -f docker-compose.e2e.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          docker compose -f docker-compose.test.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Cleanup E2E stack
+      - name: Cleanup test environment
         if: always()
-        run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
 
   # ===========================================================================
   # FULL E2E WITH LLM: Tests actual AI workflow integration
@@ -349,27 +350,28 @@ jobs:
           LANGFUSE_SECRET_KEY=sk-lf-ci-e2e-test-secret
           EOF
 
-          # Start with real API keys + Langfuse stack - workflow ENABLED
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml \
+          # Start test environment with real API keys + Langfuse stack - workflow ENABLED
+          # Note: backend-seed loads golden dataset, langfuse-restore restores config
+          docker compose -f docker-compose.test.yml \
             --env-file .env.e2e up -d --build \
-            postgres backend-migrate backend backend-seed frontend-e2e \
-            langfuse-db-e2e langfuse-clickhouse-e2e langfuse-redis-e2e \
-            langfuse-minio-e2e langfuse-minio-setup-e2e langfuse-web-e2e langfuse-worker-e2e
+            postgres redis backend frontend backend-seed \
+            langfuse-web langfuse-worker langfuse-db langfuse-clickhouse \
+            langfuse-redis langfuse-minio langfuse-minio-setup langfuse-restore
 
           # Secure cleanup - overwrite before deletion (defense in depth)
           shred -u .env.e2e 2>/dev/null || rm -f .env.e2e
 
-      - name: Wait for E2E stack to be ready
+      - name: Wait for test environment to be ready
         run: |
           echo "Waiting for backend health check..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:8500/api/v1/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:8501/api/v1/health >/dev/null 2>&1; then
               echo "✓ Backend healthy after $i attempts"
               break
             fi
             if [ $i -eq 60 ]; then
               echo "✗ Backend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs backend
+              docker compose -f docker-compose.test.yml logs backend
               exit 1
             fi
             sleep 2
@@ -383,7 +385,7 @@ jobs:
             fi
             if [ $i -eq 30 ]; then
               echo "✗ Frontend health check timed out"
-              docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs frontend-e2e
+              docker compose -f docker-compose.test.yml logs frontend
               exit 1
             fi
             sleep 2
@@ -391,7 +393,7 @@ jobs:
 
           # Verify API key configuration in logs (without exposing values)
           echo "Checking API key configuration..."
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs backend 2>&1 | grep -q "api_key_configuration" && \
+          docker compose -f docker-compose.test.yml logs backend 2>&1 | grep -q "api_key_configuration" && \
             echo "✓ API key validation logged" || \
             echo "⚠️  API key validation not found in logs"
 
@@ -399,7 +401,7 @@ jobs:
         run: |
           echo "Waiting for Langfuse observability..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:3000/api/public/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:3001/api/public/health >/dev/null 2>&1; then
               echo "✓ Langfuse ready after $i attempts"
               break
             fi
@@ -411,33 +413,32 @@ jobs:
             sleep 2
           done
 
-      - name: Seed Langfuse E2E test data
+      - name: Verify Langfuse config restored
         run: |
-          echo "Seeding Langfuse E2E test data..."
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml \
-            exec -T backend poetry run python scripts/seed_e2e_langfuse_data.py || \
-            echo "⚠️  Langfuse seeding failed (non-fatal)"
+          echo "Checking Langfuse restore logs..."
+          docker compose -f docker-compose.test.yml logs langfuse-restore | tail -20 || \
+            echo "⚠️  Langfuse restore logs not found (may have completed already)"
 
-          # Export seeded IDs for E2E tests
-          echo "E2E_ARTIFACT_ID=e2e00000-0000-0000-0000-000000000002" >> $GITHUB_ENV
-          echo "E2E_ANALYSIS_ID=e2e00000-0000-0000-0000-000000000001" >> $GITHUB_ENV
-          echo "E2E_TRACE_ID=e2e-trace-langfuse-integration-test" >> $GITHUB_ENV
+          # Export test IDs from golden dataset (first analysis)
+          echo "E2E_ARTIFACT_ID=test-artifact-001" >> $GITHUB_ENV
+          echo "E2E_ANALYSIS_ID=test-analysis-001" >> $GITHUB_ENV
+          echo "E2E_TRACE_ID=test-trace-langfuse-integration" >> $GITHUB_ENV
 
-      - name: Run Playwright E2E tests (with LLM + Langfuse)
+      - name: Run Playwright tests (with LLM + Langfuse)
         working-directory: ./frontend
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:5174
-          API_BASE_URL: http://localhost:8500
+          API_BASE_URL: http://localhost:8501
           # Signal to tests that LLM is enabled
           E2E_LLM_ENABLED: "true"
-          # Langfuse E2E test configuration
+          # Langfuse test configuration
           E2E_ARTIFACT_ID: ${{ env.E2E_ARTIFACT_ID }}
           E2E_ANALYSIS_ID: ${{ env.E2E_ANALYSIS_ID }}
           E2E_TRACE_ID: ${{ env.E2E_TRACE_ID }}
-          LANGFUSE_URL: http://localhost:3000
-          LANGFUSE_EMAIL: ci@skillforge.dev
-          LANGFUSE_PASSWORD: ci-test-password-2025
+          LANGFUSE_URL: http://localhost:3001
+          LANGFUSE_EMAIL: test@skillforge.local
+          LANGFUSE_PASSWORD: test
         run: |
           # Run full test suite including LLM and Langfuse integration tests
           npx playwright test --project=chromium
@@ -465,11 +466,11 @@ jobs:
       - name: Collect Docker logs on failure
         if: failure()
         run: |
-          echo "## Docker Compose Logs (Full E2E with LLM + Langfuse)" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Compose Logs (Test Environment with LLM + Langfuse)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           # Comprehensive API key filtering for all supported LLM providers
           # Patterns: OpenAI, Anthropic, LangChain, Jina, Google, xAI, DeepSeek, generic, Langfuse
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs --tail=100 2>&1 | \
+          docker compose -f docker-compose.test.yml logs --tail=100 2>&1 | \
             sed 's/sk-proj-[a-zA-Z0-9_-]*/sk-proj-***REDACTED***/g' | \
             sed 's/sk-ant-[a-zA-Z0-9_-]*/sk-ant-***REDACTED***/g' | \
             sed 's/sk-lf-[a-zA-Z0-9_-]*/sk-lf-***REDACTED***/g' | \
@@ -487,14 +488,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Langfuse Health Check" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          curl -s http://localhost:3000/api/public/health >> $GITHUB_STEP_SUMMARY 2>&1 || \
+          curl -s http://localhost:3001/api/public/health >> $GITHUB_STEP_SUMMARY 2>&1 || \
             echo "Langfuse health check failed" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Cleanup E2E stack
+      - name: Cleanup test environment
         if: always()
         run: |
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml down -v --remove-orphans
+          docker compose -f docker-compose.test.yml down -v --remove-orphans
           # Ensure no env files remain
           rm -f .env.e2e .env
 
@@ -532,4 +533,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans

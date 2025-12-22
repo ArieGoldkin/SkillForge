@@ -4,6 +4,8 @@
 **Pattern:** `skillforge-test` mirrors `skillforge-dev` (including Langfuse)  
 **Date:** 2025-12-22
 
+**Implementation Plan:** See `docs/TEST_ENV_IMPLEMENTATION_PLAN.md` for step-by-step implementation
+
 ---
 
 ## 🎯 Strategy Summary

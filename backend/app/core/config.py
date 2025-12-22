@@ -585,7 +585,7 @@ class Settings(BaseSettings):
         Note: 'e2e' is a special environment for end-to-end testing that
         behaves like development but with E2E-specific configurations.
         """
-        allowed = {"development", "staging", "production", "e2e"}
+        allowed = {"development", "staging", "production", "e2e", "test"}
         if v not in allowed:
             msg = f"ENVIRONMENT must be one of {allowed}"
             raise ValueError(msg)
