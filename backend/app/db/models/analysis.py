@@ -28,7 +28,11 @@ class Analysis(Base):
     url = Column(Text, nullable=False, unique=True, index=True)
     content_type = Column(String(50), nullable=False)  # 'article', 'video', 'repo'
     title = Column(Text)
-    raw_content = Column(Text)
+    raw_content = Column(
+        Text,
+        comment="Extracted text content. Stored with LZ4 compression (PostgreSQL 17 TOAST). "
+        "Compression is transparent to application layer.",
+    )
     # Embedding vector for semantic search (OpenAI text-embedding-3-small: 1536 dimensions)
     content_embedding = Column(Vector(1536))
     # Full-text search vector (automatically populated by database trigger)
