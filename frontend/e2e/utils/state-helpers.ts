@@ -1,5 +1,7 @@
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+
+import { logger } from './logger';
 
 /**
  * Storage State Management Utilities
@@ -56,7 +58,10 @@ export function readStorageState(): StorageState | null {
     const state = JSON.parse(content) as StorageState;
     return validateStorageState(state) ? state : null;
   } catch (error) {
-    console.error('Failed to read storageState:', error);
+    logger.error('Failed to read storageState', {
+      error: error instanceof Error ? error.message : String(error),
+      path: statePath,
+    });
     return null;
   }
 }
@@ -118,7 +123,10 @@ export function shouldRefreshStorageState(maxAgeMs: number = 60 * 60 * 1000): bo
     const ageMs = Date.now() - stats.mtimeMs;
     return ageMs > maxAgeMs;
   } catch (error) {
-    console.error('Failed to check storageState age:', error);
+    logger.error('Failed to check storageState age', {
+      error: error instanceof Error ? error.message : String(error),
+      path: statePath,
+    });
     return true;
   }
 }
@@ -154,7 +162,10 @@ export function getStorageStateStats(): {
       isValid: state !== null,
     };
   } catch (error) {
-    console.error('Failed to get storageState stats:', error);
+    logger.error('Failed to get storageState stats', {
+      error: error instanceof Error ? error.message : String(error),
+      path: statePath,
+    });
     return null;
   }
 }
@@ -173,7 +184,10 @@ export function deleteStorageState(): boolean {
     fs.unlinkSync(statePath);
     return true;
   } catch (error) {
-    console.error('Failed to delete storageState:', error);
+    logger.error('Failed to delete storageState', {
+      error: error instanceof Error ? error.message : String(error),
+      path: statePath,
+    });
     return false;
   }
 }

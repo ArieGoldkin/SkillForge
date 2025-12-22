@@ -1,6 +1,14 @@
-import { chromium, FullConfig } from '@playwright/test';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+import { chromium, FullConfig } from '@playwright/test';
+
+import { logSetupStep, logger } from './utils/logger';
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Global setup for Playwright E2E tests.
@@ -76,26 +84,30 @@ function shouldRefreshStorageState(storageStatePath: string): boolean {
   return ageMs > oneHour;
 }
 
+/**
+ * Global setup function for Playwright tests.
+ * Creates storageState.json for browser state reuse across tests.
+ */
+/* eslint-disable complexity -- Global setup requires comprehensive initialization logic */
 async function globalSetup(config: FullConfig): Promise<void> {
-  console.log('🔧 Starting global setup for Playwright tests...');
+  logSetupStep('Starting global setup for Playwright tests', { emoji: '🔧' });
 
   // Determine base URL from config (environment-specific)
   const baseURL = config.projects[0]?.use?.baseURL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5174';
   const isCI = !!process.env.CI;
   const environment = isCI ? 'CI' : 'local';
   
-  console.log(`📍 Base URL: ${baseURL}`);
-  console.log(`🌍 Environment: ${environment}`);
+  logger.info('Base URL configured', { baseURL, environment });
 
   // Create .auth directory if it doesn't exist
   const authDir = path.join(__dirname, '..', '.auth');
   if (!fs.existsSync(authDir)) {
     fs.mkdirSync(authDir, { recursive: true });
-    console.log(`📁 Created .auth directory: ${authDir}`);
+    logSetupStep('Created .auth directory', { path: authDir });
   }
 
   const storageStatePath = path.join(authDir, 'storageState.json');
-  console.log(`💾 Storage state path: ${storageStatePath}`);
+  logger.info('Storage state path configured', { path: storageStatePath });
 
   // Check if we need to refresh the state
   const needsRefresh = shouldRefreshStorageState(storageStatePath);
@@ -104,16 +116,16 @@ async function globalSetup(config: FullConfig): Promise<void> {
       // Validate existing state
       const existingState = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
       if (validateStorageState(existingState)) {
-        console.log('✅ Existing storageState is valid and recent, reusing it');
+        logger.info('Existing storageState is valid and recent, reusing it', { status: 'reused' });
         return;
       } else {
-        console.log('⚠️  Existing storageState is invalid, regenerating...');
+        logger.warn('Existing storageState is invalid, regenerating', { status: 'invalid' });
       }
     } catch (error) {
-      console.log('⚠️  Failed to read existing storageState, regenerating...', error);
+      logger.warn('Failed to read existing storageState, regenerating', { error: error instanceof Error ? error.message : String(error) });
     }
   } else if (needsRefresh) {
-    console.log('🔄 StorageState is older than 1 hour, refreshing...');
+    logger.info('StorageState is older than 1 hour, refreshing', { status: 'refresh_needed' });
   }
 
   try {
@@ -121,7 +133,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
     const browser = await chromium.launch({
       headless: true,
     });
-    console.log('🌐 Browser launched');
+    logSetupStep('Browser launched', { browser: 'chromium' });
 
     // Create browser context with environment-specific settings
     const context = await browser.newContext({
@@ -131,14 +143,14 @@ async function globalSetup(config: FullConfig): Promise<void> {
         viewport: { width: 1280, height: 720 },
       }),
     });
-    console.log('📄 Browser context created');
+    logSetupStep('Browser context created', { baseURL, isCI });
 
     // Create page
     const page = await context.newPage();
-    console.log('📑 Page created');
+    logSetupStep('Page created');
 
     // Navigate to baseURL to establish initial state
-    console.log(`🚀 Navigating to ${baseURL}...`);
+    logSetupStep('Navigating to baseURL', { baseURL });
     const navigationStart = Date.now();
     
     await page.goto('/', {
@@ -147,11 +159,11 @@ async function globalSetup(config: FullConfig): Promise<void> {
     });
     
     const navigationTime = Date.now() - navigationStart;
-    console.log(`✅ Navigation complete (${navigationTime}ms)`);
+    logSetupStep('Navigation complete', { duration: navigationTime, unit: 'ms' });
 
     // Wait for page to be ready (React hydration)
     await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Page loaded and ready');
+    logSetupStep('Page loaded and ready');
 
     // Save storage state (cookies, localStorage, sessionStorage)
     const saveStart = Date.now();
@@ -159,11 +171,11 @@ async function globalSetup(config: FullConfig): Promise<void> {
       path: storageStatePath,
     });
     const saveTime = Date.now() - saveStart;
-    console.log(`✅ Storage state saved to ${storageStatePath} (${saveTime}ms)`);
+    logSetupStep('Storage state saved', { path: storageStatePath, duration: saveTime, unit: 'ms' });
 
     // Close browser
     await browser.close();
-    console.log('🔒 Browser closed');
+    logSetupStep('Browser closed');
 
     // Validate the saved state
     if (fs.existsSync(storageStatePath)) {
@@ -171,9 +183,11 @@ async function globalSetup(config: FullConfig): Promise<void> {
       const stateContent = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
       
       if (validateStorageState(stateContent)) {
-        console.log(`✅ Storage state file validated (${stats.size} bytes)`);
-        console.log(`   - Cookies: ${stateContent.cookies.length}`);
-        console.log(`   - Origins: ${stateContent.origins.length}`);
+        logger.info('Storage state file validated', {
+          fileSize: stats.size,
+          cookies: stateContent.cookies.length,
+          origins: stateContent.origins.length,
+        });
       } else {
         throw new Error('Storage state validation failed - invalid structure');
       }
@@ -181,17 +195,22 @@ async function globalSetup(config: FullConfig): Promise<void> {
       throw new Error('Storage state file was not created');
     }
 
-    console.log('✨ Global setup completed successfully');
+    logSetupStep('Global setup completed successfully', { status: 'success' });
   } catch (error) {
-    console.error('❌ Global setup failed:', error);
+    logger.error('Global setup failed', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     
     // Clean up corrupted state file if it exists
     if (fs.existsSync(storageStatePath)) {
       try {
         fs.unlinkSync(storageStatePath);
-        console.log('🧹 Cleaned up corrupted storageState file');
+        logger.info('Cleaned up corrupted storageState file', { action: 'cleanup' });
       } catch (cleanupError) {
-        console.error('⚠️  Failed to clean up corrupted state:', cleanupError);
+        logger.error('Failed to clean up corrupted state', {
+          error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+        });
       }
     }
     
