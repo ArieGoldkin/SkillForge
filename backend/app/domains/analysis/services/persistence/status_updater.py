@@ -44,4 +44,3 @@ class StatusUpdater:
                 error=str(db_error),
                 exc_info=True,
             )
-

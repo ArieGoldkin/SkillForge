@@ -11,9 +11,7 @@ logger = get_logger(__name__)
 class WorkflowEventEmitter:
     """Service for emitting SSE events during workflow execution."""
 
-    async def emit_error(
-        self, analysis_id: uuid.UUID, error: BaseException | Exception
-    ) -> None:
+    async def emit_error(self, analysis_id: uuid.UUID, error: BaseException | Exception) -> None:
         """Emit SSE error event for workflow failure.
 
         Args:
@@ -74,4 +72,3 @@ class WorkflowEventEmitter:
                 status="complete",
                 trace_id=trace_id,
             )
-

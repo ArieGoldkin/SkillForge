@@ -15,9 +15,7 @@ logger = get_logger(__name__)
 class DataPersister:
     """Service for persisting workflow results to analysis records."""
 
-    async def persist(
-        self, analysis_id: uuid.UUID, workflow_result: dict
-    ) -> bool:
+    async def persist(self, analysis_id: uuid.UUID, workflow_result: dict) -> bool:
         """Persist workflow results to the analysis record.
 
         Updates the analysis with extracted content, title, and embedding data.
@@ -116,4 +114,3 @@ class DataPersister:
             )
             error_message = f"Failed to persist analysis data: {db_error}"
             raise RuntimeError(error_message) from db_error
-

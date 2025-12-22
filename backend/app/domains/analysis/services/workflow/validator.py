@@ -24,4 +24,3 @@ def validate_workflow_result(workflow_result: dict) -> list[str]:
             missing_fields.append(field)
 
     return missing_fields
-

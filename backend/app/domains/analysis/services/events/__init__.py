@@ -12,4 +12,3 @@ from app.domains.analysis.services.events.workflow_events import (
 __all__ = [
     "WorkflowEventEmitter",
 ]
-

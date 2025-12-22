@@ -98,4 +98,3 @@ async def handle_workflow_exception(
     await event_emitter.emit_error(analysis_id, exc)
     # Re-raise to propagate (explicit re-raise for ruff PLE0704)
     raise exc
-
