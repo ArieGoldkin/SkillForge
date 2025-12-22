@@ -244,7 +244,7 @@ describe('useProgressCalculation', () => {
       expect(result.current.currentStep).toContain('skipped')
     })
 
-    it('includes failed stages in finished count', () => {
+    it('excludes failed stages from progress calculation', () => {
       const stageStatuses = new Map<StageName, StageStatusEntry>([
         ['extraction', { status: 'complete', timestamp: '2024-01-01T00:00:00Z' }],
         ['tech_comparison', { status: 'failed', timestamp: '2024-01-01T00:01:00Z' }],
@@ -254,8 +254,11 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, 8, undefined)
       )
 
-      // Should count failed stage as finished (2 finished / 8 total = 25%)
+      // Failed stages are tracked separately for error display, not counted toward progress
+      // 1 completed / 8 total = 12.5% (rounded to 13%)
+      // Failed stage should be shown in status message but not counted in progress
       expect(result.current.progress).toBeGreaterThan(0)
+      expect(result.current.progress).toBeLessThan(25) // Should be ~12-13%, not 25%
       expect(result.current.currentStep).toContain('failed')
     })
 

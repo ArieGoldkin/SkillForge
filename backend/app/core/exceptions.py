@@ -116,7 +116,7 @@ def is_cleanup_generator_exit(
     GeneratorExit during execution indicates workflow interruption/cancellation.
 
     Args:
-        exc: Exception to check (GeneratorExit, RuntimeError, or other)
+        exc: BaseException to check (GeneratorExit, RuntimeError, or other)
         workflow_completed: Whether workflow completed successfully before the exception
 
     Returns:
@@ -158,7 +158,7 @@ def is_generator_exit_type(exc: BaseException) -> bool:
     Use is_cleanup_generator_exit() when you have workflow_completed information.
 
     Args:
-        exc: Exception to check
+        exc: BaseException to check
 
     Returns:
         True if GeneratorExit or converted RuntimeError, False otherwise

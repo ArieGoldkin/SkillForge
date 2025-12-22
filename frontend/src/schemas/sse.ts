@@ -292,3 +292,36 @@ export function isErrorEvent(event: unknown): event is SSEErrorEvent {
   }
   return SSEErrorEventSchema.safeParse(event).success
 }
+
+/**
+ * Check if an SSE event represents a failed stage.
+ *
+ * A stage is considered failed if:
+ * 1. It's an error event (type="error"), OR
+ * 2. It's a progress event with status="failed"
+ *
+ * This unified check ensures we detect failures from both event types,
+ * as the backend may emit failures as either error events or failed progress events.
+ *
+ * @param event - SSE event to check
+ * @returns True if the event represents a failed stage
+ *
+ * @example
+ * ```ts
+ * const failedEvents = events.filter(isFailedStage)
+ * const failedCount = failedEvents.length
+ * ```
+ */
+export function isFailedStage(event: unknown): boolean {
+  // Check for error events (type="error")
+  if (isErrorEvent(event)) {
+    return true
+  }
+
+  // Check for progress events with status="failed"
+  if (isProgressEvent(event) && event.status === 'failed') {
+    return true
+  }
+
+  return false
+}

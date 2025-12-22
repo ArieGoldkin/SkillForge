@@ -63,6 +63,8 @@
   ],
   "mypy-type-checker.cwd": "${workspaceFolder}/backend",
   "cSpell.words": [
+    "Jina",
+    "Langfuse",
     "skillforge"
   ]
 }

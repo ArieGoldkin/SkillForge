@@ -15,7 +15,7 @@
  */
 import { useEffect, useMemo, useRef } from 'react'
 
-import { isErrorEvent } from '@app-types/sse'
+import { isErrorEvent, isFailedStage } from '@app-types/sse'
 import type { SSEEvent } from '@app-types/sse'
 import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
@@ -165,12 +165,24 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // ========================================================================
   // 7. Calculate Failed Stages Count
   // ========================================================================
+  // Count failures from both error events and failed progress events
+  // This ensures we detect all failures regardless of how the backend emits them
   const { hasFailedStages, failedStagesCount } = useMemo(() => {
-    const failedCount = Array.from(stageStatuses.values()).filter(
+    // Count failed stages from stageStatuses (progress events with status="failed")
+    const failedFromStatuses = Array.from(stageStatuses.values()).filter(
       (s) => s.status === 'failed'
     ).length
+
+    // Count all failed events (both error events and failed progress events)
+    // Note: We use isFailedStage to ensure we're counting both types correctly
+    const totalFailed = events.filter(isFailedStage).length
+
+    // Use the maximum of the two counts to handle edge cases where
+    // stageStatuses might not have been updated yet but error events exist
+    const failedCount = Math.max(failedFromStatuses, totalFailed)
+
     return { hasFailedStages: failedCount > 0, failedStagesCount: failedCount }
-  }, [stageStatuses])
+  }, [events, stageStatuses])
 
   // ========================================================================
   // 8. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
