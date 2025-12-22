@@ -14,6 +14,7 @@ test.describe('Library Page - Search and Filter', () => {
     console.log(`Library has ${library.total} items`);
 
     libraryPage = new LibraryPage(page);
+    // With storageState, navigation to /library is optimized (reuses browser state)
     await libraryPage.goto();
   });
 

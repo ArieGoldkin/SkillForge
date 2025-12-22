@@ -34,3 +34,6 @@ dist-ssr
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Playwright storageState (contains browser state for E2E tests)
+/.auth/

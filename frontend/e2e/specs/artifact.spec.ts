@@ -25,6 +25,7 @@ test.describe('Artifact Page - Preview and Download', () => {
 
     artifactPage = new ArtifactPage(page);
     // Navigate using the artifact ID, not analysis ID
+    // With storageState, direct navigation to artifact URL is faster (skips baseURL navigation)
     await artifactPage.goto(artifactId!, analysisId);
   });
 

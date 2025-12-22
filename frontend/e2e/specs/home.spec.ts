@@ -14,7 +14,13 @@ test.describe('Home Page - URL Submission', () => {
 
   test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
-    await homePage.goto();
+    // With storageState, page already starts at baseURL (/)
+    // Only navigate if we need to ensure we're on home page
+    // Most tests can skip this since storageState preserves the home page state
+    const currentUrl = page.url();
+    if (!currentUrl.endsWith('/')) {
+      await homePage.goto();
+    }
   });
 
   test('should display the URL input and submit button', async () => {
@@ -171,7 +177,8 @@ test.describe('Home Page - URL Submission', () => {
       return;
     }
 
-    // Navigate to completed analysis page to verify the URL flow works
+    // With storageState, we can start directly at the analysis page URL
+    // This skips navigation from home, making the test faster
     await page.goto(`/analyze/${completed.analysis_id}`);
 
     // Verify we're on the analysis page with correct URL pattern

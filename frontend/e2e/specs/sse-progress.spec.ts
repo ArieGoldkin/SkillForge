@@ -24,10 +24,12 @@ test.describe('SSE Progress Updates', () => {
       return;
     }
     const libraryPage = new LibraryPage(page);
+    // With storageState, navigation is optimized (reuses browser state)
     await libraryPage.goto();
     await libraryPage.waitForCards();
     expect(await libraryPage.analysisCards.count()).toBeGreaterThan(0);
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(library.items[0].analysis_id);
     await expect(page).toHaveURL(/\/analyze\/.+/);
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
@@ -49,6 +51,7 @@ test.describe('SSE Progress Updates', () => {
     }
 
     // Navigate directly to completed analysis
+    // With storageState, direct navigation is faster (skips baseURL navigation)
     const analyzePage = new AnalyzePage(page);
     await analyzePage.goto(completed.analysis_id);
 

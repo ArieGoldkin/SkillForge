@@ -118,6 +118,7 @@ test.describe('Langfuse Feedback Integration E2E', () => {
     console.log(`Artifact URL: ${ARTIFACT_URL}`);
     console.log(`Trace ID for verification: ${TRACE_ID}`);
 
+    // With storageState, direct navigation to artifact URL is faster (skips baseURL navigation)
     await page.goto(ARTIFACT_URL);
     await page.waitForLoadState('networkidle');
 

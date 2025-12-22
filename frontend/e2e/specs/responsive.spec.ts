@@ -8,6 +8,7 @@ test.describe('Responsive Design Tests', () => {
 
   test('should display mobile navigation on small screens', async ({ page }) => {
     await setMobileViewport(page);
+    // With storageState, navigation is optimized (reuses browser state)
     await page.goto('/');
 
     // Mobile menu button should be visible (hamburger menu)

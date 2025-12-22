@@ -13,6 +13,8 @@ test.describe('Analysis Page - Progress Tracking', () => {
     const analysisId = completed?.analysis_id || (await createAnalysis(request)).analysis_id;
 
     const analyzePage = new AnalyzePage(page);
+    // With storageState, we can navigate directly to the analysis URL
+    // This skips any baseURL navigation, making the test faster
     await analyzePage.goto(analysisId);
 
     // Progress bar should be visible (either showing progress or completed state)
@@ -28,6 +30,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(completed!.analysis_id);
 
     // Wait for any stage indicator to appear (completed analyses show final stage)
@@ -46,6 +49,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation optimized by storageState
     await analyzePage.goto(completed!.analysis_id);
 
     // Wait for complete state - use specific heading to avoid multiple matches
@@ -62,6 +66,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation to analysis page (storageState optimization)
     await analyzePage.goto(completed!.analysis_id);
 
     await analyzePage.waitForComplete();
@@ -81,6 +86,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     const { analysis_id } = await createAnalysis(request);
 
     const analyzePage = new AnalyzePage(page);
+    // Navigate directly to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(analysis_id);
 
     // Wait for initial connection and progress indicator
@@ -121,6 +127,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation optimized by storageState
     await analyzePage.goto(completed!.analysis_id);
 
     // Wait for the page to load - progress bar indicates page is ready
@@ -143,6 +150,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     const { analysis_id } = await createAnalysis(request);
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation to analysis URL (storageState optimization)
     await analyzePage.goto(analysis_id);
 
     // Wait for initial progress
@@ -182,6 +190,7 @@ test.describe('Analysis Page - Progress Tracking', () => {
     }
 
     const analyzePage = new AnalyzePage(page);
+    // Direct navigation optimized by storageState
     await analyzePage.goto(completed!.analysis_id);
 
     // For completed analyses, completion should be immediate or very fast

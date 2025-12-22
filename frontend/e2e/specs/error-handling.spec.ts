@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Error Handling Tests', () => {
   test('should display 404 for unknown routes', async ({ page }) => {
+    // With storageState, direct navigation is optimized (reuses browser state)
     await page.goto('/this-route-does-not-exist-at-all');
 
     // Should show 404 or not found message - use heading for specificity

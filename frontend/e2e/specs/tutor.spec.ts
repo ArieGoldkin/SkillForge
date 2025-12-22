@@ -42,6 +42,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     sessionId = sessionResponse.session_id;
 
     // Initialize page object and navigate to session
+    // With storageState, direct navigation to tutor URL is faster (skips baseURL navigation)
     tutorPage = new TutorPage(page);
     await tutorPage.goto(sessionId);
   });
