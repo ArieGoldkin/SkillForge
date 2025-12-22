@@ -1,14 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { LibraryPage } from '../page-objects';
-import { getLibrary, waitForBackend } from '../utils/api-helpers';
+import { getLibrary } from '../utils/api-helpers';
 
 test.describe('Library Page - Search and Filter', () => {
   let libraryPage: LibraryPage;
 
-  test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-  });
+  // Removed beforeAll waitForBackend - causes request context disposal
+  // Backend health is checked implicitly by getLibrary() in beforeEach
 
   test.beforeEach(async ({ page, request }) => {
     // Verify that real data exists in the database

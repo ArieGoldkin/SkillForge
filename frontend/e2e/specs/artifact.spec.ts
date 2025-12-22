@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { ArtifactPage } from '../page-objects';
-import { waitForBackend, getCompletedAnalysis } from '../utils/api-helpers';
+import { getCompletedAnalysis } from '../utils/api-helpers';
 
 test.describe('Artifact Page - Preview and Download', () => {
   let artifactPage: ArtifactPage;
@@ -8,10 +8,8 @@ test.describe('Artifact Page - Preview and Download', () => {
   let analysisId: string | null = null;
 
   test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy
-    await waitForBackend(request);
-
     // Get a completed analysis with artifact
+    // Backend health is checked implicitly by getCompletedAnalysis
     const completedAnalysis = await getCompletedAnalysis(request);
 
     if (completedAnalysis) {

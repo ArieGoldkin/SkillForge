@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 import { LibraryPage, AnalyzePage } from '../page-objects';
-import { getLibrary, waitForBackend, getCompletedAnalysis } from '../utils/api-helpers';
+import { getLibrary, getCompletedAnalysis } from '../utils/api-helpers';
 
 /**
  * SSE Progress Updates Tests
@@ -14,10 +14,8 @@ import { getLibrary, waitForBackend, getCompletedAnalysis } from '../utils/api-h
  * 5. In-progress analyses show progress bar (full workflow mode)
  */
 test.describe('SSE Progress Updates', () => {
-  test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-  });
+  // Removed beforeAll waitForBackend - causes request context disposal
+  // Backend health is checked implicitly by getLibrary() in tests
 
   test('should display library and navigate to analysis page (lightweight mode)', async ({ page, request }) => {
     const library = await getLibrary(request, { limit: 10 });

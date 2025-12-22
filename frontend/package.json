@@ -21,7 +21,7 @@
     "test:debug": "vitest run --reporter=verbose",
 
     "test:unit": "vitest run --testNamePattern=\"@unit\"",
-    "test:integration": "vitest run --testNamePattern=\"@integration\"",
+    "test:integration:unit": "vitest run --testNamePattern=\"@integration\"",
     "test:component-e2e": "E2E_READY=true vitest run --testNamePattern=\"@component-e2e\"",
     "test:ci": "vitest run --testNamePattern=\"@ci\" --coverage",
     "test:slow": "vitest run --testNamePattern=\"@slow\"",
@@ -41,8 +41,9 @@
     "test:env:down": "docker compose -f docker-compose.test.yml down",
     "test:env:logs": "docker compose -f docker-compose.test.yml logs -f",
     "test:env:restart": "docker compose -f docker-compose.test.yml restart",
-    "test:e2e": "PLAYWRIGHT_BASE_URL=http://localhost:5174 API_BASE_URL=http://localhost:8501 playwright test --project=chromium",
-    "test:integration": "PLAYWRIGHT_BASE_URL=http://localhost:5174 API_BASE_URL=http://localhost:8501 playwright test --project=chromium"
+    "test:e2e": "./scripts/run-e2e-tests.sh",
+    "test:e2e:direct": "PLAYWRIGHT_BASE_URL=http://localhost:5174 API_BASE_URL=http://localhost:8501 LANGFUSE_URL=http://localhost:3001 playwright test --project=chromium",
+    "test:integration": "./scripts/run-e2e-tests.sh"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

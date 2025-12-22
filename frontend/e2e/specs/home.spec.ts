@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { HomePage } from '../page-objects';
-import { waitForBackend, getApiBaseUrl, getCompletedAnalysis } from '../utils';
+import { getApiBaseUrl, getCompletedAnalysis } from '../utils';
 
 /**
  * E2E tests for the Home Page URL submission flow.
@@ -9,10 +9,8 @@ import { waitForBackend, getApiBaseUrl, getCompletedAnalysis } from '../utils';
 test.describe('Home Page - URL Submission', () => {
   let homePage: HomePage;
 
-  test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-  });
+  // Removed beforeAll waitForBackend - causes request context disposal
+  // Each test will check backend health individually if needed
 
   test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
@@ -79,8 +77,8 @@ test.describe('Home Page - URL Submission', () => {
     // Submit a YouTube URL
     await homePage.submitUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
-    // Wait for navigation to analysis page
-    await page.waitForURL(/\/analyze\/.+/, { timeout: 10000 });
+    // Wait for navigation to analysis page - increased timeout for test env
+    await page.waitForURL(/\/analyze\/.+/, { timeout: 20000 });
 
     // Verify navigation
     await expect(page).toHaveURL(/\/analyze\/.+/);
@@ -92,8 +90,8 @@ test.describe('Home Page - URL Submission', () => {
     // Submit a GitHub repository URL
     await homePage.submitUrl('https://github.com/facebook/react');
 
-    // Wait for navigation to analysis page
-    await page.waitForURL(/\/analyze\/.+/, { timeout: 10000 });
+    // Wait for navigation to analysis page - increased timeout for test env
+    await page.waitForURL(/\/analyze\/.+/, { timeout: 20000 });
 
     // Verify navigation
     await expect(page).toHaveURL(/\/analyze\/.+/);

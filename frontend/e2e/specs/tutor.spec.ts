@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TutorPage } from '../page-objects';
 import {
-  waitForBackend,
   getCompletedAnalysis,
   createTutorSession,
   getTutorSession,
@@ -20,10 +19,8 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
   let hasCompletedAnalysis = false;
 
   test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-
     // Check if there's a completed analysis with artifact
+    // Backend health is checked implicitly by getCompletedAnalysis
     const completedAnalysis = await getCompletedAnalysis(request);
     hasCompletedAnalysis = !!completedAnalysis;
   });

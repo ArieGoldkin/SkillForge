@@ -5,7 +5,8 @@ import type { APIRequestContext } from '@playwright/test';
  * These helpers interact with the actual backend API.
  */
 
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8500';
+// Default to test environment port (8501) since e2e tests run against test env
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8501';
 
 /**
  * Get API base URL for the test environment.
