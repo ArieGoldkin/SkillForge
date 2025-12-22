@@ -79,9 +79,7 @@ export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
     const items = extractAllItems(searchResults)
     items.forEach((item) => {
       const tags = item.tags?.length ? item.tags : [item.content_type]
-      tags.forEach((tag) => {
-        tagSet.add(tag)
-      })
+      tags.forEach((tag) => tagSet.add(tag))
     })
     return Array.from(tagSet)
   }, [searchResults])

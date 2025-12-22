@@ -1,4 +1,4 @@
-import type { AnalysisStatus } from '@/types/api'
+import { AnalysisStatus } from '@/types/api'
 
 import { ContentGrid } from './ContentGrid'
 import { FiltersSidebar } from './FiltersSidebar'
