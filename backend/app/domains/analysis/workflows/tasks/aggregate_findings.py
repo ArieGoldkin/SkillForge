@@ -12,6 +12,7 @@ from uuid import UUID
 
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
+from app.core.types import AnalysisID
 from app.db.models.agent_memory import MemoryType
 from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
@@ -59,6 +60,110 @@ AGENT_MEMORY_TYPE_MAP: dict[str, MemoryType] = {
     "trend_validator": MemoryType.ANALYSIS_SUMMARY,
     "integration_feasibility": MemoryType.BEST_PRACTICE,
 }
+
+
+async def _build_agent_statuses(
+    analysis_id: AnalysisID,
+    selected_agents: list[str],
+    agent_types: list[str],
+) -> dict[str, str]:
+    """Build agent statuses dict and emit error events for failed agents.
+
+    Args:
+        analysis_id: UUID of the analysis
+        selected_agents: List of agent types selected by supervisor
+        agent_types: List of agent types that produced findings
+
+    Returns:
+        Dictionary mapping agent_type to "success" or "failed"
+
+    """
+    from app.core.agent_config import get_stage_name
+    from app.shared.services.messaging.sse_helpers import emit_error_event
+
+    agent_statuses: dict[str, str] = {}
+    for agent_type in selected_agents:
+        if agent_type in agent_types:
+            agent_statuses[agent_type] = "success"
+        else:
+            # Selected but no findings = failed
+            agent_statuses[agent_type] = "failed"
+            # Emit error event for agent failure
+            await emit_error_event(
+                analysis_id=analysis_id,
+                stage=get_stage_name(agent_type),
+                error=f"Agent {agent_type} was selected but produced no findings",
+                error_code="AGENT_FAILED",
+                agent_type=agent_type,
+            )
+    # Note: Skipped agents (not in selected_agents) are not included in agent_statuses
+    return agent_statuses
+
+
+async def _handle_aggregation_error(
+    analysis_id: AnalysisID,
+    error: Exception,
+    start_time: float,
+    agent_types: list[str] | None,
+) -> dict[str, object]:
+    """Handle aggregation errors by returning fallback insights.
+
+    Issue #299-304: Error State Pattern - capture errors in state, don't propagate.
+    This ensures the workflow ALWAYS reaches a terminal state.
+
+    Args:
+        analysis_id: UUID of the analysis
+        error: Exception that occurred during aggregation
+        start_time: Start time for calculating processing duration
+        agent_types: List of agent types that produced findings (may be None)
+
+    Returns:
+        Dictionary with aggregated_insights containing fallback data
+
+    """
+    await emit_aggregation_failed(analysis_id, str(error))
+
+    logger.error(
+        "workflow_aggregation_failed_with_fallback",
+        analysis_id=analysis_id,
+        error=str(error),
+        error_type=type(error).__name__,
+        exc_info=error,  # Pass exception object instead of True
+        fallback="returning_empty_insights_to_prevent_hang",
+    )
+
+    # Build a meaningful executive summary with agent count if available
+    # This provides better context for the fallback response
+    try:
+        agent_count = len(agent_types) if agent_types else 0
+    except (NameError, UnboundLocalError):
+        agent_count = 0
+
+    if agent_count > 0:
+        exec_summary = f"Synthesized findings from {agent_count} agents. LLM synthesis failed but basic findings are available."
+    else:
+        exec_summary = f"Analysis could not be completed due to error: {type(error).__name__}"
+
+    # Return empty insights with error metadata instead of raising
+    # This allows the workflow to continue to artifact generation (which will handle empty insights)
+    return {
+        "aggregated_insights": {
+            "executive_summary": exec_summary,
+            "key_findings": ["Analysis encountered an error during synthesis"],
+            "synthesis": "Unable to synthesize findings due to processing error.",
+            "metadata": {
+                "synthesis_status": "failed",
+                "synthesis_error": str(error),
+                "error_type": type(error).__name__,
+                "processing_time_ms": int((time.time() - start_time) * 1000),
+                "fallback_used": True,
+                "llm_synthesis_failed": True,
+                "total_agents": agent_count,
+            },
+            "coverage_gaps": [],
+            "coverage_score": 0.0,
+        }
+    }
 
 
 async def _store_findings_as_memories(
@@ -356,25 +461,11 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
 
         # Build agent_statuses dict: compare selected_agents vs agent_types
         # Emit error events for agents that were selected but produced no findings
-        from app.core.agent_config import get_stage_name
-        from app.shared.services.messaging.sse_helpers import emit_error_event
-
-        agent_statuses: dict[str, str] = {}
-        for agent_type in selected_agents:
-            if agent_type in agent_types:
-                agent_statuses[agent_type] = "success"
-            else:
-                # Selected but no findings = failed
-                agent_statuses[agent_type] = "failed"
-                # Emit error event for agent failure
-                await emit_error_event(
-                    analysis_id=analysis_id,
-                    stage=get_stage_name(agent_type),
-                    error=f"Agent {agent_type} was selected but produced no findings",
-                    error_code="AGENT_FAILED",
-                    agent_type=agent_type,
-                )
-        # Note: Skipped agents (not in selected_agents) are not included in agent_statuses
+        agent_statuses = await _build_agent_statuses(
+            analysis_id=analysis_id,
+            selected_agents=selected_agents,
+            agent_types=agent_types,
+        )
 
         if not validated_findings:
             logger.warning(
@@ -496,52 +587,15 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         # Return only updated fields, not entire state
         return {"aggregated_insights": aggregated_insights_dict}
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - Error State Pattern: catch all to ensure workflow reaches terminal state
         # Issue #299-304: Error State Pattern - capture errors in state, don't propagate
         # This ensures the workflow ALWAYS reaches a terminal state
-        await emit_aggregation_failed(analysis_id, str(e))
-
-        logger.error(
-            "workflow_aggregation_failed_with_fallback",
+        return await _handle_aggregation_error(
             analysis_id=analysis_id,
-            error=str(e),
-            error_type=type(e).__name__,
-            exc_info=True,
-            fallback="returning_empty_insights_to_prevent_hang",
+            error=e,
+            start_time=start_time,
+            agent_types=agent_types if "agent_types" in locals() else None,
         )
-
-        # Build a meaningful executive summary with agent count if available
-        # This provides better context for the fallback response
-        try:
-            agent_count = len(agent_types) if agent_types else 0
-        except (NameError, UnboundLocalError):
-            agent_count = 0
-
-        if agent_count > 0:
-            exec_summary = f"Synthesized findings from {agent_count} agents. LLM synthesis failed but basic findings are available."
-        else:
-            exec_summary = f"Analysis could not be completed due to error: {type(e).__name__}"
-
-        # Return empty insights with error metadata instead of raising
-        # This allows the workflow to continue to artifact generation (which will handle empty insights)
-        return {
-            "aggregated_insights": {
-                "executive_summary": exec_summary,
-                "key_findings": ["Analysis encountered an error during synthesis"],
-                "synthesis": "Unable to synthesize findings due to processing error.",
-                "metadata": {
-                    "synthesis_status": "failed",
-                    "synthesis_error": str(e),
-                    "error_type": type(e).__name__,
-                    "processing_time_ms": int((time.time() - start_time) * 1000),
-                    "fallback_used": True,
-                    "llm_synthesis_failed": True,
-                    "total_agents": agent_count,
-                },
-                "coverage_gaps": [],
-                "coverage_score": 0.0,
-            }
-        }
 
 
 @robust_traceable(

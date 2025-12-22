@@ -49,9 +49,14 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
     background_tasks.discard(task)
 
     # Check for exceptions that occurred during task execution or cleanup
+    from app.core.exceptions import is_cleanup_generator_exit
+
     exception = task.exception()
     if exception is not None:
-        if isinstance(exception, GeneratorExit):
+        # Use unified GeneratorExit detection
+        # Note: We can't determine workflow_completed from here, so we assume cleanup
+        # (GeneratorExit in task callback is typically cleanup after successful completion)
+        if is_cleanup_generator_exit(exception, workflow_completed=True):
             # GeneratorExit can occur during cleanup (normal) or execution (error)
             # We can't easily determine if workflow completed from here, but
             # GeneratorExit in cleanup context is typically normal behavior

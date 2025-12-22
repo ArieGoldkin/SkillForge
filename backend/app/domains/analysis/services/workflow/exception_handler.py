@@ -2,6 +2,7 @@
 
 import uuid
 
+from app.core.exceptions import is_cleanup_generator_exit, is_generator_exit_type
 from app.core.logging import get_logger
 from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
@@ -11,7 +12,7 @@ logger = get_logger(__name__)
 
 
 async def handle_workflow_exception(
-    exc: BaseException | Exception,
+    exc: BaseException,
     analysis_id: uuid.UUID,
     workflow_completed: bool,
 ) -> None:
@@ -38,30 +39,28 @@ async def handle_workflow_exception(
         GeneratorExit during execution indicates workflow interruption/cancellation.
 
     """
-    # Check if this is a GeneratorExit or converted RuntimeError
-    is_generator_exit = isinstance(exc, GeneratorExit)
-    is_converted_generator_exit = isinstance(
-        exc, RuntimeError
-    ) and "coroutine ignored GeneratorExit" in str(exc)
+    # Use unified GeneratorExit detection
+    if is_cleanup_generator_exit(exc, workflow_completed):
+        # Cleanup GeneratorExit - normal behavior, suppress it
+        logger.debug(
+            "workflow_task_cleanup_generator_exit",
+            analysis_id=str(analysis_id),
+            error_type=type(exc).__name__,
+            error_message=str(exc),
+            context="workflow_task_runner_cleanup",
+            note=(
+                "GeneratorExit caught at workflow task level during cleanup. "
+                "This is normal generator lifecycle behavior when LangGraph's pregel module "
+                "closes async generators during cleanup after successful workflow completion. "
+                "Suppressing to prevent false errors."
+            ),
+        )
+        # Don't re-raise - this is expected cleanup behavior
+        return
 
-    if is_generator_exit or is_converted_generator_exit:
-        if workflow_completed:
-            # Cleanup GeneratorExit - normal behavior, suppress it
-            logger.debug(
-                "workflow_task_cleanup_generator_exit",
-                analysis_id=str(analysis_id),
-                error_type=type(exc).__name__,
-                error_message=str(exc),
-                context="workflow_task_runner_cleanup",
-                note=(
-                    "GeneratorExit caught at workflow task level during cleanup. "
-                    "This is normal generator lifecycle behavior when LangGraph's pregel module "
-                    "closes async generators during cleanup after successful workflow completion. "
-                    "Suppressing to prevent false errors."
-                ),
-            )
-            # Don't re-raise - this is expected cleanup behavior
-            return
+    # Check if this is an execution GeneratorExit (error case)
+    # We already checked for cleanup above, so if it's a GeneratorExit and not cleanup, it's execution
+    if is_generator_exit_type(exc):
         # Execution GeneratorExit - real error, handle it
         logger.error(
             "workflow_task_execution_generator_exit",
