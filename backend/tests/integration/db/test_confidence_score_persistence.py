@@ -1,12 +1,14 @@
 """Integration tests for confidence_score database persistence."""
 
 import uuid
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
 
 from app.db.models.agent_finding import AgentFinding
 from app.db.models.analysis import Analysis
+from tests.integration.conftest import create_pending_analysis
 
 
 @pytest.mark.asyncio
@@ -17,13 +19,10 @@ async def test_confidence_score_saved_correctly(requires_database, db_session):
     confidence_value = 0.123456
 
     # Create analysis
-    analysis = Analysis(
+    analysis = await create_pending_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com",
-        content_type="article",
-        status="pending",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create finding with confidence_score
@@ -56,13 +55,10 @@ async def test_confidence_score_queryable(requires_database, db_session):
     analysis_id = uuid.uuid4()
 
     # Create analysis
-    analysis = Analysis(
+    analysis = await create_pending_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com",
-        content_type="article",
-        status="pending",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create findings with different confidence scores
@@ -106,13 +102,10 @@ async def test_confidence_score_aggregation(requires_database, db_session):
     analysis_id = uuid.uuid4()
 
     # Create analysis
-    analysis = Analysis(
+    analysis = await create_pending_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com",
-        content_type="article",
-        status="pending",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create findings with different confidence scores
@@ -167,13 +160,10 @@ async def test_confidence_score_indexing(requires_database, db_session):
     analysis_id = uuid.uuid4()
 
     # Create analysis
-    analysis = Analysis(
+    analysis = await create_pending_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com",
-        content_type="article",
-        status="pending",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create finding
@@ -208,13 +198,10 @@ async def test_confidence_score_null_handling(requires_database, db_session):
     analysis_id = uuid.uuid4()
 
     # Create analysis
-    analysis = Analysis(
+    analysis = await create_pending_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com",
-        content_type="article",
-        status="pending",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create finding with NULL confidence_score (old record)

@@ -164,10 +164,12 @@ async def test_constraint_allows_null_embedding(db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/null-embedding-{analysis_id}",
         content_type="article",
-        status="complete",
+        status="pending",
     )
+    # Set required fields before changing to complete
     analysis.raw_content = "Test content"
     analysis.extraction_metadata = {"title": "Test"}
+    analysis.status = "complete"  # type: ignore[assignment]
     # No embedding - should be allowed
     await db_session.commit()
 

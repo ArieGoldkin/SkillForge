@@ -140,7 +140,12 @@ class AnalysisRepository:
         if analysis.status == "complete":
             if not analysis.raw_content:
                 errors.append("complete analysis missing raw_content")
-            if not analysis.content_embedding:
+            # Check if content_embedding is None or empty
+            # Can't use `if not analysis.content_embedding` because arrays/lists are truthy
+            if analysis.content_embedding is None or (
+                hasattr(analysis.content_embedding, "__len__")
+                and len(analysis.content_embedding) == 0
+            ):
                 errors.append("complete analysis missing embedding")
             if not analysis.extraction_metadata:
                 errors.append("complete analysis missing metadata")

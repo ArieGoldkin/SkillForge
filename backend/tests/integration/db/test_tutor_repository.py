@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.tutor.repositories.message_repository import TutorMessageRepository
 from app.domains.tutor.repositories.session_repository import TutorSessionRepository
+from tests.integration.conftest import create_complete_analysis
 
 
 @pytest.mark.asyncio
@@ -36,14 +37,7 @@ async def test_create_session(db_session: AsyncSession):
 @pytest.mark.integration
 async def test_create_session_with_analysis_id(db_session: AsyncSession):
     """Test creating session with analysis_id."""
-    from app.db.models.analysis import Analysis
-
-    analysis = Analysis(
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
-    )
-    db_session.add(analysis)
+    analysis = await create_complete_analysis(db_session)
     await db_session.commit()
     await db_session.refresh(analysis)
 

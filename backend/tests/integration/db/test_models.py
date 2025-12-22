@@ -1,6 +1,7 @@
 """Tests for SQLAlchemy models - basic model creation and validation."""
 
 import uuid
+from uuid import uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,7 @@ from app.db.models import (
     TutoringMessage,
     TutoringSession,
 )
+from tests.integration.conftest import create_pending_analysis
 
 # db_session fixture is in conftest.py
 
@@ -20,8 +22,9 @@ from app.db.models import (
 @pytest.mark.asyncio
 async def test_analysis_model_creation(db_session: AsyncSession):
     """Test Analysis model can be created and saved."""
+    test_url = f"https://example.com/article-{uuid4()}"
     analysis = Analysis(
-        url="https://example.com/article",
+        url=test_url,
         content_type="article",
         title="Test Article",
         status="pending",
@@ -30,7 +33,7 @@ async def test_analysis_model_creation(db_session: AsyncSession):
     await db_session.flush()  # Flush to get ID without committing
 
     assert analysis.id is not None
-    assert analysis.url == "https://example.com/article"
+    assert analysis.url == test_url
     assert analysis.content_type == "article"
     assert analysis.title == "Test Article"
     assert analysis.status == "pending"
@@ -41,7 +44,8 @@ async def test_analysis_model_creation(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_analysis_model_defaults(db_session: AsyncSession):
     """Test Analysis model uses correct default values."""
-    analysis = Analysis(url="https://example.com", content_type="article")
+    test_url = f"https://example.com/test-{uuid4()}"
+    analysis = Analysis(url=test_url, content_type="article")
     db_session.add(analysis)
     await db_session.flush()  # Flush to trigger defaults
 
@@ -99,8 +103,9 @@ async def test_all_models_have_uuid_primary_keys(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_analysis_vector_embedding_column(db_session: AsyncSession):
     """Test Analysis model can store vector embeddings."""
+    test_url = f"https://example.com/test-{uuid4()}"
     analysis = Analysis(
-        url="https://example.com",
+        url=test_url,
         content_type="article",
         status="pending",
     )
@@ -117,8 +122,9 @@ async def test_analysis_vector_embedding_column(db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_jsonb_columns_store_dict_data(db_session: AsyncSession):
     """Test JSONB columns can store dictionary data."""
+    test_url = f"https://example.com/test-{uuid4()}"
     analysis = Analysis(
-        url="https://example.com",
+        url=test_url,
         content_type="article",
         extraction_metadata={"source": "jina", "word_count": 1000},
     )

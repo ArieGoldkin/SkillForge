@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.db.models.analysis import Analysis
 from app.main import app
+from tests.integration.conftest import create_complete_analysis, create_pending_analysis
 
 
 @pytest.fixture
@@ -37,16 +38,11 @@ class TestLibraryEndpointSearchMode:
     ):
         """Test hybrid search mode returns results."""
         # Create test data
-        analysis = Analysis(
-            id=uuid4(),
-            url="https://example.com/postgresql-guide",
+        analysis = await create_complete_analysis(
+            db_session,
             title="PostgreSQL Full-Text Search Guide",
-            content_type="article",
             raw_content="PostgreSQL provides powerful full-text search capabilities using tsvector and tsquery.",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(analysis)
         await db_session.commit()
 
         # Mock embedding service
@@ -85,16 +81,11 @@ class TestLibraryEndpointSearchMode:
     ):
         """Test fulltext search mode returns results."""
         # Create test data with searchable content
-        analysis = Analysis(
-            id=uuid4(),
-            url="https://example.com/typescript-guide",
+        analysis = await create_complete_analysis(
+            db_session,
             title="TypeScript Guide",
-            content_type="article",
             raw_content="TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(analysis)
         await db_session.commit()
 
         # Execute request
@@ -316,15 +307,11 @@ class TestLibraryEndpointListingMode:
         """Test listing all analyses without filters."""
         # Create test data
         for i in range(3):
-            analysis = Analysis(
-                id=uuid4(),
-                url=f"https://example.com/content-{i}",
+            analysis = await create_complete_analysis(
+                db_session,
                 title=f"Content {i}",
                 content_type="article" if i % 2 == 0 else "video",
-                status="complete",
-                created_at=datetime.now(UTC),
             )
-            db_session.add(analysis)
         await db_session.commit()
 
         # Execute request without query
@@ -348,24 +335,16 @@ class TestLibraryEndpointListingMode:
     ):
         """Test listing with content_type filter."""
         # Create test data with different content types
-        article = Analysis(
-            id=uuid4(),
-            url="https://example.com/article",
+        article = await create_complete_analysis(
+            db_session,
             title="Article",
             content_type="article",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        video = Analysis(
-            id=uuid4(),
-            url="https://example.com/video",
+        video = await create_complete_analysis(
+            db_session,
             title="Video",
             content_type="video",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(article)
-        db_session.add(video)
         await db_session.commit()
 
         # Filter by article
@@ -386,24 +365,14 @@ class TestLibraryEndpointListingMode:
     ):
         """Test listing with status filter."""
         # Create test data with different statuses
-        complete = Analysis(
-            id=uuid4(),
-            url="https://example.com/complete",
+        complete = await create_complete_analysis(
+            db_session,
             title="Complete",
-            content_type="article",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        pending = Analysis(
-            id=uuid4(),
-            url="https://example.com/pending",
+        pending = await create_pending_analysis(
+            db_session,
             title="Pending",
-            content_type="article",
-            status="pending",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(complete)
-        db_session.add(pending)
         await db_session.commit()
 
         # Filter by complete
@@ -423,15 +392,11 @@ class TestLibraryEndpointListingMode:
     ):
         """Test listing with both content_type and status filters."""
         # Create test data
-        analysis = Analysis(
-            id=uuid4(),
-            url="https://example.com/filtered",
+        analysis = await create_complete_analysis(
+            db_session,
             title="Filtered Content",
             content_type="video",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(analysis)
         await db_session.commit()
 
         # Apply both filters
@@ -456,15 +421,10 @@ class TestLibraryEndpointListingMode:
         """Test listing with pagination."""
         # Create multiple records
         for i in range(10):
-            analysis = Analysis(
-                id=uuid4(),
-                url=f"https://example.com/item-{i}",
+            analysis = await create_complete_analysis(
+                db_session,
                 title=f"Item {i}",
-                content_type="article",
-                status="complete",
-                created_at=datetime.now(UTC),
             )
-            db_session.add(analysis)
         await db_session.commit()
 
         # Request page 2
@@ -504,15 +464,10 @@ class TestLibraryEndpointListingMode:
         self, test_client, requires_database, reset_engine_connections, db_session
     ):
         """Test listing mode returns no snippet or rank (only search mode has these)."""
-        analysis = Analysis(
-            id=uuid4(),
-            url="https://example.com/test",
+        analysis = await create_complete_analysis(
+            db_session,
             title="Test",
-            content_type="article",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(analysis)
         await db_session.commit()
 
         response = await test_client.get("/api/v1/library")
@@ -585,16 +540,11 @@ class TestLibraryEndpointValidation:
     ):
         """Test default search_mode is hybrid when not specified."""
         # Create test data
-        analysis = Analysis(
-            id=uuid4(),
-            url="https://example.com/default-mode",
+        analysis = await create_complete_analysis(
+            db_session,
             title="Default Mode Test",
-            content_type="article",
             raw_content="Testing default search mode behavior.",
-            status="complete",
-            created_at=datetime.now(UTC),
         )
-        db_session.add(analysis)
         await db_session.commit()
 
         # Mock embedding service

@@ -128,7 +128,11 @@ class WorkflowResult(BaseModel):
                 missing.append("raw_content")
             if not self.extraction_metadata:
                 missing.append("extraction_metadata")
-            if not self.content_embedding:
+            # Check if content_embedding is None or empty list
+            # Can't use `if not self.content_embedding` because lists with elements are truthy
+            if self.content_embedding is None or (
+                isinstance(self.content_embedding, list) and len(self.content_embedding) == 0
+            ):
                 missing.append("content_embedding")
 
         elif status == "failed":

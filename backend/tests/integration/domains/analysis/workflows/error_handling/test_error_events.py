@@ -89,7 +89,7 @@ async def test_supervisor_failure_emits_error_event(requires_database):
 
     # Mock supervisor to raise error
     with patch(
-        "app.domains.analysis.workflows.nodes.supervisor.supervisor_node"
+        "app.domains.analysis.workflows.nodes.supervisor.supervisor_route"
     ) as mock_supervisor:
         mock_supervisor.side_effect = WorkflowError("Supervisor routing failed")
 
@@ -180,7 +180,7 @@ async def test_quality_gate_failure_emits_error_event(requires_database):
                 return_value=mock_embedding_service,
             ),
             patch(
-                "app.domains.analysis.workflows.nodes.supervisor.supervisor_node",
+                "app.domains.analysis.workflows.nodes.supervisor.supervisor_route",
                 return_value={"supervisor_decision": mock_supervisor_decision},
             ),
         ):
@@ -244,7 +244,7 @@ async def test_agent_failure_emits_error_event(requires_database):
                 return_value=mock_embedding_service,
             ),
             patch(
-                "app.domains.analysis.workflows.nodes.supervisor.supervisor_node",
+                "app.domains.analysis.workflows.nodes.supervisor.supervisor_route",
                 return_value={"supervisor_decision": mock_supervisor_decision},
             ),
             patch(
@@ -306,7 +306,7 @@ async def test_aggregation_failure_emits_error_event(requires_database):
                 return_value=mock_embedding_service,
             ),
             patch(
-                "app.domains.analysis.workflows.nodes.supervisor.supervisor_node",
+                "app.domains.analysis.workflows.nodes.supervisor.supervisor_route",
                 return_value={"supervisor_decision": mock_supervisor_decision},
             ),
             patch(
@@ -375,7 +375,7 @@ async def test_artifact_failure_emits_error_event(requires_database):
                 return_value=mock_embedding_service,
             ),
             patch(
-                "app.domains.analysis.workflows.nodes.supervisor.supervisor_node",
+                "app.domains.analysis.workflows.nodes.supervisor.supervisor_route",
                 return_value={"supervisor_decision": mock_supervisor_decision},
             ),
             patch(

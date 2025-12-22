@@ -104,7 +104,7 @@ const MemoizedComponent = React.memo(({ data }) => {
         """Test loading summary section from real database."""
         analysis = await create_test_analysis(
             analysis_id=str(uuid4()),
-            url="https://example.com/test",
+            url=f"https://example.com/test-{uuid4()}",
         )
 
         content = "This is test content for summary extraction. " * 50

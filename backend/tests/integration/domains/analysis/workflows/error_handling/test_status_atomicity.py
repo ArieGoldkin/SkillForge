@@ -42,7 +42,11 @@ async def test_concurrent_status_updates_are_serialized(requires_database):
     # Run concurrently - only one should succeed (others rejected due to invalid transitions)
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
+    # Wait a bit for all database operations to complete
+    await asyncio.sleep(0.1)
+
     # Verify final status is one of the valid states
+    # Use a fresh session to avoid connection conflicts
     async with AsyncSessionLocal() as session:
         stmt = select(Analysis).where(Analysis.id == analysis_id)
         result = await session.execute(stmt)
@@ -77,6 +81,7 @@ async def test_invalid_status_transitions_are_rejected(requires_database):
 
     # Try invalid transition: complete -> pending (terminal state)
     # First set status to complete
+    # Use a fresh session to avoid connection conflicts
     async with AsyncSessionLocal() as session:
         analysis = await session.get(Analysis, analysis_id)
         analysis.status = "complete"  # type: ignore[assignment]

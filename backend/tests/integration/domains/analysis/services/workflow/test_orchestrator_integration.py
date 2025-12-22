@@ -58,7 +58,7 @@ async def test_orchestrator_real_completed_workflow(orchestrator, db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/completed-{analysis_id}",
         content_type="article",
-        status="analyzing",
+        status="generating_artifact",  # Can transition to 'complete'
     )
 
     # Mock workflow to return completed result

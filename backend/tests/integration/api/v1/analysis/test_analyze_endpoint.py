@@ -4,6 +4,7 @@ import asyncio
 import uuid
 from datetime import UTC, datetime
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -13,6 +14,7 @@ from sqlalchemy import select
 from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
 from app.main import app
+from tests.integration.conftest import create_complete_analysis
 
 
 @pytest.mark.asyncio
@@ -222,14 +224,10 @@ async def test_get_analyze_returns_status_and_artifact(
     analysis_id = uuid.uuid4()
     artifact_id = uuid.uuid4()
 
-    analysis = Analysis(
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
         title="Example",
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
     )
     artifact = Artifact(
         id=artifact_id,
@@ -274,9 +272,10 @@ async def test_workflow_status_updates_to_complete(
     analysis_uuid = uuid.uuid4()
 
     # Create analysis record
+    test_url = f"https://example.com/article-{uuid4()}"
     analysis = Analysis(
         id=analysis_uuid,
-        url="https://example.com/article",
+        url=test_url,
         content_type="article",
         status="pending",
     )
@@ -329,9 +328,10 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
     analysis_uuid = uuid.uuid4()
 
     # Create analysis record
+    test_url = f"https://example.com/article-{uuid4()}"
     analysis = Analysis(
         id=analysis_uuid,
-        url="https://example.com/article",
+        url=test_url,
         content_type="article",
         status="pending",
     )

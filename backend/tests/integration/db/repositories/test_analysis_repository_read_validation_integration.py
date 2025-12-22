@@ -20,11 +20,13 @@ async def test_get_by_id_real_database(db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/read-test-{analysis_id}",
         content_type="article",
-        status="complete",
+        status="pending",
     )
+    # Set required fields before changing to complete
     analysis.raw_content = "Test content"
     analysis.content_embedding = [0.1] * 1536
     analysis.extraction_metadata = {"title": "Test Article"}
+    analysis.status = "complete"  # type: ignore[assignment]
     await db_session.commit()
 
     # Read with validation
@@ -42,13 +44,20 @@ async def test_get_by_id_legacy_data(db_session):
     analysis_id = uuid.uuid4()
 
     # Create legacy analysis (missing some fields)
+    # Note: This test intentionally creates invalid data to test validation
+    # We need to bypass the constraint by using SQL directly
     analysis = await repo.create_analysis(
         analysis_id=analysis_id,
         url=f"https://example.com/legacy-{analysis_id}",
         content_type="article",
-        status="complete",
+        status="pending",
     )
-    # Don't set raw_content (legacy data)
+    await db_session.commit()
+    # Use SQL to set status to complete without required fields (simulating legacy data)
+    from sqlalchemy import text
+    await db_session.execute(
+        text("UPDATE analyses SET status = 'complete' WHERE id = :id").bindparams(id=analysis_id)
+    )
     await db_session.commit()
 
     # Read with validation
@@ -72,11 +81,14 @@ async def test_get_by_id_corrupted_data(db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/corrupted-{analysis_id}",
         content_type="article",
-        status="complete",
+        status="pending",
     )
+    # Set required fields before changing to complete
     analysis.raw_content = "Test content"
-    analysis.content_embedding = [0.1] * 768  # Wrong dimensions
     analysis.extraction_metadata = {"title": "Test"}
+    analysis.status = "complete"  # type: ignore[assignment]
+    # Set wrong dimensions after status change (will fail constraint check)
+    analysis.content_embedding = [0.1] * 768  # Wrong dimensions
     await db_session.commit()
 
     # Read with validation
@@ -137,11 +149,13 @@ async def test_get_by_id_validation_performance(db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/perf-{analysis_id}",
         content_type="article",
-        status="complete",
+        status="pending",
     )
+    # Set required fields before changing to complete
     analysis.raw_content = "Test content"
     analysis.content_embedding = [0.1] * 1536
     analysis.extraction_metadata = {"title": "Test"}
+    analysis.status = "complete"  # type: ignore[assignment]
     await db_session.commit()
 
     # Measure read with validation

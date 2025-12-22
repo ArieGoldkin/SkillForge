@@ -103,9 +103,15 @@ async def test_error_event_retrievable_via_sse_stream(requires_database):
         orchestrator = WorkflowOrchestrator()
         await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
+    # Wait a bit for database operations to complete
+    import asyncio
+
+    await asyncio.sleep(0.1)
+
     # Verify event is retrievable via repository (simulating /progress endpoint)
     from app.db.repositories.analysis_repository import AnalysisRepository
 
+    # Use a fresh session to avoid connection conflicts
     async with AsyncSessionLocal() as session:
         repo = AnalysisRepository(session)
         progress_events = await repo.get_progress_events(analysis_id)
