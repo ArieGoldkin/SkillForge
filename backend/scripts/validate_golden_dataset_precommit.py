@@ -223,7 +223,7 @@ def validate_langfuse_compatibility(data: dict[str, Any], verbose: bool = False)
 
     # Check analyses have valid status
     invalid_status = [
-        a["id"] for a in data_section.get("analyses", []) if a.get("status") != "completed"
+        a["id"] for a in data_section.get("analyses", []) if a.get("status") != "complete"
     ]
     if invalid_status:
         errors.append(f"Non-completed analyses in golden dataset: {len(invalid_status)}")

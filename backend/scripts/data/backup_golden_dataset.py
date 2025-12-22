@@ -44,7 +44,8 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     if isinstance(value, datetime):
         return value
     # Handle ISO format with timezone
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # Python 3.11+ supports "Z" directly in fromisoformat
+    return datetime.fromisoformat(value)
 
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -55,12 +56,17 @@ load_dotenv()
 class UUIDEncoder(json.JSONEncoder):
     """JSON encoder that handles UUID objects."""
 
-    def default(self, obj: Any) -> Any:
-        """Serialize UUID and datetime objects to JSON-compatible strings."""
+    def default(self, obj: object) -> Any:  # type: ignore[override]
+        """Serialize UUID and datetime objects to JSON-compatible strings.
+
+        Note: Type ignore needed because JSONEncoder.default has a more specific
+        signature that raises TypeError, but we handle it via super().default().
+        """
         if isinstance(obj, UUID):
             return str(obj)
         if isinstance(obj, datetime):
             return obj.isoformat()
+        # For unsupported types, call super which raises TypeError
         return super().default(obj)
 
 
@@ -154,7 +160,7 @@ async def backup_dataset() -> int:
                 SELECT a.id, a.url, a.content_type, a.title, a.status, a.created_at, a.updated_at
                 FROM analyses a
                 INNER JOIN golden g ON a.id = g.analysis_id
-                WHERE a.status = 'completed'
+                WHERE a.status = 'complete'
                 ORDER BY a.created_at
             """)
         )
@@ -452,7 +458,7 @@ async def restore_dataset(replace: bool = False) -> int:
 
         # Verify
         result = await session.execute(
-            text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'")
+            text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
         )
         final_analyses = result.scalar()
         result = await session.execute(text("SELECT COUNT(*) FROM artifacts"))

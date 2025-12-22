@@ -105,7 +105,7 @@ async def verify_analyses(session: Any, verbose: bool = False) -> dict[str, Any]
     results["total"] = result.scalar()
 
     # Completed analyses
-    result = await session.execute(text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'"))
+    result = await session.execute(text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'"))
     results["completed"] = result.scalar()
 
     # Analyses with artifacts
@@ -114,7 +114,7 @@ async def verify_analyses(session: Any, verbose: bool = False) -> dict[str, Any]
             SELECT COUNT(DISTINCT a.id)
             FROM analyses a
             INNER JOIN artifacts art ON a.id = art.analysis_id
-            WHERE a.status = 'completed'
+            WHERE a.status = 'complete'
         """)
     )
     results["with_artifacts"] = result.scalar()
@@ -125,7 +125,7 @@ async def verify_analyses(session: Any, verbose: bool = False) -> dict[str, Any]
             SELECT COUNT(DISTINCT a.id)
             FROM analyses a
             INNER JOIN analysis_chunks c ON a.id = c.analysis_id
-            WHERE a.status = 'completed'
+            WHERE a.status = 'complete'
         """)
     )
     results["with_chunks"] = result.scalar()
@@ -144,7 +144,7 @@ async def verify_analyses(session: Any, verbose: bool = False) -> dict[str, Any]
         text("""
             SELECT content_type, COUNT(*) as count
             FROM analyses
-            WHERE status = 'completed'
+            WHERE status = 'complete'
             GROUP BY content_type
             ORDER BY count DESC
         """)
@@ -300,7 +300,7 @@ async def verify_consistency(session: Any, verbose: bool = False) -> dict[str, A
         text("""
             SELECT COUNT(*) FROM analyses a
             LEFT JOIN artifacts art ON a.id = art.analysis_id
-            WHERE a.status = 'completed' AND art.id IS NULL
+            WHERE a.status = 'complete' AND art.id IS NULL
         """)
     )
     results["completed_no_artifacts"] = result.scalar()
@@ -310,7 +310,7 @@ async def verify_consistency(session: Any, verbose: bool = False) -> dict[str, A
         text("""
             SELECT COUNT(*) FROM analyses a
             LEFT JOIN analysis_chunks c ON a.id = c.analysis_id
-            WHERE a.status = 'completed' AND c.id IS NULL
+            WHERE a.status = 'complete' AND c.id IS NULL
         """)
     )
     results["completed_no_chunks"] = result.scalar()
@@ -320,7 +320,7 @@ async def verify_consistency(session: Any, verbose: bool = False) -> dict[str, A
         text("""
             SELECT COUNT(*) FROM artifacts art
             INNER JOIN analyses a ON art.analysis_id = a.id
-            WHERE a.status != 'completed'
+            WHERE a.status != 'complete'
         """)
     )
     results["artifacts_not_completed"] = result.scalar()
@@ -581,11 +581,10 @@ async def main(verbose: bool = False, fix_orphans: bool = False) -> int:  # noqa
                 f"\n{Colors.GREEN}{Colors.BOLD}✓ All checks passed! Database is healthy.{Colors.END}"
             )
             return 0
-        else:
-            print(
-                f"\n{Colors.RED}{Colors.BOLD}✗ Found {issues_found} issue(s). See details above.{Colors.END}"
-            )
-            return 1
+        print(
+            f"\n{Colors.RED}{Colors.BOLD}✗ Found {issues_found} issue(s). See details above.{Colors.END}"
+        )
+        return 1
 
 
 if __name__ == "__main__":

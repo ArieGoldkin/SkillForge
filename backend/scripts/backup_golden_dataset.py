@@ -154,7 +154,7 @@ async def backup_dataset() -> int:
                 SELECT a.id, a.url, a.content_type, a.title, a.status, a.created_at, a.updated_at
                 FROM analyses a
                 INNER JOIN golden g ON a.id = g.analysis_id
-                WHERE a.status = 'completed'
+                WHERE a.status = 'complete'
                 ORDER BY a.created_at
             """)
         )
@@ -452,7 +452,7 @@ async def restore_dataset(replace: bool = False) -> int:
 
         # Verify
         result = await session.execute(
-            text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'")
+            text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
         )
         final_analyses = result.scalar()
         result = await session.execute(text("SELECT COUNT(*) FROM artifacts"))

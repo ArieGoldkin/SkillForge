@@ -34,6 +34,7 @@ import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -195,13 +196,12 @@ async def create_langfuse_trace(trace_id: str) -> bool:
                     message="Langfuse trace created via REST API",
                 )
                 return True
-            else:
-                logger.warning(
-                    "langfuse_trace_creation_failed",
-                    status_code=response.status_code,
-                    response=response.text[:200],
-                )
-                return False
+            logger.warning(
+                "langfuse_trace_creation_failed",
+                status_code=response.status_code,
+                response=response.text[:200],
+            )
+            return False
 
     except Exception as e:
         logger.error(
@@ -243,12 +243,12 @@ async def seed_database(
                         created_at, updated_at
                     )
                     VALUES (
-                        :id, :url, :content_type, :title, 'completed',
+                        :id, :url, :content_type, :title, 'complete',
                         NOW(), NOW()
                     )
                     ON CONFLICT (id) DO UPDATE SET
                         updated_at = NOW(),
-                        status = 'completed'
+                        status = 'complete'
                 """),
                 {
                     "id": str(analysis_id),
@@ -307,12 +307,14 @@ async def seed_database(
 async def main() -> None:
     """Main entry point for seeding script."""
     # Check for required environment variables
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
+    raw_database_url = os.getenv("DATABASE_URL")
+    if not raw_database_url:
         print("ERROR: DATABASE_URL not set")
         sys.exit(1)
 
     # Convert to async URL
+    # raw_database_url is guaranteed to be str here due to check above
+    database_url = cast("str", raw_database_url)
     if database_url.startswith("postgresql://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
@@ -328,7 +330,7 @@ async def main() -> None:
     print(f"Analysis ID: {analysis_id}")
     print(f"Artifact ID: {artifact_id}")
     print(f"Trace ID: {trace_id}")
-    print("")
+    print()
 
     # Step 1: Create Langfuse trace
     print("Step 1: Creating Langfuse trace...")
@@ -354,7 +356,7 @@ async def main() -> None:
     print(f"E2E_ARTIFACT_ID={artifact_id}")
     print(f"E2E_ANALYSIS_ID={analysis_id}")
     print(f"E2E_TRACE_ID={trace_id}")
-    print("")
+    print()
     print("Seeding complete!")
 
 

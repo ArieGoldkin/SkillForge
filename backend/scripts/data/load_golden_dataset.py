@@ -187,7 +187,7 @@ async def main(replace: bool = False) -> int:
                 id=analysis_id,
                 url=source_url,
                 content_type=content_type,
-                status="completed",
+                status="complete",
                 title=doc_title,
             )
             session.add(analysis)
@@ -263,7 +263,7 @@ async def main(replace: bool = False) -> int:
 
         # Verify results
         result = await session.execute(
-            text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'")
+            text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
         )
         analyses_count = result.scalar()
 

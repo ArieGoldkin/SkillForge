@@ -35,7 +35,7 @@ async def main() -> None:
     engine = create_async_engine(database_url)
     async with engine.begin() as conn:
         # Check if we already have completed analyses
-        res = await conn.execute(text("SELECT COUNT(*) FROM analyses WHERE status='completed'"))
+        res = await conn.execute(text("SELECT COUNT(*) FROM analyses WHERE status='complete'"))
         count = int(res.scalar() or 0)
         if count > 0:
             print(f"Found {count} completed analyses, skipping seed")
@@ -47,7 +47,7 @@ async def main() -> None:
         await conn.execute(
             text("""
                 INSERT INTO analyses (id, url, content_type, title, status, created_at, updated_at)
-                VALUES (:id, :url, :content_type, :title, 'completed', NOW(), NOW())
+                VALUES (:id, :url, :content_type, :title, 'complete', NOW(), NOW())
             """),
             {
                 "id": analysis_id,
