@@ -202,7 +202,6 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
-          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
         run: |
           # Copy template as base
           cp .env.test.example .env.test
@@ -215,13 +214,15 @@ jobs:
           # =============================================================================
           OPENAI_API_KEY=$OPENAI_API_KEY
           JINA_API_KEY=$JINA_API_KEY
-          LANGCHAIN_API_KEY=$LANGCHAIN_API_KEY
 
           # =============================================================================
           # CI/CD Overrides (Lightweight E2E)
           # =============================================================================
           ENVIRONMENT=test
           LOG_LEVEL=INFO
+
+          # Disable Langfuse observability (not needed for E2E tests)
+          LANGFUSE_ENABLED=false
 
           # Disable workflow execution (no LLM calls)
           SKILLFORGE_E2E_DISABLE_WORKFLOW=true
