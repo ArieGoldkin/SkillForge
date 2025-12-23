@@ -13,28 +13,33 @@ class AgentFinding(TypedDict, total=False):
     Used by all analysis agents to return structured findings
     that can be merged via LangGraph's reducer pattern.
 
+    Each agent returns findings in a nested structure where:
+    - agent_type identifies which agent produced the finding
+    - findings contains agent-specific structured data
+    - Optional metadata fields provide additional context
+
     Attributes:
-        agent_name: Name of the agent that produced this finding
-        agent_type: Type/category of agent (e.g., 'tech_comparator')
-        finding_type: Category of finding (e.g., 'comparison', 'security_issue')
-        title: Short title for the finding
-        content: Detailed content/analysis
-        confidence: Confidence score (0.0-1.0)
-        priority: Priority level ('high', 'medium', 'low')
-        metadata: Additional key-value metadata
-        recommendations: List of actionable recommendations
+        agent_type: Type/category of agent (e.g., 'tech_comparator', 'security_auditor')
+        findings: Agent-specific findings dictionary with structured data
+        confidence_score: Optional confidence score (0.0-1.0)
+        processing_time_ms: Optional processing time in milliseconds
+
+    Example:
+        {
+            "agent_type": "tech_comparator",
+            "findings": {
+                "technologies": ["Python", "FastAPI", "PostgreSQL"],
+                "comparisons": ["FastAPI vs Flask", "PostgreSQL vs MySQL"],
+            },
+            "processing_time_ms": 1200,
+        }
 
     """
 
-    agent_name: str
-    agent_type: str
-    finding_type: str
-    title: str
-    content: str
-    confidence: float
-    priority: str  # "high" | "medium" | "low"
-    metadata: dict[str, str]
-    recommendations: list[str]
+    agent_type: str  # Required: identifies the agent
+    findings: dict[str, object]  # Required: agent-specific structured data
+    confidence_score: float | None  # Optional: confidence score (0.0-1.0)
+    processing_time_ms: int | None  # Optional: processing time in milliseconds
 
 
 class WorkflowMetrics(TypedDict, total=False):

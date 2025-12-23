@@ -49,7 +49,7 @@ pytest-cov = "^7.0.0"
 pytest-timeout = "^2.3.1"
 pytest-xdist = "^3.6.1"
 ruff = "^0.14.10"
-ty = "^0.0.2"
+ty = "^0.0.5"
 isort = "^7.0.0"
 # langgraph-cli is installed separately via pip due to dependency conflict:
 # langgraph-cli requires sse-starlette <2.2.0, but we use sse-starlette ^3.0.3
@@ -226,6 +226,51 @@ docstring-code-format = true
 [tool.ty]
 # ty type checker configuration (Astral's Rust-based type checker)
 # https://pypi.org/project/ty/
+
+# Python version for analysis (inferred from project.requires-python by default)
+[tool.ty.environment]
+python-version = "3.13"  # Explicitly set to match project requirement
+
+# Source file inclusion/exclusion (replaces CLI --exclude flag)
+[tool.ty.src]
+exclude = ["app/evaluation/*"]  # Move CLI exclusion to config
+
+# Rule severity levels (error, warn, ignore)
+[tool.ty.rules]
+# Critical type errors - always error
+possibly-unresolved-reference = "error"
+invalid-argument-type = "error"
+missing-argument = "error"
+unsupported-operator = "error"
+division-by-zero = "error"
+
+# Code quality - warn to encourage fixes without blocking
+unused-ignore-comment = "warn"  # Detect dead # ty: ignore comments
+redundant-cast = "warn"  # Detect unnecessary type casts
+
+# Terminal output configuration
+[tool.ty.terminal]
+output-format = "concise"  # Cleaner output (new in 0.0.5: limited import paths)
+error-on-warning = false  # Don't fail CI on warnings (only errors)
+
+# Per-directory rule overrides
+# Relaxed rules for evaluation code (experimental/benchmarking)
+[[tool.ty.overrides]]
+include = ["app/evaluation/**"]
+
+[tool.ty.overrides.rules]
+# Evaluation code has complex type interactions - be lenient
+possibly-unresolved-reference = "warn"
+invalid-argument-type = "warn"
+
+# Tests can have more relaxed rules
+[[tool.ty.overrides]]
+include = ["tests/**", "**/test_*.py"]
+
+[tool.ty.overrides.rules]
+# Test code may use mocks/fixtures that aren't fully typed
+possibly-unresolved-reference = "warn"
+missing-argument = "warn"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

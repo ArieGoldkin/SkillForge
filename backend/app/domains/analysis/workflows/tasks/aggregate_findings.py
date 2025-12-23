@@ -464,6 +464,9 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         findings_count=len(agent_findings),
     )
 
+    # Initialize agent_types to None for error handling (will be set in try block)
+    agent_types: list[str] | None = None
+
     try:
         # Extract selected_agents from supervisor_decision
         supervisor_decision = get_supervisor_decision(state)
@@ -612,7 +615,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             analysis_id=analysis_id,
             error=e,
             start_time=start_time,
-            agent_types=agent_types if "agent_types" in locals() else None,
+            agent_types=agent_types,
         )
 
 

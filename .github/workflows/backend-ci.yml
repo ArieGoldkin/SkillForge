@@ -119,7 +119,7 @@ jobs:
 
       - name: Run ty type check
         working-directory: ./backend
-        run: poetry run ty check app/ --exclude "app/evaluation/*"
+        run: poetry run ty check app/
 
   # ============================================================================
   # Phase 2: UNIT TESTS (2-3 min) - Only run if lint/type pass

@@ -172,6 +172,100 @@ AGENT_SCOPES: dict[str, ContextScope] = {
 }
 
 
+def _resolve_scope(agent_type: str, scope: ContextScope | None) -> ContextScope:
+    """Resolve scope configuration for an agent.
+
+    Args:
+        agent_type: Type of agent (e.g., "security_auditor")
+        scope: Optional custom scope (uses AGENT_SCOPES[agent_type] if not provided)
+
+    Returns:
+        Resolved ContextScope configuration
+
+    """
+    if scope is None:
+        if agent_type not in AGENT_SCOPES:
+            logger.warning(
+                "agent_scope_not_found",
+                agent_type=agent_type,
+                using_default=True,
+            )
+            # Default scope: minimal safe fields
+            return ContextScope(
+                include=["analysis_id", "content_ref", "content_type", "skill_level"]
+            )
+        return AGENT_SCOPES[agent_type]
+    return scope
+
+
+def _inject_prior_context(
+    scoped_state: ScopedState,
+    full_state: AnalysisState,
+    agent_type: str,
+    scope: ContextScope,
+) -> None:
+    """Inject prior context (memory/findings) into scoped state if requested.
+
+    Args:
+        scoped_state: Scoped state to inject into (modified in place)
+        full_state: Full AnalysisState with all fields
+        agent_type: Type of agent receiving the context
+        scope: ContextScope configuration with injection flags
+
+    """
+    if scope.inject_memory or scope.include_other_findings:
+        prior_context = translate_findings(
+            full_state.get("agent_findings", []),
+            agent_type,
+            include_findings=scope.include_other_findings,
+        )
+        if prior_context:
+            scoped_state["prior_context"] = prior_context
+
+
+def _inject_supervisor_data(
+    scoped_state: ScopedState,
+    full_state: AnalysisState,
+    agent_type: str,
+    scope: ContextScope,
+) -> None:
+    """Inject supervisor decision data into scoped state.
+
+    Injects agent expectations, coverage summary, and content signals based on
+    supervisor_decision data in full_state.
+
+    Args:
+        scoped_state: Scoped state to inject into (modified in place)
+        full_state: Full AnalysisState with supervisor_decision data
+        agent_type: Type of agent receiving the context
+        scope: ContextScope configuration
+
+    """
+    supervisor_decision = full_state.get("supervisor_decision", {})
+    if not isinstance(supervisor_decision, dict):
+        return
+
+    # Inject agent expectation if available
+    agent_expectations = supervisor_decision.get("agent_expectations", {})
+    if isinstance(agent_expectations, dict) and agent_type in agent_expectations:
+        scoped_state["agent_expectation"] = agent_expectations[agent_type]
+        logger.debug(
+            "agent_expectation_injected",
+            agent_type=agent_type,
+            expectation=agent_expectations[agent_type],
+        )
+
+    # Inject coverage summary and content_signals if needed
+    content_signals = supervisor_decision.get("content_signals")
+    if isinstance(content_signals, dict):
+        coverage = content_signals.get("coverage_summary")
+        if coverage:
+            scoped_state["content_coverage"] = coverage
+        # Issue #299-304: Inject full content_signals for comparison-aware thresholds
+        if "content_signals" in scope.include:
+            scoped_state["content_signals"] = content_signals
+
+
 def build_scoped_context(
     full_state: AnalysisState,
     agent_type: str,
@@ -202,20 +296,8 @@ def build_scoped_context(
         dict_keys(['analysis_id', 'content_ref', 'content_type', 'skill_level'])
 
     """
-    # Get scope configuration
-    if scope is None:
-        if agent_type not in AGENT_SCOPES:
-            logger.warning(
-                "agent_scope_not_found",
-                agent_type=agent_type,
-                using_default=True,
-            )
-            # Default scope: minimal safe fields
-            scope = ContextScope(
-                include=["analysis_id", "content_ref", "content_type", "skill_level"]
-            )
-        else:
-            scope = AGENT_SCOPES[agent_type]
+    # Resolve scope configuration
+    scope = _resolve_scope(agent_type, scope)
 
     # Build scoped state with only included fields
     scoped_state = ScopedState()
@@ -223,43 +305,17 @@ def build_scoped_context(
         # Type narrowing: check if field exists in full_state
         value = full_state.get(field)
         if value is not None:
-            scoped_state[field] = value  # type: ignore[literal-required]
+            scoped_state[field] = value  # type: ignore[assignment]
 
     # Apply exclusions
     for field in scope.exclude:
         scoped_state.pop(field, None)
 
     # Inject prior context if requested
-    if scope.inject_memory or scope.include_other_findings:
-        prior_context = translate_findings(
-            full_state.get("agent_findings", []),
-            agent_type,
-            include_findings=scope.include_other_findings,
-        )
-        if prior_context:
-            scoped_state["prior_context"] = prior_context
+    _inject_prior_context(scoped_state, full_state, agent_type, scope)
 
-    # ISSUE #299-304: Inject agent expectation from content signals
-    # This tells the agent what analysis depth to expect (FULL_ANALYSIS, PARTIAL, OPPORTUNISTIC)
-    supervisor_decision = full_state.get("supervisor_decision", {})
-    if isinstance(supervisor_decision, dict):
-        agent_expectations = supervisor_decision.get("agent_expectations", {})
-        if isinstance(agent_expectations, dict) and agent_type in agent_expectations:
-            scoped_state["agent_expectation"] = agent_expectations[agent_type]
-            logger.debug(
-                "agent_expectation_injected",
-                agent_type=agent_type,
-                expectation=agent_expectations[agent_type],
-            )
-        # Also inject coverage summary and content_signals if needed
-        content_signals = supervisor_decision.get("content_signals")
-        if isinstance(content_signals, dict) and (
-            coverage := content_signals.get("coverage_summary")
-        ):
-            scoped_state["content_coverage"] = coverage
-        # Issue #299-304: Inject full content_signals for comparison-aware thresholds
-        if isinstance(content_signals, dict) and "content_signals" in scope.include:
-            scoped_state["content_signals"] = content_signals
+    # Inject supervisor decision data (expectations, coverage, content_signals)
+    _inject_supervisor_data(scoped_state, full_state, agent_type, scope)
 
     # Calculate size reduction
     # Cast to dict for size estimation (AnalysisState is TypedDict)
