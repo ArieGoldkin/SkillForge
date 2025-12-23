@@ -7,7 +7,9 @@ This module measures how specific and quantifiable agent outputs are by:
 - Providing detailed breakdown for monitoring and improvement
 
 Usage:
-    from app.domains.analysis.workflows.agents.validation.specificity_scorer import SpecificityScorer
+    from app.domains.analysis.workflows.agents.validation.specificity_scorer import (
+        SpecificityScorer
+    )
 
     scorer = SpecificityScorer()
     result = scorer.score_output(agent_findings, agent_type="performance_analyst")

@@ -17,7 +17,6 @@ from app.shared.services.messaging.redis_broadcaster import (
     RedisEventBroadcaster,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -174,8 +173,12 @@ async def test_subscribe_replays_buffered_events(
 
     # Mock buffered events
     buffered_events = [
-        json.dumps({"type": "progress", "stage": "extraction", "_buffered_at": "2025-01-01T00:00:00Z"}),
-        json.dumps({"type": "progress", "stage": "embedding", "_buffered_at": "2025-01-01T00:00:01Z"}),
+        json.dumps(
+            {"type": "progress", "stage": "extraction", "_buffered_at": "2025-01-01T00:00:00Z"}
+        ),
+        json.dumps(
+            {"type": "progress", "stage": "embedding", "_buffered_at": "2025-01-01T00:00:01Z"}
+        ),
         json.dumps({"type": "progress", "stage": "agents", "_buffered_at": "2025-01-01T00:00:02Z"}),
     ]
     mock_redis_client.lrange = AsyncMock(return_value=buffered_events)
@@ -194,7 +197,7 @@ async def test_subscribe_replays_buffered_events(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -229,8 +232,16 @@ async def test_subscribe_receives_live_events(
 
     # Mock get_message to return live events sequentially
     live_messages = [
-        {"type": "message", "channel": channel, "data": json.dumps({"type": "live1", "_buffered_at": "2025-01-01T00:00:00Z"})},
-        {"type": "message", "channel": channel, "data": json.dumps({"type": "live2", "_buffered_at": "2025-01-01T00:00:01Z"})},
+        {
+            "type": "message",
+            "channel": channel,
+            "data": json.dumps({"type": "live1", "_buffered_at": "2025-01-01T00:00:00Z"}),
+        },
+        {
+            "type": "message",
+            "channel": channel,
+            "data": json.dumps({"type": "live2", "_buffered_at": "2025-01-01T00:00:01Z"}),
+        },
         None,  # End of messages
     ]
     mock_pubsub.get_message = AsyncMock(side_effect=live_messages)
@@ -246,7 +257,7 @@ async def test_subscribe_receives_live_events(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -347,7 +358,9 @@ async def test_clear_buffer_handles_errors(
 @pytest.mark.asyncio
 async def test_connection_failure_handling() -> None:
     """Test that create() raises ConnectionError if Redis connection fails."""
-    with patch("app.shared.services.messaging.redis_broadcaster.aioredis.from_url") as mock_from_url:
+    with patch(
+        "app.shared.services.messaging.redis_broadcaster.aioredis.from_url"
+    ) as mock_from_url:
         mock_client = AsyncMock()
         # Use OSError (base class for connection errors) which is caught by the code
         mock_client.ping = AsyncMock(side_effect=OSError("Connection refused"))
@@ -410,7 +423,7 @@ async def test_invalid_json_in_buffer_skipped(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -454,7 +467,7 @@ async def test_invalid_json_in_pubsub_skipped(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -584,7 +597,9 @@ async def test_singleton_factory() -> None:
 
     await reset_redis_broadcaster()
 
-    with patch("app.shared.services.messaging.redis_broadcaster.RedisEventBroadcaster.create") as mock_create:
+    with patch(
+        "app.shared.services.messaging.redis_broadcaster.RedisEventBroadcaster.create"
+    ) as mock_create:
         mock_broadcaster = AsyncMock(spec=RedisEventBroadcaster)
         mock_create.return_value = mock_broadcaster
 
@@ -608,7 +623,9 @@ async def test_reset_singleton() -> None:
         reset_redis_broadcaster,
     )
 
-    with patch("app.shared.services.messaging.redis_broadcaster.RedisEventBroadcaster.create") as mock_create:
+    with patch(
+        "app.shared.services.messaging.redis_broadcaster.RedisEventBroadcaster.create"
+    ) as mock_create:
         mock_broadcaster = AsyncMock(spec=RedisEventBroadcaster)
         mock_broadcaster.close = AsyncMock()
         mock_create.return_value = mock_broadcaster

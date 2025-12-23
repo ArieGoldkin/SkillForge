@@ -62,7 +62,8 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float,  # Kept for logging/reference, but step_timeout handles actual timeout  # noqa: ASYNC109 - Parameter for logging, not timeout control
+    # Kept for logging/reference, but step_timeout handles actual timeout
+    timeout: float,  # noqa: ASYNC109
 ) -> dict[str, object]:
     """Stream agent execution - timeout handled by LangGraph's step_timeout and model-level timeout.
 

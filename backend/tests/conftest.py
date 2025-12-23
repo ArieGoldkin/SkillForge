@@ -6,18 +6,9 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 from uuid import UUID
 
-# CRITICAL: Set test environment variables BEFORE any app imports
-# This ensures settings are loaded with correct values when modules are first imported
-# These are test-only values and won't affect production
-# NOTE: DATABASE_URL should come from .env.test (port 5437) - don't override it here
-# Only set a fallback if .env.test doesn't exist (for CI environments)
-if "DATABASE_URL" not in os.environ:
-    # Check if .env.test exists and has DATABASE_URL
-    test_env_file = Path(__file__).parent.parent / ".env.test"
-    if not test_env_file.exists():
-        # Only set fallback if .env.test doesn't exist (for CI)
-        # Use port 5437 to match Docker setup
-        os.environ["DATABASE_URL"] = "postgresql://dev:devpass@localhost:5437/skillforge_test"
+# CRITICAL: Do NOT set DATABASE_URL at module level - it prevents conftest.py from being
+# importable without DATABASE_URL (required for CI import tests).
+# DATABASE_URL is set in the ensure_test_env_vars fixture when tests actually need it.
 # Set OPENAI_API_KEY placeholder at module level for unit tests that need it during fixture setup.
 # Integration tests will override this by loading real keys from .env with override=True.
 if "OPENAI_API_KEY" not in os.environ:
@@ -41,7 +32,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.main import app
-from app.shared.services.messaging.broadcaster import EventBroadcaster
 from app.shared.services.messaging.broadcaster_factory import reset_broadcaster
 
 # Note: AsyncSessionLocal, engine, and Analysis are imported lazily inside fixtures
@@ -157,7 +147,6 @@ def test_settings():
 @pytest.fixture(autouse=True)
 def auto_clear_config_cache(clear_config_cache):
     """Automatically clear config cache for all tests."""
-    pass
 
 
 @pytest.fixture(autouse=True)
@@ -169,17 +158,23 @@ def ensure_test_env_vars(monkeypatch, request):
     2. Settings cache is cleared for fresh settings
     3. Works even if modules were imported before conftest.py ran
 
-    NOTE: DATABASE_URL is NOT overridden if already set (e.g., from .env.test).
+    NOTE: DATABASE_URL is set here (not at module level) to allow conftest.py to be
+    importable without DATABASE_URL (required for CI import tests).
+    DATABASE_URL is NOT overridden if already set (e.g., from .env.test).
     This allows integration tests to use the real database configuration.
 
     NOTE: Smoke tests (marked with pytest.mark.smoke) skip the OPENAI_API_KEY
     placeholder to allow them to use real API keys from .env for live testing.
     """
-    # Only set DATABASE_URL if not already set (e.g., from .env.test)
+    # Set DATABASE_URL if not already set (e.g., from .env.test)
+    # This is done in the fixture (not at module level) to allow conftest.py to be
+    # importable without DATABASE_URL for CI import tests.
     # Integration tests need the real DATABASE_URL (port 5437 from .env.test)
     if "DATABASE_URL" not in os.environ:
         # Use port 5437 to match Docker setup
-        monkeypatch.setenv("DATABASE_URL", "postgresql://test:test@localhost:5437/test")
+        monkeypatch.setenv(
+            "DATABASE_URL", "postgresql://dev:devpass@localhost:5437/skillforge_test"
+        )
 
     # Skip OPENAI_API_KEY placeholder for smoke and integration tests - they need real keys
     # Check for smoke or integration marker to allow live API calls
@@ -248,25 +243,16 @@ def mock_async_session_local():
 
     # Create a mock session
     mock_session = MagicMock()
-    mock_session.configure_mock(
-        **{
-            "__aenter__": AsyncMock(return_value=mock_session),
-            "__aexit__": AsyncMock(return_value=False),
-        }
-    )
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=False)
 
     # Create a mock async context manager that yields the session
     mock_context_manager = MagicMock()
-    mock_context_manager.configure_mock(
-        **{
-            "__aenter__": AsyncMock(return_value=mock_session),
-            "__aexit__": AsyncMock(return_value=False),
-        }
-    )
+    mock_context_manager.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_context_manager.__aexit__ = AsyncMock(return_value=False)
 
     # AsyncSessionLocal itself is callable and returns the context manager
-    mock_async_session_local = MagicMock(return_value=mock_context_manager)
-    return mock_async_session_local
+    return MagicMock(return_value=mock_context_manager)
 
 
 @pytest.fixture
@@ -286,7 +272,7 @@ def requires_database():
         pytest.skip("DATABASE_URL not configured")
 
 
-async def get_test_session(timeout: float | None = None) -> AsyncSession:
+async def get_test_session(timeout: float | None = None) -> AsyncSession:  # noqa: ASYNC109
     """Create a test database session with timeout protection.
 
     Wraps AsyncSessionLocal() with timeout to prevent hanging if database
@@ -329,7 +315,7 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:
         try:
             await session.__aexit__(None, None, None)
         except Exception:
-            pass
+            pass  # Ignore cleanup errors when session entry failed
         raise
 
 
@@ -362,7 +348,7 @@ class TimeoutSession:
             try:
                 await self.session.__aexit__(exc_type, exc_val, exc_tb)
             except Exception:
-                pass
+                pass  # Ignore cleanup errors - session may already be closed
 
 
 @pytest_asyncio.fixture
@@ -395,7 +381,7 @@ async def check_database_available(requires_database):
         try:
             await old_engine.dispose()
         except Exception:
-            pass  # Ignore disposal errors
+            pass  # Ignore disposal errors - connections will be cleaned up later
 
     # Verify engine will use correct URL by checking get_async_database_url
     from app.db.session import get_async_database_url
@@ -433,7 +419,7 @@ async def check_database_available(requires_database):
             try:
                 await session.__aexit__(None, None, None)
             except Exception:
-                pass
+                pass  # Ignore cleanup errors when session entry failed
             # Skip test when database is unavailable (e.g., in CI without database)
             pytest.skip("Database not available - connection timeout")
     except Exception as e:
@@ -441,7 +427,7 @@ async def check_database_available(requires_database):
         pytest.skip(f"Database not available - {type(e).__name__}: {e!s}")
 
 
-async def _dispose_engine_safely(timeout: float) -> None:
+async def _dispose_engine_safely(timeout: float) -> None:  # noqa: ASYNC109
     """Dispose engine connections with timeout protection.
 
     Uses non-blocking approach to prevent hanging if database is unreachable.
@@ -677,7 +663,9 @@ def requires_llm():
         )
 
     # Check if the required API key is available
-    api_key = getattr(settings, api_field, None)
+    # Type: ignore needed because api_field is a dynamic string attribute name
+    # The values in LLM_PROVIDER_API_FIELDS are guaranteed to be valid Settings attributes
+    api_key = getattr(settings, api_field, None)  # type: ignore[arg-type]
 
     if not api_key:
         pytest.skip(

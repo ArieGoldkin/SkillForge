@@ -240,9 +240,7 @@ class TestCreateRunnableConfig:
 
             metadata = {"agent_type": "supervisor", "task": "routing"}
             tags = ["supervisor", "routing"]
-            config = create_runnable_config(
-                thread_id="full-test-789", metadata=metadata, tags=tags
-            )
+            config = create_runnable_config(thread_id="full-test-789", metadata=metadata, tags=tags)
 
             # Should have all components
             assert config["configurable"]["thread_id"] == "full-test-789"

@@ -18,7 +18,6 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 from tests.smoke.retrieval.fixtures import FixtureLoader
@@ -26,6 +25,8 @@ from tests.smoke.retrieval.metrics import MetricsCalculator
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
+
+    from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.db.models.analysis import Analysis
     from app.db.models.analysis_chunk import AnalysisChunk

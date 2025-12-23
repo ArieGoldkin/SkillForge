@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.shared.services.g_eval.scorer import CriterionScore
 from app.shared.services.g_eval.self_consistency import (
     VotingDistribution,
     score_criterion_with_self_consistency,
@@ -99,15 +98,23 @@ class TestSelfConsistencyScoring:
         with patch("app.shared.services.g_eval.self_consistency.get_chat_model") as mock_model:
             # Create 3 different mock responses
             mock_response1 = MagicMock()
-            mock_response1.content = """<reasoning>Good</reasoning><score>4</score><confidence>0.8</confidence>"""
+            mock_response1.content = (
+                """<reasoning>Good</reasoning><score>4</score><confidence>0.8</confidence>"""
+            )
             mock_response2 = MagicMock()
-            mock_response2.content = """<reasoning>Good</reasoning><score>4</score><confidence>0.9</confidence>"""
+            mock_response2.content = (
+                """<reasoning>Good</reasoning><score>4</score><confidence>0.9</confidence>"""
+            )
             mock_response3 = MagicMock()
-            mock_response3.content = """<reasoning>Fair</reasoning><score>3</score><confidence>0.7</confidence>"""
+            mock_response3.content = (
+                """<reasoning>Fair</reasoning><score>3</score><confidence>0.7</confidence>"""
+            )
 
             mock_llm = AsyncMock()
             # Mock abatch to return 3 different responses
-            mock_llm.abatch = AsyncMock(return_value=[mock_response1, mock_response2, mock_response3])
+            mock_llm.abatch = AsyncMock(
+                return_value=[mock_response1, mock_response2, mock_response3]
+            )
             mock_model.return_value = mock_llm
 
             result = await score_criterion_with_self_consistency(
@@ -265,7 +272,9 @@ class TestSelfConsistencyScoring:
 
             mock_llm = AsyncMock()
             # Mock abatch to return all 3 responses
-            mock_llm.abatch = AsyncMock(return_value=[mock_response1, mock_response2, mock_response3])
+            mock_llm.abatch = AsyncMock(
+                return_value=[mock_response1, mock_response2, mock_response3]
+            )
             mock_model.return_value = mock_llm
 
             result = await score_criterion_with_self_consistency(

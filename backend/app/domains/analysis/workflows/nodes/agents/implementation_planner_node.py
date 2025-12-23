@@ -49,6 +49,13 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
         Dictionary with agent_findings containing single result
 
     """
+    # Issue #441: Skip if workflow is aborting
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
+        return {}
+
     analysis_id = state["analysis_id"]
     content_type = state["content_type"]
 
@@ -144,6 +151,16 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             error=str(e),
             error_code="IMPLEMENTATION_PLANNER_FAILED",
             processing_time_ms=processing_time_ms,
+        )
+
+        # Record error to database
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code="IMPLEMENTATION_PLANNER_FAILED",
+            error_message=str(e),
+            stage="implementation_planner",
         )
 
         logger.error(

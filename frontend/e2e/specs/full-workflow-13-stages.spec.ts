@@ -1,5 +1,7 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+
 import { HomePage, AnalyzePage } from '../page-objects';
+import { logTestStep, logger } from '../utils';
 
 /**
  * COMPREHENSIVE WORKFLOW TEST
@@ -48,19 +50,20 @@ const OPTIONAL_AGENT_STAGES = [
   'pattern_comparison',   // Pattern comparison (workflow-level)
 ];
 
-// Other optional stages
-const OTHER_OPTIONAL_STAGES = [
-  'chunking',   // Only if ENABLE_COARSE_TO_FINE=true
-  'workflow',   // Error handling (workflow-level)
-  'metrics',    // Metrics collection (workflow-level)
-];
+// Other optional stages (for reference)
+// const OTHER_OPTIONAL_STAGES = [
+//   'chunking',   // Only if ENABLE_COARSE_TO_FINE=true
+//   'workflow',   // Error handling (workflow-level)
+//   'metrics',    // Metrics collection (workflow-level)
+// ];
 
 // All 17 possible stages (from STAGE_CONFIG)
-const ALL_POSSIBLE_STAGES = [
-  ...CORE_STAGES,
-  ...OPTIONAL_AGENT_STAGES,
-  ...OTHER_OPTIONAL_STAGES,
-];
+// Note: Used for reference, not directly in tests
+// const ALL_POSSIBLE_STAGES = [
+//   ...CORE_STAGES,
+//   ...OPTIONAL_AGENT_STAGES,
+//   ...OTHER_OPTIONAL_STAGES,
+// ];
 
 interface SSEEvent {
   type: string;
@@ -74,6 +77,7 @@ interface SSEEvent {
 test.describe('Full Workflow - 13 Stages Validation', () => {
   test.setTimeout(300000); // 5 minutes for complete workflow
 
+  /* eslint-disable complexity, max-depth -- E2E workflow test requires comprehensive validation logic */
   test('should complete full analysis workflow with all 13 stages', async ({ page }) => {
     test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
 
@@ -88,7 +92,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       screenshotCounter++;
       const filename = `${screenshotDir}/${screenshotCounter.toString().padStart(2, '0')}_${label}.png`;
       await page.screenshot({ path: filename, fullPage: true });
-      console.log(`📸 Screenshot: ${filename}`);
+      logger.debug('Screenshot captured', { filename, label, counter: screenshotCounter });
       return filename;
     };
 
@@ -98,7 +102,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
 
       // Monitor SSE endpoint
       if (url.includes('/api/v1/analyze/sse/')) {
-        console.log(`📡 SSE Response: ${response.status()} ${url}`);
+        logger.debug('SSE response received', { status: response.status(), url });
 
         try {
           // Try to read the body as text (SSE is text/event-stream)
@@ -122,18 +126,26 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
 
                 if (event.stage) {
                   stagesEncountered.add(event.stage);
-                  console.log(`✅ Stage detected: ${event.stage} (${stagesEncountered.size}/13)`);
+                  logger.info('Stage detected', {
+                    stage: event.stage,
+                    totalStages: stagesEncountered.size,
+                    allStages: Array.from(stagesEncountered),
+                  });
                 }
 
                 if (event.type === 'progress' && event.message) {
-                  console.log(`📊 Progress: ${event.progress}% - ${event.message}`);
+                  logger.info('Progress update', {
+                    progress: event.progress,
+                    message: event.message,
+                    stage: event.stage,
+                  });
                 }
-              } catch (parseError) {
+              } catch {
                 // Skip malformed JSON
               }
             }
           }
-        } catch (error) {
+        } catch {
           // SSE body might not be fully available yet
         }
       }
@@ -141,21 +153,27 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
 
     // Log page errors
     page.on('pageerror', (error) => {
-      console.error('❌ Page error:', error.message);
+      logger.error('Page error detected', {
+        error: error.message,
+        stack: error.stack,
+      });
     });
 
     // Log console messages
     page.on('console', (msg) => {
       const type = msg.type();
       if (type === 'error' || type === 'warning') {
-        console.log(`🖥️  Console [${type}]:`, msg.text());
+        logger.warn('Browser console message', {
+          type,
+          text: msg.text(),
+        });
       }
     });
 
-    console.log('\n🚀 Starting full workflow test...\n');
+    logTestStep('Starting full workflow test', { testUrl: TEST_URL });
 
     // STEP 1: Navigate to home page
-    console.log('📍 Step 1: Navigate to home page');
+    logTestStep('Navigate to home page');
     const homePage = new HomePage(page);
     await homePage.goto();
     await page.waitForLoadState('networkidle');
@@ -164,44 +182,43 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     // Verify home page loaded
     await expect(homePage.urlInput).toBeVisible();
     await expect(homePage.submitButton).toBeVisible();
-    console.log('✓ Home page loaded successfully');
+    logger.info('Home page loaded successfully');
 
     // STEP 2: Enter URL and submit
-    console.log('\n📍 Step 2: Submit URL for analysis');
-    console.log(`   URL: ${TEST_URL}`);
+    logTestStep('Submit URL for analysis', { url: TEST_URL });
     await homePage.urlInput.fill(TEST_URL);
     await takeScreenshot('02_url_entered');
 
     await homePage.submitButton.click();
-    console.log('✓ Form submitted');
+    logger.info('Form submitted');
 
     // STEP 3: Wait for redirect to analysis page
-    console.log('\n📍 Step 3: Wait for redirect to analysis page');
+    logTestStep('Wait for redirect to analysis page');
     await page.waitForURL(/\/analyze\/.+/, { timeout: 10000 });
     const currentUrl = page.url();
     const analysisId = currentUrl.match(/\/analyze\/([^/]+)/)?.[1];
-    console.log(`✓ Redirected to: ${currentUrl}`);
-    console.log(`   Analysis ID: ${analysisId}`);
+    logger.info('Redirected to analysis page', { url: currentUrl, analysisId });
     await takeScreenshot('03_analysis_page_initial');
 
     // STEP 4: Wait for SSE connection and initial events
-    console.log('\n📍 Step 4: Monitor SSE connection');
+    logTestStep('Monitor SSE connection');
     const analyzePage = new AnalyzePage(page);
 
     // Wait for progress bar to appear
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 15000 });
-    console.log('✓ Progress bar visible');
+    logger.info('Progress bar visible');
 
     // Wait for initial progress
     await page.waitForTimeout(2000);
     const initialProgress = await analyzePage.getProgress();
-    console.log(`   Initial progress: ${initialProgress}%`);
+    logger.info('Initial progress', { progress: initialProgress });
     await takeScreenshot('04_sse_connected');
 
     // STEP 5: Monitor stage progression (dynamic count based on supervisor selection)
-    console.log('\n📍 Step 5: Monitor stage progression (6 core + 0-8 agents)');
-    console.log('   Core stages (required):', CORE_STAGES);
-    console.log('   Optional agent stages (0-8):', OPTIONAL_AGENT_STAGES);
+    logTestStep('Monitor stage progression', {
+      coreStages: CORE_STAGES,
+      optionalAgentStages: OPTIONAL_AGENT_STAGES,
+    });
 
     let lastProgress = initialProgress;
     let stagnantCount = 0;
@@ -220,7 +237,13 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       const coreCount = coreStagesEncountered();
       const agentCount = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s)).length;
 
-      console.log(`   Progress: ${currentProgress}% | Core: ${coreCount}/${CORE_STAGES.length} | Agents: ${agentCount} | Total: ${stagesEncountered.size}`);
+      logger.debug('Stage progression update', {
+        progress: currentProgress,
+        coreCount,
+        coreTotal: CORE_STAGES.length,
+        agentCount,
+        totalStages: stagesEncountered.size,
+      });
 
       // Take screenshot at key stages
       if (stagesEncountered.has('supervisor_routing') && !stagesEncountered.has('aggregation')) {
@@ -231,7 +254,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       }
       if (stagesEncountered.has('implementation_planning')) {
         await takeScreenshot('07_implementation_planning_detected');
-        console.log('🎯 CRITICAL: implementation_planning stage detected!');
+        logger.info('Critical stage detected', { stage: 'implementation_planning' });
       }
       if (currentProgress >= 90 || coreCount === CORE_STAGES.length) {
         await takeScreenshot('08_near_complete');
@@ -245,8 +268,11 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       if (currentProgress === lastProgress) {
         stagnantCount++;
         if (stagnantCount % 6 === 0) { // Every 30 seconds
-          console.log(`   ⚠️  Progress stagnant for ${stagnantCount * 5}s at ${currentProgress}%`);
-          console.log(`      Stages so far: ${Array.from(stagesEncountered).join(', ')}`);
+          logger.warn('Progress stagnant', {
+            duration: stagnantCount * 5,
+            progress: currentProgress,
+            stagesEncountered: Array.from(stagesEncountered),
+          });
           await takeScreenshot(`10_stagnant_${stagnantCount}`);
         }
       } else {
@@ -256,79 +282,84 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     }
 
     // STEP 6: Validate stage completion
-    console.log('\n📍 Step 6: Validate stage completion');
+    logTestStep('Validate stage completion');
     const coreCount = CORE_STAGES.filter(s => stagesEncountered.has(s)).length;
     const agentCount = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s)).length;
-    console.log(`   Total stages encountered: ${stagesEncountered.size}`);
-    console.log(`   Core stages: ${coreCount}/${CORE_STAGES.length}`);
-    console.log(`   Agent stages: ${agentCount}/${OPTIONAL_AGENT_STAGES.length}`);
-    console.log(`   All stages: ${Array.from(stagesEncountered).join(', ')}`);
+    const missingCoreStages = CORE_STAGES.filter(stage => !stagesEncountered.has(stage));
+    const presentAgentStages = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s));
+
+    logger.info('Stage completion summary', {
+      totalStages: stagesEncountered.size,
+      coreCount,
+      coreTotal: CORE_STAGES.length,
+      agentCount,
+      agentTotal: OPTIONAL_AGENT_STAGES.length,
+      allStages: Array.from(stagesEncountered),
+      missingCoreStages,
+      presentAgentStages,
+    });
 
     // Check which core stages are missing (if any)
-    const missingCoreStages = CORE_STAGES.filter(stage => !stagesEncountered.has(stage));
     if (missingCoreStages.length > 0) {
-      console.error('❌ Missing CORE stages:', missingCoreStages);
+      logger.error('Missing CORE stages', { missingCoreStages });
       await takeScreenshot('11_error_missing_core_stages');
     } else {
-      console.log('✅ All 6 core stages detected!');
+      logger.info('All 6 core stages detected');
     }
 
-    // Log which agent stages appeared
-    const presentAgentStages = OPTIONAL_AGENT_STAGES.filter(s => stagesEncountered.has(s));
-    console.log(`   Agent stages selected by supervisor: ${presentAgentStages.join(', ') || 'none'}`);
-
     // STEP 7: Wait for completion
-    console.log('\n📍 Step 7: Wait for final completion');
+    logTestStep('Wait for final completion');
     try {
       await analyzePage.waitForComplete(60000);
-      console.log('✓ Analysis completed successfully');
+      logger.info('Analysis completed successfully');
       await takeScreenshot('11_completion_success');
 
       // Check for artifact link
       const artifactVisible = await analyzePage.viewArtifactButton.isVisible();
-      console.log(`   Artifact button visible: ${artifactVisible}`);
+      logger.info('Artifact button status', { visible: artifactVisible });
 
       if (artifactVisible) {
         await takeScreenshot('12_artifact_available');
       }
     } catch (error) {
-      console.error('❌ Completion timeout or error:', error);
+      logger.error('Completion timeout or error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       await takeScreenshot('13_error_completion_timeout');
 
       // Check for error messages
       const errorVisible = await analyzePage.errorMessage.isVisible().catch(() => false);
       if (errorVisible) {
         const errorText = await analyzePage.errorMessage.textContent();
-        console.error('   Error message:', errorText);
+        logger.error('Error message displayed', { errorText });
       }
     }
 
     // STEP 8: Final validation and reporting
-    console.log('\n📊 FINAL REPORT');
-    console.log('════════════════════════════════════════════════');
-    console.log(`Total SSE events received: ${sseEvents.length}`);
-    console.log(`Total stages encountered: ${stagesEncountered.size}`);
-    console.log(`Core stages: ${coreCount}/${CORE_STAGES.length}`);
-    console.log(`Agent stages: ${agentCount}/${OPTIONAL_AGENT_STAGES.length}`);
-    console.log(`Final progress: ${await analyzePage.getProgress()}%`);
-    console.log(`Screenshots saved: ${screenshotCounter}`);
-    console.log('');
-    console.log('Core stages (required):');
-    for (const stage of CORE_STAGES) {
-      const encountered = stagesEncountered.has(stage);
-      const symbol = encountered ? '✅' : '❌';
-      console.log(`  ${symbol} ${stage}`);
-    }
-    console.log('');
-    console.log('Agent stages (0-8 selected by supervisor):');
-    for (const stage of OPTIONAL_AGENT_STAGES) {
-      const encountered = stagesEncountered.has(stage);
-      const symbol = encountered ? '✅' : '⚪';
-      console.log(`  ${symbol} ${stage}`);
-    }
-    console.log('');
-    console.log('Missing CORE stages:', missingCoreStages.length === 0 ? 'None ✅' : missingCoreStages.join(', '));
-    console.log('════════════════════════════════════════════════');
+    const finalProgress = await analyzePage.getProgress();
+    const coreStageStatus = CORE_STAGES.map(stage => ({
+      stage,
+      encountered: stagesEncountered.has(stage),
+    }));
+    const agentStageStatus = OPTIONAL_AGENT_STAGES.map(stage => ({
+      stage,
+      encountered: stagesEncountered.has(stage),
+    }));
+
+    logger.info('Final report', {
+      totalSseEvents: sseEvents.length,
+      totalStages: stagesEncountered.size,
+      coreStages: coreCount,
+      coreTotal: CORE_STAGES.length,
+      agentStages: agentCount,
+      agentTotal: OPTIONAL_AGENT_STAGES.length,
+      finalProgress,
+      screenshotsSaved: screenshotCounter,
+      coreStageStatus,
+      agentStageStatus,
+      missingCoreStages,
+    });
 
     // Final assertions
     // CRITICAL: All 6 core stages MUST appear
@@ -355,7 +386,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
       events: sseEvents.slice(0, 50), // First 50 events
     };
 
-    console.log('\n📝 Event log sample:', JSON.stringify(eventLog, null, 2));
+    logger.debug('Event log sample', { eventLog });
 
     await takeScreenshot('14_final_state');
   });
@@ -363,7 +394,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
   test('should handle rapid stage transitions correctly', async ({ page }) => {
     test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
 
-    console.log('\n🧪 Testing rapid stage transition handling...\n');
+    logTestStep('Testing rapid stage transition handling');
 
     const homePage = new HomePage(page);
     await homePage.goto();
@@ -379,7 +410,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     await page.waitForTimeout(10000);
 
     const progress = await analyzePage.getProgress();
-    console.log(`✓ UI remained responsive, progress: ${progress}%`);
+    logger.info('UI remained responsive', { progress });
 
     expect(progress).toBeGreaterThanOrEqual(0);
     expect(progress).toBeLessThanOrEqual(100);
@@ -388,7 +419,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
   test('should calculate progress correctly with dynamic stage count', async ({ page }) => {
     test.skip(!!process.env.CI, 'Full workflow requires LLM processing');
 
-    console.log('\n📐 Testing progress calculation with dynamic stages...\n');
+    logTestStep('Testing progress calculation with dynamic stages');
 
     const homePage = new HomePage(page);
     await homePage.goto();
@@ -404,7 +435,7 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     await page.waitForTimeout(15000);
 
     const progress = await analyzePage.getProgress();
-    console.log(`   Current progress: ${progress}%`);
+    logger.info('Current progress', { progress });
 
     // Progress should be reasonable (0-100%)
     expect(progress).toBeGreaterThanOrEqual(0);
@@ -414,9 +445,12 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     if (progress > 0 && progress < 100) {
       // With dynamic stages (typically 6 core + 3-5 agents = 9-11 total)
       // Progress should reflect actual completion, not jump to 100% early
-      console.log(`   ✓ Progress is ${progress}%, not prematurely showing 100%`);
+      logger.info('Progress validation', {
+        progress,
+        status: 'not_prematurely_100',
+      });
     }
 
-    console.log('✓ Progress calculation appears correct');
+    logger.info('Progress calculation appears correct');
   });
 });

@@ -8,9 +8,9 @@ from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
 from app.main import app
+from tests.integration.conftest import create_complete_analysis
 
 
 @pytest.mark.asyncio
@@ -20,14 +20,12 @@ async def test_download_endpoint_returns_markdown(
     """Test that download endpoint returns markdown with proper headers."""
     # Create analysis
     analysis_id = uuid.uuid4()
-    analysis = Analysis(
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
+        title="Test Article",
         extraction_metadata={"title": "Test Article"},
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Create artifact
@@ -95,13 +93,10 @@ async def test_download_increments_count(requires_database, reset_engine_connect
     """Test that download endpoint increments download_count."""
     # Create analysis and artifact
     analysis_id = uuid.uuid4()
-    analysis = Analysis(
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     artifact_id = uuid.uuid4()
@@ -143,13 +138,10 @@ async def test_get_artifact_by_analysis_returns_latest(
 ):
     """GET /api/v1/analyze/{id}/artifact returns latest artifact metadata."""
     analysis_id = uuid.uuid4()
-    analysis = Analysis(
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     older_artifact = Artifact(
@@ -200,14 +192,12 @@ async def test_full_workflow_generates_artifact(
     # For now, we'll test that the artifact can be created and retrieved
 
     analysis_id = uuid.uuid4()
-    analysis = Analysis(
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
+        title="Full Workflow Test",
         extraction_metadata={"title": "Full Workflow Test"},
     )
-    db_session.add(analysis)
     await db_session.commit()
 
     # Simulate artifact creation (as would happen in workflow)

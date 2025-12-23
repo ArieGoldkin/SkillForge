@@ -28,6 +28,15 @@ export {
   retryWithBackoff,
 } from './test-helpers';
 
+// E2E logging utility
+export {
+  logger,
+  logSetupStep,
+  logTestStep,
+  logPerformance,
+  logError,
+} from './logger';
+
 // Legacy mock exports (kept for reference, will be removed)
 // TODO: Remove these once all tests are migrated to real API
 export {

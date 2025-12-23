@@ -74,9 +74,8 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
                 if aspect == "relevance":
                     # BELOW MINIMUM (0.4 < 0.5)
                     return {"key": "quality_test", "score": 0.4, "comment": "4/10 - not relevant"}
-                else:
-                    # High scores for other aspects
-                    return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+                # High scores for other aspects
+                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
 
             return evaluator
 
@@ -133,10 +132,10 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
             async def evaluator(run: Run, example: Example) -> dict:
                 if aspect == "relevance":
                     return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
-                elif aspect == "depth":
+                if aspect == "depth":
                     return {"key": "quality_test", "score": 0.5, "comment": "5/10"}
-                else:  # coherence
-                    return {"key": "quality_test", "score": 0.8, "comment": "8/10"}
+                # coherence
+                return {"key": "quality_test", "score": 0.8, "comment": "8/10"}
 
             return evaluator
 
@@ -183,8 +182,7 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
             async def evaluator(run: Run, example: Example) -> dict:
                 if aspect == "depth":
                     return {"key": "quality_test", "score": 0.3, "comment": "3/10 - shallow"}
-                else:
-                    return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
 
             return evaluator
 
@@ -230,8 +228,7 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
             async def evaluator(run: Run, example: Example) -> dict:
                 if aspect == "coherence":
                     return {"key": "quality_test", "score": 0.35, "comment": "3.5/10 - incoherent"}
-                else:
-                    return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
 
             return evaluator
 
@@ -388,10 +385,10 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
             async def evaluator(run: Run, example: Example) -> dict:
                 if aspect == "relevance":
                     return {"key": "quality_test", "score": 0.3, "comment": "3/10"}
-                elif aspect == "depth":
+                if aspect == "depth":
                     return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
-                else:  # coherence
-                    return {"key": "quality_test", "score": 0.35, "comment": "3.5/10"}
+                # coherence
+                return {"key": "quality_test", "score": 0.35, "comment": "3.5/10"}
 
             return evaluator
 

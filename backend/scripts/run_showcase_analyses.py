@@ -74,18 +74,41 @@ async def clear_existing_analyses(urls: list[str]) -> int:
     try:
         # Get count first
         result = subprocess.run(
-            ["docker", "exec", "skillforge-postgres-dev",
-             "psql", "-U", "dev", "-d", "skillforge", "-t", "-c", count_sql],
-            capture_output=True, text=True
+            [
+                "docker",
+                "exec",
+                "skillforge-postgres-dev",
+                "psql",
+                "-U",
+                "dev",
+                "-d",
+                "skillforge",
+                "-t",
+                "-c",
+                count_sql,
+            ],
+            capture_output=True,
+            text=True,
         )
         count = int(result.stdout.strip()) if result.returncode == 0 else 0
 
         if count > 0:
             # Delete
             subprocess.run(
-                ["docker", "exec", "skillforge-postgres-dev",
-                 "psql", "-U", "dev", "-d", "skillforge", "-c", delete_sql],
-                capture_output=True, text=True
+                [
+                    "docker",
+                    "exec",
+                    "skillforge-postgres-dev",
+                    "psql",
+                    "-U",
+                    "dev",
+                    "-d",
+                    "skillforge",
+                    "-c",
+                    delete_sql,
+                ],
+                capture_output=True,
+                text=True,
             )
             print(f"✓ Cleared {count} existing analyses")
         return count
@@ -100,11 +123,7 @@ async def trigger_analysis(client: httpx.AsyncClient, url: str) -> dict:
     Returns response data or error dict.
     """
     try:
-        response = await client.post(
-            f"{API_BASE_URL}/analyze",
-            json={"url": url},
-            timeout=30.0
-        )
+        response = await client.post(f"{API_BASE_URL}/analyze", json={"url": url}, timeout=30.0)
 
         if response.status_code in (200, 201):
             data = response.json()
@@ -129,7 +148,9 @@ async def trigger_analysis(client: httpx.AsyncClient, url: str) -> dict:
         }
 
 
-async def wait_for_analysis(client: httpx.AsyncClient, analysis_id: str, timeout: int = 300) -> dict:
+async def wait_for_analysis(
+    client: httpx.AsyncClient, analysis_id: str, timeout: int = 300
+) -> dict:
     """Wait for an analysis to complete by polling the status endpoint.
 
     Args:
@@ -226,7 +247,9 @@ def list_golden_urls():
 
 async def main():
     parser = argparse.ArgumentParser(description="Run showcase analyses through the pipeline")
-    parser.add_argument("--count", type=int, default=5, help="Number of analyses to run (default: 5)")
+    parser.add_argument(
+        "--count", type=int, default=5, help="Number of analyses to run (default: 5)"
+    )
     parser.add_argument("--clear-first", action="store_true", help="Clear existing analyses first")
     parser.add_argument("--no-wait", action="store_true", help="Don't wait for completion")
     parser.add_argument("--list", action="store_true", help="List all golden dataset URLs")
@@ -239,7 +262,7 @@ async def main():
         return
 
     # Select URLs
-    urls = SHOWCASE_URLS if args.all else SHOWCASE_URLS[:args.count]
+    urls = SHOWCASE_URLS if args.all else SHOWCASE_URLS[: args.count]
 
     print("=" * 60)
     print("🚀 SkillForge Showcase Analysis Runner")

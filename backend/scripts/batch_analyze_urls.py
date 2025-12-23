@@ -29,7 +29,7 @@ from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
 from app.shared.services.extraction import JinaReader
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -38,8 +38,14 @@ URLS_TO_ANALYZE = [
     # ACE Paper - Agentic Context Engineering for self-improving LLMs
     {"url": "https://arxiv.org/abs/2510.04618", "type": "research_paper"},  # ACE: Evolving Contexts
     # AI Coding resources - arXiv HTML versions have full content
-    {"url": "https://arxiv.org/abs/2508.11126", "type": "research_paper"},  # AI Agentic Programming Survey
-    {"url": "https://arxiv.org/abs/2511.04427", "type": "research_paper"},  # AI-Assisted Coding Study
+    {
+        "url": "https://arxiv.org/abs/2508.11126",
+        "type": "research_paper",
+    },  # AI Agentic Programming Survey
+    {
+        "url": "https://arxiv.org/abs/2511.04427",
+        "type": "research_paper",
+    },  # AI-Assisted Coding Study
     {"url": "https://arxiv.org/abs/2510.12399", "type": "research_paper"},  # Vibe Coding Survey
     {"url": "https://arxiv.org/abs/2511.18538", "type": "research_paper"},  # AI Coding Paper
     {"url": "https://github.com/ghuntley/how-to-build-a-coding-agent", "type": "tutorial"},
@@ -75,8 +81,7 @@ COMPARISON_URLS = [
 async def load_fixture(fixture_id: str) -> dict[str, Any] | None:
     """Load a fixture document by ID."""
     fixtures_path = (
-        Path(__file__).parent.parent
-        / "tests/smoke/retrieval/fixtures/documents_expanded.json"
+        Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures/documents_expanded.json"
     )
 
     with fixtures_path.open() as f:
@@ -144,12 +149,8 @@ async def cleanup_existing(url: str, actual_url: str | None = None) -> None:
             logger.info(f"  - {title[:50] if title else 'Untitled'}")
 
         for aid in old_ids:
-            await session.execute(
-                delete(AnalysisChunk).where(AnalysisChunk.analysis_id == aid)
-            )
-            await session.execute(
-                delete(Artifact).where(Artifact.analysis_id == aid)
-            )
+            await session.execute(delete(AnalysisChunk).where(AnalysisChunk.analysis_id == aid))
+            await session.execute(delete(Artifact).where(Artifact.analysis_id == aid))
         await session.execute(delete(Analysis).where(Analysis.id.in_(old_ids)))
         await session.commit()
         logger.info(f"Cleaned up {len(old_ids)} existing entries for: {target_url[:50]}")
@@ -218,17 +219,13 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
             "extraction_metadata": extraction_metadata,
         }
 
-        result = await analysis_workflow.ainvoke(
-            initial_state,
-            {"configurable": {"thread_id": analysis_id}}
-        )
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(initial_state, {"configurable": {"thread_id": analysis_id}})
 
         # Update status
         async with AsyncSessionLocal() as session:
             await session.execute(
-                update(Analysis)
-                .where(Analysis.id == UUID(analysis_id))
-                .values(status="complete")
+                update(Analysis).where(Analysis.id == UUID(analysis_id)).values(status="complete")
             )
             await session.commit()
 
@@ -313,7 +310,7 @@ async def main() -> int:
         logger.info("")
         logger.info("DRY RUN - Would process these URLs:")
         for i, url_info in enumerate(urls_to_process):
-            logger.info(f"  {i+1}. [{url_info['type']}] {url_info['url'][:60]}")
+            logger.info(f"  {i + 1}. [{url_info['type']}] {url_info['url'][:60]}")
         logger.info("")
         logger.info("No changes made. Remove --dry-run to execute.")
         return 0

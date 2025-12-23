@@ -13,25 +13,13 @@ def migrate_imports(file_path: Path) -> bool:
         original_content = content
 
         # Pattern 1: from app.db.models import ...
-        content = re.sub(
-            r'from app\.models import',
-            'from app.db.models import',
-            content
-        )
+        content = re.sub(r"from app\.models import", "from app.db.models import", content)
 
         # Pattern 2: from app.db.models.module import ...
-        content = re.sub(
-            r'from app\.models\.',
-            'from app.db.models.',
-            content
-        )
+        content = re.sub(r"from app\.models\.", "from app.db.models.", content)
 
         # Pattern 3: import app.db.models (rare but possible)
-        content = re.sub(
-            r'import app\.models',
-            'import app.db.models',
-            content
-        )
+        content = re.sub(r"import app\.models", "import app.db.models", content)
 
         if content != original_content:
             file_path.write_text(content, encoding="utf-8")
@@ -54,8 +42,7 @@ def main():
     # Exclude virtual env, caches, and node_modules
     exclude_patterns = [".venv", "node_modules", "__pycache__", ".pytest_cache", ".git"]
     python_files = [
-        f for f in python_files
-        if not any(pattern in str(f) for pattern in exclude_patterns)
+        f for f in python_files if not any(pattern in str(f) for pattern in exclude_patterns)
     ]
 
     # Process files

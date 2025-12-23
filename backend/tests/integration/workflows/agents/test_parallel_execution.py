@@ -11,7 +11,7 @@ import pytest
 
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 EXPECTED_AGENT_COUNT = 8
 
@@ -60,8 +60,9 @@ async def test_parallel_agents_all_8_agents_execute(
         },
     }
 
+    workflow = create_analysis_workflow()
     result = await asyncio.wait_for(
-        analysis_workflow.ainvoke(
+        workflow.ainvoke(
             {
                 "url": test_url,
                 "analysis_id": analysis_id,
@@ -131,8 +132,9 @@ async def test_parallel_agents_error_isolation_one_failure_does_not_crash_others
         },
     }
 
+    workflow = create_analysis_workflow()
     result = await asyncio.wait_for(
-        analysis_workflow.ainvoke(
+        workflow.ainvoke(
             {
                 "url": test_url,
                 "analysis_id": analysis_id,

@@ -87,9 +87,9 @@ class DocsSynthesisSchema(BaseModel):
     ai_assistant_prompt: AIAssistantPrompt = Field(
         description=(
             "Pre-formatted context for AI coding assistants (Claude, Cursor, Copilot). "
-            "Includes: context (architectural background), implementation_steps (5-10 ordered steps), "
-            "code_snippets (max 5 by purpose), file_structure (with purpose annotations), "
-            "success_criteria (3-7 testable outcomes). "
+            "Includes: context (architectural background), implementation_steps "
+            "(5-10 ordered steps), code_snippets (max 5 by purpose), file_structure "
+            "(with purpose annotations), success_criteria (3-7 testable outcomes). "
             "Optimized for one-shot code generation with high accuracy."
         )
     )
@@ -162,10 +162,16 @@ class DocsSynthesisSchema(BaseModel):
             )
             raise ValueError(msg)
         if len(v.critical_commands) > MAX_CRITICAL_COMMANDS:
-            msg = f"critical_commands must have max {MAX_CRITICAL_COMMANDS} items, got {len(v.critical_commands)}"
+            msg = (
+                f"critical_commands must have max {MAX_CRITICAL_COMMANDS} items, "
+                f"got {len(v.critical_commands)}"
+            )
             raise ValueError(msg)
         if len(v.files_to_modify) > MAX_FILES_TO_MODIFY:
-            msg = f"files_to_modify must have max {MAX_FILES_TO_MODIFY} items, got {len(v.files_to_modify)}"
+            msg = (
+                f"files_to_modify must have max {MAX_FILES_TO_MODIFY} items, "
+                f"got {len(v.files_to_modify)}"
+            )
             raise ValueError(msg)
         if len(v.gotchas) > MAX_GOTCHAS:
             msg = f"gotchas must have max {MAX_GOTCHAS} items, got {len(v.gotchas)}"
@@ -177,7 +183,10 @@ class DocsSynthesisSchema(BaseModel):
     def validate_tldr_key_takeaways(cls, v: TLDRSection) -> TLDRSection:
         """Validate that TLDR key_takeaways has 3-5 items."""
         if not MIN_TLDR_TAKEAWAYS <= len(v.key_takeaways) <= MAX_TLDR_TAKEAWAYS:
-            msg = f"tldr.key_takeaways must have {MIN_TLDR_TAKEAWAYS}-{MAX_TLDR_TAKEAWAYS} items, got {len(v.key_takeaways)}"
+            msg = (
+                f"tldr.key_takeaways must have {MIN_TLDR_TAKEAWAYS}-{MAX_TLDR_TAKEAWAYS} items, "
+                f"got {len(v.key_takeaways)}"
+            )
             raise ValueError(msg)
         return v
 
@@ -187,7 +196,8 @@ class DocsSynthesisSchema(BaseModel):
         """Validate that ai_assistant_prompt list fields have correct lengths."""
         if not MIN_IMPLEMENTATION_STEPS <= len(v.implementation_steps) <= MAX_IMPLEMENTATION_STEPS:
             msg = (
-                f"ai_assistant_prompt.implementation_steps must have {MIN_IMPLEMENTATION_STEPS}-{MAX_IMPLEMENTATION_STEPS} items, "
+                f"ai_assistant_prompt.implementation_steps must have "
+                f"{MIN_IMPLEMENTATION_STEPS}-{MAX_IMPLEMENTATION_STEPS} items, "
                 f"got {len(v.implementation_steps)}"
             )
             raise ValueError(msg)
@@ -199,7 +209,8 @@ class DocsSynthesisSchema(BaseModel):
             raise ValueError(msg)
         if not MIN_SUCCESS_CRITERIA <= len(v.success_criteria) <= MAX_SUCCESS_CRITERIA:
             msg = (
-                f"ai_assistant_prompt.success_criteria must have {MIN_SUCCESS_CRITERIA}-{MAX_SUCCESS_CRITERIA} items, "
+                f"ai_assistant_prompt.success_criteria must have "
+                f"{MIN_SUCCESS_CRITERIA}-{MAX_SUCCESS_CRITERIA} items, "
                 f"got {len(v.success_criteria)}"
             )
             raise ValueError(msg)

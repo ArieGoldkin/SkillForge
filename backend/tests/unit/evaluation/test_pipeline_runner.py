@@ -478,11 +478,10 @@ class TestPipelineRunner:
 
         # Run with mocked search (will return empty results)
         async def run_test():
-            result = await runner.run_from_fixtures(
+            return await runner.run_from_fixtures(
                 fixtures_dir=tmp_path,
                 difficulties=[Difficulty.EASY],
             )
-            return result
 
         result = asyncio.get_event_loop().run_until_complete(run_test())
 

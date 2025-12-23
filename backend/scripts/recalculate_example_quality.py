@@ -163,9 +163,7 @@ def generate_report(results: list[ScoringResult]) -> ScoringReport:
 
     # Calculate averages
     avg_old = sum(r.old_score for r in results) / len(results) if results else 0.0
-    avg_new = (
-        sum(r.new_score for r in successful) / len(successful) if successful else 0.0
-    )
+    avg_new = sum(r.new_score for r in successful) / len(successful) if successful else 0.0
 
     # Score distribution
     distribution: dict[str, int] = {}
@@ -212,7 +210,9 @@ def print_report(report: ScoringReport) -> None:
         print(f"\n⚠️  Low Quality Examples (< 0.70): {len(report.low_quality_examples)}")
         print("-" * 70)
         for r in report.low_quality_examples[:10]:  # Show top 10
-            print(f"   ID: {r.example_id[:8]}... | Type: {r.agent_type:20} | Score: {r.new_score:.2f}")
+            print(
+                f"   ID: {r.example_id[:8]}... | Type: {r.agent_type:20} | Score: {r.new_score:.2f}"
+            )
         if len(report.low_quality_examples) > 10:
             print(f"   ... and {len(report.low_quality_examples) - 10} more")
 
@@ -261,9 +261,7 @@ def save_report_json(report: ScoringReport, path: Path) -> None:
     print(f"\n📄 Report saved to: {path}")
 
 
-async def update_database_scores(
-    results: list[ScoringResult], dry_run: bool = True
-) -> int:
+async def update_database_scores(results: list[ScoringResult], dry_run: bool = True) -> int:
     """Update quality scores in the database."""
     if dry_run:
         print("\n🔍 DRY RUN - No database updates performed")
@@ -371,7 +369,9 @@ async def main() -> None:
     # Score all examples
     results: list[ScoringResult] = []
     for i, example in enumerate(examples, 1):
-        print(f"\r   Scoring {i}/{len(examples)}: {example.agent_type[:20]:20}...", end="", flush=True)
+        print(
+            f"\r   Scoring {i}/{len(examples)}: {example.agent_type[:20]:20}...", end="", flush=True
+        )
         result = await score_example(example)
         results.append(result)
 

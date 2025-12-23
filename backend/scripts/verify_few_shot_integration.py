@@ -97,8 +97,7 @@ async def test_semantic_search(agent_type: str, query: str):
         )
 
         print(
-            f"\nRetrieved {len(result.examples)} examples "
-            f"from {result.total_candidates} candidates"
+            f"\nRetrieved {len(result.examples)} examples from {result.total_candidates} candidates"
         )
 
         if result.avg_quality_score:
@@ -114,7 +113,11 @@ async def test_semantic_search(agent_type: str, query: str):
 
             for i, example in enumerate(result.examples, 1):
                 relevance = 1 - example.similarity_distance
-                summary = example.input_summary[:55] + "..." if len(example.input_summary) > 55 else example.input_summary
+                summary = (
+                    example.input_summary[:55] + "..."
+                    if len(example.input_summary) > 55
+                    else example.input_summary
+                )
                 print(f"{i:<6} {example.quality_score:<10.2f} {relevance:<12.3f} {summary}")
         else:
             print("No examples found")
@@ -143,32 +146,21 @@ async def test_token_budget_enforcement():
         )
 
         print(f"\nRequested: 20[/bold] examples")
-        print(
-            f"Retrieved: {len(result.examples)}[/bold] examples"
-        )
+        print(f"Retrieved: {len(result.examples)}[/bold] examples")
 
         # Test truncation
         truncated = _truncate_examples_to_budget(result, MAX_EXAMPLE_TOKENS)
-        print(
-            f"After truncation: {len(truncated.examples)}[/bold] examples"
-        )
+        print(f"After truncation: {len(truncated.examples)}[/bold] examples")
 
         # Format and estimate tokens
         formatted = _format_examples_for_prompt(truncated)
         estimated_tokens = _estimate_token_count(formatted)
-        print(
-            f"Estimated tokens: {estimated_tokens}[/bold] "
-            f"(limit: {MAX_EXAMPLE_TOKENS})"
-        )
+        print(f"Estimated tokens: {estimated_tokens}[/bold] (limit: {MAX_EXAMPLE_TOKENS})")
 
         if estimated_tokens <= MAX_EXAMPLE_TOKENS:
-            print(
-                "✓ Token budget respected"
-            )
+            print("✓ Token budget respected")
         else:
-            print(
-                f"✗ Token budget exceeded by {estimated_tokens - MAX_EXAMPLE_TOKENS}"
-            )
+            print(f"✗ Token budget exceeded by {estimated_tokens - MAX_EXAMPLE_TOKENS}")
 
         # Show formatted examples preview
         print("\nFormatted Prompt Preview:[/bold]")
@@ -242,9 +234,7 @@ async def test_agent_creation_variants():
                 f"(+{_estimate_token_count(treatment_agent.system_prompt) - _estimate_token_count(control_agent.system_prompt)}[/bold] tokens)"
             )
         else:
-            print(
-                "⚠ No examples found for this query"
-            )
+            print("⚠ No examples found for this query")
 
         return has_examples
 

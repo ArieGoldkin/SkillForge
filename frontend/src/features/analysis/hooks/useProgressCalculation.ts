@@ -176,17 +176,18 @@ export function useProgressCalculation(
         ([stage, status]) => expectedStages.has(stage) && status?.status === 'complete'
       ).length
 
-      const expectedFailedStages = stageStatusEntries.filter(
-        ([stage, status]) => expectedStages.has(stage) && status?.status === 'failed'
-      ).length
-
-      // Only count EXPECTED stages that have FINISHED (complete, failed)
+      // Only count EXPECTED stages that have FINISHED (complete, skipped)
+      // Failed stages are tracked separately for error display, not counted toward progress
       // Skipped stages that were never expected don't count
-      finishedStages = expectedCompletedStages + expectedFailedStages
+      const expectedSkippedStages = stageStatusEntries.filter(
+        ([stage, status]) => expectedStages.has(stage) && status?.status === 'skipped'
+      ).length
+      finishedStages = expectedCompletedStages + expectedSkippedStages
     } else {
-      // Fallback: No supervisor info available, count all finished stages (old behavior)
+      // Fallback: No supervisor info available, count all finished stages
+      // Failed stages are tracked separately for error display, not counted toward progress
       // This maintains backward compatibility with tests and early events
-      finishedStages = completedStages + failedStages + skippedStages
+      finishedStages = completedStages + skippedStages
     }
 
     // ========================================================================

@@ -64,9 +64,10 @@ class TestRegistryToolFiltering:
         # Filter tools for dependency_mapper
         filtered = tool_registry.filter_tools(all_tools, "dependency_mapper")
 
-        # Dependency mapper capabilities: get_package (npm/pypi), get_repo (github)
+        # Dependency mapper capabilities: get-npm-package-details, get-pypi-package-details, get_repo
         tool_names = [t.name for t in filtered]
-        assert "get_package" in tool_names  # Matches npm and pypi tools
+        assert "get-npm-package-details" in tool_names
+        assert "get-pypi-package-details" in tool_names
         assert "get_repo" in tool_names
         # search_code is NOT in dependency_mapper's capabilities
         assert "search_code" not in tool_names

@@ -9,10 +9,7 @@ from datetime import UTC, datetime
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.types import AnalysisID, EventData
-from app.shared.services.messaging.broadcaster_factory import (
-    BroadcasterBackend,
-    get_broadcaster,
-)
+from app.shared.services.messaging.broadcaster_factory import BroadcasterBackend, get_broadcaster
 from app.shared.services.persistence.progress import persist_progress_event_async
 
 logger = get_logger(__name__)
@@ -82,6 +79,79 @@ async def emit_streaming_event(
         event_type=event_type,
         stage=stage,
         status=status,
+    )
+
+
+async def emit_error_event(
+    analysis_id: AnalysisID,
+    stage: str,
+    error: str | Exception,
+    error_code: str | None = None,
+    **kwargs: object,
+) -> None:
+    """Emit standardized error event for workflow failures.
+
+    This is the ONLY way to emit error events. All workflow nodes
+    must use this function for consistency.
+
+    Always emits `type="error"` with `status="failed"` to ensure
+    frontend can reliably detect failures.
+
+    Args:
+        analysis_id: UUID of the analysis (as string)
+        stage: Stage name where error occurred (e.g., "extraction", "quality_validation")
+        error: Error message or Exception object (will be converted to string)
+        error_code: Optional error code (e.g., "EXTRACTION_FAILED", "QUALITY_GATE_FAILED")
+        **kwargs: Additional event data (e.g., agent_type, quality_scores, retry_count)
+
+    Example:
+        ```python
+        await emit_error_event(
+            analysis_id="123e4567-e89b-12d3-a456-426614174000",
+            stage="extraction",
+            error="Failed to extract content: timeout",
+            error_code="EXTRACTION_FAILED",
+            url=url,
+            retry_count=1,
+        )
+        ```
+
+    """
+    # Convert Exception to string if needed
+    error_message = str(error) if isinstance(error, Exception) else error
+
+    # Build error event data
+    event_data: EventData = {
+        "type": "error",
+        "analysis_id": analysis_id,
+        "stage": stage,
+        "status": "failed",
+        "timestamp": datetime.now(UTC).isoformat(),
+        "error": error_message,
+    }
+
+    # Add error_code if provided
+    if error_code:
+        event_data["error_code"] = error_code
+
+    # Add any additional context
+    event_data.update(kwargs)
+
+    # Publish to broadcaster
+    channel = f"workflow:{analysis_id}"
+    broadcaster = await get_broadcaster(_get_broadcaster_backend())
+    await broadcaster.publish(channel, event_data)
+
+    # Persist to database (non-blocking, fire-and-forget)
+    # This enables historical progress tracking and audit trails
+    persist_progress_event_async(event_data)
+
+    logger.info(
+        "sse_error_event_emitted",
+        analysis_id=analysis_id,
+        stage=stage,
+        error_code=error_code,
+        error_message=error_message[:100],  # Truncate for logging
     )
 
 

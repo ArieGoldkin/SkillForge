@@ -66,6 +66,7 @@ async def main() -> int:
     )
 
     # We only backfill rows that still use placeholder hosts.
+    # Note: host_predicate uses hardcoded hosts, not user input, so SQL injection is not possible
     host_predicate = " OR ".join(
         ["url LIKE :h0"] + [f"url LIKE :h{i}" for i in range(1, len(placeholder_hosts))]
     )
@@ -76,16 +77,16 @@ async def main() -> int:
     skipped_unknown_doc_ids = 0
 
     async with AsyncSessionLocal() as session:
-        result = await session.execute(
-            text(
-                f"""
+        # SQL injection warning suppressed: host_predicate uses hardcoded hosts only
+        query = f"""
                 SELECT id, url
                 FROM analyses
-                WHERE status = 'completed'
+                WHERE status = 'complete'
                   AND ({host_predicate})
                 ORDER BY created_at
-                """
-            ),
+                """  # noqa: S608
+        result = await session.execute(
+            text(query),
             params,
         )
         rows = list(result.fetchall())
@@ -142,7 +143,9 @@ async def main() -> int:
                 ),
                 {"analysis_id": analysis_id, "old_url": old_url, "new_url": new_url},
             )
-            updated_artifacts += int(artifact_result.rowcount or 0)
+            # rowcount is available on Result for DML statements in SQLAlchemy 2.0
+            rowcount = getattr(artifact_result, "rowcount", 0) or 0
+            updated_artifacts += int(rowcount)
 
         await session.commit()
 

@@ -210,7 +210,10 @@ docker-compose logs backend | grep "trace_id"
 
 ```
 [info] agent_node_started agent_type=tech_comparator analysis_id=397a1f79-70ea-438b-852c-df28e05ccdf4 trace_id=4f6b004a-641e-49e1-8ab1-d294a358c0c5
-[warning] agent_node_cancelled agent_type=tech_comparator analysis_id=397a1f79-70ea-438b-852c-df28e05ccdf4 exception_type=GeneratorExit duration_seconds=45.2 step_timeout=90.0 trace_id=4f6b004a-641e-49e1-8ab1-d294a358c0c5 handled_gracefully=True
+[warning] agent_node_cancelled agent_type=tech_comparator \
+  analysis_id=397a1f79-70ea-438b-852c-df28e05ccdf4 \
+  exception_type=GeneratorExit duration_seconds=45.2 step_timeout=90.0 \
+  trace_id=4f6b004a-641e-49e1-8ab1-d294a358c0c5 handled_gracefully=True
 ```
 
 ---

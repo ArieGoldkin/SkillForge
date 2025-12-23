@@ -55,8 +55,8 @@ class LearningSynthesisSchema(BaseModel):
         description=(
             "Fundamental concepts with pedagogical metadata. "
             "Used by tutor system for curriculum sequencing and knowledge graph building. "
-            "Each concept includes: name, definition, why_it_matters, related_concepts, complexity_level. "
-            "Must have 3-7 concepts for balanced learning scope."
+            "Each concept includes: name, definition, why_it_matters, related_concepts, "
+            "complexity_level. Must have 3-7 concepts for balanced learning scope."
         ),
         min_length=3,
         max_length=7,
@@ -65,8 +65,8 @@ class LearningSynthesisSchema(BaseModel):
     exercises: list[Exercise] = Field(
         description=(
             "Hands-on coding exercises with progressive difficulty. "
-            "Bridges theory to practice with: title, difficulty, description, hints, solution, learning_objectives. "
-            "Must have 2-4 exercises for practical skill building. "
+            "Bridges theory to practice with: title, difficulty, description, hints, solution, "
+            "learning_objectives. Must have 2-4 exercises for practical skill building. "
             "Order by difficulty: Beginner → Intermediate → Advanced → Expert."
         ),
         min_length=2,

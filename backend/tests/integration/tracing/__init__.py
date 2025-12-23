@@ -1,1 +1,1 @@
-"""Integration tests for LangSmith tracing best practices."""
+"""Integration tests for Langfuse tracing best practices."""

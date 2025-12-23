@@ -30,7 +30,6 @@ class TestImportWithoutDatabaseUrl:
         [
             "app.main",
             "app.api.v1.analysis.endpoints",
-            "app.api.v1.analysis.workflow_runner",
             "app.domains.analysis.workflows.analysis",
             "app.domains.analysis.workflows.tasks",
             # Models should import Base without triggering DATABASE_URL validation

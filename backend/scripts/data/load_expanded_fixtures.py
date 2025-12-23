@@ -140,7 +140,7 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
             id=analysis_id,
             url=f"https://fixtures.skillforge.local/{analysis_name}",
             content_type="fixture_dataset",
-            status="completed",
+            status="complete",
             title="Context Engineering for AI Agents",  # Title for E2E tests
         )
         session.add(analysis)

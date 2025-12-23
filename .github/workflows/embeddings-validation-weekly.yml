@@ -85,7 +85,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-unit-tests' }}
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
         run: |
           echo "Using real embeddings: ${{ inputs.use_real_embeddings != false }}"
@@ -96,7 +96,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-unit-tests' }}
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
         run: |
           # Run full evaluation pipeline
@@ -138,7 +138,6 @@ jobs:
           path: |
             backend/evaluation_results_real.json
             backend/embeddings_validation_report.md
-          compression-level: 9
           retention-days: 90
           if-no-files-found: warn
 

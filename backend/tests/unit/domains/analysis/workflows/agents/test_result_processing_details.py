@@ -17,8 +17,7 @@ from app.domains.analysis.workflows.agents.result_processing import (
 @pytest.fixture
 def mock_session():
     """Mock database session."""
-    session = AsyncMock(spec=AsyncSession)
-    return session
+    return AsyncMock(spec=AsyncSession)
 
 
 @pytest.fixture

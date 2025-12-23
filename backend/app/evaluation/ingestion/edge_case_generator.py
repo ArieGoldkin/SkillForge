@@ -225,7 +225,9 @@ class EdgeCaseGenerator:
                 category="very_short",
                 difficulty="hard",
                 notes=template["note"],
-                expected_error="Query too short for meaningful analysis. Please provide more context.",
+                expected_error=(
+                    "Query too short for meaningful analysis. Please provide more context."
+                ),
             )
             examples.append(example)
 
@@ -564,7 +566,9 @@ class EdgeCaseGenerator:
                 "created_at": datetime.now(UTC).isoformat(),
                 "updated_at": datetime.now(UTC).isoformat(),
                 "release_tag": "draft",
-                "description": f"Edge case examples for agent robustness testing ({len(examples)} examples)",
+                "description": (
+                    f"Edge case examples for agent robustness testing ({len(examples)} examples)"
+                ),
                 "maintainers": ["edge_case_generator"],
             },
             "examples": examples,

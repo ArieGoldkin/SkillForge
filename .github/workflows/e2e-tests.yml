@@ -85,7 +85,7 @@ jobs:
               - 'backend/poetry.lock'
               - 'backend/alembic/**'
               - '.github/workflows/e2e-tests.yml'
-              - 'docker-compose.e2e.yml'
+              - 'docker-compose.test.yml'
               - 'Dockerfile*'
               # Explicitly exclude docs
               - '!**/*.md'
@@ -191,26 +191,109 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Build and start E2E stack (lightweight mode)
+      - name: Create .auth directory for storageState
+        working-directory: ./frontend
+        run: |
+          mkdir -p .auth
+          echo "Created .auth directory for Playwright storageState"
+
+      - name: Create .env.test from template (lightweight mode)
+        working-directory: ./backend
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          # Create comprehensive .env.test for CI (lightweight E2E mode)
+          cat > .env.test << EOF
+          # =============================================================================
+          # CI Test Environment Configuration (Lightweight E2E Mode)
+          # =============================================================================
+
+          # =============================================================================
+          # Database Configuration
+          # =============================================================================
+          POSTGRES_USER=dev
+          POSTGRES_PASSWORD=dev
+          POSTGRES_DB=skillforge-test
+
+          # =============================================================================
+          # Redis Configuration
+          # =============================================================================
+          REDIS_PASSWORD=redis-dev
+
+          # =============================================================================
+          # LLM API Keys (From GitHub Secrets)
+          # =============================================================================
+          OPENAI_API_KEY=$OPENAI_API_KEY
+          JINA_API_KEY=$JINA_API_KEY
+
+          # =============================================================================
+          # Langfuse Observability (Disabled for lightweight E2E)
+          # =============================================================================
+          LANGFUSE_ENABLED=false
+          LANGFUSE_HOST=http://langfuse-web:3000
+
+          # Langfuse Database Configuration
+          LANGFUSE_POSTGRES_USER=langfuse
+          LANGFUSE_POSTGRES_PASSWORD=langfuse
+          LANGFUSE_POSTGRES_DB=langfuse
+
+          # Langfuse Redis Configuration
+          LANGFUSE_REDIS_PASSWORD=redis-dev
+
+          # Clickhouse Configuration
+          CLICKHOUSE_USER=default
+          CLICKHOUSE_PASSWORD=langfuse
+
+          # MinIO Configuration
+          MINIO_ROOT_USER=minioadmin
+          MINIO_ROOT_PASSWORD=minioadmin
+
+          # =============================================================================
+          # Application Configuration
+          # =============================================================================
+          LLM_MODEL=gpt-4o-mini
+          ENVIRONMENT=test
+          LOG_LEVEL=INFO
+
+          # =============================================================================
+          # Security (Test Environment)
+          # =============================================================================
+          NEXTAUTH_SECRET=test-secret-ci-e2e
+          NEXTAUTH_SALT=test-salt-ci-e2e
+          LANGFUSE_ENCRYPTION_KEY=test-key-ci-e2e
+          LANGFUSE_INIT_USER_PASSWORD=test
+
+          # =============================================================================
+          # Workflow Control (Lightweight Mode)
+          # =============================================================================
+          SKILLFORGE_E2E_DISABLE_WORKFLOW=true
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS=true
+          EOF
+
+          echo "✓ Created comprehensive .env.test for CI lightweight E2E mode"
+
+      - name: Build and start test environment (lightweight mode)
         run: |
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
 
-          # Start services WITHOUT API keys - workflow disabled
-          docker compose -f docker-compose.e2e.yml up -d --build \
-            postgres backend-migrate backend backend-seed frontend-e2e
+          # Start ONLY essential services for lightweight E2E (no Langfuse stack)
+          # Langfuse is disabled in .env.test, so don't waste CI resources starting it
+          docker compose -f docker-compose.test.yml up -d --build \
+            postgres redis backend frontend backend-seed
 
-      - name: Wait for E2E stack to be ready
+      - name: Wait for test environment to be ready
         run: |
           echo "Waiting for backend health check..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:8500/api/v1/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:8501/api/v1/health >/dev/null 2>&1; then
               echo "✓ Backend healthy after $i attempts"
               break
             fi
             if [ $i -eq 60 ]; then
               echo "✗ Backend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs backend
+              docker compose -f docker-compose.test.yml logs backend
               exit 1
             fi
             sleep 2
@@ -224,21 +307,51 @@ jobs:
             fi
             if [ $i -eq 30 ]; then
               echo "✗ Frontend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs frontend-e2e
+              docker compose -f docker-compose.test.yml logs frontend
               exit 1
             fi
             sleep 2
           done
 
-      - name: Run Playwright E2E tests (lightweight)
+      - name: Run Playwright tests (lightweight)
         working-directory: ./frontend
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:5174
-          API_BASE_URL: http://localhost:8500
+          API_BASE_URL: http://localhost:8501
           # Signal to tests that LLM is disabled
           E2E_LLM_DISABLED: "true"
-        run: npx playwright test --project=chromium
+        run: |
+          # Track test execution time for performance metrics
+          echo "## E2E Test Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          START_TIME=$(date +%s)
+          
+          # Global setup will create storageState.json
+          # Verify it was created after test run
+          npx playwright test --project=chromium
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          echo "| Test Execution Time | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workers (Parallel) | 4 |" >> $GITHUB_STEP_SUMMARY
+          echo "| storageState Optimization | Enabled |" >> $GITHUB_STEP_SUMMARY
+          
+          # Validate storageState was created
+          if [ -f ".auth/storageState.json" ]; then
+            STATE_SIZE=$(stat -f%z .auth/storageState.json 2>/dev/null || stat -c%s .auth/storageState.json 2>/dev/null || echo 'unknown')
+            echo "✅ storageState.json created successfully (${STATE_SIZE} bytes)"
+            echo "| storageState File Size | ${STATE_SIZE} bytes |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  storageState.json not found (tests may still pass, but optimization not active)"
+            echo "| storageState File Size | Not created |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** With storageState optimization and 4 parallel workers, expected 50-70% time reduction vs sequential execution." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v6
@@ -248,7 +361,6 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
-          compression-level: 9
           if-no-files-found: warn
 
       - name: Upload test results on failure
@@ -264,14 +376,17 @@ jobs:
       - name: Collect Docker logs on failure
         if: failure()
         run: |
-          echo "## Docker Compose Logs (Lightweight E2E)" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Compose Logs (Test Environment)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          docker compose -f docker-compose.e2e.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          docker compose -f docker-compose.test.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Cleanup E2E stack
+      - name: Cleanup test environment
         if: always()
-        run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans
+        run: |
+          docker compose -f docker-compose.test.yml down -v --remove-orphans
+          # Clean up any env files
+          rm -f backend/.env.test
 
   # ===========================================================================
   # FULL E2E WITH LLM: Tests actual AI workflow integration
@@ -318,12 +433,52 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
+      - name: Create .auth directory for storageState
+        working-directory: ./frontend
+        run: |
+          mkdir -p .auth
+          echo "Created .auth directory for Playwright storageState"
+
+      - name: Create .env.test from template (with LLM mode)
+        working-directory: ./backend
+        env:
+          # Pass secrets to environment for .env.test creation
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          # Copy template as base
+          cp .env.test.example .env.test
+
+          # Set restricted permissions (600 = owner read/write only)
+          chmod 600 .env.test
+
+          # Append CI configuration with real API keys for LLM tests
+          cat >> .env.test << EOF
+
+          # =============================================================================
+          # CI/CD Overrides (Full E2E with LLM)
+          # =============================================================================
+          ENVIRONMENT=test
+          LOG_LEVEL=INFO
+
+          # Enable workflow execution with real API keys
+          SKILLFORGE_E2E_DISABLE_WORKFLOW=false
+
+          # Real API keys for LLM integration tests
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          JINA_API_KEY=${JINA_API_KEY}
+
+          # Use real embeddings (not deterministic)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS=false
+          EOF
+
+          echo "✓ Created .env.test for full E2E mode with real API keys"
+
       - name: Build and start E2E stack (with LLM + Langfuse)
         env:
           # Pass secrets to Docker Compose via environment
           # These are ONLY available when security-check passes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: |
           export DOCKER_BUILDKIT=1
@@ -335,9 +490,6 @@ jobs:
           chmod 600 .env.e2e
           cat > .env.e2e << EOF
           OPENAI_API_KEY=${OPENAI_API_KEY}
-          LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
-          LANGCHAIN_TRACING_V2=true
-          LANGCHAIN_PROJECT=skillforge-e2e-ci
           JINA_API_KEY=${JINA_API_KEY}
           LLM_MODEL=gpt-4o-mini
           ENVIRONMENT=e2e
@@ -350,27 +502,28 @@ jobs:
           LANGFUSE_SECRET_KEY=sk-lf-ci-e2e-test-secret
           EOF
 
-          # Start with real API keys + Langfuse stack - workflow ENABLED
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml \
+          # Start test environment with real API keys + Langfuse stack - workflow ENABLED
+          # Note: backend-seed loads golden dataset, langfuse-restore restores config
+          docker compose -f docker-compose.test.yml \
             --env-file .env.e2e up -d --build \
-            postgres backend-migrate backend backend-seed frontend-e2e \
-            langfuse-db-e2e langfuse-clickhouse-e2e langfuse-redis-e2e \
-            langfuse-minio-e2e langfuse-minio-setup-e2e langfuse-web-e2e langfuse-worker-e2e
+            postgres redis backend frontend backend-seed \
+            langfuse-web langfuse-worker langfuse-db langfuse-clickhouse \
+            langfuse-redis langfuse-minio langfuse-minio-setup langfuse-restore
 
           # Secure cleanup - overwrite before deletion (defense in depth)
           shred -u .env.e2e 2>/dev/null || rm -f .env.e2e
 
-      - name: Wait for E2E stack to be ready
+      - name: Wait for test environment to be ready
         run: |
           echo "Waiting for backend health check..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:8500/api/v1/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:8501/api/v1/health >/dev/null 2>&1; then
               echo "✓ Backend healthy after $i attempts"
               break
             fi
             if [ $i -eq 60 ]; then
               echo "✗ Backend health check timed out"
-              docker compose -f docker-compose.e2e.yml logs backend
+              docker compose -f docker-compose.test.yml logs backend
               exit 1
             fi
             sleep 2
@@ -384,7 +537,7 @@ jobs:
             fi
             if [ $i -eq 30 ]; then
               echo "✗ Frontend health check timed out"
-              docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs frontend-e2e
+              docker compose -f docker-compose.test.yml logs frontend
               exit 1
             fi
             sleep 2
@@ -392,7 +545,7 @@ jobs:
 
           # Verify API key configuration in logs (without exposing values)
           echo "Checking API key configuration..."
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs backend 2>&1 | grep -q "api_key_configuration" && \
+          docker compose -f docker-compose.test.yml logs backend 2>&1 | grep -q "api_key_configuration" && \
             echo "✓ API key validation logged" || \
             echo "⚠️  API key validation not found in logs"
 
@@ -400,7 +553,7 @@ jobs:
         run: |
           echo "Waiting for Langfuse observability..."
           for i in {1..60}; do
-            if curl -fsS http://localhost:3000/api/public/health >/dev/null 2>&1; then
+            if curl -fsS http://localhost:3001/api/public/health >/dev/null 2>&1; then
               echo "✓ Langfuse ready after $i attempts"
               break
             fi
@@ -412,36 +565,63 @@ jobs:
             sleep 2
           done
 
-      - name: Seed Langfuse E2E test data
+      - name: Verify Langfuse config restored
         run: |
-          echo "Seeding Langfuse E2E test data..."
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml \
-            exec -T backend poetry run python scripts/seed_e2e_langfuse_data.py || \
-            echo "⚠️  Langfuse seeding failed (non-fatal)"
+          echo "Checking Langfuse restore logs..."
+          docker compose -f docker-compose.test.yml logs langfuse-restore | tail -20 || \
+            echo "⚠️  Langfuse restore logs not found (may have completed already)"
 
-          # Export seeded IDs for E2E tests
-          echo "E2E_ARTIFACT_ID=e2e00000-0000-0000-0000-000000000002" >> $GITHUB_ENV
-          echo "E2E_ANALYSIS_ID=e2e00000-0000-0000-0000-000000000001" >> $GITHUB_ENV
-          echo "E2E_TRACE_ID=e2e-trace-langfuse-integration-test" >> $GITHUB_ENV
+          # Export test IDs from golden dataset (first analysis)
+          echo "E2E_ARTIFACT_ID=test-artifact-001" >> $GITHUB_ENV
+          echo "E2E_ANALYSIS_ID=test-analysis-001" >> $GITHUB_ENV
+          echo "E2E_TRACE_ID=test-trace-langfuse-integration" >> $GITHUB_ENV
 
-      - name: Run Playwright E2E tests (with LLM + Langfuse)
+      - name: Run Playwright tests (with LLM + Langfuse)
         working-directory: ./frontend
         env:
           CI: "true"
           PLAYWRIGHT_BASE_URL: http://localhost:5174
-          API_BASE_URL: http://localhost:8500
+          API_BASE_URL: http://localhost:8501
           # Signal to tests that LLM is enabled
           E2E_LLM_ENABLED: "true"
-          # Langfuse E2E test configuration
+          # Langfuse test configuration
           E2E_ARTIFACT_ID: ${{ env.E2E_ARTIFACT_ID }}
           E2E_ANALYSIS_ID: ${{ env.E2E_ANALYSIS_ID }}
           E2E_TRACE_ID: ${{ env.E2E_TRACE_ID }}
-          LANGFUSE_URL: http://localhost:3000
-          LANGFUSE_EMAIL: ci@skillforge.dev
-          LANGFUSE_PASSWORD: ci-test-password-2025
+          LANGFUSE_URL: http://localhost:3001
+          LANGFUSE_EMAIL: test@skillforge.local
+          LANGFUSE_PASSWORD: test
         run: |
+          # Track test execution time for performance metrics
+          echo "## E2E Test Performance Metrics (with LLM)" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          
+          START_TIME=$(date +%s)
+          
           # Run full test suite including LLM and Langfuse integration tests
+          # Global setup will create storageState.json for optimization
           npx playwright test --project=chromium
+          
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          echo "| Test Execution Time | ${DURATION}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workers (Parallel) | 4 |" >> $GITHUB_STEP_SUMMARY
+          echo "| storageState Optimization | Enabled |" >> $GITHUB_STEP_SUMMARY
+          
+          # Validate storageState was created
+          if [ -f ".auth/storageState.json" ]; then
+            STATE_SIZE=$(stat -f%z .auth/storageState.json 2>/dev/null || stat -c%s .auth/storageState.json 2>/dev/null || echo 'unknown')
+            echo "✅ storageState.json created successfully (${STATE_SIZE} bytes)"
+            echo "| storageState File Size | ${STATE_SIZE} bytes |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  storageState.json not found (tests may still pass, but optimization not active)"
+            echo "| storageState File Size | Not created |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** With storageState optimization and 4 parallel workers, expected 50-70% time reduction vs sequential execution." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v6
@@ -451,7 +631,6 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
-          compression-level: 9
           if-no-files-found: warn
 
       - name: Upload test results on failure
@@ -467,11 +646,11 @@ jobs:
       - name: Collect Docker logs on failure
         if: failure()
         run: |
-          echo "## Docker Compose Logs (Full E2E with LLM + Langfuse)" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Compose Logs (Test Environment with LLM + Langfuse)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           # Comprehensive API key filtering for all supported LLM providers
           # Patterns: OpenAI, Anthropic, LangChain, Jina, Google, xAI, DeepSeek, generic, Langfuse
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml logs --tail=100 2>&1 | \
+          docker compose -f docker-compose.test.yml logs --tail=100 2>&1 | \
             sed 's/sk-proj-[a-zA-Z0-9_-]*/sk-proj-***REDACTED***/g' | \
             sed 's/sk-ant-[a-zA-Z0-9_-]*/sk-ant-***REDACTED***/g' | \
             sed 's/sk-lf-[a-zA-Z0-9_-]*/sk-lf-***REDACTED***/g' | \
@@ -489,15 +668,16 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Langfuse Health Check" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          curl -s http://localhost:3000/api/public/health >> $GITHUB_STEP_SUMMARY 2>&1 || \
+          curl -s http://localhost:3001/api/public/health >> $GITHUB_STEP_SUMMARY 2>&1 || \
             echo "Langfuse health check failed" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Cleanup E2E stack
+      - name: Cleanup test environment
         if: always()
         run: |
-          docker compose -f docker-compose.e2e.yml -f docker-compose.e2e-langfuse.yml down -v --remove-orphans
-          # Ensure no env files remain
+          docker compose -f docker-compose.test.yml down -v --remove-orphans
+          # Secure cleanup - ensure no env files remain
+          shred -u backend/.env.test 2>/dev/null || rm -f backend/.env.test
           rm -f .env.e2e .env
 
   # ===========================================================================
@@ -530,9 +710,8 @@ jobs:
           path: frontend/playwright-report/
           compression-level: 9
           retention-days: 14
-          compression-level: 9
           if-no-files-found: warn
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker-compose.e2e.yml down -v --remove-orphans
+        run: docker compose -f docker-compose.test.yml down -v --remove-orphans

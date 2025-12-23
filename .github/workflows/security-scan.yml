@@ -79,7 +79,6 @@ jobs:
           path: backend/backend-security-report.json
           compression-level: 9
           retention-days: 30
-          compression-level: 9
           if-no-files-found: warn
 
       - name: Check for critical/high vulnerabilities
@@ -131,7 +130,6 @@ jobs:
           path: frontend/frontend-security-report.json
           compression-level: 9
           retention-days: 30
-          compression-level: 9
           if-no-files-found: warn
 
       - name: Check for critical/high vulnerabilities
@@ -231,5 +229,4 @@ jobs:
           path: security-summary.md
           compression-level: 9
           retention-days: 30
-          compression-level: 9
           if-no-files-found: warn

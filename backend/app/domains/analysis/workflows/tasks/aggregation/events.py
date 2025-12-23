@@ -6,7 +6,10 @@ aggregation processing.
 
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 
 logger = get_logger(__name__)
 
@@ -111,11 +114,9 @@ async def emit_aggregation_failed(
         error: Error message
 
     """
-    await emit_streaming_event(
-        "error",
+    await emit_error_event(
         analysis_id=analysis_id,
         stage="aggregation",
-        status="failed",
         error=error,
         error_code="AGGREGATION_FAILED",
     )

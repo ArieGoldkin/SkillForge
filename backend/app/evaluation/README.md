@@ -33,7 +33,6 @@ evaluation/
 │   └── __init__.py          # Dataset loading utilities
 │
 ├── ingestion/               # Dataset generation tools
-│   ├── langsmith_extractor.py    # Extract from LangSmith traces
 │   ├── github_importer.py        # Import from GitHub issues
 │   ├── pii_anonymizer.py         # PII detection and masking
 │   ├── adversarial_generator.py  # Adversarial test generation
@@ -156,14 +155,16 @@ The evaluation pipeline integrates with GitHub Actions:
 
 ### Create Golden Dataset
 
-```python
-from app.evaluation.ingestion import LangSmithExtractor
+Golden datasets are created from successful production runs tracked in Langfuse.
+Use the evaluation pipeline to extract and curate examples:
 
-extractor = LangSmithExtractor(project_name="skillforge-prod")
-examples = await extractor.extract_successful_runs(
-    task_type="supervisor",
-    limit=100,
-)
+```python
+# Golden datasets are stored in evaluation/datasets/golden/
+# See data/golden_dataset_backup.json for the curated dataset
+from app.evaluation.datasets import load_golden_dataset
+
+# Load existing golden dataset
+dataset = load_golden_dataset("supervisor")
 ```
 
 ### Anonymize PII

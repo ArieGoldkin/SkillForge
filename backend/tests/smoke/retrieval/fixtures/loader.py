@@ -167,12 +167,12 @@ class FixtureLoader:
             All sections matching the granularity.
 
         """
-        sections: list[Section] = []
-        for doc in self.load_documents():
-            for section in doc.get("sections", []):
-                if section.get("granularity") == granularity:
-                    sections.append(section)
-        return sections
+        return [
+            section
+            for doc in self.load_documents()
+            for section in doc.get("sections", [])
+            if section.get("granularity") == granularity
+        ]
 
     def get_fine_sections_for_parent(self, parent_id: str) -> list[Section]:
         """Get fine-grained sections that belong to a coarse parent.
@@ -184,12 +184,12 @@ class FixtureLoader:
             Fine sections with matching parent_section.
 
         """
-        sections: list[Section] = []
-        for doc in self.load_documents():
-            for section in doc.get("sections", []):
-                if section.get("parent_section") == parent_id:
-                    sections.append(section)
-        return sections
+        return [
+            section
+            for doc in self.load_documents()
+            for section in doc.get("sections", [])
+            if section.get("parent_section") == parent_id
+        ]
 
     def get_document_by_id(self, doc_id: str) -> Document | None:
         """Get a specific document by ID.
@@ -244,8 +244,10 @@ class FixtureLoader:
                 errors.append(f"Duplicate query ID: {query['id']}")
             query_ids.add(query["id"])
 
-            for chunk_id in query.get("expected_chunks", []):
-                if chunk_id not in section_ids:
-                    errors.append(f"Query {query['id']} references unknown section: {chunk_id}")
+            errors.extend(
+                f"Query {query['id']} references unknown section: {chunk_id}"
+                for chunk_id in query.get("expected_chunks", [])
+                if chunk_id not in section_ids
+            )
 
         return errors

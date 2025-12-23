@@ -1136,7 +1136,9 @@ def generate_ambiguous_examples(count: int) -> List[Dict]:
 
     templates = [
         {
-            "content": "# FastAPI vs Flask Performance\n\nFastAPI is faster but Flask is more secure. We need to implement authentication. The migration will take 2 weeks. Here's the dependency list...",
+            "content": "# FastAPI vs Flask Performance\n\nFastAPI is faster but Flask " +
+              "is more secure. We need to implement authentication. The migration will " +
+              "take 2 weeks. Here's the dependency list...",
             "ambiguity": "Contains tech comparison, security, implementation, and dependencies - unclear primary focus",
             "expected_behavior": "Supervisor should route to multiple agents with clear reasoning"
         },
@@ -1381,7 +1383,9 @@ def generate_difficulty_stratified_examples() -> Dict[str, List[Dict]]:
             {
                 "id": "diff-medium-1",
                 "inputs": {
-                    "content": "# FastAPI Authentication\n\nImplement JWT authentication with OAuth2 password flow. Requires secure token storage, refresh rotation...",
+                    "content": "# FastAPI Authentication\n\nImplement JWT authentication " +
+                      "with OAuth2 password flow. Requires secure token storage, refresh " +
+                      "rotation...",
                     "content_type": "tutorial"
                 },
                 "metadata": {
@@ -1524,7 +1528,9 @@ jobs:
             - **Coherence**: ${(synthesisResults.avg_coherence * 100).toFixed(1)}%
             - **Coverage**: ${(synthesisResults.avg_coverage * 100).toFixed(1)}%
 
-            ${agentResults.passed && supervisorResults.passed && synthesisResults.passed ? '✅ All evaluations passed!' : '❌ Some evaluations failed. Review details in artifacts.'}
+            ${agentResults.passed && supervisorResults.passed && synthesisResults.passed
+              ? '✅ All evaluations passed!'
+              : '❌ Some evaluations failed. Review details in artifacts.'}
             `;
 
             github.rest.issues.createComment({

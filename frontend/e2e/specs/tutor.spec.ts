@@ -1,13 +1,14 @@
 import { test, expect } from '@playwright/test';
+
 import { TutorPage } from '../page-objects';
 import {
-  waitForBackend,
   getCompletedAnalysis,
   createTutorSession,
   getTutorSession,
   sendTutorMessage,
   waitForAssistantResponse,
   sendMessageAndWaitForResponse,
+  logger,
 } from '../utils';
 
 // SKIP: Tutor UI is currently using mock data (mockTutoringAPI), not the real backend API.
@@ -20,10 +21,8 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
   let hasCompletedAnalysis = false;
 
   test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-
     // Check if there's a completed analysis with artifact
+    // Backend health is checked implicitly by getCompletedAnalysis
     const completedAnalysis = await getCompletedAnalysis(request);
     hasCompletedAnalysis = !!completedAnalysis;
   });
@@ -45,6 +44,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     sessionId = sessionResponse.session_id;
 
     // Initialize page object and navigate to session
+    // With storageState, direct navigation to tutor URL is faster (skips baseURL navigation)
     tutorPage = new TutorPage(page);
     await tutorPage.goto(sessionId);
   });
@@ -146,7 +146,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     // Typing indicator might be visible briefly while LLM generates response
     // We check if it exists in the DOM within a short window
     const typingIndicator = tutorPage.typingIndicator;
-    const isVisible = await typingIndicator.isVisible().catch(() => false);
+    await typingIndicator.isVisible().catch(() => false);
 
     // Either typing indicator shows or response comes quickly
     // Both are valid outcomes, so test passes if no errors occurred
@@ -213,7 +213,7 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     } else {
       // LLM response timed out - this is acceptable for this test
       // The test still passes as it verifies the system handles slow responses gracefully
-      console.log('LLM response timed out - this may be expected in CI environments');
+      logger.warn('LLM response timed out - this may be expected in CI environments');
     }
 
     // Page should remain functional regardless of LLM response

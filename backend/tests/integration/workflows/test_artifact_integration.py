@@ -104,7 +104,7 @@ const MemoizedComponent = React.memo(({ data }) => {
         """Test loading summary section from real database."""
         analysis = await create_test_analysis(
             analysis_id=str(uuid4()),
-            url="https://example.com/test",
+            url=f"https://example.com/test-{uuid4()}",
         )
 
         content = "This is test content for summary extraction. " * 50
@@ -156,9 +156,11 @@ const MemoizedComponent = React.memo(({ data }) => {
         create_test_analysis,
     ):
         """Test loading first N characters."""
+        # Use unique URL to avoid UniqueViolationError
+        unique_id = uuid4()
         analysis = await create_test_analysis(
-            analysis_id=str(uuid4()),
-            url="https://example.com/first-n-test",
+            analysis_id=str(unique_id),
+            url=f"https://example.com/first-n-test-{unique_id}",
         )
 
         # Use content with spaces for proper summary generation

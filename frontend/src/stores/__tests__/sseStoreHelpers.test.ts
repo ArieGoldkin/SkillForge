@@ -129,6 +129,8 @@ function createMockStore(): {
     connect: vi.fn(),
     disconnect: vi.fn(),
     reset: vi.fn(),
+    startPolling: vi.fn(),
+    stopPolling: vi.fn(),
     _addEvent: vi.fn(),
     _setInternalState: vi.fn(),
   }
@@ -302,10 +304,13 @@ describe('SSE Store Helpers - Bug Fixes', () => {
   })
 
   describe('Bug Fix 2: Infinite reconnection loop', () => {
-    it('should prevent reconnection when permanentlyFailed is true for same analysis', async () => {
-      const { store } = createMockStore()
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    it('should start polling fallback after max reconnection attempts', async () => {
+      const { store, state } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      // Mock startPolling to track calls
+      const startPollingMock = vi.fn()
+      state.startPolling = startPollingMock
 
       // Disable auto-connect to fully control connection lifecycle
       setAutoConnect(false)
@@ -322,40 +327,26 @@ describe('SSE Store Helpers - Bug Fixes', () => {
         await vi.runAllTimersAsync()
       }
 
-      // Should reach permanent failure state after 3 reconnect attempts
+      // Should reach max reconnection attempts and start polling fallback
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[ERROR] SSE max reconnection attempts reached',
+        '[ERROR] SSE max reconnection attempts reached, starting polling fallback',
         expect.objectContaining({
           reason: 'persistent_connection_failure',
         })
       )
       expect(store.getState().error?.message).toBe(
-        'Connection failed after multiple attempts. Please refresh to retry.'
+        'SSE connection failed. Using polling fallback to continue receiving updates.'
       )
 
-      // Clear previous mocks
-      consoleWarnSpy.mockClear()
+      // Should have called startPolling as fallback
+      expect(startPollingMock).toHaveBeenCalledWith(TEST_ANALYSIS_ID)
 
-      // Try to reconnect with SAME analysis ID
-      createConnection(TEST_ANALYSIS_ID, store)
-
-      // Should be blocked by permanentlyFailed flag
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[WARN] SSE reconnection blocked due to permanent failure',
-        expect.objectContaining({
-          permanentlyFailed: true,
-          suggestion: 'user_refresh_required',
-        })
-      )
-
-      consoleWarnSpy.mockRestore()
       consoleErrorSpy.mockRestore()
     })
 
-    it('should reset permanentlyFailed when switching to different analysis', async () => {
+    it('should allow new connection when switching to different analysis', async () => {
       const { store } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       // Disable auto-connect to fully control connection lifecycle
       setAutoConnect(false)
@@ -364,19 +355,21 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       createConnection(TEST_ANALYSIS_ID, store)
       await vi.runAllTimersAsync()
 
-      // Simulate connection failures to reach permanent failure
+      // Simulate connection failures to reach max attempts
       for (let i = 0; i < 4; i++) {
         // 4 times: initial + 3 reconnects
         getMockEventSource()?.simulateConnectionError()
         await vi.runAllTimersAsync()
       }
 
-      expect(store.getState().error?.message).toContain('Connection failed after multiple attempts')
+      expect(store.getState().error?.message).toContain(
+        'SSE connection failed. Using polling fallback'
+      )
 
       // Re-enable auto-connect for new analysis
       setAutoConnect(true)
 
-      // Connect to DIFFERENT analysis - should reset permanentlyFailed
+      // Connect to DIFFERENT analysis - should allow new connection
       createConnection('test-456', store)
       await vi.runAllTimersAsync()
 
@@ -386,13 +379,16 @@ describe('SSE Store Helpers - Bug Fixes', () => {
       expect(getMockEventSource()?.url).toContain('test-456')
 
       consoleErrorSpy.mockRestore()
-      consoleWarnSpy.mockRestore()
     })
 
-    it('should set permanentlyFailed = true after max reconnection attempts', async () => {
-      const { store } = createMockStore()
+    it('should use exponential backoff and start polling after max attempts', async () => {
+      const { store, state } = createMockStore()
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      // Mock startPolling to track calls
+      const startPollingMock = vi.fn()
+      state.startPolling = startPollingMock
 
       // Disable auto-connect to fully control connection lifecycle
       setAutoConnect(false)
@@ -443,29 +439,20 @@ describe('SSE Store Helpers - Bug Fixes', () => {
         })
       )
 
-      // Trigger final connection error - should give up
+      // Trigger final connection error - should start polling fallback
       getMockEventSource()?.simulateConnectionError()
       await vi.runAllTimersAsync()
 
-      // After 3rd attempt, should give up
+      // After 3rd attempt, should start polling fallback
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[ERROR] SSE max reconnection attempts reached',
+        '[ERROR] SSE max reconnection attempts reached, starting polling fallback',
         expect.objectContaining({
           reason: 'persistent_connection_failure',
         })
       )
 
-      // Try to reconnect - should be blocked
-      consoleWarnSpy.mockClear()
-      createConnection(TEST_ANALYSIS_ID, store)
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[WARN] SSE reconnection blocked due to permanent failure',
-        expect.objectContaining({
-          permanentlyFailed: true,
-          suggestion: 'user_refresh_required',
-        })
-      )
+      // Should have called startPolling
+      expect(startPollingMock).toHaveBeenCalledWith(TEST_ANALYSIS_ID)
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()

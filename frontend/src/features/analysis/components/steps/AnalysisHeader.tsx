@@ -9,6 +9,8 @@ import { Badge } from '@shared/components/ui/badge'
 
 import { cn } from '@lib/utils'
 
+import { SSEConnectionStatus } from '../progress/SSEConnectionStatus'
+
 interface AnalysisHeaderProps {
   title?: string | null
   url?: string
@@ -51,7 +53,7 @@ export const AnalysisHeader = memo(function AnalysisHeader({
   const ContentIcon = contentTypeConfig?.icon
 
   return (
-    <div className="mb-8">
+    <div className="mb-8" data-testid="analysis-header">
       <div className="flex items-center gap-3 mb-2">
         <h1 className="text-3xl font-bold">{title || 'Content Analysis'}</h1>
         {contentTypeConfig && ContentIcon && (
@@ -63,6 +65,7 @@ export const AnalysisHeader = memo(function AnalysisHeader({
             {contentTypeConfig.label}
           </Badge>
         )}
+        <SSEConnectionStatus />
       </div>
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         {isGoldenDataset && documentName ? (

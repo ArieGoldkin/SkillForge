@@ -54,10 +54,10 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
 
     from app.core.config import get_settings
     from app.core.logging import get_logger
-    from app.db.session import AsyncSessionLocal
     from app.db.models.analysis import Analysis
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
+    from app.db.session import AsyncSessionLocal
     from app.shared.services.embeddings import EmbeddingService
     from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 
@@ -140,8 +140,10 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
             id=analysis_id,
             url=f"https://fixtures.skillforge.local/{analysis_name}",
             content_type="fixture_dataset",
-            status="completed",
+            status="complete",
             title="Context Engineering for AI Agents",  # Title for E2E tests
+            raw_content="Sample fixture content for testing",
+            extraction_metadata={"source": "fixture", "version": "1.0"},
         )
         session.add(analysis)
         await session.flush()

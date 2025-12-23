@@ -1,12 +1,15 @@
 """Unit tests for type aliases."""
 
-from app.core.types import (
-    AnalysisID,
-    ChannelName,
-    EmbeddingVector,
-    EventData,
-    ExtractionResult,
-)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.core.types import (
+        AnalysisID,
+        ChannelName,
+        EmbeddingVector,
+        EventData,
+        ExtractionResult,
+    )
 
 
 def test_embedding_vector_type() -> None:

@@ -78,7 +78,8 @@ Scores are submitted to Langfuse with consistent naming:
 
 **Example Comment**:
 ```
-tech_comparator: The comparison provides thorough analysis of pros, cons, and use cases for each technology option, demonstrating deep understanding of trade-offs...
+tech_comparator: The comparison provides thorough analysis of pros, cons, and use cases \
+  for each technology option, demonstrating deep understanding of trade-offs...
 ```
 
 ### 3. Error Handling

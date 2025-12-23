@@ -143,7 +143,7 @@ async def main() -> int:
                 id=analysis_id,
                 url=source_url,
                 content_type=content_type,
-                status="completed",
+                status="complete",
                 title=title,
             )
             session.add(analysis)

@@ -108,13 +108,14 @@ async def test_implementation_planner_does_not_emit_failed_on_success(
 # Test one representative agent (dependency_mapper) for all error types
 # Other agents follow the same pattern and are covered by existing tests
 
+
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.emit_agent_progress", new_callable=AsyncMock)
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
 async def test_dependency_mapper_handles_timeout_error_with_specific_code(mock_emit, mock_state):
     """Test that dependency_mapper handles TimeoutError with specific error code (2025 best practice)."""
     with patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session",
-        side_effect=TimeoutError("Execution timeout")
+        side_effect=TimeoutError("Execution timeout"),
     ):
         result = await dependency_mapper_node(mock_state)
 
@@ -133,12 +134,14 @@ async def test_dependency_mapper_handles_timeout_error_with_specific_code(mock_e
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.emit_agent_progress", new_callable=AsyncMock)
-async def test_dependency_mapper_handles_specificity_validation_error_with_specific_code(mock_emit, mock_state):
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+async def test_dependency_mapper_handles_specificity_validation_error_with_specific_code(
+    mock_emit, mock_state
+):
     """Test that dependency_mapper handles ValueError (specificity failures) with specific error code (2025 best practice)."""
     with patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session",
-        side_effect=ValueError("Specificity score 0.65 below threshold 0.70")
+        side_effect=ValueError("Specificity score 0.65 below threshold 0.70"),
     ):
         result = await dependency_mapper_node(mock_state)
 
@@ -157,12 +160,14 @@ async def test_dependency_mapper_handles_specificity_validation_error_with_speci
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.emit_agent_progress", new_callable=AsyncMock)
-async def test_dependency_mapper_handles_generic_exception_with_fallback_code(mock_emit, mock_state):
+@patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
+async def test_dependency_mapper_handles_generic_exception_with_fallback_code(
+    mock_emit, mock_state
+):
     """Test that dependency_mapper handles generic exceptions with fallback error code (2025 best practice)."""
     with patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session",
-        side_effect=ConnectionError("Database connection failed")
+        side_effect=ConnectionError("Database connection failed"),
     ):
         result = await dependency_mapper_node(mock_state)
 

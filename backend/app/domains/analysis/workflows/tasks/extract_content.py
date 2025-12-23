@@ -19,7 +19,7 @@ from app.domains.analysis.workflows.state import ContentRef
 from app.shared.services.extraction.arxiv_pdf_extractor import ArxivPDFExtractor, is_arxiv_url
 from app.shared.services.extraction.content_type import detect_content_type
 from app.shared.services.extraction.jina_reader import JinaReader
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import emit_error_event, emit_streaming_event
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ logger = get_logger(__name__)
         "task_type": "extraction",
     },
 )
-async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
+async def extract_content(url: str, analysis_id: AnalysisID) -> dict:  # noqa: PLR0915
     """Extract content from URL using JinaReader.
 
     Args:
@@ -134,6 +134,9 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         # Type assertion: extracted["content"] is always str from JinaReader
         raw_content: str = str(extracted["content"])
 
+        # Add char_count for WorkflowResult validation (Issue #441)
+        metadata["char_count"] = len(raw_content)
+
         # Issue #244: Create ArtifactRef for Handle Pattern
         # This stores content summary and section metadata for on-demand loading
         content_ref = await _create_artifact_ref(
@@ -154,14 +157,34 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
             "extraction_metadata": metadata,
         }
     except Exception as e:
-        # Emit SSE event: extraction failed
-        await emit_streaming_event(
-            "error",
+        # Extract error code from exception if available
+        from app.core.exceptions import JinaReaderError
+
+        error_code = "EXTRACTION_FAILED"
+        if isinstance(e, JinaReaderError):
+            # Use the error code from JinaReaderError
+            error_code = e.error_code.value
+
+        # Record error to database before emitting events
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=error_code,
+                error_message=str(e),
+                stage="extraction",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
+
+        # Emit error event using standardized helper
+        await emit_error_event(
             analysis_id=analysis_id,
             stage="extraction",
-            status="failed",
             error=str(e),
-            error_code="EXTRACTION_FAILED",
+            error_code=error_code,
+            url=url,
         )
         logger.error(
             "workflow_extraction_failed",

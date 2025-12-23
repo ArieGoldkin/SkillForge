@@ -271,7 +271,8 @@ class Settings(BaseSettings):
         description=(
             "LLM model for quality evaluation (LLM-as-judge). "
             "Used by quality gate to score relevance, depth, coherence. "
-            "Defaults to gemini-3-flash-preview (released Dec 17, 2025 - $0.50/$3.00 per 1M tokens). "
+            "Defaults to gemini-3-flash-preview "
+            "(released Dec 17, 2025 - $0.50/$3.00 per 1M tokens). "
             "Alternatives: gemini-2.5-flash ($0.30/$2.50), gpt-4o-mini ($0.15/$0.60)."
         ),
     )
@@ -585,7 +586,7 @@ class Settings(BaseSettings):
         Note: 'e2e' is a special environment for end-to-end testing that
         behaves like development but with E2E-specific configurations.
         """
-        allowed = {"development", "staging", "production", "e2e"}
+        allowed = {"development", "staging", "production", "e2e", "test"}
         if v not in allowed:
             msg = f"ENVIRONMENT must be one of {allowed}"
             raise ValueError(msg)
@@ -698,7 +699,8 @@ class Settings(BaseSettings):
         if self.LANGFUSE_ENABLED and (not self.LANGFUSE_PUBLIC_KEY or not self.LANGFUSE_SECRET_KEY):
             error_msg = (
                 "Langfuse is enabled but credentials are missing. "
-                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with "
+                "LANGFUSE_ENABLED=false"
             )
             raise ValueError(error_msg)
         return self

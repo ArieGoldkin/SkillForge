@@ -101,8 +101,10 @@ CODE PATTERN TRIGGERS (REQUIRED):
 Select based on: content type, keywords, complexity, analysis needs.
 
 Examples:
-- Quick tip/snippet → {{"agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
-  "reasoning": "Even simple content needs implementation guidance, dependency context, and security basics",
+- Quick tip/snippet → {{
+    "agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
+    "reasoning": "Even simple content needs implementation guidance, dependency context, "
+                 "and security basics",
   "confidence": 0.85}}
 - Framework tutorial → {{
     "agents": [

@@ -136,10 +136,8 @@ class TestEmbeddingUsageTracking:
         assert not hasattr(mock_response, "usage")
         # This is what the code does:
         if hasattr(mock_response, "usage") and mock_response.usage:
-            assert False, "Should not reach here"
-        else:
-            # Gracefully skip usage tracking
-            pass
+            raise AssertionError("Should not reach here")
+        # Gracefully skip usage tracking
 
 
 class TestObservabilityLogging:
@@ -284,7 +282,7 @@ class TestEndToEndObservability:
             }
 
             # 4. Extract usage (as done in invocation.py)
-            if "usage_metadata" in mock_response and mock_response["usage_metadata"]:
+            if mock_response.get("usage_metadata"):
                 usage = mock_response["usage_metadata"]
                 # Would log here in real code
                 assert usage["total_tokens"] == 300

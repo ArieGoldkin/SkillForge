@@ -110,7 +110,8 @@ def parse_datetime(value: str | datetime | None) -> datetime | None:
     if isinstance(value, datetime):
         return value
     # Handle ISO format with timezone
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # Python 3.11+ supports "Z" directly in fromisoformat
+    return datetime.fromisoformat(value)
 
 
 async def regenerate_database(backup_data: dict[str, Any], replace: bool = False) -> None:
@@ -241,7 +242,7 @@ async def regenerate_database(backup_data: dict[str, Any], replace: bool = False
 
         # Verify results
         result = await session.execute(
-            text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'")
+            text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
         )
         final_analyses = result.scalar()
         result = await session.execute(text("SELECT COUNT(*) FROM artifacts"))
@@ -364,7 +365,7 @@ def regenerate_eval_datasets(backup_data: dict[str, Any]) -> None:
 
     # Take samples from each type
     eval_samples = []
-    for _content_type, samples in by_type.items():
+    for samples in by_type.values():
         # Take 2-3 samples per type, up to 15 total
         num_samples = min(3, len(samples))
         eval_samples.extend(samples[:num_samples])

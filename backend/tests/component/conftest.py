@@ -3,7 +3,7 @@
 Component tests verify business logic with MOCKED external dependencies.
 They test the integration of multiple internal modules without hitting:
 - Real databases (PostgreSQL)
-- Real external APIs (OpenAI, LangSmith)
+- Real external APIs (OpenAI, Langfuse, etc.)
 - Real network calls
 
 This differs from:

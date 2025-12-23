@@ -1,0 +1,288 @@
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                    SKILLFORGE AGENT SELECTION ARCHITECTURE                     │
+│                              (supervisor.py flow)                              │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+                                   ┌──────────┐
+                                   │  Content │
+                                   │ (Raw URL)│
+                                   └─────┬────┘
+                                         │
+                      ┌──────────────────┴──────────────────┐
+                      │     PHASE 1: SIGNAL DETECTION       │
+                      │          (< 50ms, regex)            │
+                      └──────────────────┬──────────────────┘
+                                         │
+                 ┌───────────────────────┼───────────────────────┐
+                 │                       │                       │
+                 ▼                       ▼                       ▼
+        ┌─────────────────┐   ┌─────────────────┐   ┌──────────────────┐
+        │detect_content   │   │detect_code      │   │detect_content    │
+        │_type()          │   │_patterns()      │   │_signals()        │
+        ├─────────────────┤   ├─────────────────┤   ├──────────────────┤
+        │• code           │   │• has_imports    │   │• genre: TUTORIAL │
+        │• changelog      │   │• has_frameworks │   │• richness: 7.2/10│
+        │• documentation  │   │• has_security   │   │• has_code: true  │
+        │• article        │   │• has_performance│   │• has_benchmarks  │
+        │• video          │   │• has_comparisons│   │• expectations {} │
+        └────────┬────────┘   └────────┬────────┘   └─────────┬────────┘
+                 │                     │                       │
+                 └──────────────┬──────┴───────────────────────┘
+                                │
+                                ▼
+                      ┌──────────────────┐
+                      │  ContentSignals  │
+                      │  ContentType     │
+                      │  code_patterns   │
+                      └─────────┬────────┘
+                                │
+                      ┌─────────▼─────────────────────────────────────┐
+                      │ PHASE 2: SUPERVISOR LLM ROUTING               │
+                      │  (150-300ms uncached, Redis cache on hash)    │
+                      └─────────┬─────────────────────────────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │ LLM Supervisor Call    │
+                    │ (Gemini/GPT-4o-mini)   │
+                    ├────────────────────────┤
+                    │ Input:                 │
+                    │  • sized_content       │
+                    │  • SUPERVISOR_PROMPT   │
+                    │  • agent_list          │
+                    │ Output:                │
+                    │  • agents: []          │
+                    │  • reasoning: "..."    │
+                    │  • confidence: 0.85    │
+                    └───────────┬────────────┘
+                                │
+                                ▼
+                    ┌───────────────────────────────────────┐
+                    │ AgentSelection (structured output)    │
+                    │ - agents: [impl_planner, security...] │
+                    │ - reasoning: "Tutorial with code..."  │
+                    │ - confidence: 0.85                    │
+                    └───────────┬───────────────────────────┘
+                                │
+                    ┌───────────▼───────────────────────────────┐
+                    │ PHASE 3: POST-PROCESSING FILTERS          │
+                    │ (Rule-based refinement)                   │
+                    └───────────┬───────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌───────────────┐   ┌──────────────────┐   ┌─────────────────────┐
+│Step 3a:       │   │Step 3b:          │   │Step 3c:             │
+│Content-Type   │   │Auto-Activation   │   │Signal-Based Skip    │
+│Filtering      │   │(Pattern Rules)   │   │(should_skip_agent)  │
+├───────────────┤   ├──────────────────┤   ├─────────────────────┤
+│• code_quality │   │• has_imports     │   │• code_quality       │
+│  → CODE only  │   │  → dependency_   │   │  IF no code         │
+│               │   │     mapper       │   │• security_auditor   │
+│• All others   │   │• has_performance │   │  IF opinion +       │
+│  → multiple   │   │  → performance_  │   │     conceptual      │
+│    types      │   │     analyst      │   │• performance_       │
+│               │   │• has_security    │   │  analyst IF         │
+│SKIP if type   │   │  → security_     │   │  conceptual + no    │
+│mismatch       │   │     auditor      │   │  architecture       │
+└──────┬────────┘   │• has_comparisons │   └──────────┬──────────┘
+       │            │  → tech_comparator│              │
+       │            └─────────┬─────────┘              │
+       │                      │                        │
+       └──────────────────────┼────────────────────────┘
+                              │
+                              ▼
+                  ┌───────────────────────┐
+                  │Step 3d: Minimum       │
+                  │Agent Enforcement      │
+                  ├───────────────────────┤
+                  │• HARDCODED: 3 agents  │
+                  │  (Issue: should vary  │
+                  │   by genre)           │
+                  │                       │
+                  │• Use content_signals  │
+                  │  .get_appropriate_    │
+                  │  agents()             │
+                  │                       │
+                  │• Fallback defaults:   │
+                  │  - impl_planner       │
+                  │  - dependency_mapper  │
+                  │  - trend_validator    │
+                  └───────────┬───────────┘
+                              │
+                              ▼
+                  ┌──────────────────────────────────────┐
+                  │ FINAL OUTPUT: supervisor_decision    │
+                  ├──────────────────────────────────────┤
+                  │ {                                    │
+                  │   "agents": [                        │
+                  │     "implementation_planner",        │
+                  │     "security_auditor",              │
+                  │     "dependency_mapper"              │
+                  │   ],                                 │
+                  │   "confidence": 0.85,                │
+                  │   "reasoning": "...",                │
+                  │   "content_signals": {               │
+                  │     "richness_score": 7.2,           │
+                  │     "detected_genre": "tutorial",    │
+                  │     "has_code": true,                │
+                  │     ...                              │
+                  │   },                                 │
+                  │   "agent_expectations": {            │
+                  │     "security_auditor": "full_...",  │
+                  │     "impl_planner": "partial",       │
+                  │     ...                              │
+                  │   },                                 │
+                  │   "agents_skipped_by_signals": [     │
+                  │     "code_quality_critic"            │
+                  │   ]                                  │
+                  │ }                                    │
+                  └──────────────┬───────────────────────┘
+                                 │
+                                 ▼
+                  ┌──────────────────────────────────────┐
+                  │  AGENT EXECUTION PHASE                │
+                  │  (Each agent reads expectations)      │
+                  └──────────────────────────────────────┘
+                                 │
+        ┌────────────────────────┼────────────────────────┐
+        │                        │                        │
+        ▼                        ▼                        ▼
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│security_auditor │   │impl_planner     │   │dependency_mapper│
+├─────────────────┤   ├─────────────────┤   ├─────────────────┤
+│• Reads:         │   │• Reads:         │   │• Reads:         │
+│  expectation =  │   │  expectation =  │   │  expectation =  │
+│  "full_analysis"│   │  "partial"      │   │  "full_analysis"│
+│                 │   │                 │   │                 │
+│• Gets threshold:│   │• Gets threshold:│   │• Gets threshold:│
+│  0.70 (standard)│   │  0.55 (lowered) │   │  0.70 (standard)│
+│                 │   │                 │   │                 │
+│• Analyzes with  │   │• Analyzes with  │   │• Analyzes with  │
+│  appropriate    │   │  appropriate    │   │  appropriate    │
+│  depth          │   │  depth          │   │  depth          │
+└─────────────────┘   └─────────────────┘   └─────────────────┘
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           IDENTIFIED GAPS & ISSUES                             │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+GAP 1: Supervisor LLM Never Sees Content Signals
+┌─────────────────────────────────────────────────────────────────────┐
+│ Current: sized_content (raw text) → LLM → agents                    │
+│ Missing: content_signals (genre, richness) → LLM                    │
+│ Impact: LLM re-discovers what regex already computed in < 50ms      │
+└─────────────────────────────────────────────────────────────────────┘
+
+GAP 2: No Feedback Loop from Agent Execution
+┌─────────────────────────────────────────────────────────────────────┐
+│ Current: supervisor_decision → agents execute → failures logged     │
+│ Missing: failures → supervisor learns → better future routing       │
+│ Impact: Same bad routing decisions repeated for similar content     │
+└─────────────────────────────────────────────────────────────────────┘
+
+GAP 3: Hardcoded 3-Agent Minimum Ignores Genre
+┌─────────────────────────────────────────────────────────────────────┐
+│ Current: ALWAYS 3 agents (OPINION, TUTORIAL, RESEARCH all same)     │
+│ Missing: Genre-aware minimums (OPINION: 1, TUTORIAL: 4, etc.)       │
+│ Impact: Forced agents on OPINION content → wasted analysis          │
+└─────────────────────────────────────────────────────────────────────┘
+
+GAP 4: Auto-Activation Redundancy with LLM
+┌─────────────────────────────────────────────────────────────────────┐
+│ Current: LLM selects agents → auto-activation ALSO checks patterns  │
+│ Missing: Coordination (is this safety net or duplicate logic?)      │
+│ Impact: Unclear responsibility, wasted cycles                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+GAP 5: No Genre-Aware Agent Prompts
+┌─────────────────────────────────────────────────────────────────────┐
+│ Current: Same security_auditor prompt for TUTORIAL vs RESEARCH      │
+│ Missing: Genre-specific prompt variants (concepts vs metrics)       │
+│ Impact: Research content fails specificity (band-aided with 0.15)   │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           AGENT EXPECTATION MAPPING                            │
+│                       (computed by _compute_agent_expectations)                │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────┬─────────────────┬─────────────────┬──────────────────────┐
+│ Agent             │ FULL_ANALYSIS   │ PARTIAL         │ OPPORTUNISTIC        │
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ security_auditor  │ has_security +  │ has_code OR     │ All other cases      │
+│                   │ NOT conceptual  │ has_architecture│ (may find nothing)   │
+│ Threshold:        │ 0.70            │ 0.55            │ 0.45                 │
+│ Research override:│ -               │ -               │ 0.20 (concepts only) │
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ performance_      │ has_benchmarks +│ has_code        │ All other cases      │
+│ analyst           │ NOT conceptual  │                 │                      │
+│ Threshold:        │ 0.70            │ 0.55            │ 0.45                 │
+│ Research override:│ -               │ -               │ 0.15 (concepts only) │
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ implementation_   │ has_code +      │ has_code OR     │ All other cases      │
+│ planner           │ has_tutorials   │ tutorials OR    │                      │
+│                   │                 │ architecture    │                      │
+│ Threshold:        │ 0.70            │ 0.55            │ 0.45                 │
+│ Research override:│ -               │ -               │ 0.15 (concepts only) │
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ tech_comparator   │ has_comparisons │ has_architecture│ All other cases      │
+│ Threshold:        │ 0.50 (breadth!) │ 0.55            │ 0.45                 │
+│ Comparison boost: │ ALWAYS 0.50     │ -               │ -                    │
+│ Research override:│ -               │ -               │ 0.30 (qualitative OK)│
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ dependency_mapper │ has_dependencies│ has_code        │ All other cases      │
+│ Threshold:        │ 0.70            │ 0.55            │ 0.45                 │
+│ Comparison boost: │ 0.65 (specific) │ -               │ -                    │
+│ Research override:│ -               │ -               │ 0.25 (libs mentioned)│
+├───────────────────┼─────────────────┼─────────────────┼──────────────────────┤
+│ trend_validator   │ ALWAYS          │ -               │ -                    │
+│ Threshold:        │ 0.70            │ -               │ -                    │
+│ Research override:│ 0.25            │ -               │ -                    │
+└───────────────────┴─────────────────┴─────────────────┴──────────────────────┘
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                         CONTENT TYPE → AGENT MATRIX                            │
+│                   (AGENT_CAPABILITIES in content_type_detection.py)            │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────┬──────┬───────────┬──────────────┬─────────┬───────┬──────┐
+│ Agent              │ code │ changelog │ documentation│ article │ video │ repo │
+├────────────────────┼──────┼───────────┼──────────────┼─────────┼───────┼──────┤
+│ tech_comparator    │  ✓   │     ✓     │      ✓       │    ✓    │       │      │
+│ security_auditor   │  ✓   │           │      ✓       │    ✓    │       │      │
+│ impl_planner       │  ✓   │           │      ✓       │    ✓    │       │      │
+│ performance_       │  ✓   │           │      ✓       │    ✓    │       │      │
+│ analyst            │      │           │              │         │       │      │
+│ code_quality_      │  ✓   │           │              │         │       │      │
+│ critic             │      │           │              │         │       │      │
+│ trend_validator    │  ✓   │     ✓     │      ✓       │    ✓    │       │      │
+│ dependency_mapper  │  ✓   │           │      ✓       │    ✓    │       │      │
+│ integration_       │  ✓   │           │      ✓       │    ✓    │       │      │
+│ feasibility        │      │           │              │         │       │      │
+└────────────────────┴──────┴───────────┴──────────────┴─────────┴───────┴──────┘
+
+Note: Articles often discuss technical topics (security, performance, implementation)
+      so most analytical agents can process "article" content type.
+      Only code_quality_critic requires actual parseable code.
+
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                           PERFORMANCE CHARACTERISTICS                          │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+Signal Detection (detect_content_signals):        < 50ms  (regex patterns)
+Content Type Detection (detect_content_type):     < 10ms  (pattern scoring)
+Code Pattern Detection (detect_code_patterns):    < 20ms  (regex search)
+
+Supervisor LLM Call (cached):                     < 5ms   (Redis exact-match)
+Supervisor LLM Call (uncached, Gemini):           150-250ms (structured output)
+Supervisor LLM Call (uncached, GPT-4o-mini):      200-350ms (structured output)
+
+Post-Processing Filters:                          < 30ms  (all rule-based)
+
+Total Supervisor Phase (cached):                  ~100ms
+Total Supervisor Phase (uncached):                ~400ms

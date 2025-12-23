@@ -5,10 +5,10 @@
  * - E2E_ARTIFACT_ID: Target artifact ID for trace visualization tests
  * - E2E_ANALYSIS_ID: Parent analysis ID for the artifact
  * - E2E_TRACE_ID: Langfuse trace ID (optional, for specific trace tests)
- * - E2E_BASE_URL: Frontend base URL (default: http://localhost:5173)
- * - LANGFUSE_URL: Langfuse UI base URL (default: http://localhost:3000)
- * - LANGFUSE_EMAIL: Langfuse login email (default: dev@skillforge.local)
- * - LANGFUSE_PASSWORD: Langfuse login password (default: skillforge-dev-password)
+ * - E2E_BASE_URL: Frontend base URL (default: http://localhost:5174 for test env)
+ * - LANGFUSE_URL: Langfuse UI base URL (default: http://localhost:3001 for test env)
+ * - LANGFUSE_EMAIL: Langfuse login email (MUST be provided via env var)
+ * - LANGFUSE_PASSWORD: Langfuse login password (MUST be provided via env var)
  *
  * Usage:
  * - Local Dev: Uses default UUIDs and localhost URLs
@@ -53,12 +53,14 @@ export const langfuseConfig: LangfuseConfig = {
   traceId: process.env.E2E_TRACE_ID, // Optional
 
   // Base URLs
-  baseUrl: process.env.E2E_BASE_URL || 'http://localhost:5173',
-  langfuseUrl: process.env.LANGFUSE_URL || 'http://localhost:3000',
+  // Default to test environment ports (5174/3001) since e2e tests run against test env
+  baseUrl: process.env.E2E_BASE_URL || 'http://localhost:5174',
+  langfuseUrl: process.env.LANGFUSE_URL || 'http://localhost:3001',
 
   // Langfuse Authentication
-  langfuseEmail: process.env.LANGFUSE_EMAIL || 'dev@skillforge.local',
-  langfusePassword: process.env.LANGFUSE_PASSWORD || 'skillforge-dev-password',
+  // MUST be provided via environment variables - never hardcode credentials
+  langfuseEmail: process.env.LANGFUSE_EMAIL || '',
+  langfusePassword: process.env.LANGFUSE_PASSWORD || '',
 };
 
 /**
@@ -99,7 +101,7 @@ export function isLangfuseEnabled(): boolean {
  * @returns Full URL to trace in Langfuse UI
  *
  * @example
- * // Returns: http://localhost:3000/project/default/traces/trace-123
+ * // Returns: http://localhost:3001/project/skillforge-test/traces/trace-123
  * const url = getLangfuseTraceUrl('trace-123');
  */
 export function getLangfuseTraceUrl(traceId: string): string {

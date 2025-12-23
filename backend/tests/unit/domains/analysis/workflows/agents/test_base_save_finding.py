@@ -12,8 +12,7 @@ from app.domains.analysis.workflows.agents.base import save_agent_finding
 @pytest.fixture
 def mock_session():
     """Create a mock database session."""
-    session = MagicMock(spec=AsyncSession)
-    return session
+    return MagicMock(spec=AsyncSession)
 
 
 @pytest.fixture

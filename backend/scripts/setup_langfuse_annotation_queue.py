@@ -36,8 +36,10 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-# Load environment variables from .env
-env_path = Path(__file__).parent.parent / ".env"
+# Load environment variables from .env or .env.test
+# Check ENVIRONMENT variable to determine which file to use
+env_file = ".env.test" if os.getenv("ENVIRONMENT") == "test" else ".env"
+env_path = Path(__file__).parent.parent / env_file
 if env_path.exists():
     load_dotenv(env_path)
 
@@ -121,13 +123,15 @@ async def list_annotation_queues(host: str, public_key: str, secret_key: str) ->
 
 
 def update_env_file(queue_id: str) -> None:
-    """Update .env file with LANGFUSE_ANNOTATION_QUEUE_ID.
+    """Update .env or .env.test file with LANGFUSE_ANNOTATION_QUEUE_ID.
 
     Args:
-        queue_id: Queue ID to add to .env
+        queue_id: Queue ID to add to env file
 
     """
-    env_path = Path(__file__).parent.parent / ".env"
+    # Use .env.test in test environment, otherwise .env
+    env_file = ".env.test" if os.getenv("ENVIRONMENT") == "test" else ".env"
+    env_path = Path(__file__).parent.parent / env_file
 
     if not env_path.exists():
         logger.warning(

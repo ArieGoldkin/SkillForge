@@ -272,7 +272,8 @@ def _create_static_fallback(
     return {
         "executive_summary": (
             f"Analysis completed with {agent_count} specialized agents. "
-            f"Full synthesis unavailable - please review individual agent findings for detailed insights."
+            f"Full synthesis unavailable - please review individual agent findings "
+            f"for detailed insights."
         ),
         "key_findings": all_insights[:5]
         if all_insights
@@ -284,7 +285,10 @@ def _create_static_fallback(
             "recommendations": "Recommendations available in agent findings.",
         },
         "coverage_score": 0.3,
-        "generation_notes": "Static fallback - full synthesis unavailable. Agent findings contain detailed analysis.",
+        "generation_notes": (
+            "Static fallback - full synthesis unavailable. "
+            "Agent findings contain detailed analysis."
+        ),
         # Empty optional fields for full schema compatibility
         "core_concepts": [],
         "exercises": [],
@@ -370,7 +374,8 @@ async def _attempt_synthesis(  # noqa: PLR0913
     return extract_structured_response(final_result, "aggregation")
 
 
-MINIMAL_SYSTEM_PROMPT = """You are an expert technical analyst creating a MINIMAL emergency synthesis.
+MINIMAL_SYSTEM_PROMPT = """You are an expert technical analyst creating a MINIMAL
+emergency synthesis.
 
 Due to processing constraints, you must generate ONLY the essential fields:
 - executive_summary: 2-3 sentences capturing the essence

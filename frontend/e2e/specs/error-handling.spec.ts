@@ -1,7 +1,12 @@
+ 
 import { test, expect } from '@playwright/test';
 
+import { logger } from '../utils';
+
+ 
 test.describe('Error Handling Tests', () => {
   test('should display 404 for unknown routes', async ({ page }) => {
+    // With storageState, direct navigation is optimized (reuses browser state)
     await page.goto('/this-route-does-not-exist-at-all');
 
     // Should show 404 or not found message - use heading for specificity
@@ -183,9 +188,10 @@ test.describe('Error Handling Tests', () => {
 
     // Log for debugging in CI
     if (!anySucceeded) {
-      console.log('No valid outcome detected. Outcomes:', outcomes.map((o, i) =>
+      const outcomeDetails = outcomes.map((o, i) =>
         `${i}: ${o.status}${o.status === 'rejected' ? ` (${(o as PromiseRejectedResult).reason?.message || 'unknown'})` : ''}`
-      ));
+      );
+      logger.warn('No valid outcome detected', { outcomes: outcomeDetails });
     }
 
     expect(anySucceeded).toBe(true);
@@ -253,7 +259,7 @@ test.describe('Error Handling Tests', () => {
     const didNavigate = currentUrl !== initialUrl || result.type === 'navigated';
 
     // Try to check button state (might not exist if navigated)
-    let buttonState = { exists: false, disabled: false };
+    const buttonState = { exists: false, disabled: false };
     try {
       const buttonVisible = await submitButton.isVisible({ timeout: 2000 });
       if (buttonVisible) {

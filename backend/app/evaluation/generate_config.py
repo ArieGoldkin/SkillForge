@@ -212,7 +212,9 @@ def _hypothesis_rationale(task_type: str) -> str:
     rationales = {
         "supervisor": "Fast routing requires low latency; Gemini Flash offers best speed/cost",
         "agent": "Analysis quality needs strong reasoning; balanced models like GPT-4o-mini",
-        "synthesis": "Aggregation benefits from longer context; Claude excels at coherent summaries",
+        "synthesis": (
+            "Aggregation benefits from longer context; Claude excels at coherent summaries"
+        ),
     }
     return rationales.get(task_type, "No specific rationale")
 

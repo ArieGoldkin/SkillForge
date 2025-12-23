@@ -81,7 +81,7 @@ async def main() -> int:
                 f"""
                 SELECT id, url
                 FROM analyses
-                WHERE status = 'completed'
+                WHERE status = 'complete'
                   AND ({host_predicate})
                 ORDER BY created_at
                 """

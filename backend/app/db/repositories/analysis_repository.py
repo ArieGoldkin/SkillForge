@@ -13,13 +13,11 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import EMBEDDING_DIMENSIONS
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.models.progress import AnalysisProgress
 from app.db.session import get_db
-
-# Embedding dimensions constant (OpenAI text-embedding-3-small)
-EMBEDDING_DIMENSIONS = 1536
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -30,8 +28,8 @@ logger = get_logger(__name__)
 class IAnalysisRepository(Protocol):
     """Protocol interface for analysis repository operations."""
 
-    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
-        """Get a single analysis by ID."""
+    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+        """Get a single analysis by ID with optional validation."""
         ...
 
     async def create_analysis(
@@ -77,6 +75,16 @@ class IAnalysisRepository(Protocol):
         """Mark an analysis as failed with error details."""
         ...
 
+    async def record_error(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        stage: str,
+    ) -> None:
+        """Record error details for an analysis without changing status."""
+        ...
+
     async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
         """Get all progress events for an analysis."""
         ...
@@ -94,10 +102,73 @@ class AnalysisRepository:
         """
         self.session = session
 
-    async def get_by_id(self, analysis_id: uuid.UUID) -> Analysis | None:
-        """Get analysis by ID."""
+    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+        """Get analysis by ID with optional validation.
+
+        Args:
+            analysis_id: UUID of the analysis
+            validate: Whether to validate data integrity (default: True)
+
+        Returns:
+            Analysis if found, None otherwise
+
+        """
         result = await self.session.execute(select(Analysis).where(Analysis.id == analysis_id))
-        return result.scalar_one_or_none()
+        analysis = result.scalar_one_or_none()
+
+        if not analysis:
+            return None
+
+        if validate:
+            # Validate data integrity
+            errors = self._validate_analysis_data(analysis)
+            if errors:
+                logger.warning(
+                    "read_validation_warning",
+                    analysis_id=str(analysis_id),
+                    status=analysis.status,
+                    errors=errors,
+                    message="Analysis data integrity issues detected",
+                )
+                # Don't fail - return data with warning
+
+        return analysis
+
+    def _validate_analysis_data(self, analysis: Analysis) -> list[str]:
+        """Validate analysis data against expected schema.
+
+        Args:
+            analysis: Analysis model instance
+
+        Returns:
+            List of validation error messages (empty if valid)
+
+        """
+        errors: list[str] = []
+
+        # Status-specific validation
+        if analysis.status == "complete":
+            if not analysis.raw_content:
+                errors.append("complete analysis missing raw_content")
+            # Check if content_embedding is None or empty
+            # Can't use `if not analysis.content_embedding` because arrays/lists are truthy
+            # Type guard: check if it's a list/array before using len()
+            if analysis.content_embedding is None or (
+                isinstance(analysis.content_embedding, list)
+                and len(analysis.content_embedding) == 0
+            ):
+                errors.append("complete analysis missing embedding")
+            if not analysis.extraction_metadata:
+                errors.append("complete analysis missing metadata")
+            if analysis.content_embedding is not None:
+                # Type guard: content_embedding is a list when not None
+                embedding_list = analysis.content_embedding
+                if isinstance(embedding_list, list) and len(embedding_list) != EMBEDDING_DIMENSIONS:
+                    errors.append(
+                        f"embedding has {len(embedding_list)} dims, expected {EMBEDDING_DIMENSIONS}"
+                    )
+
+        return errors
 
     async def create_analysis(
         self,
@@ -317,6 +388,53 @@ class AnalysisRepository:
             analysis_id=str(analysis_id),
             error_code=error_code,
             failed_at_stage=failed_at_stage,
+        )
+
+    async def record_error(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        stage: str,
+    ) -> None:
+        """Record error details for an analysis without changing status.
+
+        Updates error tracking fields without changing the analysis status.
+        Useful for recording intermediate errors during workflow execution.
+
+        Args:
+            analysis_id: UUID of the analysis
+            error_code: Error code for categorization (e.g., "QUALITY_GATE_FAILED")
+            error_message: Human-readable error description
+            stage: Workflow stage where error occurred
+
+        Raises:
+            NoResultFound: If analysis_id doesn't exist
+
+        """
+        stmt = (
+            update(Analysis)
+            .where(Analysis.id == analysis_id)
+            .values(
+                error_code=error_code,
+                error_message=error_message,
+                failed_at_stage=stage,
+            )
+        )
+        result = await self.session.execute(stmt)
+
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        await self.session.commit()
+
+        logger.info(
+            "analysis_error_recorded",
+            analysis_id=str(analysis_id),
+            error_code=error_code,
+            stage=stage,
         )
 
     async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:

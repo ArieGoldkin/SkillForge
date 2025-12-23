@@ -122,10 +122,10 @@ async def main(replace: bool = False) -> int:
     from sqlalchemy import text
 
     from app.core.logging import get_logger
-    from app.db.session import AsyncSessionLocal
     from app.db.models.analysis import Analysis
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
+    from app.db.session import AsyncSessionLocal
     from app.shared.services.embeddings import EmbeddingService
 
     logger = get_logger(__name__)
@@ -187,7 +187,7 @@ async def main(replace: bool = False) -> int:
                 id=analysis_id,
                 url=source_url,
                 content_type=content_type,
-                status="completed",
+                status="complete",
                 title=doc_title,
             )
             session.add(analysis)
@@ -263,7 +263,7 @@ async def main(replace: bool = False) -> int:
 
         # Verify results
         result = await session.execute(
-            text("SELECT COUNT(*) FROM analyses WHERE status = 'completed'")
+            text("SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
         )
         analyses_count = result.scalar()
 

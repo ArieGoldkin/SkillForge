@@ -6,6 +6,63 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 
+class AnalysisStatus(str, Enum):
+    """Analysis status values with semantic meaning.
+
+    Status values accurately describe the current state of an analysis.
+    The 'complete' status is ONLY set when artifact exists and is valid.
+    """
+
+    # Lifecycle states
+    PENDING = "pending"
+    EXTRACTING = "extracting"
+    ANALYZING = "analyzing"
+    GENERATING_ARTIFACT = "generating_artifact"
+    COMPLETE = "complete"  # Only when artifact exists and is valid!
+
+    # Failure states
+    EXTRACTION_FAILED = "extraction_failed"
+    ANALYSIS_FAILED = "analysis_failed"
+    ARTIFACT_FAILED = "artifact_failed"  # Workflow done, but no artifact
+    QUALITY_GATE_FAILED = "quality_gate_failed"
+    FAILED = "failed"  # Generic fallback
+
+    # User actions
+    CANCELLED = "cancelled"
+
+    @classmethod
+    def is_failure(cls, status: str) -> bool:
+        """Check if status represents a failure state.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status is a failure state, False otherwise
+
+        """
+        return status in {
+            cls.EXTRACTION_FAILED,
+            cls.ANALYSIS_FAILED,
+            cls.ARTIFACT_FAILED,
+            cls.QUALITY_GATE_FAILED,
+            cls.FAILED,
+        }
+
+    @classmethod
+    def is_complete(cls, status: str) -> bool:
+        """Check if status represents successful completion.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status is 'complete', False otherwise
+
+        """
+        return status == cls.COMPLETE
+
+
 class AnalyzeRequest(BaseModel):
     """Request schema for creating a new analysis.
 
@@ -95,7 +152,14 @@ class AnalyzeCreateResponse(BaseModel):
 
 
 class AnalyzeStatusResponse(BaseModel):
-    """Response schema for analysis status and artifact lookup."""
+    """Response schema for analysis status and artifact lookup.
+
+    Error Tracking Fields (Issue #441):
+        error_code: Machine-readable error code for categorization (e.g., "QUALITY_GATE_FAILED")
+        error_message: Human-readable error description for debugging
+        failed_at_stage: Workflow stage where error occurred (e.g., "quality_gate", "extraction")
+
+    """
 
     analysis_id: str = Field(..., description="Unique identifier for the analysis")
     url: str = Field(..., description="Source URL that was analyzed")
@@ -105,6 +169,15 @@ class AnalyzeStatusResponse(BaseModel):
     artifact_id: str | None = Field(None, description="Latest artifact id if generated")
     created_at: str = Field(..., description="Timestamp when analysis was created")
     updated_at: str = Field(..., description="Timestamp when analysis was last updated")
+
+    # Error tracking fields (Issue #441)
+    error_code: str | None = Field(
+        None, description="Error code for categorization (e.g., 'QUALITY_GATE_FAILED')"
+    )
+    error_message: str | None = Field(None, description="Human-readable error description")
+    failed_at_stage: str | None = Field(
+        None, description="Workflow stage where error occurred (e.g., 'quality_gate')"
+    )
 
 
 class ProgressEventResponse(BaseModel):

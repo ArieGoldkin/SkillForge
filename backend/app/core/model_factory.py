@@ -20,7 +20,8 @@ logger = get_logger(__name__)
 # Maps specific task types to optimized models (cheaper/faster)
 TASK_MODEL_MAP: dict[str, str] = {
     "supervisor": "claude-haiku-3-5-20241022",  # Fast classification
-    "g_eval": "gemini-3-flash-preview",  # Dec 2025: Gemini 3 Flash (released Dec 17, 2025) - frontier quality
+    # Dec 2025: Gemini 3 Flash (released Dec 17, 2025) - frontier quality
+    "g_eval": "gemini-3-flash-preview",
     # "agent" and "synthesis" use the default model from settings
 }
 

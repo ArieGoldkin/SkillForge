@@ -15,13 +15,14 @@
  */
 import { useEffect, useMemo, useRef } from 'react'
 
-import { isErrorEvent } from '@app-types/sse'
+import { isErrorEvent, isFailedStage } from '@app-types/sse'
 import type { SSEEvent } from '@app-types/sse'
 import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'
 
+import { collectErrorCodesFromEvents, collectErrorCodesFromStages } from './errorCodeCollection'
 import { useActivityFeed } from './useActivityFeed'
 import type { AgentActivity } from './useActivityFeed'
 import { useAnalysisMetadata } from './useAnalysisMetadata'
@@ -56,6 +57,7 @@ export interface AnalysisProgressData {
   traceId?: string // Langfuse trace ID for feedback submission
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: {
     title?: string
     contentType?: 'article' | 'video' | 'repo'
@@ -163,14 +165,39 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   }, [events])
 
   // ========================================================================
-  // 7. Calculate Failed Stages Count
+  // 7. Calculate Failed Stages Count and Collect Error Codes
   // ========================================================================
-  const { hasFailedStages, failedStagesCount } = useMemo(() => {
-    const failedCount = Array.from(stageStatuses.values()).filter(
+  // Count failures from both error events and failed progress events
+  // This ensures we detect all failures regardless of how the backend emits them
+  const { hasFailedStages, failedStagesCount, failedStageErrorCodes } = useMemo(() => {
+    // Count failed stages from stageStatuses (progress events with status="failed")
+    const failedFromStatuses = Array.from(stageStatuses.values()).filter(
       (s) => s.status === 'failed'
     ).length
-    return { hasFailedStages: failedCount > 0, failedStagesCount: failedCount }
-  }, [stageStatuses])
+
+    // Count all failed events (both error events and failed progress events)
+    // Note: We use isFailedStage to ensure we're counting both types correctly
+    const totalFailed = events.filter(isFailedStage).length
+
+    // Use the maximum of the two counts to handle edge cases where
+    // stageStatuses might not have been updated yet but error events exist
+    const failedCount = Math.max(failedFromStatuses, totalFailed)
+
+    // Collect error codes from failed stages and events
+    const errorCodes = new Set<string>()
+    for (const code of collectErrorCodesFromStages(stageStatuses)) {
+      errorCodes.add(code)
+    }
+    for (const code of collectErrorCodesFromEvents(events)) {
+      errorCodes.add(code)
+    }
+
+    return {
+      hasFailedStages: failedCount > 0,
+      failedStagesCount: failedCount,
+      failedStageErrorCodes: Array.from(errorCodes),
+    }
+  }, [events, stageStatuses])
 
   // ========================================================================
   // 8. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
@@ -196,6 +223,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       overallProgress,
       hasFailedStages,
       failedStagesCount,
+      failedStageErrorCodes: failedStageErrorCodes.length > 0 ? failedStageErrorCodes : undefined,
       analysisMetadata: analysisMetadata || undefined,
     }
 
@@ -235,6 +263,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     overallProgress,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
     setAnalysisMetadata,
   ])
@@ -253,6 +282,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     traceId,
     hasFailedStages,
     failedStagesCount,
+    failedStageErrorCodes,
     analysisMetadata,
     skipReasons,
     stageSuccessMetrics,

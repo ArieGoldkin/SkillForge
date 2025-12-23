@@ -171,11 +171,11 @@ class TestAgentMemoryServiceProactiveRecall:
         async def mock_search(query, memory_type, limit, threshold):
             if memory_type == MemoryType.VULNERABILITY_PATTERN:
                 return [MemorySearchResult(memory=mock_memory_2, similarity=0.95)]
-            else:  # BEST_PRACTICE
-                return [
-                    MemorySearchResult(memory=mock_memory_1, similarity=0.72),
-                    MemorySearchResult(memory=mock_memory_3, similarity=0.85),
-                ]
+            # BEST_PRACTICE
+            return [
+                MemorySearchResult(memory=mock_memory_1, similarity=0.72),
+                MemorySearchResult(memory=mock_memory_3, similarity=0.85),
+            ]
 
         service.search = AsyncMock(side_effect=mock_search)
 

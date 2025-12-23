@@ -10,6 +10,7 @@ import uuid
 from app.core.agent_config import get_stage_name
 from app.core.annotation_service import AnnotationService
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
 from app.core.tracing import robust_traceable
@@ -26,7 +27,10 @@ from app.domains.analysis.workflows.tasks.artifact_helpers import (
     build_claude_code_prompt,
     extract_artifact_metadata,
 )
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 from app.shared.services.utils.markdown import sanitize_markdown
 
 logger = get_logger(__name__)
@@ -131,6 +135,19 @@ async def _queue_low_quality_artifact_for_review(
 
     except Exception as e:  # noqa: BLE001 - Graceful degradation
         # Don't fail artifact generation if queuing fails
+        # Record as warning (non-fatal)
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record_warning(
+                analysis_id=str(analysis_id),
+                warning_code="ARTIFACT_QUEUING_FAILED",
+                warning_message=str(e),
+                stage="artifact_generation",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let warning recording break the flow
+
         logger.warning(
             "artifact_queuing_failed",
             analysis_id=analysis_id,
@@ -178,7 +195,10 @@ async def _submit_artifact_quality_scores(
         input_summary = aggregated_insights.get("summary", "")
         if not input_summary:
             # Fallback to a generic description if summary is missing
-            input_summary = "Generate a comprehensive technical implementation guide from the aggregated agent findings."
+            input_summary = (
+                "Generate a comprehensive technical implementation guide from the "
+                "aggregated agent findings."
+            )
 
         logger.info(
             "artifact_g_eval_scoring_started",
@@ -211,6 +231,19 @@ async def _submit_artifact_quality_scores(
 
     except Exception as e:  # noqa: BLE001 - Graceful degradation for quality scoring
         # Don't fail artifact generation if G-Eval scoring fails
+        # Record as warning (non-fatal)
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record_warning(
+                analysis_id=str(analysis_id),
+                warning_code="ARTIFACT_G_EVAL_SCORING_FAILED",
+                warning_message=str(e),
+                stage="artifact_generation",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let warning recording break the flow
+
         logger.warning(
             "artifact_g_eval_scoring_failed",
             analysis_id=analysis_id,
@@ -250,6 +283,13 @@ async def generate_artifact(  # noqa: PLR0915
         Exception: If database operation fails
 
     """
+    # Issue #441: Skip if workflow is aborting
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
+        return {}
+
     analysis_id = state["analysis_id"]
     aggregated_insights = get_aggregated_insights(state)
     agent_findings = get_agent_findings(state)
@@ -294,6 +334,12 @@ async def generate_artifact(  # noqa: PLR0915
         # Validate aggregated_insights exists
         if not aggregated_insights or not isinstance(aggregated_insights, dict):
             error_msg = "aggregated_insights is missing or invalid"
+            await emit_error_event(
+                analysis_id=analysis_id,
+                stage=get_stage_name("artifact_generation"),
+                error=error_msg,
+                error_code="ARTIFACT_GENERATION_FAILED",
+            )
             logger.error(
                 "workflow_artifact_generation_missing_insights",
                 analysis_id=analysis_id,
@@ -426,15 +472,15 @@ async def generate_artifact(  # noqa: PLR0915
         )
 
         # Return only updated fields, not entire state
-        return {"artifact_id": artifact_id}
+        # Issue #441: Set workflow_status to "completed" for orchestrator validation
+        return {"artifact_id": artifact_id, "workflow_status": "completed"}
 
     except Exception as e:
-        # Emit SSE event: artifact generation failed
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        stage_name = get_stage_name("artifact_generation")
+        await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("artifact_generation"),
-            status="failed",
+            stage=stage_name,
             error=str(e),
             error_code="ARTIFACT_GENERATION_FAILED",
         )
@@ -445,4 +491,9 @@ async def generate_artifact(  # noqa: PLR0915
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Artifact generation failed: {e}",
+        ) from e

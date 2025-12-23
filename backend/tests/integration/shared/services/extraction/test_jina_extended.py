@@ -64,7 +64,6 @@ async def test_retry_behavior(requires_jina_api_key):
     """
     # Retry behavior is verified in error handling tests
     # This test is kept for documentation purposes
-    pass
 
 
 @pytest.fixture

@@ -6,10 +6,12 @@ parallel execution patterns using fan-out and fan-in with Send API.
 
 import os
 import uuid
+from collections.abc import Callable
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
+from langgraph.types import Send
 
 from app.core.config import settings
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
@@ -287,8 +289,8 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
 
     # SSE: chunking started
     from app.shared.services.messaging.sse_helpers import (
-        emit_streaming_event,
-    )  # local import to avoid cycles
+        emit_streaming_event,  # local import to avoid cycles
+    )
 
     await emit_streaming_event(
         "progress",
@@ -351,8 +353,10 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     Returns only the fields being updated to avoid LangGraph concurrent update errors.
     """
     # Issue #441: Skip if workflow is aborting
-    if state.get("should_abort"):
-        logger.debug("supervisor_skipped_abort", analysis_id=state.get("analysis_id"))
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
         return {}
 
     content = state["raw_content"]
@@ -472,7 +476,8 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     quality_scores_raw = state.get("quality_scores", {})
     retry_count = int(state.get("quality_gate_retry_count", 0) or 0)
 
-    # Extract score values from nested structure (e.g., {"relevance": {"score": 0.3, "comment": "..."}})
+    # Extract score values from nested structure
+    # (e.g., {"relevance": {"score": 0.3, "comment": "..."}})
     # to flat structure (e.g., {"relevance": 0.3})
     quality_scores_flat: dict[str, float] = {}
     if quality_scores_raw:
@@ -513,12 +518,26 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     # Return quality metadata but don't mark as failed - let artifact generation continue
     return {
         "quality_gate_passed": False,
-        "quality_gate_warning": f"Low quality (avg_score={avg_score:.2f}) after {retry_count} retries",
+        "quality_gate_warning": (
+            f"Low quality (avg_score={avg_score:.2f}) after {retry_count} retries"
+        ),
     }
 
 
-def build_analysis_graph():
+def build_analysis_graph(
+    route_to_agents_fn: Callable[[AnalysisState], list[Send]] | None = None,
+    checkpointer_override: Any | None = None,
+):
     """Build StateGraph workflow with native parallel execution using Send API.
+
+    This function supports dependency injection for testability. Optional parameters
+    allow tests to inject mocked routing functions and checkpointers.
+
+    Args:
+        route_to_agents_fn: Optional custom routing function for supervisor->agent routing.
+            Defaults to route_to_agents from agent_router module.
+        checkpointer_override: Optional checkpointer instance to use instead of default.
+            Defaults to _get_checkpointer() which returns PostgresSaver or MemorySaver.
 
     Workflow structure:
     1. Extract content (sequential)
@@ -546,6 +565,11 @@ def build_analysis_graph():
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
 
     """
+    # Apply dependency injection defaults
+    # Use provided functions/objects or fall back to module defaults
+    routing_fn = route_to_agents_fn or route_to_agents
+    checkpointer = checkpointer_override or _get_checkpointer()
+
     # Create graph with AnalysisState
     # LangGraph lacks type stubs for TypedDict state
     graph = StateGraph(AnalysisState)  # type: ignore[arg-type]
@@ -602,7 +626,7 @@ def build_analysis_graph():
     # All agent nodes are potential targets
     graph.add_conditional_edges(
         "supervisor",
-        route_to_agents,
+        routing_fn,
         [
             "tech_comparator",
             "security_auditor",
@@ -666,7 +690,7 @@ def build_analysis_graph():
     graph.add_edge("generate_artifact", END)
 
     # Compile with checkpointer
-    checkpointer = _get_checkpointer()
+    # Use the checkpointer (already set to default if not provided via DI)
     compiled_graph = graph.compile(checkpointer=checkpointer)
 
     # Set step timeout (in seconds) - LangGraph handles cancellation gracefully

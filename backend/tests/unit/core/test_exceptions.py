@@ -1,70 +1,46 @@
-"""Unit tests for exception hierarchy."""
+"""Unit tests for exception utilities."""
 
-from app.core.exceptions import (
-    DatabaseError,
-    EmbeddingError,
-    JinaReaderError,
-    ServiceException,
-    SkillForgeException,
-    WorkflowError,
-)
+import pytest
+
+from app.core.exceptions import is_cleanup_generator_exit
 
 
-def test_exception_hierarchy() -> None:
-    """Test that exceptions follow the correct hierarchy."""
-    # Base exception
-    assert issubclass(SkillForgeException, Exception)
-
-    # Service exceptions
-    assert issubclass(ServiceException, SkillForgeException)
-    assert issubclass(EmbeddingError, ServiceException)
-    assert issubclass(JinaReaderError, ServiceException)
-
-    # Other exceptions
-    assert issubclass(WorkflowError, SkillForgeException)
-    assert issubclass(DatabaseError, SkillForgeException)
+@pytest.mark.unit
+def test_is_cleanup_generator_exit_cleanup_case():
+    """Test that cleanup GeneratorExit is detected correctly."""
+    # Cleanup GeneratorExit (workflow completed)
+    assert is_cleanup_generator_exit(GeneratorExit(), workflow_completed=True) is True
 
 
-def test_exception_instantiation() -> None:
-    """Test that exceptions can be instantiated with messages."""
-    base_exc = SkillForgeException("Base error")
-    assert str(base_exc) == "Base error"
-
-    service_exc = ServiceException("Service error")
-    assert str(service_exc) == "Service error"
-    assert isinstance(service_exc, SkillForgeException)
-
-    embedding_exc = EmbeddingError("Embedding failed")
-    assert str(embedding_exc) == "Embedding failed"
-    assert isinstance(embedding_exc, ServiceException)
-    assert isinstance(embedding_exc, SkillForgeException)
-
-    jina_exc = JinaReaderError("Jina extraction failed")
-    assert str(jina_exc) == "Jina extraction failed"
-    assert isinstance(jina_exc, ServiceException)
-    assert isinstance(jina_exc, SkillForgeException)
-
-    workflow_exc = WorkflowError("Workflow failed")
-    assert str(workflow_exc) == "Workflow failed"
-    assert isinstance(workflow_exc, SkillForgeException)
-
-    db_exc = DatabaseError("Database error")
-    assert str(db_exc) == "Database error"
-    assert isinstance(db_exc, SkillForgeException)
+@pytest.mark.unit
+def test_is_cleanup_generator_exit_execution_case():
+    """Test that execution GeneratorExit is detected correctly."""
+    # Execution GeneratorExit (workflow didn't complete)
+    assert is_cleanup_generator_exit(GeneratorExit(), workflow_completed=False) is False
 
 
-def test_exception_catching() -> None:
-    """Test that exceptions can be caught by base class."""
-    try:
-        msg = "Test error"
-        raise EmbeddingError(msg)
-    except SkillForgeException as e:
-        assert isinstance(e, EmbeddingError)
-        assert str(e) == "Test error"
+@pytest.mark.unit
+def test_is_cleanup_generator_exit_converted_runtime_error():
+    """Test that converted RuntimeError from GeneratorExit is detected."""
+    # Converted RuntimeError (Python async runtime converts GeneratorExit)
+    converted_error = RuntimeError("coroutine ignored GeneratorExit")
+    assert is_cleanup_generator_exit(converted_error, workflow_completed=True) is True
+    assert is_cleanup_generator_exit(converted_error, workflow_completed=False) is False
 
-    try:
-        msg = "Test error"
-        raise JinaReaderError(msg)
-    except ServiceException as e:
-        assert isinstance(e, JinaReaderError)
-        assert str(e) == "Test error"
+
+@pytest.mark.unit
+def test_is_cleanup_generator_exit_other_runtime_error():
+    """Test that other RuntimeErrors are not detected as GeneratorExit."""
+    # Other RuntimeError (not from GeneratorExit)
+    other_error = RuntimeError("some other error")
+    assert is_cleanup_generator_exit(other_error, workflow_completed=True) is False
+    assert is_cleanup_generator_exit(other_error, workflow_completed=False) is False
+
+
+@pytest.mark.unit
+def test_is_cleanup_generator_exit_other_exception():
+    """Test that other exceptions are not detected as GeneratorExit."""
+    # Other exception types
+    assert is_cleanup_generator_exit(ValueError("test"), workflow_completed=True) is False
+    assert is_cleanup_generator_exit(KeyError("test"), workflow_completed=False) is False
+    assert is_cleanup_generator_exit(Exception("test"), workflow_completed=True) is False

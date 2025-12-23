@@ -2,13 +2,17 @@
 
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID, EmbeddingVector
 from app.shared.services.chunking.chunker import ChunkText
 from app.shared.services.chunking.summaries import SummaryChunk
 from app.shared.services.embeddings.service import EmbeddingService
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 
 logger = get_logger(__name__)
 
@@ -77,12 +81,25 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             embedding_dimensions=len(embedding),
         )
     except Exception as e:
-        # Emit SSE event: embedding failed
-        await emit_streaming_event(
-            "error",
+        # Record error to database before emitting events
+        from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=EMBEDDING_FAILED,
+                error_message=str(e),
+                stage="embedding",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
+
+        # Emit error event using standardized helper
+        stage_name = get_stage_name("embedding")
+        await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="failed",
+            stage=stage_name,
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )
@@ -92,7 +109,12 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Embedding generation failed: {e}",
+        ) from e
     finally:
         await embedding_service.close()
 
@@ -149,11 +171,25 @@ async def generate_embeddings_batch(
             normalize=normalize,
         )
     except Exception as e:
-        await emit_streaming_event(
-            "error",
+        # Record error to database before emitting events
+        from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=EMBEDDING_FAILED,
+                error_message=str(e),
+                stage="embedding",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
+
+        # Emit error event using standardized helper
+        stage_name = get_stage_name("embedding")
+        await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="failed",
+            stage=stage_name,
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )
@@ -163,7 +199,12 @@ async def generate_embeddings_batch(
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Batch embedding generation failed: {e}",
+        ) from e
     finally:
         await embedding_service.close()
 

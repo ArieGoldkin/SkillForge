@@ -63,7 +63,10 @@ async def search_memory(
 
     Examples:
         # Find similar security vulnerabilities
-        search_memory(query="XSS vulnerabilities in React apps", memory_type="vulnerability_pattern")
+        search_memory(
+            query="XSS vulnerabilities in React apps",
+            memory_type="vulnerability_pattern"
+        )
 
         # Look up best practices for API design
         search_memory(query="REST API authentication best practices")

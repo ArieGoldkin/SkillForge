@@ -137,7 +137,10 @@ class RegressionReport:
                 [
                     "**Status**: ⚠️ NO BASELINE (first run)",
                     "",
-                    "No baseline results found for comparison. This evaluation will establish the baseline.",
+                    (
+                        "No baseline results found for comparison. "
+                        "This evaluation will establish the baseline."
+                    ),
                     "",
                 ]
             )

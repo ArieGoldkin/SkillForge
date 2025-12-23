@@ -76,9 +76,7 @@ def main():
 
         # Test 5: Check library API has data
         print("\n[5/5] Testing library API...")
-        library_response = page.request.get(
-            "http://localhost:8500/api/v1/library/analyses?limit=5"
-        )
+        library_response = page.request.get("http://localhost:8500/api/v1/library/analyses?limit=5")
         if library_response.ok:
             library_data = library_response.json()
             total = library_data.get("total", 0)

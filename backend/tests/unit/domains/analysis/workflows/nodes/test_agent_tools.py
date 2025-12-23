@@ -192,7 +192,7 @@ class TestToolToAgentMap:
 
     def test_tool_to_agent_map_agent_names_valid(self):
         """Test TOOL_TO_AGENT_MAP agent names follow naming conventions."""
-        for _tool_name, agent_name in TOOL_TO_AGENT_MAP.items():
+        for agent_name in TOOL_TO_AGENT_MAP.values():
             # Agent names should be snake_case
             assert agent_name.islower()
             assert "_" in agent_name or len(agent_name.split("_")) == 1

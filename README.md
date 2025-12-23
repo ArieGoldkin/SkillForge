@@ -286,7 +286,10 @@ VITE_API_URL=http://localhost:8500
 - Production-ready MCP endpoints
 
 ### Testing & Deployment
-- E2E testing suite
+- **E2E testing suite** with Playwright
+  - Optimized with storageState (50-70% faster execution)
+  - Parallel execution (4 workers in CI)
+  - See [frontend/e2e/README.md](frontend/e2e/README.md) for details
 - Performance optimization
 - Production deployment (Vercel + Railway)
 

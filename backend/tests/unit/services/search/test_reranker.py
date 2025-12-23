@@ -68,8 +68,7 @@ def mock_model():
 @pytest.fixture
 def reranker(mock_model):
     """Create a ReRanker with mocked LLM model."""
-    reranker = ReRanker(model=mock_model)
-    return reranker
+    return ReRanker(model=mock_model)
 
 
 class TestReRankerBasic:

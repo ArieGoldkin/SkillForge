@@ -9,6 +9,7 @@ interface ProgressColumnProps {
   steps: ProgressStep[]
   hasFailedStages?: boolean
   failedStagesCount?: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: {
     title?: string
     contentType?: 'article' | 'video' | 'repo'
@@ -28,6 +29,7 @@ export const ProgressColumn = memo(function ProgressColumn({
   steps,
   hasFailedStages = false,
   failedStagesCount = 0,
+  failedStageErrorCodes = [],
   analysisMetadata,
 }: ProgressColumnProps) {
   return (
@@ -43,6 +45,7 @@ export const ProgressColumn = memo(function ProgressColumn({
         wordCount={analysisMetadata?.wordCount}
         hasFailedStages={hasFailedStages}
         failedStagesCount={failedStagesCount}
+        failedStageErrorCodes={failedStageErrorCodes}
       />
       <AnalysisStepList steps={steps} />
     </div>

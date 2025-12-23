@@ -32,8 +32,31 @@ export default function Home() {
     setError(null)
     try {
       // Use real backend API with skill level
+      logger.info('Creating analysis', { url, skillLevel })
       const response = await analyzeAPI.createAnalysis({ url, skill_level: skillLevel })
-      navigate({ to: '/analyze/$id', params: { id: response.analysis_id } })
+
+      logger.info('Analysis created, navigating', {
+        analysisId: response.analysis_id,
+        sseEndpoint: response.sse_endpoint,
+        status: response.status,
+      })
+
+      // Navigate to analysis page
+      const targetPath = `/analyze/${response.analysis_id}`
+      logger.info('Navigating to', { targetPath, analysisId: response.analysis_id })
+
+      try {
+        navigate({ to: '/analyze/$id', params: { id: response.analysis_id } })
+        logger.info('Navigation called', { analysisId: response.analysis_id })
+      } catch (navError) {
+        logger.error('Navigation failed', {
+          error: navError instanceof Error ? navError.message : String(navError),
+          analysisId: response.analysis_id,
+          stack: navError instanceof Error ? navError.stack : undefined,
+        })
+        // Fallback to window.location if router navigation fails
+        window.location.href = targetPath
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create analysis'
       setError(message)
@@ -41,6 +64,7 @@ export default function Home() {
         error: err instanceof Error ? err.message : String(err),
         url,
         skillLevel,
+        stack: err instanceof Error ? err.stack : undefined,
       })
     } finally {
       setIsSubmitting(false)

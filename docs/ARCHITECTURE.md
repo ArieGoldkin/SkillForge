@@ -171,13 +171,15 @@ graph TB
     end
     
     subgraph "Data Layer [Yonatan]"
-        PostgreSQL[(PostgreSQL)]
+        PostgreSQL[(PostgreSQL 17)]
         PGVector[(PGVector)]
         Alembic[Alembic Migrations]
+        LZ4[LZ4 Compression]
         
         Repos --> PostgreSQL
         Services --> PGVector
         Alembic --> PostgreSQL
+        PostgreSQL --> LZ4
     end
     
     subgraph "External Services"
@@ -844,6 +846,17 @@ graph TB
 ## Backend Architecture Patterns
 
 This section documents the key architectural patterns and best practices used in the SkillForge backend.
+
+### Storage Optimization
+
+**PostgreSQL TOAST Compression:**
+- `raw_content` column uses LZ4 compression (PostgreSQL 17)
+- Automatic compression for values > 2KB
+- Transparent to application layer
+- 2-3x faster compression/decompression vs default pglz
+- Improves performance for large content operations
+
+**Migration:** `20251222_enable_lz4_compression_raw_content`
 
 ### Repository Pattern
 
