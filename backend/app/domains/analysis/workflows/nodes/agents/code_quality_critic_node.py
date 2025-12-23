@@ -14,9 +14,8 @@ import time
 from langfuse import observe
 
 from app.core.logging import get_logger
-from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
-from app.domains.analysis.workflows.agents.base import emit_agent_progress
+from app.domains.analysis.workflows.agents.base import handle_agent_node_error
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
     get_fallback_content,
@@ -113,90 +112,13 @@ async def code_quality_critic_node(state: AnalysisState) -> dict[str, object]:
 
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
-    except GeneratorExit:
-        # GeneratorExit during execution (cancellation/timeout) - return empty for
-        # graceful degradation. Cleanup GeneratorExit is handled by robust_traceable wrapper
+    except (GeneratorExit, TimeoutError, ValueError, Exception) as e:  # noqa: BLE001 - Intentional: catch all exceptions for graceful degradation
+        # Centralized error handling via shared helper (reduces return statements)
         duration = time.time() - start_time
-        logger.warning(
-            "agent_node_cancelled",
+        return await handle_agent_node_error(
+            error=e,
+            analysis_id=analysis_id,
             agent_type="code_quality_critic",
-            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
-            exception_type="GeneratorExit",
-            duration_seconds=duration,
-            step_timeout=STEP_TIMEOUT,
+            duration=duration,
             trace_id=trace_id,
-            handled_gracefully=True,
         )
-        # Return empty findings on cancellation (allows other agents to continue)
-        return {"agent_findings": []}
-    except TimeoutError:
-        # Agent execution exceeded timeout
-        duration = time.time() - start_time
-        processing_time_ms = int(duration * 1000)
-
-        await emit_agent_progress(
-            analysis_id,
-            "code_quality_critic",
-            "failed",
-            error="Agent execution timed out",
-            error_code="CODE_QUALITY_CRITIC_TIMEOUT",
-            processing_time_ms=processing_time_ms,
-        )
-        logger.warning(
-            "code_quality_critic_timeout",
-            analysis_id=str(analysis_id),
-            duration_seconds=duration,
-            timeout_seconds=STEP_TIMEOUT,
-        )
-        # Return empty findings to allow other agents to continue
-        return {"agent_findings": []}
-    except ValueError as e:
-        # Specificity validation failed
-        duration = time.time() - start_time
-        processing_time_ms = int(duration * 1000)
-
-        await emit_agent_progress(
-            analysis_id,
-            "code_quality_critic",
-            "failed",
-            error=f"Specificity validation failed: {e!r}",
-            error_code="CODE_QUALITY_CRITIC_SPECIFICITY_FAILED",
-            processing_time_ms=processing_time_ms,
-        )
-        logger.warning(
-            "code_quality_critic_specificity_failed",
-            analysis_id=str(analysis_id),
-            error=str(e),
-            duration_seconds=duration,
-        )
-        # Return empty findings to allow other agents to continue
-        return {"agent_findings": []}
-    except Exception as e:
-        # Unexpected errors (database, LLM API, etc.)
-        duration = time.time() - start_time
-        processing_time_ms = int(duration * 1000)
-
-        # Emit failed event using existing emit_agent_progress helper
-        await emit_agent_progress(
-            analysis_id,
-            "code_quality_critic",
-            "failed",
-            error=str(e),
-            error_code="CODE_QUALITY_CRITIC_FAILED",
-            processing_time_ms=processing_time_ms,
-        )
-
-        logger.error(
-            "agent_node_failed",
-            agent_type="code_quality_critic",
-            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
-            error_type=type(e).__name__,
-            error=str(e),
-            duration_seconds=duration,
-            step_timeout=STEP_TIMEOUT,
-            trace_id=trace_id,
-            handled_gracefully=True,  # Returns empty findings, doesn't break workflow
-            exc_info=True,
-        )
-        # Return empty findings on error (allows other agents to continue)
-        return {"agent_findings": []}

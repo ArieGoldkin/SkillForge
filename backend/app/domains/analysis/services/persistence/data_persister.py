@@ -27,6 +27,51 @@ class DataPersister:
         """Initialize persister with validator."""
         self.validator = WorkflowResultValidator()
 
+    def _validate_and_convert_workflow_result(
+        self,
+        workflow_result: dict | WorkflowResult,
+        validate: bool,
+    ) -> WorkflowResult:
+        """Validate and convert workflow result to WorkflowResult type.
+
+        Args:
+            workflow_result: Dictionary or WorkflowResult containing workflow state
+            validate: Whether to validate dict before conversion (default: True)
+
+        Returns:
+            Validated WorkflowResult instance
+
+        Raises:
+            ValueError: If validation fails or conversion fails
+            TypeError: If workflow_result is not dict or WorkflowResult
+
+        """
+        if isinstance(workflow_result, dict):
+            if validate:
+                validated, errors = self.validator.validate(workflow_result, "completed")
+                if errors:
+                    error_msg = f"Invalid workflow result: {errors}"
+                    raise ValueError(error_msg)
+                if validated is None:
+                    error_msg = "Validation returned None unexpectedly"
+                    raise ValueError(error_msg)
+                return validated
+            # If validation disabled, still need to convert to WorkflowResult
+            # This is for edge cases where caller knows data is valid
+            try:
+                return WorkflowResult.model_validate(workflow_result)
+            except Exception as e:
+                error_msg = (
+                    f"Invalid workflow result (validation disabled but conversion failed): {e}"
+                )
+                raise ValueError(error_msg) from e
+        if isinstance(workflow_result, WorkflowResult):
+            return workflow_result
+        type_error_msg = (
+            f"workflow_result must be dict or WorkflowResult, got {type(workflow_result)}"
+        )
+        raise TypeError(type_error_msg)
+
     async def persist(
         self,
         analysis_id: uuid.UUID,
@@ -51,35 +96,10 @@ class DataPersister:
             RuntimeError: If persistence fails due to database error
 
         """
-        # Validate dict if provided, use WorkflowResult directly
-        validated_workflow_result: WorkflowResult
-        if isinstance(workflow_result, dict):
-            if validate:
-                validated, errors = self.validator.validate(workflow_result, "completed")
-                if errors:
-                    error_msg = f"Invalid workflow result: {errors}"
-                    raise ValueError(error_msg)
-                if validated is None:
-                    error_msg = "Validation returned None unexpectedly"
-                    raise ValueError(error_msg)
-                validated_workflow_result = validated
-            else:
-                # If validation disabled, still need to convert to WorkflowResult
-                # This is for edge cases where caller knows data is valid
-                try:
-                    validated_workflow_result = WorkflowResult.model_validate(workflow_result)
-                except Exception as e:
-                    error_msg = (
-                        f"Invalid workflow result (validation disabled but conversion failed): {e}"
-                    )
-                    raise ValueError(error_msg) from e
-        elif isinstance(workflow_result, WorkflowResult):
-            validated_workflow_result = workflow_result
-        else:
-            type_error_msg = (
-                f"workflow_result must be dict or WorkflowResult, got {type(workflow_result)}"
-            )
-            raise TypeError(type_error_msg)
+        # Validate and convert workflow result (extracted to reduce branches)
+        validated_workflow_result = self._validate_and_convert_workflow_result(
+            workflow_result, validate
+        )
 
         try:
             async with AsyncSessionLocal() as db_session:
