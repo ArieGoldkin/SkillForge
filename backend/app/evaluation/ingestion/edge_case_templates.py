@@ -85,8 +85,7 @@ TECH_CONTENT_SNIPPETS: list[str] = [
 SPECIAL_CHAR_TEMPLATES: list[dict[str, str]] = [
     {
         "content": (
-            "Performance metrics: ∑(latency) = 100ms, ∏(throughput) > 1000 req/s, "
-            "∫cost dt = $50/mo"
+            "Performance metrics: ∑(latency) = 100ms, ∏(throughput) > 1000 req/s, ∫cost dt = $50/mo"
         ),
         "note": "Unicode math symbols",
     },
@@ -296,10 +295,8 @@ MULTILINGUAL_TEMPLATES: list[dict[str, str]] = [
         "note": "Mixed language with code comments",
     },
     {
-        # noqa: RUF001
         "content": (
-            "Reactのパフォーマンスを最適化する方法を教えてください。"
-            "ベストプラクティスは何ですか？"
+            "Reactのパフォーマンスを最適化する方法を教えてください。ベストプラクティスは何ですか？"  # noqa: RUF001
         ),
         "language": "Japanese",
         "note": "Full Japanese technical question",
@@ -313,8 +310,8 @@ MULTILINGUAL_TEMPLATES: list[dict[str, str]] = [
     },
     {
         "content": (
-            "Как настроить CI/CD pipeline с GitHub Actions? Нужен пример для Python проекта."
-        ),  # noqa: RUF001
+            "Как настроить CI/CD pipeline с GitHub Actions? Нужен пример для Python проекта."  # noqa: RUF001
+        ),
         "language": "Russian",
         "note": "Full Russian technical question",
     },
@@ -364,9 +361,7 @@ class EdgeCaseTemplates:
             else:
                 content_parts.append(" ")
 
-        return (
-            "".join(content_parts).strip()
-        )
+        return "".join(content_parts).strip()
 
     def apply_misspellings(self, text: str, typo_rate: float = 0.3) -> str:
         """Apply realistic typos to text.

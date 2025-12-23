@@ -64,8 +64,7 @@ class LearningPath(DataAvailabilityMixin):
     )
     total_estimated_time: str = Field(
         description=(
-            "Total estimated time to complete the entire path "
-            "(e.g., '20-30 hours', '2 weeks')"
+            "Total estimated time to complete the entire path (e.g., '20-30 hours', '2 weeks')"
         )
     )
     mastery_indicators: list[str] = Field(

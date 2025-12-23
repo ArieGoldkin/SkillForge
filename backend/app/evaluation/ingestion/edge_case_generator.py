@@ -567,8 +567,7 @@ class EdgeCaseGenerator:
                 "updated_at": datetime.now(UTC).isoformat(),
                 "release_tag": "draft",
                 "description": (
-                    f"Edge case examples for agent robustness testing "
-                    f"({len(examples)} examples)"
+                    f"Edge case examples for agent robustness testing ({len(examples)} examples)"
                 ),
                 "maintainers": ["edge_case_generator"],
             },

@@ -234,10 +234,8 @@ async def run_task_experiments(
             else:
                 info = MODEL_REGISTRY[model_id]
                 print(
-                    (
-                        f"  {model_id}: ${info.input_cost_per_1m}/1M input, "
-                        f"${info.output_cost_per_1m}/1M output"
-                    )
+                    f"  {model_id}: ${info.input_cost_per_1m}/1M input, "
+                    f"${info.output_cost_per_1m}/1M output"
                 )
 
         return {
@@ -462,10 +460,8 @@ Examples:
         print("Available models:")
         for name, info in sorted(MODEL_REGISTRY.items()):
             print(
-                (
-                    f"  {name}: {info.display_name} "
-                    f"(${info.input_cost_per_1m}/1M in, ${info.output_cost_per_1m}/1M out)"
-                )
+                f"  {name}: {info.display_name} "
+                f"(${info.input_cost_per_1m}/1M in, ${info.output_cost_per_1m}/1M out)"
             )
         return
 

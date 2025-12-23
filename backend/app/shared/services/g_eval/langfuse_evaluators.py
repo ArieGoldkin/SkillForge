@@ -383,8 +383,7 @@ def average_g_eval_score_evaluator(*, item_results: list, **_kwargs: Any):
         value=avg,
         data_type="NUMERIC",
         comment=(
-            f"Average: {avg:.3f} (range: {min_score:.3f}-{max_score:.3f}, "
-            f"n={len(overall_scores)})"
+            f"Average: {avg:.3f} (range: {min_score:.3f}-{max_score:.3f}, n={len(overall_scores)})"
         ),
         metadata={
             "total_items": len(item_results),
