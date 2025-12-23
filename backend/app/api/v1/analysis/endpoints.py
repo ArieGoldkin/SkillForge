@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -31,8 +31,18 @@ from app.shared.services.extraction.content_type import ContentTypeError, detect
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
 
-# Workflow instance (created on first use, reused for all requests)
-_workflow_instance = None
+
+class WorkflowCache:
+    """Cache for workflow instance to avoid global variable."""
+
+    _instance: Any = None
+
+    @classmethod
+    def get_or_create(cls) -> Any:
+        """Get cached workflow instance or create new one."""
+        if cls._instance is None:
+            cls._instance = create_analysis_workflow()
+        return cls._instance
 
 
 def get_orchestrator() -> WorkflowOrchestrator:
@@ -40,10 +50,8 @@ def get_orchestrator() -> WorkflowOrchestrator:
 
     For FastAPI dependency injection. Creates workflow on first call.
     """
-    global _workflow_instance
-    if _workflow_instance is None:
-        _workflow_instance = create_analysis_workflow()
-    return WorkflowOrchestrator(workflow=_workflow_instance)
+    workflow = WorkflowCache.get_or_create()
+    return WorkflowOrchestrator(workflow=workflow)
 
 
 def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task]) -> None:

@@ -108,9 +108,7 @@ class WorkflowStageError(SkillForgeException):
             result = await generate_embedding(content, analysis_id)
         except Exception as e:
             raise WorkflowStageError(
-                stage="embedding",
-                original_exception=e,
-                message=f"Embedding generation failed: {e}"
+                stage="embedding", original_exception=e, message=f"Embedding generation failed: {e}"
             )
         ```
 

@@ -64,6 +64,7 @@ def create_analysis_workflow():
 
     Returns:
         Compiled StateGraph ready for execution
+
     """
     try:
         workflow = build_analysis_graph()
@@ -80,5 +81,3 @@ def create_analysis_workflow():
         )
         # Re-raise to prevent application startup with broken workflow
         raise
-
-

@@ -6,7 +6,7 @@ parallel execution patterns using fan-out and fan-in with Send API.
 
 import os
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -521,8 +521,20 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     }
 
 
-def build_analysis_graph():
+def build_analysis_graph(
+    route_to_agents_fn: Callable[[AnalysisState], list[Send]] | None = None,
+    checkpointer_override: Any | None = None,
+):
     """Build StateGraph workflow with native parallel execution using Send API.
+
+    This function supports dependency injection for testability. Optional parameters
+    allow tests to inject mocked routing functions and checkpointers.
+
+    Args:
+        route_to_agents_fn: Optional custom routing function for supervisor->agent routing.
+            Defaults to route_to_agents from agent_router module.
+        checkpointer_override: Optional checkpointer instance to use instead of default.
+            Defaults to _get_checkpointer() which returns PostgresSaver or MemorySaver.
 
     Workflow structure:
     1. Extract content (sequential)
@@ -550,6 +562,11 @@ def build_analysis_graph():
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
 
     """
+    # Apply dependency injection defaults
+    # Use provided functions/objects or fall back to module defaults
+    routing_fn = route_to_agents_fn or route_to_agents
+    checkpointer = checkpointer_override or _get_checkpointer()
+
     # Create graph with AnalysisState
     # LangGraph lacks type stubs for TypedDict state
     graph = StateGraph(AnalysisState)  # type: ignore[arg-type]
@@ -670,8 +687,8 @@ def build_analysis_graph():
     graph.add_edge("generate_artifact", END)
 
     # Compile with checkpointer
-    checkpointer_instance = checkpointer or _get_checkpointer()
-    compiled_graph = graph.compile(checkpointer=checkpointer_instance)
+    # Use the checkpointer (already set to default if not provided via DI)
+    compiled_graph = graph.compile(checkpointer=checkpointer)
 
     # Set step timeout (in seconds) - LangGraph handles cancellation gracefully
     # This prevents any single node from running indefinitely

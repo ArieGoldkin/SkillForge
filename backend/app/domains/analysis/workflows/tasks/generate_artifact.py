@@ -10,6 +10,7 @@ import uuid
 from app.core.agent_config import get_stage_name
 from app.core.annotation_service import AnnotationService
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.template_utils import render_jinja_template
 from app.core.tracing import robust_traceable

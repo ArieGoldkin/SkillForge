@@ -89,10 +89,11 @@ class WorkflowEventEmitter:
             # Require explicit stage - no default fallback
             if stage is None:
                 error_type_name = type(error).__name__
-                raise ValueError(
+                error_msg = (
                     f"Stage must be provided when error is not WorkflowStageError. "
                     f"Got error type: {error_type_name}"
                 )
+                raise ValueError(error_msg)
             error_stage = stage
             error_message = str(error)
 

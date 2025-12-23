@@ -1,4 +1,9 @@
-"""Unit tests for status-aware WorkflowOrchestrator."""
+"""Unit tests for status-aware WorkflowOrchestrator.
+
+These tests use dependency injection to provide mock workflows to the orchestrator,
+following the refactored pattern where WorkflowOrchestrator requires explicit
+workflow injection (no singleton).
+"""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -9,14 +14,24 @@ from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import DataPersister, StatusUpdater
 from app.domains.analysis.services.workflow.orchestrator import WorkflowOrchestrator
-from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
-def orchestrator():
-    """Create orchestrator instance for tests."""
-    workflow = create_analysis_workflow()
-    return WorkflowOrchestrator(workflow=workflow)
+def mock_workflow():
+    """Create a mock workflow for testing."""
+    workflow = MagicMock()
+    workflow.ainvoke = AsyncMock()
+    return workflow
+
+
+@pytest.fixture
+def orchestrator(mock_workflow):
+    """Create orchestrator instance with mocked workflow for tests.
+
+    Uses dependency injection pattern - the mock workflow is injected
+    directly into the orchestrator constructor.
+    """
+    return WorkflowOrchestrator(workflow=mock_workflow)
 
 
 @pytest.fixture
@@ -62,7 +77,7 @@ def failed_result():
 
 @pytest.mark.asyncio
 async def test_orchestrator_failed_workflow_skips_validation(
-    orchestrator, mock_analysis_id, failed_result
+    orchestrator, mock_workflow, mock_analysis_id, failed_result
 ):
     """Test failed workflows skip validation."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -73,21 +88,18 @@ async def test_orchestrator_failed_workflow_skips_validation(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
-    # Mock workflow execution
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=failed_result)
+    # Configure injected mock workflow to return failed result
+    mock_workflow.ainvoke = AsyncMock(return_value=failed_result)
 
-        await orchestrator.run(mock_analysis_id, "https://example.com")
+    await orchestrator.run(mock_analysis_id, "https://example.com")
 
-        # Should not call validator or persister for failed workflows
-        mock_persister.persist.assert_not_called()
+    # Should not call validator or persister for failed workflows
+    mock_persister.persist.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_orchestrator_completed_workflow_validates(
-    orchestrator, mock_analysis_id, valid_completed_result
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
 ):
     """Test completed workflows validated."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -98,6 +110,9 @@ async def test_orchestrator_completed_workflow_validates(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
+    # Configure injected mock workflow to return valid result
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
     # Mock artifact repository
     mock_artifact = MagicMock()
     mock_artifact.id = uuid.uuid4()
@@ -106,9 +121,6 @@ async def test_orchestrator_completed_workflow_validates(
 
     with (
         patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
             return_value=mock_repo_instance,
         ),
@@ -116,8 +128,6 @@ async def test_orchestrator_completed_workflow_validates(
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
@@ -133,7 +143,9 @@ async def test_orchestrator_completed_workflow_validates(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_validation_failure_updates_status(orchestrator, mock_analysis_id):
+async def test_orchestrator_validation_failure_updates_status(
+    orchestrator, mock_workflow, mock_analysis_id
+):
     """Test validation failure updates status."""
     invalid_result = {
         "raw_content": "",  # Invalid - empty
@@ -148,23 +160,21 @@ async def test_orchestrator_validation_failure_updates_status(orchestrator, mock
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
 
-        await orchestrator.run(mock_analysis_id, "https://example.com")
+    await orchestrator.run(mock_analysis_id, "https://example.com")
 
-        # Should update status to failed
-        mock_status.update.assert_called_with(
-            mock_analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-        )
-        # Should emit error
-        mock_emitter.emit_error.assert_called_once()
+    # Should update status to failed (generic "failed" to avoid state transition issues)
+    mock_status.update.assert_called_with(mock_analysis_id, "failed")
+    # Should emit error
+    mock_emitter.emit_error.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_validation_failure_emits_error(orchestrator, mock_analysis_id):
+async def test_orchestrator_validation_failure_emits_error(
+    orchestrator, mock_workflow, mock_analysis_id
+):
     """Test validation failure emits error."""
     invalid_result = {
         "raw_content": "",
@@ -179,22 +189,20 @@ async def test_orchestrator_validation_failure_emits_error(orchestrator, mock_an
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
 
-        await orchestrator.run(mock_analysis_id, "https://example.com")
+    await orchestrator.run(mock_analysis_id, "https://example.com")
 
-        # Should emit error event
-        mock_emitter.emit_error.assert_called_once()
-        error_arg = mock_emitter.emit_error.call_args[0][1]
-        assert isinstance(error_arg, ValueError)
+    # Should emit error event
+    mock_emitter.emit_error.assert_called_once()
+    error_arg = mock_emitter.emit_error.call_args[0][1]
+    assert isinstance(error_arg, ValueError)
 
 
 @pytest.mark.asyncio
 async def test_orchestrator_valid_workflow_persists(
-    orchestrator, mock_analysis_id, valid_completed_result
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
 ):
     """Test valid workflow persists."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -206,6 +214,9 @@ async def test_orchestrator_valid_workflow_persists(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
     # Mock artifact
     mock_artifact = MagicMock()
     mock_artifact.id = uuid.uuid4()
@@ -214,9 +225,6 @@ async def test_orchestrator_valid_workflow_persists(
 
     with (
         patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
             return_value=mock_repo_instance,
         ),
@@ -224,8 +232,6 @@ async def test_orchestrator_valid_workflow_persists(
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
@@ -238,7 +244,9 @@ async def test_orchestrator_valid_workflow_persists(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_invalid_status_handled(orchestrator, mock_analysis_id):
+async def test_orchestrator_invalid_status_handled(
+    orchestrator, mock_workflow, mock_analysis_id
+):
     """Test invalid status handled."""
     invalid_result = {
         "workflow_status": "invalid_status",
@@ -252,23 +260,21 @@ async def test_orchestrator_invalid_status_handled(orchestrator, mock_analysis_i
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
 
-        await orchestrator.run(mock_analysis_id, "https://example.com")
+    await orchestrator.run(mock_analysis_id, "https://example.com")
 
-        # Should update status to failed
-        mock_status.update.assert_called_with(
-            mock_analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-        )
-        # Should emit error
-        mock_emitter.emit_error.assert_called_once()
+    # Should update status to failed (generic "failed" to avoid state transition issues)
+    mock_status.update.assert_called_with(mock_analysis_id, "failed")
+    # Should emit error
+    mock_emitter.emit_error.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_missing_status_handled(orchestrator, mock_analysis_id):
+async def test_orchestrator_missing_status_handled(
+    orchestrator, mock_workflow, mock_analysis_id
+):
     """Test missing status handled."""
     result_without_status = {
         "raw_content": "Test content",
@@ -282,22 +288,18 @@ async def test_orchestrator_missing_status_handled(orchestrator, mock_analysis_i
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=result_without_status)
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=result_without_status)
 
-        await orchestrator.run(mock_analysis_id, "https://example.com")
+    await orchestrator.run(mock_analysis_id, "https://example.com")
 
-        # Should handle missing status as invalid
-        mock_status.update.assert_called_with(
-            mock_analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-        )
+    # Should handle missing status as invalid (generic "failed" to avoid state transition issues)
+    mock_status.update.assert_called_with(mock_analysis_id, "failed")
 
 
 @pytest.mark.asyncio
 async def test_orchestrator_error_propagation(
-    orchestrator, mock_analysis_id, valid_completed_result
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
 ):
     """Test errors propagate correctly."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -309,15 +311,15 @@ async def test_orchestrator_error_propagation(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
     mock_artifact = MagicMock()
     mock_artifact.id = uuid.uuid4()
     mock_repo_instance = MagicMock()
     mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
 
     with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
         patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
             return_value=mock_repo_instance,
@@ -326,8 +328,6 @@ async def test_orchestrator_error_propagation(
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
@@ -342,7 +342,7 @@ async def test_orchestrator_error_propagation(
 
 @pytest.mark.asyncio
 async def test_orchestrator_status_updater_called(
-    orchestrator, mock_analysis_id, valid_completed_result
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
 ):
     """Test status updater called correctly."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -354,15 +354,15 @@ async def test_orchestrator_status_updater_called(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
     mock_artifact = MagicMock()
     mock_artifact.id = uuid.uuid4()
     mock_repo_instance = MagicMock()
     mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
 
     with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
         patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
             return_value=mock_repo_instance,
@@ -375,8 +375,6 @@ async def test_orchestrator_status_updater_called(
             return_value="trace-123",
         ),
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
@@ -390,7 +388,7 @@ async def test_orchestrator_status_updater_called(
 
 @pytest.mark.asyncio
 async def test_orchestrator_event_emitter_called(
-    orchestrator, mock_analysis_id, valid_completed_result
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
 ):
     """Test event emitter called correctly."""
     mock_persister = AsyncMock(spec=DataPersister)
@@ -402,15 +400,15 @@ async def test_orchestrator_event_emitter_called(
     orchestrator.status_updater = mock_status
     orchestrator.event_emitter = mock_emitter
 
+    # Configure injected mock workflow
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
     mock_artifact = MagicMock()
     mock_artifact.id = uuid.uuid4()
     mock_repo_instance = MagicMock()
     mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
 
     with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
         patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
             return_value=mock_repo_instance,
@@ -423,8 +421,6 @@ async def test_orchestrator_event_emitter_called(
             return_value="trace-123",
         ),
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)

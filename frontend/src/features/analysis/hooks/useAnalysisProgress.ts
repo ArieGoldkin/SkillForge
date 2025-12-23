@@ -185,8 +185,12 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
 
     // Collect error codes from failed stages and events
     const errorCodes = new Set<string>()
-    collectErrorCodesFromStages(stageStatuses).forEach((code) => errorCodes.add(code))
-    collectErrorCodesFromEvents(events).forEach((code) => errorCodes.add(code))
+    for (const code of collectErrorCodesFromStages(stageStatuses)) {
+      errorCodes.add(code)
+    }
+    for (const code of collectErrorCodesFromEvents(events)) {
+      errorCodes.add(code)
+    }
 
     return {
       hasFailedStages: failedCount > 0,

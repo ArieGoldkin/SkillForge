@@ -142,8 +142,9 @@ class AnalysisRepository:
                 errors.append("complete analysis missing raw_content")
             # Check if content_embedding is None or empty
             # Can't use `if not analysis.content_embedding` because arrays/lists are truthy
+            # Type guard: check if it's a list/array before using len()
             if analysis.content_embedding is None or (
-                hasattr(analysis.content_embedding, "__len__")
+                isinstance(analysis.content_embedding, list)
                 and len(analysis.content_embedding) == 0
             ):
                 errors.append("complete analysis missing embedding")

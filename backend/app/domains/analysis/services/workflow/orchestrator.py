@@ -26,6 +26,7 @@ class WorkflowOrchestrator:
 
         Args:
             workflow: Compiled workflow graph instance (required)
+
         """
         self.workflow = workflow
         self.status_updater = StatusUpdater()
