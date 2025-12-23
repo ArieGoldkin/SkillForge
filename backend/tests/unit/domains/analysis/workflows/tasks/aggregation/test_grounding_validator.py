@@ -266,9 +266,7 @@ class TestValidateGrounding:
         Key features include checkpointing and state management.
         Works with LangChain ecosystem and supports Python.
         """
-        is_grounded, score, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, score, warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert is_grounded is True
         assert score >= 0.15
@@ -286,9 +284,7 @@ class TestValidateGrounding:
         The Claude API provides streaming and function calling features.
         Implementation uses Python SDK with async support.
         """
-        is_grounded, score, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, score, warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert is_grounded is False
         assert score < 0.15
@@ -301,24 +297,18 @@ class TestValidateGrounding:
         generated = "python java spring mongodb redis"
 
         # With low threshold, should pass
-        is_grounded, score, _ = validate_grounding(
-            source, generated, min_overlap=0.05
-        )
+        is_grounded, _score, _ = validate_grounding(source, generated, min_overlap=0.05)
         assert is_grounded is True  # 1/5 = 0.2 >= 0.05
 
         # With high threshold, should fail
-        is_grounded, score, _ = validate_grounding(
-            source, generated, min_overlap=0.5
-        )
+        is_grounded, _score, _ = validate_grounding(source, generated, min_overlap=0.5)
         assert is_grounded is False  # 0.2 < 0.5
 
     def test_empty_source(self) -> None:
         """Empty source content returns low score."""
         source = ""
         generated = "python fastapi postgresql"
-        is_grounded, score, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, score, _warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert score == 0.0
         assert is_grounded is False
@@ -327,9 +317,7 @@ class TestValidateGrounding:
         """Empty generated content returns low score."""
         source = "python fastapi postgresql"
         generated = ""
-        is_grounded, score, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, score, _warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert score == 0.0
         assert is_grounded is False
@@ -364,9 +352,7 @@ class TestValidateGrounding:
         source = "alibaba qwen3 chinese model training"
         generated = "anthropic claude api streaming implementation"
 
-        is_grounded, _, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, _, warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert is_grounded is False
         assert len(warnings) > 0
@@ -391,9 +377,7 @@ class TestValidateGrounding:
         for automatic documentation and request validation.
         """
 
-        is_grounded, score, warnings = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        is_grounded, score, warnings = validate_grounding(source, generated, min_overlap=0.15)
 
         assert is_grounded is True
         assert score > 0.3  # Should have good overlap
@@ -413,9 +397,7 @@ class TestValidateGrounding:
         # Some overlap (langgraph, multi-agent, workflows, state)
         # But also new terms (autogpt, babyagi, crewai)
 
-        is_grounded, score, _ = validate_grounding(
-            source, generated, min_overlap=0.15
-        )
+        _is_grounded, score, _ = validate_grounding(source, generated, min_overlap=0.15)
 
         # Should still pass with reasonable overlap
         assert score > 0  # Has some valid terms

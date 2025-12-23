@@ -140,16 +140,12 @@ class TestCalculateDataSufficiency:
         assert len(result.coverage_gaps) == 2
 
         # Check first gap (security_auditor)
-        security_gap = next(
-            g for g in result.coverage_gaps if g.agent_name == "security_auditor"
-        )
+        security_gap = next(g for g in result.coverage_gaps if g.agent_name == "security_auditor")
         assert security_gap.data_availability == "limited"
         assert "high-level architecture" in security_gap.note
 
         # Check second gap (code_quality_critic)
-        quality_gap = next(
-            g for g in result.coverage_gaps if g.agent_name == "code_quality_critic"
-        )
+        quality_gap = next(g for g in result.coverage_gaps if g.agent_name == "code_quality_critic")
         assert quality_gap.data_availability == "insufficient"
         assert "minimal data found" in quality_gap.impact
 
@@ -175,10 +171,7 @@ class TestCalculateDataSufficiency:
             [{"agent_name": "a", "data_availability": "sufficient"}],
             [{"agent_name": "a", "data_availability": "insufficient"}],
             # Many agents (more than expected)
-            [
-                {"agent_name": f"agent_{i}", "data_availability": "sufficient"}
-                for i in range(20)
-            ],
+            [{"agent_name": f"agent_{i}", "data_availability": "sufficient"} for i in range(20)],
         ]
 
         for findings in test_cases:
@@ -193,8 +186,7 @@ class TestSynthesisModeRecommendations:
         """Score >= 0.5 recommends normal mode."""
         # Need 4 agents with sufficient data for 50%
         findings = [
-            {"agent_name": f"agent_{i}", "data_availability": "sufficient"}
-            for i in range(4)
+            {"agent_name": f"agent_{i}", "data_availability": "sufficient"} for i in range(4)
         ]
         result = calculate_data_sufficiency(findings)
 
@@ -205,8 +197,7 @@ class TestSynthesisModeRecommendations:
         """Score between 0.3-0.5 recommends limited mode."""
         # 3 agents with sufficient = 0.375 (between thresholds)
         findings = [
-            {"agent_name": f"agent_{i}", "data_availability": "sufficient"}
-            for i in range(3)
+            {"agent_name": f"agent_{i}", "data_availability": "sufficient"} for i in range(3)
         ]
         result = calculate_data_sufficiency(findings)
 
@@ -218,8 +209,7 @@ class TestSynthesisModeRecommendations:
         """Score < 0.3 recommends fallback mode."""
         # 2 agents with sufficient = 0.25 (below fallback threshold)
         findings = [
-            {"agent_name": f"agent_{i}", "data_availability": "sufficient"}
-            for i in range(2)
+            {"agent_name": f"agent_{i}", "data_availability": "sufficient"} for i in range(2)
         ]
         result = calculate_data_sufficiency(findings)
 
