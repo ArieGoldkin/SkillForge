@@ -172,7 +172,7 @@ AGENT_SCOPES: dict[str, ContextScope] = {
 }
 
 
-def build_scoped_context(
+def build_scoped_context(  # noqa: PLR0912
     full_state: AnalysisState,
     agent_type: str,
     scope: ContextScope | None = None,
