@@ -42,12 +42,15 @@ async def _get_lock(analysis_id: uuid.UUID) -> asyncio.Lock:
 
 # Valid status transitions
 # Format: {from_status: {to_status1, to_status2, ...}}  # noqa: ERA001
+# Note: All intermediate states allow "complete" transition for fast-track completion
+# when workflow finishes before DB status updates (Issue #441)
 VALID_TRANSITIONS: Mapping[str, set[str]] = {
-    # Normal workflow progression
-    "pending": {"extracting", "failed", "cancelled"},
-    "extracting": {"analyzing", "extraction_failed", "failed", "cancelled"},
+    # Normal workflow progression (with fast-track to complete)
+    "pending": {"extracting", "complete", "failed", "cancelled"},
+    "extracting": {"analyzing", "complete", "extraction_failed", "failed", "cancelled"},
     "analyzing": {
         "generating_artifact",
+        "complete",  # Fast-track when workflow completes quickly
         "analysis_failed",
         "quality_gate_failed",
         "failed",

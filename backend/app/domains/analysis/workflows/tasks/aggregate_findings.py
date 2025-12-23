@@ -121,6 +121,21 @@ async def _handle_aggregation_error(
         Dictionary with aggregated_insights containing fallback data
 
     """
+    # Record error to database FIRST to make failure visible
+    from app.domains.analysis.constants.error_codes import AGGREGATION_FAILED
+    from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+    try:
+        await error_recorder.record(
+            analysis_id=str(analysis_id),
+            error_code=AGGREGATION_FAILED,
+            error_message=str(error),
+            stage="aggregate_findings",
+        )
+    except Exception:  # noqa: S110, BLE001
+        # Don't fail if error recording fails (e.g., invalid UUID in tests)
+        pass
+
     await emit_aggregation_failed(analysis_id, str(error))
 
     logger.error(

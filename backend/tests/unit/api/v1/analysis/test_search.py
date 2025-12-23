@@ -14,8 +14,7 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_repo():
-    repo = AsyncMock()
-    return repo
+    return AsyncMock()
 
 
 @pytest.fixture

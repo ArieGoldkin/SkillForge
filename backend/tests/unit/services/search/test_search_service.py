@@ -34,11 +34,10 @@ class TestTechnicalQueryDetection:
             mock_embedding_service.model = "test-model"
             mock_embedding_service.expected_dimensions = 1536
 
-            service = SearchService(
+            return SearchService(
                 session=mock_session,
                 embedding_service=mock_embedding_service,
             )
-            return service
 
     def test_technical_query_with_langgraph(self, search_service):
         """LangGraph query should be detected as technical."""
@@ -88,11 +87,10 @@ class TestMetadataBoosts:
             mock_embedding_service.model = "test-model"
             mock_embedding_service.expected_dimensions = 1536
 
-            service = SearchService(
+            return SearchService(
                 session=mock_session,
                 embedding_service=mock_embedding_service,
             )
-            return service
 
     def _make_result(
         self,

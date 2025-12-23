@@ -75,6 +75,16 @@ class IAnalysisRepository(Protocol):
         """Mark an analysis as failed with error details."""
         ...
 
+    async def record_error(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        stage: str,
+    ) -> None:
+        """Record error details for an analysis without changing status."""
+        ...
+
     async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
         """Get all progress events for an analysis."""
         ...
@@ -378,6 +388,53 @@ class AnalysisRepository:
             analysis_id=str(analysis_id),
             error_code=error_code,
             failed_at_stage=failed_at_stage,
+        )
+
+    async def record_error(
+        self,
+        analysis_id: uuid.UUID,
+        error_code: str,
+        error_message: str,
+        stage: str,
+    ) -> None:
+        """Record error details for an analysis without changing status.
+
+        Updates error tracking fields without changing the analysis status.
+        Useful for recording intermediate errors during workflow execution.
+
+        Args:
+            analysis_id: UUID of the analysis
+            error_code: Error code for categorization (e.g., "QUALITY_GATE_FAILED")
+            error_message: Human-readable error description
+            stage: Workflow stage where error occurred
+
+        Raises:
+            NoResultFound: If analysis_id doesn't exist
+
+        """
+        stmt = (
+            update(Analysis)
+            .where(Analysis.id == analysis_id)
+            .values(
+                error_code=error_code,
+                error_message=error_message,
+                failed_at_stage=stage,
+            )
+        )
+        result = await self.session.execute(stmt)
+
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        await self.session.commit()
+
+        logger.info(
+            "analysis_error_recorded",
+            analysis_id=str(analysis_id),
+            error_code=error_code,
+            stage=stage,
         )
 
     async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:

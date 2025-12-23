@@ -28,6 +28,7 @@ def build_test_graph(
 
     Returns:
         Compiled graph ready for testing
+
     """
     return build_analysis_graph(
         route_to_agents_fn=route_to_agents_mock,
@@ -114,6 +115,7 @@ async def create_test_analysis(
         test_url: URL to analyze
         initial_status: Initial status (default: "pending").
                        Use "analyzing" for errors that occur after extraction/embedding.
+
     """
     async with AsyncSessionLocal() as session:
         analysis = Analysis(
@@ -221,6 +223,7 @@ async def verify_progress_event_failed(
 
     Returns:
         The progress event that was found
+
     """
     async with AsyncSessionLocal() as session:
         # Find progress event with status="failed" for the expected stage

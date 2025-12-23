@@ -9,12 +9,6 @@ IMPORTANT: Integration tests require:
 - Langfuse credentials (LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY)
 """
 
-import pytest
-from fastapi import FastAPI
-
-# Import app and lifespan for lifecycle initialization
-from app.main import app, lifespan
-
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Import app and lifespan for lifecycle initialization
 from app.main import app, lifespan
 
+# Import app and lifespan for lifecycle initialization
+
 # CRITICAL: Load .env BEFORE any other imports to get real API keys
 # Integration tests need real keys, not placeholders
 _env_file = Path(__file__).parent.parent.parent / ".env"
@@ -37,13 +33,8 @@ if _env_file.exists():
     # Override=True ensures we get real keys from .env, not placeholders
     load_dotenv(_env_file, override=True)
 
-# Enable Langfuse tracing for integration tests
-# Integration tests should send traces to Langfuse for real workflow observability
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-
-# Set project for integration tests
-# This helps organize integration test traces separately from production traces
-os.environ.setdefault("LANGCHAIN_PROJECT", "skillforge-integration-tests")
+# Note: Langfuse tracing is configured via LANGFUSE_* environment variables
+# LANGCHAIN_TRACING_V2 was used for LangSmith but is NOT needed for Langfuse
 
 # Note: Langfuse credentials should be set via:
 # 1. .env file (loaded above)
@@ -87,6 +78,7 @@ async def create_complete_analysis(
         ...     title="Test Article",
         ...     raw_content="Full article content here",
         ... )
+
     """
     from app.db.models.analysis import Analysis
 
@@ -149,6 +141,7 @@ async def create_pending_analysis(
         ...     content_type="video",
         ...     status="extracting",
         ... )
+
     """
     from app.db.models.analysis import Analysis
 

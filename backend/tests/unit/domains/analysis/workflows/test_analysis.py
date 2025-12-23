@@ -1,13 +1,16 @@
 """Unit tests for analysis workflow."""
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
 import pytest
 
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
-from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.services.extraction.jina_reader import JinaReaderError
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -137,11 +140,12 @@ async def test_analysis_workflow_with_mocked_services(
         assert result["analysis_id"] == TEST_ANALYSIS_ID
         assert result["url"] == "https://example.com"
         assert result["raw_content"] == sample_extraction_result["content"]
-        # extraction_metadata now includes title and word_count from top-level fields
+        # extraction_metadata now includes title, word_count, and char_count from top-level fields
         expected_metadata = {
             **sample_extraction_result["metadata"],
             "title": sample_extraction_result.get("title"),
             "word_count": sample_extraction_result.get("word_count"),
+            "char_count": len(sample_extraction_result["content"]),  # Issue #441
         }
         assert result["extraction_metadata"] == expected_metadata
         assert result["content_embedding"] == sample_embedding
@@ -165,6 +169,9 @@ async def test_analysis_workflow_error_handling() -> None:
     with patch(
         "app.domains.analysis.workflows.tasks.extract_content.JinaReader", return_value=mock_jina
     ):
+        # Create workflow
+        analysis_workflow = create_analysis_workflow()
+
         # LangGraph catches exceptions in nodes and the workflow wrapper catches BaseException
         # JinaReaderError is an Exception (not BaseException), so it should propagate
         # However, LangGraph may handle it internally, so we check that the error is logged

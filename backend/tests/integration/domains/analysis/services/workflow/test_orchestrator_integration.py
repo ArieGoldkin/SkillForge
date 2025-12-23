@@ -44,8 +44,8 @@ async def test_orchestrator_real_failed_workflow(orchestrator, db_session):
 
     await orchestrator_with_mock.run(analysis_id, "https://example.com/failed")
 
-        # Verify status updated (should be handled by workflow_failed node)
-        # This test verifies orchestrator doesn't crash on failed workflows
+    # Verify status updated (should be handled by workflow_failed node)
+    # This test verifies orchestrator doesn't crash on failed workflows
 
 
 @pytest.mark.integration
@@ -254,7 +254,8 @@ async def test_orchestrator_concurrent_workflows(orchestrator, db_session):
 
         # Run concurrently
         tasks = [
-            orchestrator_with_mock.run(aid, f"https://example.com/concurrent-{aid}") for aid in analysis_ids
+            orchestrator_with_mock.run(aid, f"https://example.com/concurrent-{aid}")
+            for aid in analysis_ids
         ]
         await asyncio.gather(*tasks)
 

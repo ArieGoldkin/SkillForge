@@ -277,7 +277,7 @@ class TestAdversarialGeneratorAll:
             category_counts[cat] = category_counts.get(cat, 0) + 1
 
         assert len(category_counts) == 6
-        for _cat, count in category_counts.items():
+        for count in category_counts.values():
             assert count == 2
 
     def test_generate_all_full_30(self, generator):

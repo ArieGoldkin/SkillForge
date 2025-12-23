@@ -21,13 +21,16 @@ import pytest
 
 @pytest.mark.unit
 # =============================================================================
-# MOCK CLASSES (avoiding LangSmith imports)
+# MOCK CLASSES (for evaluator testing)
 # =============================================================================
 
 
 @dataclass
 class MockRun:
-    """Mock LangSmith Run class."""
+    """Mock Run class for evaluation testing.
+
+    Represents a traced execution run with outputs, timing, and feedback.
+    """
 
     outputs: dict[str, Any] | None = None
     inputs: dict[str, Any] | None = None
@@ -39,7 +42,10 @@ class MockRun:
 
 @dataclass
 class MockExample:
-    """Mock LangSmith Example class."""
+    """Mock Example class for evaluation testing.
+
+    Represents a golden dataset example with expected inputs/outputs.
+    """
 
     inputs: dict[str, Any] | None = None
     outputs: dict[str, Any] | None = None
@@ -47,7 +53,10 @@ class MockExample:
 
 @dataclass
 class MockFeedback:
-    """Mock LangSmith Feedback class."""
+    """Mock Feedback class for evaluation testing.
+
+    Represents evaluation feedback with key and score.
+    """
 
     key: str
     score: float

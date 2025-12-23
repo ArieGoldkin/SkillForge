@@ -446,8 +446,7 @@ class TestBatchCheckDependencies:
     @pytest.fixture
     def mock_pool(self):
         """Create mock MCPClientPool."""
-        pool = MagicMock()
-        return pool
+        return MagicMock()
 
     @pytest.fixture
     def mock_npm_tool(self):
@@ -544,8 +543,7 @@ class TestBatchCheckVulnerabilities:
     @pytest.fixture
     def mock_pool(self):
         """Create mock MCPClientPool."""
-        pool = MagicMock()
-        return pool
+        return MagicMock()
 
     @pytest.fixture
     def mock_security_tool(self):

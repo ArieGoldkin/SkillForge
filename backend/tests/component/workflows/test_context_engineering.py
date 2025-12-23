@@ -11,6 +11,7 @@ Tests verify the end-to-end behavior of:
 - #270: Tutor ContextCompiler Migration
 """
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -20,7 +21,6 @@ from app.db.models.agent_memory import MemoryType
 from app.domains.analysis.services.context.compaction import CompactionConfig, SessionCompactor
 from app.domains.analysis.services.context.section_extractor import SectionExtractor
 from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
-from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import (
     AGENT_MEMORY_TYPE_MAP,
     _extract_finding_content,
@@ -32,6 +32,9 @@ from app.shared.workflows.context_scope import (
     build_scoped_context,
     translate_findings,
 )
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 class TestContextScopingIntegration:

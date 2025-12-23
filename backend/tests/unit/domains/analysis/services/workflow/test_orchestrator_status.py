@@ -7,7 +7,6 @@ import pytest
 
 from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
-from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture

@@ -338,7 +338,67 @@ async def get_analysis(
         artifact_id=str(artifact.id) if artifact else None,
         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
         updated_at=analysis.updated_at.isoformat() if analysis.updated_at else "",
+        # Error tracking fields (Issue #441)
+        error_code=str(analysis.error_code) if analysis.error_code else None,
+        error_message=str(analysis.error_message) if analysis.error_message else None,
+        failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
     )
+
+
+@router.get(
+    "/analyses/error-summary",
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def get_error_summary(
+    analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
+) -> dict:
+    """Get summary of analysis errors for debugging and monitoring.
+
+    Returns aggregated error statistics showing:
+    - Error codes with counts
+    - Stages where failures occurred
+    - Most common error patterns
+
+    Useful for:
+    - System health monitoring
+    - Identifying systemic issues
+    - Debugging recurring failures
+
+    Returns:
+        Dictionary with error_summary list containing error_code, failed_at_stage, count.
+
+    """
+    from sqlalchemy import func, select
+
+    from app.db.models.analysis import Analysis
+
+    # Get database session from repository
+    # Type ignore: repository implementation has session attribute
+    db = analysis_repo.session  # type: ignore[attr-defined]
+
+    result = await db.execute(
+        select(
+            Analysis.error_code,
+            Analysis.failed_at_stage,
+            func.count(Analysis.id).label("count"),
+        )
+        .where(Analysis.error_code.isnot(None))
+        .group_by(Analysis.error_code, Analysis.failed_at_stage)
+        .order_by(func.count(Analysis.id).desc())
+    )
+
+    error_summary = [
+        {
+            "error_code": row.error_code,
+            "failed_at_stage": row.failed_at_stage,
+            "count": row.count,
+        }
+        for row in result.fetchall()
+    ]
+
+    return {"error_summary": error_summary}
 
 
 @router.get(

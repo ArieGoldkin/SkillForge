@@ -387,6 +387,7 @@ async def handle_agent_node_error(
 
     """
     from app.core.timeout_config import STEP_TIMEOUT
+    from app.domains.analysis.services.persistence.error_recorder import error_recorder
 
     processing_time_ms = int(duration * 1000)
     error_type = type(error).__name__
@@ -408,14 +409,26 @@ async def handle_agent_node_error(
 
     if isinstance(error, TimeoutError):
         # Agent execution exceeded timeout
+        error_code = f"{agent_type.upper()}_TIMEOUT"
+        error_message = "Agent execution timed out"
+
         await emit_agent_progress(
             analysis_id,
             agent_type,
             "failed",
-            error="Agent execution timed out",
-            error_code=f"{agent_type.upper()}_TIMEOUT",
+            error=error_message,
+            error_code=error_code,
             processing_time_ms=processing_time_ms,
         )
+
+        # Record error to database
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code=error_code,
+            error_message=error_message,
+            stage=agent_type,
+        )
+
         logger.warning(
             f"{agent_type}_timeout",
             analysis_id=str(analysis_id),
@@ -426,14 +439,26 @@ async def handle_agent_node_error(
 
     if isinstance(error, ValueError):
         # Specificity validation failed
+        error_code = f"{agent_type.upper()}_SPECIFICITY_FAILED"
+        error_message = f"Specificity validation failed: {error!r}"
+
         await emit_agent_progress(
             analysis_id,
             agent_type,
             "failed",
-            error=f"Specificity validation failed: {error!r}",
-            error_code=f"{agent_type.upper()}_SPECIFICITY_FAILED",
+            error=error_message,
+            error_code=error_code,
             processing_time_ms=processing_time_ms,
         )
+
+        # Record error to database
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code=error_code,
+            error_message=str(error),
+            stage=agent_type,
+        )
+
         logger.warning(
             f"{agent_type}_specificity_failed",
             analysis_id=str(analysis_id),
@@ -443,20 +468,32 @@ async def handle_agent_node_error(
         return {"agent_findings": []}
 
     # Unexpected errors (database, LLM API, etc.)
+    error_code = f"{agent_type.upper()}_FAILED"
+    error_message = str(error)
+
     await emit_agent_progress(
         analysis_id,
         agent_type,
         "failed",
-        error=str(error),
-        error_code=f"{agent_type.upper()}_FAILED",
+        error=error_message,
+        error_code=error_code,
         processing_time_ms=processing_time_ms,
     )
+
+    # Record error to database
+    await error_recorder.record(
+        analysis_id=analysis_id,
+        error_code=error_code,
+        error_message=error_message,
+        stage=agent_type,
+    )
+
     logger.error(
         "agent_node_failed",
         agent_type=agent_type,
         analysis_id=str(analysis_id),
         error_type=error_type,
-        error=str(error),
+        error=error_message,
         duration_seconds=duration,
         step_timeout=STEP_TIMEOUT,
         trace_id=trace_id,

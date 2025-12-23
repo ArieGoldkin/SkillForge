@@ -64,8 +64,8 @@ async def test_constraint_embedding_dimensions(db_session):
         await db_session.execute(
             text(
                 f"""
-                UPDATE analyses 
-                SET content_embedding = '{wrong_embedding_str}'::vector 
+                UPDATE analyses
+                SET content_embedding = '{wrong_embedding_str}'::vector
                 WHERE id = :analysis_id
                 """
             ).bindparams(analysis_id=analysis_id)

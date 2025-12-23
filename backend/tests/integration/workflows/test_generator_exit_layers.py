@@ -1,11 +1,10 @@
-"""Integration tests for GeneratorExit handling across all 5 layers.
+"""Integration tests for GeneratorExit handling across all 4 layers.
 
 Tests the hybrid approach for handling GeneratorExit exceptions:
 1. Layer 1: Async generator cleanup with aclosing()
 2. Layer 2: Robust @traceable wrappers
 3. Layer 3: Workflow-level conditional handling
-4. Layer 4: LangSmith query filtering (manual verification)
-5. Layer 5: Upstream reporting (external)
+4. Layer 4: Langfuse observability (traces auto-captured)
 """
 
 import asyncio
@@ -192,31 +191,10 @@ class TestLayer3WorkflowHandling:
         assert workflow_completed is False
 
 
-# Layer 4 Tests: LangSmith Query Filtering (Unit tests for utility functions)
-class TestLayer4LangSmithQueries:
-    """Test LangSmith query filtering utilities.
-
-    Note: These tests are skipped because the tools.langfuse.queries module
-    was never implemented after the Langfuse migration. Database constraints
-    now prevent creating invalid data, making these utility functions unnecessary
-    for GeneratorExit filtering.
-    """
-
-    @pytest.mark.skip(
-        reason="tools.langfuse.queries module not implemented - functionality may not be needed "
-        "after Langfuse migration and database constraint enforcement"
-    )
-    def test_list_runs_without_generator_exit_filter(self, mock_client_class) -> None:
-        """Test that query filters out GeneratorExit errors."""
-        # Test skipped - module not implemented
-
-    @pytest.mark.skip(
-        reason="tools.langfuse.queries module not implemented - functionality may not be needed "
-        "after Langfuse migration and database constraint enforcement"
-    )
-    def test_get_generator_exit_count(self, mock_client_class) -> None:
-        """Test GeneratorExit count utility."""
-        # Test skipped - module not implemented
+# Layer 4: Langfuse Observability
+# Note: GeneratorExit handling is automatic in Langfuse. No filtering utilities needed.
+# Langfuse traces all workflow execution including exceptions.
+# See: app/core/langfuse_service.py for integration details.
 
 
 # Combined Layer Tests

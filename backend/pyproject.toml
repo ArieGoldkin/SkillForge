@@ -145,9 +145,19 @@ ignore = [
     "TRY003",   # Long exception message - acceptable in test error scenarios
     # NEW - Test-specific ignores for new rules
     "S101",     # assert OK in tests (required for pytest)
-    "ARG001",   # Unused args OK (pytest fixtures)
+    "ARG001",   # Unused function args OK (pytest fixtures used for side effects)
+    "ARG002",   # Unused method args OK (pytest fixtures in test classes)
+    "ARG005",   # Unused lambda args OK (mock callbacks with unused params)
+    "ERA001",   # Explanatory comments with = signs look like code but aren't
     "T201",     # print() OK in tests for debugging
     "S311",     # Non-crypto random OK in tests
+    "S105",     # Hardcoded passwords OK in test credentials
+    "S106",     # Hardcoded password in function args OK in tests
+    "S108",     # Hardcoded temp paths OK in tests
+    "S110",     # try-except-pass OK in test cleanup/error handling tests
+    "S104",     # Binding to 0.0.0.0 OK in test fixtures
+    "S603",     # subprocess without shell OK in test runners
+    "S608",     # SQL string construction OK in validation tests
 ]
 # Diagnostic scripts can have more complex error handling
 "scripts/**/*.py" = [

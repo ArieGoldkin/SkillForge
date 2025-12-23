@@ -5,6 +5,7 @@ to verify the complete workflow works correctly with a known, high-quality
 technical article. This serves as a regression test and performance baseline.
 """
 
+import asyncio
 import os
 from uuid import UUID, uuid4
 
@@ -80,7 +81,7 @@ async def test_claude_opus_4_5_baseline(
         session.add(analysis)
         await session.commit()
 
-    # Run workflow with LangSmith configuration
+    # Run workflow with tracing configuration
     workflow_config = {
         "configurable": {"thread_id": analysis_id},
         "run_name": f"baseline_claude_opus_4_5_{analysis_id[:8]}",
@@ -159,10 +160,7 @@ async def test_claude_opus_4_5_baseline(
         f"Should find at least {MIN_KEYWORD_MATCHES} expected keywords (found: {found_keywords})"
     )
 
-    # Verify LangSmith tracing is enabled (if configured)
-    if os.getenv("LANGCHAIN_TRACING_V2") == "true":
-        # LangSmith tracing should be active - check if traces were attempted
-        import time
-
-        # Give traces time to send (they're async)
-        time.sleep(2)
+    # Verify Langfuse tracing is enabled (if configured)
+    if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
+        # Langfuse tracing is active - give traces time to send (they're async)
+        await asyncio.sleep(2)

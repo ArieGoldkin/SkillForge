@@ -8,6 +8,7 @@ Tests verify that context engineering features handle:
 """
 
 import asyncio
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -19,12 +20,14 @@ from app.domains.analysis.services.context.compaction import (
     SessionCompactor,
 )
 from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
-from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.aggregate_findings import (
     _extract_finding_content,
     _store_findings_as_memories,
 )
 from app.shared.workflows.context_scope import build_scoped_context
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 class TestConcurrentMemoryAccess:

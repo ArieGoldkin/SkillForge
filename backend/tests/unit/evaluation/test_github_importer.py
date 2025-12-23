@@ -206,8 +206,7 @@ class TestGitHubImporterDomainInference:
     def importer(self):
         """Create importer for testing."""
         with patch.object(GitHubImporter, "__init__", lambda x, **kwargs: None):
-            importer = GitHubImporter.__new__(GitHubImporter)
-            return importer
+            return GitHubImporter.__new__(GitHubImporter)
 
     @pytest.fixture
     def base_issue(self):
@@ -264,8 +263,7 @@ class TestGitHubImporterDifficultyEstimation:
     def importer(self):
         """Create importer for testing."""
         with patch.object(GitHubImporter, "__init__", lambda x, **kwargs: None):
-            importer = GitHubImporter.__new__(GitHubImporter)
-            return importer
+            return GitHubImporter.__new__(GitHubImporter)
 
     @pytest.fixture
     def base_issue(self):
@@ -397,8 +395,7 @@ class TestGitHubImporterSaveDataset:
     def importer(self):
         """Create importer for testing."""
         with patch.object(GitHubImporter, "__init__", lambda x, **kwargs: None):
-            importer = GitHubImporter.__new__(GitHubImporter)
-            return importer
+            return GitHubImporter.__new__(GitHubImporter)
 
     def test_save_dataset(self, importer, tmp_path):
         """Test saving examples as dataset."""

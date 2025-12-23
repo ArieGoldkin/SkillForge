@@ -14,7 +14,6 @@ from app.db.models import (
     TutoringMessage,
     TutoringSession,
 )
-from tests.integration.conftest import create_pending_analysis
 
 # db_session fixture is in conftest.py
 

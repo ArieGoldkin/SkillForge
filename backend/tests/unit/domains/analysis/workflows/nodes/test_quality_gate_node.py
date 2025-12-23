@@ -94,7 +94,7 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
         patch("app.evaluation.types.Run") as mock_run_class,
         patch("app.evaluation.types.Example") as mock_example_class,
     ):
-        # Mock LangSmith run tree
+        # Mock trace ID for evaluation
         mock_run_tree.return_value = None
 
         # Mock Run and Example construction
@@ -424,8 +424,8 @@ async def test_should_retry_synthesis_max_retries():
 
 
 @pytest.mark.asyncio
-async def test_quality_gate_fail_open_on_exception(base_state: AnalysisState):
-    """Test exception during evaluation returns passed=True (fail open)."""
+async def test_quality_gate_fail_closed_on_exception(base_state: AnalysisState):
+    """Test exception during evaluation returns passed=False (fail closed - best practice)."""
     with (
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
@@ -455,8 +455,8 @@ async def test_quality_gate_fail_open_on_exception(base_state: AnalysisState):
 
         result = await quality_gate_node(base_state)
 
-        # Gate should pass (fail open)
-        assert result["quality_gate_passed"] is True
+        # Gate should fail (fail closed - best practice for safety)
+        assert result["quality_gate_passed"] is False
 
         # Should have empty scores
         assert result["quality_scores"] == {}
@@ -471,7 +471,7 @@ async def test_quality_gate_fail_open_on_exception(base_state: AnalysisState):
         # Verify error was logged
         mock_logger.error.assert_called_once()
         call_args = mock_logger.error.call_args
-        assert call_args[0][0] == "quality_gate_failed"
+        assert call_args[0][0] == "quality_gate_evaluation_failed"
         kwargs = call_args[1]
         assert kwargs["analysis_id"] == "test-analysis-123"
         assert kwargs["error_type"] == "ValueError"

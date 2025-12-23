@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.shared.services.g_eval.scorer import CriterionScore
 from app.shared.services.g_eval.self_consistency import (
     VotingDistribution,
     score_criterion_with_self_consistency,

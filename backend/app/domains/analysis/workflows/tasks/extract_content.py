@@ -35,7 +35,7 @@ logger = get_logger(__name__)
         "task_type": "extraction",
     },
 )
-async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
+async def extract_content(url: str, analysis_id: AnalysisID) -> dict:  # noqa: PLR0915
     """Extract content from URL using JinaReader.
 
     Args:
@@ -134,6 +134,9 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         # Type assertion: extracted["content"] is always str from JinaReader
         raw_content: str = str(extracted["content"])
 
+        # Add char_count for WorkflowResult validation (Issue #441)
+        metadata["char_count"] = len(raw_content)
+
         # Issue #244: Create ArtifactRef for Handle Pattern
         # This stores content summary and section metadata for on-demand loading
         content_ref = await _create_artifact_ref(
@@ -161,6 +164,19 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:
         if isinstance(e, JinaReaderError):
             # Use the error code from JinaReaderError
             error_code = e.error_code.value
+
+        # Record error to database before emitting events
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=error_code,
+                error_message=str(e),
+                stage="extraction",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
 
         # Emit error event using standardized helper
         await emit_error_event(

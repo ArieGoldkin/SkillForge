@@ -13,7 +13,7 @@ from app.core.exceptions import EmbeddingError, WorkflowError
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
-from .conftest import create_test_analysis  # noqa: F401
+from .conftest import create_test_analysis
 
 
 @pytest.mark.asyncio

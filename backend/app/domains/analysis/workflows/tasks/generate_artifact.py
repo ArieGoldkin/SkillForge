@@ -135,6 +135,19 @@ async def _queue_low_quality_artifact_for_review(
 
     except Exception as e:  # noqa: BLE001 - Graceful degradation
         # Don't fail artifact generation if queuing fails
+        # Record as warning (non-fatal)
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record_warning(
+                analysis_id=str(analysis_id),
+                warning_code="ARTIFACT_QUEUING_FAILED",
+                warning_message=str(e),
+                stage="artifact_generation",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let warning recording break the flow
+
         logger.warning(
             "artifact_queuing_failed",
             analysis_id=analysis_id,
@@ -218,6 +231,19 @@ async def _submit_artifact_quality_scores(
 
     except Exception as e:  # noqa: BLE001 - Graceful degradation for quality scoring
         # Don't fail artifact generation if G-Eval scoring fails
+        # Record as warning (non-fatal)
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record_warning(
+                analysis_id=str(analysis_id),
+                warning_code="ARTIFACT_G_EVAL_SCORING_FAILED",
+                warning_message=str(e),
+                stage="artifact_generation",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let warning recording break the flow
+
         logger.warning(
             "artifact_g_eval_scoring_failed",
             analysis_id=analysis_id,
@@ -446,7 +472,8 @@ async def generate_artifact(  # noqa: PLR0915
         )
 
         # Return only updated fields, not entire state
-        return {"artifact_id": artifact_id}
+        # Issue #441: Set workflow_status to "completed" for orchestrator validation
+        return {"artifact_id": artifact_id, "workflow_status": "completed"}
 
     except Exception as e:
         # Emit error event using standardized helper

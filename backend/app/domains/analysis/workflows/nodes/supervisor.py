@@ -38,6 +38,7 @@ from app.shared.services.messaging.sse_helpers import (
 )
 from app.shared.services.prompts import get_prompt_manager
 from app.shared.workflows.utils.content_signals import (
+    ContentGenre,
     detect_content_signals,
     should_skip_agent,
 )
@@ -53,6 +54,18 @@ logger = get_logger(__name__)
 CONTENT_SIZE_SMALL = 5000  # Use all content
 CONTENT_SIZE_MEDIUM = 15000  # Use 8K-10K chars
 CONTENT_SIZE_LARGE = 50000  # Use 12K-15K chars
+
+# Genre-aware minimum agent counts
+# Different content types require different analysis depth based on genre
+MIN_AGENTS_BY_GENRE: dict[ContentGenre, int] = {
+    ContentGenre.TUTORIAL: 4,  # Comprehensive multi-perspective analysis
+    ContentGenre.RESEARCH: 2,  # Concepts + trends only
+    ContentGenre.OPINION: 1,  # Trend validation sufficient
+    ContentGenre.REFERENCE: 3,  # Standard documentation coverage
+    ContentGenre.QUICKSTART: 3,  # Implementation focus
+    ContentGenre.CHANGELOG: 2,  # Trends + tech comparison
+    ContentGenre.UNKNOWN: 3,  # Safe default
+}
 
 
 def _get_content_for_supervisor(
@@ -379,11 +392,12 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                 "prompt_version": "fallback",
             }
 
-        # Build prompt using prompt builder
+        # Build prompt using prompt builder (pass content signals for LLM routing guidance)
         user_prompt = build_supervisor_user_prompt(
             system_prompt=supervisor_prompt,
             content=sized_content,
             content_type=content_type,
+            content_signals=content_signals,
         )
 
         # Get model with structured output (no tools, faster inference)
@@ -498,8 +512,19 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                 )
 
         # MINIMUM AGENT ENFORCEMENT (Issue #299-304)
-        # Use content signals to pick appropriate default agents
-        min_agents_required = 3
+        # Use genre-aware minimum agent counts instead of hardcoded value
+        min_agents_required = MIN_AGENTS_BY_GENRE.get(
+            content_signals.detected_genre,
+            3,  # Fallback to safe default
+        )
+        logger.info(
+            "supervisor_genre_aware_minimum",
+            analysis_id=analysis_id,
+            genre=content_signals.detected_genre.value,
+            minimum_required=min_agents_required,
+            current_count=len(filtered_agents),
+        )
+
         # Combine signal-appropriate with static defaults to ensure enough agents
         signal_appropriate_agents = content_signals.get_appropriate_agents()
         static_defaults = ["implementation_planner", "dependency_mapper", "trend_validator"]

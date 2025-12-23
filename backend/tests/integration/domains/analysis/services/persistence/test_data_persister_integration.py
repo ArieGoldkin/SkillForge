@@ -220,7 +220,7 @@ async def test_persister_data_integrity(db_session, valid_workflow_result_dict):
         f"Embedding dimensions don't match. Expected {len(expected_embedding)}, got {len(actual_embedding)}"
     )
     # Check values are approximately equal (floating point precision)
-    for i, (actual, expected) in enumerate(zip(actual_embedding, expected_embedding)):
+    for i, (actual, expected) in enumerate(zip(actual_embedding, expected_embedding, strict=False)):
         assert abs(actual - expected) < 1e-6, (
             f"Embedding value at index {i} differs: {actual} != {expected}"
         )

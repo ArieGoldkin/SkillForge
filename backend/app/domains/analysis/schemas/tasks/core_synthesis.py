@@ -45,7 +45,7 @@ class CoreSynthesisSchema(BaseModel):
             "Should answer: What is this? Why does it matter? What's the key takeaway?"
         ),
         min_length=50,
-        max_length=500,
+        max_length=1000,  # Increased from 500 for research papers
     )
 
     key_findings: list[str] = Field(

@@ -11,7 +11,7 @@ Tests cover:
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -22,6 +22,9 @@ from app.evaluation.ingestion.cutting_edge_generator import (
     Topic,
 )
 from app.evaluation.ingestion.cutting_edge_templates import ALL_TEMPLATES
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.unit
@@ -198,7 +201,7 @@ class TestCuttingEdgeTemplates:
 
     def test_templates_include_required_fields(self):
         """Test templates have all required fields."""
-        for _topic_name, templates in ALL_TEMPLATES.items():
+        for templates in ALL_TEMPLATES.values():
             for template in templates:
                 assert "query_patterns" in template
                 assert "expected_topics" in template

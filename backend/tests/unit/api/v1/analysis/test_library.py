@@ -21,8 +21,7 @@ client = TestClient(app)
 @pytest.fixture
 def mock_repo():
     """Create mock library repository."""
-    repo = AsyncMock()
-    return repo
+    return AsyncMock()
 
 
 @pytest.fixture

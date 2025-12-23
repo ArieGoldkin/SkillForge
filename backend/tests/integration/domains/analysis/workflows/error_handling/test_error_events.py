@@ -8,7 +8,6 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langgraph.types import Send
 
 from app.core.exceptions import EmbeddingError, WorkflowError, WorkflowStageError
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
@@ -81,7 +80,6 @@ async def test_embedding_failure_emits_error_event(requires_database, reset_engi
                 import asyncio
 
                 await asyncio.sleep(0.2)
-                pass
 
     # Wait for error event to be persisted
     event_found = await wait_for_event_persistence(analysis_id, "error", max_wait=10.0)

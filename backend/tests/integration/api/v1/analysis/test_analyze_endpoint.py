@@ -13,7 +13,6 @@ from sqlalchemy import select
 
 from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
-from app.main import app
 from tests.integration.conftest import create_complete_analysis
 
 
@@ -236,7 +235,7 @@ async def test_post_analyze_content_types(reset_engine_connections, app_with_lif
 
 @pytest.mark.asyncio
 async def test_get_analyze_returns_status_and_artifact(
-    requires_database, reset_engine_connections, db_session
+    requires_database, reset_engine_connections, db_session, app_with_lifespan
 ):
     """GET /api/v1/analyze/{id} returns status and latest artifact id."""
     analysis_id = uuid.uuid4()
@@ -270,7 +269,7 @@ async def test_get_analyze_returns_status_and_artifact(
 
 
 @pytest.mark.asyncio
-async def test_get_analyze_not_found(reset_engine_connections):
+async def test_get_analyze_not_found(reset_engine_connections, app_with_lifespan):
     """GET /api/v1/analyze/{id} returns 404 when missing."""
     transport = ASGITransport(app=app_with_lifespan)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -285,7 +284,6 @@ async def test_workflow_status_updates_to_complete(
 ):
     """Test that workflow status is updated to 'complete' after successful execution."""
     from app.domains.analysis.services.workflow import WorkflowOrchestrator
-    from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
     analysis_uuid = uuid.uuid4()
 
@@ -336,7 +334,7 @@ async def test_workflow_status_updates_to_complete(
         }
 
     # Create mock workflow and orchestrator
-    from unittest.mock import MagicMock, AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
 
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(side_effect=mock_workflow_ainvoke)
@@ -386,7 +384,7 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
         raise GeneratorExit()
 
     # Create mock workflow and orchestrator
-    from unittest.mock import MagicMock, AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
 
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(side_effect=mock_workflow_ainvoke)

@@ -153,6 +153,16 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             processing_time_ms=processing_time_ms,
         )
 
+        # Record error to database
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code="IMPLEMENTATION_PLANNER_FAILED",
+            error_message=str(e),
+            stage="implementation_planner",
+        )
+
         logger.error(
             "agent_node_failed",
             agent_type="implementation_planner",

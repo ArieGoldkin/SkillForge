@@ -7,8 +7,6 @@ including all methods and pattern matching functionality.
 import pytest
 
 from app.shared.types.result_types import (
-    Err,
-    Ok,
     Result,
     UnwrapError,
     err,

@@ -139,7 +139,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
             ),
         ):
             # Run workflow with timeout (increased for streaming/parallel overhead)
-            # Add LangSmith tracing config
+            # Configure tracing metadata
             workflow_config = {
                 "configurable": {"thread_id": analysis_id},
                 "run_name": f"test_analysis_{analysis_id}",
@@ -302,6 +302,9 @@ async def test_analysis_workflow_with_checkpointer(
                 return_value=mock_artifact_repo,
             ),
         ):
+            # Create workflow
+            analysis_workflow = create_analysis_workflow()
+
             # Run workflow first time with timeout (increased for streaming/parallel overhead)
             workflow_config1 = {
                 "configurable": {"thread_id": analysis_id},

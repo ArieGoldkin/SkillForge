@@ -1,6 +1,5 @@
 """Integration tests for library API endpoint."""
 
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -8,7 +7,6 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.db.models.analysis import Analysis
-from app.main import app
 from tests.integration.conftest import create_complete_analysis, create_pending_analysis
 
 

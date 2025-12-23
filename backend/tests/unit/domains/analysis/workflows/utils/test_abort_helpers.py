@@ -1,9 +1,13 @@
 """Unit tests for abort signal helpers."""
 
+from typing import TYPE_CHECKING
+
 import pytest
 
-from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 @pytest.mark.unit

@@ -81,6 +81,20 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             embedding_dimensions=len(embedding),
         )
     except Exception as e:
+        # Record error to database before emitting events
+        from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=EMBEDDING_FAILED,
+                error_message=str(e),
+                stage="embedding",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
+
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")
         await emit_error_event(
@@ -157,6 +171,20 @@ async def generate_embeddings_batch(
             normalize=normalize,
         )
     except Exception as e:
+        # Record error to database before emitting events
+        from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code=EMBEDDING_FAILED,
+                error_message=str(e),
+                stage="embedding",
+            )
+        except Exception:  # noqa: S110, BLE001
+            pass  # Don't let error recording break the flow
+
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")
         await emit_error_event(

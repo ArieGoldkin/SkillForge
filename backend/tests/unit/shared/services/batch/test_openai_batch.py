@@ -17,7 +17,7 @@ Test Coverage:
 """
 
 from pathlib import Path
-from unittest.mock import ANY, AsyncMock, MagicMock, mock_open, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -89,7 +89,7 @@ class TestOpenAIBatchClient:
         assert len(jsonl_files) == 1
 
         # Verify JSONL content
-        with open(jsonl_files[0]) as f:
+        with jsonl_files[0].open() as f:
             lines = f.readlines()
             assert len(lines) == 2
             import json

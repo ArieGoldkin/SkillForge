@@ -21,12 +21,8 @@ Issue: #220 - PII/Safety Guardrails
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
 
 from app.shared.services.pii.types import PIIResult, PIIType, SensitivityLevel
-
-if TYPE_CHECKING:
-    pass
 
 # Mock patterns module (will be replaced with actual implementation)
 # These patterns match the architecture spec in ARCHITECTURE_DESIGN.md

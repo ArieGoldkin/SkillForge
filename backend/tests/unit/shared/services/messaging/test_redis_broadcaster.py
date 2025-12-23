@@ -17,7 +17,6 @@ from app.shared.services.messaging.redis_broadcaster import (
     RedisEventBroadcaster,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -198,7 +197,7 @@ async def test_subscribe_replays_buffered_events(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -258,7 +257,7 @@ async def test_subscribe_receives_live_events(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -424,7 +423,7 @@ async def test_invalid_json_in_buffer_skipped(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task
@@ -468,7 +467,7 @@ async def test_invalid_json_in_pubsub_skipped(
     task = asyncio.create_task(collect_events())
     try:
         await asyncio.wait_for(task, timeout=1.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.cancel()
         try:
             await task

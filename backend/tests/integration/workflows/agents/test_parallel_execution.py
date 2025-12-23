@@ -132,8 +132,8 @@ async def test_parallel_agents_error_isolation_one_failure_does_not_crash_others
         },
     }
 
+    workflow = create_analysis_workflow()
     result = await asyncio.wait_for(
-        workflow = create_analysis_workflow()
         workflow.ainvoke(
             {
                 "url": test_url,

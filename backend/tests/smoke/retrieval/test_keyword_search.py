@@ -17,11 +17,11 @@ from typing import TYPE_CHECKING
 import pytest
 
 from app.schemas.search import SearchMode
-from tests.smoke.retrieval.fixtures.loader import Query
 from tests.smoke.retrieval.metrics import MetricsCalculator, aggregate_metrics
 
 if TYPE_CHECKING:
     from app.shared.services.search.search_service import SearchService
+    from tests.smoke.retrieval.fixtures.loader import Query
 
 
 # TODO(#299): Skip in CI until queries.json is updated for real golden dataset

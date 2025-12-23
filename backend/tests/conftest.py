@@ -314,7 +314,7 @@ async def get_test_session(timeout: float | None = None) -> AsyncSession:  # noq
         # Try to close the session if entry failed
         try:
             await session.__aexit__(None, None, None)
-        except Exception:  # noqa: S110
+        except Exception:
             pass  # Ignore cleanup errors when session entry failed
         raise
 
@@ -347,7 +347,7 @@ class TimeoutSession:
         if self.session is not None:
             try:
                 await self.session.__aexit__(exc_type, exc_val, exc_tb)
-            except Exception:  # noqa: S110
+            except Exception:
                 pass  # Ignore cleanup errors - session may already be closed
 
 
@@ -380,7 +380,7 @@ async def check_database_available(requires_database):
     if old_engine is not None:
         try:
             await old_engine.dispose()
-        except Exception:  # noqa: S110
+        except Exception:
             pass  # Ignore disposal errors - connections will be cleaned up later
 
     # Verify engine will use correct URL by checking get_async_database_url
@@ -418,7 +418,7 @@ async def check_database_available(requires_database):
                 pass
             try:
                 await session.__aexit__(None, None, None)
-            except Exception:  # noqa: S110
+            except Exception:
                 pass  # Ignore cleanup errors when session entry failed
             # Skip test when database is unavailable (e.g., in CI without database)
             pytest.skip("Database not available - connection timeout")
@@ -454,7 +454,7 @@ async def _dispose_engine_safely(timeout: float) -> None:  # noqa: ASYNC109
         except asyncio.CancelledError:
             pass
         # Continue anyway - connections will be cleaned up later
-    except Exception:  # noqa: S110
+    except Exception:
         # If dispose fails for any reason, continue anyway
         pass
 
@@ -563,14 +563,14 @@ async def db_session(
         if transaction.is_active:
             try:
                 await transaction.rollback()
-            except Exception:  # noqa: S110
+            except Exception:
                 # Transaction may already be closed, ignore
                 pass
         # pytest 9.0.1 automatically ensures session.close() runs via async generator cleanup
         # No need for redundant finally block - automatic cleanup handles it
         try:
             await session.close()
-        except Exception:  # noqa: S110
+        except Exception:
             # Session may already be closed, ignore
             pass
 

@@ -136,7 +136,7 @@ async def test_full_workflow_e2e(reset_engine_connections, db_session, app_with_
                     # typing limitation with Column-based style. Assignment is safe at runtime.
                     analysis.status = "complete"  # type: ignore[assignment]
                     # Don't commit - let the test fixture handle rollback
-            except Exception:  # noqa: S110
+            except Exception:
                 # Skip database update if it fails
                 # This is in a mock workflow, so it's acceptable to skip
                 # No logging needed - this is expected in test mocks

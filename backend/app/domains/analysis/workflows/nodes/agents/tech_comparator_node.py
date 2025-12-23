@@ -153,6 +153,16 @@ async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
             processing_time_ms=processing_time_ms,
         )
 
+        # Record error to database
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code="TECH_COMPARATOR_FAILED",
+            error_message=str(e),
+            stage="tech_comparator",
+        )
+
         logger.error(
             "agent_node_failed",
             agent_type="tech_comparator",

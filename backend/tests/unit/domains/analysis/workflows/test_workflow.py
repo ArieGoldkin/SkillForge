@@ -1,8 +1,13 @@
 """Tests for LangGraph analysis workflow."""
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 @pytest.mark.unit
@@ -47,8 +52,6 @@ async def test_analysis_workflow_structure():
 
 def test_analysis_state_typeddict():
     """Test AnalysisState TypedDict structure."""
-    from app.domains.analysis.workflows.state import AnalysisState
-
     # Verify TypedDict structure
     state: AnalysisState = {
         "analysis_id": "123",

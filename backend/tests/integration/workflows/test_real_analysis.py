@@ -5,6 +5,7 @@ including content extraction, embedding generation, supervisor routing,
 and agent execution with proper session isolation.
 """
 
+import asyncio
 import os
 from uuid import UUID, uuid4
 
@@ -50,7 +51,7 @@ async def test_real_article_analysis_claude_opus_4_5(
     - Agent execution with separate sessions works
     - No GeneratorExit errors
     - No database concurrency errors
-    - LangSmith tracing is active
+    - Langfuse tracing is active (if configured)
     """
     # Claude Opus 4.5 release article
     test_url = (
@@ -70,7 +71,7 @@ async def test_real_article_analysis_claude_opus_4_5(
         session.add(analysis)
         await session.commit()
 
-    # Run workflow with LangSmith configuration
+    # Run workflow with tracing configuration
     workflow_config = {
         "configurable": {"thread_id": analysis_id},
         "run_name": f"test_real_analysis_{analysis_id[:8]}",
@@ -119,10 +120,5 @@ async def test_real_article_analysis_claude_opus_4_5(
     # Note: Agents may timeout in integration tests, but structure should be correct
     assert isinstance(agent_findings, list)
 
-    # Verify LangSmith tracing is enabled and give time for traces to send
-    assert os.getenv("LANGCHAIN_TRACING_V2") == "true", "LangSmith tracing should be enabled"
-
-    # Give async traces time to send before test completes
-    import time
-
-    time.sleep(3)
+    # Give async traces time to send before test completes (Langfuse is async)
+    await asyncio.sleep(3)

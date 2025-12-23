@@ -47,6 +47,8 @@ class LibrarySearchResult(BaseModel):
         snippet: Search snippet with highlighted matches (for text search)
         rank: Relevance score (for text search) or distance (for vector search)
         created_at: Timestamp when the analysis was created
+        error_code: Machine-readable error code (if analysis failed)
+        failed_at_stage: Workflow stage where error occurred (if analysis failed)
 
     Example:
         ```python
@@ -79,6 +81,13 @@ class LibrarySearchResult(BaseModel):
         ..., description="Relevance score (for text search) or distance (for vector search)"
     )
     created_at: str = Field(..., description="Timestamp when the analysis was created")
+    # Error tracking fields (Issue #441) - for quick diagnosis in library view
+    error_code: str | None = Field(
+        None, description="Error code for categorization (e.g., 'QUALITY_GATE_FAILED')"
+    )
+    failed_at_stage: str | None = Field(
+        None, description="Workflow stage where error occurred (e.g., 'quality_gate')"
+    )
 
     model_config = {
         "json_schema_extra": {

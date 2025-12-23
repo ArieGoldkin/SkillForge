@@ -1,13 +1,11 @@
 """Integration tests for confidence_score database persistence."""
 
 import uuid
-from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
 
 from app.db.models.agent_finding import AgentFinding
-from app.db.models.analysis import Analysis
 from tests.integration.conftest import create_pending_analysis
 
 

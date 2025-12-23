@@ -321,7 +321,7 @@ async def test_all_agents_import_grounding():
             f"app.domains.analysis.workflows.agents.{module_name}"
         ).__file__
         if source:
-            with Path(source).open() as f:
+            with Path(source).open() as f:  # noqa: ASYNC230
                 content = f.read()
                 assert (
                     "from app.domains.analysis.workflows.agents.grounding import apply_grounding"
