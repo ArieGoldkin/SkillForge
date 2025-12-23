@@ -16,7 +16,17 @@ from langfuse import get_client, observe
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
-from app.domains.analysis.workflows.agents.base import emit_agent_progress
+from app.domains.analysis.constants.error_codes import (
+    AGENT_CANCELLED,
+    AGENT_LLM_ERROR,
+    AGENT_NO_CONTENT,
+    AGENT_TIMEOUT,
+    AgentStatus,
+)
+from app.domains.analysis.workflows.agents.base import (
+    emit_agent_progress,
+    record_agent_execution,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
     get_fallback_content,
@@ -68,6 +78,13 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             has_content_ref=bool(state.get("content_ref")),
             has_raw_content=bool(state.get("raw_content")),
         )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="implementation_planner",
+            status=AgentStatus.SKIPPED,
+            error_code=AGENT_NO_CONTENT,
+            error_message="No content available for analysis",
+        )
         return {"agent_findings": []}
 
     start_time = time.time()
@@ -113,6 +130,7 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
         )
 
         duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
         logger.info(
             "agent_node_complete",
             agent_type="implementation_planner",
@@ -121,12 +139,30 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             trace_id=trace_id,
         )
 
+        # Extract fields for database recording
+        findings_raw = result.get("findings", {})
+        confidence_raw = result.get("confidence_score")
+
+        # Type-safe extraction with fallbacks (cast to satisfy type checker)
+        findings_to_save = findings_raw if isinstance(findings_raw, dict) else {}
+        confidence_to_save = float(confidence_raw) if confidence_raw is not None else None
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="implementation_planner",
+            status=AgentStatus.SUCCESS,
+            findings=findings_to_save,
+            confidence_score=confidence_to_save,
+            processing_time_ms=processing_time_ms,
+        )
+
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
     except GeneratorExit:
         # GeneratorExit during execution (cancellation/timeout) - return empty for
         # graceful degradation. Cleanup GeneratorExit is handled by robust_traceable wrapper
         duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
         logger.warning(
             "agent_node_cancelled",
             agent_type="implementation_planner",
@@ -137,7 +173,62 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             trace_id=trace_id,
             handled_gracefully=True,
         )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="implementation_planner",
+            status=AgentStatus.FAILED,
+            error_code=AGENT_CANCELLED,
+            error_message="Agent execution cancelled",
+            processing_time_ms=processing_time_ms,
+        )
         # Return empty findings on cancellation (allows other agents to continue)
+        return {"agent_findings": []}
+    except TimeoutError as e:
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+
+        # Emit failed event using existing emit_agent_progress helper
+        await emit_agent_progress(
+            analysis_id,
+            "implementation_planner",
+            "failed",
+            error=str(e),
+            error_code="IMPLEMENTATION_PLANNER_FAILED",
+            processing_time_ms=processing_time_ms,
+        )
+
+        # Record error to database
+        from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code="IMPLEMENTATION_PLANNER_FAILED",
+            error_message=str(e),
+            stage="implementation_planner",
+        )
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="implementation_planner",
+            status=AgentStatus.FAILED,
+            error_code=AGENT_TIMEOUT,
+            error_message=str(e)[:2000],
+            processing_time_ms=processing_time_ms,
+        )
+
+        logger.error(
+            "agent_node_failed",
+            agent_type="implementation_planner",
+            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,  # Returns empty findings, doesn't break workflow
+            exc_info=True,
+        )
+        # Return empty findings on error (allows other agents to continue)
         return {"agent_findings": []}
     except Exception as e:
         duration = time.time() - start_time
@@ -161,6 +252,15 @@ async def implementation_planner_node(state: AnalysisState) -> dict[str, object]
             error_code="IMPLEMENTATION_PLANNER_FAILED",
             error_message=str(e),
             stage="implementation_planner",
+        )
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="implementation_planner",
+            status=AgentStatus.FAILED,
+            error_code=AGENT_LLM_ERROR,
+            error_message=str(e)[:2000],
+            processing_time_ms=processing_time_ms,
         )
 
         logger.error(

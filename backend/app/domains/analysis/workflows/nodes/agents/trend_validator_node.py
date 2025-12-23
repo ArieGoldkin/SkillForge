@@ -10,12 +10,20 @@ with fallback to raw_content for backward compatibility.
 """
 
 import time
+from typing import cast
 
 from langfuse import observe
 
 from app.core.logging import get_logger
 from app.core.tracing import get_current_trace_id, update_current_trace
-from app.domains.analysis.workflows.agents.base import handle_agent_node_error
+from app.domains.analysis.constants.error_codes import (
+    AGENT_NO_CONTENT,
+    AgentStatus,
+)
+from app.domains.analysis.workflows.agents.base import (
+    handle_agent_node_error,
+    record_agent_execution,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
     get_fallback_content,
@@ -67,6 +75,13 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
             has_content_ref=bool(state.get("content_ref")),
             has_raw_content=bool(state.get("raw_content")),
         )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="trend_validator",
+            status=AgentStatus.SKIPPED,
+            error_code=AGENT_NO_CONTENT,
+            error_message="No content available for analysis",
+        )
         return {"agent_findings": []}
 
     start_time = time.time()
@@ -102,12 +117,29 @@ async def trend_validator_node(state: AnalysisState) -> dict[str, object]:
         )
 
         duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
         logger.info(
             "agent_node_complete",
             agent_type="trend_validator",
             analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             duration_seconds=duration,
             trace_id=trace_id,
+        )
+
+        findings_value = result.get("findings")
+        confidence_value = result.get("confidence_score")
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="trend_validator",
+            status=AgentStatus.SUCCESS,
+            findings=cast("dict[str, object]", findings_value)
+            if isinstance(findings_value, dict)
+            else None,
+            confidence_score=float(confidence_value)
+            if isinstance(confidence_value, (int, float))
+            else None,
+            processing_time_ms=processing_time_ms,
         )
 
         # Return findings as single-item list (aggregate will collect from all nodes)

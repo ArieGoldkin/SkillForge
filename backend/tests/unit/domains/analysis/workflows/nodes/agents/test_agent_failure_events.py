@@ -36,6 +36,10 @@ def mock_state():
 
 @pytest.mark.asyncio
 @patch(
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.record_agent_execution",
+    new_callable=AsyncMock,
+)
+@patch(
     "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session",
     new_callable=AsyncMock,
 )
@@ -44,7 +48,7 @@ def mock_state():
     new_callable=AsyncMock,
 )
 async def test_implementation_planner_emits_failed_event_on_exception(
-    mock_emit, mock_runner, mock_state
+    mock_emit, mock_runner, mock_record, mock_state
 ):
     """Test that implementation_planner_node emits failed event when exception occurs."""
     # Mock runner to raise exception
@@ -73,6 +77,10 @@ async def test_implementation_planner_emits_failed_event_on_exception(
 
 @pytest.mark.asyncio
 @patch(
+    "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.record_agent_execution",
+    new_callable=AsyncMock,
+)
+@patch(
     "app.domains.analysis.workflows.nodes.agents.implementation_planner_node.run_implementation_planner_with_session"
 )
 @patch(
@@ -80,7 +88,7 @@ async def test_implementation_planner_emits_failed_event_on_exception(
     new_callable=AsyncMock,
 )
 async def test_implementation_planner_does_not_emit_failed_on_success(
-    mock_emit, mock_runner, mock_state
+    mock_emit, mock_runner, mock_record, mock_state
 ):
     """Test that implementation_planner_node does not emit failed event on success."""
     # Mock runner to return successful result
@@ -110,8 +118,14 @@ async def test_implementation_planner_does_not_emit_failed_on_success(
 
 
 @pytest.mark.asyncio
+@patch(
+    "app.domains.analysis.workflows.agents.base.record_agent_execution",
+    new_callable=AsyncMock,
+)
 @patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
-async def test_dependency_mapper_handles_timeout_error_with_specific_code(mock_emit, mock_state):
+async def test_dependency_mapper_handles_timeout_error_with_specific_code(
+    mock_emit, mock_record, mock_state
+):
     """Test that dependency_mapper handles TimeoutError with specific error code (2025 best practice)."""
     with patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session",
@@ -134,9 +148,13 @@ async def test_dependency_mapper_handles_timeout_error_with_specific_code(mock_e
 
 
 @pytest.mark.asyncio
+@patch(
+    "app.domains.analysis.workflows.agents.base.record_agent_execution",
+    new_callable=AsyncMock,
+)
 @patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
 async def test_dependency_mapper_handles_specificity_validation_error_with_specific_code(
-    mock_emit, mock_state
+    mock_emit, mock_record, mock_state
 ):
     """Test that dependency_mapper handles ValueError (specificity failures) with specific error code (2025 best practice)."""
     with patch(
@@ -160,9 +178,13 @@ async def test_dependency_mapper_handles_specificity_validation_error_with_speci
 
 
 @pytest.mark.asyncio
+@patch(
+    "app.domains.analysis.workflows.agents.base.record_agent_execution",
+    new_callable=AsyncMock,
+)
 @patch("app.domains.analysis.workflows.agents.base.emit_agent_progress", new_callable=AsyncMock)
 async def test_dependency_mapper_handles_generic_exception_with_fallback_code(
-    mock_emit, mock_state
+    mock_emit, mock_record, mock_state
 ):
     """Test that dependency_mapper handles generic exceptions with fallback error code (2025 best practice)."""
     with patch(

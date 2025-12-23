@@ -15,7 +15,14 @@ from langfuse import observe
 
 from app.core.logging import get_logger
 from app.core.tracing import get_current_trace_id, update_current_trace
-from app.domains.analysis.workflows.agents.base import handle_agent_node_error
+from app.domains.analysis.constants.error_codes import (
+    AGENT_NO_CONTENT,
+    AgentStatus,
+)
+from app.domains.analysis.workflows.agents.base import (
+    handle_agent_node_error,
+    record_agent_execution,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
     get_fallback_content,
@@ -67,6 +74,13 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
             has_content_ref=bool(state.get("content_ref")),
             has_raw_content=bool(state.get("raw_content")),
         )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="performance_analyst",
+            status=AgentStatus.SKIPPED,
+            error_code=AGENT_NO_CONTENT,
+            error_message="No content available for analysis",
+        )
         return {"agent_findings": []}
 
     start_time = time.time()
@@ -102,12 +116,30 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
         )
 
         duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
         logger.info(
             "agent_node_complete",
             agent_type="performance_analyst",
             analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
             duration_seconds=duration,
             trace_id=trace_id,
+        )
+
+        # Extract fields for database recording
+        findings_raw = result.get("findings", {})
+        confidence_raw = result.get("confidence_score")
+
+        # Type-safe extraction with fallbacks (cast to satisfy type checker)
+        findings_to_save = findings_raw if isinstance(findings_raw, dict) else {}
+        confidence_to_save = float(confidence_raw) if confidence_raw is not None else None
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="performance_analyst",
+            status=AgentStatus.SUCCESS,
+            findings=findings_to_save,
+            confidence_score=confidence_to_save,
+            processing_time_ms=processing_time_ms,
         )
 
         # Return findings as single-item list (aggregate will collect from all nodes)
