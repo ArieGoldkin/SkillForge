@@ -190,10 +190,6 @@ ignore = [
     "D105",   # Missing magic method docstring - __repr__ is self-documenting
     "TC003",  # Callable import needed at runtime for Result type system
 ]
-# Context scope builder - complex conditional logic for scoping agent context
-"app/shared/workflows/context_scope.py" = [
-    "PLR0912",  # Too many branches - complex conditional logic for building scoped context
-]
 # Evaluation framework - experimental benchmarking code with complex logic
 "app/evaluation/**/*.py" = [
     "PLR0912",  # Too many branches - evaluator logic requires multiple checks
@@ -395,7 +391,8 @@ exclude_lines = [
 "app/shared/services/extraction/arxiv_pdf_extractor.py" = [
     "S110",    # Silent pass OK - best-effort title extraction
 ]
-# Context scope - ARG001 agent_type reserved for future feature
+# Context scope - ARG001 agent_type reserved for future feature, PLR0912 complex conditional logic
 "app/shared/workflows/context_scope.py" = [
     "ARG001",  # agent_type reserved for future agent-specific summarization
+    "PLR0912",  # Too many branches - complex conditional logic for building scoped context (13 branches)
 ]
