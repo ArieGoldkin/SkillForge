@@ -78,12 +78,25 @@
       ],
       "reference_file": "checklists/type-safety-checklist.md",
       "token_cost": 280
+    },
+    "ty-type-checker": {
+      "keywords": ["ty", "rust type checker", "strict typing", "isinstance", "cast", "type narrowing", "dict extraction", "optional types"],
+      "solves": [
+        "How do I make ty type checker pass?",
+        "Extract values from untyped dicts safely",
+        "Type-safe agent result processing",
+        "Handle optional numeric types with ty",
+        "Type narrowing with isinstance checks",
+        "Fix 'object | None' type errors in ty"
+      ],
+      "reference_file": "references/ty-type-checker-patterns.md",
+      "token_cost": 450
     }
   },
 
   "triggers": {
-    "high_confidence": ["zod.*schema", "trpc.*setup", "type.*safe", "validate.*input"],
-    "medium_confidence": ["typescript.*types", "prisma.*types", "api.*contract"]
+    "high_confidence": ["zod.*schema", "trpc.*setup", "type.*safe", "validate.*input", "ty.*check", "ty.*error"],
+    "medium_confidence": ["typescript.*types", "prisma.*types", "api.*contract", "isinstance.*check"]
   },
 
   "integrates_with": ["api-design-framework", "database-schema-designer"],

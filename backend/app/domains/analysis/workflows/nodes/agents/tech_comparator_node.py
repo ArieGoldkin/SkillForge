@@ -10,6 +10,7 @@ with fallback to raw_content for backward compatibility.
 """
 
 import time
+from typing import cast
 
 from langfuse import get_client, observe
 
@@ -144,8 +145,12 @@ async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
         confidence_raw = result.get("confidence_score")
 
         # Type-safe extraction with fallbacks (cast to satisfy type checker)
-        findings_to_save = findings_raw if isinstance(findings_raw, dict) else {}
-        confidence_to_save = float(confidence_raw) if confidence_raw is not None else None
+        findings_to_save: dict[str, object] | None = (
+            cast("dict[str, object]", findings_raw) if isinstance(findings_raw, dict) else None
+        )
+        confidence_to_save: float | None = (
+            float(confidence_raw) if isinstance(confidence_raw, (int, float)) else None
+        )
 
         await record_agent_execution(
             analysis_id=analysis_id,
