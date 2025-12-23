@@ -391,8 +391,7 @@ exclude_lines = [
 "app/shared/services/extraction/arxiv_pdf_extractor.py" = [
     "S110",    # Silent pass OK - best-effort title extraction
 ]
-# Context scope - ARG001 agent_type reserved for future feature, PLR0912 complex conditional logic
+# Context scope - ARG001 agent_type reserved for future feature
 "app/shared/workflows/context_scope.py" = [
     "ARG001",  # agent_type reserved for future agent-specific summarization
-    "PLR0912",  # Too many branches - complex conditional logic for building scoped context (13 branches)
 ]
