@@ -294,6 +294,37 @@ export function PostList() {
 }
 ```
 
+## Python Type Safety with Ty
+
+**SkillForge uses ty**, a Rust-based static type checker for Python that enforces stricter type safety than mypy.
+
+### Pattern: Safe Dict Extraction (Ty-Compliant)
+
+```python
+from typing import cast
+
+# Extract from untyped dict (e.g., agent results)
+result = {"findings": {...}, "confidence_score": 0.85}
+findings_raw = result.get("findings", {})
+confidence_raw = result.get("confidence_score")
+
+# Type-safe extraction with explicit annotations
+findings_to_save: dict[str, object] | None = (
+    cast("dict[str, object]", findings_raw) if isinstance(findings_raw, dict) else None
+)
+confidence_to_save: float | None = (
+    float(confidence_raw) if isinstance(confidence_raw, (int, float)) else None
+)
+```
+
+**Why needed**: Ty requires explicit type annotations + `isinstance()` checks to narrow types from `object | None`.
+
+**Full patterns**: See `references/ty-type-checker-patterns.md` for:
+- Mixed numeric type handling
+- List type narrowing
+- Nested dict extraction
+- Agent result processing examples
+
 ## Best Practices
 
 ### Validation
@@ -309,6 +340,7 @@ export function PostList() {
 - ✅ Prefer `unknown` over `any`
 - ✅ Use type guards for narrowing
 - ✅ Leverage inference with `typeof` and `ReturnType`
+- ✅ **Python/Ty**: Use explicit annotations + `isinstance()` for dict extraction
 
 ### Performance
 - ✅ Reuse schemas (don't create inline)

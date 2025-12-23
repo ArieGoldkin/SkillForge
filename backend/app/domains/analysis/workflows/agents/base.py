@@ -24,6 +24,8 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.types import AnalysisID
 from app.db.models.agent_finding import AgentFinding
+from app.db.session import get_session_factory
+from app.domains.analysis.constants.error_codes import AgentStatus
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
 if TYPE_CHECKING:
@@ -291,6 +293,9 @@ async def save_agent_finding(  # noqa: PLR0913
     findings: dict[str, object],
     confidence_score: float | None = None,
     processing_time_ms: int | None = None,
+    status: str = AgentStatus.SUCCESS,
+    error_code: str | None = None,
+    error_message: str | None = None,
 ) -> AgentFinding:
     """Save agent finding to database.
 
@@ -301,6 +306,9 @@ async def save_agent_finding(  # noqa: PLR0913
         findings: Structured findings dictionary
         confidence_score: Optional confidence score (0.0-1.0)
         processing_time_ms: Optional processing time in milliseconds
+        status: Execution status (default: "success")
+        error_code: Optional error code if status is "failed" or "skipped"
+        error_message: Optional error message if status is "failed" or "skipped"
 
     Returns:
         Created AgentFinding instance
@@ -329,11 +337,109 @@ async def save_agent_finding(  # noqa: PLR0913
         findings=findings,
         confidence_score=confidence_score,
         processing_time_ms=processing_time_ms,
+        status=status,
+        error_code=error_code,
+        error_message=error_message,
     )
     session.add(finding)
     await session.commit()
     await session.refresh(finding)
     return finding
+
+
+async def record_agent_execution(  # noqa: PLR0913
+    analysis_id: AnalysisID,
+    agent_type: str,
+    status: str,
+    findings: dict[str, object] | None = None,
+    confidence_score: float | None = None,
+    processing_time_ms: int | None = None,
+    error_code: str | None = None,
+    error_message: str | None = None,
+) -> None:
+    """Record agent execution to database with automatic session management.
+
+    This is a convenience wrapper around save_agent_finding() that handles
+    its own database session and error logging. Use this function from agent
+    nodes to reduce boilerplate.
+
+    Args:
+        analysis_id: AnalysisID (str representation of UUID)
+        agent_type: Type of agent (e.g., "tech_comparator")
+        status: Execution status ("success", "failed", "skipped")
+        findings: Optional structured findings dictionary
+        confidence_score: Optional confidence score (0.0-1.0)
+        processing_time_ms: Optional processing time in milliseconds
+        error_code: Optional error code if status is "failed" or "skipped"
+        error_message: Optional error message if status is "failed" or "skipped"
+
+    Note:
+        - Creates its own database session (no session parameter needed)
+        - Catches and logs database errors without crashing the workflow
+        - For success status, findings dict is required
+        - For failed/skipped status, findings can be None (empty dict will be used)
+
+    Example:
+        >>> # Success case
+        >>> await record_agent_execution(
+        ...     analysis_id=analysis_id,
+        ...     agent_type="tech_comparator",
+        ...     status=AgentStatus.SUCCESS,
+        ...     findings={"comparison": "..."},
+        ...     confidence_score=0.85,
+        ...     processing_time_ms=1234,
+        ... )
+        >>>
+        >>> # Failure case
+        >>> await record_agent_execution(
+        ...     analysis_id=analysis_id,
+        ...     agent_type="tech_comparator",
+        ...     status=AgentStatus.FAILED,
+        ...     error_code="TECH_COMPARATOR_FAILED",
+        ...     error_message="LLM API timeout",
+        ...     processing_time_ms=5000,
+        ... )
+
+    """
+    # Use empty dict for findings if not provided (for failures/skipped)
+    findings_to_save = findings if findings is not None else {}
+
+    # Convert analysis_id to UUID if it's a string
+    analysis_uuid = UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
+
+    # Get database session
+    session_factory = get_session_factory()
+    try:
+        async with session_factory() as session:
+            await save_agent_finding(
+                session=session,
+                analysis_id=analysis_uuid,
+                agent_type=agent_type,
+                findings=findings_to_save,
+                confidence_score=confidence_score,
+                processing_time_ms=processing_time_ms,
+                status=status,
+                error_code=error_code,
+                error_message=error_message,
+            )
+            logger.info(
+                "agent_execution_recorded",
+                agent_type=agent_type,
+                analysis_id=str(analysis_id),
+                status=status,
+                error_code=error_code,
+                processing_time_ms=processing_time_ms,
+            )
+    except Exception as e:
+        # Log database errors but don't crash the workflow
+        logger.error(
+            "failed_to_record_agent_execution",
+            agent_type=agent_type,
+            analysis_id=str(analysis_id),
+            status=status,
+            error=str(e),
+            exc_info=True,
+        )
 
 
 async def emit_agent_progress(
@@ -387,6 +493,11 @@ async def handle_agent_node_error(
 
     """
     from app.core.timeout_config import STEP_TIMEOUT
+    from app.domains.analysis.constants.error_codes import (
+        AGENT_CANCELLED,
+        AGENT_LLM_ERROR,
+        AGENT_TIMEOUT,
+    )
     from app.domains.analysis.services.persistence.error_recorder import error_recorder
 
     processing_time_ms = int(duration * 1000)
@@ -404,6 +515,14 @@ async def handle_agent_node_error(
             step_timeout=STEP_TIMEOUT,
             trace_id=trace_id,
             handled_gracefully=True,
+        )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type=agent_type,
+            status=AgentStatus.FAILED,
+            error_code=AGENT_CANCELLED,
+            error_message="Agent execution cancelled",
+            processing_time_ms=processing_time_ms,
         )
         return {"agent_findings": []}
 
@@ -427,6 +546,15 @@ async def handle_agent_node_error(
             error_code=error_code,
             error_message=error_message,
             stage=agent_type,
+        )
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type=agent_type,
+            status=AgentStatus.FAILED,
+            error_code=AGENT_TIMEOUT,
+            error_message=str(error)[:2000],
+            processing_time_ms=processing_time_ms,
         )
 
         logger.warning(
@@ -459,6 +587,15 @@ async def handle_agent_node_error(
             stage=agent_type,
         )
 
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type=agent_type,
+            status=AgentStatus.FAILED,
+            error_code=AGENT_LLM_ERROR,
+            error_message=str(error)[:2000],
+            processing_time_ms=processing_time_ms,
+        )
+
         logger.warning(
             f"{agent_type}_specificity_failed",
             analysis_id=str(analysis_id),
@@ -486,6 +623,15 @@ async def handle_agent_node_error(
         error_code=error_code,
         error_message=error_message,
         stage=agent_type,
+    )
+
+    await record_agent_execution(
+        analysis_id=analysis_id,
+        agent_type=agent_type,
+        status=AgentStatus.FAILED,
+        error_code=AGENT_LLM_ERROR,
+        error_message=str(error)[:2000],
+        processing_time_ms=processing_time_ms,
     )
 
     logger.error(
