@@ -187,7 +187,8 @@ services:
       langfuse-minio:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- --timeout=5 http://langfuse-web:3000/api/public/health || exit 1"]
+      # Use localhost:3000 from inside container, not service name
+      test: ["CMD-SHELL", "wget -q -O- --timeout=5 http://localhost:3000/api/public/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10

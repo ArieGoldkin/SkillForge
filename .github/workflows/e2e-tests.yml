@@ -278,10 +278,10 @@ jobs:
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
 
-          # Start test environment WITHOUT API keys - workflow disabled
-          # Note: backend-seed loads golden dataset, langfuse-restore restores config
+          # Start ONLY essential services for lightweight E2E (no Langfuse stack)
+          # Langfuse is disabled in .env.test, so don't waste CI resources starting it
           docker compose -f docker-compose.test.yml up -d --build \
-            postgres redis backend frontend backend-seed langfuse-web langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup langfuse-restore
+            postgres redis backend frontend backend-seed
 
       - name: Wait for test environment to be ready
         run: |
