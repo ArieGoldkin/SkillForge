@@ -361,3 +361,143 @@ async def emit_agent_progress(
         agent_type=agent_type,  # Keep agent_type in details for debugging
         **kwargs,
     )
+
+
+async def handle_agent_node_error(
+    error: BaseException,  # BaseException to handle GeneratorExit (not Exception subclass)
+    analysis_id: AnalysisID,
+    agent_type: str,
+    duration: float,
+    trace_id: str | None,
+) -> dict[str, object]:
+    """Handle errors in agent node execution and return appropriate result.
+
+    This helper centralizes error handling logic to reduce return statements
+    in agent nodes (PLR0911 compliance).
+
+    Args:
+        error: Exception that occurred
+        analysis_id: UUID of the analysis
+        agent_type: Type of agent (e.g., "code_quality_critic")
+        duration: Execution duration in seconds
+        trace_id: Optional Langfuse trace ID
+
+    Returns:
+        Dictionary with empty agent_findings list
+
+    """
+    from app.core.timeout_config import STEP_TIMEOUT
+    from app.domains.analysis.services.persistence.error_recorder import error_recorder
+
+    processing_time_ms = int(duration * 1000)
+    error_type = type(error).__name__
+
+    # Handle specific exception types
+    if isinstance(error, GeneratorExit):
+        # GeneratorExit during execution (cancellation/timeout)
+        logger.warning(
+            "agent_node_cancelled",
+            agent_type=agent_type,
+            analysis_id=str(analysis_id),
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {"agent_findings": []}
+
+    if isinstance(error, TimeoutError):
+        # Agent execution exceeded timeout
+        error_code = f"{agent_type.upper()}_TIMEOUT"
+        error_message = "Agent execution timed out"
+
+        await emit_agent_progress(
+            analysis_id,
+            agent_type,
+            "failed",
+            error=error_message,
+            error_code=error_code,
+            processing_time_ms=processing_time_ms,
+        )
+
+        # Record error to database
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code=error_code,
+            error_message=error_message,
+            stage=agent_type,
+        )
+
+        logger.warning(
+            f"{agent_type}_timeout",
+            analysis_id=str(analysis_id),
+            duration_seconds=duration,
+            timeout_seconds=STEP_TIMEOUT,
+        )
+        return {"agent_findings": []}
+
+    if isinstance(error, ValueError):
+        # Specificity validation failed
+        error_code = f"{agent_type.upper()}_SPECIFICITY_FAILED"
+        error_message = f"Specificity validation failed: {error!r}"
+
+        await emit_agent_progress(
+            analysis_id,
+            agent_type,
+            "failed",
+            error=error_message,
+            error_code=error_code,
+            processing_time_ms=processing_time_ms,
+        )
+
+        # Record error to database
+        await error_recorder.record(
+            analysis_id=analysis_id,
+            error_code=error_code,
+            error_message=str(error),
+            stage=agent_type,
+        )
+
+        logger.warning(
+            f"{agent_type}_specificity_failed",
+            analysis_id=str(analysis_id),
+            error=str(error),
+            duration_seconds=duration,
+        )
+        return {"agent_findings": []}
+
+    # Unexpected errors (database, LLM API, etc.)
+    error_code = f"{agent_type.upper()}_FAILED"
+    error_message = str(error)
+
+    await emit_agent_progress(
+        analysis_id,
+        agent_type,
+        "failed",
+        error=error_message,
+        error_code=error_code,
+        processing_time_ms=processing_time_ms,
+    )
+
+    # Record error to database
+    await error_recorder.record(
+        analysis_id=analysis_id,
+        error_code=error_code,
+        error_message=error_message,
+        stage=agent_type,
+    )
+
+    logger.error(
+        "agent_node_failed",
+        agent_type=agent_type,
+        analysis_id=str(analysis_id),
+        error_type=error_type,
+        error=error_message,
+        duration_seconds=duration,
+        step_timeout=STEP_TIMEOUT,
+        trace_id=trace_id,
+        handled_gracefully=True,  # Returns empty findings, doesn't break workflow
+        exc_info=error,  # Pass exception object for traceback logging
+    )
+    return {"agent_findings": []}

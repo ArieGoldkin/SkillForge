@@ -45,7 +45,7 @@ class CoreSynthesisSchema(BaseModel):
             "Should answer: What is this? Why does it matter? What's the key takeaway?"
         ),
         min_length=50,
-        max_length=500,
+        max_length=1000,  # Increased from 500 for research papers
     )
 
     key_findings: list[str] = Field(
@@ -88,7 +88,8 @@ class CoreSynthesisSchema(BaseModel):
 
     cross_domain_connections: list[CrossDomainConnection] = Field(
         description=(
-            "Connections identified between different analysis domains (e.g., security + performance). "
+            "Connections identified between different analysis domains "
+            "(e.g., security + performance). "
             "Each connection specifies: two domains, the relationship/trade-off, agents involved. "
             "Reveals non-obvious insights from multi-agent collaboration. "
             "Empty list if no cross-domain patterns found."

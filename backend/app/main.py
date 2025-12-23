@@ -52,12 +52,17 @@ def _background_task_exception_handler(_loop: asyncio.AbstractEventLoop, context
     This catches exceptions (including GeneratorExit) that occur in background tasks
     and escape all other exception handlers. This is a safety net for cleanup exceptions.
     """
+    from app.core.exceptions import is_cleanup_generator_exit
+
     exception = context.get("exception")
     task = context.get("task")
     message = context.get("message", "")
 
     if exception is not None:
-        if isinstance(exception, GeneratorExit):
+        # Use unified GeneratorExit detection
+        # Note: We can't determine workflow_completed from here, so we assume cleanup
+        # (GeneratorExit in global handler is typically cleanup after successful completion)
+        if is_cleanup_generator_exit(exception, workflow_completed=True):
             # GeneratorExit during cleanup is normal generator lifecycle behavior
             # Log at DEBUG level to avoid false error indicators
             logger.debug(
@@ -127,7 +132,8 @@ async def lifespan(app: FastAPI):
         if not public_key or not secret_key:
             error_msg = (
                 "Langfuse is enabled but credentials are missing. "
-                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with "
+                "LANGFUSE_ENABLED=false"
             )
             logger.error(
                 "langfuse_credentials_missing",

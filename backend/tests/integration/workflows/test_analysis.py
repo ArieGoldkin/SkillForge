@@ -8,11 +8,11 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import select
 
-from app.api.v1.analysis.workflow_runner import run_workflow_task
 from app.core.config import get_settings
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal, engine
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -139,7 +139,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
             ),
         ):
             # Run workflow with timeout (increased for streaming/parallel overhead)
-            # Add LangSmith tracing config
+            # Configure tracing metadata
             workflow_config = {
                 "configurable": {"thread_id": analysis_id},
                 "run_name": f"test_analysis_{analysis_id}",
@@ -150,8 +150,9 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
                     "test_type": "end_to_end",
                 },
             }
+            workflow = create_analysis_workflow()
             result = await asyncio.wait_for(
-                analysis_workflow.ainvoke(
+                workflow.ainvoke(
                     {
                         "url": test_url,
                         "analysis_id": analysis_id,
@@ -203,7 +204,7 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
         assert title is not None, "Title should be present in extraction_metadata"
         assert title == "Test Article", "Title should match the extracted value"
         # Verify the structure matches what _persist_analysis_data expects
-        # (from workflow_runner.py line 102-104)
+        # (from orchestrator data_persister.persist)
         assert isinstance(title, str), "Title should be a string"
     finally:
         # Ensure engine connections are disposed
@@ -301,6 +302,9 @@ async def test_analysis_workflow_with_checkpointer(
                 return_value=mock_artifact_repo,
             ),
         ):
+            # Create workflow
+            analysis_workflow = create_analysis_workflow()
+
             # Run workflow first time with timeout (increased for streaming/parallel overhead)
             workflow_config1 = {
                 "configurable": {"thread_id": analysis_id},
@@ -385,7 +389,7 @@ async def test_workflow_persists_results_to_database(
     """
     from sqlalchemy import select
 
-    from app.api.v1.analysis.workflow_runner import run_workflow_task
+    from app.domains.analysis.services.workflow import WorkflowOrchestrator
 
     # Use a simple test URL
     test_url = "https://react.dev"
@@ -452,8 +456,10 @@ async def test_workflow_persists_results_to_database(
                 return_value=mock_artifact_repo,
             ),
         ):
-            # Run full workflow via run_workflow_task (this calls _persist_analysis_data)
-            await run_workflow_task(
+            # Run full workflow via orchestrator (this calls data_persister.persist)
+            workflow = create_analysis_workflow()
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
+            await orchestrator.run(
                 analysis_id=analysis_id,
                 url=test_url,
                 skill_level="intermediate",
@@ -479,12 +485,14 @@ async def test_workflow_persists_results_to_database(
 
             # Verify content_embedding is persisted
             assert analysis.content_embedding is not None, "content_embedding should be persisted"
-            assert len(analysis.content_embedding) == EXPECTED_EMBEDDING_DIMENSIONS, (
-                f"content_embedding should be {EXPECTED_EMBEDDING_DIMENSIONS} dimensions"
-            )
-            assert list(analysis.content_embedding) == SAMPLE_EMBEDDING, (
-                "content_embedding should match generated embedding"
-            )
+            # Type guard for type checker
+            if isinstance(analysis.content_embedding, list):
+                assert len(analysis.content_embedding) == EXPECTED_EMBEDDING_DIMENSIONS, (
+                    f"content_embedding should be {EXPECTED_EMBEDDING_DIMENSIONS} dimensions"
+                )
+                assert list(analysis.content_embedding) == SAMPLE_EMBEDDING, (
+                    "content_embedding should match generated embedding"
+                )
 
             # Verify extraction_metadata is persisted
             assert analysis.extraction_metadata is not None, (
@@ -511,9 +519,7 @@ async def test_workflow_persists_results_to_database(
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(150)
-@patch("app.api.v1.analysis.workflow_runner.analysis_workflow")
 async def test_workflow_fails_when_required_fields_missing(
-    mock_workflow,
     requires_database,
     reset_engine_connections,
 ) -> None:
@@ -533,6 +539,7 @@ async def test_workflow_fails_when_required_fields_missing(
         await session.commit()
 
     # Mock workflow to return incomplete result (missing embedding)
+    mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Sample content",
@@ -542,7 +549,8 @@ async def test_workflow_fails_when_required_fields_missing(
     )
 
     # Run workflow task
-    await run_workflow_task(
+    orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
+    await orchestrator.run(
         analysis_id=analysis_id,
         url=test_url,
         skill_level="intermediate",

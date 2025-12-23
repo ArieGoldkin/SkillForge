@@ -59,9 +59,7 @@ def get_langfuse_credentials() -> tuple[str, str, str]:
     return public_key, secret_key, host
 
 
-async def fetch_score_configs(
-    client: httpx.AsyncClient, host: str
-) -> list[dict]:
+async def fetch_score_configs(client: httpx.AsyncClient, host: str) -> list[dict]:
     """Fetch all score configurations from Langfuse.
 
     Score configs define the types and ranges of scores used by evaluators.
@@ -96,9 +94,7 @@ async def fetch_score_configs(
     return score_configs
 
 
-async def fetch_prompts(
-    client: httpx.AsyncClient, host: str
-) -> list[dict]:
+async def fetch_prompts(client: httpx.AsyncClient, host: str) -> list[dict]:
     """Fetch all prompts from Langfuse.
 
     Many evaluators reference prompts, so we backup those too.

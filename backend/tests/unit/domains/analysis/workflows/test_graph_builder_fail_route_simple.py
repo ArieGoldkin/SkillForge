@@ -6,6 +6,7 @@ Issue #ARTIFACT-QUALITY: Graph now has fail-closed path for quality gate.
 """
 
 import inspect
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -14,7 +15,9 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
     MAX_RETRY_ATTEMPTS,
     should_retry_synthesis,
 )
-from app.domains.analysis.workflows.state import AnalysisState
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 @pytest.mark.unit

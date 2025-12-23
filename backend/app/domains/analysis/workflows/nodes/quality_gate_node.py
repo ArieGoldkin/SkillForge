@@ -19,9 +19,7 @@ from app.domains.analysis.workflows.state_accessors import (
     get_quality_scores,
 )
 from app.domains.analysis.workflows.state_types import AggregatedInsights
-from app.evaluation.evaluators.quality import (
-    create_quality_evaluator,
-)
+from app.evaluation.evaluators.quality import create_quality_evaluator
 
 logger = get_logger(__name__)
 
@@ -77,6 +75,13 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         Dictionary with quality_scores and retry_count fields
 
     """
+    # Issue #441: Skip if workflow is aborting
+    from app.domains.analysis.workflows.utils.abort_helpers import check_should_abort
+
+    abort_result = check_should_abort(state)
+    if abort_result is None:
+        return {}
+
     analysis_id = state["analysis_id"]
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
@@ -293,19 +298,42 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         )
 
         # Emit SSE event for quality gate result
-        from app.shared.services.messaging.sse_helpers import emit_streaming_event
+        from app.shared.services.messaging.sse_helpers import emit_error_event, emit_streaming_event
 
-        await emit_streaming_event(
-            "progress",  # Must be "progress", "complete", or "error" for frontend schema
-            analysis_id=analysis_id,
-            stage="quality_validation",
-            status="complete" if gate_passed else "failed",  # "passed" not valid, use "complete"
-            avg_score=avg_score,
-            threshold=QUALITY_THRESHOLD,
-            retry_count=retry_count,
-            scores=quality_scores,
-            gate_passed=gate_passed,  # Preserve pass/fail info in details
-        )
+        if gate_passed:
+            # Gate passed - emit progress event with complete status
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage="quality_validation",
+                status="complete",
+                avg_score=avg_score,
+                threshold=effective_threshold,
+                retry_count=retry_count,
+                scores=quality_scores,
+                gate_passed=True,
+            )
+        else:
+            # Gate failed - emit error event
+            error_message = (
+                f"Quality gate failed - average score {avg_score:.2f} below threshold "
+                f"{effective_threshold:.2f}"
+            )
+            if failed_aspects:
+                error_message += f". Failed aspects: {', '.join(failed_aspects)}"
+
+            await emit_error_event(
+                analysis_id=analysis_id,
+                stage="quality_validation",
+                error=error_message,
+                error_code="QUALITY_GATE_FAILED",
+                avg_score=avg_score,
+                threshold=effective_threshold,
+                retry_count=retry_count,
+                scores=quality_scores,
+                gate_passed=False,
+                failed_aspects=failed_aspects if failed_aspects else None,
+            )
 
         # Submit quality scores to Langfuse for analytics
         # Issue #432: Submit G-Eval scores using direct Langfuse SDK API
@@ -336,7 +364,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                     name="g_eval_overall",
                     value=avg_score,
                     data_type="NUMERIC",
-                    comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
+                    comment=(
+                        f"Gate {'passed' if gate_passed else 'failed'} "
+                        f"(threshold: {effective_threshold})"
+                    ),
                 )
 
                 # Flush to ensure scores are sent immediately
@@ -435,7 +466,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     except Exception as e:
         duration = time.time() - start_time
         logger.error(
-            "quality_gate_failed",
+            "quality_gate_evaluation_failed",
             analysis_id=analysis_id,
             retry_count=retry_count,
             error=str(e),
@@ -444,6 +475,37 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             trace_id=trace_id,
             exc_info=True,
         )
+
+        # Record error to database for debugging
+        try:
+            from uuid import UUID
+
+            from app.db.repositories.analysis_repository import AnalysisRepository
+            from app.db.session import get_db
+
+            # Convert analysis_id to UUID if it's a string
+            analysis_uuid = UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
+
+            # Create a new session for error recording
+            async for db_session in get_db():
+                try:
+                    analysis_repo = AnalysisRepository(session=db_session)
+                    await analysis_repo.record_error(
+                        analysis_id=analysis_uuid,
+                        error_code="QUALITY_GATE_FAILED",
+                        error_message=str(e),
+                        stage="quality_gate",
+                    )
+                finally:
+                    await db_session.close()
+                break  # Only need one iteration
+        except Exception as record_error:  # noqa: BLE001 - Graceful degradation
+            logger.warning(
+                "error_recording_failed",
+                analysis_id=analysis_id,
+                error=str(record_error),
+                error_type=type(record_error).__name__,
+            )
 
         # Submit latency metric even on error
         from app.core.langfuse_service import get_langfuse_service
@@ -458,19 +520,34 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                         name="latency_seconds",
                         value=duration,
                         data_type="NUMERIC",
-                        comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
+                        comment=(
+                            f"Quality gate evaluation failed after {duration:.2f}s: "
+                            f"{type(e).__name__}"
+                        ),
                     )
                     langfuse_service.sdk_client.flush()
             except Exception as score_error:  # noqa: BLE001 - Graceful degradation
                 logger.debug("latency_score_failed_on_error", error=str(score_error))
 
-        # Issue #442: On error, pass gate (fail open) but track warning
-        # This ensures workflow continues while providing transparency
+        # Emit error event for SSE
+        from app.shared.services.messaging.sse_helpers import emit_error_event
+
+        await emit_error_event(
+            analysis_id=analysis_id,
+            stage="quality_validation",
+            error=f"Quality evaluation failed: {type(e).__name__}",
+            error_code="QUALITY_GATE_FAILED",
+            error_details=str(e)[:500],
+        )
+
+        # FAIL CLOSED - reject on error (best practice)
+        # Prevents shipping artifacts when quality cannot be verified
         error_warning = f"Quality evaluation failed: {type(e).__name__}: {e!s}"
+
         return {
             "quality_scores": {},
             "quality_gate_avg_score": 0.0,
-            "quality_gate_passed": True,  # Fail open
+            "quality_gate_passed": False,  # FAIL CLOSED - best practice
             "quality_gate_retry_count": retry_count,
             "quality_gate_error": str(e),
             "quality_warnings": [error_warning],

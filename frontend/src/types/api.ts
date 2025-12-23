@@ -2,16 +2,45 @@
 // Source: docs/INTEGRATION_POINTS.md
 
 export type ContentType = 'article' | 'video' | 'repo'
+
+// Granular analysis status values with semantic meaning
+// 'complete' is ONLY set when artifact exists and is valid
 export type AnalysisStatus =
+  // Lifecycle states
   | 'pending'
   | 'extracting'
   | 'analyzing'
-  | 'running'
-  | 'in-progress'
-  | 'complete'
+  | 'generating_artifact'
+  | 'complete' // Only when artifact exists!
+  // Failure states
+  | 'extraction_failed'
+  | 'analysis_failed'
+  | 'artifact_failed' // Workflow done, but no artifact
+  | 'quality_gate_failed'
+  | 'failed' // Generic fallback
+  // User actions
+  | 'cancelled'
+  // Legacy (for backward compatibility)
+  | 'running' // Deprecated - use specific lifecycle states
+  | 'in-progress' // Deprecated - use specific lifecycle states
   | 'completed' // Backend returns 'completed', normalized to 'complete' in api.service.ts
-  | 'failed'
+
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
+
+// Helper functions for status checks
+export function isFailureStatus(status: AnalysisStatus): boolean {
+  return [
+    'extraction_failed',
+    'analysis_failed',
+    'artifact_failed',
+    'quality_gate_failed',
+    'failed',
+  ].includes(status)
+}
+
+export function isCompleteStatus(status: AnalysisStatus): boolean {
+  return status === 'complete'
+}
 
 export interface Analysis {
   id: string

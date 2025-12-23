@@ -260,7 +260,8 @@ def _validate_business_logic(dataset: dict[str, Any]) -> tuple[list[str], list[s
                 total_weight = sum(weights)
                 if abs(total_weight - 1.0) > 0.01:  # Allow small floating point errors
                     errors.append(
-                        f"{example_id}: Scoring rubric weights sum to {total_weight:.2f}, must sum to 1.0"
+                        f"{example_id}: Scoring rubric weights sum to {total_weight:.2f}, "
+                        f"must sum to 1.0"
                     )
 
         # Check validation status

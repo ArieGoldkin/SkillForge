@@ -24,7 +24,7 @@ from app.core.config import get_settings
 from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.session import AsyncSessionLocal, engine
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
@@ -94,8 +94,9 @@ async def test_analysis_workflow_live_embeddings_and_extraction(requires_live_en
                     "test_type": "live_embeddings_extraction",
                 },
             }
+            workflow = create_analysis_workflow()
             result = await asyncio.wait_for(
-                analysis_workflow.ainvoke(
+                workflow.ainvoke(
                     {
                         "url": test_url,
                         "analysis_id": analysis_id,

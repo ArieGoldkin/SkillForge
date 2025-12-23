@@ -106,6 +106,7 @@ def verify_langfuse_traces() -> None:
     except Exception as e:
         print(f"❌ Error fetching traces: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

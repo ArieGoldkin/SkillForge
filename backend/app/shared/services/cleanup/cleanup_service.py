@@ -245,7 +245,10 @@ class CleanupService:
             [
                 "## Health Status",
                 "",
-                f"{status_emoji} **Overall Status**: {'Healthy' if health['healthy'] else 'Issues Found'}",
+                (
+                    f"{status_emoji} **Overall Status**: "
+                    f"{'Healthy' if health['healthy'] else 'Issues Found'}"
+                ),
                 f"- Total Issues: {health['total_issues']}",
                 f"- Orphan Chunks: {health['orphan_chunks']}",
                 f"- Expired Analyses: {health['expired_analyses']}",

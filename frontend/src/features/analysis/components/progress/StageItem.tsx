@@ -8,6 +8,8 @@ import { Badge } from '@shared/components/ui/badge'
 
 import { cn } from '@lib/utils'
 
+import { formatErrorCode } from '../../utils/errorCodeFormatter'
+
 import { formatAgentName, formatStatus, getStatusBadgeVariant, type StageState } from './constants'
 
 /**
@@ -99,11 +101,21 @@ export const StageItem = memo(function StageItem({ stage, isLast }: StageItemPro
         )}
         {stage.error && (
           <div
-            className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded"
+            className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded space-y-1"
             role="alert"
             aria-label={`Error in ${stage.label}`}
           >
-            <span className="font-medium">Error:</span> {stage.error}
+            <div>
+              <span className="font-medium">Error:</span> {stage.error}
+            </div>
+            {stage.errorCode && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Code:</span>
+                <Badge variant="destructive" className="text-xs">
+                  {formatErrorCode(stage.errorCode)}
+                </Badge>
+              </div>
+            )}
           </div>
         )}
       </div>

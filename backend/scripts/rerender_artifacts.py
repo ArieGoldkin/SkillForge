@@ -69,14 +69,12 @@ async def rerender_all_artifacts(dry_run: bool = False) -> dict:
         for i, artifact in enumerate(artifacts):
             try:
                 # Get the analysis
-                analysis_query = select(Analysis).where(
-                    Analysis.id == artifact.analysis_id
-                )
+                analysis_query = select(Analysis).where(Analysis.id == artifact.analysis_id)
                 analysis_result = await db.execute(analysis_query)
                 analysis = analysis_result.scalar_one_or_none()
 
                 if not analysis:
-                    print(f"[{i+1}/{len(artifacts)}] ⚠️  No analysis for artifact {artifact.id}")
+                    print(f"[{i + 1}/{len(artifacts)}] ⚠️  No analysis for artifact {artifact.id}")
                     results["skipped"] += 1
                     continue
 
@@ -87,7 +85,9 @@ async def rerender_all_artifacts(dry_run: bool = False) -> dict:
                 # If no aggregated_insights in metadata, check if we can extract from
                 # the existing markdown content (skip re-render if no source data)
                 if not aggregated_insights:
-                    print(f"[{i+1}/{len(artifacts)}] ⚠️  No insights in metadata for {artifact.id}")
+                    print(
+                        f"[{i + 1}/{len(artifacts)}] ⚠️  No insights in metadata for {artifact.id}"
+                    )
                     results["skipped"] += 1
                     continue
 
@@ -119,22 +119,19 @@ async def rerender_all_artifacts(dry_run: bool = False) -> dict:
 
                 title_short = (analysis.title or "Untitled")[:40]
                 print(
-                    f"[{i+1}/{len(artifacts)}] ✅ {title_short}... "
-                    f"({old_len} → {new_len} chars)"
+                    f"[{i + 1}/{len(artifacts)}] ✅ {title_short}... ({old_len} → {new_len} chars)"
                 )
                 results["success"] += 1
 
             except Exception as e:
-                print(f"[{i+1}/{len(artifacts)}] ❌ Error: {e}")
+                print(f"[{i + 1}/{len(artifacts)}] ❌ Error: {e}")
                 results["errors"].append({"id": str(artifact.id), "error": str(e)})
 
     return results
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Re-render all artifacts using updated template"
-    )
+    parser = argparse.ArgumentParser(description="Re-render all artifacts using updated template")
     parser.add_argument(
         "--dry-run",
         action="store_true",

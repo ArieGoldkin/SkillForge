@@ -3,13 +3,17 @@
 Tests the quality gate validation logic using LLM-as-judge evaluators.
 """
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from app.domains.analysis.workflows.nodes.quality_gate_node import (
     _format_insights_for_evaluation,
     should_retry_synthesis,
 )
-from app.domains.analysis.workflows.state import AnalysisState
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 
 @pytest.mark.unit
@@ -173,8 +177,8 @@ class TestQualityGateNode:
         assert result["quality_gate_passed"] is True
         assert result["quality_scores"] == {}
 
-    async def test_quality_gate_fail_open_on_error(self, monkeypatch):
-        """Test that quality gate fails open on evaluation error."""
+    async def test_quality_gate_fail_closed_on_error(self, monkeypatch):
+        """Test that quality gate fails closed on evaluation error (best practice)."""
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         # Mock evaluator to raise exception
@@ -199,6 +203,6 @@ class TestQualityGateNode:
 
         result = await quality_gate_node(state)
 
-        # Should fail open (pass the gate) on error
-        assert result["quality_gate_passed"] is True
+        # Should fail closed (reject) on error - best practice for safety
+        assert result["quality_gate_passed"] is False
         assert "quality_gate_error" in result

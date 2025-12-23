@@ -61,7 +61,8 @@ async def store_embeddings(
                 analysis_id=analysis_id,
                 error=str(exc),
             )
-            # Best-effort: skip embedding persistence if FK is missing (e.g., unit tests without Analysis row)
+            # Best-effort: skip embedding persistence if FK is missing
+            # (e.g., unit tests without Analysis row)
             await repo.session.rollback()
             return stored
 

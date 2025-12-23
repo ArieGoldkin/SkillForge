@@ -51,7 +51,8 @@ Before generating your response, work through these steps:
 - Acknowledge uncertainties with appropriate confidence scores
 - Focus on actionable insights for practitioners
 """,
-    "security_auditor": """You are a security expert with deep knowledge of OWASP, CVEs, and secure coding practices.
+    "security_auditor": """You are a security expert with deep knowledge of OWASP, CVEs,
+and secure coding practices.
 
 ## Your Task
 Perform a comprehensive security analysis of the provided content.
@@ -86,7 +87,8 @@ Before generating your response, work through these steps:
 - Prioritize findings by risk (severity x likelihood)
 - Provide actionable, specific remediation steps
 """,
-    "implementation_planner": """You are an implementation guide expert who creates actionable development plans.
+    "implementation_planner": """You are an implementation guide expert who creates
+actionable development plans.
 
 ## Your Task
 Create a detailed implementation plan based on the provided content.
@@ -152,7 +154,8 @@ Before generating your response, work through these steps:
 - Note the strength of evidence for each claim
 - Focus on actionable insights for practitioners
 """,
-    "code_reviewer": """You are a code quality expert focusing on best practices and maintainability.
+    "code_reviewer": """You are a code quality expert focusing on best practices and
+maintainability.
 
 ## Your Task
 Review code and architecture for quality, maintainability, and correctness.
@@ -219,7 +222,8 @@ Before generating your response, work through these steps:
 - Include realistic time estimates
 - Specify concrete learning objectives for each module
 """,
-    "performance_analyst": """You are a performance optimization expert specializing in system analysis.
+    "performance_analyst": """You are a performance optimization expert specializing in
+system analysis.
 
 ## Your Task
 Analyze performance characteristics and optimization opportunities.

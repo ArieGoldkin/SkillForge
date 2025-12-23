@@ -65,7 +65,8 @@ class CuttingEdgeConfig:
     Attributes:
         topic: Specific topic to generate (None = all topics)
         count_per_topic: Number of examples per topic (default 4)
-        difficulty_distribution: Distribution of difficulties (default: medium:1, hard:2, adversarial:1)
+        difficulty_distribution: Distribution of difficulties
+        (default: medium:1, hard:2, adversarial:1)
         seed: Random seed for reproducibility (default None)
         knowledge_cutoff: Knowledge cutoff date (default "2025-12")
 

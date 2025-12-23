@@ -27,6 +27,8 @@ build/
 *.egg
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .tox/
 .hypothesis/
@@ -281,6 +283,9 @@ coverage/
 # Pytest
 .pytest_cache/
 htmlcov/
+.coverage
+.coverage.*
+coverage.xml
 
 # ============================================================================
 # Project Specific

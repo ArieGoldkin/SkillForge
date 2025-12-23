@@ -261,7 +261,8 @@ class OpenAIBatchClient:
         Returns:
             Dictionary containing:
                 - id: Batch job ID
-                - status: Current status (validating/in_progress/finalizing/completed/failed/expired/cancelled)
+                - status: Current status
+                  (validating/in_progress/finalizing/completed/failed/expired/cancelled)
                 - request_counts: Dict with total/completed/failed counts
                 - output_file_id: Output file ID (when completed)
                 - error_file_id: Error file ID (if failures occurred)
@@ -273,7 +274,8 @@ class OpenAIBatchClient:
         Example:
             >>> status = await client.get_batch_status("batch-abc123")
             >>> print(
-            ...     f"Progress: {status['request_counts']['completed']}/{status['request_counts']['total']}"
+            ...     f"Progress: {status['request_counts']['completed']}/"
+            ...     f"{status['request_counts']['total']}"
             ... )
 
         """

@@ -99,7 +99,10 @@ curl http://localhost:8500/api/v1/health
 
 **Configuration Verification:**
 ```bash
-docker-compose exec backend python -c "from app.workflows.agents.execution import get_specificity_min_score, get_specificity_max_retries; print(f'Min: {get_specificity_min_score()}, Max: {get_specificity_max_retries()}')"
+docker-compose exec backend python -c \
+  "from app.workflows.agents.execution import get_specificity_min_score, \
+    get_specificity_max_retries; \
+    print(f'Min: {get_specificity_min_score()}, Max: {get_specificity_max_retries()}')"
 # Result: Min: 0.7, Max: 1
 ```
 

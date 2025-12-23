@@ -43,7 +43,7 @@ load_dotenv()
 from app.core.logging import get_logger  # noqa: E402
 from app.db.session import AsyncSessionLocal  # noqa: E402
 from app.db.models.analysis import Analysis  # noqa: E402
-from app.domains.analysis.workflows.analysis import analysis_workflow  # noqa: E402
+from app.domains.analysis.workflows.analysis import create_analysis_workflow  # noqa: E402
 
 logger = get_logger(__name__)
 
@@ -157,7 +157,8 @@ async def run_workflow_on_fixture(
 
     # Run the workflow (extract node will passthrough since raw_content is set)
     logger.info(f"Running workflow for: {doc['title']}")
-    result = await analysis_workflow.ainvoke(initial_state, config)
+    workflow = create_analysis_workflow()
+    result = await workflow.ainvoke(initial_state, config)
 
     return result
 

@@ -5,10 +5,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.domains.analysis.workflows.nodes.supervisor import (
+    MIN_AGENTS_BY_GENRE,
     _get_content_for_supervisor,
     supervisor_route,
 )
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
+from app.shared.workflows.utils.content_signals import ContentGenre
 from app.shared.workflows.utils.import_detection import detect_code_patterns
 
 
@@ -643,3 +645,199 @@ async def test_supervisor_auto_activates_tech_comparator():
             "comparison_indicators_detected" in str(result)
             or "comparison detected" in result["supervisor_decision"]["reasoning"]
         )
+
+
+def test_genre_aware_minimum_agents():
+    """Test that MIN_AGENTS_BY_GENRE constant has correct genre-specific minimums."""
+    # Verify all ContentGenre values are mapped
+    assert ContentGenre.TUTORIAL in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.RESEARCH in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.OPINION in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.REFERENCE in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.QUICKSTART in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.CHANGELOG in MIN_AGENTS_BY_GENRE
+    assert ContentGenre.UNKNOWN in MIN_AGENTS_BY_GENRE
+
+    # Verify specific minimums
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.TUTORIAL] == 4  # Comprehensive
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.RESEARCH] == 2  # Concepts only
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.OPINION] == 1  # Trend validation
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.REFERENCE] == 3  # Standard
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.QUICKSTART] == 3  # Implementation
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.CHANGELOG] == 2  # Trends + comparison
+    assert MIN_AGENTS_BY_GENRE[ContentGenre.UNKNOWN] == 3  # Safe default
+
+
+@pytest.mark.asyncio
+async def test_supervisor_enforces_genre_aware_minimum_research():
+    """Test supervisor enforces minimum 2 agents for RESEARCH genre.
+
+    Note: AgentSelection schema has min_length=3, so LLM must return 3+ agents.
+    This test verifies the genre-aware logic doesn't ADD extra agents unnecessarily
+    for research content (which needs less comprehensive analysis).
+    """
+    # Mock selection with 3 agents (schema minimum)
+    # For research, this is already MORE than the genre-aware minimum of 2
+    mock_selection = AgentSelection(
+        agents=["trend_validator", "tech_comparator", "implementation_planner"],
+        reasoning="Research paper needs trend analysis and concept comparison",
+        confidence=0.8,
+    )
+
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
+
+    # Research paper content (will be detected as RESEARCH genre)
+    content = """
+    Abstract: This paper explores the theoretical foundations of neural architecture search.
+    We present a novel framework for understanding optimization landscapes in deep learning.
+
+    1. Introduction
+    Machine learning has evolved significantly over the past decade...
+
+    2. Related Work
+    Previous research by Smith et al. (2020) investigated...
+
+    3. Methodology
+    Our approach builds on information theory and optimization principles...
+
+    4. Conclusion
+    We have demonstrated that our theoretical framework...
+    """
+
+    with (
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+            return_value=mock_model,
+        ),
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+            new_callable=AsyncMock,
+        ),
+    ):
+        result = await supervisor_route(content, "article", "test-research")
+        agents = result["supervisor_decision"]["agents"]
+
+        # For research, minimum is 2 (per genre-aware logic), but schema enforces 3
+        # Supervisor should NOT add extra agents beyond what LLM selected
+        assert len(agents) == 3  # Exactly what LLM returned, no extras
+        assert "trend_validator" in agents
+
+
+@pytest.mark.asyncio
+async def test_supervisor_enforces_genre_aware_minimum_opinion():
+    """Test supervisor behavior for OPINION genre.
+
+    Note: AgentSelection schema has min_length=3, so LLM must return 3+ agents
+    even though opinion content only needs minimum 1. This test verifies the
+    supervisor doesn't ADD extra agents beyond what LLM selected.
+    """
+    # Mock selection with 3 agents (schema minimum, but more than genre needs)
+    mock_selection = AgentSelection(
+        agents=["trend_validator", "tech_comparator", "implementation_planner"],
+        reasoning="Opinion piece needs trend and comparison validation",
+        confidence=0.6,
+    )
+
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
+
+    # Opinion blog post content
+    content = """
+    I think that React is the best framework for modern web development.
+    In my experience, the component model makes code more maintainable.
+    Blog post: Why I switched from Vue to React and never looked back.
+    """
+
+    with (
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+            return_value=mock_model,
+        ),
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+            new_callable=AsyncMock,
+        ),
+    ):
+        result = await supervisor_route(content, "article", "test-opinion")
+        agents = result["supervisor_decision"]["agents"]
+
+        # Opinion needs minimum 1, but schema enforces 3
+        # Supervisor should NOT add extras beyond LLM selection
+        assert len(agents) == 3  # Exactly what LLM returned
+
+
+@pytest.mark.asyncio
+async def test_supervisor_enforces_genre_aware_minimum_tutorial():
+    """Test supervisor enforces minimum 4 agents for TUTORIAL genre.
+
+    The LLM returns 3 agents (schema minimum), but genre-aware logic
+    should add a 4th agent to meet the TUTORIAL genre minimum.
+    """
+    # Mock selection with 3 agents (schema minimum, but less than genre needs)
+    mock_selection = AgentSelection(
+        agents=["implementation_planner", "dependency_mapper", "trend_validator"],
+        reasoning="Tutorial needs implementation guidance",
+        confidence=0.85,
+    )
+
+    mock_lcel_chain = MagicMock()
+    mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+    mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+    mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
+    mock_model = MagicMock()
+    mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
+
+    # Tutorial content with step-by-step instructions and code
+    content = """
+    # Building a REST API with FastAPI
+
+    Step 1: Install FastAPI
+    ```bash
+    pip install fastapi uvicorn
+    ```
+
+    Step 2: Create your first endpoint
+    ```python
+    from fastapi import FastAPI
+
+    app = FastAPI()
+
+    @app.get("/")
+    def read_root():
+        return {"Hello": "World"}
+    ```
+
+    Step 3: Run the server
+    ```bash
+    uvicorn main:app --reload
+    ```
+
+    Let's build a complete CRUD API...
+    """
+
+    with (
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+            return_value=mock_model,
+        ),
+        patch(
+            "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+            new_callable=AsyncMock,
+        ),
+    ):
+        result = await supervisor_route(content, "article", "test-tutorial")
+        agents = result["supervisor_decision"]["agents"]
+
+        # Should enforce minimum 4 agents for tutorial
+        assert len(agents) >= 4
+        assert "implementation_planner" in agents
+        assert "dependency_mapper" in agents

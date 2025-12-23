@@ -49,7 +49,8 @@ export const LIMIT_CONSTANTS = {
   MAX_EVENTS: 500,
   SSE_RECONNECT_ATTEMPTS: 3,
   SSE_RECONNECT_DELAY_INITIAL: 1000, // 1 second
-  SSE_RECONNECT_DELAY_MAX: 4000, // 4 seconds
+  SSE_RECONNECT_DELAY_MAX: 30000, // 30 seconds (max exponential backoff)
+  SSE_POLLING_INTERVAL: 5000, // 5 seconds between polling requests
 
   // Performance monitoring
   PERFORMANCE_FAILURE_RATE_THRESHOLD: 0.1, // 10%

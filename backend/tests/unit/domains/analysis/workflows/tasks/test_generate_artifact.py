@@ -210,9 +210,26 @@ class TestGenerateArtifact:
             patch(
                 "app.domains.analysis.workflows.tasks.generate_artifact._submit_artifact_quality_scores"
             ) as mock_g_eval,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact._queue_low_quality_artifact_for_review"
+            ) as mock_queue,
+            patch(
+                "app.domains.analysis.workflows.utils.abort_helpers.check_should_abort"
+            ) as mock_abort,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.sanitize_markdown"
+            ) as mock_sanitize,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.validate_and_parse_findings"
+            ) as mock_validate,
+            patch("app.core.tracing.get_current_trace_id") as mock_trace_id,
         ):
             # Setup mocks
+            mock_abort.return_value = True
             mock_render.return_value = "# Test Artifact\n\nContent here."
+            mock_sanitize.return_value = "# Test Artifact\n\nContent here."
+            mock_validate.return_value = (sample_state["agent_findings"], [], [])
+            mock_trace_id.return_value = "trace-123"
             mock_db_session = AsyncMock()
             mock_db_session.commit = AsyncMock()
             mock_db_session.refresh = AsyncMock()
@@ -249,40 +266,78 @@ class TestGenerateArtifact:
             assert "aggregated_insights" in call_args
             assert "analysis_id" in call_args
 
+            # Verify queuing was called
+            mock_queue.assert_called_once()
+
     @pytest.mark.asyncio
     async def test_generate_artifact_empty_aggregated_insights(self, sample_state):
         """Test artifact generation with empty aggregated insights."""
+        from app.core.exceptions import WorkflowStageError
+
         sample_state["aggregated_insights"] = {}
 
-        with patch(
-            "app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event"
-        ) as mock_sse:
-            with pytest.raises(ValueError, match="aggregated_insights is missing or invalid"):
+        with (
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event"
+            ) as mock_sse,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.emit_error_event"
+            ) as mock_error,
+            patch(
+                "app.domains.analysis.workflows.utils.abort_helpers.check_should_abort"
+            ) as mock_abort,
+        ):
+            # Mock abort check to return non-None (workflow is not aborting)
+            mock_abort.return_value = True
+
+            # Expect WorkflowStageError wrapping the ValueError
+            with pytest.raises(
+                WorkflowStageError, match="aggregated_insights is missing or invalid"
+            ):
                 await generate_artifact(sample_state)
 
-            # Verify error SSE event was called
-            assert mock_sse.called
-            # Check that error event was emitted
-            error_calls = [
-                call
-                for call in mock_sse.call_args_list
-                if len(call[0]) > 0 and call[0][0] == "error"
-            ]
-            assert len(error_calls) > 0
+            # Verify error SSE event was called (twice: once for validation, once in exception handler)
+            assert mock_error.call_count == 2
+            # Verify both calls contain correct information
+            for call in mock_error.call_args_list:
+                call_kwargs = call[1]
+                assert "aggregated_insights is missing or invalid" in call_kwargs["error"]
+                assert call_kwargs["error_code"] == "ARTIFACT_GENERATION_FAILED"
 
     @pytest.mark.asyncio
     async def test_generate_artifact_missing_aggregated_insights(self, sample_state):
         """Test artifact generation with missing aggregated_insights."""
+        from app.core.exceptions import WorkflowStageError
+
         del sample_state["aggregated_insights"]
 
-        with patch(
-            "app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event"
-        ) as mock_sse:
-            with pytest.raises(ValueError, match="aggregated_insights is missing or invalid"):
+        with (
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event"
+            ) as mock_sse,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.emit_error_event"
+            ) as mock_error,
+            patch(
+                "app.domains.analysis.workflows.utils.abort_helpers.check_should_abort"
+            ) as mock_abort,
+        ):
+            # Mock abort check to return non-None (workflow is not aborting)
+            mock_abort.return_value = True
+
+            # Expect WorkflowStageError wrapping the ValueError
+            with pytest.raises(
+                WorkflowStageError, match="aggregated_insights is missing or invalid"
+            ):
                 await generate_artifact(sample_state)
 
-            # Verify error SSE event
-            assert mock_sse.called
+            # Verify error SSE event was called (twice: once for validation, once in exception handler)
+            assert mock_error.call_count == 2
+            # Verify both calls contain correct information
+            for call in mock_error.call_args_list:
+                call_kwargs = call[1]
+                assert "aggregated_insights is missing or invalid" in call_kwargs["error"]
+                assert call_kwargs["error_code"] == "ARTIFACT_GENERATION_FAILED"
 
     @pytest.mark.asyncio
     async def test_generate_artifact_database_error(self, sample_state):
@@ -297,8 +352,27 @@ class TestGenerateArtifact:
             patch(
                 "app.domains.analysis.workflows.tasks.generate_artifact.emit_streaming_event"
             ) as mock_sse,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.emit_error_event"
+            ) as mock_error,
+            patch(
+                "app.domains.analysis.workflows.utils.abort_helpers.check_should_abort"
+            ) as mock_abort,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.sanitize_markdown"
+            ) as mock_sanitize,
+            patch(
+                "app.domains.analysis.workflows.tasks.generate_artifact.validate_and_parse_findings"
+            ) as mock_validate,
+            patch("app.core.tracing.get_current_trace_id") as mock_trace_id,
         ):
+            # Mock abort check to return non-None (workflow is not aborting)
+            mock_abort.return_value = True
             mock_render.return_value = "# Test\n\nContent."
+            mock_sanitize.return_value = "# Test\n\nContent."
+            mock_validate.return_value = ([], [], [])
+            mock_trace_id.return_value = "trace-123"
+
             mock_db_session = AsyncMock()
             mock_session_factory = MagicMock()
             mock_session_factory.return_value.__aenter__.return_value = mock_db_session
@@ -311,18 +385,19 @@ class TestGenerateArtifact:
                 mock_repo.create_artifact.side_effect = Exception("Database error")
                 mock_repo_class.return_value = mock_repo
 
-                with pytest.raises(Exception, match="Database error"):
+                # Expect WorkflowStageError wrapping the database error
+                from app.core.exceptions import WorkflowStageError
+
+                with pytest.raises(WorkflowStageError, match="Artifact generation failed"):
                     await generate_artifact(sample_state)
 
             # Verify error SSE event was called
-            assert mock_sse.called
-            # Check that error event was emitted
-            error_calls = [
-                call
-                for call in mock_sse.call_args_list
-                if len(call[0]) > 0 and call[0][0] == "error"
-            ]
-            assert len(error_calls) > 0
+            assert mock_error.called
+            # Verify error event contains correct information
+            mock_error.assert_called_once()
+            call_kwargs = mock_error.call_args[1]
+            assert "Database error" in call_kwargs["error"]
+            assert call_kwargs["error_code"] == "ARTIFACT_GENERATION_FAILED"
 
 
 class TestGFMTemplateRendering:

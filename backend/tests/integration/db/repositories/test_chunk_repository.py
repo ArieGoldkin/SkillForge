@@ -13,8 +13,7 @@ from app.db.repositories.chunk_repository import ChunkRepository
 @pytest.fixture
 def mock_session():
     """Mock database session."""
-    session = AsyncMock(spec=AsyncSession)
-    return session
+    return AsyncMock(spec=AsyncSession)
 
 
 @pytest.fixture
@@ -314,11 +313,14 @@ async def test_hybrid_search_combines_results(mock_session, sample_embedding, sa
                 limit=10,
             )
 
-            # Verify both searches were called with 2*limit
+            # Verify both searches were called with HYBRID_FETCH_MULTIPLIER * limit (3x)
+            from app.core.constants import HYBRID_FETCH_MULTIPLIER
+
             mock_semantic.assert_called_once()
             mock_keyword.assert_called_once()
-            assert mock_semantic.call_args[1]["limit"] == 20
-            assert mock_keyword.call_args[1]["limit"] == 20
+            expected_fetch_limit = 10 * HYBRID_FETCH_MULTIPLIER  # 30
+            assert mock_semantic.call_args[1]["limit"] == expected_fetch_limit
+            assert mock_keyword.call_args[1]["limit"] == expected_fetch_limit
 
             # Results should be fused via RRF
             assert len(results) == 2

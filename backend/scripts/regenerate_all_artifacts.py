@@ -30,7 +30,7 @@ from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -39,9 +39,7 @@ async def get_all_completed_analyses() -> list[dict]:
     """Get all completed analyses with their data."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(Analysis).where(
-                Analysis.status.in_(["complete", "completed"])
-            )
+            select(Analysis).where(Analysis.status.in_(["complete", "completed"]))
         )
         analyses = result.scalars().all()
 
@@ -94,7 +92,8 @@ async def regenerate_artifact(analysis: dict, idx: int, total: int) -> dict:
 
         # Run workflow
         logger.info(f"[{idx + 1}/{total}] Regenerating: {analysis['title'][:50]}...")
-        result = await analysis_workflow.ainvoke(initial_state, config)
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(initial_state, config)
 
         elapsed = time.time() - start_time
         logger.info(f"[{idx + 1}/{total}] ✅ Done in {elapsed:.1f}s")
@@ -180,18 +179,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Regenerate artifacts with updated Mermaid constraints"
     )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Show what would be regenerated"
-    )
-    parser.add_argument(
-        "--limit", type=int, help="Limit number of artifacts to regenerate"
-    )
-    parser.add_argument(
-        "--ids", nargs="+", help="Specific analysis IDs to regenerate"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be regenerated")
+    parser.add_argument("--limit", type=int, help="Limit number of artifacts to regenerate")
+    parser.add_argument("--ids", nargs="+", help="Specific analysis IDs to regenerate")
     args = parser.parse_args()
 
-    exit_code = asyncio.run(
-        main(dry_run=args.dry_run, limit=args.limit, analysis_ids=args.ids)
-    )
+    exit_code = asyncio.run(main(dry_run=args.dry_run, limit=args.limit, analysis_ids=args.ids))
     sys.exit(exit_code)

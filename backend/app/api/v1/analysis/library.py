@@ -235,6 +235,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                         snippet=snippet,
                         rank=score,
                         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+                        # Error tracking fields (Issue #441)
+                        error_code=str(analysis.error_code) if analysis.error_code else None,
+                        failed_at_stage=(
+                            str(analysis.failed_at_stage) if analysis.failed_at_stage else None
+                        ),
                     )
                 )
 
@@ -292,6 +297,9 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 snippet=None,  # No snippet in listing mode
                 rank=0.0,  # No ranking in listing mode
                 created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+                # Error tracking fields (Issue #441)
+                error_code=str(analysis.error_code) if analysis.error_code else None,
+                failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
             )
             for analysis in analyses
         ]

@@ -6,10 +6,7 @@ Issue #444: Updated to use broadcaster factory for multi-instance support.
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shared.services.messaging.broadcaster_factory import (
-    BroadcasterBackend,
-    get_broadcaster,
-)
+from app.shared.services.messaging.broadcaster_factory import get_broadcaster
 
 
 @pytest.mark.asyncio
@@ -58,6 +55,7 @@ async def test_event_broadcaster_cleanup_automatic():
 
     pytest 9.0.1 ensures broadcaster cleanup runs even if test fails.
     """
+    broadcaster = await get_broadcaster()
     test_channel = "test:isolation"
     await broadcaster.publish(test_channel, {"type": "test"})
 

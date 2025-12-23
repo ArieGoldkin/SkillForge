@@ -44,7 +44,9 @@ class TestLCELAgentFactory:
     """Test LCEL agent factory with fallback and retry."""
 
     @patch("app.domains.analysis.workflows.agents.factories.get_chat_model")
-    async def test_create_agent_with_lcel_fallback_basic(self, mock_get_chat_model, mock_chat_model):
+    async def test_create_agent_with_lcel_fallback_basic(
+        self, mock_get_chat_model, mock_chat_model
+    ):
         """Test basic LCEL agent creation with fallback chain."""
         mock_get_chat_model.return_value = mock_chat_model
 

@@ -4,7 +4,9 @@ Tests metadata propagation, thread grouping, runtime metadata updates,
 and consistent decorator usage across the codebase.
 """
 
-from unittest.mock import patch
+from collections.abc import Callable
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,16 +14,17 @@ from app.core.tracing import robust_traceable
 
 
 @pytest.mark.asyncio
-@patch("app.core.tracing.observe")
+@patch("langfuse.observe")
 async def test_metadata_propagation(mock_observe):
     """Test that metadata is properly propagated to Langfuse traces."""
-    captured_func = None
+    captured_func: Callable[..., Any] | None = None
 
-    def mock_decorator(func):
+    def mock_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         nonlocal captured_func
         captured_func = func
 
-        async def mock_wrapper(*args, **kwargs):
+        async def mock_wrapper(*args: Any, **kwargs: Any) -> Any:
+            assert captured_func is not None, "captured_func must be set by decorator"
             return await captured_func(*args, **kwargs)
 
         return mock_wrapper
@@ -50,10 +53,14 @@ async def test_metadata_propagation(mock_observe):
 
 
 @pytest.mark.asyncio
-@patch("app.core.tracing.langfuse_context")
-async def test_thread_grouping_tutor(mock_langfuse_context):
+@patch("langfuse.get_client")
+async def test_thread_grouping_tutor(mock_get_client):
     """Test that tutor nodes group traces by session_id via update_current_trace."""
     from app.core.tracing import update_current_trace
+
+    # Mock Langfuse client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
 
     # Call update_current_trace with session grouping metadata
     update_current_trace(
@@ -66,18 +73,23 @@ async def test_thread_grouping_tutor(mock_langfuse_context):
         session_id="session-123",
     )
 
-    # Verify langfuse_context.update_current_trace was called
-    mock_langfuse_context.update_current_trace.assert_called_once()
-    call_kwargs = mock_langfuse_context.update_current_trace.call_args.kwargs
+    # Verify get_client().update_current_trace was called
+    mock_get_client.assert_called_once()
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
     assert call_kwargs["metadata"]["session_id"] == "session-123"
     assert call_kwargs["session_id"] == "session-123"
 
 
 @pytest.mark.asyncio
-@patch("app.core.tracing.langfuse_context")
-async def test_runtime_metadata_updates(mock_langfuse_context):
+@patch("langfuse.get_client")
+async def test_runtime_metadata_updates(mock_get_client):
     """Test that runtime metadata updates work correctly."""
     from app.core.tracing import update_current_trace
+
+    # Mock Langfuse client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
 
     # Call update_current_trace with runtime metadata
     update_current_trace(
@@ -88,25 +100,27 @@ async def test_runtime_metadata_updates(mock_langfuse_context):
         tags=["parallel-execution"],
     )
 
-    # Verify langfuse_context.update_current_trace was called
-    mock_langfuse_context.update_current_trace.assert_called_once()
-    call_kwargs = mock_langfuse_context.update_current_trace.call_args.kwargs
+    # Verify get_client().update_current_trace was called
+    mock_get_client.assert_called_once()
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
     assert call_kwargs["metadata"]["analysis_id"] == "analysis-123"
     assert call_kwargs["metadata"]["url"] == "https://example.com"
     assert "parallel-execution" in call_kwargs["tags"]
 
 
 @pytest.mark.asyncio
-@patch("app.core.tracing.observe")
+@patch("langfuse.observe")
 async def test_consistent_decorator_usage(mock_observe):
     """Test that robust_traceable is used consistently."""
-    captured_func = None
+    captured_func: Callable[..., Any] | None = None
 
-    def mock_decorator(func):
+    def mock_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         nonlocal captured_func
         captured_func = func
 
-        async def mock_wrapper(*args, **kwargs):
+        async def mock_wrapper(*args: Any, **kwargs: Any) -> Any:
+            assert captured_func is not None, "captured_func must be set by decorator"
             return await captured_func(*args, **kwargs)
 
         return mock_wrapper
@@ -133,10 +147,14 @@ async def test_consistent_decorator_usage(mock_observe):
 
 
 @pytest.mark.asyncio
-@patch("app.core.tracing.langfuse_context")
-async def test_environment_metadata_propagation(mock_langfuse_context):
+@patch("langfuse.get_client")
+async def test_environment_metadata_propagation(mock_get_client):
     """Test that environment metadata is propagated correctly."""
     from app.core.tracing import update_current_trace
+
+    # Mock Langfuse client
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
 
     # Call update_current_trace with environment metadata
     update_current_trace(
@@ -148,6 +166,7 @@ async def test_environment_metadata_propagation(mock_langfuse_context):
     )
 
     # Verify runtime metadata was added
-    mock_langfuse_context.update_current_trace.assert_called_once()
-    call_kwargs = mock_langfuse_context.update_current_trace.call_args.kwargs
+    mock_get_client.assert_called_once()
+    mock_client.update_current_trace.assert_called_once()
+    call_kwargs = mock_client.update_current_trace.call_args.kwargs
     assert call_kwargs["metadata"]["runtime_key"] == "runtime_value"

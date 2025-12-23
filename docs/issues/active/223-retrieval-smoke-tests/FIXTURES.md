@@ -71,19 +71,30 @@ This document defines the test fixtures for the retrieval smoke test suite. Fixt
     {
       "id": "fastapi-auth/intro",
       "title": "Introduction to FastAPI Security",
-      "content": "FastAPI provides built-in security utilities that make implementing authentication straightforward. The framework includes OAuth2 with Password flow, JWT tokens, and API key authentication out of the box. This guide covers the essential patterns for securing your FastAPI applications.",
+      "content": "FastAPI provides built-in security utilities that make implementing " +
+        "authentication straightforward. The framework includes OAuth2 with Password flow, " +
+        "JWT tokens, and API key authentication out of the box. This guide covers the " +
+        "essential patterns for securing your FastAPI applications.",
       "granularity": "coarse"
     },
     {
       "id": "fastapi-auth/oauth2-password",
       "title": "OAuth2 with Password Flow",
-      "content": "The OAuth2 password flow is ideal for first-party applications where you control both the client and the server. To implement it, first create a token endpoint that validates credentials and returns a JWT. Use the OAuth2PasswordBearer class to define the token URL. The password flow exchanges username and password for an access token, which is then used for subsequent API requests.",
+      "content": "The OAuth2 password flow is ideal for first-party applications where you " +
+        "control both the client and the server. To implement it, first create a token " +
+        "endpoint that validates credentials and returns a JWT. Use the OAuth2PasswordBearer " +
+        "class to define the token URL. The password flow exchanges username and password " +
+        "for an access token, which is then used for subsequent API requests.",
       "granularity": "coarse"
     },
     {
       "id": "fastapi-auth/jwt-tokens",
       "title": "JWT Token Management",
-      "content": "JSON Web Tokens (JWT) are the standard for stateless authentication in FastAPI. Create tokens using the python-jose library with HS256 or RS256 algorithms. Include user claims like user_id, email, and roles. Set appropriate expiration times - typically 15 minutes for access tokens and 7 days for refresh tokens. Always validate tokens on protected endpoints using FastAPI's dependency injection.",
+      "content": "JSON Web Tokens (JWT) are the standard for stateless authentication in FastAPI. " +
+        "Create tokens using the python-jose library with HS256 or RS256 algorithms. " +
+        "Include user claims like user_id, email, and roles. Set appropriate expiration " +
+        "times - typically 15 minutes for access tokens and 7 days for refresh tokens. " +
+        "Always validate tokens on protected endpoints using FastAPI's dependency injection.",
       "granularity": "coarse"
     }
   ]
@@ -245,7 +256,9 @@ This document defines the test fixtures for the retrieval smoke test suite. Fixt
   },
   {
     "id": "q-edge-long",
-    "query": "I want to learn how to implement secure authentication in my FastAPI application using OAuth2 password flow with JWT tokens and proper token expiration handling for a production environment",
+    "query": "I want to learn how to implement secure authentication in my FastAPI " +
+      "application using OAuth2 password flow with JWT tokens and proper token " +
+      "expiration handling for a production environment",
     "modes": ["semantic", "hybrid"],
     "category": "edge",
     "expected_chunks": ["fastapi-auth/oauth2-password", "fastapi-auth/jwt-tokens"],

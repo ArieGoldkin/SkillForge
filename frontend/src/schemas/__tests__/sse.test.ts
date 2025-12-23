@@ -20,6 +20,7 @@ import {
   isProgressEvent,
   isCompleteEvent,
   isErrorEvent,
+  isFailedStage,
   type SSEProgressEvent,
   type SSEErrorEvent,
 } from '../sse'
@@ -1348,6 +1349,121 @@ describe('Type guard functions', () => {
       expect(isProgressEvent(events[2])).toBe(false)
       expect(isCompleteEvent(events[2])).toBe(false)
       expect(isErrorEvent(events[2])).toBe(true)
+    })
+  })
+
+  describe('isFailedStage', () => {
+    it('should return true for error events', () => {
+      const errorEvent = {
+        type: 'error',
+        analysis_id: VALID_ANALYSIS_ID,
+        stage: 'extraction',
+        status: 'failed',
+        timestamp: VALID_TIMESTAMP,
+      }
+
+      expect(isFailedStage(errorEvent)).toBe(true)
+    })
+
+    it('should return true for progress events with status="failed"', () => {
+      const failedProgressEvent = {
+        type: 'progress',
+        analysis_id: VALID_ANALYSIS_ID,
+        stage: 'extraction',
+        status: 'failed',
+        timestamp: VALID_TIMESTAMP,
+        error: 'Extraction failed',
+        error_code: 'EXTRACTION_FAILED',
+      }
+
+      expect(isFailedStage(failedProgressEvent)).toBe(true)
+    })
+
+    it('should return false for progress events with status="running"', () => {
+      const runningEvent = {
+        type: 'progress',
+        analysis_id: VALID_ANALYSIS_ID,
+        stage: 'extraction',
+        status: 'running',
+        timestamp: VALID_TIMESTAMP,
+      }
+
+      expect(isFailedStage(runningEvent)).toBe(false)
+    })
+
+    it('should return false for progress events with status="complete"', () => {
+      const completeEvent = {
+        type: 'progress',
+        analysis_id: VALID_ANALYSIS_ID,
+        stage: 'extraction',
+        status: 'complete',
+        timestamp: VALID_TIMESTAMP,
+      }
+
+      expect(isFailedStage(completeEvent)).toBe(false)
+    })
+
+    it('should return false for complete events', () => {
+      const completeEvent = {
+        type: 'complete',
+        analysis_id: VALID_ANALYSIS_ID,
+        stage: 'workflow',
+        status: 'complete',
+        timestamp: VALID_TIMESTAMP,
+      }
+
+      expect(isFailedStage(completeEvent)).toBe(false)
+    })
+
+    it('should return false for invalid events', () => {
+      const invalidEvent = {
+        type: 'progress',
+        analysis_id: INVALID_UUID,
+        stage: 'extraction',
+        status: 'failed',
+        timestamp: VALID_TIMESTAMP,
+      }
+
+      expect(isFailedStage(invalidEvent)).toBe(false)
+    })
+
+    it('should return false for non-object inputs', () => {
+      expect(isFailedStage(null)).toBe(false)
+      expect(isFailedStage(undefined)).toBe(false)
+      expect(isFailedStage('string')).toBe(false)
+      expect(isFailedStage(123)).toBe(false)
+    })
+
+    it('should detect failures from both error events and failed progress events', () => {
+      const events = [
+        {
+          type: 'error' as const,
+          analysis_id: VALID_ANALYSIS_ID,
+          stage: 'extraction',
+          status: 'failed' as const,
+          timestamp: VALID_TIMESTAMP,
+        },
+        {
+          type: 'progress' as const,
+          analysis_id: VALID_ANALYSIS_ID,
+          stage: 'embedding',
+          status: 'failed' as const,
+          timestamp: VALID_TIMESTAMP,
+        },
+        {
+          type: 'progress' as const,
+          analysis_id: VALID_ANALYSIS_ID,
+          stage: 'supervisor_routing',
+          status: 'complete' as const,
+          timestamp: VALID_TIMESTAMP,
+        },
+      ]
+
+      const failedEvents = events.filter(isFailedStage)
+      expect(failedEvents).toHaveLength(2)
+      expect(failedEvents[0].type).toBe('error')
+      expect(failedEvents[1].type).toBe('progress')
+      expect(failedEvents[1].status).toBe('failed')
     })
   })
 })

@@ -173,6 +173,7 @@ export default tseslint.config(
       '**/__tests__/**/*.tsx',
       '**/test-utils/**/*.ts',
       '**/test-utils/**/*.tsx',
+      '**/e2e/**/*.ts', // E2E tests and utilities need console for debugging/reporting
     ],
     rules: {
       'max-lines': 'off',

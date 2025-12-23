@@ -66,6 +66,10 @@ jobs:
     needs: pre-deployment-checks
     environment:
       name: production
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -107,11 +111,13 @@ jobs:
 
       - name: Deploy to Railway
         if: env.RAILWAY_TOKEN != ''
-        uses: bervProject/railway-deploy@v0.1.0
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: skillforge-backend-production
-          detach: true
+        run: |
+          # Install Railway CLI
+          curl -fsSL https://railway.app/install.sh | sh
+          # Deploy using Railway CLI
+          railway up --service skillforge-backend-production --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy to Render
         if: env.RENDER_API_KEY != ''

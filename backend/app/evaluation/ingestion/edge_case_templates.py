@@ -49,19 +49,34 @@ MISSPELLING_PATTERNS: dict[str, list[str]] = {
 
 # Technical content snippets for generating long content
 TECH_CONTENT_SNIPPETS: list[str] = [
-    "Modern web development requires a deep understanding of both frontend and backend technologies.",
+    (
+        "Modern web development requires a deep understanding of both frontend and backend "
+        "technologies."
+    ),
     "API design patterns have evolved significantly with the rise of microservices architecture.",
-    "Performance optimization involves careful analysis of bottlenecks and systematic improvements.",
-    "Security best practices include input validation, authentication, and authorization mechanisms.",
+    (
+        "Performance optimization involves careful analysis of bottlenecks and systematic "
+        "improvements."
+    ),
+    (
+        "Security best practices include input validation, authentication, and authorization "
+        "mechanisms."
+    ),
     "Database schema design impacts application scalability and maintainability significantly.",
     "Containerization with Docker simplifies deployment and ensures consistent environments.",
     "CI/CD pipelines automate testing, building, and deployment processes efficiently.",
     "State management in modern frameworks requires careful consideration of data flow patterns.",
     "Error handling strategies should provide meaningful feedback while maintaining security.",
     "Testing strategies span unit tests, integration tests, and end-to-end testing approaches.",
-    "Caching mechanisms improve performance by reducing redundant computations and database queries.",
+    (
+        "Caching mechanisms improve performance by reducing redundant computations and database "
+        "queries."
+    ),
     "Logging and monitoring enable debugging and performance analysis in production environments.",
-    "Code review practices improve code quality and facilitate knowledge sharing among team members.",
+    (
+        "Code review practices improve code quality and facilitate knowledge sharing among team "
+        "members."
+    ),
     "Documentation is essential for maintainability and onboarding new developers effectively.",
     "Version control workflows like GitFlow provide structure for collaborative development.",
 ]
@@ -69,7 +84,9 @@ TECH_CONTENT_SNIPPETS: list[str] = [
 # Special character content templates
 SPECIAL_CHAR_TEMPLATES: list[dict[str, str]] = [
     {
-        "content": "Performance metrics: ∑(latency) = 100ms, ∏(throughput) > 1000 req/s, ∫cost dt = $50/mo",
+        "content": (
+            "Performance metrics: ∑(latency) = 100ms, ∏(throughput) > 1000 req/s, ∫cost dt = $50/mo"
+        ),
         "note": "Unicode math symbols",
     },
     {
@@ -105,7 +122,10 @@ SPECIAL_CHAR_TEMPLATES: list[dict[str, str]] = [
 # Ambiguous content that could route to multiple agents
 AMBIGUOUS_TEMPLATES: list[dict[str, str | list[str]]] = [
     {
-        "content": "Is React secure enough for building authenticated REST APIs? Show me a complete tutorial with performance benchmarks.",
+        "content": (
+            "Is React secure enough for building authenticated REST APIs? Show me a complete "
+            "tutorial with performance benchmarks."
+        ),
         "agents": [
             "tech_comparator",
             "security_auditor",
@@ -115,12 +135,18 @@ AMBIGUOUS_TEMPLATES: list[dict[str, str | list[str]]] = [
         "note": "4 agents: comparison, security, implementation, performance",
     },
     {
-        "content": "Compare Next.js vs Nuxt.js for SEO-optimized e-commerce. Which has better security defaults and easier deployment?",
+        "content": (
+            "Compare Next.js vs Nuxt.js for SEO-optimized e-commerce. Which has better security "
+            "defaults and easier deployment?"
+        ),
         "agents": ["tech_comparator", "security_auditor", "integration_feasibility"],
         "note": "3 agents: comparison, security, integration",
     },
     {
-        "content": "Build a modern SaaS with authentication, real-time updates, CI/CD, and comprehensive monitoring dashboard.",
+        "content": (
+            "Build a modern SaaS with authentication, real-time updates, CI/CD, and comprehensive "
+            "monitoring dashboard."
+        ),
         "agents": [
             "implementation_planner",
             "security_auditor",
@@ -130,12 +156,18 @@ AMBIGUOUS_TEMPLATES: list[dict[str, str | list[str]]] = [
         "note": "4 agents: implementation, security, performance, quality",
     },
     {
-        "content": "Is the LangChain ecosystem still the best choice? What are the emerging alternatives and their trade-offs?",
+        "content": (
+            "Is the LangChain ecosystem still the best choice? What are the emerging alternatives "
+            "and their trade-offs?"
+        ),
         "agents": ["tech_comparator", "trend_validator", "dependency_mapper"],
         "note": "3 agents: comparison, trends, dependencies",
     },
     {
-        "content": "Review this authentication implementation for security vulnerabilities, code quality, and performance issues.",
+        "content": (
+            "Review this authentication implementation for security vulnerabilities, code quality, "
+            "and performance issues."
+        ),
         "agents": ["security_auditor", "code_quality_critic", "performance_analyst"],
         "note": "3 agents: security, quality, performance",
     },
@@ -188,27 +220,42 @@ MINIMAL_CONTEXT_TEMPLATES: list[dict[str, str]] = [
 # Contradictory content templates
 CONTRADICTORY_TEMPLATES: list[dict[str, str]] = [
     {
-        "content": "React is consistently 10x faster than Vue in all benchmarks. However, independent tests show Vue outperforms React by 300% in rendering speed.",
+        "content": (
+            "React is consistently 10x faster than Vue in all benchmarks. However, independent "
+            "tests show Vue outperforms React by 300% in rendering speed."
+        ),
         "contradiction": "performance claims",
         "note": "Directly contradicting performance statements",
     },
     {
-        "content": "Always store passwords in plaintext for easy debugging during development. Security best practice: Never store passwords in plaintext under any circumstances.",
+        "content": (
+            "Always store passwords in plaintext for easy debugging during development. Security "
+            "best practice: Never store passwords in plaintext under any circumstances."
+        ),
         "contradiction": "security advice",
         "note": "Dangerous vs correct security advice",
     },
     {
-        "content": "Class components are the recommended approach in modern React. Functional components with hooks have completely replaced class components as best practice.",
+        "content": (
+            "Class components are the recommended approach in modern React. Functional components "
+            "with hooks have completely replaced class components as best practice."
+        ),
         "contradiction": "React patterns",
         "note": "Outdated vs current best practices",
     },
     {
-        "content": "MongoDB is a relational SQL database designed for structured data. PostgreSQL is a NoSQL document store optimized for unstructured data.",
+        "content": (
+            "MongoDB is a relational SQL database designed for structured data. PostgreSQL is a "
+            "NoSQL document store optimized for unstructured data."
+        ),
         "contradiction": "database types",
         "note": "Completely reversed database categorizations",
     },
     {
-        "content": "Microservices are always better than monoliths for any project size. Monoliths are always the superior choice regardless of scale.",
+        "content": (
+            "Microservices are always better than monoliths for any project size. Monoliths are "
+            "always the superior choice regardless of scale."
+        ),
         "contradiction": "architecture advice",
         "note": "Absolute contradicting architecture claims",
     },
@@ -217,37 +264,54 @@ CONTRADICTORY_TEMPLATES: list[dict[str, str]] = [
 # Multilingual content templates
 MULTILINGUAL_TEMPLATES: list[dict[str, str]] = [
     {
-        "content": "¿Cómo implementar autenticación JWT en FastAPI? Necesito un tutorial paso a paso con ejemplos de código.",
+        "content": (
+            "¿Cómo implementar autenticación JWT en FastAPI? Necesito un tutorial paso a paso "
+            "con ejemplos de código."
+        ),
         "language": "Spanish",
         "note": "Full Spanish technical question",
     },
     {
-        "content": "Comment optimiser les performances de React en 2025? Quelles sont les meilleures pratiques actuelles?",
+        "content": (
+            "Comment optimiser les performances de React en 2025? Quelles sont les meilleures "
+            "pratiques actuelles?"
+        ),
         "language": "French",
         "note": "Full French technical question",
     },
     {
-        "content": "Wie integriere ich PostgreSQL mit FastAPI? Brauche ich SQLAlchemy oder gibt es bessere Alternativen?",
+        "content": (
+            "Wie integriere ich PostgreSQL mit FastAPI? Brauche ich SQLAlchemy oder gibt es "
+            "bessere Alternativen?"
+        ),
         "language": "German",
         "note": "Full German technical question",
     },
     {
-        "content": "Build a React app // crear una aplicación with authentication // con autenticación",
+        "content": (
+            "Build a React app // crear una aplicación with authentication // con autenticación"
+        ),
         "language": "English-Spanish code-switching",
         "note": "Mixed language with code comments",
     },
     {
-        "content": "Reactのパフォーマンスを最適化する方法を教えてください。ベストプラクティスは何ですか？",  # noqa: RUF001
+        "content": (
+            "Reactのパフォーマンスを最適化する方法を教えてください。ベストプラクティスは何ですか？"  # noqa: RUF001
+        ),
         "language": "Japanese",
         "note": "Full Japanese technical question",
     },
     {
-        "content": "Como configurar o Docker para desenvolvimento local? Preciso de um guia completo.",
+        "content": (
+            "Como configurar o Docker para desenvolvimento local? Preciso de um guia completo."
+        ),
         "language": "Portuguese",
         "note": "Full Portuguese technical question",
     },
     {
-        "content": "Как настроить CI/CD pipeline с GitHub Actions? Нужен пример для Python проекта.",  # noqa: RUF001
+        "content": (
+            "Как настроить CI/CD pipeline с GitHub Actions? Нужен пример для Python проекта."  # noqa: RUF001
+        ),
         "language": "Russian",
         "note": "Full Russian technical question",
     },

@@ -13,8 +13,7 @@ from app.db.repositories.analysis_repository import AnalysisRepository
 @pytest.fixture
 def mock_session():
     """Mock database session."""
-    session = AsyncMock(spec=AsyncSession)
-    return session
+    return AsyncMock(spec=AsyncSession)
 
 
 @pytest.fixture
@@ -103,9 +102,7 @@ async def test_stream_all_analyses(mock_session):
     # stream_scalars is a regular method (not async) that returns async context manager
     mock_session.stream_scalars = MagicMock(return_value=mock_result)
 
-    results = []
-    async for analysis in repo.stream_all_analyses(limit=10):
-        results.append(analysis)
+    results = [analysis async for analysis in repo.stream_all_analyses(limit=10)]
 
     assert len(results) == 1
     assert mock_session.stream_scalars.called
@@ -125,9 +122,7 @@ async def test_stream_all_analyses_invalid_order_by(mock_session):
     mock_session.stream_scalars = MagicMock(return_value=mock_result)
 
     # Invalid column should default to "created_at"
-    results = []
-    async for _ in repo.stream_all_analyses(order_by="invalid_column"):
-        results.append(_)
+    results = [item async for item in repo.stream_all_analyses(order_by="invalid_column")]
 
     # Should still work (defaults to created_at)
     assert mock_session.stream_scalars.called

@@ -18,8 +18,7 @@ class TestAnnotationRepository:
     @pytest.fixture
     def mock_session(self):
         """Create mock async database session."""
-        session = AsyncMock(spec=AsyncSession)
-        return session
+        return AsyncMock(spec=AsyncSession)
 
     @pytest.fixture
     def repository(self, mock_session):

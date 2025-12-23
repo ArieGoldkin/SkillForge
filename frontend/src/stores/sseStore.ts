@@ -4,6 +4,9 @@ import type { SSEEvent } from '@app-types/sse'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 
+import { LIMIT_CONSTANTS } from '@/lib/constants'
+import { logger } from '@/lib/logger'
+
 import {
   deriveLoadingState,
   getConnectionMessage,
@@ -21,6 +24,46 @@ import {
   deduplicateEvents,
 } from './sseStoreHelpers'
 
+/**
+ * Convert API progress events to SSE format
+ * Extracted to reduce complexity in startPolling
+ */
+function convertProgressToSSE(progressData: {
+  analysis_id: string
+  events: Array<{
+    stage: string
+    status: string
+    timestamp: string
+    progress_data: unknown
+  }>
+}): SSEEvent[] {
+  return progressData.events.map((event) => {
+    const progressDataObj =
+      event.progress_data && typeof event.progress_data === 'object' ? event.progress_data : null
+
+    return {
+      type: 'progress' as const,
+      analysis_id: progressData.analysis_id,
+      stage: event.stage,
+      status: event.status,
+      timestamp: event.timestamp,
+      details: progressDataObj || undefined,
+      ...(progressDataObj &&
+        'analysis_metadata' in progressDataObj && {
+          analysis_metadata: progressDataObj.analysis_metadata,
+        }),
+      ...(progressDataObj &&
+        'artifact_id' in progressDataObj && {
+          artifact_id: progressDataObj.artifact_id as string,
+        }),
+      ...(progressDataObj &&
+        'trace_id' in progressDataObj && {
+          trace_id: progressDataObj.trace_id as string,
+        }),
+    } as SSEEvent
+  })
+}
+
 // Analysis Metadata Types (Issue #396 - Eliminate Prop Drilling)
 
 /**
@@ -35,6 +78,7 @@ export type ConnectionState =
   | 'connecting'
   | 'connected'
   | 'reconnecting'
+  | 'polling'
   | 'disconnected'
   | 'timeout_warning'
 
@@ -97,6 +141,9 @@ export interface SSEStoreState {
   _permanentlyFailed: boolean
   _listenerRefs: ListenerRefs | null
   _cleanupNetworkRecovery: (() => void) | null
+  // Polling fallback state
+  isPolling: boolean
+  _pollingIntervalId: ReturnType<typeof setInterval> | null
 }
 
 export interface SSEStoreActions {
@@ -115,6 +162,9 @@ export interface SSEStoreActions {
   // Internal actions - used by helpers
   _addEvent: (event: SSEEvent) => void
   _setInternalState: (partial: Partial<SSEStoreState>) => void
+  // Polling actions
+  startPolling: (analysisId: string) => void
+  stopPolling: () => void
 }
 
 export type SSEStore = SSEStoreState & SSEStoreActions
@@ -166,6 +216,9 @@ const baseStore = create<SSEStore>((set, get) => ({
   _permanentlyFailed: false,
   _listenerRefs: null,
   _cleanupNetworkRecovery: null,
+  // Polling fallback state
+  isPolling: false,
+  _pollingIntervalId: null,
 
   connect: (analysisId: string) => {
     // Track connection start time for timeout warnings (Issue #399)
@@ -174,6 +227,8 @@ const baseStore = create<SSEStore>((set, get) => ({
   },
 
   disconnect: () => {
+    // Stop polling before closing connection
+    get().stopPolling()
     closeConnection({ getState: get, setState: set })
 
     // Keep events for UI display after disconnect - only reset() clears events
@@ -191,6 +246,9 @@ const baseStore = create<SSEStore>((set, get) => ({
       _reconnectTimeoutId: null,
       _permanentlyFailed: false,
       _cleanupNetworkRecovery: undefined,
+      // Stop polling on disconnect
+      isPolling: false,
+      _pollingIntervalId: null,
     }))
   },
 
@@ -222,6 +280,9 @@ const baseStore = create<SSEStore>((set, get) => ({
       _permanentlyFailed: false,
       _listenerRefs: null,
       _cleanupNetworkRecovery: null,
+      // Clear polling state on reset
+      isPolling: false,
+      _pollingIntervalId: null,
     })
   },
 
@@ -294,6 +355,85 @@ const baseStore = create<SSEStore>((set, get) => ({
    */
   _setInternalState: (partial: Partial<SSEStoreState>) => {
     set(partial)
+  },
+
+  /**
+   * Start polling fallback when SSE connection fails
+   */
+  startPolling: (analysisId: string) => {
+    const state = get()
+    // Don't start polling if already polling or if SSE is connected
+    if (state.isPolling || state.isConnected) {
+      return
+    }
+
+    // Stop any existing polling
+    if (state._pollingIntervalId) {
+      clearInterval(state._pollingIntervalId)
+    }
+
+    logger.info('Starting polling fallback', {
+      analysisId,
+      reason: 'sse_connection_failed',
+      pollingInterval: LIMIT_CONSTANTS.SSE_POLLING_INTERVAL,
+    })
+
+    // Import analyzeAPI dynamically to avoid circular dependencies
+    import('@services/api.service').then(({ analyzeAPI }) => {
+      const pollProgress = async () => {
+        try {
+          const progressData = await analyzeAPI.getAnalysisProgress(analysisId)
+          // Convert and add events
+          const sseEvents = convertProgressToSSE(progressData)
+          sseEvents.forEach((event) => {
+            get()._addEvent(event)
+          })
+
+          // Check if analysis is complete
+          const statusData = await analyzeAPI.getAnalysisStatus(analysisId)
+          if (
+            statusData.status === 'complete' ||
+            statusData.status === 'completed' ||
+            statusData.status === 'failed'
+          ) {
+            get().stopPolling()
+            set({ isComplete: true })
+          }
+        } catch (error) {
+          logger.error('Polling failed', {
+            analysisId,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+
+      // Poll immediately, then at intervals
+      void pollProgress()
+      const intervalId = setInterval(pollProgress, LIMIT_CONSTANTS.SSE_POLLING_INTERVAL)
+
+      set({
+        isPolling: true,
+        _pollingIntervalId: intervalId,
+        connectionState: 'polling' as ConnectionState,
+      })
+    })
+  },
+
+  /**
+   * Stop polling fallback
+   */
+  stopPolling: () => {
+    const state = get()
+    if (state._pollingIntervalId) {
+      clearInterval(state._pollingIntervalId)
+      logger.info('Stopped polling fallback', {
+        analysisId: state.activeAnalysisId,
+      })
+    }
+    set({
+      isPolling: false,
+      _pollingIntervalId: null,
+    })
   },
 }))
 

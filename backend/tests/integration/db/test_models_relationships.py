@@ -5,21 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
     AgentFinding,
-    Analysis,
     AnalysisProgress,
     Artifact,
     TutoringMessage,
     TutoringSession,
 )
+from tests.integration.conftest import create_pending_analysis
 
 
 @pytest.mark.asyncio
 async def test_agent_finding_model_relationship(db_session: AsyncSession):
     """Test AgentFinding model relationship with Analysis."""
     # Create analysis first
-    analysis = Analysis(url="https://example.com", content_type="article", status="pending")
-    db_session.add(analysis)
-    await db_session.flush()
+    analysis = await create_pending_analysis(db_session)
 
     # Create agent finding
     finding = AgentFinding(
@@ -47,9 +45,7 @@ async def test_agent_finding_model_relationship(db_session: AsyncSession):
 async def test_artifact_model_relationship(db_session: AsyncSession):
     """Test Artifact model relationship with Analysis."""
     # Create analysis first
-    analysis = Analysis(url="https://example.com", content_type="article", status="pending")
-    db_session.add(analysis)
-    await db_session.flush()
+    analysis = await create_pending_analysis(db_session)
 
     # Create artifact
     artifact = Artifact(
@@ -72,9 +68,7 @@ async def test_artifact_model_relationship(db_session: AsyncSession):
 async def test_tutoring_session_model_optional_relationship(db_session: AsyncSession):
     """Test TutoringSession model with optional Analysis relationship."""
     # Create analysis first
-    analysis = Analysis(url="https://example.com", content_type="article", status="pending")
-    db_session.add(analysis)
-    await db_session.flush()
+    analysis = await create_pending_analysis(db_session)
 
     # Create tutoring session with analysis
     session = TutoringSession(
@@ -124,9 +118,7 @@ async def test_tutoring_message_model_relationship(db_session: AsyncSession):
 async def test_analysis_progress_model_relationship(db_session: AsyncSession):
     """Test AnalysisProgress model relationship with Analysis."""
     # Create analysis first
-    analysis = Analysis(url="https://example.com", content_type="article", status="pending")
-    db_session.add(analysis)
-    await db_session.flush()
+    analysis = await create_pending_analysis(db_session)
 
     # Create progress entry
     progress = AnalysisProgress(

@@ -65,7 +65,7 @@ class TestBatchAPIIntegration:
 
                     # Should use Batch API
                     assert len(results) == 2
-                    mock_batch_api.assert_called_once_with(texts, True)
+                    mock_batch_api.assert_called_once_with(texts, True)  # noqa: FBT003
 
     @pytest.mark.asyncio
     async def test_embeddings_batch_explicit_override(self):

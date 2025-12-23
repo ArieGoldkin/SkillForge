@@ -28,7 +28,7 @@ with sync_playwright() as p:
     response = page.request.get("http://localhost:8500/api/v1/library?limit=5")
     data = response.json()
     print(f"\nLibrary API: {data['total']} total analyses")
-    for item in data['items'][:5]:
+    for item in data["items"][:5]:
         print(f"  - {item['title'] or 'Untitled'} ({item['status']})")
 
     browser.close()

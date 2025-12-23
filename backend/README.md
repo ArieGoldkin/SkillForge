@@ -323,10 +323,11 @@ The application uses LangGraph v1.0 Functional API for workflow orchestration.
 The `analysis_workflow` performs content extraction and embedding generation:
 
 ```python
-from app.workflows import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
-# Run workflow
-result = await analysis_workflow.ainvoke({
+# Create and run workflow
+workflow = create_analysis_workflow()
+result = await workflow.ainvoke({
     "url": "https://example.com/article",
     "analysis_id": "unique-analysis-id",
 })

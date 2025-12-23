@@ -19,6 +19,7 @@ from langchain_core.runnables import Runnable
 
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
@@ -31,9 +32,13 @@ from app.domains.analysis.workflows.nodes.supervisor_config import (
 )
 from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelection
 from app.shared.services.cache import get_exact_cache
-from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.messaging.sse_helpers import (
+    emit_error_event,
+    emit_streaming_event,
+)
 from app.shared.services.prompts import get_prompt_manager
 from app.shared.workflows.utils.content_signals import (
+    ContentGenre,
     detect_content_signals,
     should_skip_agent,
 )
@@ -49,6 +54,18 @@ logger = get_logger(__name__)
 CONTENT_SIZE_SMALL = 5000  # Use all content
 CONTENT_SIZE_MEDIUM = 15000  # Use 8K-10K chars
 CONTENT_SIZE_LARGE = 50000  # Use 12K-15K chars
+
+# Genre-aware minimum agent counts
+# Different content types require different analysis depth based on genre
+MIN_AGENTS_BY_GENRE: dict[ContentGenre, int] = {
+    ContentGenre.TUTORIAL: 4,  # Comprehensive multi-perspective analysis
+    ContentGenre.RESEARCH: 2,  # Concepts + trends only
+    ContentGenre.OPINION: 1,  # Trend validation sufficient
+    ContentGenre.REFERENCE: 3,  # Standard documentation coverage
+    ContentGenre.QUICKSTART: 3,  # Implementation focus
+    ContentGenre.CHANGELOG: 2,  # Trends + tech comparison
+    ContentGenre.UNKNOWN: 3,  # Safe default
+}
 
 
 def _get_content_for_supervisor(
@@ -324,7 +341,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             has_benchmarks=content_signals.has_benchmarks,
             has_security=content_signals.has_security_patterns,
             has_architecture=content_signals.has_architecture,
-            has_comparisons=content_signals.has_comparisons,  # Issue #299-304: Log comparison detection
+            # Issue #299-304: Log comparison detection
+            has_comparisons=content_signals.has_comparisons,
             coverage_summary=content_signals.get_coverage_summary(),
         )
 
@@ -374,11 +392,12 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                 "prompt_version": "fallback",
             }
 
-        # Build prompt using prompt builder
+        # Build prompt using prompt builder (pass content signals for LLM routing guidance)
         user_prompt = build_supervisor_user_prompt(
             system_prompt=supervisor_prompt,
             content=sized_content,
             content_type=content_type,
+            content_signals=content_signals,
         )
 
         # Get model with structured output (no tools, faster inference)
@@ -493,8 +512,19 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                 )
 
         # MINIMUM AGENT ENFORCEMENT (Issue #299-304)
-        # Use content signals to pick appropriate default agents
-        min_agents_required = 3
+        # Use genre-aware minimum agent counts instead of hardcoded value
+        min_agents_required = MIN_AGENTS_BY_GENRE.get(
+            content_signals.detected_genre,
+            3,  # Fallback to safe default
+        )
+        logger.info(
+            "supervisor_genre_aware_minimum",
+            analysis_id=analysis_id,
+            genre=content_signals.detected_genre.value,
+            minimum_required=min_agents_required,
+            current_count=len(filtered_agents),
+        )
+
         # Combine signal-appropriate with static defaults to ensure enough agents
         signal_appropriate_agents = content_signals.get_appropriate_agents()
         static_defaults = ["implementation_planner", "dependency_mapper", "trend_validator"]
@@ -584,7 +614,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             # Content signals for downstream agents and synthesis
             "content_signals": {
                 "richness_score": content_signals.content_richness_score,
-                "detected_genre": content_signals.detected_genre.value,  # Issue #442: Must match agent reads
+                # Issue #442: Must match agent reads
+                "detected_genre": content_signals.detected_genre.value,
                 "word_count": content_signals.word_count,
                 "coverage_summary": content_signals.get_coverage_summary(),
                 "has_code": content_signals.has_code_patterns,
@@ -665,12 +696,11 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
     except Exception as e:
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # Emit SSE event: supervisor failed
-        await emit_streaming_event(
-            "error",
+        # Emit error event using standardized helper
+        stage_name = get_stage_name("supervisor")
+        await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("supervisor"),
-            status="failed",
+            stage=stage_name,
             error=str(e),
             error_code="SUPERVISOR_FAILED",
         )
@@ -682,6 +712,11 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             duration_ms=duration_ms,
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Supervisor routing failed: {e}",
+        ) from e
     else:
         return {"supervisor_decision": supervisor_decision}

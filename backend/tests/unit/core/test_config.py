@@ -17,6 +17,8 @@ def test_settings_loads_defaults(monkeypatch):
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     monkeypatch.delenv("RELOAD", raising=False)
     monkeypatch.delenv("LLM_MODEL", raising=False)
+    # Override ENVIRONMENT set by conftest.py line 76 to test true default
+    monkeypatch.setenv("ENVIRONMENT", "development")
     get_settings.cache_clear()
 
     # Prevent loading from .env file by passing _env_file=None

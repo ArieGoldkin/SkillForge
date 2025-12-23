@@ -107,6 +107,7 @@ const RENDER_ROUTES: RenderRoute[] = [
         overallProgress,
         steps,
         failedStagesCount,
+        failedStageErrorCodes,
         resolvedArtifactId,
         artifactId,
         activities,
@@ -141,6 +142,7 @@ const RENDER_ROUTES: RenderRoute[] = [
                 steps={steps}
                 hasFailedStages={hasFailedStages}
                 failedStagesCount={failedStagesCount}
+                failedStageErrorCodes={failedStageErrorCodes}
                 analysisMetadata={analysisMetadata}
               />
               {/* Activity or Completion Column */}

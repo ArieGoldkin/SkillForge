@@ -24,16 +24,18 @@ from app.shared.services.examples import SemanticExampleSelector
 class TestSemanticExampleSelectorIntegration:
     """Integration tests for SemanticExampleSelector with real database."""
 
-    async def test_database_has_examples(self, db_session):
-        """Verify agent_examples table has data (minimum 97 examples)."""
+    async def test_database_has_examples(self, db_session, minimal_agent_examples):
+        """Verify agent_examples table has data (minimum examples from fixture)."""
         result = await db_session.execute(text("SELECT COUNT(*) FROM agent_examples"))
         count = result.scalar()
         assert count > 0, "agent_examples table should have data"
-        # Should have at least 97 examples from seed script (may grow over time)
-        assert count >= 97, f"Expected at least 97 examples, got {count}"
+        # Should have at least the minimal examples from fixture
+        assert count >= len(minimal_agent_examples), (
+            f"Expected at least {len(minimal_agent_examples)} examples, got {count}"
+        )
         print(f"\nAgent examples count: {count}")
 
-    async def test_examples_by_agent_type(self, db_session):
+    async def test_examples_by_agent_type(self, db_session, minimal_agent_examples):
         """Verify examples exist for each agent type."""
         result = await db_session.execute(
             text(

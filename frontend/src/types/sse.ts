@@ -43,5 +43,6 @@ export {
   isProgressEvent,
   isCompleteEvent,
   isErrorEvent,
+  isFailedStage,
   parseSSEEvent,
 } from '@/schemas/sse'

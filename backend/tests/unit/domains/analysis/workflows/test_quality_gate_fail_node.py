@@ -7,12 +7,15 @@ even with low quality scores. Users prefer getting something over nothing.
 """
 
 import uuid
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.domains.analysis.workflows.graph_builder import _quality_gate_fail_node
-from app.domains.analysis.workflows.state import AnalysisState
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 # Use valid UUIDs for tests (annotation queue requires UUID format)
 TEST_UUID_1 = str(uuid.uuid4())

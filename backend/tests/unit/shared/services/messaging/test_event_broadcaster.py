@@ -19,6 +19,7 @@ async def test_publish_subscribe_single_message():
         """Subscribe and wait for first message."""
         async for message in broadcaster.subscribe(channel):
             return message
+        return None
 
     async def publisher():
         """Wait for subscriber to be ready, then publish."""

@@ -7,6 +7,7 @@ Checks for:
 2. G-Eval scores (LLM-as-a-Judge)
 3. User feedback scores
 """
+
 import httpx
 import os
 import sys
@@ -18,16 +19,19 @@ LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "http://localhost:3000")
 LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY", "pk-lf-a2a89dc7-fe10-4584-b8d1-28bb47018ae9")
 LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY", "sk-lf-ac49d63e-cd97-42b7-9a24-6af77a1315fa")
 
+
 def print_header(text: str):
     """Print a formatted header."""
     print("\n" + "=" * 80)
     print(f"  {text}")
     print("=" * 80)
 
+
 def print_section(text: str):
     """Print a formatted section header."""
     print(f"\n{text}")
     print("-" * 80)
+
 
 def query_langfuse(endpoint: str, params: dict = None) -> dict:
     """Query Langfuse API with authentication."""
@@ -35,19 +39,17 @@ def query_langfuse(endpoint: str, params: dict = None) -> dict:
 
     try:
         response = httpx.get(
-            url,
-            params=params,
-            auth=(LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY),
-            timeout=30.0
+            url, params=params, auth=(LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY), timeout=30.0
         )
         response.raise_for_status()
         return response.json()
     except httpx.HTTPError as e:
         print(f"ERROR querying {endpoint}: {e}")
-        if hasattr(e, 'response') and e.response is not None:
+        if hasattr(e, "response") and e.response is not None:
             print(f"Response status: {e.response.status_code}")
             print(f"Response body: {e.response.text}")
         return None
+
 
 def main():
     print_header("LANGFUSE DATA VERIFICATION REPORT")
@@ -159,7 +161,9 @@ def main():
 
             if trace_score_map:
                 # Find trace with most scores
-                richest_trace_id = max(trace_score_map.keys(), key=lambda k: len(trace_score_map[k]))
+                richest_trace_id = max(
+                    trace_score_map.keys(), key=lambda k: len(trace_score_map[k])
+                )
                 trace_scores = trace_score_map[richest_trace_id]
 
                 print(f"Trace ID: {richest_trace_id}")
@@ -195,6 +199,7 @@ def main():
     print("\n" + "=" * 80)
     print("Verification complete!")
     print("=" * 80 + "\n")
+
 
 if __name__ == "__main__":
     main()

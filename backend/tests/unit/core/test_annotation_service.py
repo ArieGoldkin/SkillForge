@@ -20,8 +20,7 @@ from app.db.models.annotation_queue import AnnotationQueue
 @pytest.fixture
 def mock_session():
     """Create mock async database session."""
-    session = AsyncMock(spec=AsyncSession)
-    return session
+    return AsyncMock(spec=AsyncSession)
 
 
 @pytest.fixture

@@ -31,7 +31,6 @@ async def test_stream_analysis_progress_success(
     mock_request,
 ):
     """Test successful SSE streaming."""
-
     # Create mock broadcaster with subscribe method
     mock_broadcaster = MagicMock()
 
@@ -55,9 +54,7 @@ async def test_stream_analysis_progress_success(
     assert isinstance(response, EventSourceResponse)
 
     # Verify events were generated
-    events = []
-    async for event in response.body_iterator:
-        events.append(event)
+    events = [event async for event in response.body_iterator]
 
     # Should have 3 events (2 progress + 1 complete)
     assert len(events) >= 3

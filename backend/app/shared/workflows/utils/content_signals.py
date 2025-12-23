@@ -628,7 +628,8 @@ def get_threshold_for_expectation(
     Issue #442: Added research/conceptual-aware threshold support.
 
     Args:
-        expectation_str: Expectation value string (e.g., "full_analysis", "partial", "opportunistic")
+        expectation_str: Expectation value string
+        (e.g., "full_analysis", "partial", "opportunistic")
             or None if not available.
         agent_name: Optional agent name for comparison threshold lookup
         has_comparisons: Whether content contains comparison patterns (from content_signals)

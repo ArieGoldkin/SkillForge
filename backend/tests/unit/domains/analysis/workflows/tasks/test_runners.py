@@ -46,10 +46,7 @@ def mock_session():
     session = MagicMock()
     # Use configure_mock to set async context manager methods
     session.configure_mock(
-        **{
-            "__aenter__": AsyncMock(return_value=session),
-            "__aexit__": AsyncMock(return_value=False),
-        }
+        __aenter__=AsyncMock(return_value=session), __aexit__=AsyncMock(return_value=False)
     )
     return session
 
@@ -60,15 +57,11 @@ def mock_async_session_local(mock_session):
     # AsyncSessionLocal() should return an async context manager
     mock_context_manager = MagicMock()
     mock_context_manager.configure_mock(
-        **{
-            "__aenter__": AsyncMock(return_value=mock_session),
-            "__aexit__": AsyncMock(return_value=False),
-        }
+        __aenter__=AsyncMock(return_value=mock_session), __aexit__=AsyncMock(return_value=False)
     )
 
     # AsyncSessionLocal itself is callable
-    mock_async_session_local = MagicMock(return_value=mock_context_manager)
-    return mock_async_session_local
+    return MagicMock(return_value=mock_context_manager)
 
 
 @pytest.fixture

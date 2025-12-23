@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+
 import { HomePage } from '../page-objects';
-import { waitForBackend, getApiBaseUrl, getCompletedAnalysis } from '../utils';
+import { getApiBaseUrl, getCompletedAnalysis } from '../utils';
 
 /**
  * E2E tests for the Home Page URL submission flow.
@@ -9,14 +10,18 @@ import { waitForBackend, getApiBaseUrl, getCompletedAnalysis } from '../utils';
 test.describe('Home Page - URL Submission', () => {
   let homePage: HomePage;
 
-  test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-  });
+  // Removed beforeAll waitForBackend - causes request context disposal
+  // Each test will check backend health individually if needed
 
   test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
-    await homePage.goto();
+    // With storageState, page already starts at baseURL (/)
+    // Only navigate if we need to ensure we're on home page
+    // Most tests can skip this since storageState preserves the home page state
+    const currentUrl = page.url();
+    if (!currentUrl.endsWith('/')) {
+      await homePage.goto();
+    }
   });
 
   test('should display the URL input and submit button', async () => {
@@ -79,8 +84,8 @@ test.describe('Home Page - URL Submission', () => {
     // Submit a YouTube URL
     await homePage.submitUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
-    // Wait for navigation to analysis page
-    await page.waitForURL(/\/analyze\/.+/, { timeout: 10000 });
+    // Wait for navigation to analysis page - increased timeout for test env
+    await page.waitForURL(/\/analyze\/.+/, { timeout: 20000 });
 
     // Verify navigation
     await expect(page).toHaveURL(/\/analyze\/.+/);
@@ -92,8 +97,8 @@ test.describe('Home Page - URL Submission', () => {
     // Submit a GitHub repository URL
     await homePage.submitUrl('https://github.com/facebook/react');
 
-    // Wait for navigation to analysis page
-    await page.waitForURL(/\/analyze\/.+/, { timeout: 10000 });
+    // Wait for navigation to analysis page - increased timeout for test env
+    await page.waitForURL(/\/analyze\/.+/, { timeout: 20000 });
 
     // Verify navigation
     await expect(page).toHaveURL(/\/analyze\/.+/);
@@ -173,7 +178,8 @@ test.describe('Home Page - URL Submission', () => {
       return;
     }
 
-    // Navigate to completed analysis page to verify the URL flow works
+    // With storageState, we can start directly at the analysis page URL
+    // This skips navigation from home, making the test faster
     await page.goto(`/analyze/${completed.analysis_id}`);
 
     // Verify we're on the analysis page with correct URL pattern

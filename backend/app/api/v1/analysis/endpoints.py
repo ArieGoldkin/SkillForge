@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -12,7 +12,6 @@ from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
     stream_analysis_progress as stream_analysis_progress_handler,
 )
-from app.api.v1.analysis.workflow_runner import run_workflow_task
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
@@ -25,10 +24,34 @@ from app.domains.analysis.schemas.api import (
     AnalyzeStatusResponse,
     ProgressEventResponse,
 )
+from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
+
+
+class WorkflowCache:
+    """Cache for workflow instance to avoid global variable."""
+
+    _instance: Any = None
+
+    @classmethod
+    def get_or_create(cls) -> Any:
+        """Get cached workflow instance or create new one."""
+        if cls._instance is None:
+            cls._instance = create_analysis_workflow()
+        return cls._instance
+
+
+def get_orchestrator() -> WorkflowOrchestrator:
+    """Get WorkflowOrchestrator instance with workflow injected.
+
+    For FastAPI dependency injection. Creates workflow on first call.
+    """
+    workflow = WorkflowCache.get_or_create()
+    return WorkflowOrchestrator(workflow=workflow)
 
 
 def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task]) -> None:
@@ -49,9 +72,14 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
     background_tasks.discard(task)
 
     # Check for exceptions that occurred during task execution or cleanup
+    from app.core.exceptions import is_cleanup_generator_exit
+
     exception = task.exception()
     if exception is not None:
-        if isinstance(exception, GeneratorExit):
+        # Use unified GeneratorExit detection
+        # Note: We can't determine workflow_completed from here, so we assume cleanup
+        # (GeneratorExit in task callback is typically cleanup after successful completion)
+        if is_cleanup_generator_exit(exception, workflow_completed=True):
             # GeneratorExit can occur during cleanup (normal) or execution (error)
             # We can't easily determine if workflow completed from here, but
             # GeneratorExit in cleanup context is typically normal behavior
@@ -254,8 +282,9 @@ async def create_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
+        orchestrator = get_orchestrator()
         task: asyncio.Task[None] = asyncio.create_task(
-            run_workflow_task(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
+            orchestrator.run(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
         )
         background_tasks = fastapi_request.app.state.background_tasks
         background_tasks.add(task)
@@ -309,7 +338,67 @@ async def get_analysis(
         artifact_id=str(artifact.id) if artifact else None,
         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
         updated_at=analysis.updated_at.isoformat() if analysis.updated_at else "",
+        # Error tracking fields (Issue #441)
+        error_code=str(analysis.error_code) if analysis.error_code else None,
+        error_message=str(analysis.error_message) if analysis.error_message else None,
+        failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
     )
+
+
+@router.get(
+    "/analyses/error-summary",
+    responses={
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def get_error_summary(
+    analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
+) -> dict:
+    """Get summary of analysis errors for debugging and monitoring.
+
+    Returns aggregated error statistics showing:
+    - Error codes with counts
+    - Stages where failures occurred
+    - Most common error patterns
+
+    Useful for:
+    - System health monitoring
+    - Identifying systemic issues
+    - Debugging recurring failures
+
+    Returns:
+        Dictionary with error_summary list containing error_code, failed_at_stage, count.
+
+    """
+    from sqlalchemy import func, select
+
+    from app.db.models.analysis import Analysis
+
+    # Get database session from repository
+    # Type ignore: repository implementation has session attribute
+    db = analysis_repo.session  # type: ignore[attr-defined]
+
+    result = await db.execute(
+        select(
+            Analysis.error_code,
+            Analysis.failed_at_stage,
+            func.count(Analysis.id).label("count"),
+        )
+        .where(Analysis.error_code.isnot(None))
+        .group_by(Analysis.error_code, Analysis.failed_at_stage)
+        .order_by(func.count(Analysis.id).desc())
+    )
+
+    error_summary = [
+        {
+            "error_code": row.error_code,
+            "failed_at_stage": row.failed_at_stage,
+            "count": row.count,
+        }
+        for row in result.fetchall()
+    ]
+
+    return {"error_summary": error_summary}
 
 
 @router.get(

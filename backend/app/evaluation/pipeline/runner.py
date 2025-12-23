@@ -146,8 +146,10 @@ class PipelineResult:
         lines = [
             "# Evaluation Pipeline Results",
             "",
-            f"**Overall Status**: {self._status_emoji(self.overall_status)} {self.overall_status.value.upper()}",
-            f"**Total Examples**: {self.total_passed}/{self.total_examples} passed ({self._pass_rate():.1f}%)",
+            f"**Overall Status**: {self._status_emoji(self.overall_status)} "
+            f"{self.overall_status.value.upper()}",
+            f"**Total Examples**: {self.total_passed}/{self.total_examples} passed "
+            f"({self._pass_rate():.1f}%)",
             f"**Execution Time**: {self.execution_time_seconds:.1f}s",
             f"**Timestamp**: {self.timestamp}",
             "",
@@ -357,7 +359,8 @@ class EvaluationRunner:
                 )
 
                 # Extract section IDs from path metadata for matching
-                # Path is stored as ["doc_id", "section_id"], e.g., ["fastapi-auth", "fastapi-auth/intro"]
+                # Path is stored as ["doc_id", "section_id"],
+                # e.g., ["fastapi-auth", "fastapi-auth/intro"]
                 # We use path[1] (section_id) to match against expected_chunks
                 retrieved_ids = []
                 for r in results:

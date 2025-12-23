@@ -77,7 +77,8 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     # ISSUE #174: Security Critical Keywords
     # Detects: auth libraries, crypto, cors, jwt, passwords, secrets
     security_pattern = re.compile(
-        r"\b(?:python-jose|passlib|bcrypt|cryptography|authlib|django-allauth|helmet|cors|jwt|oauth|secret|password|vulnerability|xss|csrf|sql injection)",
+        r"\b(?:python-jose|passlib|bcrypt|cryptography|authlib|django-allauth|helmet|"
+        r"cors|jwt|oauth|secret|password|vulnerability|xss|csrf|sql injection)",
         re.IGNORECASE,
     )
     has_security_indicators = bool(security_pattern.search(content))

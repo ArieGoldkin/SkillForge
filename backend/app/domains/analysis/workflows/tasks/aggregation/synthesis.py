@@ -100,7 +100,8 @@ Each agent provides confidence_score (0.0-1.0). When agents disagree:
 - Document conflicts in conflicts_resolved with reasoning
 
 **COVERAGE ACKNOWLEDGMENT (Issue #299-304):**
-Each agent now reports `data_availability` (sufficient/limited/insufficient) and `data_availability_note`.
+Each agent now reports `data_availability` (sufficient/limited/insufficient) and
+`data_availability_note`."
 
 When processing findings:
 1. Check each agent's `data_availability` field:
@@ -116,8 +117,8 @@ When processing findings:
 3. Acknowledge gaps in `executive_summary` when:
    - Multiple agents report "limited" or "insufficient"
    - Coverage_score < 0.5
-   - Example: "Note: This analysis is based on conceptual content without code examples,
-     so implementation guidance is inferred rather than extracted."
+   - Example: "Note: This analysis is based on conceptual content without code "
+             "examples, so implementation guidance is inferred rather than extracted."
 
 4. This enables HONEST synthesis - don't hallucinate details that weren't in the content.
    It's better to say "No security patterns detected" than to fabricate risks.
@@ -143,9 +144,11 @@ If you return multiple responses, the system will fail. Return ONE complete resp
 
 You MUST follow these formatting rules exactly:
 
-1. **Paragraph Separation**: Use TWO newlines (blank line) between paragraphs. Never run paragraphs together.
+1. **Paragraph Separation**: Use TWO newlines (blank line) between paragraphs.
+Never run paragraphs together."
 
-2. **Section Headers**: When using bold headers like **Title:**, ALWAYS put the content on a new line:
+2. **Section Headers**: When using bold headers like **Title:**, ALWAYS put the content
+on a new line:
    CORRECT:
    **Immediate Actions:**
    Start with implementation...

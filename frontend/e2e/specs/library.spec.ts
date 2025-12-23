@@ -1,21 +1,22 @@
 import { test, expect } from '@playwright/test';
+
 import { LibraryPage } from '../page-objects';
-import { getLibrary, waitForBackend } from '../utils/api-helpers';
+import { logger } from '../utils';
+import { getLibrary } from '../utils/api-helpers';
 
 test.describe('Library Page - Search and Filter', () => {
   let libraryPage: LibraryPage;
 
-  test.beforeAll(async ({ request }) => {
-    // Ensure backend is healthy before running tests
-    await waitForBackend(request);
-  });
+  // Removed beforeAll waitForBackend - causes request context disposal
+  // Backend health is checked implicitly by getLibrary() in beforeEach
 
   test.beforeEach(async ({ page, request }) => {
     // Verify that real data exists in the database
     const library = await getLibrary(request, { limit: 10 });
-    console.log(`Library has ${library.total} items`);
+    logger.info('Library data loaded', { totalItems: library.total });
 
     libraryPage = new LibraryPage(page);
+    // With storageState, navigation to /library is optimized (reuses browser state)
     await libraryPage.goto();
   });
 
@@ -23,7 +24,7 @@ test.describe('Library Page - Search and Filter', () => {
     await expect(libraryPage.searchInput).toBeVisible();
   });
 
-  test('should display analysis cards when data exists', async ({ page, request }) => {
+  test('should display analysis cards when data exists', async ({ page }) => {
     // Wait for cards using the page object helper (proper wait patterns)
     await libraryPage.waitForCards();
 
@@ -33,18 +34,18 @@ test.describe('Library Page - Search and Filter', () => {
 
     // Either cards are displayed OR empty state is shown - both are valid
     if (cardCount > 0) {
-      console.log(`Library displaying ${cardCount} cards`);
+      logger.info('Library displaying cards', { cardCount });
       // Verify cards are actually visible
       await expect(libraryPage.analysisCards.first()).toBeVisible();
     } else {
       // No cards means empty state should be visible
-      console.log('No cards in library - checking for empty state');
+      logger.info('No cards in library - checking for empty state');
       // Page should still be functional (either empty state or just no cards yet)
       await expect(page.locator('body')).toBeVisible();
     }
   });
 
-  test('should search library by query', async ({ page, request }) => {
+  test('should search library by query', async ({ request }) => {
     const library = await getLibrary(request);
 
     // Skip test if no data available
@@ -64,7 +65,7 @@ test.describe('Library Page - Search and Filter', () => {
 
     // Verify search input has the value
     await expect(libraryPage.searchInput).toHaveValue(searchTerm);
-    console.log(`Searched for: ${searchTerm}`);
+    logger.info('Search performed', { searchTerm });
   });
 
   test('should filter by content type', async ({ page, request }) => {
@@ -96,10 +97,10 @@ test.describe('Library Page - Search and Filter', () => {
 
         // Wait for filtered results
         await responsePromise;
-        console.log('Applied video filter');
+        logger.info('Applied video filter');
       }
     } else {
-      console.log('Content type filter not implemented - skipping');
+      logger.info('Content type filter not implemented - skipping');
     }
   });
 
@@ -112,10 +113,10 @@ test.describe('Library Page - Search and Filter', () => {
       const semanticOption = page.getByRole('option', { name: /semantic/i });
       if (await semanticOption.isVisible()) {
         await semanticOption.click();
-        console.log('Switched to semantic search mode');
+        logger.info('Switched to semantic search mode');
       }
     } else {
-      console.log('Search mode toggle not implemented - skipping');
+      logger.info('Search mode toggle not implemented - skipping');
     }
   });
 
@@ -145,7 +146,7 @@ test.describe('Library Page - Search and Filter', () => {
 
       // The click may have done something - page should still be functional
       await expect(page.locator('body')).toBeVisible();
-      console.log('Clicked first analysis card');
+      logger.info('Clicked first analysis card');
     }
   });
 
@@ -160,11 +161,11 @@ test.describe('Library Page - Search and Filter', () => {
 
     // Either shows empty state or page is functional with no results
     await expect(page.locator('body')).toBeVisible();
-    console.log(`Searched for non-existent query: ${nonExistentQuery}`);
+    logger.info('Searched for non-existent query', { query: nonExistentQuery });
 
     // Check if empty state is shown
     const cardCount = await libraryPage.analysisCards.count();
-    console.log(`Card count after non-existent search: ${cardCount}`);
+    logger.info('Card count after non-existent search', { cardCount });
   });
 
   test('should show empty state when filtering by non-existent status', async ({ page }) => {
@@ -181,10 +182,10 @@ test.describe('Library Page - Search and Filter', () => {
 
     // Page should be functional
     await expect(page.locator('body')).toBeVisible();
-    console.log('Applied non-existent status filter');
+    logger.info('Applied non-existent status filter');
   });
 
-  test('should display card metadata when data exists', async ({ page, request }) => {
+  test('should display card metadata when data exists', async ({ request }) => {
     const library = await getLibrary(request);
 
     // Skip test if no data available
@@ -201,7 +202,7 @@ test.describe('Library Page - Search and Filter', () => {
     if (cardCount > 0) {
       const firstCard = libraryPage.analysisCards.first();
       await expect(firstCard).toBeVisible();
-      console.log('Card metadata visible');
+      logger.info('Card metadata visible');
     }
   });
 
@@ -223,6 +224,6 @@ test.describe('Library Page - Search and Filter', () => {
 
     // Page should remain functional
     await expect(page.locator('body')).toBeVisible();
-    console.log('Keyboard navigation working');
+    logger.info('Keyboard navigation working');
   });
 });

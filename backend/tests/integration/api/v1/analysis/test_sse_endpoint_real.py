@@ -19,7 +19,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.api.v1.analysis.sse_handler import stream_analysis_progress
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from app.shared.services.messaging.broadcaster_factory import (
     BroadcasterBackend,
     get_broadcaster,
@@ -46,7 +46,8 @@ async def _run_workflow_task(analysis_id: str, channel: str) -> None:
     broadcaster = await get_broadcaster(BroadcasterBackend.MEMORY)
 
     try:
-        await analysis_workflow.ainvoke(
+        workflow = create_analysis_workflow()
+        await workflow.ainvoke(
             {
                 "url": "https://react.dev",
                 "analysis_id": analysis_id,
@@ -279,8 +280,9 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
         pytest.skip(f"Database not available: {e}")
 
     # Run workflow (which should emit SSE events)
+    workflow = create_analysis_workflow()
     workflow_task = asyncio.create_task(
-        analysis_workflow.ainvoke(
+        workflow.ainvoke(
             {
                 "url": "https://python.org",
                 "analysis_id": analysis_id,
