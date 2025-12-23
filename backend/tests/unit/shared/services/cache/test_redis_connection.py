@@ -135,7 +135,11 @@ class TestCreateRedisClient:
 
         # Verify logger was called with connection details
         # Note: logger may be called multiple times, check for the creation log
-        log_calls = [call for call in mock_logger.info.call_args_list if call[0][0] == "redis_connection_factory_creating"]
+        log_calls = [
+            call
+            for call in mock_logger.info.call_args_list
+            if call[0][0] == "redis_connection_factory_creating"
+        ]
         assert len(log_calls) > 0, "Expected redis_connection_factory_creating log"
         log_call = log_calls[0]
         assert log_call[1]["socket_keepalive"] is True

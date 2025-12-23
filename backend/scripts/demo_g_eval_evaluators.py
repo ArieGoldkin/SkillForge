@@ -119,7 +119,9 @@ def show_evaluator_info(agent_type: str = "tech_comparator") -> None:
             for config in g_eval_configs:
                 print(f"  - {config['name']}: {config['dataType']}")
                 if "minValue" in config:
-                    print(f"    Range: {config.get('minValue', 'N/A')} - {config.get('maxValue', 'N/A')}")
+                    print(
+                        f"    Range: {config.get('minValue', 'N/A')} - {config.get('maxValue', 'N/A')}"
+                    )
                 if "description" in config:
                     print(f"    {config['description']}")
                 print()

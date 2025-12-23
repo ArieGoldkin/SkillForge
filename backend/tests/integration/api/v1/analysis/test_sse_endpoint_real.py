@@ -280,8 +280,8 @@ async def test_sse_endpoint_real_workflow_events(requires_test_env):
         pytest.skip(f"Database not available: {e}")
 
     # Run workflow (which should emit SSE events)
+    workflow = create_analysis_workflow()
     workflow_task = asyncio.create_task(
-        workflow = create_analysis_workflow()
         workflow.ainvoke(
             {
                 "url": "https://python.org",

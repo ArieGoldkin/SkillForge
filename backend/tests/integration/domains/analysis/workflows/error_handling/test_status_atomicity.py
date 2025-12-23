@@ -83,7 +83,7 @@ async def test_invalid_status_transitions_are_rejected(requires_database):
     # First set status to complete (requires content fields due to constraints)
     # Use create_complete_analysis helper to satisfy constraints
     from tests.integration.conftest import create_complete_analysis
-    
+
     # Delete the pending analysis and create a complete one with all required fields
     async with AsyncSessionLocal() as session:
         # Delete existing pending analysis
@@ -91,7 +91,7 @@ async def test_invalid_status_transitions_are_rejected(requires_database):
         if existing:
             await session.delete(existing)
             await session.commit()
-        
+
         # Create complete analysis with all required fields
         await create_complete_analysis(
             session,

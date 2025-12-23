@@ -60,8 +60,8 @@ async def test_parallel_agents_all_8_agents_execute(
         },
     }
 
+    workflow = create_analysis_workflow()
     result = await asyncio.wait_for(
-        workflow = create_analysis_workflow()
         workflow.ainvoke(
             {
                 "url": test_url,

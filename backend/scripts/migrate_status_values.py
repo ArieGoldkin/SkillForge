@@ -33,9 +33,7 @@ async def migrate_statuses() -> None:
             select(Analysis)
             .where(Analysis.status == "complete")
             .where(
-                ~select(Artifact.analysis_id)
-                .where(Artifact.analysis_id == Analysis.id)
-                .exists()
+                ~select(Artifact.analysis_id).where(Artifact.analysis_id == Analysis.id).exists()
             )
         )
 
@@ -66,4 +64,3 @@ async def migrate_statuses() -> None:
 
 if __name__ == "__main__":
     asyncio.run(migrate_statuses())
-

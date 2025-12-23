@@ -10,6 +10,7 @@ This migration enforces URL uniqueness in the analyses table by:
 
 Issue: #440
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -17,8 +18,8 @@ from sqlalchemy import text
 
 
 # revision identifiers, used by Alembic.
-revision: str = '20251221_url_unique'
-down_revision: Union[str, Sequence[str], None] = 'f16597da5830'
+revision: str = "20251221_url_unique"
+down_revision: Union[str, Sequence[str], None] = "f16597da5830"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -37,7 +38,8 @@ def upgrade() -> None:
     """
     # Step 1: Delete duplicate URLs, keeping only the most recent analysis
     # Using CTE with ROW_NUMBER() to identify duplicates
-    op.execute(text("""
+    op.execute(
+        text("""
         WITH ranked_analyses AS (
             SELECT
                 id,
@@ -54,18 +56,14 @@ def upgrade() -> None:
             FROM ranked_analyses
             WHERE rn > 1
         );
-    """))
+    """)
+    )
 
     # Step 2: Drop the existing non-unique index
-    op.drop_index('ix_analyses_url', table_name='analyses')
+    op.drop_index("ix_analyses_url", table_name="analyses")
 
     # Step 3: Create a new unique index on the url column
-    op.create_index(
-        'ix_analyses_url',
-        'analyses',
-        ['url'],
-        unique=True
-    )
+    op.create_index("ix_analyses_url", "analyses", ["url"], unique=True)
 
 
 def downgrade() -> None:
@@ -78,12 +76,7 @@ def downgrade() -> None:
     Note: This does NOT restore any deleted duplicate records.
     """
     # Drop the unique index
-    op.drop_index('ix_analyses_url', table_name='analyses')
+    op.drop_index("ix_analyses_url", table_name="analyses")
 
     # Recreate the original non-unique index
-    op.create_index(
-        'ix_analyses_url',
-        'analyses',
-        ['url'],
-        unique=False
-    )
+    op.create_index("ix_analyses_url", "analyses", ["url"], unique=False)

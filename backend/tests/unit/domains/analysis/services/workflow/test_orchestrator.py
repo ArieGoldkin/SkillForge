@@ -244,9 +244,7 @@ async def test_orchestrator_valid_workflow_persists(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_invalid_status_handled(
-    orchestrator, mock_workflow, mock_analysis_id
-):
+async def test_orchestrator_invalid_status_handled(orchestrator, mock_workflow, mock_analysis_id):
     """Test invalid status handled."""
     invalid_result = {
         "workflow_status": "invalid_status",
@@ -272,9 +270,7 @@ async def test_orchestrator_invalid_status_handled(
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_missing_status_handled(
-    orchestrator, mock_workflow, mock_analysis_id
-):
+async def test_orchestrator_missing_status_handled(orchestrator, mock_workflow, mock_analysis_id):
     """Test missing status handled."""
     result_without_status = {
         "raw_content": "Test content",

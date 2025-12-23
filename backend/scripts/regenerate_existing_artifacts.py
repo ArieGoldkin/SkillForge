@@ -43,8 +43,7 @@ logger = get_logger(__name__)
 async def load_fixture_documents() -> list[dict[str, Any]]:
     """Load fixture documents from expanded JSON."""
     fixtures_path = (
-        Path(__file__).parent.parent
-        / "tests/smoke/retrieval/fixtures/documents_expanded.json"
+        Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures/documents_expanded.json"
     )
 
     if not fixtures_path.exists():
@@ -121,9 +120,7 @@ async def cleanup_existing_data(fixture_ids: list[str], dry_run: bool = False) -
             if not analysis_ids:
                 continue
 
-            logger.info(
-                f"Found {len(analysis_ids)} analyses for fixture '{fixture_id}'"
-            )
+            logger.info(f"Found {len(analysis_ids)} analyses for fixture '{fixture_id}'")
 
             if not dry_run:
                 # Delete chunks for these analyses
@@ -134,14 +131,10 @@ async def cleanup_existing_data(fixture_ids: list[str], dry_run: bool = False) -
 
                 # Delete artifacts for these analyses
                 for aid in analysis_ids:
-                    await session.execute(
-                        delete(Artifact).where(Artifact.analysis_id == aid)
-                    )
+                    await session.execute(delete(Artifact).where(Artifact.analysis_id == aid))
 
                 # Delete analyses
-                await session.execute(
-                    delete(Analysis).where(Analysis.id.in_(analysis_ids))
-                )
+                await session.execute(delete(Analysis).where(Analysis.id.in_(analysis_ids)))
 
                 await session.commit()
 
@@ -204,16 +197,12 @@ async def regenerate_fixture(
         # Update analysis status to complete
         async with AsyncSessionLocal() as session:
             await session.execute(
-                update(Analysis)
-                .where(Analysis.id == UUID(analysis_id))
-                .values(status="complete")
+                update(Analysis).where(Analysis.id == UUID(analysis_id)).values(status="complete")
             )
             await session.commit()
 
         elapsed = time.time() - start_time
-        logger.info(
-            f"[{idx + 1}/{total}] ✅ Completed in {elapsed:.1f}s: {doc['title']}"
-        )
+        logger.info(f"[{idx + 1}/{total}] ✅ Completed in {elapsed:.1f}s: {doc['title']}")
 
         return {
             "analysis_id": analysis_id,
@@ -307,9 +296,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Regenerate existing artifacts with updated template"
     )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Show what would be regenerated"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be regenerated")
     args = parser.parse_args()
 
     exit_code = asyncio.run(main(dry_run=args.dry_run))

@@ -316,7 +316,7 @@ async def test_hybrid_search_combines_results(mock_session, sample_embedding, sa
 
             # Verify both searches were called with HYBRID_FETCH_MULTIPLIER * limit (3x)
             from app.core.constants import HYBRID_FETCH_MULTIPLIER
-            
+
             mock_semantic.assert_called_once()
             mock_keyword.assert_called_once()
             expected_fetch_limit = 10 * HYBRID_FETCH_MULTIPLIER  # 30

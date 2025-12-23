@@ -109,7 +109,6 @@ async def test_orchestrator_concurrent_workflow_handling(orchestrator, valid_com
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-
         mock_artifact = MagicMock()
         mock_artifact.id = uuid.uuid4()
         mock_repo_instance = MagicMock()

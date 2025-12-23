@@ -452,7 +452,7 @@ class TestLibraryEndpointListingMode:
         # Since content_type is validated to be article|video|repo, we can't use a fake type
         # Instead, filter by status="pending" with a specific URL pattern that doesn't exist
         # Or better: filter by a combination that won't match
-        
+
         # Create a test analysis with a specific status to verify filtering works
         test_analysis = await create_complete_analysis(
             db_session,
@@ -460,7 +460,7 @@ class TestLibraryEndpointListingMode:
             status="complete",
         )
         await db_session.commit()
-        
+
         # Filter by status="pending" - should return empty since we created "complete"
         response = await test_client.get(
             "/api/v1/library",

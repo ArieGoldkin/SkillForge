@@ -72,9 +72,7 @@ class TestOpenAIBatchClient:
         mock_client.batch_dir = tmp_path
 
         # Mock file upload response
-        mock_client.client.files.create = AsyncMock(
-            return_value=MagicMock(id="file-123")
-        )
+        mock_client.client.files.create = AsyncMock(return_value=MagicMock(id="file-123"))
 
         requests = [
             {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "Hello"}]},
@@ -107,9 +105,7 @@ class TestOpenAIBatchClient:
         mock_client.batch_dir = tmp_path
 
         # Mock file upload failure
-        mock_client.client.files.create = AsyncMock(
-            side_effect=Exception("Upload failed")
-        )
+        mock_client.client.files.create = AsyncMock(side_effect=Exception("Upload failed"))
 
         requests = [{"model": "gpt-4o-mini", "messages": []}]
 
@@ -150,9 +146,7 @@ class TestOpenAIBatchClient:
 
     async def test_submit_batch_failure(self, mock_client):
         """Test submit_batch handles API failures."""
-        mock_client.client.batches.create = AsyncMock(
-            side_effect=Exception("API error")
-        )
+        mock_client.client.batches.create = AsyncMock(side_effect=Exception("API error"))
 
         with pytest.raises(Exception, match="API error"):
             await mock_client.submit_batch("file-123")
@@ -190,9 +184,7 @@ class TestOpenAIBatchClient:
 
     async def test_get_batch_status_failure(self, mock_client):
         """Test get_batch_status handles API failures."""
-        mock_client.client.batches.retrieve = AsyncMock(
-            side_effect=Exception("API error")
-        )
+        mock_client.client.batches.retrieve = AsyncMock(side_effect=Exception("API error"))
 
         with pytest.raises(Exception, match="API error"):
             await mock_client.get_batch_status("batch-456")
@@ -363,9 +355,7 @@ class TestOpenAIBatchClient:
         jsonl_content = """{"custom_id": "request-0", "response": {"body": {"choices": [{"message": {"content": "Hello"}}]}}}
 {"custom_id": "request-1", "response": {"body": {"choices": [{"message": {"content": "World"}}]}}}"""
 
-        mock_client.client.files.content = AsyncMock(
-            return_value=MagicMock(text=jsonl_content)
-        )
+        mock_client.client.files.content = AsyncMock(return_value=MagicMock(text=jsonl_content))
 
         results = await mock_client.get_batch_results("batch-456")
 
@@ -385,9 +375,7 @@ class TestOpenAIBatchClient:
             )
         )
 
-        mock_client.client.files.content = AsyncMock(
-            side_effect=Exception("Download failed")
-        )
+        mock_client.client.files.content = AsyncMock(side_effect=Exception("Download failed"))
 
         with pytest.raises(Exception, match="Download failed"):
             await mock_client.get_batch_results("batch-456")
@@ -423,9 +411,7 @@ class TestBatchEmbeddings:
             client = MagicMock()
             client.create_batch_file = AsyncMock(return_value="file-123")
             client.submit_batch = AsyncMock(return_value="batch-456")
-            client.wait_for_completion = AsyncMock(
-                return_value={"status": "completed"}
-            )
+            client.wait_for_completion = AsyncMock(return_value={"status": "completed"})
             client.get_batch_results = AsyncMock()
             mock.return_value = client
             yield client
@@ -441,15 +427,11 @@ class TestBatchEmbeddings:
         mock_batch_client.get_batch_results.return_value = [
             {
                 "custom_id": "request-0",
-                "response": {
-                    "body": {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.1, 0.2, 0.3]}]}},
             },
             {
                 "custom_id": "request-1",
-                "response": {
-                    "body": {"data": [{"embedding": [0.4, 0.5, 0.6]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.4, 0.5, 0.6]}]}},
             },
         ]
 
@@ -478,9 +460,7 @@ class TestBatchEmbeddings:
         mock_batch_client.get_batch_results.return_value = [
             {
                 "custom_id": "request-0",
-                "response": {
-                    "body": {"data": [{"embedding": [0.1]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.1]}]}},
             },
         ]
 
@@ -509,21 +489,15 @@ class TestBatchEmbeddings:
         mock_batch_client.get_batch_results.return_value = [
             {
                 "custom_id": "request-2",
-                "response": {
-                    "body": {"data": [{"embedding": [0.7, 0.8, 0.9]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.7, 0.8, 0.9]}]}},
             },
             {
                 "custom_id": "request-1",
-                "response": {
-                    "body": {"data": [{"embedding": [0.4, 0.5, 0.6]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.4, 0.5, 0.6]}]}},
             },
             {
                 "custom_id": "request-0",
-                "response": {
-                    "body": {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
-                },
+                "response": {"body": {"data": [{"embedding": [0.1, 0.2, 0.3]}]}},
             },
         ]
 

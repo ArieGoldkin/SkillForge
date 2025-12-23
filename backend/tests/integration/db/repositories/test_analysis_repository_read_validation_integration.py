@@ -111,6 +111,7 @@ async def test_get_by_id_concurrent_reads(db_session):
     # Read concurrently - use new sessions to avoid transaction conflicts
     async def read_one(aid):
         from app.db.session import AsyncSessionLocal
+
         async with AsyncSessionLocal() as session:
             repo_instance = AnalysisRepository(session=session)
             return await repo_instance.get_by_id(aid, validate=True)

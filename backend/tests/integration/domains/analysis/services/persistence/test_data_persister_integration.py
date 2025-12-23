@@ -213,7 +213,7 @@ async def test_persister_data_integrity(db_session, valid_workflow_result_dict):
         actual_embedding = analysis.content_embedding.tolist()
     else:
         actual_embedding = list(analysis.content_embedding) if analysis.content_embedding else None
-    
+
     # Use approximate comparison for floating point values
     assert actual_embedding is not None, "Embedding should be persisted"
     assert len(actual_embedding) == len(expected_embedding), (

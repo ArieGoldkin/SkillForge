@@ -14,7 +14,8 @@ from app.domains.analysis.services.workflow.exception_handler import (
 async def test_exception_handler_generator_exit_during_execution():
     """Test GeneratorExit during execution (workflow_completed=False).
 
-    Should call StatusUpdater.update("failed"), emit error, and re-raise.
+    Should call StatusUpdater.update("failed") and re-raise.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = GeneratorExit()
@@ -35,10 +36,8 @@ async def test_exception_handler_generator_exit_during_execution():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -74,6 +73,7 @@ async def test_exception_handler_converted_generator_exit_during_execution():
 
     Python's async runtime converts GeneratorExit to RuntimeError in async functions.
     Should treat same as GeneratorExit during execution.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = RuntimeError("coroutine ignored GeneratorExit")
@@ -94,10 +94,8 @@ async def test_exception_handler_converted_generator_exit_during_execution():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -132,6 +130,7 @@ async def test_exception_handler_other_runtime_error_during_execution():
     """Test RuntimeError without 'coroutine ignored GeneratorExit' message.
 
     Should treat as regular exception (not converted GeneratorExit).
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = RuntimeError("Some other runtime error")
@@ -152,17 +151,16 @@ async def test_exception_handler_other_runtime_error_during_execution():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_exception_handler_value_error_during_execution():
     """Test ValueError (other exception type) during execution.
 
-    Should call StatusUpdater.update("failed"), emit error, and re-raise.
+    Should call StatusUpdater.update("failed") and re-raise.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = ValueError("Invalid workflow state")
@@ -183,17 +181,16 @@ async def test_exception_handler_value_error_during_execution():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_exception_handler_key_error_during_execution():
     """Test KeyError (other exception type) during execution.
 
-    Should call StatusUpdater.update("failed"), emit error, and re-raise.
+    Should call StatusUpdater.update("failed") and re-raise.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = KeyError("missing_field")
@@ -214,10 +211,8 @@ async def test_exception_handler_key_error_during_execution():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -225,6 +220,7 @@ async def test_exception_handler_exception_during_cleanup_is_not_suppressed():
     """Test non-GeneratorExit exceptions during cleanup are still treated as errors.
 
     workflow_completed=True only suppresses GeneratorExit, not other exceptions.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = ValueError("Error during cleanup")
@@ -245,10 +241,8 @@ async def test_exception_handler_exception_during_cleanup_is_not_suppressed():
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
 
-            # Verify error event was emitted
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -256,6 +250,7 @@ async def test_exception_handler_partial_match_runtime_error():
     """Test RuntimeError with partial match of 'GeneratorExit' string.
 
     Only exact match 'coroutine ignored GeneratorExit' should be treated as converted.
+    Note: emit_error is NOT called for non-WorkflowStageError exceptions.
     """
     analysis_id = uuid.uuid4()
     exc = RuntimeError("GeneratorExit was found")
@@ -275,7 +270,5 @@ async def test_exception_handler_partial_match_runtime_error():
             mock_status.assert_called_once()
             assert mock_status.call_args[0][0] == analysis_id
             assert mock_status.call_args[0][1] == "failed"
-            mock_emit.assert_called_once()
-            assert mock_emit.call_args[0][0] == analysis_id
-            assert mock_emit.call_args[0][1] == exc
-
+            # Verify error event was NOT emitted (not a WorkflowStageError)
+            mock_emit.assert_not_called()

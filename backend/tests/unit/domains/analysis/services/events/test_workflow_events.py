@@ -34,7 +34,7 @@ async def test_event_emitter_emit_error(mock_analysis_id):
     ):
         emitter = WorkflowEventEmitter()
         error = ValueError("Test error")
-        await emitter.emit_error(mock_analysis_id, error)
+        await emitter.emit_error(mock_analysis_id, error, stage="test")
 
         # Verify broadcaster.publish was called
         mock_broadcaster.publish.assert_called_once()
@@ -45,7 +45,7 @@ async def test_event_emitter_emit_error(mock_analysis_id):
         assert channel == f"workflow:{mock_analysis_id}"
         assert event_data["type"] == "error"
         assert event_data["analysis_id"] == str(mock_analysis_id)
-        assert event_data["stage"] == "workflow"
+        assert event_data["stage"] == "test"
         assert event_data["status"] == "failed"
         assert event_data["error"] == str(error)
 
@@ -121,4 +121,3 @@ async def test_event_emitter_emit_completion_without_artifact(mock_analysis_id):
         assert event_data["analysis_id"] == str(mock_analysis_id)
         assert "artifact_id" not in event_data
         assert event_data["trace_id"] == trace_id
-

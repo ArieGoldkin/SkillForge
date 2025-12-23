@@ -83,7 +83,7 @@ def downgrade() -> None:
     # Optional: Reset storage to PLAIN if you want no compression
     # We keep EXTENDED to maintain compression capability
     # op.execute(text("""
-    #     ALTER TABLE analyses 
-    #     ALTER COLUMN raw_content 
+    #     ALTER TABLE analyses
+    #     ALTER COLUMN raw_content
     #     SET STORAGE PLAIN;
     # """))

@@ -73,7 +73,7 @@ def backup_datasets(client: Langfuse) -> dict[str, Any]:
         datasets_data = {
             "datasets": [],
             "count": 0,
-            "note": "Dataset export via API not yet implemented - configure manually"
+            "note": "Dataset export via API not yet implemented - configure manually",
         }
         print("  ⚠ Dataset export via API not available - manual documentation required")
         return datasets_data
@@ -83,7 +83,7 @@ def backup_datasets(client: Langfuse) -> dict[str, Any]:
             "datasets": [],
             "count": 0,
             "error": str(e),
-            "note": "Configure datasets manually in Langfuse UI"
+            "note": "Configure datasets manually in Langfuse UI",
         }
 
 
@@ -104,7 +104,7 @@ def backup_score_configs() -> dict[str, Any]:
                 "min_value": 0,
                 "max_value": 10,
                 "description": "G-Eval quality score (0-10) for analysis depth and accuracy",
-                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config"
+                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config",
             },
             {
                 "name": "depth_score",
@@ -112,7 +112,7 @@ def backup_score_configs() -> dict[str, Any]:
                 "min_value": 0,
                 "max_value": 10,
                 "description": "Analysis depth score (0-10)",
-                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config"
+                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config",
             },
             {
                 "name": "accuracy_score",
@@ -120,7 +120,7 @@ def backup_score_configs() -> dict[str, Any]:
                 "min_value": 0,
                 "max_value": 10,
                 "description": "Technical accuracy score (0-10)",
-                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config"
+                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config",
             },
             {
                 "name": "relevance_score",
@@ -128,7 +128,7 @@ def backup_score_configs() -> dict[str, Any]:
                 "min_value": 0,
                 "max_value": 10,
                 "description": "Relevance to user goals score (0-10)",
-                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config"
+                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config",
             },
             {
                 "name": "coherence_score",
@@ -136,15 +136,17 @@ def backup_score_configs() -> dict[str, Any]:
                 "min_value": 0,
                 "max_value": 10,
                 "description": "Output coherence score (0-10)",
-                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config"
-            }
+                "note": "Configure in Langfuse UI: Settings → Scores → Add Score Config",
+            },
         ],
         "count": 5,
-        "note": "These must be configured manually in Langfuse UI (Settings → Scores)"
+        "note": "These must be configured manually in Langfuse UI (Settings → Scores)",
     }
 
     for config in score_configs["configs"]:
-        print(f"  - {config['name']} ({config['type']}, {config['min_value']}-{config['max_value']})")
+        print(
+            f"  - {config['name']} ({config['type']}, {config['min_value']}-{config['max_value']})"
+        )
 
     return score_configs
 
@@ -164,26 +166,26 @@ def backup_llm_connections() -> dict[str, Any]:
                 "provider": "openai",
                 "model": "gpt-4o-mini",
                 "use_case": "Main agent LLM for cost efficiency",
-                "note": "Configure in Langfuse UI: Settings → LLM API Keys → OpenAI"
+                "note": "Configure in Langfuse UI: Settings → LLM API Keys → OpenAI",
             },
             {
                 "name": "Anthropic Claude 3.5 Sonnet",
                 "provider": "anthropic",
                 "model": "claude-3-5-sonnet-20241022",
                 "use_case": "High-quality analysis and reasoning",
-                "note": "Configure in Langfuse UI: Settings → LLM API Keys → Anthropic"
+                "note": "Configure in Langfuse UI: Settings → LLM API Keys → Anthropic",
             },
             {
                 "name": "Google Gemini 2.0 Flash",
                 "provider": "google",
                 "model": "gemini-2.0-flash-exp",
                 "use_case": "G-Eval quality scoring",
-                "note": "Configure in Langfuse UI: Settings → LLM API Keys → Google"
-            }
+                "note": "Configure in Langfuse UI: Settings → LLM API Keys → Google",
+            },
         ],
         "count": 3,
         "warning": "DO NOT commit API keys - configure manually in Langfuse UI",
-        "note": "This documents the required connections, not the actual credentials"
+        "note": "This documents the required connections, not the actual credentials",
     }
 
     for conn in llm_connections["connections"]:
@@ -368,14 +370,8 @@ def verify_backup() -> None:
 
 def main() -> None:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Backup and restore Langfuse configurations"
-    )
-    parser.add_argument(
-        "action",
-        choices=["backup", "restore", "verify"],
-        help="Action to perform"
-    )
+    parser = argparse.ArgumentParser(description="Backup and restore Langfuse configurations")
+    parser.add_argument("action", choices=["backup", "restore", "verify"], help="Action to perform")
 
     args = parser.parse_args()
 

@@ -5,39 +5,47 @@
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:28:56.639868+00:00",
-      "cache_key": "2437ca5c0d68c550883b3eb4305d6fd3a0421b1a0336270e49fd7b5ac4f2a015"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 1.0,
-      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
-      "timestamp": "2025-12-23T09:29:00.735891+00:00",
-      "cache_key": "ebbfbd6187057fa34c363687ea9d76dabb00ccd7cf3bdfe2fb143f07cf104c44"
-    },
-    {
-      "score": 1,
-      "normalized": 0.0,
-      "confidence": 1.0,
-      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
-      "timestamp": "2025-12-23T09:29:04.822512+00:00",
-      "cache_key": "a11c2635a107820eb6737e6d9b32aa5dfb2fea748f45af607a3e955db591fd65"
-    },
-    {
-      "score": 1,
-      "normalized": 0.0,
-      "confidence": 1.0,
-      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
-      "timestamp": "2025-12-23T09:29:08.911015+00:00",
-      "cache_key": "31de58d02edeb7ba5209aa6d862933b18f01d7ea7b08e815d430bf53394451b5"
+      "timestamp": "2025-12-23T09:50:56.204601+00:00",
+      "cache_key": "e6f755ee5a0f1004d4aa575725e61566c13ae1c81e57ad8a076867133bc11922"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:30:38.946769+00:00",
+      "timestamp": "2025-12-23T09:51:03.764188+00:00",
+      "cache_key": "57b358b9019f11dd0766fb58a94ebbf3948f09272e0eafcdb3af3de3897e1c21"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-23T09:51:07.817611+00:00",
+      "cache_key": "23b6291786377e1ab962bcd83d4c2b3dcfa893cbe05499452dd9eafc5d210135"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-23T09:51:11.877377+00:00",
+      "cache_key": "9af2e261152aef234385b122d4405c86fbb0aa71bdd403269d805cdf0ea8bde8"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-23T09:51:15.943193+00:00",
+      "cache_key": "9a482d997faf76b2297af4012da2a5510a45a9563b34813a355cb56358b978a0"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-23T10:01:54.550790+00:00",
       "cache_key": "62be721053398b489efe30a21a8e66a059b2e952e84c0e7255880467c614c143"
     },
     {
@@ -45,47 +53,47 @@
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:30:48.837782+00:00",
-      "cache_key": "34b8bde59101c2106a6328f2202ce23c6c4418aec76493e3f6fd97c1ed75fa4d"
+      "timestamp": "2025-12-23T10:02:02.663660+00:00",
+      "cache_key": "6e74e8c07c6f04b8e9b3b5d99d3a0cc3d72e010249a66b3ab6a84076f656e5c5"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:30:56.807275+00:00",
-      "cache_key": "52d2c0c03044e578bf26678fc4020ecffe9ef889c020a729c942b5ba5b1904a3"
+      "timestamp": "2025-12-23T10:02:11.690448+00:00",
+      "cache_key": "c48aaa9c670f468c915b6971b6cbb33c98116a0c099f339cce8125afd721b395"
     },
     {
       "score": 2,
       "normalized": 0.25,
       "confidence": 1.0,
       "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
-      "timestamp": "2025-12-23T09:31:00.884135+00:00",
-      "cache_key": "eb004b7629fc64710be74e8c9b1c96e8a97f26b22c5cc4fe693e81babb91b90f"
+      "timestamp": "2025-12-23T10:02:15.744309+00:00",
+      "cache_key": "b510e3837d1831c1803cad6bb389a07913e8d5f415d46233c027905e2f98e92e"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
-      "timestamp": "2025-12-23T09:31:04.964850+00:00",
-      "cache_key": "f7b7a8ac17ddd30a3ea58c85028e8c88383a6f0283f61785c0e8b1c18f14698b"
+      "timestamp": "2025-12-23T10:02:19.801213+00:00",
+      "cache_key": "37a0496a8ebf27f94dcc92fb5321273938cd57d1131fbbf1b5b4569292c02463"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
-      "timestamp": "2025-12-23T09:31:09.049531+00:00",
-      "cache_key": "24666cda9498e1aa0429d7ff2cc907ace07907d52553414b3b3f849c84e9d4cb"
+      "timestamp": "2025-12-23T10:02:23.864085+00:00",
+      "cache_key": "9a4f65d2249a03bc0b9379d890046253df10930f021029377ae6b7d9d09296a3"
     },
     {
       "score": 2,
       "normalized": 0.25,
       "confidence": 1.0,
       "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
-      "timestamp": "2025-12-23T09:36:03.365777+00:00",
+      "timestamp": "2025-12-23T10:07:26.797932+00:00",
       "cache_key": "ee90e822a03513425b30899fd0cf63f6844e6f401dab60a652b262eaa1afe59b"
     },
     {
@@ -93,49 +101,81 @@
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:36:15.665847+00:00",
-      "cache_key": "919172b5d92293d638ea71163d829afdf6094451ac50df7a75e7f20567caa515"
+      "timestamp": "2025-12-23T10:07:35.831846+00:00",
+      "cache_key": "dd057c9cae97a6a9d9efc6a019ffb75981d07e5d2244b3db06bca12793609494"
     },
     {
       "score": 2,
       "normalized": 0.25,
       "confidence": 1.0,
       "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
-      "timestamp": "2025-12-23T09:36:19.724863+00:00",
-      "cache_key": "73a1252421d228fbbfc4d9a99ba5ba4c9287dc8efa37fd2656be8a3dd345e296"
-    },
-    {
-      "score": 1,
-      "normalized": 0.0,
-      "confidence": 1.0,
-      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
-      "timestamp": "2025-12-23T09:36:28.015201+00:00",
-      "cache_key": "003f70a9ac0125f055bec6aae30665f681ff7d365f372eb0a39fd440483c8ae7"
-    },
-    {
-      "score": 2,
-      "normalized": 0.25,
-      "confidence": 1.0,
-      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
-      "timestamp": "2025-12-23T09:36:32.075699+00:00",
-      "cache_key": "940d6a0aa98d7e91f0be4ea7033b82303268a995acc48bba354fa0d167cfaa90"
+      "timestamp": "2025-12-23T10:07:39.879654+00:00",
+      "cache_key": "9b93d19ada9fb8e7a34a2532d56a7fa81555745eaddd84676101c88152a48970"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
-      "timestamp": "2025-12-23T09:36:36.140021+00:00",
-      "cache_key": "4d2287d4e02b562f9705f81ccab1e9e66774cdfd7d56bf70a0cf7472480025d0"
+      "timestamp": "2025-12-23T10:07:43.927969+00:00",
+      "cache_key": "887dfbbee08338ad2f08f434e04a3cd44fe6ecbf3263eccb91a8be65ba9de1db"
     },
     {
       "score": 1,
       "normalized": 0.0,
       "confidence": 1.0,
       "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
-      "timestamp": "2025-12-23T09:36:40.206854+00:00",
-      "cache_key": "19f94fe8411dd6336f5959a078c12e04bc13d4f2ae9807b939c54ac3498e27a9"
+      "timestamp": "2025-12-23T10:07:47.977825+00:00",
+      "cache_key": "6ca81abcdbae2feb8f4f6568e66ffb1eaca8403b55a2e04c677f9d13459e5567"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-23T10:08:17.207939+00:00",
+      "cache_key": "2421636bd77834c372ae561c44cebded0d7e9a1415b3ac504f5ab438f2a06e1d"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-23T10:08:27.288574+00:00",
+      "cache_key": "32e27ccacbcc1e19b78329b52dd5065b78c1c3b1fa9ea7737e66d090a17c6cfa"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is an empty template that explicitly states \"LLM synthesis failed\" and \"Analysis encountered an error during synthesis.\" Every major section intended for the \"comprehensive technical implementation guide\" (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) is marked as \"not available.\" The only substantive content provided is a small list of prerequisites in the \"Detailed Agent Findings\" section. The metadata even confirms a \"Coverage Score\" of 0%. Th",
+      "timestamp": "2025-12-23T10:08:36.858446+00:00",
+      "cache_key": "637f3c5ccbff5da23be9eda2203f6be427a4f083589b53f91cb8c660707b133b"
+    },
+    {
+      "score": 2,
+      "normalized": 0.25,
+      "confidence": 1.0,
+      "reasoning": "The generated output follows a logical report template with clear Markdown headers, which provides a basic level of navigational structure. However, it fails significantly in terms of coherence and internal consistency.\n\n1.  **Contradictory Sections:** The \"Executive Summary\" and several following sections (Technical Analysis, Implementation Plan, Risk Assessment, Recommendations) state that synthesis failed and findings/guidance are not available. However, the \"Detailed Agent Findings\" section ",
+      "timestamp": "2025-12-23T10:08:40.929136+00:00",
+      "cache_key": "ad9ec3aa5475dd7993d5204d6208375e10d2549e47d41baf6be1f19ab59a6232"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is almost entirely devoid of content. The document explicitly states that \"LLM synthesis failed\" and multiple key sections\u2014including Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations\u2014are explicitly marked as \"not available.\" The only information provided is a list of basic prerequisites (Python version, API access). There are no technical details, architectural descriptions, code examples, or implementation strategies provided. This represents a s",
+      "timestamp": "2025-12-23T10:08:44.984908+00:00",
+      "cache_key": "5893b86ffedf00a097ba91289c44b0790c98d6085cb68c11d6fc5a07d8869e8b"
+    },
+    {
+      "score": 1,
+      "normalized": 0.0,
+      "confidence": 1.0,
+      "reasoning": "The generated output is essentially a failed report template. The content explicitly states that \"LLM synthesis failed,\" and the sections for Technical Analysis, Implementation Plan, Risk Assessment, and Recommendations are all marked as \"not available.\" While there is a single shell command to install a library and a list of prerequisites, the output provides no actual implementation steps, logic, code samples, or guidance on how to build effective AI agents as requested. It fails to meet even ",
+      "timestamp": "2025-12-23T10:08:49.037589+00:00",
+      "cache_key": "448ff688832878933ee66e73bc7cb6ba7aa4ea8db2667c0ac8e598eae1732c28"
     }
   ],
-  "saved_at": "2025-12-23T09:36:40.206896+00:00"
+  "saved_at": "2025-12-23T10:08:49.037696+00:00"
 }

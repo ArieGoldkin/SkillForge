@@ -179,7 +179,7 @@ async def test_supervisor_failure_stops_workflow(requires_database, reset_engine
             ),
         ):
             workflow = create_analysis_workflow()
-        orchestrator = WorkflowOrchestrator(workflow=workflow)
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -257,7 +257,7 @@ async def test_quality_gate_failure_stops_workflow(requires_database, reset_engi
             ),
         ):
             workflow = create_analysis_workflow()
-        orchestrator = WorkflowOrchestrator(workflow=workflow)
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -335,7 +335,7 @@ async def test_aggregation_failure_stops_workflow(requires_database, reset_engin
             ),
         ):
             workflow = create_analysis_workflow()
-        orchestrator = WorkflowOrchestrator(workflow=workflow)
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify artifact was NOT called
@@ -411,7 +411,7 @@ async def test_agent_failure_does_not_stop_workflow(requires_database, reset_eng
             ),
         ):
             workflow = create_analysis_workflow()
-        orchestrator = WorkflowOrchestrator(workflow=workflow)
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify aggregation WAS called (workflow continued despite agent failure)

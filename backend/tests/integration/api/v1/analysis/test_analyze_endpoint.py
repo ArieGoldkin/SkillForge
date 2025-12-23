@@ -18,7 +18,9 @@ from tests.integration.conftest import create_complete_analysis
 
 
 @pytest.mark.asyncio
-async def test_post_analyze_creates_record(requires_database, reset_engine_connections, db_session, app_with_lifespan):
+async def test_post_analyze_creates_record(
+    requires_database, reset_engine_connections, db_session, app_with_lifespan
+):
     """Test that POST /api/v1/analyze creates Analysis record in database."""
     analysis_uuid = uuid.uuid4()
 
@@ -335,26 +337,26 @@ async def test_workflow_status_updates_to_complete(
 
     # Create mock workflow and orchestrator
     from unittest.mock import MagicMock, AsyncMock
+
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(side_effect=mock_workflow_ainvoke)
     orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
-        await orchestrator.run(
-            analysis_uuid, "https://example.com/article", skill_level="intermediate"
-        )
+    await orchestrator.run(analysis_uuid, "https://example.com/article", skill_level="intermediate")
 
-        # Wait a bit for status update (orchestrator uses separate session)
-        await asyncio.sleep(0.2)
+    # Wait a bit for status update (orchestrator uses separate session)
+    await asyncio.sleep(0.2)
 
-        # Verify status was updated to complete (query fresh from DB)
-        await db_session.refresh(analysis)
-        # Also verify with a fresh query to ensure we see the updated status
-        from sqlalchemy import select
-        fresh_result = await db_session.execute(
-            select(Analysis).where(Analysis.id == analysis_uuid)
-        )
-        fresh_analysis = fresh_result.scalar_one_or_none()
-        assert fresh_analysis is not None, "Analysis should exist"
-        assert fresh_analysis.status == "complete", f"Status should be 'complete', got '{fresh_analysis.status}'"
+    # Verify status was updated to complete (query fresh from DB)
+    await db_session.refresh(analysis)
+    # Also verify with a fresh query to ensure we see the updated status
+    from sqlalchemy import select
+
+    fresh_result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_uuid))
+    fresh_analysis = fresh_result.scalar_one_or_none()
+    assert fresh_analysis is not None, "Analysis should exist"
+    assert fresh_analysis.status == "complete", (
+        f"Status should be 'complete', got '{fresh_analysis.status}'"
+    )
 
 
 @pytest.mark.asyncio
@@ -385,25 +387,27 @@ async def test_workflow_status_updates_to_failed_on_generatorexit(
 
     # Create mock workflow and orchestrator
     from unittest.mock import MagicMock, AsyncMock
+
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(side_effect=mock_workflow_ainvoke)
     orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
-        # Exception handler updates status to failed, then re-raises
-        with pytest.raises((GeneratorExit, RuntimeError)):
-            await orchestrator.run(
-                analysis_uuid, "https://example.com/article", skill_level="intermediate"
-            )
-
-        # Wait a bit for status update (status update happens in exception handler before re-raise)
-        await asyncio.sleep(0.2)
-
-        # Verify status was updated to failed (query fresh from DB)
-        await db_session.refresh(analysis)
-        # Also verify with a fresh query to ensure we see the updated status
-        from sqlalchemy import select
-        fresh_result = await db_session.execute(
-            select(Analysis).where(Analysis.id == analysis_uuid)
+    # Exception handler updates status to failed, then re-raises
+    with pytest.raises((GeneratorExit, RuntimeError)):
+        await orchestrator.run(
+            analysis_uuid, "https://example.com/article", skill_level="intermediate"
         )
-        fresh_analysis = fresh_result.scalar_one_or_none()
-        assert fresh_analysis is not None, "Analysis should exist"
-        assert fresh_analysis.status == "failed", f"Status should be 'failed' on GeneratorExit, got '{fresh_analysis.status}'"
+
+    # Wait a bit for status update (status update happens in exception handler before re-raise)
+    await asyncio.sleep(0.2)
+
+    # Verify status was updated to failed (query fresh from DB)
+    await db_session.refresh(analysis)
+    # Also verify with a fresh query to ensure we see the updated status
+    from sqlalchemy import select
+
+    fresh_result = await db_session.execute(select(Analysis).where(Analysis.id == analysis_uuid))
+    fresh_analysis = fresh_result.scalar_one_or_none()
+    assert fresh_analysis is not None, "Analysis should exist"
+    assert fresh_analysis.status == "failed", (
+        f"Status should be 'failed' on GeneratorExit, got '{fresh_analysis.status}'"
+    )

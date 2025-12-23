@@ -55,7 +55,7 @@ async def test_constraint_embedding_dimensions(db_session):
     # Use raw SQL with vector literal format for pgvector
     # pgvector requires literal format: '[0.1,0.1,...]'::vector
     from sqlalchemy.exc import DBAPIError
-    
+
     with pytest.raises((IntegrityError, DBAPIError)):
         # Convert list to PostgreSQL vector literal format
         wrong_embedding_list = [0.1] * 768

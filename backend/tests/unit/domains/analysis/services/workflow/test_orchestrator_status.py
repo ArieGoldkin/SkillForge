@@ -45,12 +45,24 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     test_url,
 ):
     """Test workflow sets status to artifact_failed when artifact is missing."""
-    # Create mock workflow
+    # Create mock workflow with complete result
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
+            "workflow_status": "completed",
+            "content_ref": {
+                "uri": f"analysis://{mock_analysis_id}/content",
+                "summary": "Test summary",
+                "size_bytes": 1000,
+                "content_type": "text/plain",
+                "available_sections": ["summary", "full"],
+            },
             "raw_content": "Test content",
-            "extraction_metadata": {"title": "Test Title"},
+            "extraction_metadata": {
+                "title": "Test Title",
+                "word_count": 100,
+                "char_count": 500,
+            },
             "content_embedding": [0.1] * 1536,
         }
     )
@@ -125,12 +137,24 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     """Test workflow sets status to complete when artifact exists."""
     from app.db.models.artifact import Artifact
 
-    # Create mock workflow
+    # Create mock workflow with complete result
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
+            "workflow_status": "completed",
+            "content_ref": {
+                "uri": f"analysis://{mock_analysis_id}/content",
+                "summary": "Test summary",
+                "size_bytes": 1000,
+                "content_type": "text/plain",
+                "available_sections": ["summary", "full"],
+            },
             "raw_content": "Test content",
-            "extraction_metadata": {"title": "Test Title"},
+            "extraction_metadata": {
+                "title": "Test Title",
+                "word_count": 100,
+                "char_count": 500,
+            },
             "content_embedding": [0.1] * 1536,
         }
     )
@@ -188,13 +212,18 @@ async def test_orchestrator_sets_analysis_failed_when_result_incomplete(
     mock_analysis_id,
     test_url,
 ):
-    """Test workflow sets status to analysis_failed when result is incomplete."""
-    # Create mock workflow
+    """Test workflow sets status to failed when result is incomplete.
+
+    When workflow_status is missing or invalid (not 'completed' or 'failed'),
+    the orchestrator sets status to FAILED (generic failure).
+    """
+    # Create mock workflow that returns incomplete result
+    # (missing workflow_status, so it falls into the invalid status path)
     mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Test content",
-            # Missing extraction_metadata and content_embedding
+            # Missing workflow_status and other required fields
         }
     )
 
@@ -202,17 +231,17 @@ async def test_orchestrator_sets_analysis_failed_when_result_incomplete(
     orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
     await orchestrator.run(mock_analysis_id, test_url)
 
-    # Verify status was set to analysis_failed
+    # Verify status was set to failed (generic failure for invalid workflow status)
     mock_update_status.assert_called()
     calls = mock_update_status.call_args_list
 
-    # Find the call that sets analysis_failed
-    analysis_failed_call = None
+    # Find the call that sets failed
+    failed_call = None
     for call in calls:
-        if len(call[0]) >= 2 and call[0][1] == AnalysisStatus.ANALYSIS_FAILED.value:
-            analysis_failed_call = call
+        if len(call[0]) >= 2 and call[0][1] == AnalysisStatus.FAILED.value:
+            failed_call = call
             break
 
-    assert analysis_failed_call is not None, "Expected status to be set to analysis_failed"
-    assert analysis_failed_call[0][0] == mock_analysis_id
-    assert analysis_failed_call[0][1] == AnalysisStatus.ANALYSIS_FAILED.value
+    assert failed_call is not None, "Expected status to be set to failed"
+    assert failed_call[0][0] == mock_analysis_id
+    assert failed_call[0][1] == AnalysisStatus.FAILED.value

@@ -6,7 +6,17 @@ including all methods and pattern matching functionality.
 
 import pytest
 
-from app.shared.types.result_types import Err, Ok, Result, UnwrapError, err, is_err, is_ok, match, ok
+from app.shared.types.result_types import (
+    Err,
+    Ok,
+    Result,
+    UnwrapError,
+    err,
+    is_err,
+    is_ok,
+    match,
+    ok,
+)
 
 
 class TestOk:
@@ -195,6 +205,7 @@ class TestResultUsagePatterns:
 
     def test_division_example(self):
         """Test the division example from docstring."""
+
         def divide(a: int, b: int) -> Result[int, str]:
             if b == 0:
                 return err("Division by zero")
@@ -212,6 +223,7 @@ class TestResultUsagePatterns:
 
     def test_chaining_operations(self):
         """Test chaining multiple Result operations."""
+
         def parse_int(s: str) -> Result[int, str]:
             try:
                 return ok(int(s))
@@ -240,6 +252,7 @@ class TestResultUsagePatterns:
 
     def test_error_recovery(self):
         """Test error recovery with or_else."""
+
         def risky_operation() -> Result[int, str]:
             return err("Database connection failed")
 
@@ -254,6 +267,7 @@ class TestResultUsagePatterns:
 
     def test_result_mapping(self):
         """Test mapping over Results."""
+
         def add_one(n: int) -> Result[int, str]:
             return ok(n + 1)
 

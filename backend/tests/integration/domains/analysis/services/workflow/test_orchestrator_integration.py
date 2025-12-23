@@ -189,9 +189,9 @@ async def test_orchestrator_error_recovery(orchestrator, db_session):
 
     await orchestrator_with_mock.run(analysis_id, "https://example.com/recovery")
 
-        # Verify status updated to failed
-        analysis = await repo.get_by_id(analysis_id)
-        # Status should be updated by orchestrator
+    # Verify status updated to failed
+    analysis = await repo.get_by_id(analysis_id)
+    # Status should be updated by orchestrator
 
 
 @pytest.mark.integration
