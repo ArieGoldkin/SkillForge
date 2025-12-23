@@ -12,7 +12,7 @@ import pytest
 
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
@@ -82,7 +82,8 @@ async def test_real_article_analysis_claude_opus_4_5(
         },
     }
 
-    result = await analysis_workflow.ainvoke(
+    workflow = create_analysis_workflow()
+    result = await workflow.ainvoke(
         {
             "url": test_url,
             "analysis_id": analysis_id,

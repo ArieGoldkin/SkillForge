@@ -9,12 +9,14 @@ from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import DataPersister, StatusUpdater
 from app.domains.analysis.services.workflow.orchestrator import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
 def orchestrator():
     """Create orchestrator instance for tests."""
-    return WorkflowOrchestrator()
+    workflow = create_analysis_workflow()
+    return WorkflowOrchestrator(workflow=workflow)
 
 
 @pytest.fixture

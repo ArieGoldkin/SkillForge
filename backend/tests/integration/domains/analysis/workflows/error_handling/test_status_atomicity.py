@@ -80,11 +80,25 @@ async def test_invalid_status_transitions_are_rejected(requires_database):
         await updater.update(analysis_id, "complete")
 
     # Try invalid transition: complete -> pending (terminal state)
-    # First set status to complete
-    # Use a fresh session to avoid connection conflicts
+    # First set status to complete (requires content fields due to constraints)
+    # Use create_complete_analysis helper to satisfy constraints
+    from tests.integration.conftest import create_complete_analysis
+    
+    # Delete the pending analysis and create a complete one with all required fields
     async with AsyncSessionLocal() as session:
-        analysis = await session.get(Analysis, analysis_id)
-        analysis.status = "complete"  # type: ignore[assignment]
+        # Delete existing pending analysis
+        existing = await session.get(Analysis, analysis_id)
+        if existing:
+            await session.delete(existing)
+            await session.commit()
+        
+        # Create complete analysis with all required fields
+        await create_complete_analysis(
+            session,
+            id=analysis_id,
+            url=test_url,
+            status="complete",
+        )
         await session.commit()
 
     # Now try to go back to pending (should fail)

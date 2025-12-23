@@ -446,9 +446,10 @@ async def generate_artifact(  # noqa: PLR0915
 
     except Exception as e:
         # Emit error event using standardized helper
+        stage_name = get_stage_name("artifact_generation")
         await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("artifact_generation"),
+            stage=stage_name,
             error=str(e),
             error_code="ARTIFACT_GENERATION_FAILED",
         )
@@ -459,4 +460,9 @@ async def generate_artifact(  # noqa: PLR0915
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Artifact generation failed: {e}",
+        ) from e

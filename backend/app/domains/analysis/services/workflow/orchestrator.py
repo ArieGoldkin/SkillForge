@@ -1,6 +1,7 @@
 """Workflow orchestration service for analysis workflows."""
 
 import uuid
+from typing import Any
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -13,7 +14,6 @@ from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import DataPersister, StatusUpdater
 from app.domains.analysis.services.workflow import handle_workflow_exception
 from app.domains.analysis.services.workflow.validator import WorkflowResultValidator
-from app.domains.analysis.workflows.analysis import analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -21,8 +21,13 @@ logger = get_logger(__name__)
 class WorkflowOrchestrator:
     """Orchestrates analysis workflow execution and post-processing."""
 
-    def __init__(self) -> None:
-        """Initialize orchestrator with service dependencies."""
+    def __init__(self, workflow: Any) -> None:
+        """Initialize orchestrator with workflow instance.
+
+        Args:
+            workflow: Compiled workflow graph instance (required)
+        """
+        self.workflow = workflow
         self.status_updater = StatusUpdater()
         self.data_persister = DataPersister()
         self.event_emitter = WorkflowEventEmitter()
@@ -36,7 +41,7 @@ class WorkflowOrchestrator:
             "workflow_type": "analysis",
         },
     )
-    async def run(
+    async def run(  # noqa: PLR0911, PLR0912, PLR0915
         self, analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
     ) -> None:
         """Run analysis workflow and handle post-processing.
@@ -121,7 +126,7 @@ class WorkflowOrchestrator:
                 thread_id=str(analysis_id),
                 callbacks_enabled=callbacks_enabled,
             )
-            result = await analysis_workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
+            result = await self.workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
             logger.debug(
                 "workflow_execution_completed",
                 analysis_id=str(analysis_id),
@@ -154,12 +159,13 @@ class WorkflowOrchestrator:
                         analysis_id=str(analysis_id),
                         result_type=type(result).__name__,
                     )
-                    await self.status_updater.update(
-                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-                    )
+                    # Use generic "failed" status to avoid transition issues
+                    # (analysis might be in various states when this error occurs)
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
                     await self.event_emitter.emit_error(
                         analysis_id,
                         TypeError(f"Workflow result must be dict, got {type(result)}"),
+                        stage="validation",  # Orchestrator-level validation error
                     )
                     return
 
@@ -174,12 +180,13 @@ class WorkflowOrchestrator:
                         errors=errors,
                         message="Completed workflow has invalid data",
                     )
-                    await self.status_updater.update(
-                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-                    )
+                    # Use generic "failed" status to avoid transition issues
+                    # (analysis might be in various states when validation fails)
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
                     await self.event_emitter.emit_error(
                         analysis_id,
                         ValueError(f"Data validation failed: {errors}"),
+                        stage="validation",  # Orchestrator-level validation error
                     )
                     return
 
@@ -191,12 +198,12 @@ class WorkflowOrchestrator:
                         analysis_id=str(analysis_id),
                         message="Validator returned None despite no errors",
                     )
-                    await self.status_updater.update(
-                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
-                    )
+                    # Use generic "failed" status to avoid transition issues
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
                     await self.event_emitter.emit_error(
                         analysis_id,
                         ValueError("Validation returned None unexpectedly"),
+                        stage="validation",  # Orchestrator-level validation error
                     )
                     return
 
@@ -209,10 +216,13 @@ class WorkflowOrchestrator:
                         analysis_id=str(analysis_id),
                         error=str(validation_error),
                     )
-                    await self.status_updater.update(
-                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
+                    # Use generic "failed" status to avoid transition issues
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
+                    await self.event_emitter.emit_error(
+                        analysis_id,
+                        validation_error,
+                        stage="persistence",  # Orchestrator-level persistence validation error
                     )
-                    await self.event_emitter.emit_error(analysis_id, validation_error)
                     return
                 except RuntimeError as db_error:
                     # Database error
@@ -221,24 +231,32 @@ class WorkflowOrchestrator:
                         analysis_id=str(analysis_id),
                         error=str(db_error),
                     )
-                    await self.status_updater.update(
-                        analysis_id, AnalysisStatus.ANALYSIS_FAILED.value
+                    # Use generic "failed" status to avoid transition issues
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
+                    await self.event_emitter.emit_error(
+                        analysis_id,
+                        db_error,
+                        stage="persistence",  # Orchestrator-level database error
                     )
-                    await self.event_emitter.emit_error(analysis_id, db_error)
                     return
 
             else:
                 # Invalid or missing workflow status
+                # This typically means the workflow encountered an unexpected error
+                # Check if a node-level error was already emitted before emitting orchestrator error
                 logger.error(
                     "invalid_workflow_status",
                     analysis_id=str(analysis_id),
                     status=workflow_status,
                     message="Workflow returned invalid or missing status",
                 )
-                await self.status_updater.update(analysis_id, AnalysisStatus.ANALYSIS_FAILED.value)
+                # Use generic "failed" status to avoid transition issues
+                await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
+                # emit_error() will check for recent errors and skip if node already emitted
                 await self.event_emitter.emit_error(
                     analysis_id,
                     ValueError(f"Invalid workflow status: {workflow_status}"),
+                    stage="validation",  # Orchestrator-level validation error
                 )
                 return
 
@@ -261,6 +279,7 @@ class WorkflowOrchestrator:
                     await self.event_emitter.emit_error(
                         analysis_id,
                         ValueError("Workflow completed but no artifact was generated"),
+                        stage="validation",  # Orchestrator-level validation error (artifact check)
                     )
                     return
 

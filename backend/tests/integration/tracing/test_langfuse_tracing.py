@@ -4,6 +4,8 @@ Tests metadata propagation, thread grouping, runtime metadata updates,
 and consistent decorator usage across the codebase.
 """
 
+from collections.abc import Callable
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,13 +17,14 @@ from app.core.tracing import robust_traceable
 @patch("langfuse.observe")
 async def test_metadata_propagation(mock_observe):
     """Test that metadata is properly propagated to Langfuse traces."""
-    captured_func = None
+    captured_func: Callable[..., Any] | None = None
 
-    def mock_decorator(func):
+    def mock_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         nonlocal captured_func
         captured_func = func
 
-        async def mock_wrapper(*args, **kwargs):
+        async def mock_wrapper(*args: Any, **kwargs: Any) -> Any:
+            assert captured_func is not None, "captured_func must be set by decorator"
             return await captured_func(*args, **kwargs)
 
         return mock_wrapper
@@ -110,13 +113,14 @@ async def test_runtime_metadata_updates(mock_get_client):
 @patch("langfuse.observe")
 async def test_consistent_decorator_usage(mock_observe):
     """Test that robust_traceable is used consistently."""
-    captured_func = None
+    captured_func: Callable[..., Any] | None = None
 
-    def mock_decorator(func):
+    def mock_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         nonlocal captured_func
         captured_func = func
 
-        async def mock_wrapper(*args, **kwargs):
+        async def mock_wrapper(*args: Any, **kwargs: Any) -> Any:
+            assert captured_func is not None, "captured_func must be set by decorator"
             return await captured_func(*args, **kwargs)
 
         return mock_wrapper

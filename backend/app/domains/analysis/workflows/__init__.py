@@ -9,7 +9,7 @@ This package contains all LangGraph workflows for the analysis domain:
 - tasks/ - Task implementations
 """
 
-# Re-export main workflow for convenience
-from app.domains.analysis.workflows.analysis import analysis_workflow
+# Re-export main workflow factory for convenience
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
-__all__ = ["analysis_workflow"]
+__all__ = ["create_analysis_workflow"]

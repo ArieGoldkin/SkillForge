@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal, engine
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 # Expected embedding dimensions for OpenAI text-embedding-3-small
 EXPECTED_EMBEDDING_DIMENSIONS = 1536
@@ -150,8 +150,9 @@ async def test_analysis_workflow_end_to_end(requires_database, reset_engine_conn
                     "test_type": "end_to_end",
                 },
             }
+            workflow = create_analysis_workflow()
             result = await asyncio.wait_for(
-                analysis_workflow.ainvoke(
+                workflow.ainvoke(
                     {
                         "url": test_url,
                         "analysis_id": analysis_id,
@@ -453,7 +454,8 @@ async def test_workflow_persists_results_to_database(
             ),
         ):
             # Run full workflow via orchestrator (this calls data_persister.persist)
-            orchestrator = WorkflowOrchestrator()
+            workflow = create_analysis_workflow()
+            orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(
                 analysis_id=analysis_id,
                 url=test_url,
@@ -514,9 +516,7 @@ async def test_workflow_persists_results_to_database(
 @pytest.mark.slow
 @pytest.mark.external
 @pytest.mark.timeout(150)
-@patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 async def test_workflow_fails_when_required_fields_missing(
-    mock_workflow,
     requires_database,
     reset_engine_connections,
 ) -> None:
@@ -536,6 +536,7 @@ async def test_workflow_fails_when_required_fields_missing(
         await session.commit()
 
     # Mock workflow to return incomplete result (missing embedding)
+    mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Sample content",
@@ -545,7 +546,7 @@ async def test_workflow_fails_when_required_fields_missing(
     )
 
     # Run workflow task
-    orchestrator = WorkflowOrchestrator()
+    orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
     await orchestrator.run(
         analysis_id=analysis_id,
         url=test_url,

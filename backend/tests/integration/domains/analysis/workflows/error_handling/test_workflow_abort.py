@@ -11,13 +11,14 @@ import pytest
 
 from app.core.exceptions import EmbeddingError, WorkflowError
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
-from .conftest import create_test_analysis
+from .conftest import create_test_analysis  # noqa: F401
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_embedding_failure_stops_workflow(requires_database):
+async def test_embedding_failure_stops_workflow(requires_database, reset_engine_connections):
     """Test that embedding failure stops workflow (abort signal)."""
     analysis_id = uuid.uuid4()
     test_url = f"https://test-embedding-abort-{analysis_id}.com"
@@ -94,7 +95,8 @@ async def test_embedding_failure_stops_workflow(requires_database):
             side_effect=mock_artifact_node,
         ),
     ):
-        orchestrator = WorkflowOrchestrator()
+        workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
         await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -108,12 +110,13 @@ async def test_embedding_failure_stops_workflow(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_supervisor_failure_stops_workflow(requires_database):
+async def test_supervisor_failure_stops_workflow(requires_database, reset_engine_connections):
     """Test that supervisor failure stops workflow."""
     analysis_id = uuid.uuid4()
     test_url = f"https://test-supervisor-abort-{analysis_id}.com"
 
-    await create_test_analysis(analysis_id, test_url)
+    # Supervisor runs after extraction/embedding, so status should be "analyzing"
+    await create_test_analysis(analysis_id, test_url, initial_status="analyzing")
 
     # Track nodes
     nodes_called = {"quality_gate": False, "aggregate": False, "artifact": False}
@@ -175,7 +178,8 @@ async def test_supervisor_failure_stops_workflow(requires_database):
                 return_value=mock_embedding_service,
             ),
         ):
-            orchestrator = WorkflowOrchestrator()
+            workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -186,12 +190,13 @@ async def test_supervisor_failure_stops_workflow(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_quality_gate_failure_stops_workflow(requires_database):
+async def test_quality_gate_failure_stops_workflow(requires_database, reset_engine_connections):
     """Test that quality gate failure stops workflow."""
     analysis_id = uuid.uuid4()
     test_url = f"https://test-quality-gate-abort-{analysis_id}.com"
 
-    await create_test_analysis(analysis_id, test_url)
+    # Quality gate runs after supervisor, so status should be "analyzing"
+    await create_test_analysis(analysis_id, test_url, initial_status="analyzing")
 
     # Track nodes
     nodes_called = {"aggregate": False, "artifact": False}
@@ -251,7 +256,8 @@ async def test_quality_gate_failure_stops_workflow(requires_database):
                 return_value={"supervisor_decision": mock_supervisor_decision},
             ),
         ):
-            orchestrator = WorkflowOrchestrator()
+            workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -261,12 +267,13 @@ async def test_quality_gate_failure_stops_workflow(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_aggregation_failure_stops_workflow(requires_database):
+async def test_aggregation_failure_stops_workflow(requires_database, reset_engine_connections):
     """Test that aggregation failure stops workflow."""
     analysis_id = uuid.uuid4()
     test_url = f"https://test-aggregation-abort-{analysis_id}.com"
 
-    await create_test_analysis(analysis_id, test_url)
+    # Aggregation runs after agents, so status should be "analyzing"
+    await create_test_analysis(analysis_id, test_url, initial_status="analyzing")
 
     # Track artifact node
     artifact_called = False
@@ -323,11 +330,12 @@ async def test_aggregation_failure_stops_workflow(requires_database):
                 return_value={"quality_gate_passed": True},
             ),
             patch(
-                "app.domains.analysis.workflows.agents.tech_comparator.tech_comparator_agent",
+                "app.domains.analysis.workflows.agents.tech_comparator.run_tech_comparator",
                 return_value={"findings": []},
             ),
         ):
-            orchestrator = WorkflowOrchestrator()
+            workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify artifact was NOT called
@@ -336,7 +344,7 @@ async def test_aggregation_failure_stops_workflow(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_agent_failure_does_not_stop_workflow(requires_database):
+async def test_agent_failure_does_not_stop_workflow(requires_database, reset_engine_connections):
     """Test that agent failure does NOT stop workflow (agents are non-blocking).
 
     When an agent fails, other agents may still execute and workflow continues.
@@ -344,7 +352,8 @@ async def test_agent_failure_does_not_stop_workflow(requires_database):
     analysis_id = uuid.uuid4()
     test_url = f"https://test-agent-non-blocking-{analysis_id}.com"
 
-    await create_test_analysis(analysis_id, test_url)
+    # Agents run after quality gate, so status should be "analyzing"
+    await create_test_analysis(analysis_id, test_url, initial_status="analyzing")
 
     # Track if aggregation was called (workflow continued)
     aggregation_called = False
@@ -357,7 +366,7 @@ async def test_agent_failure_does_not_stop_workflow(requires_database):
     # Mock agent to fail
     with (
         patch(
-            "app.domains.analysis.workflows.agents.tech_comparator.tech_comparator_agent",
+            "app.domains.analysis.workflows.agents.tech_comparator.run_tech_comparator",
             side_effect=WorkflowError("Tech comparator failed"),
         ),
         patch(
@@ -401,7 +410,8 @@ async def test_agent_failure_does_not_stop_workflow(requires_database):
                 return_value={"quality_gate_passed": True},
             ),
         ):
-            orchestrator = WorkflowOrchestrator()
+            workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
             await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify aggregation WAS called (workflow continued despite agent failure)

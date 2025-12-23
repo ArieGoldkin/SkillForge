@@ -9,13 +9,24 @@ IMPORTANT: Integration tests require:
 - Langfuse credentials (LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY)
 """
 
+import pytest
+from fastapi import FastAPI
+
+# Import app and lifespan for lifecycle initialization
+from app.main import app, lifespan
+
 import os
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
+from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# Import app and lifespan for lifecycle initialization
+from app.main import app, lifespan
 
 # CRITICAL: Load .env BEFORE any other imports to get real API keys
 # Integration tests need real keys, not placeholders
@@ -195,3 +206,27 @@ async def minimal_agent_examples(db_session):
 
     await db_session.commit()
     return examples
+
+
+@pytest_asyncio.fixture
+async def app_with_lifespan() -> FastAPI:
+    """Initialize FastAPI app with proper lifecycle (lifespan context manager).
+
+    This fixture ensures app.state is properly initialized (including background_tasks)
+    before tests run, matching production behavior.
+
+    The lifespan context manager runs:
+    - Startup: Initializes app.state.background_tasks, configures Langfuse, etc.
+    - Shutdown: Cleans up resources
+
+    Usage:
+        @pytest.mark.asyncio
+        async def test_endpoint(app_with_lifespan):
+            transport = ASGITransport(app=app_with_lifespan)
+            async with AsyncClient(transport=transport) as client:
+                response = await client.post("/api/v1/analyze", ...)
+    """
+    # Run lifespan startup and shutdown
+    async with lifespan(app):
+        yield app
+        # Lifespan shutdown runs automatically on exit

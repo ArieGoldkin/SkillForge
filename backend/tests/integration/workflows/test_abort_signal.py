@@ -12,7 +12,7 @@ import pytest
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from app.domains.analysis.workflows.state import AnalysisState
 
 
@@ -28,7 +28,7 @@ def requires_database():
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_abort_signal_stops_subsequent_nodes(requires_database):
+async def test_abort_signal_stops_subsequent_nodes(requires_database, reset_engine_connections):
     """Test that extraction failure stops all subsequent nodes.
 
     When extraction fails:
@@ -133,7 +133,8 @@ async def test_abort_signal_stops_subsequent_nodes(requires_database):
             },
         }
 
-        result = await analysis_workflow.ainvoke(input_state, config=config)
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(input_state, config=config)
 
         # Verify should_abort is set
         assert result.get("should_abort") is True
@@ -203,7 +204,8 @@ async def test_abort_signal_routes_to_workflow_failed(requires_database):
             },
         }
 
-        result = await analysis_workflow.ainvoke(input_state, config=config)
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(input_state, config=config)
 
         # Verify abort signal is set
         assert result.get("should_abort") is True

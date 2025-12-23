@@ -19,6 +19,7 @@ from langchain_core.runnables import Runnable
 
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
@@ -669,9 +670,10 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         duration_ms = int((time.time() - start_time) * 1000)
 
         # Emit error event using standardized helper
+        stage_name = get_stage_name("supervisor")
         await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("supervisor"),
+            stage=stage_name,
             error=str(e),
             error_code="SUPERVISOR_FAILED",
         )
@@ -683,6 +685,11 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             duration_ms=duration_ms,
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Supervisor routing failed: {e}",
+        ) from e
     else:
         return {"supervisor_decision": supervisor_decision}

@@ -7,6 +7,7 @@ import pytest
 
 from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
@@ -24,7 +25,6 @@ def test_url():
 @patch("app.shared.services.persistence.progress.persist_progress_event_async")
 @patch("app.shared.services.messaging.sse_helpers.get_broadcaster", new_callable=AsyncMock)
 @patch("app.core.tracing.get_current_trace_id")
-@patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 @patch("app.domains.analysis.services.persistence.data_persister.DataPersister.persist")
 @patch("app.domains.analysis.services.persistence.status_updater.StatusUpdater.update")
 @patch("app.domains.analysis.services.workflow.orchestrator.ArtifactRepository")
@@ -38,7 +38,6 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     mock_repo_class,
     mock_update_status,
     mock_persist,
-    mock_workflow,
     mock_get_trace_id,
     mock_get_broadcaster,
     mock_persist_progress,
@@ -46,7 +45,8 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     test_url,
 ):
     """Test workflow sets status to artifact_failed when artifact is missing."""
-    # Mock workflow to complete successfully
+    # Create mock workflow
+    mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Test content",
@@ -81,7 +81,7 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
     mock_get_trace_id.return_value = "test-trace-id"
 
     # Run workflow
-    orchestrator = WorkflowOrchestrator()
+    orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
     await orchestrator.run(mock_analysis_id, test_url)
 
     # Verify status was set to artifact_failed (not generic failed)
@@ -103,7 +103,6 @@ async def test_orchestrator_sets_artifact_failed_when_no_artifact(
 @patch("app.shared.services.persistence.progress.persist_progress_event_async")
 @patch("app.shared.services.messaging.sse_helpers.get_broadcaster", new_callable=AsyncMock)
 @patch("app.core.tracing.get_current_trace_id")
-@patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 @patch("app.domains.analysis.services.persistence.data_persister.DataPersister.persist")
 @patch("app.domains.analysis.services.persistence.status_updater.StatusUpdater.update")
 @patch("app.domains.analysis.services.workflow.orchestrator.ArtifactRepository")
@@ -117,7 +116,6 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     mock_repo_class,
     mock_update_status,
     mock_persist,
-    mock_workflow,
     mock_get_trace_id,
     mock_get_broadcaster,
     mock_persist_progress,
@@ -127,7 +125,8 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     """Test workflow sets status to complete when artifact exists."""
     from app.db.models.artifact import Artifact
 
-    # Mock workflow to complete successfully
+    # Create mock workflow
+    mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Test content",
@@ -164,7 +163,7 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     mock_get_trace_id.return_value = "test-trace-id"
 
     # Run workflow
-    orchestrator = WorkflowOrchestrator()
+    orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
     await orchestrator.run(mock_analysis_id, test_url)
 
     # Verify status was set to complete
@@ -183,16 +182,15 @@ async def test_orchestrator_sets_complete_when_artifact_exists(
     assert complete_call[0][1] == AnalysisStatus.COMPLETE.value
 
 
-@patch("app.domains.analysis.services.workflow.orchestrator.analysis_workflow")
 @patch("app.domains.analysis.services.persistence.status_updater.StatusUpdater.update")
 async def test_orchestrator_sets_analysis_failed_when_result_incomplete(
     mock_update_status,
-    mock_workflow,
     mock_analysis_id,
     test_url,
 ):
     """Test workflow sets status to analysis_failed when result is incomplete."""
-    # Mock workflow to return incomplete result (missing required fields)
+    # Create mock workflow
+    mock_workflow = MagicMock()
     mock_workflow.ainvoke = AsyncMock(
         return_value={
             "raw_content": "Test content",
@@ -201,7 +199,7 @@ async def test_orchestrator_sets_analysis_failed_when_result_incomplete(
     )
 
     # Run workflow
-    orchestrator = WorkflowOrchestrator()
+    orchestrator = WorkflowOrchestrator(workflow=mock_workflow)
     await orchestrator.run(mock_analysis_id, test_url)
 
     # Verify status was set to analysis_failed

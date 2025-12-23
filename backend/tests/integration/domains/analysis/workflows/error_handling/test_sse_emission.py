@@ -12,13 +12,14 @@ import pytest
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.db.session import AsyncSessionLocal
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 from .conftest import create_test_analysis, wait_for_event_persistence
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_error_event_emitted_to_broadcaster(requires_database):
+async def test_error_event_emitted_to_broadcaster(requires_database, reset_engine_connections):
     """Test that error events are emitted to EventBroadcaster.
 
     This test verifies that events are published to the broadcaster,
@@ -42,7 +43,8 @@ async def test_error_event_emitted_to_broadcaster(requires_database):
         "app.domains.analysis.workflows.tasks.extract_content.JinaReader",
         return_value=mock_jina,
     ):
-        orchestrator = WorkflowOrchestrator()
+        workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
         await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify error event was persisted (which means it was emitted)
@@ -77,7 +79,7 @@ async def test_error_event_emitted_to_broadcaster(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_error_event_retrievable_via_sse_stream(requires_database):
+async def test_error_event_retrievable_via_sse_stream(requires_database, reset_engine_connections):
     """Test that error events are retrievable via SSE stream endpoint.
 
     This test verifies the full flow: error event → database → /progress endpoint.
@@ -100,12 +102,15 @@ async def test_error_event_retrievable_via_sse_stream(requires_database):
         "app.domains.analysis.workflows.tasks.extract_content.JinaReader",
         return_value=mock_jina,
     ):
-        orchestrator = WorkflowOrchestrator()
+        workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
         await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
+        # Small delay to allow async cleanup (connections, SSE streams, etc.)
+        import asyncio
+
+        await asyncio.sleep(0.05)
 
     # Wait a bit for database operations to complete
-    import asyncio
-
     await asyncio.sleep(0.1)
 
     # Verify event is retrievable via repository (simulating /progress endpoint)

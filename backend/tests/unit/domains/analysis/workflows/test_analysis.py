@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.services.extraction.jina_reader import JinaReaderError
 
@@ -115,7 +115,8 @@ async def test_analysis_workflow_with_mocked_services(
             return_value=[],
         ),
     ):
-        result = await analysis_workflow.ainvoke(
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(
             {
                 "url": "https://example.com",
                 "analysis_id": TEST_ANALYSIS_ID,

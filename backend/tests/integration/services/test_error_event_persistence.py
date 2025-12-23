@@ -18,6 +18,7 @@ from app.db.models.analysis import Analysis
 from app.db.models.progress import AnalysisProgress
 from app.db.session import AsyncSessionLocal
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
@@ -63,7 +64,9 @@ async def wait_for_event_persistence(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_error_event_persisted_on_extraction_failure(requires_database):
+async def test_error_event_persisted_on_extraction_failure(
+    requires_database, reset_engine_connections
+):
     """Test that error event is persisted when extraction fails.
 
     This test:
@@ -103,7 +106,8 @@ async def test_error_event_persisted_on_extraction_failure(requires_database):
         mock_jina_class.return_value = mock_jina
 
         # Run workflow orchestrator (which will trigger extraction failure)
-        orchestrator = WorkflowOrchestrator()
+        workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
         await orchestrator.run(analysis_uuid, test_url, skill_level="intermediate")
 
     # Wait for error event to be persisted (with timeout)
@@ -171,7 +175,7 @@ async def test_error_event_persisted_on_extraction_failure(requires_database):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_error_event_contains_error_code(requires_database):
+async def test_error_event_contains_error_code(requires_database, reset_engine_connections):
     """Test that error events include error_code when available."""
     analysis_uuid = uuid.uuid4()
     analysis_id = str(analysis_uuid)
@@ -200,8 +204,13 @@ async def test_error_event_contains_error_code(requires_database):
     ) as mock_jina_class:
         mock_jina_class.return_value = mock_jina
 
-        orchestrator = WorkflowOrchestrator()
+        workflow = create_analysis_workflow()
+        orchestrator = WorkflowOrchestrator(workflow=workflow)
         await orchestrator.run(analysis_uuid, test_url, skill_level="intermediate")
+        # Small delay to allow async cleanup (connections, SSE streams, etc.)
+        import asyncio
+
+        await asyncio.sleep(0.05)
 
     # Wait for error event
     event_found = await wait_for_event_persistence(analysis_uuid, "error", max_wait=10.0)

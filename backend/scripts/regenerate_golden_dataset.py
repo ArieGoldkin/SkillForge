@@ -51,7 +51,7 @@ from app.api.v1.analysis.workflow_runner import _update_analysis_status
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -208,7 +208,8 @@ async def run_workflow_for_document(
     # Run the workflow
     start_time = time.time()
     try:
-        result = await analysis_workflow.ainvoke(
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(
             initial_state,
             config={"configurable": {"thread_id": analysis_id}},
         )

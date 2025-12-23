@@ -6,12 +6,14 @@ import time
 import pytest
 
 from app.domains.analysis.services.workflow.orchestrator import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
 def orchestrator():
     """Create orchestrator instance for tests."""
-    return WorkflowOrchestrator()
+    workflow = create_analysis_workflow()
+    return WorkflowOrchestrator(workflow=workflow)
 
 
 @pytest.fixture
@@ -44,10 +46,12 @@ async def test_orchestrator_validation_overhead(orchestrator, valid_completed_re
 
     analysis_id = uuid.uuid4()
 
+    # Create mock workflow
+    mock_workflow = MagicMock()
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+    orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
+
     with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
         patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
         ) as mock_artifact_repo,
@@ -55,8 +59,6 @@ async def test_orchestrator_validation_overhead(orchestrator, valid_completed_re
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-        mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
-
         mock_artifact = MagicMock()
         mock_artifact.id = uuid.uuid4()
         mock_repo_instance = MagicMock()
@@ -69,7 +71,7 @@ async def test_orchestrator_validation_overhead(orchestrator, valid_completed_re
         mock_session_local.return_value = mock_session
 
         start = time.time()
-        await orchestrator.run(analysis_id, "https://example.com")
+        await orchestrator_with_mock.run(analysis_id, "https://example.com")
         elapsed = time.time() - start
 
         # Validation overhead should be minimal (<10ms)
@@ -90,10 +92,16 @@ async def test_orchestrator_concurrent_workflow_handling(orchestrator, valid_com
         result["content_ref"]["uri"] = f"analysis://{aid}/content"
         return result
 
+    # Create mock workflow
+    def mock_ainvoke(input_state, config):
+        aid = uuid.UUID(input_state["analysis_id"])
+        return create_result(aid)
+
+    mock_workflow = MagicMock()
+    mock_workflow.ainvoke = AsyncMock(side_effect=mock_ainvoke)
+    orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
+
     with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
         patch(
             "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
         ) as mock_artifact_repo,
@@ -101,12 +109,6 @@ async def test_orchestrator_concurrent_workflow_handling(orchestrator, valid_com
             "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
         ) as mock_session_local,
     ):
-
-        def mock_ainvoke(input_state, config):
-            aid = uuid.UUID(input_state["analysis_id"])
-            return create_result(aid)
-
-        mock_workflow.ainvoke = AsyncMock(side_effect=mock_ainvoke)
 
         mock_artifact = MagicMock()
         mock_artifact.id = uuid.uuid4()
@@ -120,7 +122,7 @@ async def test_orchestrator_concurrent_workflow_handling(orchestrator, valid_com
         mock_session_local.return_value = mock_session
 
         async def run_one(aid):
-            return await orchestrator.run(aid, f"https://example.com/{aid}")
+            return await orchestrator_with_mock.run(aid, f"https://example.com/{aid}")
 
         start = time.time()
         tasks = [run_one(aid) for aid in analysis_ids]

@@ -6,12 +6,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.domains.analysis.services.workflow.orchestrator import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.fixture
 def orchestrator():
     """Create orchestrator instance for tests."""
-    return WorkflowOrchestrator()
+    workflow = create_analysis_workflow()
+    return WorkflowOrchestrator(workflow=workflow)
 
 
 @pytest.mark.integration
@@ -35,12 +37,12 @@ async def test_orchestrator_real_failed_workflow(orchestrator, db_session):
         "final_error": "Extraction failed",
     }
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=failed_result)
+    # Create orchestrator with mock workflow
+    mock_workflow = MagicMock()
+    mock_workflow.ainvoke = AsyncMock(return_value=failed_result)
+    orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
-        await orchestrator.run(analysis_id, "https://example.com/failed")
+    await orchestrator_with_mock.run(analysis_id, "https://example.com/failed")
 
         # Verify status updated (should be handled by workflow_failed node)
         # This test verifies orchestrator doesn't crash on failed workflows
@@ -79,15 +81,13 @@ async def test_orchestrator_real_completed_workflow(orchestrator, db_session):
         "workflow_status": "completed",
     }
 
-    with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
-        ) as mock_artifact_repo,
-    ):
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
+    ) as mock_artifact_repo:
+        # Create orchestrator with mock workflow
+        mock_workflow = MagicMock()
         mock_workflow.ainvoke = AsyncMock(return_value=completed_result)
+        orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
         # Mock artifact
         from app.db.models.artifact import Artifact
@@ -98,7 +98,7 @@ async def test_orchestrator_real_completed_workflow(orchestrator, db_session):
         mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
         mock_artifact_repo.return_value = mock_repo_instance
 
-        await orchestrator.run(analysis_id, "https://example.com/completed")
+        await orchestrator_with_mock.run(analysis_id, "https://example.com/completed")
 
         # Verify data persisted
         analysis = await repo.get_by_id(analysis_id)
@@ -118,7 +118,7 @@ async def test_orchestrator_end_to_end_validation(orchestrator, db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/e2e-{analysis_id}",
         content_type="article",
-        status="analyzing",
+        status="generating_artifact",  # Valid transition to "complete"
     )
 
     # Valid completed result
@@ -139,15 +139,13 @@ async def test_orchestrator_end_to_end_validation(orchestrator, db_session):
         "workflow_status": "completed",
     }
 
-    with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
-        ) as mock_artifact_repo,
-    ):
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
+    ) as mock_artifact_repo:
+        # Create orchestrator with mock workflow
+        mock_workflow = MagicMock()
         mock_workflow.ainvoke = AsyncMock(return_value=completed_result)
+        orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
         mock_artifact = MagicMock()
         mock_artifact.id = uuid.uuid4()
@@ -155,7 +153,7 @@ async def test_orchestrator_end_to_end_validation(orchestrator, db_session):
         mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
         mock_artifact_repo.return_value = mock_repo_instance
 
-        await orchestrator.run(analysis_id, "https://example.com/e2e")
+        await orchestrator_with_mock.run(analysis_id, "https://example.com/e2e")
 
         # Verify complete flow: validation → persistence → status update
         analysis = await repo.get_by_id(analysis_id)
@@ -184,12 +182,12 @@ async def test_orchestrator_error_recovery(orchestrator, db_session):
         "workflow_status": "completed",
     }
 
-    with patch(
-        "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-    ) as mock_workflow:
-        mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
+    # Create orchestrator with mock workflow
+    mock_workflow = MagicMock()
+    mock_workflow.ainvoke = AsyncMock(return_value=invalid_result)
+    orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
-        await orchestrator.run(analysis_id, "https://example.com/recovery")
+    await orchestrator_with_mock.run(analysis_id, "https://example.com/recovery")
 
         # Verify status updated to failed
         analysis = await repo.get_by_id(analysis_id)
@@ -213,7 +211,7 @@ async def test_orchestrator_concurrent_workflows(orchestrator, db_session):
             analysis_id=analysis_id,
             url=f"https://example.com/concurrent-{analysis_id}",
             content_type="article",
-            status="analyzing",
+            status="generating_artifact",  # Valid transition to "complete"
         )
 
     # Mock workflow results
@@ -235,20 +233,17 @@ async def test_orchestrator_concurrent_workflows(orchestrator, db_session):
             "workflow_status": "completed",
         }
 
-    with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
-        ) as mock_artifact_repo,
-    ):
-        # Mock workflow to return different results
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
+    ) as mock_artifact_repo:
+        # Create orchestrator with mock workflow
         def mock_ainvoke(input_state, config):
             aid = uuid.UUID(input_state["analysis_id"])
             return create_result(aid)
 
+        mock_workflow = MagicMock()
         mock_workflow.ainvoke = AsyncMock(side_effect=mock_ainvoke)
+        orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
         # Mock artifacts
         mock_artifact = MagicMock()
@@ -259,7 +254,7 @@ async def test_orchestrator_concurrent_workflows(orchestrator, db_session):
 
         # Run concurrently
         tasks = [
-            orchestrator.run(aid, f"https://example.com/concurrent-{aid}") for aid in analysis_ids
+            orchestrator_with_mock.run(aid, f"https://example.com/concurrent-{aid}") for aid in analysis_ids
         ]
         await asyncio.gather(*tasks)
 
@@ -282,7 +277,7 @@ async def test_orchestrator_status_consistency(orchestrator, db_session):
         analysis_id=analysis_id,
         url=f"https://example.com/consistency-{analysis_id}",
         content_type="article",
-        status="analyzing",
+        status="generating_artifact",  # Valid starting point for -> complete transition
     )
 
     # Valid completed result
@@ -303,15 +298,13 @@ async def test_orchestrator_status_consistency(orchestrator, db_session):
         "workflow_status": "completed",
     }
 
-    with (
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.analysis_workflow"
-        ) as mock_workflow,
-        patch(
-            "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
-        ) as mock_artifact_repo,
-    ):
+    with patch(
+        "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository"
+    ) as mock_artifact_repo:
+        # Create orchestrator with mock workflow
+        mock_workflow = MagicMock()
         mock_workflow.ainvoke = AsyncMock(return_value=completed_result)
+        orchestrator_with_mock = WorkflowOrchestrator(workflow=mock_workflow)
 
         mock_artifact = MagicMock()
         mock_artifact.id = uuid.uuid4()
@@ -319,7 +312,7 @@ async def test_orchestrator_status_consistency(orchestrator, db_session):
         mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
         mock_artifact_repo.return_value = mock_repo_instance
 
-        await orchestrator.run(analysis_id, "https://example.com/consistency")
+        await orchestrator_with_mock.run(analysis_id, "https://example.com/consistency")
 
         # Verify status is consistent
         analysis = await repo.get_by_id(analysis_id)

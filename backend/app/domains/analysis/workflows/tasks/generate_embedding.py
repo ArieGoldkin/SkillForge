@@ -2,6 +2,7 @@
 
 from app.core.agent_config import get_stage_name
 from app.core.config import settings
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID, EmbeddingVector
@@ -81,9 +82,10 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
         )
     except Exception as e:
         # Emit error event using standardized helper
+        stage_name = get_stage_name("embedding")
         await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
+            stage=stage_name,
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )
@@ -93,7 +95,12 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Embedding generation failed: {e}",
+        ) from e
     finally:
         await embedding_service.close()
 
@@ -151,9 +158,10 @@ async def generate_embeddings_batch(
         )
     except Exception as e:
         # Emit error event using standardized helper
+        stage_name = get_stage_name("embedding")
         await emit_error_event(
             analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
+            stage=stage_name,
             error=str(e),
             error_code="EMBEDDING_FAILED",
         )
@@ -163,7 +171,12 @@ async def generate_embeddings_batch(
             error=str(e),
             exc_info=True,
         )
-        raise
+        # Wrap exception with stage context for orchestrator-level error handling
+        raise WorkflowStageError(
+            stage=stage_name,
+            original_exception=e,
+            message=f"Batch embedding generation failed: {e}",
+        ) from e
     finally:
         await embedding_service.close()
 

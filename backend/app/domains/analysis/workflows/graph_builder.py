@@ -6,10 +6,12 @@ parallel execution patterns using fan-out and fan-in with Send API.
 
 import os
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
+from langgraph.types import Send
 
 from app.core.config import settings
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
@@ -604,7 +606,7 @@ def build_analysis_graph():
     # All agent nodes are potential targets
     graph.add_conditional_edges(
         "supervisor",
-        route_to_agents,
+        routing_fn,
         [
             "tech_comparator",
             "security_auditor",
@@ -668,8 +670,8 @@ def build_analysis_graph():
     graph.add_edge("generate_artifact", END)
 
     # Compile with checkpointer
-    checkpointer = _get_checkpointer()
-    compiled_graph = graph.compile(checkpointer=checkpointer)
+    checkpointer_instance = checkpointer or _get_checkpointer()
+    compiled_graph = graph.compile(checkpointer=checkpointer_instance)
 
     # Set step timeout (in seconds) - LangGraph handles cancellation gracefully
     # This prevents any single node from running indefinitely

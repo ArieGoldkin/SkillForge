@@ -25,10 +25,25 @@ from app.domains.analysis.schemas.api import (
     ProgressEventResponse,
 )
 from app.domains.analysis.services.workflow import WorkflowOrchestrator
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from app.shared.services.extraction.content_type import ContentTypeError, detect_content_type
 
 router = APIRouter(tags=["analyze"])
 logger = get_logger(__name__)
+
+# Workflow instance (created on first use, reused for all requests)
+_workflow_instance = None
+
+
+def get_orchestrator() -> WorkflowOrchestrator:
+    """Get WorkflowOrchestrator instance with workflow injected.
+
+    For FastAPI dependency injection. Creates workflow on first call.
+    """
+    global _workflow_instance
+    if _workflow_instance is None:
+        _workflow_instance = create_analysis_workflow()
+    return WorkflowOrchestrator(workflow=_workflow_instance)
 
 
 def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task]) -> None:
@@ -259,7 +274,7 @@ async def create_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-        orchestrator = WorkflowOrchestrator()
+        orchestrator = get_orchestrator()
         task: asyncio.Task[None] = asyncio.create_task(
             orchestrator.run(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
         )

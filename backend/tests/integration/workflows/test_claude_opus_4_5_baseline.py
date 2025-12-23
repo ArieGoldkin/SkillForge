@@ -12,7 +12,7 @@ import pytest
 
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 # Test constants
 EXPECTED_EMBEDDING_DIMENSIONS = 1536  # OpenAI text-embedding-3-small dimensions
@@ -93,7 +93,8 @@ async def test_claude_opus_4_5_baseline(
         },
     }
 
-    result = await analysis_workflow.ainvoke(
+    workflow = create_analysis_workflow()
+    result = await workflow.ainvoke(
         {
             "url": test_url,
             "analysis_id": analysis_id,

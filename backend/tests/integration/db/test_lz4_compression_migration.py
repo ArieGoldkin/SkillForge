@@ -71,14 +71,14 @@ async def test_raw_content_read_write_with_compression(
         # Use unique URL to avoid conflicts
         unique_url = f"https://test-lz4-compression-{uuid.uuid4().hex[:8]}.example.com"
 
-        # Write
-        analysis = Analysis(
+        # Write - use create_complete_analysis helper to ensure all required fields
+        from tests.integration.conftest import create_complete_analysis
+
+        analysis = await create_complete_analysis(
+            session,
             url=unique_url,
-            content_type="article",
             raw_content=test_content,
-            status="complete",
         )
-        session.add(analysis)
         await session.commit()
         await session.refresh(analysis)
 

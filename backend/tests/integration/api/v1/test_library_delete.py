@@ -18,14 +18,16 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_delete_analysis_cascades(requires_database, reset_engine_connections, db_session):
     """DELETE /api/v1/analyses/{id} removes analysis and related rows."""
+    from tests.integration.conftest import create_complete_analysis
+
     analysis_id = uuid.uuid4()
-    analysis = Analysis(
+    # Use create_complete_analysis helper to ensure all required fields are set
+    analysis = await create_complete_analysis(
+        db_session,
         id=analysis_id,
-        url="https://example.com/article",
-        content_type="article",
-        status="complete",
-        created_at=datetime.now(UTC),
+        url=f"https://example.com/article-{analysis_id}",
     )
+    # Note: analysis is already added to session by create_complete_analysis
     finding = AgentFinding(
         id=uuid.uuid4(),
         analysis_id=analysis_id,
@@ -49,7 +51,8 @@ async def test_delete_analysis_cascades(requires_database, reset_engine_connecti
         progress_data={},
         created_at=datetime.now(UTC),
     )
-    db_session.add_all([analysis, finding, artifact, progress])
+    # Only add related objects - analysis already added by create_complete_analysis
+    db_session.add_all([finding, artifact, progress])
     await db_session.commit()
 
     transport = ASGITransport(app=app)

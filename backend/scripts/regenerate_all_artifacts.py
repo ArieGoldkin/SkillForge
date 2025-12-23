@@ -30,7 +30,7 @@ from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -94,7 +94,8 @@ async def regenerate_artifact(analysis: dict, idx: int, total: int) -> dict:
 
         # Run workflow
         logger.info(f"[{idx + 1}/{total}] Regenerating: {analysis['title'][:50]}...")
-        result = await analysis_workflow.ainvoke(initial_state, config)
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(initial_state, config)
 
         elapsed = time.time() - start_time
         logger.info(f"[{idx + 1}/{total}] ✅ Done in {elapsed:.1f}s")

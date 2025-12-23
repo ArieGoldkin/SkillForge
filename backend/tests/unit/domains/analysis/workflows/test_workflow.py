@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 
 @pytest.mark.unit
@@ -36,12 +36,13 @@ async def test_generate_embedding_task():
 
 @pytest.mark.asyncio
 async def test_analysis_workflow_structure():
-    """Test analysis_workflow has correct structure."""
+    """Test analysis_workflow factory creates workflow with correct structure."""
     # Workflow should have ainvoke method for async invocation
-    assert hasattr(analysis_workflow, "ainvoke"), "Workflow should have ainvoke method"
-    assert hasattr(analysis_workflow, "astream"), "Workflow should have astream method"
+    workflow = create_analysis_workflow()
+    assert hasattr(workflow, "ainvoke"), "Workflow should have ainvoke method"
+    assert hasattr(workflow, "astream"), "Workflow should have astream method"
     # Workflow should be a LangGraph Pregel object
-    assert analysis_workflow is not None, "Workflow should be defined"
+    assert workflow is not None, "Workflow should be defined"
 
 
 def test_analysis_state_typeddict():

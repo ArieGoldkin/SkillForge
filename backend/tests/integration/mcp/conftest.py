@@ -60,9 +60,9 @@ def mock_github_get_security_advisories_tool():
 
 @pytest.fixture
 def mock_npm_get_package_tool():
-    """Mock npm get_package MCP tool."""
+    """Mock npm get-npm-package-details MCP tool."""
     tool = MagicMock(spec=BaseTool)
-    tool.name = "get_package"  # Matches registry capability (npm:get_package)
+    tool.name = "get-npm-package-details"  # Matches registry capability tool_name
     tool.description = "Get npm package metadata"
     tool.ainvoke = AsyncMock(
         return_value={
@@ -76,9 +76,9 @@ def mock_npm_get_package_tool():
 
 @pytest.fixture
 def mock_pypi_get_package_tool():
-    """Mock PyPI get_package MCP tool."""
+    """Mock PyPI get-pypi-package-details MCP tool."""
     tool = MagicMock(spec=BaseTool)
-    tool.name = "get_package"  # Same name as npm (differentiated by server)
+    tool.name = "get-pypi-package-details"  # Matches registry capability tool_name
     tool.description = "Get PyPI package information"
     tool.ainvoke = AsyncMock(
         return_value={

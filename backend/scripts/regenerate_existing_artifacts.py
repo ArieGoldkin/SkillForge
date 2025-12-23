@@ -35,7 +35,7 @@ from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -198,7 +198,8 @@ async def regenerate_fixture(
 
         # Run workflow
         logger.info(f"[{idx + 1}/{total}] Running workflow for: {doc['title']}")
-        result = await analysis_workflow.ainvoke(initial_state, config)
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(initial_state, config)
 
         # Update analysis status to complete
         async with AsyncSessionLocal() as session:

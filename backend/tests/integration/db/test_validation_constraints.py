@@ -38,29 +38,37 @@ async def test_constraint_complete_must_have_content(db_session):
 @pytest.mark.asyncio
 async def test_constraint_embedding_dimensions(db_session):
     """Test constraint prevents wrong embedding dimensions."""
-    repo = AnalysisRepository(session=db_session)
-    analysis_id = uuid.uuid4()
+    from tests.integration.conftest import create_complete_analysis
 
-    analysis = await repo.create_analysis(
-        analysis_id=analysis_id,
+    analysis_id = uuid.uuid4()
+    # Create a valid complete analysis with all required fields
+    analysis = await create_complete_analysis(
+        db_session,
+        id=analysis_id,
         url=f"https://example.com/embedding-test-{analysis_id}",
-        content_type="article",
-        status="complete",
+        content_embedding=[0.1] * 1536,  # Start with correct dimensions
     )
-    analysis.raw_content = "Test content"
-    analysis.extraction_metadata = {"title": "Test"}
     await db_session.commit()
 
-    # Try to set wrong dimension embedding - should fail
-    with pytest.raises(IntegrityError):
+    # Try to set wrong dimension embedding - should fail dimension check
+    # pgvector validates dimensions before constraint check, so we get DataError
+    # Use raw SQL with vector literal format for pgvector
+    # pgvector requires literal format: '[0.1,0.1,...]'::vector
+    from sqlalchemy.exc import DBAPIError
+    
+    with pytest.raises((IntegrityError, DBAPIError)):
+        # Convert list to PostgreSQL vector literal format
+        wrong_embedding_list = [0.1] * 768
+        wrong_embedding_str = "[" + ",".join(str(v) for v in wrong_embedding_list) + "]"
+        # Use f-string for vector literal (safe here - values are controlled)
         await db_session.execute(
             text(
-                """
+                f"""
                 UPDATE analyses 
-                SET content_embedding = :embedding::vector 
-                WHERE id = :id
+                SET content_embedding = '{wrong_embedding_str}'::vector 
+                WHERE id = :analysis_id
                 """
-            ).bindparams(embedding=[0.1] * 768, id=analysis_id)
+            ).bindparams(analysis_id=analysis_id)
         )
         await db_session.commit()
 

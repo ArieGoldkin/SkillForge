@@ -91,6 +91,53 @@ class WorkflowError(SkillForgeException):
     """
 
 
+class WorkflowStageError(SkillForgeException):
+    """Exception that preserves workflow stage context for error handling.
+
+    This exception wraps other exceptions to preserve the stage/node context
+    where the error occurred, allowing the orchestrator to emit stage-specific
+    error events instead of generic "workflow" stage errors.
+
+    Attributes:
+        stage: The workflow stage where the error occurred (e.g., "embedding", "supervisor_routing")
+        original_exception: The original exception that was wrapped
+
+    Example:
+        ```python
+        try:
+            result = await generate_embedding(content, analysis_id)
+        except Exception as e:
+            raise WorkflowStageError(
+                stage="embedding",
+                original_exception=e,
+                message=f"Embedding generation failed: {e}"
+            )
+        ```
+
+    """
+
+    def __init__(
+        self,
+        stage: str,
+        original_exception: BaseException | Exception,
+        message: str | None = None,
+    ):
+        """Initialize WorkflowStageError with stage context.
+
+        Args:
+            stage: The workflow stage where the error occurred
+            original_exception: The original exception that was wrapped
+            message: Optional custom error message (defaults to original exception message)
+
+        """
+        error_message = message or str(original_exception)
+        super().__init__(error_message)
+        self.stage = stage
+        self.original_exception = original_exception
+        # Preserve exception chain for debugging (__cause__)
+        self.__cause__ = original_exception
+
+
 class DatabaseError(SkillForgeException):
     """Exception raised when database operations fail.
 

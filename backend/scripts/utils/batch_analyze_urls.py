@@ -29,7 +29,7 @@ from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
 from app.services.extraction import JinaReader
-from app.domains.analysis.workflows.analysis import analysis_workflow
+from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
 
@@ -191,7 +191,8 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
             "extraction_metadata": extraction_metadata,
         }
 
-        result = await analysis_workflow.ainvoke(
+        workflow = create_analysis_workflow()
+        result = await workflow.ainvoke(
             initial_state,
             {"configurable": {"thread_id": analysis_id}}
         )
