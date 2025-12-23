@@ -8,6 +8,7 @@ the Context Engineering feedback loop.
 """
 
 import time
+from typing import Any, cast
 from uuid import UUID
 
 from app.core.logging import get_logger
@@ -18,6 +19,7 @@ from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import (
     get_agent_findings,
+    get_extraction_metadata,
     get_supervisor_decision,
 )
 from app.domains.analysis.workflows.tasks.aggregation import (
@@ -33,11 +35,21 @@ from app.domains.analysis.workflows.tasks.aggregation import (
     synthesize_with_llm,
     validate_and_parse_findings,
 )
+from app.domains.analysis.workflows.tasks.aggregation.data_sufficiency import (
+    calculate_data_sufficiency,
+    format_coverage_gaps_for_synthesis,
+)
+from app.domains.analysis.workflows.tasks.aggregation.grounding_validator import (
+    validate_grounding,
+)
+from app.domains.analysis.workflows.tasks.aggregation.source_content_extractor import (
+    extract_source_summary,
+)
 from app.domains.analysis.workflows.tasks.aggregation_fallback import (
     create_empty_aggregated_insights,
+    synthesize_trend_summary,
 )
 from app.domains.analysis.workflows.tasks.aggregation_helpers import (
-    calculate_coverage_score,
     detect_conflicts,
     detect_coverage_gaps,
 )
@@ -417,7 +429,7 @@ def _extract_fallback_summary(finding_data: dict) -> list[str]:
     return ["; ".join(summary_parts)] if summary_parts else []
 
 
-async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic requires many statements
+async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregation logic requires many branches and statements
     state: AnalysisState,
 ) -> dict[str, object]:
     """Aggregate agent findings implementation.
@@ -498,22 +510,52 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             empty_insights["agent_statuses"] = agent_statuses
             return {"aggregated_insights": empty_insights}
 
-        # Step 1.5: Detect coverage gaps and calculate coverage score
-        # Issue #299-304: Pass validated_findings to detect data availability gaps
-        # Fix: Pass selected_agents to only check selected agents, not all agents
-        coverage_gaps = detect_coverage_gaps(
+        # Issue #487: Abort if ALL agents report insufficient data
+        # Prevents hallucination when source has no implementable content (e.g., news articles)
+        all_insufficient = all(
+            finding.get("findings", {}).get("data_availability") == "insufficient"
+            for finding in validated_findings
+        )
+        if all_insufficient:
+            logger.error(
+                "workflow_all_agents_insufficient_data",
+                analysis_id=analysis_id,
+                agent_count=len(validated_findings),
+            )
+            msg = (
+                "Cannot generate implementation guide: Source content contains no "
+                "implementable code or technical patterns. All agents reported "
+                "insufficient data for analysis. Consider analyzing content with "
+                "code examples, architectural diagrams, or technical specifications."
+            )
+            raise ValueError(msg)
+
+        # Step 1.5: Calculate data sufficiency using weighted scoring (Issue #487)
+        # This provides more nuanced coverage analysis based on data_availability levels
+        # and recommends synthesis mode (normal/limited/fallback)
+        data_sufficiency_result = calculate_data_sufficiency(validated_findings)
+
+        # Use weighted coverage score and properly formatted gaps
+        coverage_score = data_sufficiency_result.coverage_score
+        coverage_gaps = format_coverage_gaps_for_synthesis(data_sufficiency_result.coverage_gaps)
+
+        # Also detect gaps for agents that didn't contribute at all
+        # (handles agents that were selected but produced no findings)
+        missing_agent_gaps = detect_coverage_gaps(
             contributing_agents=agent_types,
             agent_findings=validated_findings,
             selected_agents=selected_agents if selected_agents else None,
         )
-        coverage_score = calculate_coverage_score(agent_types)
+        # Combine gaps from data_sufficiency (limited/insufficient) with missing agent gaps
+        coverage_gaps.extend(missing_agent_gaps)
 
         logger.debug(
             "workflow_coverage_analysis",
             analysis_id=analysis_id,
             contributing_agents=len(agent_types),
-            coverage_score=coverage_score,
+            coverage_score=f"{coverage_score:.2%}",
             gaps_detected=len(coverage_gaps),
+            recommended_mode=data_sufficiency_result.recommended_mode,
         )
 
         # Step 2: Extract Quick Reference (before LLM synthesis for efficiency)
@@ -540,30 +582,112 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             conflicts_detected=len(conflicts),
         )
 
-        # Step 5: LLM Synthesis with tiered fallback chain (Issue #299-304)
-        # The new synthesize_with_llm NEVER raises exceptions - it falls back
-        # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
-        # Static fallback extracts content from findings, so it always completes.
-        aggregated_insights_dict = await synthesize_with_llm(
-            validated_findings=validated_findings,
-            conflicts=conflicts,
-            confidence_scores=confidence_scores,
-            analysis_id=analysis_id,
-        )
+        # Step 5: Extract source context for LLM grounding (Issue #487 - Hallucination Prevention)
+        # This provides the LLM with actual source content to prevent fabrication
+        source_context = None
+        raw_content = state.get("raw_content", "")
+        if raw_content:
+            extraction_metadata = get_extraction_metadata(state)
+            source_context = extract_source_summary(
+                raw_content=raw_content,
+                extraction_metadata=cast("dict[str, Any]", extraction_metadata),
+                max_chars=2000,  # Sufficient context without overwhelming token budget
+            )
+            logger.debug(
+                "source_context_extracted_for_grounding",
+                analysis_id=analysis_id,
+                title=source_context.get("title", "N/A"),
+                summary_length=len(source_context.get("summary", "")),
+                key_terms_count=len(source_context.get("key_terms", [])),
+            )
 
-        # Step 6: Post-processing and validation
+        # Step 6: LLM Synthesis - choose mode based on data sufficiency (Issue #487)
+        # If recommended_mode is "fallback", use trend-summary synthesis instead
+        # of normal synthesis to prevent hallucinating implementation details
+        if data_sufficiency_result.recommended_mode == "fallback":
+            logger.info(
+                "workflow_using_trend_summary_synthesis",
+                analysis_id=analysis_id,
+                coverage_score=f"{coverage_score:.2%}",
+                reason=data_sufficiency_result.recommendation_reason,
+            )
+            # Use trend-summary synthesis for low-coverage content
+            aggregated_insights_dict = await synthesize_trend_summary(
+                validated_findings=validated_findings,
+                analysis_id=analysis_id,
+                coverage_score=coverage_score,
+                source_context=source_context,
+            )
+        else:
+            # Normal synthesis with tiered fallback chain (Issue #299-304)
+            # The synthesize_with_llm NEVER raises exceptions - it falls back
+            # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
+            # Issue #487: Now includes source_context to prevent hallucinations
+            aggregated_insights_dict = await synthesize_with_llm(
+                validated_findings=validated_findings,
+                conflicts=conflicts,
+                confidence_scores=confidence_scores,
+                analysis_id=analysis_id,
+                source_context=source_context,
+            )
+
+        # Step 7: Post-processing and validation
         aggregated_insights_dict = validate_and_format_aggregated_insights(aggregated_insights_dict)
 
-        # Step 7: Add quick_reference to aggregated insights
+        # Step 7.5: Validate grounding to prevent hallucinations (Issue #487)
+        # Check if generated content is grounded in source material
+        if source_context and aggregated_insights_dict:
+            # Combine source title and summary for grounding check
+            source_text = source_context.get("summary", "") + " " + source_context.get("title", "")
+            generated_text = aggregated_insights_dict.get("executive_summary", "")
+
+            if source_text.strip() and generated_text.strip():
+                is_grounded, grounding_score, warnings = validate_grounding(
+                    source_content=source_text,
+                    generated_content=generated_text,
+                    min_overlap=0.15,  # 15% minimum overlap threshold
+                )
+
+                # Store grounding validation results in metadata for observability
+                grounding_metadata = {
+                    "is_grounded": is_grounded,
+                    "grounding_score": grounding_score,
+                    "warnings": warnings,
+                }
+
+                # Add to aggregated insights metadata
+                existing_metadata = cast(
+                    "dict[str, object]", aggregated_insights_dict.get("metadata", {})
+                )
+                existing_metadata["grounding_validation"] = grounding_metadata
+                aggregated_insights_dict["metadata"] = existing_metadata
+
+                # Log warning if low grounding detected (observability, not blocking)
+                if not is_grounded:
+                    logger.warning(
+                        "low_grounding_score_detected",
+                        grounding_score=grounding_score,
+                        analysis_id=str(analysis_id),
+                        warnings=warnings,
+                        recommended_action="review_synthesis_for_hallucinations",
+                    )
+                else:
+                    logger.info(
+                        "grounding_validation_passed",
+                        grounding_score=grounding_score,
+                        analysis_id=str(analysis_id),
+                    )
+
+        # Step 8: Add quick_reference to aggregated insights
         if quick_reference:
             aggregated_insights_dict["quick_reference"] = quick_reference.model_dump()
 
-        # Step 7.5: Add coverage gaps, coverage score, and agent_statuses
+        # Step 8.5: Add coverage gaps, coverage score, and agent_statuses
         aggregated_insights_dict["coverage_gaps"] = coverage_gaps
         aggregated_insights_dict["coverage_score"] = coverage_score
         aggregated_insights_dict["agent_statuses"] = agent_statuses
 
-        # Step 8: Calculate metadata using extracted function
+        # Step 9: Calculate metadata using extracted function
         aggregated_insights_dict = calculate_aggregation_metadata(
             validated_findings=validated_findings,
             agent_types=agent_types,
@@ -590,7 +714,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
             conflicts_resolved=conflicts_resolved_for_log,
         )
 
-        # Step 9: Store findings as memories for future recall (Issue #269)
+        # Step 10: Store findings as memories for future recall (Issue #269)
         # This enables the Context Engineering feedback loop
         stored_memories = await _store_findings_as_memories(
             analysis_id=analysis_id,
@@ -603,6 +727,14 @@ async def _aggregate_findings_impl(  # noqa: PLR0915 - Complex aggregation logic
         # Issue #299-304: Track synthesis status for debugging
         if "synthesis_status" not in metadata:
             metadata["synthesis_status"] = "success"
+        # Issue #487: Store data sufficiency recommendation for fallback logic
+        metadata["data_sufficiency"] = {
+            "coverage_score": data_sufficiency_result.coverage_score,
+            "recommended_mode": data_sufficiency_result.recommended_mode,
+            "recommendation_reason": data_sufficiency_result.recommendation_reason,
+            "agents_with_data": data_sufficiency_result.agents_with_data,
+            "total_agents": data_sufficiency_result.total_agents,
+        }
         aggregated_insights_dict["metadata"] = metadata
 
         # Return only updated fields, not entire state

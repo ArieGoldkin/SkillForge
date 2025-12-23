@@ -35,11 +35,28 @@ Generate a concise synthesis of the agent findings with:
 
 6. **Coverage Score** (0.0-1.0): How complete is this analysis?
 
+## SOURCE CONTENT (GROUNDING) - Issue #487 Hallucination Prevention
+Title: {source_title}
+Key Terms: {source_key_terms}
+Content Summary:
+{source_summary}
+
+## CRITICAL GROUNDING RULES
+1. **ONLY discuss technologies, products, and concepts mentioned in the source above**
+2. If the source is about "Alibaba Qwen3-Next", do NOT write about "Anthropic Claude"
+3. If agents report insufficient data, acknowledge this limitation honestly
+4. Do NOT hallucinate implementation details not found in source
+5. When in doubt, say "The source does not provide implementation details for this"
+
 ## Guidelines
+- Answer ONLY using information from the source content + agent findings below
+- Do NOT fabricate technologies, APIs, or implementation details not mentioned in source
 - Be concise but comprehensive
 - Prioritize actionable insights over theoretical discussion
 - Highlight security concerns prominently
 - Include specific code references where relevant
+- If agent findings are minimal, acknowledge data limitations honestly
+- It's better to say "No implementation patterns found" than to hallucinate details
 
 ## AGENTS PROVIDED (8 specialized analysts):
 1. Tech Comparator - Technology comparisons and alternatives
@@ -110,6 +127,15 @@ Return valid JSON matching the CoreSynthesisSchema with fields:
 
 LEARNING_SYNTHESIS_PROMPT = """You are creating educational content from technical analysis.
 
+## SOURCE CONTENT (GROUNDING) - Issue #487 Hallucination Prevention
+Title: {source_title}
+Key Terms: {source_key_terms}
+Content Summary:
+{source_summary}
+
+## CRITICAL: Only create learning materials about concepts IN THE SOURCE ABOVE
+Do NOT create exercises about technologies not mentioned in the source.
+
 ## Your Task
 Generate tutor-ready learning materials for the LearningSynthesisSchema.
 
@@ -174,6 +200,15 @@ Field names, counts, and string patterns must match EXACTLY or validation will f
 # ============================================================================
 
 DOCS_SYNTHESIS_PROMPT = """You are creating documentation for developers and AI assistants.
+
+## SOURCE CONTENT (GROUNDING) - Issue #487 Hallucination Prevention
+Title: {source_title}
+Key Terms: {source_key_terms}
+Content Summary:
+{source_summary}
+
+## CRITICAL: Only document technologies IN THE SOURCE ABOVE
+Do NOT create documentation about APIs, frameworks, or tools not mentioned in the source.
 
 ## Your Task
 Generate developer-friendly documentation for the DocsSynthesisSchema.
@@ -255,56 +290,116 @@ Field names and structures must match EXACTLY or validation will fail.
 def build_core_prompt(
     compressed_findings: list[dict[str, Any]],
     conflicts: list[dict[str, Any]],
+    source_context: dict[str, Any] | None = None,
 ) -> str:
     """Build the Phase 1 (Core) synthesis prompt.
 
     Args:
         compressed_findings: Compressed agent findings with key insights
         conflicts: Detected conflicts between agents
+        source_context: Optional source content for LLM grounding (Issue #487)
+            Expected keys: title, summary, key_terms
 
     Returns:
-        Formatted prompt string with findings and conflicts inserted
+        Formatted prompt string with findings, conflicts, and source context inserted
 
     """
     findings_text = _format_compressed_findings(compressed_findings)
     conflicts_text = _format_conflicts(conflicts)
+    source_title, source_summary, source_key_terms = _format_source_context(source_context)
     return CORE_SYNTHESIS_PROMPT.format(
         agent_findings=findings_text,
         conflicts=conflicts_text,
+        source_title=source_title,
+        source_summary=source_summary,
+        source_key_terms=source_key_terms,
     )
 
 
-def build_learning_prompt(compressed_findings: list[dict[str, Any]]) -> str:
+def build_learning_prompt(
+    compressed_findings: list[dict[str, Any]],
+    source_context: dict[str, Any] | None = None,
+) -> str:
     """Build the Phase 2 (Learning) synthesis prompt.
 
     Args:
         compressed_findings: Compressed agent findings with key insights
+        source_context: Optional source content for LLM grounding (Issue #487)
 
     Returns:
-        Formatted prompt string with findings inserted
+        Formatted prompt string with findings and source context inserted
 
     """
     findings_text = _format_compressed_findings(compressed_findings)
-    return LEARNING_SYNTHESIS_PROMPT.format(agent_findings=findings_text)
+    source_title, source_summary, source_key_terms = _format_source_context(source_context)
+    return LEARNING_SYNTHESIS_PROMPT.format(
+        agent_findings=findings_text,
+        source_title=source_title,
+        source_summary=source_summary,
+        source_key_terms=source_key_terms,
+    )
 
 
-def build_docs_prompt(compressed_findings: list[dict[str, Any]]) -> str:
+def build_docs_prompt(
+    compressed_findings: list[dict[str, Any]],
+    source_context: dict[str, Any] | None = None,
+) -> str:
     """Build the Phase 3 (Docs) synthesis prompt.
 
     Args:
         compressed_findings: Compressed agent findings with key insights
+        source_context: Optional source content for LLM grounding (Issue #487)
 
     Returns:
-        Formatted prompt string with findings inserted
+        Formatted prompt string with findings and source context inserted
 
     """
     findings_text = _format_compressed_findings(compressed_findings)
-    return DOCS_SYNTHESIS_PROMPT.format(agent_findings=findings_text)
+    source_title, source_summary, source_key_terms = _format_source_context(source_context)
+    return DOCS_SYNTHESIS_PROMPT.format(
+        agent_findings=findings_text,
+        source_title=source_title,
+        source_summary=source_summary,
+        source_key_terms=source_key_terms,
+    )
 
 
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
+
+def _format_source_context(
+    source_context: dict[str, Any] | None,
+) -> tuple[str, str, str]:
+    """Format source context for prompt insertion.
+
+    Issue #487: Extracts and formats source content for LLM grounding
+    to prevent hallucinations.
+
+    Args:
+        source_context: Dict with title, summary, key_terms from source_content_extractor
+            or None if not available
+
+    Returns:
+        Tuple of (title, summary, key_terms_str) for prompt formatting
+
+    """
+    if not source_context:
+        return (
+            "Not available",
+            "Source content not provided - base synthesis on agent findings only.",
+            "N/A",
+        )
+
+    title = source_context.get("title", "Untitled")
+    summary = source_context.get("summary", "No summary available.")
+    key_terms = source_context.get("key_terms", [])
+
+    # Format key terms as comma-separated string
+    key_terms_str = ", ".join(key_terms[:15]) if key_terms else "N/A"
+
+    return (title, summary, key_terms_str)
 
 
 def _format_compressed_findings(findings: list[dict[str, Any]]) -> str:
