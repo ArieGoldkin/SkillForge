@@ -203,35 +203,69 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: |
-          # Copy template as base
-          cp .env.test.example .env.test
-
-          # Inject API keys from GitHub Secrets
-          cat >> .env.test << EOF
+          # Create comprehensive .env.test for CI (lightweight E2E mode)
+          cat > .env.test << EOF
+          # =============================================================================
+          # CI Test Environment Configuration (Lightweight E2E Mode)
+          # =============================================================================
 
           # =============================================================================
-          # API Keys (Injected from GitHub Secrets)
+          # Database Configuration
+          # =============================================================================
+          POSTGRES_USER=dev
+          POSTGRES_PASSWORD=dev
+          POSTGRES_DB=skillforge-test
+
+          # =============================================================================
+          # Redis Configuration
+          # =============================================================================
+          REDIS_PASSWORD=redis-dev
+
+          # =============================================================================
+          # LLM API Keys (From GitHub Secrets)
           # =============================================================================
           OPENAI_API_KEY=$OPENAI_API_KEY
           JINA_API_KEY=$JINA_API_KEY
 
           # =============================================================================
-          # CI/CD Overrides (Lightweight E2E)
+          # Langfuse Observability (Disabled for lightweight E2E)
           # =============================================================================
+          LANGFUSE_ENABLED=false
+          LANGFUSE_HOST=http://langfuse-web:3000
+
+          # Langfuse Infrastructure (for docker-compose services)
+          LANGFUSE_POSTGRES_USER=langfuse
+          LANGFUSE_POSTGRES_PASSWORD=langfuse
+          LANGFUSE_POSTGRES_DB=langfuse
+          LANGFUSE_REDIS_PASSWORD=redis-dev
+          CLICKHOUSE_USER=default
+          CLICKHOUSE_PASSWORD=langfuse
+          MINIO_ROOT_USER=minioadmin
+          MINIO_ROOT_PASSWORD=minioadmin
+
+          # =============================================================================
+          # Application Configuration
+          # =============================================================================
+          LLM_MODEL=gpt-4o-mini
           ENVIRONMENT=test
           LOG_LEVEL=INFO
 
-          # Disable Langfuse observability (not needed for E2E tests)
-          LANGFUSE_ENABLED=false
+          # =============================================================================
+          # Security (Test Environment)
+          # =============================================================================
+          NEXTAUTH_SECRET=test-secret-ci-e2e
+          NEXTAUTH_SALT=test-salt-ci-e2e
+          LANGFUSE_ENCRYPTION_KEY=test-key-ci-e2e
+          LANGFUSE_INIT_USER_PASSWORD=test
 
-          # Disable workflow execution (no LLM calls)
+          # =============================================================================
+          # Workflow Control (Lightweight Mode)
+          # =============================================================================
           SKILLFORGE_E2E_DISABLE_WORKFLOW=true
-
-          # Use deterministic embeddings (no API calls)
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS=true
           EOF
 
-          echo "✓ Created .env.test with API keys from GitHub Secrets"
+          echo "✓ Created comprehensive .env.test for CI lightweight E2E mode"
 
       - name: Build and start test environment (lightweight mode)
         run: |
