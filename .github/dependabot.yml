@@ -11,12 +11,8 @@ updates:
     target-branch: "dev"
     versioning-strategy: "increase"
     open-pull-requests-limit: 10
-    reviewers:
-      - "ArieGoldkin"
-      - "yonatangross"
     labels:
       - "dependencies"
-      - "backend"
     commit-message:
       prefix: "chore(backend)"
       include: "scope"
@@ -48,12 +44,8 @@ updates:
       time: "09:00"
     target-branch: "dev"
     open-pull-requests-limit: 10
-    reviewers:
-      - "ArieGoldkin"
-      - "yonatangross"
     labels:
       - "dependencies"
-      - "frontend"
     commit-message:
       prefix: "chore(frontend)"
       include: "scope"
@@ -88,9 +80,6 @@ updates:
       time: "09:00"
     target-branch: "dev"
     open-pull-requests-limit: 5
-    reviewers:
-      - "ArieGoldkin"
-      - "yonatangross"
     labels:
       - "dependencies"
       - "ci/cd"

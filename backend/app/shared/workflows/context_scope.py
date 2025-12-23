@@ -253,10 +253,10 @@ def build_scoped_context(
             )
         # Also inject coverage summary and content_signals if needed
         content_signals = supervisor_decision.get("content_signals")
-        if isinstance(content_signals, dict) and (
-            coverage := content_signals.get("coverage_summary")
-        ):
-            scoped_state["content_coverage"] = coverage
+        if isinstance(content_signals, dict):
+            coverage = content_signals.get("coverage_summary")
+            if coverage:
+                scoped_state["content_coverage"] = coverage
         # Issue #299-304: Inject full content_signals for comparison-aware thresholds
         if isinstance(content_signals, dict) and "content_signals" in scope.include:
             scoped_state["content_signals"] = content_signals

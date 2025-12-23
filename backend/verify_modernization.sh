@@ -17,7 +17,7 @@ echo "   ✓ Lint check completed (93 remaining issues - see RUFF_MODERNIZATION_
 echo ""
 
 echo "3. Type check..."
-poetry run ty check app/ --exclude "app/evaluation/*" > /dev/null 2>&1 && echo "   ✓ Type check passed (7 warnings)" || echo "   ✓ Type check completed"
+poetry run ty check app/ > /dev/null 2>&1 && echo "   ✓ Type check passed (7 warnings)" || echo "   ✓ Type check completed"
 echo ""
 
 echo "4. Statistics..."

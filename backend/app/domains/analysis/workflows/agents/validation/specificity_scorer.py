@@ -7,7 +7,9 @@ This module measures how specific and quantifiable agent outputs are by:
 - Providing detailed breakdown for monitoring and improvement
 
 Usage:
-    from app.domains.analysis.workflows.agents.validation.specificity_scorer import SpecificityScorer
+    from app.domains.analysis.workflows.agents.validation.specificity_scorer import (
+        SpecificityScorer
+    )
 
     scorer = SpecificityScorer()
     result = scorer.score_output(agent_findings, agent_type="performance_analyst")
@@ -447,7 +449,11 @@ class SpecificityScorer:
                     compliant += 1
 
         # Return compliance ratio
-        return compliant / total if total > 0 else 1.0
+        # Guard clause prevents division by zero, but type checker sees total could be 0/1/2
+        # This is a false positive - the if statement prevents actual division by zero
+        if total > 0:
+            return compliant / total  # ty: ignore[division-by-zero] - Guard clause ensures total > 0
+        return 1.0
 
     def _has_numeric_with_unit(self, text: str) -> bool:
         """Check if text contains a numeric value with units.
