@@ -199,12 +199,23 @@ jobs:
 
       - name: Create .env.test from template (lightweight mode)
         working-directory: ./backend
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
         run: |
           # Copy template as base
           cp .env.test.example .env.test
 
-          # Append minimal CI configuration for lightweight tests
-          cat >> .env.test << 'EOF'
+          # Inject API keys from GitHub Secrets
+          cat >> .env.test << EOF
+
+          # =============================================================================
+          # API Keys (Injected from GitHub Secrets)
+          # =============================================================================
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          JINA_API_KEY=${JINA_API_KEY}
+          LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
 
           # =============================================================================
           # CI/CD Overrides (Lightweight E2E)
@@ -219,7 +230,7 @@ jobs:
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS=true
           EOF
 
-          echo "✓ Created .env.test for lightweight E2E mode"
+          echo "✓ Created .env.test with API keys from GitHub Secrets"
 
       - name: Build and start test environment (lightweight mode)
         run: |
