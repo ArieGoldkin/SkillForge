@@ -88,7 +88,8 @@ class CoreSynthesisSchema(BaseModel):
 
     cross_domain_connections: list[CrossDomainConnection] = Field(
         description=(
-            "Connections identified between different analysis domains (e.g., security + performance). "
+            "Connections identified between different analysis domains "
+            "(e.g., security + performance). "
             "Each connection specifies: two domains, the relationship/trade-off, agents involved. "
             "Reveals non-obvious insights from multi-agent collaboration. "
             "Empty list if no cross-domain patterns found."

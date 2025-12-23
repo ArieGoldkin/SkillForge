@@ -1224,7 +1224,8 @@ class LLMBenchmark:
         if cost_winner and cost_winner != overall_winner:
             # Overall winner is not cheapest
             rec_parts.append(
-                f"Note: {cost_winner} is cheaper but {overall_winner} offers better overall performance"
+                f"Note: {cost_winner} is cheaper but {overall_winner} offers better "
+                f"overall performance"
             )
         elif accuracy_winner and accuracy_winner == overall_winner:
             rec_parts.append("Best accuracy with competitive cost")

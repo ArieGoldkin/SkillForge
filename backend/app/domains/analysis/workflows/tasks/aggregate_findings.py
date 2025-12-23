@@ -140,7 +140,10 @@ async def _handle_aggregation_error(
         agent_count = 0
 
     if agent_count > 0:
-        exec_summary = f"Synthesized findings from {agent_count} agents. LLM synthesis failed but basic findings are available."
+        exec_summary = (
+            f"Synthesized findings from {agent_count} agents. "
+            f"LLM synthesis failed but basic findings are available."
+        )
     else:
         exec_summary = f"Analysis could not be completed due to error: {type(error).__name__}"
 

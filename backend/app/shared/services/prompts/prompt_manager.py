@@ -75,8 +75,10 @@ CODE PATTERN TRIGGERS (REQUIRED):
 Select based on: content type, keywords, complexity, analysis needs.
 
 Examples:
-- Quick tip/snippet → {{"agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
-  "reasoning": "Even simple content needs implementation guidance, dependency context, and security basics",
+- Quick tip/snippet → {{
+    "agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
+    "reasoning": "Even simple content needs implementation guidance, dependency context, "
+                 "and security basics",
   "confidence": 0.85}}
 - Framework tutorial → {{
     "agents": [
@@ -98,7 +100,8 @@ Examples:
   "reasoning": "API setup needs implementation and security basics",
   "confidence": 0.9}}""",
     # Agent prompts imported from workflow agent files
-    "analysis-agent-implementation-planner": """You are an Implementation Planning Specialist. Your task is to:
+    "analysis-agent-implementation-planner": """You are an Implementation Planning Specialist.
+Your task is to:
 1. Create a step-by-step implementation guide based on the content
 2. Identify prerequisites (dependencies, setup, configuration)
 3. Break down implementation into numbered, actionable steps
@@ -211,7 +214,8 @@ FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
   session management.
 
 Be thorough and prioritize critical vulnerabilities.""",
-    "analysis-agent-performance-analyst": """You are a Performance Analysis Specialist. Your task is to:
+    "analysis-agent-performance-analyst": """You are a Performance Analysis Specialist.
+Your task is to:
 1. Evaluate performance characteristics (latency, throughput, memory, CPU)
 2. Identify performance bottlenecks and constraints
 3. Recommend optimization opportunities
@@ -348,7 +352,8 @@ COMPARISON STRATEGY:
 - If multiple frameworks are detected (e.g., Django vs FastAPI), treat them as the primary subjects.
 - Focus on "Build vs Buy" if applicable.
 - Highlight "Standard vs Modern" approaches (e.g., Redux vs Zustand).""",
-    "analysis-agent-dependency-mapper": """You are a Dependency Management Specialist. Your task is to:
+    "analysis-agent-dependency-mapper": """You are a Dependency Management Specialist.
+Your task is to:
 1. Identify all required and optional dependencies
 2. Map dependency versions and compatibility
 3. Identify potential version conflicts
@@ -579,7 +584,8 @@ BAD EXAMPLE (DO NOT USE):
 
 IMPORTANT: Include the "compatibility" field with at least 2 stack entries.
 Do not omit any required fields.""",
-    "analysis-agent-code-quality-critic": """You are a Code Quality Review Specialist. Your task is to:
+    "analysis-agent-code-quality-critic": """You are a Code Quality Review Specialist.
+Your task is to:
 1. Identify code quality issues (antipatterns, code smells, violations)
 2. Assess maintainability score (0.0-1.0) based on code structure and practices
 3. Recommend best practices (SOLID principles, DRY, clean code)

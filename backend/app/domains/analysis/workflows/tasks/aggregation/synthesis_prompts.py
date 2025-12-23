@@ -13,7 +13,8 @@ from typing import Any
 # PHASE 1: CORE SYNTHESIS (~1K tokens)
 # ============================================================================
 
-CORE_SYNTHESIS_PROMPT = """You are synthesizing technical analysis findings into an executive summary.
+CORE_SYNTHESIS_PROMPT = """You are synthesizing technical analysis findings into an
+executive summary.
 
 ## Your Task
 Generate a concise synthesis of the agent findings with:
@@ -95,7 +96,8 @@ It's better to say "No security patterns detected" than to fabricate risks.
 Return valid JSON matching the CoreSynthesisSchema with fields:
 - executive_summary (string)
 - key_findings (list of strings)
-- synthesis (object with technical_analysis, implementation_guidance, risk_assessment, recommendations)
+- synthesis (object with technical_analysis, implementation_guidance, risk_assessment,
+  recommendations)
 - conflicts_resolved (list of objects)
 - coverage_gaps (list of objects)
 - coverage_score (float 0.0-1.0)
@@ -137,7 +139,8 @@ Each exercise object must have these EXACT fields:
 - mastery_checklist: List of 5-10 "I can..." statements (strings)
 
 ## CRITICAL FIELD VALUE CONSTRAINTS
-- complexity_level and difficulty MUST be exactly: "Beginner", "Intermediate", "Advanced", or "Expert"
+- complexity_level and difficulty MUST be exactly: "Beginner", "Intermediate",
+  "Advanced", or "Expert"."
 - NOT: "beginner", "easy", "medium", "hard", "simple", "1", "2", etc.
 - correct_answer MUST exactly match one option or validation fails
 

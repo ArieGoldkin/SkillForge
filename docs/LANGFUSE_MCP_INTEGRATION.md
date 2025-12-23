@@ -910,6 +910,7 @@ Add the following section to your `CLAUDE.md` file to enable automatic Langfuse 
 - "migrate prompts from code"
 - "optimize prompt costs"
 - "test prompt variations"
+```
 
 ### Example Usage
 
@@ -928,7 +929,7 @@ Claude: [Uses langfuse.list_prompts, filters by "agent_" prefix]
 
 The Langfuse MCP server works alongside the Python `PromptManager` service:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                      PROMPT FLOW                                │
 ├─────────────────────────────────────────────────────────────────┤
@@ -1327,6 +1328,8 @@ docker-compose restart backend
 - Link changes to GitHub issues/PRs
 - Use version labels to track rollouts
 
+```
+
 ---
 
 ## Appendix: MCP Architecture Details
@@ -1335,7 +1338,7 @@ docker-compose restart backend
 
 **Model Context Protocol (MCP)** is a standardized way for AI models to interact with external tools and data sources. It uses stdio (stdin/stdout) for communication between the Claude Code CLI and MCP servers.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                       MCP PROTOCOL LAYERS                              │
 ├────────────────────────────────────────────────────────────────────────┤

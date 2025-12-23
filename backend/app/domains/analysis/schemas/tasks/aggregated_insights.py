@@ -153,7 +153,8 @@ class TLDRSection(BaseModel):
             "2-3 sentence overview of what this content teaches. "
             "Focus on the 'what' and 'why', not the 'how'. "
             "Example: 'This guide teaches vector database optimization for RAG systems. "
-            "You will learn how to reduce latency by 60% through proper indexing and chunking strategies.'"
+            "You will learn how to reduce latency by 60% through proper indexing and "
+            "chunking strategies.'"
         ),
         min_length=50,
         max_length=500,
@@ -400,8 +401,10 @@ class MermaidDiagram(BaseModel):
     type: str = Field(
         description=(
             "Mermaid diagram type. "
-            "Options: 'flowchart', 'sequence', 'class', 'state', 'er' (entity-relationship), 'gantt'. "
-            "Choose based on what you're explaining (flow=process, sequence=interactions, class=structure)."
+            "Options: 'flowchart', 'sequence', 'class', 'state', 'er' "
+            "(entity-relationship), 'gantt'. "
+            "Choose based on what you're explaining "
+            "(flow=process, sequence=interactions, class=structure)."
         ),
         pattern="^(flowchart|sequence|class|state|er|gantt)$",
     )
@@ -483,7 +486,8 @@ class GlossaryTerm(BaseModel):
             "Clear, concise definition (1-2 sentences). "
             "Avoid circular definitions - explain in simpler terms. "
             "Example: 'RAG (Retrieval Augmented Generation): A technique that enhances LLM "
-            "responses by retrieving relevant context from a knowledge base before generating output.'"
+            "responses by retrieving relevant context from a knowledge base before generating "
+            "output.'"
         ),
         min_length=20,
         max_length=500,

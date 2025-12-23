@@ -351,7 +351,9 @@ Do NOT include any explanation or text, only the numeric scores."""
         max_content_length = 300  # Truncate to save tokens
 
         chunks_text = "\n\n".join(
-            f"[Document {i + 1}]\n{result.content[:max_content_length]}{'...' if len(result.content) > max_content_length else ''}"
+            f"[Document {i + 1}]\n"
+            f"{result.content[:max_content_length]}"
+            f"{'...' if len(result.content) > max_content_length else ''}"
             for i, result in enumerate(results)
         )
 

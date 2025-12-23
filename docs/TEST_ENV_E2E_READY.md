@@ -85,7 +85,7 @@ cd frontend
 
 These are loaded from `frontend/.env.test`:
 
-- `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:8501)
+- `VITE_API_URL` - Backend API URL (default: http://localhost:8501)
 - `LANGFUSE_URL` - Langfuse UI URL (default: http://localhost:3001)
 - `LANGFUSE_EMAIL` - Langfuse login email (required for Langfuse tests)
 - `LANGFUSE_PASSWORD` - Langfuse login password (required for Langfuse tests)

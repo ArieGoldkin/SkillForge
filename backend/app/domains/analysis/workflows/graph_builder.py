@@ -476,7 +476,8 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     quality_scores_raw = state.get("quality_scores", {})
     retry_count = int(state.get("quality_gate_retry_count", 0) or 0)
 
-    # Extract score values from nested structure (e.g., {"relevance": {"score": 0.3, "comment": "..."}})
+    # Extract score values from nested structure
+    # (e.g., {"relevance": {"score": 0.3, "comment": "..."}})
     # to flat structure (e.g., {"relevance": 0.3})
     quality_scores_flat: dict[str, float] = {}
     if quality_scores_raw:
@@ -517,7 +518,9 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     # Return quality metadata but don't mark as failed - let artifact generation continue
     return {
         "quality_gate_passed": False,
-        "quality_gate_warning": f"Low quality (avg_score={avg_score:.2f}) after {retry_count} retries",
+        "quality_gate_warning": (
+            f"Low quality (avg_score={avg_score:.2f}) after {retry_count} retries"
+        ),
     }
 
 

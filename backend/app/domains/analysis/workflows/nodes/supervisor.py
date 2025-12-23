@@ -328,7 +328,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             has_benchmarks=content_signals.has_benchmarks,
             has_security=content_signals.has_security_patterns,
             has_architecture=content_signals.has_architecture,
-            has_comparisons=content_signals.has_comparisons,  # Issue #299-304: Log comparison detection
+            # Issue #299-304: Log comparison detection
+            has_comparisons=content_signals.has_comparisons,
             coverage_summary=content_signals.get_coverage_summary(),
         )
 
@@ -588,7 +589,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             # Content signals for downstream agents and synthesis
             "content_signals": {
                 "richness_score": content_signals.content_richness_score,
-                "detected_genre": content_signals.detected_genre.value,  # Issue #442: Must match agent reads
+                # Issue #442: Must match agent reads
+                "detected_genre": content_signals.detected_genre.value,
                 "word_count": content_signals.word_count,
                 "coverage_summary": content_signals.get_coverage_summary(),
                 "has_code": content_signals.has_code_patterns,

@@ -132,7 +132,8 @@ async def lifespan(app: FastAPI):
         if not public_key or not secret_key:
             error_msg = (
                 "Langfuse is enabled but credentials are missing. "
-                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with LANGFUSE_ENABLED=false"
+                "Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY or disable with "
+                "LANGFUSE_ENABLED=false"
             )
             logger.error(
                 "langfuse_credentials_missing",

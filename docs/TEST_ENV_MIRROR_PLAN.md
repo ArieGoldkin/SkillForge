@@ -336,7 +336,7 @@ services:
     ports:
       - "5174:5173"
     environment:
-      VITE_API_BASE_URL: http://localhost:8501
+      VITE_API_URL: http://localhost:8501
 
   # Langfuse services (full stack like dev)
   langfuse-db:

@@ -79,7 +79,7 @@ npm run test:e2e -- e2e/specs/error-handling.spec.ts
 
 All required environment variables are properly configured:
 
-- ✅ `VITE_API_BASE_URL=http://localhost:8501`
+- ✅ `VITE_API_URL=http://localhost:8501`
 - ✅ `LANGFUSE_URL=http://localhost:3001`
 - ✅ `LANGFUSE_EMAIL` (configured)
 - ✅ `LANGFUSE_PASSWORD` (configured)

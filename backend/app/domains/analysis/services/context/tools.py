@@ -71,7 +71,10 @@ async def load_artifact(uri: str, section: str = "summary", max_chars: int | Non
     try:
         section_enum = ArtifactSection(section.lower())
     except ValueError:
-        return f"Invalid section '{section}'. Valid options: summary, full, first_n, code_blocks, headings"
+        return (
+            f"Invalid section '{section}'. "
+            f"Valid options: summary, full, first_n, code_blocks, headings"
+        )
 
     logger.info(
         "load_artifact_called",
@@ -100,7 +103,10 @@ async def load_artifact(uri: str, section: str = "summary", max_chars: int | Non
 
         except InvalidURIError as e:
             logger.warning("load_artifact_invalid_uri", uri=uri, error=str(e))
-            return f"Error: Invalid artifact URI format. Expected 'analysis://{{id}}/content'. Got: {uri}"
+            return (
+                f"Error: Invalid artifact URI format. "
+                f"Expected 'analysis://{{id}}/content'. Got: {uri}"
+            )
 
         except ArtifactNotFoundError as e:
             logger.warning("load_artifact_not_found", uri=uri, error=str(e))

@@ -293,7 +293,8 @@ class WorkflowOrchestrator:
                 # Get trace_id for frontend feedback submission (Issue #385)
                 trace_id = get_current_trace_id()
 
-                # Re-query artifact for SSE event (artifact variable from validation is out of scope)
+                # Re-query artifact for SSE event
+                # (artifact variable from validation is out of scope)
                 async with AsyncSessionLocal() as db_session:
                     repository = ArtifactRepository(session=db_session)
                     artifact = await repository.get_artifact_by_analysis_id(analysis_id)

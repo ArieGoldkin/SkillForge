@@ -182,7 +182,10 @@ async def _submit_artifact_quality_scores(
         input_summary = aggregated_insights.get("summary", "")
         if not input_summary:
             # Fallback to a generic description if summary is missing
-            input_summary = "Generate a comprehensive technical implementation guide from the aggregated agent findings."
+            input_summary = (
+                "Generate a comprehensive technical implementation guide from the "
+                "aggregated agent findings."
+            )
 
         logger.info(
             "artifact_g_eval_scoring_started",

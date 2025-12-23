@@ -345,7 +345,8 @@ class MCPClientPool:
                     )
 
                 # Create client with 0.2 features
-                # use_tool_name_prefix=True: Tools get prefixed with server name (e.g., github_get_repo)
+                # use_tool_name_prefix=True: Tools get prefixed with server name
+                # (e.g., github_get_repo)
                 self._client = MultiServerMCPClient(
                     client_config,
                     use_tool_name_prefix=True,  # 0.2 feature: built-in server prefixing

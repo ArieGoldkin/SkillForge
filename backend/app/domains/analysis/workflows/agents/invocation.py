@@ -35,7 +35,8 @@ async def invoke_agent(
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
     agent_type: str,
-    timeout: float = AGENT_TIMEOUT,  # For logging/reference; step_timeout handles actual timeout  # noqa: ASYNC109 - Parameter for logging, not timeout control
+    # For logging/reference; step_timeout handles actual timeout
+    timeout: float = AGENT_TIMEOUT  # noqa: ASYNC109
 ) -> dict[str, object]:
     """Invoke agent using ainvoke - timeout handled by LangGraph's step_timeout.
 

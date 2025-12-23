@@ -315,7 +315,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             )
         else:
             # Gate failed - emit error event
-            error_message = f"Quality gate failed - average score {avg_score:.2f} below threshold {effective_threshold:.2f}"
+            error_message = (
+                f"Quality gate failed - average score {avg_score:.2f} below threshold "
+                f"{effective_threshold:.2f}"
+            )
             if failed_aspects:
                 error_message += f". Failed aspects: {', '.join(failed_aspects)}"
 
@@ -361,7 +364,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                     name="g_eval_overall",
                     value=avg_score,
                     data_type="NUMERIC",
-                    comment=f"Gate {'passed' if gate_passed else 'failed'} (threshold: {effective_threshold})",
+                    comment=(
+                        f"Gate {'passed' if gate_passed else 'failed'} "
+                        f"(threshold: {effective_threshold})"
+                    ),
                 )
 
                 # Flush to ensure scores are sent immediately
@@ -483,7 +489,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                         name="latency_seconds",
                         value=duration,
                         data_type="NUMERIC",
-                        comment=f"Quality gate evaluation failed after {duration:.2f}s: {type(e).__name__}",
+                        comment=(
+                            f"Quality gate evaluation failed after {duration:.2f}s: "
+                            f"{type(e).__name__}"
+                        ),
                     )
                     langfuse_service.sdk_client.flush()
             except Exception as score_error:  # noqa: BLE001 - Graceful degradation

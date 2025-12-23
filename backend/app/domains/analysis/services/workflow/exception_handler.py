@@ -63,7 +63,8 @@ async def handle_workflow_exception(
         return
 
     # Check if this is an execution GeneratorExit (error case)
-    # We already checked for cleanup above, so if it's a GeneratorExit and not cleanup, it's execution
+    # We already checked for cleanup above, so if it's a GeneratorExit and not cleanup,
+    # it's execution
     if is_generator_exit_type(exc):
         # Execution GeneratorExit - real error, handle it
         logger.error(
