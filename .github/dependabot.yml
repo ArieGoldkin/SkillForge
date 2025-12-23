@@ -13,7 +13,6 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "backend"
     commit-message:
       prefix: "chore(backend)"
       include: "scope"
@@ -47,7 +46,6 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
-      - "frontend"
     commit-message:
       prefix: "chore(frontend)"
       include: "scope"
