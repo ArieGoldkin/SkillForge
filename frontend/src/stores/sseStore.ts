@@ -144,6 +144,8 @@ export interface SSEStoreState {
   // Polling fallback state
   isPolling: boolean
   _pollingIntervalId: ReturnType<typeof setInterval> | null
+  // Telemetry - track validation failures (Issue #489)
+  _validationFailures: number
 }
 
 export interface SSEStoreActions {
@@ -159,6 +161,10 @@ export interface SSEStoreActions {
     failedStagesCount?: number
     analysisMetadata?: AnalysisMetadata | null
   }) => void
+  // REST API reconciliation actions (Issue #489)
+  clearError: () => void
+  setComplete: (value: boolean) => void
+  reconcileComplete: () => void // Atomic: clears error AND sets complete in single update
   // Internal actions - used by helpers
   _addEvent: (event: SSEEvent) => void
   _setInternalState: (partial: Partial<SSEStoreState>) => void
@@ -219,6 +225,8 @@ const baseStore = create<SSEStore>((set, get) => ({
   // Polling fallback state
   isPolling: false,
   _pollingIntervalId: null,
+  // Telemetry (Issue #489)
+  _validationFailures: 0,
 
   connect: (analysisId: string) => {
     // Track connection start time for timeout warnings (Issue #399)
@@ -283,6 +291,8 @@ const baseStore = create<SSEStore>((set, get) => ({
       // Clear polling state on reset
       isPolling: false,
       _pollingIntervalId: null,
+      // Clear telemetry (Issue #489)
+      _validationFailures: 0,
     })
   },
 
@@ -303,6 +313,33 @@ const baseStore = create<SSEStore>((set, get) => ({
       analysisMetadata:
         meta.analysisMetadata !== undefined ? meta.analysisMetadata : state.analysisMetadata,
     }))
+  },
+
+  /**
+   * Clear error state (Issue #489 - REST API reconciliation)
+   * Called when REST API confirms success but SSE showed error
+   */
+  clearError: () => {
+    set({ error: null })
+  },
+
+  /**
+   * Set completion state (Issue #489 - REST API reconciliation)
+   * Called when REST API confirms completion
+   */
+  setComplete: (value: boolean) => {
+    set({ isComplete: value })
+  },
+
+  /**
+   * Atomic reconciliation action (Issue #489 - Race condition fix)
+   * Clears error AND sets complete in a single store update to prevent
+   * intermediate state where error is cleared but isComplete is still false.
+   * This is critical because components subscribed to the store would otherwise
+   * see an inconsistent state between two separate set() calls.
+   */
+  reconcileComplete: () => {
+    set({ error: null, isComplete: true })
   },
 
   /**
@@ -465,6 +502,21 @@ export const selectAnalysisMetadata = (state: SSEStore) => state.analysisMetadat
 
 /** Select setAnalysisMetadata action */
 export const selectSetAnalysisMetadata = (state: SSEStore) => state.setAnalysisMetadata
+
+/** Select error state (Issue #489 - REST API reconciliation) */
+export const selectError = (state: SSEStore) => state.error
+
+/** Select clearError action (Issue #489 - REST API reconciliation) */
+export const selectClearError = (state: SSEStore) => state.clearError
+
+/** Select setComplete action (Issue #489 - REST API reconciliation) */
+export const selectSetComplete = (state: SSEStore) => state.setComplete
+
+/** Select reconcileComplete action (Issue #489 - Atomic error+complete update) */
+export const selectReconcileComplete = (state: SSEStore) => state.reconcileComplete
+
+/** Select validation failures count (Issue #489 - for telemetry) */
+export const selectValidationFailures = (state: SSEStore) => state._validationFailures
 
 // Computed Loading State Hooks (Issue #399 - Missing Loading States)
 // IMPORTANT: Hooks that return objects MUST use useShallow to prevent infinite re-renders

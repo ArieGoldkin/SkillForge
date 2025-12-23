@@ -1,15 +1,16 @@
 /**
  * useAnalysisProgress - Transform SSE events into UI-friendly progress data
  *
- * This hook orchestrates 5 composable sub-hooks to transform raw SSE events
+ * This hook orchestrates 6 composable sub-hooks to transform raw SSE events
  * into structured data for UI components.
  *
- * Architecture (Issue #391):
+ * Architecture (Issue #391, #489):
  * 1. useStageStatusProcessing - Core event processing, builds stage status map
  * 2. useAnalysisMetadata - Extracts metadata, skip reasons, success metrics
  * 3. useProgressSteps - Builds UI-friendly step objects
  * 4. useActivityFeed - Builds agent activity feed
  * 5. useProgressCalculation - Calculates overall progress percentage
+ * 6. useStatusReconciliation - Reconciles SSE errors with REST API (Issue #489)
  *
  * @module hooks/useAnalysisProgress
  */
@@ -29,6 +30,7 @@ import { useAnalysisMetadata } from './useAnalysisMetadata'
 import { useProgressCalculation } from './useProgressCalculation'
 import { useProgressSteps } from './useProgressSteps'
 import { useStageStatusProcessing } from './useStageStatusProcessing'
+import { useStatusReconciliation } from './useStatusReconciliation'
 
 // ============================================================================
 // Exported Types
@@ -82,12 +84,13 @@ export interface AnalysisProgressData {
 /**
  * Transforms raw SSE events into structured data for UI components
  *
- * This is the main orchestrator hook that composes 5 sub-hooks:
+ * This is the main orchestrator hook that composes 6 sub-hooks:
  * - Stage status processing for core event handling
  * - Metadata extraction for analysis info and skip reasons
  * - Progress steps for step list display
  * - Activity feed for real-time activity stream
  * - Progress calculation for overall percentage
+ * - Status reconciliation for SSE error recovery (Issue #489)
  *
  * @param events - Array of SSE events from the analysis workflow
  * @returns Comprehensive analysis progress data for UI rendering
@@ -107,7 +110,7 @@ export interface AnalysisProgressData {
  * )
  * ```
  */
-// eslint-disable-next-line max-lines-per-function -- Orchestrator hook composing 5 sub-hooks + store sync
+// eslint-disable-next-line max-lines-per-function -- Orchestrator hook composing 6 sub-hooks + store sync
 export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // ========================================================================
   // 1. Stage Status Processing - Core event processing
@@ -165,7 +168,16 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   }, [events])
 
   // ========================================================================
-  // 7. Calculate Failed Stages Count and Collect Error Codes
+  // 7. Extract Analysis ID for Reconciliation (Issue #489)
+  // ========================================================================
+  // Get analysis_id from first event for REST API verification
+  const analysisId = useMemo(() => {
+    if (events.length === 0) return undefined
+    return events[0].analysis_id
+  }, [events])
+
+  // ========================================================================
+  // 8. Calculate Failed Stages Count and Collect Error Codes
   // ========================================================================
   // Count failures from both error events and failed progress events
   // This ensures we detect all failures regardless of how the backend emits them
@@ -200,7 +212,22 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   }, [events, stageStatuses])
 
   // ========================================================================
-  // 8. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
+  // 9. Status Reconciliation (Issue #489 - SSE Error Recovery)
+  // ========================================================================
+  // When SSE shows error, verify with REST API and override if backend succeeded
+  const { reconciledStatus, reconciledArtifactId } = useStatusReconciliation({
+    analysisId,
+    enabled: errorInfo.hasError || isComplete,
+  })
+
+  // Compute final reconciled values - REST API is authoritative
+  const finalIsComplete = reconciledStatus === 'complete' || isComplete
+  const finalHasError =
+    reconciledStatus === 'failed' || (errorInfo.hasError && reconciledStatus !== 'complete')
+  const finalArtifactId = reconciledArtifactId || artifactId
+
+  // ========================================================================
+  // 10. Sync to Zustand Store (Issue #396 - Eliminate prop drilling)
   // ========================================================================
   // This enables leaf components (GuideButton, TeachMeButton, etc.) to access
   // derived data directly via selectors instead of through prop chains
@@ -218,7 +245,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
 
   useEffect(() => {
     const newMetadata = {
-      artifactId: artifactId ?? null,
+      artifactId: finalArtifactId ?? null, // Use reconciled artifact ID (Issue #489)
       traceId: traceId ?? null,
       overallProgress,
       hasFailedStages,
@@ -258,7 +285,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       prevMetadataRef.current = newMetadata
     }
   }, [
-    artifactId,
+    finalArtifactId, // Use reconciled artifact ID (Issue #489)
     traceId,
     overallProgress,
     hasFailedStages,
@@ -269,16 +296,16 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   ])
 
   // ========================================================================
-  // Return Comprehensive Progress Data
+  // Return Comprehensive Progress Data (using reconciled values - Issue #489)
   // ========================================================================
   return {
     overallProgress,
     steps,
     activities,
-    isComplete,
-    hasError: errorInfo.hasError,
-    errorMessage: errorInfo.errorMessage,
-    artifactId,
+    isComplete: finalIsComplete, // Reconciled: REST API overrides SSE errors
+    hasError: finalHasError, // Reconciled: Only true if REST confirms failure
+    errorMessage: finalHasError ? errorInfo.errorMessage : undefined, // Clear message if reconciled
+    artifactId: finalArtifactId, // Reconciled: May come from REST API
     traceId,
     hasFailedStages,
     failedStagesCount,
