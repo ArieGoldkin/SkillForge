@@ -5,6 +5,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.domains.analysis.workflows.tasks.aggregate_findings import aggregate_findings
+from app.domains.analysis.workflows.tasks.aggregation.data_sufficiency import (
+    DataSufficiencyResult,
+)
 
 
 @pytest.fixture
@@ -62,6 +65,32 @@ def state_with_all_successful():
     }
 
 
+@pytest.fixture
+def mock_data_sufficiency_high():
+    """Mock data sufficiency result with high coverage."""
+    return DataSufficiencyResult(
+        coverage_score=0.85,
+        agents_with_data=2,
+        total_agents=8,
+        coverage_gaps=[],
+        recommended_mode="normal",
+        recommendation_reason="Sufficient data",
+    )
+
+
+@pytest.fixture
+def mock_data_sufficiency_full():
+    """Mock data sufficiency result with full coverage."""
+    return DataSufficiencyResult(
+        coverage_score=1.0,
+        agents_with_data=2,
+        total_agents=8,
+        coverage_gaps=[],
+        recommended_mode="normal",
+        recommendation_reason="Full data",
+    )
+
+
 @pytest.mark.asyncio
 @patch(
     "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started",
@@ -74,26 +103,31 @@ def state_with_all_successful():
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.extract_quick_reference")
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_conflicts")
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_coverage_gaps")
-@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_coverage_score")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_data_sufficiency")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.validate_grounding")
 async def test_aggregate_findings_tracks_agent_statuses(
-    mock_coverage_score,
+    mock_validate_grounding,
+    mock_data_sufficiency,
     mock_coverage_gaps,
     mock_conflicts,
     mock_quick_ref,
     mock_synthesize,
     mock_emit,
     state_with_selected_agents,
+    mock_data_sufficiency_high,
 ):
     """Test that aggregate_findings builds agent_statuses correctly."""
     # Mock dependencies
-    mock_coverage_score.return_value = 0.85
+    mock_data_sufficiency.return_value = mock_data_sufficiency_high
     mock_coverage_gaps.return_value = []
     mock_conflicts.return_value = []
     mock_quick_ref.return_value = None
+    mock_validate_grounding.return_value = (True, 0.85, [])
     mock_synthesize.return_value = {
-        "summary": "Test summary",
-        "key_insights": [],
-        "recommendations": [],
+        "executive_summary": "Test summary. Second sentence.",
+        "key_findings": ["F1", "F2", "F3"],
+        "synthesis": {},
+        "conflicts_resolved": [],
     }
 
     result = await aggregate_findings(state_with_selected_agents)
@@ -133,26 +167,31 @@ async def test_aggregate_findings_tracks_agent_statuses(
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.extract_quick_reference")
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_conflicts")
 @patch("app.domains.analysis.workflows.tasks.aggregate_findings.detect_coverage_gaps")
-@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_coverage_score")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.calculate_data_sufficiency")
+@patch("app.domains.analysis.workflows.tasks.aggregate_findings.validate_grounding")
 async def test_aggregate_findings_all_successful_agents(
-    mock_coverage_score,
+    mock_validate_grounding,
+    mock_data_sufficiency,
     mock_coverage_gaps,
     mock_conflicts,
     mock_quick_ref,
     mock_synthesize,
     mock_emit,
     state_with_all_successful,
+    mock_data_sufficiency_full,
 ):
     """Test agent_statuses when all selected agents succeeded."""
     # Mock dependencies
-    mock_coverage_score.return_value = 1.0
+    mock_data_sufficiency.return_value = mock_data_sufficiency_full
     mock_coverage_gaps.return_value = []
     mock_conflicts.return_value = []
     mock_quick_ref.return_value = None
+    mock_validate_grounding.return_value = (True, 0.85, [])
     mock_synthesize.return_value = {
-        "summary": "Test summary",
-        "key_insights": [],
-        "recommendations": [],
+        "executive_summary": "Test summary. Second sentence.",
+        "key_findings": ["F1", "F2", "F3"],
+        "synthesis": {},
+        "conflicts_resolved": [],
     }
 
     result = await aggregate_findings(state_with_all_successful)

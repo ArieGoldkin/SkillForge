@@ -12,7 +12,7 @@ always completes even if all LLM tiers fail.
 
 import time
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
@@ -51,6 +51,67 @@ class MinimalSynthesis(BaseModel):
     implementation_guidance: str = Field(description="Basic implementation steps")
     risk_assessment: str = Field(description="Key risks identified")
     recommendations: str = Field(description="Top recommendations")
+
+
+class TrendSummary(BaseModel):
+    """Trend-focused synthesis for news/announcement content (Issue #487).
+
+    Used when data_sufficiency recommends "fallback" mode due to low
+    implementation detail coverage. Focuses on trends and insights
+    rather than implementation guidance.
+    """
+
+    overview: str = Field(description="High-level overview of what was announced or discussed")
+    key_trends: list[str] = Field(
+        description="Main trends or developments identified",
+        min_length=1,
+        max_length=5,
+    )
+    industry_impact: str = Field(description="Potential impact on the industry or ecosystem")
+    what_to_watch: str = Field(description="Things to watch for or next steps to monitor")
+
+
+class TrendSummarySchema(BaseModel):
+    """Schema for trend-summary fallback mode (Issue #487).
+
+    Used when source content has low implementation coverage (< 30%)
+    such as news articles, announcements, or conceptual discussions.
+    Generates useful trend analysis instead of hallucinated implementation guides.
+    """
+
+    executive_summary: str = Field(
+        description=(
+            "2-3 sentence summary focusing on what this content announces/discusses. "
+            "Do NOT include implementation details unless they are explicitly in the source."
+        ),
+        min_length=50,
+    )
+    key_findings: list[str] = Field(
+        description=(
+            "3-5 key takeaways from the content. Focus on facts stated, "
+            "not inferred implementation details."
+        ),
+        min_length=3,
+        max_length=5,
+    )
+    synthesis: TrendSummary = Field(description="Trend-focused analysis of the content")
+    coverage_score: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Coverage score from data sufficiency analysis",
+    )
+    generation_notes: str = Field(
+        default=(
+            "Trend-summary mode: Source content lacks implementation details. "
+            "This artifact focuses on trends and insights rather than code guidance."
+        ),
+        description="Note explaining why trend-summary mode was used",
+    )
+    content_type: str = Field(
+        default="trend_summary",
+        description="Indicates this is a trend-summary artifact",
+    )
 
 
 class MinimalSynthesisSchema(BaseModel):
@@ -389,6 +450,222 @@ DO NOT attempt to generate:
 
 Focus on accuracy and completeness of the core synthesis only.
 """
+
+TREND_SUMMARY_SYSTEM_PROMPT = """You are an expert analyst creating a TREND SUMMARY artifact.
+
+The source content you're analyzing has LOW IMPLEMENTATION COVERAGE - it's likely a news article,
+announcement, or high-level discussion rather than a technical tutorial.
+
+CRITICAL RULES:
+1. DO NOT hallucinate implementation details that aren't in the source
+2. DO NOT generate code snippets, file structures, or step-by-step guides
+3. DO NOT claim the content covers topics it doesn't actually discuss
+4. FOCUS on summarizing what was actually announced/discussed
+
+Your output should include:
+- executive_summary: 2-3 sentences about what this content announces or discusses
+- key_findings: 3-5 actual takeaways from the content (not inferred details)
+- synthesis:
+  - overview: What was announced/discussed
+  - key_trends: Main trends or developments identified
+  - industry_impact: Potential impact on the industry
+  - what_to_watch: Things to monitor going forward
+
+This is NOT an implementation guide - it's a trend/news summary.
+If you're unsure about something, say "the source does not specify" rather than guessing.
+"""
+
+
+async def synthesize_trend_summary(
+    validated_findings: list[dict[str, Any]],
+    analysis_id: AnalysisID,
+    coverage_score: float,
+    source_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Synthesize trend-summary artifact for low-coverage content.
+
+    Issue #487: Used when data_sufficiency recommends "fallback" mode
+    due to low implementation detail coverage (< 30%). Generates useful
+    trend analysis instead of hallucinated implementation guides.
+
+    Args:
+        validated_findings: List of validated agent findings
+        analysis_id: UUID of the analysis
+        coverage_score: Coverage score from data sufficiency analysis
+        source_context: Optional source context for grounding
+
+    Returns:
+        Dictionary with trend-summary aggregated insights
+
+    """
+    # Extract key insights from findings to include in the prompt
+    insights = []
+    for finding in validated_findings:
+        agent_type = str(finding.get("agent_type", "unknown"))
+        findings_data = finding.get("findings", {})
+
+        if isinstance(findings_data, dict):
+            # Get any summary or recommendation
+            if "summary" in findings_data:
+                insights.append(f"{agent_type}: {findings_data['summary']}")
+            elif "recommendation" in findings_data:
+                insights.append(f"{agent_type}: {findings_data['recommendation']}")
+
+    # Build a focused prompt for trend summary
+    prompt_parts = [
+        "Analyze the following agent findings and create a TREND SUMMARY.",
+        "Remember: This content lacks implementation details, focus on trends/news only.",
+        "",
+        "Agent Findings:",
+    ]
+
+    prompt_parts.extend(f"- {insight}" for insight in insights[:10])
+
+    # Add source context if available for grounding
+    if source_context:
+        prompt_parts.extend(
+            [
+                "",
+                "Source Context (for grounding - stick to this):",
+                f"Title: {source_context.get('title', 'N/A')}",
+                f"Key Terms: {', '.join(source_context.get('key_terms', []))}",
+            ]
+        )
+
+    user_prompt = "\n".join(prompt_parts)
+
+    try:
+        # Create agent with trend summary schema
+        synthesis_agent = create_structured_agent(
+            system_prompt=TREND_SUMMARY_SYSTEM_PROMPT,
+            response_schema=TrendSummarySchema,
+        )
+
+        # Invoke agent
+        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
+
+        final_result = await invoke_agent(
+            agent=synthesis_agent,
+            input_messages=input_messages,
+            analysis_id=analysis_id,
+            agent_type="trend_summary",
+            timeout=45,
+        )
+
+        # Extract structured response
+        result = extract_structured_response(final_result, "trend_summary")
+
+        # Ensure metadata exists and add trend-summary markers
+        if isinstance(result, dict):
+            # Get metadata with proper type handling
+            existing_metadata = result.get("metadata", {})
+            metadata: dict[str, Any] = (
+                cast("dict[str, Any]", existing_metadata)
+                if isinstance(existing_metadata, dict)
+                else {}
+            )
+
+            # Add trend-summary markers
+            metadata["synthesis_mode"] = "trend_summary"
+            metadata["coverage_score"] = coverage_score
+            metadata["fallback_reason"] = "low_implementation_coverage"
+            result["metadata"] = metadata
+            result["content_type"] = "trend_summary"
+
+        logger.info(
+            "trend_summary_synthesis_complete",
+            analysis_id=str(analysis_id),
+            coverage_score=coverage_score,
+            findings_count=len(validated_findings),
+        )
+
+        return result
+
+    except Exception as e:  # noqa: BLE001 - Catch all for fallback
+        logger.warning(
+            "trend_summary_synthesis_failed",
+            analysis_id=str(analysis_id),
+            error=str(e),
+            error_type=type(e).__name__,
+            fallback="static_trend_summary",
+        )
+
+        # Static fallback for trend summary
+        return _create_static_trend_summary(
+            validated_findings=validated_findings,
+            coverage_score=coverage_score,
+            source_context=source_context,
+        )
+
+
+def _create_static_trend_summary(
+    validated_findings: list[dict[str, Any]],
+    coverage_score: float,
+    source_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create static trend summary when LLM synthesis fails.
+
+    Args:
+        validated_findings: List of validated agent findings
+        coverage_score: Coverage score from data sufficiency
+        source_context: Optional source context
+
+    Returns:
+        Static trend summary dictionary
+
+    """
+    title = "Unknown Content"
+    if source_context:
+        title = source_context.get("title", "Unknown Content")
+
+    key_findings = []
+    for finding in validated_findings[:5]:
+        agent_type = str(finding.get("agent_type", "unknown"))
+        findings_data = finding.get("findings", {})
+        if isinstance(findings_data, dict) and "summary" in findings_data:
+            key_findings.append(f"{agent_type}: {findings_data['summary']}")
+
+    if not key_findings:
+        key_findings = ["Analysis findings available in agent reports"]
+
+    return {
+        "executive_summary": (
+            f"Analysis of '{title}' completed. "
+            f"This content has limited implementation details (coverage: {coverage_score:.0%}). "
+            f"See key findings for available insights."
+        ),
+        "key_findings": key_findings,
+        "synthesis": {
+            "overview": "Content analyzed with limited implementation coverage.",
+            "key_trends": ["See agent findings for details"],
+            "industry_impact": "Impact assessment requires more detailed source content.",
+            "what_to_watch": "Monitor for follow-up content with implementation details.",
+        },
+        "coverage_score": coverage_score,
+        "generation_notes": (
+            "Static trend-summary fallback. Source content lacks implementation "
+            "details for full artifact generation."
+        ),
+        "content_type": "trend_summary",
+        # Empty optional fields for schema compatibility
+        "core_concepts": [],
+        "exercises": [],
+        "self_assessment": None,
+        "quick_reference": None,
+        "tldr": None,
+        "ai_assistant_prompt": None,
+        "diagrams": [],
+        "glossary": [],
+        "conflicts_resolved": [],
+        "coverage_gaps": [],
+        "cross_domain_connections": [],
+        "metadata": {
+            "total_agents": len(validated_findings),
+            "synthesis_mode": "trend_summary_static",
+            "coverage_score": coverage_score,
+            "fallback_reason": "trend_summary_llm_failed",
+        },
+    }
 
 
 async def synthesize_with_fallback_chain(

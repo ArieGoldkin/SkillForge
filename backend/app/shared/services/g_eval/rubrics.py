@@ -24,6 +24,7 @@ SUPPORTED_CRITERIA: Final[list[str]] = [
     "accuracy",
     "coherence",
     "depth",
+    "grounding",  # Issue #487 - hallucination prevention
 ]
 
 # ============================================================================
@@ -58,6 +59,13 @@ DEFAULT_RUBRICS: Final[dict[str, dict[int, str]]] = {
         3: "Moderate depth with some analytical elements",
         4: "Good depth with meaningful insights and analysis",
         5: "Exceptional depth, nuanced analysis, expert-level insight",
+    },
+    "grounding": {
+        1: "Output contains numerous claims not present in source material; fabricated implementation details",
+        2: "Multiple hallucinations present; significant content not grounded in source",
+        3: "Some ungrounded claims but mostly faithful to source material",
+        4: "Minimal hallucinations; nearly all content traceable to source",
+        5: "Fully grounded; all technical claims and implementation details verified in source",
     },
 }
 
@@ -343,12 +351,13 @@ AGENT_RUBRICS: Final[dict[str, dict]] = {
         },
     },
     "artifact_generator": {
-        "criteria": ["completeness", "coherence", "depth", "actionability"],
+        "criteria": ["completeness", "accuracy", "coherence", "actionability", "grounding"],
         "weights": {
-            "completeness": 0.30,
-            "coherence": 0.25,
-            "depth": 0.25,
+            "completeness": 0.20,
+            "accuracy": 0.25,
+            "coherence": 0.15,
             "actionability": 0.20,
+            "grounding": 0.20,  # Issue #487 - hallucination prevention
         },
         "rubrics": {
             "completeness": {
@@ -361,6 +370,13 @@ AGENT_RUBRICS: Final[dict[str, dict]] = {
                     "and edge cases"
                 ),
             },
+            "accuracy": {
+                1: "Major factual errors or contradictions about technologies or concepts",
+                2: "Some inaccuracies or unsupported claims about implementation",
+                3: "Generally accurate but lacks verification or specificity in places",
+                4: "Accurate with good technical detail and evidence from source",
+                5: "Highly accurate, well-sourced, factually rigorous throughout",
+            },
             "coherence": {
                 1: "Disorganized, contradictory sections, no logical flow between topics",
                 2: "Poor organization with disconnected sections and confusing navigation",
@@ -369,16 +385,6 @@ AGENT_RUBRICS: Final[dict[str, dict]] = {
                 5: (
                     "Excellent structure with seamless flow, clear navigation, and "
                     "professional formatting"
-                ),
-            },
-            "depth": {
-                1: "Superficial treatment with no technical details or code examples",
-                2: "Basic coverage without implementation details, architecture, or reasoning",
-                3: "Moderate technical depth with some code examples and explanations",
-                4: "Good technical depth with detailed implementation guidance and architecture",
-                5: (
-                    "Expert-level depth with comprehensive examples, trade-offs, and "
-                    "advanced considerations"
                 ),
             },
             "actionability": {
@@ -390,6 +396,13 @@ AGENT_RUBRICS: Final[dict[str, dict]] = {
                     "Highly actionable with copy-paste ready code, CLI commands, and "
                     "validation checklists"
                 ),
+            },
+            "grounding": {
+                1: "Fabricates implementation steps, code, or prerequisites not in source",
+                2: "Contains significant hallucinated technical details",
+                3: "Some ungrounded claims but core content is faithful to source",
+                4: "Nearly all implementation guidance traceable to source material",
+                5: "Fully grounded artifact; all code and steps verified against source",
             },
         },
     },

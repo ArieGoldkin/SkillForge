@@ -61,10 +61,12 @@ async def synthesize_with_llm_phased(
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
     analysis_id: AnalysisID,
+    source_context: dict[str, Any] | None = None,
 ) -> dict[str, object]:  # Returns AggregatedInsights-compatible dict
     """Synthesize agent findings using multi-phase parallel execution.
 
     Issue #299-304: Replaces monolithic 50-80K token synthesis with 3 parallel phases.
+    Issue #487: Now includes source_context for LLM grounding to prevent hallucinations.
 
     Flow:
     1. Phase 0: Compress findings (parallel, ~2K tokens each)
@@ -79,6 +81,8 @@ async def synthesize_with_llm_phased(
         conflicts: List of detected conflicts
         confidence_scores: Dictionary of agent confidence scores
         analysis_id: UUID of the analysis
+        source_context: Optional source content for LLM grounding (Issue #487)
+            Expected keys: title, summary, key_terms from source_content_extractor
 
     Returns:
         Dictionary with aggregated insights from multi-phase synthesis
@@ -133,22 +137,25 @@ async def synthesize_with_llm_phased(
             analysis_id, start_time, "Running parallel synthesis phases (1-3)..."
         )
 
-        # Create phase tasks
+        # Create phase tasks - pass source_context for hallucination prevention (Issue #487)
         core_task = _synthesize_core(
             compressed_findings=compressed_findings,
             conflicts=conflicts,
             confidence_scores=confidence_scores,
             analysis_id=str(analysis_id),
+            source_context=source_context,
         )
 
         learning_task = _synthesize_learning(
             compressed_findings=compressed_findings,
             analysis_id=str(analysis_id),
+            source_context=source_context,
         )
 
         docs_task = _synthesize_docs(
             compressed_findings=compressed_findings,
             analysis_id=str(analysis_id),
+            source_context=source_context,
         )
 
         # Run phases 1-3 in parallel with exception handling
@@ -239,11 +246,13 @@ async def _synthesize_core(
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],  # noqa: ARG001 - Reserved for future use
     analysis_id: str,
+    source_context: dict[str, Any] | None = None,
 ) -> dict:  # CoreSynthesisSchema dict
     """Phase 1: Generate core synthesis (REQUIRED) using LCEL chains.
 
     Uses LCEL `.with_fallbacks()` to replace manual try/catch fallback logic.
     Automatically retries with fallback model on any failure.
+    Issue #487: Now includes source_context for LLM grounding.
 
     Generates:
     - executive_summary
@@ -259,6 +268,7 @@ async def _synthesize_core(
         conflicts: List of detected conflicts
         confidence_scores: Agent confidence scores
         analysis_id: UUID of the analysis
+        source_context: Optional source content for LLM grounding (Issue #487)
 
     Returns:
         CoreSynthesisSchema as dict
@@ -285,10 +295,11 @@ async def _synthesize_core(
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
-        # Build phase prompt
+        # Build phase prompt with source context for grounding (Issue #487)
         user_prompt = build_core_prompt(
             compressed_findings=findings_dicts,
             conflicts=conflicts,
+            source_context=source_context,
         )
 
         # Create LCEL chain with automatic fallback and retry
@@ -364,11 +375,13 @@ async def _synthesize_core(
 async def _synthesize_learning(
     compressed_findings: list,  # CompressedFinding from compress_findings
     analysis_id: str,
+    source_context: dict[str, Any] | None = None,
 ) -> dict | None:  # LearningSynthesisSchema dict or None
     """Phase 2: Generate learning content (OPTIONAL) using LCEL chains.
 
     Uses LCEL `.with_fallbacks()` for automatic fallback handling.
     Returns None on failure for graceful degradation.
+    Issue #487: Now includes source_context for LLM grounding.
 
     Generates:
     - core_concepts
@@ -378,6 +391,7 @@ async def _synthesize_learning(
     Args:
         compressed_findings: List of compressed agent findings
         analysis_id: UUID of the analysis
+        source_context: Optional source content for LLM grounding (Issue #487)
 
     Returns:
         LearningSynthesisSchema as dict, or None on failure
@@ -400,8 +414,11 @@ async def _synthesize_learning(
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
-        # Build phase prompt
-        user_prompt = build_learning_prompt(compressed_findings=findings_dicts)
+        # Build phase prompt with source context for grounding (Issue #487)
+        user_prompt = build_learning_prompt(
+            compressed_findings=findings_dicts,
+            source_context=source_context,
+        )
 
         # Create LCEL chain with automatic fallback and retry
         primary_model = get_chat_model()
@@ -475,11 +492,13 @@ async def _synthesize_learning(
 async def _synthesize_docs(
     compressed_findings: list,  # CompressedFinding from compress_findings
     analysis_id: str,
+    source_context: dict[str, Any] | None = None,
 ) -> dict | None:  # DocsSynthesisSchema dict or None
     """Phase 3: Generate documentation content (OPTIONAL) using LCEL chains.
 
     Uses LCEL `.with_fallbacks()` for automatic fallback handling.
     Returns None on failure for graceful degradation.
+    Issue #487: Now includes source_context for LLM grounding.
 
     Generates:
     - tldr
@@ -493,6 +512,7 @@ async def _synthesize_docs(
     Args:
         compressed_findings: List of compressed agent findings
         analysis_id: UUID of the analysis
+        source_context: Optional source content for LLM grounding (Issue #487)
 
     Returns:
         DocsSynthesisSchema as dict, or None on failure
@@ -515,8 +535,11 @@ async def _synthesize_docs(
         # Convert compressed findings to dicts for prompt building
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
-        # Build phase prompt
-        user_prompt = build_docs_prompt(compressed_findings=findings_dicts)
+        # Build phase prompt with source context for grounding (Issue #487)
+        user_prompt = build_docs_prompt(
+            compressed_findings=findings_dicts,
+            source_context=source_context,
+        )
 
         # Create LCEL chain with automatic fallback and retry
         primary_model = get_chat_model()

@@ -263,6 +263,7 @@ async def synthesize_with_llm(
     conflicts: list[dict[str, str]],
     confidence_scores: dict[str, float],
     analysis_id: AnalysisID,
+    source_context: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Synthesize agent findings using multi-phase parallel execution.
 
@@ -272,6 +273,8 @@ async def synthesize_with_llm(
     - Phase 2 (Learning): OPTIONAL - concepts, exercises, quizzes (~15-25K tokens)
     - Phase 3 (Docs): OPTIONAL - TLDR, diagrams, glossary, AI prompts (~15-25K tokens)
 
+    Issue #487: Now includes source_context for LLM grounding to prevent hallucinations.
+
     Phases 1-3 run in parallel after compression. Phase 1 failure fails the whole synthesis.
     Phases 2-3 failures result in graceful degradation (empty but valid structures).
 
@@ -280,6 +283,8 @@ async def synthesize_with_llm(
         conflicts: List of detected conflicts
         confidence_scores: Dictionary of agent confidence scores
         analysis_id: UUID of the analysis
+        source_context: Optional source content for LLM grounding (Issue #487)
+            Expected keys: title, summary, key_terms from source_content_extractor
 
     Returns:
         Dictionary with aggregated insights from multi-phase synthesis
@@ -298,4 +303,5 @@ async def synthesize_with_llm(
         conflicts=conflicts,
         confidence_scores=confidence_scores,
         analysis_id=analysis_id,
+        source_context=source_context,
     )
