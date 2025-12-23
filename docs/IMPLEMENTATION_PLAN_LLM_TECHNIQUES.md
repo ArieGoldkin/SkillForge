@@ -1156,7 +1156,8 @@ from app.domains.analysis.schemas.supervisor.reasoning_log import ReasoningLog
 logger = get_logger(__name__)
 
 
-COT_REASONING_PROMPT = """You are a content analysis supervisor. Analyze the following content step-by-step to determine which specialized agents should process it.
+COT_REASONING_PROMPT = """You are a content analysis supervisor. \
+Analyze the following content step-by-step to determine which specialized agents should process it.
 
 ## Available Agents
 

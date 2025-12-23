@@ -197,6 +197,30 @@ jobs:
           mkdir -p .auth
           echo "Created .auth directory for Playwright storageState"
 
+      - name: Create .env.test from template (lightweight mode)
+        working-directory: ./backend
+        run: |
+          # Copy template as base
+          cp .env.test.example .env.test
+
+          # Append minimal CI configuration for lightweight tests
+          cat >> .env.test << 'EOF'
+
+          # =============================================================================
+          # CI/CD Overrides (Lightweight E2E)
+          # =============================================================================
+          ENVIRONMENT=test
+          LOG_LEVEL=INFO
+
+          # Disable workflow execution (no LLM calls)
+          SKILLFORGE_E2E_DISABLE_WORKFLOW=true
+
+          # Use deterministic embeddings (no API calls)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS=true
+          EOF
+
+          echo "✓ Created .env.test for lightweight E2E mode"
+
       - name: Build and start test environment (lightweight mode)
         run: |
           export DOCKER_BUILDKIT=1
@@ -307,7 +331,10 @@ jobs:
 
       - name: Cleanup test environment
         if: always()
-        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
+        run: |
+          docker compose -f docker-compose.test.yml down -v --remove-orphans
+          # Clean up any env files
+          rm -f backend/.env.test
 
   # ===========================================================================
   # FULL E2E WITH LLM: Tests actual AI workflow integration
@@ -359,6 +386,41 @@ jobs:
         run: |
           mkdir -p .auth
           echo "Created .auth directory for Playwright storageState"
+
+      - name: Create .env.test from template (with LLM mode)
+        working-directory: ./backend
+        env:
+          # Pass secrets to environment for .env.test creation
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+        run: |
+          # Copy template as base
+          cp .env.test.example .env.test
+
+          # Set restricted permissions (600 = owner read/write only)
+          chmod 600 .env.test
+
+          # Append CI configuration with real API keys for LLM tests
+          cat >> .env.test << EOF
+
+          # =============================================================================
+          # CI/CD Overrides (Full E2E with LLM)
+          # =============================================================================
+          ENVIRONMENT=test
+          LOG_LEVEL=INFO
+
+          # Enable workflow execution with real API keys
+          SKILLFORGE_E2E_DISABLE_WORKFLOW=false
+
+          # Real API keys for LLM integration tests
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          JINA_API_KEY=${JINA_API_KEY}
+
+          # Use real embeddings (not deterministic)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS=false
+          EOF
+
+          echo "✓ Created .env.test for full E2E mode with real API keys"
 
       - name: Build and start E2E stack (with LLM + Langfuse)
         env:
@@ -566,7 +628,8 @@ jobs:
         if: always()
         run: |
           docker compose -f docker-compose.test.yml down -v --remove-orphans
-          # Ensure no env files remain
+          # Secure cleanup - ensure no env files remain
+          shred -u backend/.env.test 2>/dev/null || rm -f backend/.env.test
           rm -f .env.e2e .env
 
   # ===========================================================================

@@ -465,7 +465,9 @@ Claude: [Calls create_prompt with generated content]
 ```json
 {
   "name": "security_audit",
-  "prompt": "Analyze the following code for security vulnerabilities:\n\n{{code}}\n\nFocus on:\n1. SQL injection risks\n2. XSS vulnerabilities\n3. Authentication issues\n4. Data exposure risks",
+  "prompt": "Analyze the following code for security vulnerabilities:\n\n{{code}}\n\n" +
+    "Focus on:\n1. SQL injection risks\n2. XSS vulnerabilities\n" +
+    "3. Authentication issues\n4. Data exposure risks",
   "config": {
     "model": "claude-sonnet-4-20250514",
     "temperature": 0.3,
@@ -481,7 +483,9 @@ Claude: [Calls create_prompt with generated content]
   "id": "pm_xyz789",
   "name": "security_audit",
   "version": 1,
-  "prompt": "Analyze the following code for security vulnerabilities:\n\n{{code}}\n\nFocus on:\n1. SQL injection risks\n2. XSS vulnerabilities\n3. Authentication issues\n4. Data exposure risks",
+  "prompt": "Analyze the following code for security vulnerabilities:\n\n{{code}}\n\n" +
+    "Focus on:\n1. SQL injection risks\n2. XSS vulnerabilities\n" +
+    "3. Authentication issues\n4. Data exposure risks",
   "config": {
     "model": "claude-sonnet-4-20250514",
     "temperature": 0.3,
@@ -541,7 +545,9 @@ Claude: [Calls update_prompt with refined content]
 ```json
 {
   "name": "content_analysis",
-  "prompt": "Analyze this technical content for implementation patterns:\n\n{{content}}\n\nExtract:\n• Core concepts (1 sentence each)\n• Implementation steps (numbered list)\n• Code examples (if present)\n• Key insights (max 3)",
+  "prompt": "Analyze this technical content for implementation patterns:\n\n{{content}}\n\n" +
+    "Extract:\n• Core concepts (1 sentence each)\n• Implementation steps " +
+    "(numbered list)\n• Code examples (if present)\n• Key insights (max 3)",
   "config": {
     "model": "claude-sonnet-4-20250514",
     "temperature": 0.5,
@@ -557,7 +563,9 @@ Claude: [Calls update_prompt with refined content]
   "id": "pm_abc124",
   "name": "content_analysis",
   "version": 6,
-  "prompt": "Analyze this technical content for implementation patterns:\n\n{{content}}\n\nExtract:\n• Core concepts (1 sentence each)\n• Implementation steps (numbered list)\n• Code examples (if present)\n• Key insights (max 3)",
+  "prompt": "Analyze this technical content for implementation patterns:\n\n{{content}}\n\n" +
+    "Extract:\n• Core concepts (1 sentence each)\n• Implementation steps " +
+    "(numbered list)\n• Code examples (if present)\n• Key insights (max 3)",
   "config": {
     "model": "claude-sonnet-4-20250514",
     "temperature": 0.5,

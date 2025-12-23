@@ -142,6 +142,8 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
             content_type="fixture_dataset",
             status="complete",
             title="Context Engineering for AI Agents",  # Title for E2E tests
+            raw_content="Sample fixture content for testing",
+            extraction_metadata={"source": "fixture", "version": "1.0"},
         )
         session.add(analysis)
         await session.flush()
