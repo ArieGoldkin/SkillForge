@@ -9,10 +9,14 @@ Reference: Issue #246 - Multi-Agent Context Scoping
 import pytest
 
 from app.domains.analysis.workflows.state import AnalysisState, ContentRef
+from app.shared.types.workflow_types import AgentFinding
 from app.shared.workflows.context_scope import (
     AGENT_SCOPES,
     ContextScope,
     ScopedState,
+    _inject_prior_context,
+    _inject_supervisor_data,
+    _resolve_scope,
     build_scoped_context,
     translate_findings,
 )
@@ -40,25 +44,25 @@ def sample_full_state() -> AnalysisState:
             "author": "Test Author",
         },
         agent_findings=[
-            {
-                "agent_type": "tech_comparator",
-                "findings": {
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={
                     "technologies": ["Python", "FastAPI", "PostgreSQL"],
                     "comparisons": ["FastAPI vs Flask", "PostgreSQL vs MySQL"],
                 },
-                "processing_time_ms": 1200,
-            },
-            {
-                "agent_type": "security_auditor",
-                "findings": {
+                processing_time_ms=1200,
+            ),
+            AgentFinding(
+                agent_type="security_auditor",
+                findings={
                     "security_risks": [
                         {"type": "sql_injection", "severity": "high"},
                         {"type": "xss", "severity": "medium"},
                     ],
                     "best_practices": ["Use parameterized queries", "Sanitize inputs"],
                 },
-                "processing_time_ms": 1500,
-            },
+                processing_time_ms=1500,
+            ),
         ],
         supervisor_decision={
             "agents": ["security_auditor", "tech_comparator"],
@@ -278,14 +282,14 @@ class TestTranslateFindings:
 
     def test_single_finding(self) -> None:
         """Test with single finding from another agent."""
-        findings = [
-            {
-                "agent_type": "tech_comparator",
-                "findings": {
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={
                     "technologies": ["Python", "FastAPI"],
                     "comparisons": ["FastAPI vs Flask"],
                 },
-            }
+            )
         ]
 
         result = translate_findings(findings, "security_auditor", include_findings=False)
@@ -296,15 +300,15 @@ class TestTranslateFindings:
 
     def test_multiple_findings(self) -> None:
         """Test with multiple findings."""
-        findings = [
-            {
-                "agent_type": "tech_comparator",
-                "findings": {"technologies": ["Python", "FastAPI"]},
-            },
-            {
-                "agent_type": "dependency_mapper",
-                "findings": {"dependencies": ["fastapi", "pydantic", "sqlalchemy"]},
-            },
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={"technologies": ["Python", "FastAPI"]},
+            ),
+            AgentFinding(
+                agent_type="dependency_mapper",
+                findings={"dependencies": ["fastapi", "pydantic", "sqlalchemy"]},
+            ),
         ]
 
         result = translate_findings(findings, "security_auditor", include_findings=False)
@@ -315,15 +319,15 @@ class TestTranslateFindings:
 
     def test_exclude_same_agent(self) -> None:
         """Test that findings from the same agent are excluded."""
-        findings = [
-            {
-                "agent_type": "security_auditor",
-                "findings": {"security_risks": []},
-            },
-            {
-                "agent_type": "tech_comparator",
-                "findings": {"technologies": []},
-            },
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="security_auditor",
+                findings={"security_risks": []},
+            ),
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={"technologies": []},
+            ),
         ]
 
         result = translate_findings(findings, "security_auditor")
@@ -335,14 +339,14 @@ class TestTranslateFindings:
 
     def test_include_findings_detailed(self) -> None:
         """Test with include_findings=True for detailed summary."""
-        findings = [
-            {
-                "agent_type": "tech_comparator",
-                "findings": {
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={
                     "technologies": ["Python", "FastAPI", "PostgreSQL"],
                     "comparisons": ["FastAPI vs Flask"],
                 },
-            }
+            )
         ]
 
         result = translate_findings(findings, "security_auditor", include_findings=True)
@@ -353,14 +357,14 @@ class TestTranslateFindings:
 
     def test_include_findings_summary_only(self) -> None:
         """Test with include_findings=False for summary only."""
-        findings = [
-            {
-                "agent_type": "tech_comparator",
-                "findings": {
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={
                     "technologies": ["Python", "FastAPI", "PostgreSQL"],
                     "comparisons": ["FastAPI vs Flask"],
                 },
-            }
+            )
         ]
 
         result = translate_findings(findings, "security_auditor", include_findings=False)
@@ -370,10 +374,10 @@ class TestTranslateFindings:
 
     def test_missing_agent_type(self) -> None:
         """Test handling of findings without agent_type."""
-        findings = [
-            {
-                "findings": {"some_data": ["value"]},
-            }
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                findings={"some_data": ["value"]},
+            )
         ]
 
         result = translate_findings(findings, "security_auditor")
@@ -383,11 +387,11 @@ class TestTranslateFindings:
 
     def test_empty_findings_dict(self) -> None:
         """Test with findings that have empty data."""
-        findings = [
-            {
-                "agent_type": "tech_comparator",
-                "findings": {},
-            }
+        findings: list[AgentFinding] = [
+            AgentFinding(
+                agent_type="tech_comparator",
+                findings={},
+            )
         ]
 
         result = translate_findings(findings, "security_auditor")
@@ -552,3 +556,220 @@ class TestScopedState:
         assert scoped["analysis_id"] == "test-123"
         assert scoped["content_type"] == "article"
         assert len(scoped) == 2
+
+
+class TestResolveScope:
+    """Test _resolve_scope helper function."""
+
+    def test_resolve_scope_with_provided_scope(self) -> None:
+        """Test that provided scope is returned as-is."""
+        custom_scope = ContextScope(include=["custom_field"])
+        result = _resolve_scope("any_agent", custom_scope)
+
+        assert result == custom_scope
+        assert result.include == ["custom_field"]
+
+    def test_resolve_scope_with_known_agent(self) -> None:
+        """Test that known agents get their configured scope."""
+        result = _resolve_scope("security_auditor", None)
+
+        assert result == AGENT_SCOPES["security_auditor"]
+        assert "analysis_id" in result.include
+        assert "content_ref" in result.include
+
+    def test_resolve_scope_with_unknown_agent(self) -> None:
+        """Test that unknown agents get default scope."""
+        result = _resolve_scope("unknown_agent_type", None)
+
+        assert "analysis_id" in result.include
+        assert "content_ref" in result.include
+        assert "content_type" in result.include
+        assert "skill_level" in result.include
+        assert result.include == ["analysis_id", "content_ref", "content_type", "skill_level"]
+
+
+class TestInjectPriorContext:
+    """Test _inject_prior_context helper function."""
+
+    def test_inject_prior_context_with_inject_memory(
+        self, sample_full_state: AnalysisState
+    ) -> None:
+        """Test that inject_memory flag triggers prior context injection."""
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"], inject_memory=True)
+
+        _inject_prior_context(scoped_state, sample_full_state, "implementation_planner", scope)
+
+        assert "prior_context" in scoped_state
+        assert isinstance(scoped_state["prior_context"], str)
+        assert "tech_comparator" in scoped_state["prior_context"]
+
+    def test_inject_prior_context_with_include_other_findings(
+        self, sample_full_state: AnalysisState
+    ) -> None:
+        """Test that include_other_findings flag triggers prior context injection."""
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"], include_other_findings=True)
+
+        _inject_prior_context(scoped_state, sample_full_state, "implementation_planner", scope)
+
+        assert "prior_context" in scoped_state
+        assert isinstance(scoped_state["prior_context"], str)
+
+    def test_inject_prior_context_without_flags(self, sample_full_state: AnalysisState) -> None:
+        """Test that prior context is not injected when flags are False."""
+        scoped_state = ScopedState()
+        scope = ContextScope(
+            include=["analysis_id"], inject_memory=False, include_other_findings=False
+        )
+
+        _inject_prior_context(scoped_state, sample_full_state, "implementation_planner", scope)
+
+        assert "prior_context" not in scoped_state
+
+    def test_inject_prior_context_empty_findings(self) -> None:
+        """Test that prior context is not injected when there are no findings."""
+        empty_state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            agent_findings=[],
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"], inject_memory=True)
+
+        _inject_prior_context(scoped_state, empty_state, "security_auditor", scope)
+
+        # Should not inject if translate_findings returns empty string
+        assert "prior_context" not in scoped_state
+
+
+class TestInjectSupervisorData:
+    """Test _inject_supervisor_data helper function."""
+
+    def test_inject_agent_expectation(self) -> None:
+        """Test that agent expectation is injected when available."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            supervisor_decision={
+                "agents": ["tech_comparator"],
+                "agent_expectations": {
+                    "tech_comparator": "full_analysis",
+                },
+            },
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"])
+
+        _inject_supervisor_data(scoped_state, state, "tech_comparator", scope)
+
+        assert "agent_expectation" in scoped_state
+        assert scoped_state["agent_expectation"] == "full_analysis"
+
+    def test_inject_coverage_summary(self) -> None:
+        """Test that coverage summary is injected when available."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            supervisor_decision={
+                "agents": ["tech_comparator"],
+                "content_signals": {
+                    "coverage_summary": "technology comparisons",
+                },
+            },
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"])
+
+        _inject_supervisor_data(scoped_state, state, "tech_comparator", scope)
+
+        assert "content_coverage" in scoped_state
+        assert scoped_state["content_coverage"] == "technology comparisons"
+
+    def test_inject_content_signals_when_in_scope(self) -> None:
+        """Test that content_signals is injected when in scope.include."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            supervisor_decision={
+                "agents": ["tech_comparator"],
+                "content_signals": {
+                    "richness_score": 6.2,
+                    "has_comparisons": True,
+                },
+            },
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id", "content_signals"])
+
+        _inject_supervisor_data(scoped_state, state, "tech_comparator", scope)
+
+        assert "content_signals" in scoped_state
+        assert scoped_state["content_signals"]["richness_score"] == 6.2
+        assert scoped_state["content_signals"]["has_comparisons"] is True
+
+    def test_not_inject_content_signals_when_not_in_scope(self) -> None:
+        """Test that content_signals is not injected when not in scope.include."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            supervisor_decision={
+                "agents": ["security_auditor"],
+                "content_signals": {
+                    "has_comparisons": True,
+                },
+            },
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"])  # content_signals NOT in scope
+
+        _inject_supervisor_data(scoped_state, state, "security_auditor", scope)
+
+        # Should inject coverage if available, but not full content_signals
+        assert "content_signals" not in scoped_state
+
+    def test_inject_supervisor_data_missing_supervisor_decision(self) -> None:
+        """Test that function handles missing supervisor_decision gracefully."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"])
+
+        _inject_supervisor_data(scoped_state, state, "tech_comparator", scope)
+
+        # Should not crash, scoped_state unchanged
+        assert "agent_expectation" not in scoped_state
+        assert "content_coverage" not in scoped_state
+        assert "content_signals" not in scoped_state
+
+    def test_inject_supervisor_data_non_dict_supervisor_decision(self) -> None:
+        """Test that function handles non-dict supervisor_decision gracefully."""
+        state = AnalysisState(
+            analysis_id="test-123",
+            url="https://example.com",
+            content_type="article",
+            skill_level="intermediate",
+            supervisor_decision="not-a-dict",  # type: ignore[assignment]
+        )
+        scoped_state = ScopedState()
+        scope = ContextScope(include=["analysis_id"])
+
+        _inject_supervisor_data(scoped_state, state, "tech_comparator", scope)
+
+        # Should return early without injecting anything
+        assert "agent_expectation" not in scoped_state
+        assert "content_coverage" not in scoped_state
