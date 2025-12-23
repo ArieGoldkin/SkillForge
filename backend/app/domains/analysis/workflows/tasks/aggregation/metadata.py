@@ -109,7 +109,7 @@ def calculate_aggregation_metadata(  # noqa: PLR0913
 
     confidence_values = list(confidence_scores.values())
 
-    metadata = {
+    new_metadata = {
         "total_agents": len(validated_findings),
         "agents_executed": agent_types,
         "confidence_avg": (
@@ -122,5 +122,10 @@ def calculate_aggregation_metadata(  # noqa: PLR0913
         "conflicts_resolved": len(conflicts_resolved_list),
     }
 
-    aggregated_insights_dict["metadata"] = metadata
+    # Merge with existing metadata (preserve grounding_validation, hallucination_blocked, etc.)
+    existing_metadata = aggregated_insights_dict.get("metadata", {})
+    if isinstance(existing_metadata, dict):
+        new_metadata = {**existing_metadata, **new_metadata}
+
+    aggregated_insights_dict["metadata"] = new_metadata
     return aggregated_insights_dict

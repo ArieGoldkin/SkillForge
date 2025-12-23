@@ -662,14 +662,49 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
                 existing_metadata["grounding_validation"] = grounding_metadata
                 aggregated_insights_dict["metadata"] = existing_metadata
 
-                # Log warning if low grounding detected (observability, not blocking)
+                # Issue #487: BLOCK hallucinated content when grounding fails
                 if not is_grounded:
                     logger.warning(
-                        "low_grounding_score_detected",
+                        "hallucination_blocked",
                         grounding_score=grounding_score,
                         analysis_id=str(analysis_id),
                         warnings=warnings,
-                        recommended_action="review_synthesis_for_hallucinations",
+                        action="replacing_with_source_grounded_content",
+                    )
+
+                    # Replace hallucinated executive_summary with source-grounded version
+                    source_title = source_context.get("title", "this content")
+                    source_summary = source_context.get("summary", "")
+
+                    # Create safe executive summary from source
+                    if source_summary:
+                        safe_summary = (
+                            f"This analysis covers {source_title}. {source_summary[:500]}"
+                        )
+                    else:
+                        safe_summary = (
+                            f"This analysis covers {source_title}. "
+                            "Due to limited technical content in the source material, "
+                            "detailed implementation guidance is not available."
+                        )
+                    aggregated_insights_dict["executive_summary"] = safe_summary
+
+                    # Replace key_findings with honest acknowledgment
+                    aggregated_insights_dict["key_findings"] = [
+                        f"Source: {source_title}",
+                        "Limited technical implementation details available in source content.",
+                        "This appears to be news/announcement content rather than technical documentation.",
+                    ]
+
+                    # Mark synthesis as replaced due to hallucination
+                    existing_metadata["hallucination_blocked"] = True
+                    existing_metadata["original_grounding_score"] = grounding_score
+                    aggregated_insights_dict["metadata"] = existing_metadata
+
+                    logger.info(
+                        "hallucination_replaced_with_safe_content",
+                        analysis_id=str(analysis_id),
+                        source_title=source_title,
                     )
                 else:
                     logger.info(
