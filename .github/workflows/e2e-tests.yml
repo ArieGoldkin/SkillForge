@@ -233,13 +233,19 @@ jobs:
           LANGFUSE_ENABLED=false
           LANGFUSE_HOST=http://langfuse-web:3000
 
-          # Langfuse Infrastructure (for docker-compose services)
+          # Langfuse Database Configuration
           LANGFUSE_POSTGRES_USER=langfuse
           LANGFUSE_POSTGRES_PASSWORD=langfuse
           LANGFUSE_POSTGRES_DB=langfuse
+
+          # Langfuse Redis Configuration
           LANGFUSE_REDIS_PASSWORD=redis-dev
+
+          # Clickhouse Configuration
           CLICKHOUSE_USER=default
           CLICKHOUSE_PASSWORD=langfuse
+
+          # MinIO Configuration
           MINIO_ROOT_USER=minioadmin
           MINIO_ROOT_PASSWORD=minioadmin
 
@@ -473,7 +479,6 @@ jobs:
           # Pass secrets to Docker Compose via environment
           # These are ONLY available when security-check passes
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         run: |
           export DOCKER_BUILDKIT=1
@@ -485,9 +490,6 @@ jobs:
           chmod 600 .env.e2e
           cat > .env.e2e << EOF
           OPENAI_API_KEY=${OPENAI_API_KEY}
-          LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
-          LANGCHAIN_TRACING_V2=true
-          LANGCHAIN_PROJECT=skillforge-e2e-ci
           JINA_API_KEY=${JINA_API_KEY}
           LLM_MODEL=gpt-4o-mini
           ENVIRONMENT=e2e
