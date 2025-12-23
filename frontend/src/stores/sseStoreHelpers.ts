@@ -233,27 +233,32 @@ function handleProgressEvent(store: StoreAPI): (event: MessageEvent) => void {
       const validatedData = parseSSEEvent(rawData)
 
       if (!validatedData) {
-        logger.error('Progress event validation failed', {
-          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+        // Log warning but DON'T crash - continue processing other events (Issue #489)
+        logger.warn('Progress event validation failed - skipping event', {
+          rawData: typeof rawData === 'string' ? rawData.substring(0, 500) : rawData,
           eventType: 'progress',
+          hint: 'Backend may have added new fields - schema update may be needed',
         })
-        store.setState({
-          error: new Error('Received invalid progress event from server'),
-        })
+        // Track metric for observability (Issue #489)
+        store.setState((state) => ({
+          _validationFailures: (state._validationFailures ?? 0) + 1,
+        }))
+        // DON'T set error state - let other events continue
         return
       }
 
       // Use _addEvent for memory-safe event storage
       store.getState()._addEvent(validatedData)
     } catch (error) {
-      logger.error('Failed to parse progress event', {
-        rawData: event.data?.substring(0, 200),
+      // JSON parse errors are also non-fatal for progress events (Issue #489)
+      logger.warn('Failed to parse progress event JSON - skipping', {
+        rawData: event.data?.substring(0, 500),
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
       })
-      store.setState({
-        error: error instanceof Error ? error : new Error('Failed to parse progress event'),
-      })
+      store.setState((state) => ({
+        _validationFailures: (state._validationFailures ?? 0) + 1,
+      }))
+      // DON'T set error state - let other events continue
     }
   }
 }
@@ -268,13 +273,17 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
       const validatedData = parseSSEEvent(rawData)
 
       if (!validatedData) {
-        logger.error('Complete event validation failed', {
-          rawData: typeof rawData === 'string' ? rawData.substring(0, 200) : rawData,
+        // Log warning but DON'T crash - trigger REST verification instead (Issue #489)
+        logger.warn('Complete event validation failed - will verify via REST API', {
+          rawData: typeof rawData === 'string' ? rawData.substring(0, 500) : rawData,
           eventType: 'complete',
+          hint: 'Will fall back to REST API verification',
         })
-        store.setState({
-          error: new Error('Received invalid complete event from server'),
-        })
+        store.setState((state) => ({
+          _validationFailures: (state._validationFailures ?? 0) + 1,
+          // Set a flag to trigger REST verification (the reconciliation hook will handle this)
+        }))
+        // DON'T set error - let reconciliation hook verify via REST
         return
       }
 
@@ -289,14 +298,16 @@ function handleCompleteEvent(store: StoreAPI): (event: MessageEvent) => void {
         }
       }
     } catch (error) {
-      logger.error('Failed to parse complete event', {
-        rawData: event.data?.substring(0, 200),
+      // JSON parse errors are also non-fatal for complete events (Issue #489)
+      logger.warn('Failed to parse complete event JSON - will verify via REST API', {
+        rawData: event.data?.substring(0, 500),
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
       })
-      store.setState({
-        error: error instanceof Error ? error : new Error('Failed to parse complete event'),
-      })
+      store.setState((state) => ({
+        _validationFailures: (state._validationFailures ?? 0) + 1,
+        // Set a flag to trigger REST verification (the reconciliation hook will handle this)
+      }))
+      // DON'T set error - let reconciliation hook verify via REST
     }
   }
 }
