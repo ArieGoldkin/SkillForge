@@ -213,9 +213,9 @@ jobs:
           # =============================================================================
           # API Keys (Injected from GitHub Secrets)
           # =============================================================================
-          OPENAI_API_KEY=${OPENAI_API_KEY}
-          JINA_API_KEY=${JINA_API_KEY}
-          LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+          OPENAI_API_KEY=$OPENAI_API_KEY
+          JINA_API_KEY=$JINA_API_KEY
+          LANGCHAIN_API_KEY=$LANGCHAIN_API_KEY
 
           # =============================================================================
           # CI/CD Overrides (Lightweight E2E)
