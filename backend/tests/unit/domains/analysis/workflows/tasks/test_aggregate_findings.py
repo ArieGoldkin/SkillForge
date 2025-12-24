@@ -67,7 +67,7 @@ def sample_agent_findings():
 def sample_state(sample_agent_findings):
     """Sample analysis state for testing."""
     return AnalysisState(
-        analysis_id="test-analysis-id",
+        analysis_id="00000000-0000-0000-0000-000000000001",
         url="https://example.com",
         content_type="article",
         raw_content="Test content",
@@ -642,9 +642,10 @@ class TestDetectCoverageGaps:
 
         gaps = detect_coverage_gaps(contributing_agents)
 
-        # Should detect gaps for all other agents (10 gaps for 2 contributing out of 12)
-        # 12 total agents: 8 specialized + 4 universal (key_insights, pros_cons, audience_fit, actionable)
-        assert len(gaps) == 10
+        # Should detect gaps for all other agents (14 gaps for 2 contributing out of 16)
+        # 16 total agents: 8 content-specific + 4 universal (Tier 1) + 4 validation (Tier 2)
+        # Issue #436: Added Tier 2 agents (fact_validator, source_credibility, freshness_checker, alternatives_finder)
+        assert len(gaps) == 14
         gap_agent_types = [gap["missing_agent"] for gap in gaps]
         assert "implementation_planner" not in gap_agent_types
         assert "security_auditor" not in gap_agent_types
@@ -681,8 +682,10 @@ class TestDetectCoverageGaps:
         """Test gap detection when no agents contribute."""
         gaps = detect_coverage_gaps([])
 
-        # Should detect gaps for all 12 agents (8 specialized + 4 universal)
-        assert len(gaps) == 12
+        # Should detect gaps for all 16 agents
+        # (8 content-specific + 4 universal Tier 1 + 4 validation Tier 2)
+        # Issue #436: Added 4 Tier 2 agents
+        assert len(gaps) == 16
 
 
 class TestCalculateCoverageScore:
@@ -694,8 +697,8 @@ class TestCalculateCoverageScore:
 
         score = calculate_coverage_score(contributing_agents)
 
-        # 2 out of 12 agents = 0.1666... (round to 2 decimal places for test)
-        assert round(score, 2) == round(2 / 12, 2)
+        # 2 out of 16 agents = 0.125 (Issue #436: 4 new Tier 2 agents added)
+        assert round(score, 2) == round(2 / 16, 2)
 
     def test_calculate_coverage_score_all(self):
         """Test coverage score when all agents contribute."""
@@ -710,18 +713,19 @@ class TestCalculateCoverageScore:
 
         score = calculate_coverage_score(all_agents)
 
-        # All 12 agents = 1.0
+        # All 16 agents = 1.0 (Issue #436: 4 new Tier 2 agents added)
         assert score == 1.0
 
     def test_calculate_coverage_score_none(self):
         """Test coverage score with no agents."""
         score = calculate_coverage_score([])
 
-        # 0 out of 12 agents = 0.0
+        # 0 out of 16 agents = 0.0 (Issue #436: 4 new Tier 2 agents added)
         assert score == 0.0
 
     def test_calculate_coverage_score_half(self):
-        """Test coverage score with half the agents (6 out of 12)."""
+        """Test coverage score with half the agents (8 out of 16)."""
+        # Issue #436: Added 4 new Tier 2 agents, now 16 total
         contributing_agents = [
             "tech_comparator",
             "security_auditor",
@@ -729,11 +733,13 @@ class TestCalculateCoverageScore:
             "performance_analyst",
             "key_insights",
             "pros_cons",
+            "audience_fit",  # Added to maintain 50% coverage
+            "actionable",  # Added to maintain 50% coverage
         ]
 
         score = calculate_coverage_score(contributing_agents)
 
-        # 6 out of 12 agents = 0.5
+        # 8 out of 16 agents = 0.5
         assert score == 0.5
 
 
@@ -776,8 +782,11 @@ class TestAggregationCoverageFeatures:
             insights = result["aggregated_insights"]
             # Coverage gaps should be present (even if empty)
             assert "coverage_gaps" in insights
-            # Should have gaps for missing agents (3 contributing, 9 missing out of 12)
-            assert len(insights["coverage_gaps"]) == 9
+            # Should have gaps for missing agents
+            # sample_agent_findings has 3 agents (tech_comparator, security_auditor, implementation_planner)
+            # 16 total agents - 3 contributing = 13 gaps
+            # Issue #436: Added 4 new Tier 2 agents, now 16 total agents
+            assert len(insights["coverage_gaps"]) == 13
 
     @pytest.mark.asyncio
     async def test_aggregation_includes_coverage_score(self, sample_state):
@@ -916,13 +925,27 @@ class TestAggregationCoverageFeatures:
                 "app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm"
             ) as mock_synthesize,
             patch(
+                "app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_trend_summary"
+            ) as mock_trend_synthesize,
+            patch(
                 "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_started"
             ),
             patch(
                 "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_complete"
             ),
+            patch(
+                "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_detecting_conflicts"
+            ),
+            patch(
+                "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_synthesizing"
+            ),
+            patch(
+                "app.domains.analysis.workflows.tasks.aggregate_findings._store_findings_as_memories"
+            ) as mock_store_memories,
         ):
             mock_synthesize.return_value = mock_structured_response
+            mock_trend_synthesize.return_value = mock_structured_response  # Mock fallback path
+            mock_store_memories.return_value = 0  # Mock memory storage to prevent real API calls
 
             result = await aggregate_findings(sample_state)
 
@@ -980,7 +1003,7 @@ class TestStoreFindings:
             # Verify memory storage was called
             mock_store_memories.assert_called_once()
             call_args = mock_store_memories.call_args
-            assert call_args.kwargs["analysis_id"] == "test-analysis-id"
+            assert call_args.kwargs["analysis_id"] == "00000000-0000-0000-0000-000000000001"
             assert len(call_args.kwargs["agent_findings"]) == 3
 
             # Verify metadata includes memories_stored

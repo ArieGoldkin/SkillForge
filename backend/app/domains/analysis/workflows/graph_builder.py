@@ -366,7 +366,9 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     content = state["raw_content"]
     content_type = state["content_type"]
     analysis_id = state["analysis_id"]
-    result = await supervisor_route(content, content_type, analysis_id)
+    # Issue #436: Pass analysis_mode for tier-based agent filtering
+    analysis_mode = state.get("analysis_mode", "standard")
+    result = await supervisor_route(content, content_type, analysis_id, analysis_mode=analysis_mode)
     supervisor_decision = result.get("supervisor_decision", {})
     # Return only updated fields, not entire state
     if isinstance(supervisor_decision, dict):

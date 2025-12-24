@@ -24,3 +24,6 @@ EventData = dict[str, object]
 
 # Extraction result type - metadata can contain str or int values
 ExtractionResult = dict[str, str | int | dict[str, str | int]]
+
+# Tavily Search result type
+TavilySearchResult = dict[str, str | int | list[dict[str, str | float]]]

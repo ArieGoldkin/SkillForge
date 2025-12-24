@@ -9,6 +9,10 @@ from app.domains.analysis.schemas.agents.actionable import (
     ActionableOutput,
     Resource,
 )
+from app.domains.analysis.schemas.agents.alternatives_finder import (
+    Alternative,
+    AlternativesFinderOutput,
+)
 from app.domains.analysis.schemas.agents.audience_fit import (
     Audience,
     AudienceFitOutput,
@@ -24,6 +28,10 @@ from app.domains.analysis.schemas.agents.code_quality_critic import (
 from app.domains.analysis.schemas.agents.dependency_mapper import (
     Dependency,
     DependencyMapping,
+)
+from app.domains.analysis.schemas.agents.fact_validator import (
+    Claim,
+    FactValidatorOutput,
 )
 from app.domains.analysis.schemas.agents.implementation_planner import (
     ImplementationPlan,
@@ -46,6 +54,10 @@ from app.domains.analysis.schemas.agents.security_auditor import (
     SecurityAudit,
     SecurityRisk,
 )
+from app.domains.analysis.schemas.agents.source_credibility import (
+    CredibilitySignal,
+    SourceCredibilityOutput,
+)
 from app.domains.analysis.schemas.agents.tech_comparator import (
     TechComparison,
     TechComparisonEntry,
@@ -58,15 +70,20 @@ from app.domains.analysis.schemas.agents.trend_validator import (
 __all__ = [
     "Action",
     "ActionableOutput",
+    "Alternative",
+    "AlternativesFinderOutput",
     "Audience",
     "AudienceFitOutput",
+    "Claim",
     "CodeIssue",
     "CodeQualityReview",
     "CompatibilityScore",
+    "CredibilitySignal",
     "DataAvailabilityLevel",
     "DataAvailabilityMixin",
     "Dependency",
     "DependencyMapping",
+    "FactValidatorOutput",
     "ImplementationPlan",
     "ImplementationStep",
     "IntegrationFeasibility",
@@ -78,6 +95,7 @@ __all__ = [
     "Resource",
     "SecurityAudit",
     "SecurityRisk",
+    "SourceCredibilityOutput",
     "TechComparison",
     "TechComparisonEntry",
     "TrendAssessment",

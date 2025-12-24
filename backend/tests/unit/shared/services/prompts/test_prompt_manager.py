@@ -404,10 +404,108 @@ class TestPromptManagerIntegration:
     @pytest.mark.asyncio
     @pytest.mark.integration
     async def test_full_cache_flow(self):
-        """Test full flow: L1 miss → L2 miss → Langfuse → cache population."""
-        # This test requires real Redis and Langfuse connections
-        # Skip if not available in test environment
-        pytest.skip("Requires live Redis and Langfuse - run in integration suite")
+        """Test full flow: L1 miss → L2 miss → Langfuse → cache population.
+
+        This test verifies the cache flow works correctly regardless of whether
+        Langfuse has content or falls back to hardcoded prompts. The key is that:
+        1. First call should fetch from source (Langfuse or hardcoded)
+        2. Second call should hit L1 cache (same result, faster)
+        3. Result should always have content (never empty)
+        """
+        import os
+        import socket
+
+        def check_port(host: str, port: int) -> bool:
+            """Check if a port is open."""
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                result = sock.connect_ex((host, port))
+                sock.close()
+                return result == 0
+            except Exception:
+                return False
+
+        # Check Redis on multiple common ports (6380=dev, 6381=test, 6379=default)
+        redis_host = os.environ.get("REDIS_HOST", "localhost")
+        redis_port_env = os.environ.get("REDIS_PORT")
+        redis_ports_to_try = [int(redis_port_env)] if redis_port_env else [6380, 6381, 6379]
+        redis_available = any(check_port(redis_host, port) for port in redis_ports_to_try)
+
+        # Check Langfuse on multiple common ports (3000=dev, 3001=test)
+        # LANGFUSE_HOST may be a URL like http://localhost:3001, so extract host/port
+        from urllib.parse import urlparse
+
+        langfuse_env = os.environ.get("LANGFUSE_HOST", "localhost")
+        if langfuse_env.startswith("http"):
+            parsed = urlparse(langfuse_env)
+            langfuse_host = parsed.hostname or "localhost"
+            # If port is in URL, use it; otherwise check common ports
+            langfuse_ports_to_try = [parsed.port] if parsed.port else [3000, 3001]
+        else:
+            langfuse_host = langfuse_env
+            langfuse_port_env = os.environ.get("LANGFUSE_PORT")
+            langfuse_ports_to_try = [int(langfuse_port_env)] if langfuse_port_env else [3000, 3001]
+        langfuse_available = any(check_port(langfuse_host, port) for port in langfuse_ports_to_try)
+
+        if not redis_available or not langfuse_available:
+            pytest.skip(
+                f"Live services not available (Redis: {redis_available}, Langfuse: {langfuse_available})"
+            )
+
+        # Create manager with real connections
+        manager = PromptManager(
+            enable_langfuse=True,
+            enable_redis=True,
+        )
+
+        # Test L1 miss → L2 miss → Source fetch → cache population
+        prompt_name = "analysis-supervisor-routing"
+
+        # First call - should fetch from source (Langfuse with content, or fallback to hardcoded)
+        # The manager should return non-empty content regardless of Langfuse state
+        # Note: Routing prompt requires agent_list variable
+        test_variables = {"agent_list": "- test_agent_1\n- test_agent_2"}
+        result1 = await manager.get_prompt(
+            name=prompt_name,
+            variables=test_variables,
+            label="production",
+        )
+        # Verify we got content (from Langfuse or hardcoded fallback)
+        assert result1 is not None, "First call should return a prompt"
+        assert len(result1) > 0, "Prompt should have content (from Langfuse or hardcoded)"
+        assert "agent" in result1.lower(), "Routing prompt should mention agents"
+
+        # Second call - should hit L1 cache (same result, faster)
+        result2 = await manager.get_prompt(
+            name=prompt_name,
+            variables=test_variables,
+            label="production",
+        )
+        assert result2 == result1, "L1 cache should return same result"
+
+        # Third call after clearing L1 - should hit L2 Redis cache (if Langfuse had content)
+        # or return hardcoded again (if Langfuse was empty)
+        manager.l1_cache.clear()
+        result3 = await manager.get_prompt(
+            name=prompt_name,
+            variables=test_variables,
+            label="production",
+        )
+        # Result should be same (from L2 cache or hardcoded)
+        # Note: If Langfuse was empty, we don't cache hardcoded prompts, so result3 == result1
+        # If Langfuse had content, result3 comes from L2 cache and should equal result1
+        assert result3 == result1, "Result should be consistent across cache levels"
+
+        # Verify metadata is available
+        metadata = await manager.get_prompt_metadata(
+            name=prompt_name,
+            label="production",
+        )
+        assert metadata is not None
+        assert metadata["prompt_name"] == prompt_name
+        # Source should be either "langfuse" (if Langfuse had content) or "hardcoded" (fallback)
+        assert metadata["prompt_source"] in ["langfuse", "hardcoded"]
 
     @pytest.mark.asyncio
     @pytest.mark.integration

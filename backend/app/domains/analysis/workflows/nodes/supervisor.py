@@ -25,6 +25,9 @@ from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
+
+# Issue #436: Tier-based agent filtering
+from app.domains.analysis.agents.registry import get_agent_metadata, get_agents_for_mode
 from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.domains.analysis.workflows.nodes.supervisor_config import (
     SUPERVISOR_PROMPT,
@@ -202,6 +205,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
     content_type: str,
     analysis_id: AnalysisID,
     model_id: str | None = None,
+    analysis_mode: str = "standard",
 ) -> dict[str, object]:
     """Supervisor decides which agents should analyze the content.
 
@@ -215,6 +219,8 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         analysis_id: Unique identifier for this analysis
         model_id: Optional model identifier to use (e.g., "gpt-4o-mini", "gemini-2.5-flash").
             If not provided, uses the default from settings.
+        analysis_mode: Analysis depth mode (quick, standard, deep_dive). Controls tier-based
+            agent filtering. Quick=Tier 1 only, Standard=Tier 1+2, Deep=All tiers.
 
     Returns:
         Dictionary with supervisor_decision containing:
@@ -556,6 +562,38 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
                     )
                     if len(filtered_agents) >= min_agents_required:
                         break
+
+        # ISSUE #436: Tier-based agent filtering based on analysis_mode
+        # INCLUSIVE filtering: Only restrict agents that ARE in the tier registry
+        # Old content-specific agents (tech_comparator, security_auditor, etc.) are
+        # NOT in the tier registry - they pass through (filtered by content signals)
+        allowed_for_mode = set(get_agents_for_mode(analysis_mode))
+        tier_excluded = []
+        tier_filtered_agents = []
+
+        for agent in filtered_agents:
+            agent_meta = get_agent_metadata(agent)
+            if agent_meta is None:
+                # Agent not in tier registry - allow through (content-specific)
+                tier_filtered_agents.append(agent)
+            elif agent in allowed_for_mode:
+                # Agent is tiered and allowed for this mode
+                tier_filtered_agents.append(agent)
+            else:
+                # Agent is tiered but NOT allowed for this mode
+                tier_excluded.append(agent)
+
+        if tier_excluded:
+            logger.info(
+                "supervisor_tier_filtered",
+                analysis_id=analysis_id,
+                analysis_mode=analysis_mode,
+                excluded_agents=tier_excluded,
+                reason="agents_excluded_by_tier",
+            )
+
+        # Update filtered_agents with tier-filtered list
+        filtered_agents = tier_filtered_agents
 
         if skipped_agents:
             logger.info(

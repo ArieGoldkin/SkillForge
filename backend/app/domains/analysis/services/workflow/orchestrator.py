@@ -43,7 +43,11 @@ class WorkflowOrchestrator:
         },
     )
     async def run(  # noqa: PLR0911, PLR0912, PLR0915
-        self, analysis_id: uuid.UUID, url: str, skill_level: str = "intermediate"
+        self,
+        analysis_id: uuid.UUID,
+        url: str,
+        skill_level: str = "intermediate",
+        analysis_mode: str = "standard",
     ) -> None:
         """Run analysis workflow and handle post-processing.
 
@@ -61,6 +65,7 @@ class WorkflowOrchestrator:
             analysis_id: UUID of the analysis
             url: URL to analyze
             skill_level: User's experience level (beginner, intermediate, expert)
+            analysis_mode: Analysis depth mode (quick, standard, deep_dive) - Issue #436
 
         """
         workflow_completed = False  # Track completion status for GeneratorExit handling
@@ -117,6 +122,7 @@ class WorkflowOrchestrator:
                 "url": url,
                 "analysis_id": str(analysis_id),
                 "skill_level": skill_level,
+                "analysis_mode": analysis_mode,  # Issue #436: Tier-based agent filtering
             }
 
             # Execute workflow with callbacks (Issue #384: enables graph visualization)

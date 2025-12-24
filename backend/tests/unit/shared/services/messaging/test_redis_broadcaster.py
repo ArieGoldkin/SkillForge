@@ -564,7 +564,7 @@ async def test_close_broadcaster(
     """Test that close() closes Redis connection."""
     await broadcaster.close()
 
-    mock_redis_client.close.assert_called_once()
+    mock_redis_client.aclose.assert_called_once()
     assert broadcaster._connected is False
 
 
@@ -575,7 +575,7 @@ async def test_close_handles_errors(
     mock_redis_client: AsyncMock,
 ) -> None:
     """Test that close() handles errors gracefully."""
-    mock_redis_client.close = AsyncMock(side_effect=Exception("Close error"))
+    mock_redis_client.aclose = AsyncMock(side_effect=Exception("Close error"))
 
     # Should not raise - logs warning instead
     await broadcaster.close()

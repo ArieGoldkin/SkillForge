@@ -207,7 +207,10 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
 
     # Enable streaming usage metadata (LangChain-Core 1.2.4+)
     # This allows usage_metadata extraction from streaming chunks
-    init_kwargs["stream_options"] = {"include_usage": True}  # type: ignore[typeddict-item]
+    # Move to model_kwargs to avoid LangChain's "not default parameter" warning
+    if "model_kwargs" not in init_kwargs:
+        init_kwargs["model_kwargs"] = {}
+    init_kwargs["model_kwargs"]["stream_options"] = {"include_usage": True}  # type: ignore[typeddict-item]
 
     # Remove provider prefix when LangChain expects bare model names
     if _should_strip_provider_prefix(provider):
