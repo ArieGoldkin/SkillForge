@@ -2,6 +2,7 @@
 name = "skillforge-backend"
 version = "0.1.0"
 description = "SkillForge Backend API - Research-to-Implementation Pipeline"
+license = "BUSL-1.1"
 authors = ["SkillForge Team"]
 packages = [{include = "app"}]
 

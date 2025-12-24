@@ -12,6 +12,10 @@ Agent Tool Access:
     - performance_analyst: No tools (analyzes metrics)
     - trend_validator: No tools (validates trends)
     - integration_feasibility: No tools (assesses feasibility)
+    - key_insights: Tier 1 Universal - artifact loading, memory search
+    - pros_cons: Tier 1 Universal - artifact loading, memory search
+    - actionable: Tier 1 Universal - artifact loading, memory search
+    - audience_fit: Tier 1 Universal - artifact loading, memory search
 
 Example:
     >>> registry = ToolRegistry()
@@ -240,6 +244,36 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
     ),
     "integration_feasibility": AgentToolConfig(
         agent_type="integration_feasibility",
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
+    ),
+    # Tier 1 Universal Agents (Issue #436, #499)
+    # These agents run on ALL content types and use artifact loading + memory search
+    "key_insights": AgentToolConfig(
+        agent_type="key_insights",
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
+    ),
+    "pros_cons": AgentToolConfig(
+        agent_type="pros_cons",
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
+    ),
+    "actionable": AgentToolConfig(
+        agent_type="actionable",
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
+    ),
+    "audience_fit": AgentToolConfig(
+        agent_type="audience_fit",
         enabled=True,
         capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
         max_tool_calls=5,

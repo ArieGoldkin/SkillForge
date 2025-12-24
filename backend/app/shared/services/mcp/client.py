@@ -295,7 +295,7 @@ class MCPClientPool:
         The client handles actual MCP protocol communication.
 
         0.2 Features:
-            - use_tool_name_prefix=True: Tools prefixed with server name
+            - tool_name_prefix=True: Tools prefixed with server name
             - tool_interceptors: Auth, retry, logging, enrichment chain
             - callbacks: Progress and logging notifications from MCP servers
 
@@ -345,11 +345,11 @@ class MCPClientPool:
                     )
 
                 # Create client with 0.2 features
-                # use_tool_name_prefix=True: Tools get prefixed with server name
+                # tool_name_prefix=True: Tools get prefixed with server name
                 # (e.g., github_get_repo)
                 self._client = MultiServerMCPClient(
                     client_config,
-                    use_tool_name_prefix=True,  # 0.2 feature: built-in server prefixing
+                    tool_name_prefix=True,  # 0.2 feature: built-in server prefixing
                     tool_interceptors=interceptors,  # 0.2 feature: interceptor chain
                     callbacks=callbacks,  # 0.2 feature: progress/logging notifications
                 )
@@ -357,7 +357,7 @@ class MCPClientPool:
                 logger.info(
                     "mcp_client_created",
                     servers=list(self._configs.keys()),
-                    use_tool_name_prefix=True,
+                    tool_name_prefix=True,
                     interceptors_enabled=interceptors is not None,
                     callbacks_enabled=callbacks is not None,
                 )
@@ -502,7 +502,7 @@ class MCPClientPool:
                 server_name=conn.server_name,
             )
 
-            # With use_tool_name_prefix=True (0.2 feature), tools are already
+            # With tool_name_prefix=True (0.2 feature), tools are already
             # prefixed with server name (e.g., github_get_repo) by the client.
             # No manual filtering needed - just return the tools.
             return list(tools)

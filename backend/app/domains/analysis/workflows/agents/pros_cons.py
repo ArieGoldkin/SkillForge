@@ -7,6 +7,9 @@ for any subject matter discussed in the content.
 Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -123,12 +126,13 @@ IMPORTANT: Return exactly ONE structured response/tool call; never return multip
 tool calls or extra responses."""
 
 
-async def run_pros_cons(
+async def run_pros_cons(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run pros/cons agent to analyze advantages and disadvantages.
 
@@ -138,6 +142,7 @@ async def run_pros_cons(
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced analysis capabilities
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -193,7 +198,6 @@ async def run_pros_cons(
     full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
     # Create agent with optional few-shot prompting (Phase 1, Week 2.3)
-    # Tier 1 universal agents don't use tools
     agent = await create_agent_with_optional_few_shot(
         agent_type="pros_cons",
         content=content,
@@ -201,8 +205,17 @@ async def run_pros_cons(
         response_schema=ProsConsOutput,
         analysis_id=analysis_id,
         session=session,
-        tools=None,  # Pros/cons agent doesn't use tools
+        tools=tools,
     )
+
+    # Log MCP tool usage if tools are provided
+    if tools:
+        logger.info(
+            "pros_cons_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis

@@ -77,11 +77,16 @@ async def test_agent_applies_grounding(
     # Mock the factory function call to capture the prompt
     captured_prompt = None
 
-    # Determine the factory function name - try factory first, fallback to create_structured_agent
+    # Determine the factory function name - try multiple patterns
+    # Issue #436: Some agents use create_agent_with_optional_few_shot from factories module
     factory_name = f"create_{agent_module}_agent_with_few_shot"
     if not hasattr(module, factory_name):
-        # This agent hasn't been migrated to factory pattern yet
-        factory_name = "create_structured_agent"
+        # Try the generic factory (used by integration_feasibility, etc.)
+        if hasattr(module, "create_agent_with_optional_few_shot"):
+            factory_name = "create_agent_with_optional_few_shot"
+        else:
+            # Fallback to create_structured_agent for legacy agents
+            factory_name = "create_structured_agent"
 
     def mock_create_agent(*args, **kwargs):
         nonlocal captured_prompt

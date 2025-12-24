@@ -20,6 +20,7 @@ from app.domains.analysis.workflows.tasks.runners import (
     run_tech_comparator_with_session,
     run_trend_validator_with_session,
 )
+from app.shared.services.mcp.config import MCPSettings
 
 
 @pytest.fixture
@@ -82,6 +83,18 @@ def mock_state():
     )
 
 
+@pytest.fixture
+def mock_mcp_settings_disabled():
+    """Create MCP settings with MCP disabled.
+
+    Issue #436: Tests should not load actual MCP tools.
+    This fixture ensures tests run with tools=[] as expected.
+    """
+    settings = MagicMock(spec=MCPSettings)
+    settings.enabled = False
+    return settings
+
+
 @patch("app.domains.analysis.workflows.tasks.runners.run_tech_comparator")
 async def test_run_tech_comparator_with_session(
     mock_run_agent,
@@ -91,18 +104,26 @@ async def test_run_tech_comparator_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test tech comparator runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
 
-    # Patch AsyncSessionLocal where it's imported (app.db.session, imported inside function)
-    with patch("app.db.session.AsyncSessionLocal", mock_async_session_local):
+    # Patch AsyncSessionLocal and disable MCP to prevent real tool loading
+    # Note: get_mcp_settings is imported inside the function from app.shared.services.mcp
+    with (
+        patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
+    ):
         result = await run_tech_comparator_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Tech comparator now passes tools=[] for MCP integration
+    # Tech comparator now passes tools=[] for MCP integration (MCP disabled in test)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
@@ -117,6 +138,7 @@ async def test_run_integration_feasibility_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test integration feasibility runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -127,14 +149,19 @@ async def test_run_integration_feasibility_with_session(
             "app.domains.analysis.workflows.tasks.runners.run_integration_feasibility",
             mock_run_agent,
         ),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_integration_feasibility_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
+    # Issue #436: integration_feasibility now receives tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -147,6 +174,7 @@ async def test_run_implementation_planner_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test implementation planner runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -157,13 +185,17 @@ async def test_run_implementation_planner_with_session(
             "app.domains.analysis.workflows.tasks.runners.run_implementation_planner",
             mock_run_agent,
         ),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_implementation_planner_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Implementation planner now passes tools=[] for MCP integration
+    # Implementation planner now passes tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
@@ -178,6 +210,7 @@ async def test_run_security_auditor_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test security auditor runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -185,13 +218,17 @@ async def test_run_security_auditor_with_session(
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
         patch("app.domains.analysis.workflows.tasks.runners.run_security_auditor", mock_run_agent),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_security_auditor_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Security auditor now passes tools=[] for MCP integration
+    # Security auditor now passes tools=[] for MCP integration (MCP disabled in test)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
@@ -206,6 +243,7 @@ async def test_run_performance_analyst_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test performance analyst runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -215,13 +253,17 @@ async def test_run_performance_analyst_with_session(
         patch(
             "app.domains.analysis.workflows.tasks.runners.run_performance_analyst", mock_run_agent
         ),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_performance_analyst_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Performance analyst now passes tools=[] for MCP integration
+    # Performance analyst now passes tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
@@ -236,6 +278,7 @@ async def test_run_code_quality_critic_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test code quality critic runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -245,13 +288,17 @@ async def test_run_code_quality_critic_with_session(
         patch(
             "app.domains.analysis.workflows.tasks.runners.run_code_quality_critic", mock_run_agent
         ),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_code_quality_critic_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Code quality critic now passes tools=[] for MCP integration
+    # Code quality critic now passes tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
@@ -266,6 +313,7 @@ async def test_run_trend_validator_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test trend validator runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -273,14 +321,19 @@ async def test_run_trend_validator_with_session(
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
         patch("app.domains.analysis.workflows.tasks.runners.run_trend_validator", mock_run_agent),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_trend_validator_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
+    # Issue #436: trend_validator now receives tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -293,6 +346,7 @@ async def test_run_dependency_mapper_with_session(
     mock_session,
     mock_state,
     mock_async_session_local,
+    mock_mcp_settings_disabled,
 ):
     """Test dependency mapper runner with session management."""
     mock_run_agent.return_value = {"findings": "test"}
@@ -300,13 +354,17 @@ async def test_run_dependency_mapper_with_session(
     with (
         patch("app.db.session.AsyncSessionLocal", mock_async_session_local),
         patch("app.domains.analysis.workflows.tasks.runners.run_dependency_mapper", mock_run_agent),
+        patch(
+            "app.shared.services.mcp.get_mcp_settings",
+            return_value=mock_mcp_settings_disabled,
+        ),
     ):
         result = await run_dependency_mapper_with_session(
             test_content, test_content_type, mock_analysis_id, mock_state
         )
 
     assert result == {"findings": "test"}
-    # Dependency mapper now passes tools=[] for MCP integration
+    # Dependency mapper now passes tools=[] for MCP integration (MCP disabled)
     mock_run_agent.assert_called_once_with(
         test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )

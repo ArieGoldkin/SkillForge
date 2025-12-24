@@ -363,12 +363,13 @@ async def create_dependency_mapper_agent_with_few_shot(  # noqa: PLR0913 - Facto
     )
 
 
-async def create_trend_validator_agent_with_few_shot(
+async def create_trend_validator_agent_with_few_shot(  # noqa: PLR0913
     content: str,
     system_prompt: str,
     response_schema: type[BaseModel],
     analysis_id: AnalysisID,
     session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
 ) -> Runnable:
     """Create trend validator agent with optional few-shot prompting.
 
@@ -378,6 +379,7 @@ async def create_trend_validator_agent_with_few_shot(
         response_schema: Expected output schema (TrendValidation)
         analysis_id: Analysis UUID
         session: Database session
+        tools: Optional MCP tools
 
     Returns:
         Runnable: Trend validator agent instance
@@ -390,6 +392,7 @@ async def create_trend_validator_agent_with_few_shot(
         response_schema=response_schema,
         analysis_id=analysis_id,
         session=session,
+        tools=tools,
     )
 
 
