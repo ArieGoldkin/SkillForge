@@ -44,7 +44,7 @@ export const AgentStageNameSchema = z.enum([
   'supervisor_routing',
   'aggregation',
   'artifact_generation',
-  // Agent stages (dynamically selected by supervisor, 0-8 agents)
+  // Content-based agent stages (dynamically selected by supervisor, 0-7 agents)
   'tech_comparison',
   'security_audit',
   'implementation_planning', // Used by BOTH implementation_planner AND integration_feasibility
@@ -52,6 +52,21 @@ export const AgentStageNameSchema = z.enum([
   'code_quality_audit',
   'trends_analysis',
   'dependencies_analysis',
+  // Tier 1: Universal agents (always run in Quick+ mode)
+  'key_insights',
+  'pros_cons',
+  'audience_fit',
+  'actionable',
+  // Tier 2: Validation agents (run in Standard+ mode)
+  'fact_validation',
+  'source_credibility',
+  'freshness_check',
+  'alternatives_finding',
+  // Tier 3: Research agents (run in Deep Dive mode)
+  'deep_research',
+  'community_pulse',
+  'knowledge_curation',
+  'learning_path',
   // Optional stages
   'chunking', // Only if ENABLE_COARSE_TO_FINE=true
   // Quality gate stages (emitted during quality validation)

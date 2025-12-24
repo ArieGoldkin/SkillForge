@@ -37,7 +37,7 @@ export interface StageRegistryEntry {
   id: StageName
   /** Canonical display title for UI */
   title: string
-  /** Pipeline order (1-17, unique) */
+  /** Pipeline order (1-29, unique) */
   order: number
   /** UI grouping for progress visualization */
   uiStage: AnalysisStage
@@ -47,6 +47,8 @@ export interface StageRegistryEntry {
   category: StageCategory
   /** Backend agent type names that map to this stage */
   agentTypes?: string[]
+  /** Agent tier for mode-based filtering (1=Universal, 2=Validation, 3=Research) */
+  tier?: 1 | 2 | 3
 }
 
 // ============================================================================
@@ -54,13 +56,16 @@ export interface StageRegistryEntry {
 // ============================================================================
 
 /**
- * Complete stage registry with all 17 pipeline stages
+ * Complete stage registry with all 30 pipeline stages
  *
  * Order breakdown:
  * - 1-3:   Core workflow (extraction, embedding, routing)
- * - 4-10:  Agent analysis (7 agents, all optional)
- * - 11-13: Quality pipeline (aggregation, validation, generation)
- * - 14-17: Optional workflow stages (chunking, workflow, pattern_comparison, metrics)
+ * - 4-10:  Content-based agents (7 agents, all optional)
+ * - 11-14: Tier 1 Universal agents (4 agents, all optional)
+ * - 15-18: Tier 2 Validation agents (4 agents, all optional)
+ * - 19-22: Tier 3 Research agents (4 agents, all optional)
+ * - 23-25: Quality pipeline (aggregation, validation, generation)
+ * - 26-29: Optional workflow stages (chunking, workflow, pattern_comparison, metrics)
  */
 export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
   // ===== WORKFLOW STAGES (Core Pipeline Flow) =====
@@ -154,6 +159,132 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
     optional: true,
     category: 'agent',
     agentTypes: ['dependencies_analyzer', 'dependency_mapper'],
+  },
+
+  // ===== TIER 1: UNIVERSAL AGENTS (Always run in Quick+ mode) =====
+  key_insights: {
+    id: 'key_insights',
+    title: 'Key Insights',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER1_KEY_INSIGHTS,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['key_insights'],
+    tier: 1,
+  },
+  pros_cons: {
+    id: 'pros_cons',
+    title: 'Pros & Cons',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER1_PROS_CONS,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['pros_cons'],
+    tier: 1,
+  },
+  audience_fit: {
+    id: 'audience_fit',
+    title: 'Audience Fit',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER1_AUDIENCE_FIT,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['audience_fit'],
+    tier: 1,
+  },
+  actionable: {
+    id: 'actionable',
+    title: 'Actionable Steps',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER1_ACTIONABLE,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['actionable'],
+    tier: 1,
+  },
+
+  // ===== TIER 2: VALIDATION AGENTS (Run in Standard+ mode) =====
+  fact_validation: {
+    id: 'fact_validation',
+    title: 'Fact Validation',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER2_FACT_VALIDATION,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['fact_validator'],
+    tier: 2,
+  },
+  source_credibility: {
+    id: 'source_credibility',
+    title: 'Source Credibility',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER2_SOURCE_CREDIBILITY,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['source_credibility'],
+    tier: 2,
+  },
+  freshness_check: {
+    id: 'freshness_check',
+    title: 'Freshness Check',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER2_FRESHNESS_CHECK,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['freshness_checker'],
+    tier: 2,
+  },
+  alternatives_finding: {
+    id: 'alternatives_finding',
+    title: 'Alternatives Finding',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER2_ALTERNATIVES_FINDING,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['alternatives_finder'],
+    tier: 2,
+  },
+
+  // ===== TIER 3: RESEARCH AGENTS (Run in Deep Dive mode) =====
+  deep_research: {
+    id: 'deep_research',
+    title: 'Deep Research',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER3_DEEP_RESEARCH,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['deep_researcher'],
+    tier: 3,
+  },
+  community_pulse: {
+    id: 'community_pulse',
+    title: 'Community Pulse',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER3_COMMUNITY_PULSE,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['community_pulse'],
+    tier: 3,
+  },
+  knowledge_curation: {
+    id: 'knowledge_curation',
+    title: 'Knowledge Curation',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER3_KNOWLEDGE_CURATION,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['knowledge_curator'],
+    tier: 3,
+  },
+  learning_path: {
+    id: 'learning_path',
+    title: 'Learning Path',
+    order: STAGE_ORDER_CONSTANTS.STAGE_TIER3_LEARNING_PATH,
+    uiStage: 'analyzing',
+    optional: true,
+    category: 'agent',
+    agentTypes: ['learning_path_advisor'],
+    tier: 3,
   },
 
   // ===== QUALITY STAGES (Final Pipeline Stages) =====
@@ -460,4 +591,43 @@ export function getStageNameFromAgentType(agentType: string): AgentStageName | n
     return agentType as AgentStageName
   }
   return null
+}
+
+// ============================================================================
+// Tier-Based Helper Functions
+// ============================================================================
+
+/**
+ * Get agents by specific tier
+ *
+ * @param tier - Agent tier (1=Universal, 2=Validation, 3=Research)
+ * @returns Array of stage entries for that tier, sorted by order
+ */
+export function getAgentsByTier(tier: 1 | 2 | 3): StageRegistryEntry[] {
+  return Object.values(STAGE_REGISTRY)
+    .filter((entry) => entry.tier === tier)
+    .sort((a, b) => a.order - b.order)
+}
+
+/**
+ * Get agents up to and including a tier (cumulative)
+ *
+ * @param maxTier - Maximum tier to include (1, 2, or 3)
+ * @returns Array of stage entries for tiers 1 to maxTier, sorted by order
+ */
+export function getAgentsUpToTier(maxTier: 1 | 2 | 3): StageRegistryEntry[] {
+  return Object.values(STAGE_REGISTRY)
+    .filter((entry) => entry.tier !== undefined && entry.tier <= maxTier)
+    .sort((a, b) => a.order - b.order)
+}
+
+/**
+ * Get all tiered agents (all agents that have a tier property)
+ *
+ * @returns Array of all tiered stage entries, sorted by order
+ */
+export function getAllTieredAgents(): StageRegistryEntry[] {
+  return Object.values(STAGE_REGISTRY)
+    .filter((entry) => entry.tier !== undefined)
+    .sort((a, b) => a.order - b.order)
 }

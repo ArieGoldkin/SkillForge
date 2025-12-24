@@ -147,7 +147,7 @@ export function getAgentName(stage: StageName, details?: Record<string, unknown>
     quality_gate: 'Quality Validator', // Alias for quality_validation
     quality_validation: 'Quality Validator',
     artifact_generation: 'Report Generator',
-    // Agent stages
+    // Content-based agent stages
     tech_comparison: 'Tech Comparator',
     security_audit: 'Security Auditor',
     implementation_planning: 'Implementation Planner', // Covers BOTH implementation_planner AND integration_feasibility
@@ -155,6 +155,21 @@ export function getAgentName(stage: StageName, details?: Record<string, unknown>
     code_quality_audit: 'Code Quality Reviewer',
     trends_analysis: 'Trends Analyst',
     dependencies_analysis: 'Dependencies Analyzer',
+    // Tier 1: Universal agents
+    key_insights: 'Key Insights Extractor',
+    pros_cons: 'Pros & Cons Analyzer',
+    audience_fit: 'Audience Fit Analyzer',
+    actionable: 'Actionable Steps Generator',
+    // Tier 2: Validation agents
+    fact_validation: 'Fact Validator',
+    source_credibility: 'Source Credibility Assessor',
+    freshness_check: 'Freshness Checker',
+    alternatives_finding: 'Alternatives Finder',
+    // Tier 3: Research agents
+    deep_research: 'Deep Researcher',
+    community_pulse: 'Community Pulse Analyzer',
+    knowledge_curation: 'Knowledge Curator',
+    learning_path: 'Learning Path Advisor',
     // Optional stages
     chunking: 'Content Chunker',
     workflow: 'Workflow',
@@ -174,7 +189,7 @@ const RUNNING_ACTIONS: Record<StageName, string> = {
   quality_gate: 'Validating quality standards...', // Alias for quality_validation
   quality_validation: 'Validating quality standards...',
   artifact_generation: 'Generating implementation guide...',
-  // Agent stages
+  // Content-based agent stages
   tech_comparison: 'Comparing technology patterns...',
   security_audit: 'Auditing security considerations...',
   implementation_planning: 'Planning implementation steps...', // Covers BOTH implementation_planner AND integration_feasibility
@@ -182,6 +197,21 @@ const RUNNING_ACTIONS: Record<StageName, string> = {
   code_quality_audit: 'Reviewing code quality...',
   trends_analysis: 'Analyzing technology trends...',
   dependencies_analysis: 'Analyzing dependencies...',
+  // Tier 1: Universal agents
+  key_insights: 'Extracting key insights...',
+  pros_cons: 'Analyzing pros and cons...',
+  audience_fit: 'Assessing audience fit...',
+  actionable: 'Generating actionable steps...',
+  // Tier 2: Validation agents
+  fact_validation: 'Validating facts...',
+  source_credibility: 'Assessing source credibility...',
+  freshness_check: 'Checking content freshness...',
+  alternatives_finding: 'Finding alternatives...',
+  // Tier 3: Research agents
+  deep_research: 'Conducting deep research...',
+  community_pulse: 'Analyzing community sentiment...',
+  knowledge_curation: 'Curating knowledge...',
+  learning_path: 'Generating learning path...',
   // Optional stages
   chunking: 'Chunking content...',
   workflow: 'Managing workflow...',

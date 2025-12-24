@@ -15,7 +15,10 @@ import type { AnalysisStage } from '../../components/steps/AnalysisProgressCard'
 import {
   AGENT_TO_STAGE_MAP,
   ALL_STAGES,
+  getAgentsByTier,
+  getAgentsUpToTier,
   getAgentTypesForStage,
+  getAllTieredAgents,
   getOptionalStages,
   getStageByAgentType,
   getStageOrder,
@@ -40,14 +43,14 @@ import {
 // Test Data & Constants
 // ============================================================================
 
-const EXPECTED_STAGE_COUNT = 18
+const EXPECTED_STAGE_COUNT = 30
 
 const EXPECTED_STAGE_NAMES: StageName[] = [
   // Workflow stages (core pipeline)
   'extraction',
   'embedding',
   'supervisor_routing',
-  // Agent stages (all optional)
+  // Content-based agent stages (all optional)
   'tech_comparison',
   'dependencies_analysis',
   'security_audit',
@@ -55,6 +58,21 @@ const EXPECTED_STAGE_NAMES: StageName[] = [
   'performance_audit',
   'code_quality_audit',
   'trends_analysis',
+  // Tier 1: Universal agents
+  'key_insights',
+  'pros_cons',
+  'audience_fit',
+  'actionable',
+  // Tier 2: Validation agents
+  'fact_validation',
+  'source_credibility',
+  'freshness_check',
+  'alternatives_finding',
+  // Tier 3: Research agents
+  'deep_research',
+  'community_pulse',
+  'knowledge_curation',
+  'learning_path',
   // Quality stages
   'aggregation',
   'quality_gate',
@@ -68,6 +86,7 @@ const EXPECTED_STAGE_NAMES: StageName[] = [
 ]
 
 const EXPECTED_OPTIONAL_STAGES: StageName[] = [
+  // Content-based agents
   'tech_comparison',
   'security_audit',
   'implementation_planning',
@@ -75,6 +94,22 @@ const EXPECTED_OPTIONAL_STAGES: StageName[] = [
   'code_quality_audit',
   'trends_analysis',
   'dependencies_analysis',
+  // Tier 1: Universal agents
+  'key_insights',
+  'pros_cons',
+  'audience_fit',
+  'actionable',
+  // Tier 2: Validation agents
+  'fact_validation',
+  'source_credibility',
+  'freshness_check',
+  'alternatives_finding',
+  // Tier 3: Research agents
+  'deep_research',
+  'community_pulse',
+  'knowledge_curation',
+  'learning_path',
+  // Optional workflow stages
   'chunking',
   'pattern_comparison',
   'metrics',
@@ -92,10 +127,12 @@ const EXPECTED_WORKING_STAGES: StageName[] = [
 ]
 
 const KNOWN_AGENT_TYPES = [
+  // Core workflow
   'extraction',
   'embedding',
   'supervisor',
   'supervisor_route',
+  // Content-based agents
   'tech_comparator',
   'security_auditor',
   'implementation_planner',
@@ -108,6 +145,22 @@ const KNOWN_AGENT_TYPES = [
   'trend_validator',
   'dependencies_analyzer',
   'dependency_mapper',
+  // Tier 1: Universal agents
+  'key_insights',
+  'pros_cons',
+  'audience_fit',
+  'actionable',
+  // Tier 2: Validation agents
+  'fact_validator',
+  'source_credibility',
+  'freshness_checker',
+  'alternatives_finder',
+  // Tier 3: Research agents
+  'deep_researcher',
+  'community_pulse',
+  'knowledge_curator',
+  'learning_path_advisor',
+  // Quality stages
   'aggregation',
   'quality_gate',
   'quality_validation',
@@ -121,7 +174,7 @@ const KNOWN_AGENT_TYPES = [
 
 describe('Stage Registry Structure', () => {
   describe('Basic Structure', () => {
-    it('should have exactly 17 stages defined', () => {
+    it('should have exactly 30 stages defined', () => {
       const stageCount = Object.keys(STAGE_REGISTRY).length
       expect(stageCount).toBe(EXPECTED_STAGE_COUNT)
     })
@@ -197,29 +250,29 @@ describe('Stage Registry Structure', () => {
   })
 
   describe('Order Values', () => {
-    it('should have order values in valid range (1-18)', () => {
+    it('should have order values in valid range (1-29)', () => {
       const orderValues = Object.values(STAGE_REGISTRY).map((entry) => entry.order)
 
-      // Note: quality_gate and quality_validation share order 12, so we have 17 unique orders for 18 stages
+      // Note: quality_gate and quality_validation share order 24, so we have 29 unique orders for 30 stages
       const uniqueOrders = new Set(orderValues)
-      expect(uniqueOrders.size).toBe(17) // One duplicate at order 12
+      expect(uniqueOrders.size).toBe(29) // One duplicate at order 24
 
       // Check range
       orderValues.forEach((order) => {
         expect(order).toBeGreaterThanOrEqual(1)
-        expect(order).toBeLessThanOrEqual(17) // Max order is 17 (not 18) due to duplicate
+        expect(order).toBeLessThanOrEqual(29) // Max order is 29 due to duplicate
       })
     })
 
-    it('should have mostly sequential order values with one duplicate at position 12', () => {
+    it('should have mostly sequential order values with one duplicate at position 24', () => {
       const orderValues = Object.values(STAGE_REGISTRY).map((entry) => entry.order)
       const sortedOrders = [...orderValues].sort((a, b) => a - b)
 
-      // Should be [1, 2, 3, ..., 11, 12, 12, 13, ..., 17]
-      // quality_gate and quality_validation both have order 12
-      expect(sortedOrders.filter((o) => o === 12).length).toBe(2) // Two stages at order 12
+      // Should be [1, 2, 3, ..., 23, 24, 24, 25, ..., 29]
+      // quality_gate and quality_validation both have order 24
+      expect(sortedOrders.filter((o) => o === 24).length).toBe(2) // Two stages at order 24
       expect(sortedOrders[0]).toBe(1)
-      expect(sortedOrders[sortedOrders.length - 1]).toBe(17) // Last order is 17, not 18
+      expect(sortedOrders[sortedOrders.length - 1]).toBe(29) // Last order is 29
     })
 
     it('should have correct order ranges by category', () => {
@@ -239,21 +292,23 @@ describe('Stage Registry Structure', () => {
         .map((entry) => entry.order)
       expect(coreWorkflowOrders).toEqual([1, 2, 3])
 
-      // Agent stages: 4-10
+      // Agent stages: 4-22 (7 content-based + 12 tier-based = 19 agents)
       const agentOrders = agentStages.map((entry) => entry.order).sort((a, b) => a - b)
-      expect(agentOrders).toEqual([4, 5, 6, 7, 8, 9, 10])
+      expect(agentOrders.length).toBe(19) // 7 content-based + 4 tier1 + 4 tier2 + 4 tier3
+      expect(agentOrders[0]).toBe(4) // First content-based agent
+      expect(agentOrders[agentOrders.length - 1]).toBe(22) // Last tier3 agent
 
-      // Quality stages: 11-14 (4 quality stages now)
+      // Quality stages: 23-25 (4 quality stages, quality_gate and quality_validation share 24)
       const qualityOrders = qualityStages.map((entry) => entry.order).sort((a, b) => a - b)
       expect(qualityOrders.length).toBe(4)
-      expect(qualityOrders[0]).toBe(11) // aggregation
+      expect(qualityOrders[0]).toBe(23) // aggregation
 
-      // Optional workflow stages: 15-17 (chunking, pattern_comparison, metrics have orders 15, 16, 17)
+      // Optional workflow stages: 26-29 (chunking, workflow, pattern_comparison, metrics)
       const optionalWorkflowOrders = workflowStages
-        .filter((entry) => entry.order >= 15)
+        .filter((entry) => entry.order >= 26)
         .map((entry) => entry.order)
         .sort((a, b) => a - b)
-      expect(optionalWorkflowOrders).toEqual([15, 16, 17])
+      expect(optionalWorkflowOrders).toEqual([26, 27, 28, 29])
     })
   })
 
@@ -268,9 +323,9 @@ describe('Stage Registry Structure', () => {
       })
     })
 
-    it('should have exactly 10 optional stages', () => {
+    it('should have exactly 22 optional stages', () => {
       const optionalStages = Object.values(STAGE_REGISTRY).filter((entry) => entry.optional)
-      expect(optionalStages).toHaveLength(10)
+      expect(optionalStages).toHaveLength(22) // 7 content-based + 12 tier-based + 3 workflow optional
     })
 
     it('should match expected optional stages list', () => {
@@ -361,7 +416,7 @@ describe('Derived Exports', () => {
   })
 
   describe('ALL_STAGES', () => {
-    it('should have 18 entries', () => {
+    it('should have 30 entries', () => {
       expect(ALL_STAGES).toHaveLength(EXPECTED_STAGE_COUNT)
     })
 
@@ -385,7 +440,7 @@ describe('Derived Exports', () => {
   })
 
   describe('VALID_STAGES', () => {
-    it('should be a Set with 18 entries', () => {
+    it('should be a Set with 30 entries', () => {
       expect(VALID_STAGES).toBeInstanceOf(Set)
       expect(VALID_STAGES.size).toBe(EXPECTED_STAGE_COUNT)
     })
@@ -404,7 +459,7 @@ describe('Derived Exports', () => {
   })
 
   describe('TOTAL_STAGES', () => {
-    it('should equal 18', () => {
+    it('should equal 30', () => {
       expect(TOTAL_STAGES).toBe(EXPECTED_STAGE_COUNT)
     })
 
@@ -422,8 +477,8 @@ describe('Derived Exports', () => {
       expect(OPTIONAL_STAGES.sort()).toEqual([...EXPECTED_OPTIONAL_STAGES].sort())
     })
 
-    it('should have 10 entries', () => {
-      expect(OPTIONAL_STAGES).toHaveLength(10)
+    it('should have 22 entries', () => {
+      expect(OPTIONAL_STAGES).toHaveLength(22) // 7 content-based + 12 tier-based + 3 workflow optional
     })
 
     it('should match registry optional flag', () => {
@@ -522,8 +577,9 @@ describe('Agent Mapping', () => {
       expect(AGENT_TO_STAGE_MAP.supervisor_route).toBe('supervisor_routing')
     })
 
-    it('should have at least 21 agent type mappings', () => {
-      expect(Object.keys(AGENT_TO_STAGE_MAP).length).toBeGreaterThanOrEqual(21)
+    it('should have at least 33 agent type mappings', () => {
+      // 21 original + 12 tier-based agents = 33
+      expect(Object.keys(AGENT_TO_STAGE_MAP).length).toBeGreaterThanOrEqual(33)
     })
   })
 
@@ -677,8 +733,8 @@ describe('Helper Functions', () => {
       expect(getOptionalStages()).toEqual(OPTIONAL_STAGES)
     })
 
-    it('should have 10 entries', () => {
-      expect(getOptionalStages()).toHaveLength(10)
+    it('should have 22 entries', () => {
+      expect(getOptionalStages()).toHaveLength(22) // 7 content-based + 12 tier-based + 3 workflow optional
     })
   })
 
@@ -698,7 +754,7 @@ describe('Helper Functions', () => {
     it('should filter by agent category correctly', () => {
       const agentStages = getStagesByCategory('agent')
 
-      expect(agentStages.length).toBe(7) // 7 agent stages
+      expect(agentStages.length).toBe(19) // 7 content-based + 12 tier-based agents
       agentStages.forEach((entry) => {
         expect(entry.category).toBe('agent')
         expect(entry.optional).toBe(true) // All agent stages are optional
@@ -768,6 +824,7 @@ describe('Helper Functions', () => {
   describe('isAgentStage', () => {
     it('should return true for agent stages', () => {
       const agentStages: AgentStageName[] = [
+        // Content-based agents
         'tech_comparison',
         'security_audit',
         'implementation_planning',
@@ -775,6 +832,21 @@ describe('Helper Functions', () => {
         'code_quality_audit',
         'trends_analysis',
         'dependencies_analysis',
+        // Tier 1: Universal agents
+        'key_insights',
+        'pros_cons',
+        'audience_fit',
+        'actionable',
+        // Tier 2: Validation agents
+        'fact_validation',
+        'source_credibility',
+        'freshness_check',
+        'alternatives_finding',
+        // Tier 3: Research agents
+        'deep_research',
+        'community_pulse',
+        'knowledge_curation',
+        'learning_path',
       ]
 
       agentStages.forEach((stageName) => {
@@ -843,8 +915,16 @@ describe('Helper Functions', () => {
       expect(getStageOrder('embedding')).toBe(2)
       expect(getStageOrder('supervisor_routing')).toBe(3)
       expect(getStageOrder('tech_comparison')).toBe(4)
-      expect(getStageOrder('aggregation')).toBe(11)
-      expect(getStageOrder('metrics')).toBe(17)
+      // Tier 1 agents are at 11-14
+      expect(getStageOrder('key_insights')).toBe(11)
+      expect(getStageOrder('actionable')).toBe(14)
+      // Tier 2 agents are at 15-18
+      expect(getStageOrder('fact_validation')).toBe(15)
+      // Tier 3 agents are at 19-22
+      expect(getStageOrder('deep_research')).toBe(19)
+      // Workflow stages now at 23+
+      expect(getStageOrder('aggregation')).toBe(23)
+      expect(getStageOrder('metrics')).toBe(29)
     })
 
     it('should return Infinity for unknown stages', () => {
@@ -974,7 +1054,7 @@ describe('Integration Tests', () => {
 
       // Agent stages (optional)
       const agentStages = sorted.filter((s) => s.category === 'agent')
-      expect(agentStages.length).toBe(7)
+      expect(agentStages.length).toBe(19) // 7 content-based + 12 tier-based
 
       // Quality stages
       const qualityStages = sorted.filter((s) => s.category === 'quality')
@@ -993,7 +1073,7 @@ describe('Integration Tests', () => {
       const qualityStages = Object.values(STAGE_REGISTRY).filter((s) => s.category === 'quality')
 
       expect(workflowStages.length).toBe(7) // 3 core + 4 optional workflow stages
-      expect(agentStages.length).toBe(7)
+      expect(agentStages.length).toBe(19) // 7 content-based + 12 tier-based
       expect(qualityStages.length).toBe(4) // aggregation, quality_gate, quality_validation, artifact_generation
       expect(workflowStages.length + agentStages.length + qualityStages.length).toBe(
         EXPECTED_STAGE_COUNT
@@ -1018,6 +1098,174 @@ describe('Integration Tests', () => {
 
       const requiredConfig = STAGE_CONFIG.extraction
       expect('optional' in requiredConfig).toBe(false)
+    })
+  })
+})
+
+// ============================================================================
+// 6. Tier-Based Agent Tests
+// ============================================================================
+
+describe('Tier-Based Agent Functions', () => {
+  describe('getAgentsByTier', () => {
+    it('should return Tier 1 (Universal) agents correctly', () => {
+      const tier1 = getAgentsByTier(1)
+      expect(tier1).toHaveLength(4)
+      expect(tier1.map((s) => s.id)).toEqual([
+        'key_insights',
+        'pros_cons',
+        'audience_fit',
+        'actionable',
+      ])
+    })
+
+    it('should return Tier 2 (Validation) agents correctly', () => {
+      const tier2 = getAgentsByTier(2)
+      expect(tier2).toHaveLength(4)
+      expect(tier2.map((s) => s.id)).toEqual([
+        'fact_validation',
+        'source_credibility',
+        'freshness_check',
+        'alternatives_finding',
+      ])
+    })
+
+    it('should return Tier 3 (Research) agents correctly', () => {
+      const tier3 = getAgentsByTier(3)
+      expect(tier3).toHaveLength(4)
+      expect(tier3.map((s) => s.id)).toEqual([
+        'deep_research',
+        'community_pulse',
+        'knowledge_curation',
+        'learning_path',
+      ])
+    })
+
+    it('should return agents sorted by order', () => {
+      const tier1 = getAgentsByTier(1)
+      const orders = tier1.map((s) => s.order)
+      for (let i = 1; i < orders.length; i++) {
+        expect(orders[i]).toBeGreaterThan(orders[i - 1])
+      }
+    })
+  })
+
+  describe('getAgentsUpToTier', () => {
+    it('should return only Tier 1 agents for maxTier=1', () => {
+      const agents = getAgentsUpToTier(1)
+      expect(agents).toHaveLength(4)
+      agents.forEach((agent) => {
+        expect(agent.tier).toBe(1)
+      })
+    })
+
+    it('should return Tier 1 + Tier 2 agents for maxTier=2', () => {
+      const agents = getAgentsUpToTier(2)
+      expect(agents).toHaveLength(8)
+      agents.forEach((agent) => {
+        expect(agent.tier).toBeLessThanOrEqual(2)
+      })
+    })
+
+    it('should return all tiered agents for maxTier=3', () => {
+      const agents = getAgentsUpToTier(3)
+      expect(agents).toHaveLength(12)
+      agents.forEach((agent) => {
+        expect(agent.tier).toBeLessThanOrEqual(3)
+      })
+    })
+
+    it('should return agents sorted by order', () => {
+      const agents = getAgentsUpToTier(3)
+      const orders = agents.map((s) => s.order)
+      for (let i = 1; i < orders.length; i++) {
+        expect(orders[i]).toBeGreaterThan(orders[i - 1])
+      }
+    })
+  })
+
+  describe('getAllTieredAgents', () => {
+    it('should return all 12 tiered agents', () => {
+      const agents = getAllTieredAgents()
+      expect(agents).toHaveLength(12)
+    })
+
+    it('should not include content-based agents', () => {
+      const agents = getAllTieredAgents()
+      const ids = agents.map((s) => s.id)
+      expect(ids).not.toContain('tech_comparison')
+      expect(ids).not.toContain('security_audit')
+      expect(ids).not.toContain('implementation_planning')
+    })
+
+    it('should return agents sorted by order', () => {
+      const agents = getAllTieredAgents()
+      const orders = agents.map((s) => s.order)
+      for (let i = 1; i < orders.length; i++) {
+        expect(orders[i]).toBeGreaterThan(orders[i - 1])
+      }
+    })
+  })
+
+  describe('Tier Agent Type Mappings', () => {
+    it('should map Tier 1 agent types to stage names', () => {
+      expect(AGENT_TO_STAGE_MAP.key_insights).toBe('key_insights')
+      expect(AGENT_TO_STAGE_MAP.pros_cons).toBe('pros_cons')
+      expect(AGENT_TO_STAGE_MAP.audience_fit).toBe('audience_fit')
+      expect(AGENT_TO_STAGE_MAP.actionable).toBe('actionable')
+    })
+
+    it('should map Tier 2 agent types to stage names', () => {
+      expect(AGENT_TO_STAGE_MAP.fact_validator).toBe('fact_validation')
+      expect(AGENT_TO_STAGE_MAP.source_credibility).toBe('source_credibility')
+      expect(AGENT_TO_STAGE_MAP.freshness_checker).toBe('freshness_check')
+      expect(AGENT_TO_STAGE_MAP.alternatives_finder).toBe('alternatives_finding')
+    })
+
+    it('should map Tier 3 agent types to stage names', () => {
+      expect(AGENT_TO_STAGE_MAP.deep_researcher).toBe('deep_research')
+      expect(AGENT_TO_STAGE_MAP.community_pulse).toBe('community_pulse')
+      expect(AGENT_TO_STAGE_MAP.knowledge_curator).toBe('knowledge_curation')
+      expect(AGENT_TO_STAGE_MAP.learning_path_advisor).toBe('learning_path')
+    })
+  })
+
+  describe('Tier Property in Registry', () => {
+    it('should have tier property only for tiered agents', () => {
+      const tieredAgents = Object.values(STAGE_REGISTRY).filter((entry) => entry.tier !== undefined)
+      expect(tieredAgents).toHaveLength(12)
+    })
+
+    it('should not have tier property for content-based agents', () => {
+      expect(STAGE_REGISTRY.tech_comparison.tier).toBeUndefined()
+      expect(STAGE_REGISTRY.security_audit.tier).toBeUndefined()
+      expect(STAGE_REGISTRY.implementation_planning.tier).toBeUndefined()
+    })
+
+    it('should not have tier property for workflow stages', () => {
+      expect(STAGE_REGISTRY.extraction.tier).toBeUndefined()
+      expect(STAGE_REGISTRY.embedding.tier).toBeUndefined()
+      expect(STAGE_REGISTRY.supervisor_routing.tier).toBeUndefined()
+    })
+
+    it('should have correct tier values for each tiered agent', () => {
+      // Tier 1
+      expect(STAGE_REGISTRY.key_insights.tier).toBe(1)
+      expect(STAGE_REGISTRY.pros_cons.tier).toBe(1)
+      expect(STAGE_REGISTRY.audience_fit.tier).toBe(1)
+      expect(STAGE_REGISTRY.actionable.tier).toBe(1)
+
+      // Tier 2
+      expect(STAGE_REGISTRY.fact_validation.tier).toBe(2)
+      expect(STAGE_REGISTRY.source_credibility.tier).toBe(2)
+      expect(STAGE_REGISTRY.freshness_check.tier).toBe(2)
+      expect(STAGE_REGISTRY.alternatives_finding.tier).toBe(2)
+
+      // Tier 3
+      expect(STAGE_REGISTRY.deep_research.tier).toBe(3)
+      expect(STAGE_REGISTRY.community_pulse.tier).toBe(3)
+      expect(STAGE_REGISTRY.knowledge_curation.tier).toBe(3)
+      expect(STAGE_REGISTRY.learning_path.tier).toBe(3)
     })
   })
 })
