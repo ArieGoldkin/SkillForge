@@ -369,7 +369,7 @@ class RedisEventBroadcaster:
     async def close(self) -> None:
         """Close Redis connection."""
         try:
-            await self._redis.close()
+            await self._redis.aclose()
             self._connected = False
             logger.info("redis_broadcaster_closed")
         except Exception as e:  # noqa: BLE001 - Close must not fail

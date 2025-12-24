@@ -43,68 +43,19 @@ if [[ -n "$MATCHING_DOCS" ]]; then
   exit 0
 fi
 
-# Documentation missing - block and show instructions
-TEMPLATE_PATH="$CLAUDE_PROJECT_DIR/.claude/templates/issue-readme.md"
-
+# Documentation missing - warn but allow branch creation
+# User prefers: create branch first, then docs
 cat >&2 << EOF
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║  BLOCKED: Issue documentation required before starting work                  ║
+║  ⚠️  REMINDER: Create issue documentation after branch setup                 ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 Branch:   $BRANCH_NAME
 Issue #:  $ISSUE_NUM
 
-Required: Create docs/issues/${ISSUE_NUM}-<description>/README.md first.
-
-Steps:
-  1. mkdir -p docs/issues/${ISSUE_NUM}-<description>
-  2. Create README.md with the template below
-  3. Retry: git checkout -b $BRANCH_NAME
+TODO: Create docs/issues/${ISSUE_NUM}-<description>/README.md
 
 EOF
 
-# Show template if it exists, otherwise show inline template
-if [[ -f "$TEMPLATE_PATH" ]]; then
-  echo "Template (from .claude/templates/issue-readme.md):" >&2
-  echo "────────────────────────────────────────────────────────────────────────" >&2
-  sed "s/{{ISSUE_NUM}}/${ISSUE_NUM}/g" "$TEMPLATE_PATH" >&2
-else
-  cat >&2 << 'TEMPLATE'
-Template structure:
-────────────────────────────────────────────────────────────────────────────
-# Issue #<NUM>: <Title from GitHub>
-
-## Summary
-<1-2 sentences: What is the problem?>
-
-## Evidence
-<Logs, screenshots, DB queries, error messages>
-
-## Root Cause Analysis
-<Why does this happen? Include diagrams if helpful>
-
-## Solution Approach
-<High-level strategy: which approach and why>
-
-## Implementation Phases
-| Phase | Description | Files |
-|-------|-------------|-------|
-| 1 | ... | ... |
-| 2 | ... | ... |
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Tests pass
-- [ ] Lint checks pass
-
-## Related Files
-- `path/to/file.ts` - Description of changes needed
-────────────────────────────────────────────────────────────────────────────
-TEMPLATE
-fi
-
-echo "" >&2
-echo "Why? Documentation-first ensures you understand the problem before coding." >&2
-
-exit 2
+# Allow branch creation - docs can be created after
+exit 0

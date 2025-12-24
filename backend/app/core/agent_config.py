@@ -42,6 +42,13 @@ StageName = Literal[
     "pros_cons",
     "audience_fit",
     "actionable",
+    # Tier 2 Validation agents (Issue #436, #498) - run on Standard+ modes
+    "fact_validation",
+    "source_credibility",
+    "freshness_check",
+    "alternatives_finding",
+    # Integration feasibility (shared stage with implementation_planning)
+    "integration_feasibility",
     # Workflow-level stages (for error handling and metrics)
     "workflow",
     "pattern_comparison",
@@ -181,6 +188,46 @@ AGENT_REGISTRY: dict[str, AgentConfig] = {
         description=(
             "UNIVERSAL: Concrete next steps and learning resources. "
             "Always runs. Provides immediate actions, follow-ups, and helpful resources."
+        ),
+    ),
+    # Tier 2 Validation agents (Issue #436, #498) - run on Standard+ modes
+    "fact_validator": AgentConfig(
+        agent_type="fact_validator",
+        stage_name="fact_validation",
+        display_name="Fact Validation",
+        description=(
+            "VALIDATION: Extract and verify factual claims using Tavily search. "
+            "Runs on Standard+ modes. Validates technical facts, metrics, and assertions."
+        ),
+    ),
+    "source_credibility": AgentConfig(
+        agent_type="source_credibility",
+        stage_name="source_credibility",
+        display_name="Source Credibility",
+        description=(
+            "VALIDATION: Assess source trustworthiness and reliability. "
+            "Runs on Standard+ modes. Evaluates domain authority, author expertise, "
+            "publication standards, and identifies red flags."
+        ),
+    ),
+    "freshness_checker": AgentConfig(
+        agent_type="freshness_checker",
+        stage_name="freshness_check",
+        display_name="Freshness Check",
+        description=(
+            "VALIDATION: Check if technologies mentioned are current or outdated. "
+            "Runs on Standard+ modes. Uses npm/PyPI APIs to verify package versions "
+            "and detect deprecated dependencies."
+        ),
+    ),
+    "alternatives_finder": AgentConfig(
+        agent_type="alternatives_finder",
+        stage_name="alternatives_finding",
+        display_name="Alternatives Finding",
+        description=(
+            "VALIDATION: Find alternative technologies using Tavily search. "
+            "Runs on Standard+ modes. Discovers competing libraries, frameworks, "
+            "and approaches for informed decision-making."
         ),
     ),
     # Workflow stages (not agents, but need stage names)

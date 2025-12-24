@@ -37,6 +37,11 @@ RETRY_MIN_WAIT_JINA = 1  # Minimum wait time for Jina retries (seconds)
 RETRY_MAX_WAIT_JINA = 10  # Maximum wait time for Jina retries (seconds)
 RETRY_MIN_WAIT_JINA_TEST = 0.5  # Faster retries in tests (seconds)
 RETRY_MAX_WAIT_JINA_TEST = 2  # Shorter max wait in tests (seconds)
+RETRY_MULTIPLIER_TAVILY = 2  # Exponential backoff multiplier for Tavily Search
+RETRY_MIN_WAIT_TAVILY = 1  # Minimum wait time for Tavily retries (seconds)
+RETRY_MAX_WAIT_TAVILY = 10  # Maximum wait time for Tavily retries (seconds)
+RETRY_MIN_WAIT_TAVILY_TEST = 0.5  # Faster retries in tests (seconds)
+RETRY_MAX_WAIT_TAVILY_TEST = 2  # Shorter max wait in tests (seconds)
 
 # Database Connection Pool Configuration
 DB_POOL_SIZE = 5  # Number of connections to maintain in pool
@@ -142,3 +147,12 @@ STRUCTURAL_WEIGHT_HEADING = 0.10  # Boost for heading chunks
 STRUCTURAL_PATH_DEPTH_THRESHOLD = 2  # Path depth above this triggers penalty
 STRUCTURAL_POSITION_EARLY_THRESHOLD = 0.2  # First 20% of section considered "early"
 STRUCTURAL_POSITION_LATE_THRESHOLD = 0.8  # Last 20% of section considered "late"
+
+# Tavily Search Configuration (Issue #500 - Tier 2 Validation Agents)
+TAVILY_API_URL = "https://api.tavily.com/search"  # Tavily Search API endpoint
+TAVILY_SEARCH_DEPTH_BASIC = "basic"  # Basic search depth (faster, less comprehensive)
+TAVILY_SEARCH_DEPTH_ADVANCED = "advanced"  # Advanced search depth (slower, more comprehensive)
+TAVILY_DEFAULT_MAX_RESULTS = 5  # Default number of search results to return
+TAVILY_TIMEOUT = 15.0  # Tavily API timeout in seconds (search can be slow)
+TAVILY_CACHE_TTL = 3600  # Cache search results for 1 hour (searches are stable)
+TAVILY_MAX_QUERY_LENGTH = 400  # Maximum query length in characters

@@ -203,3 +203,130 @@ def get_current_trace_id() -> str | None:
         return None
     except Exception:  # noqa: BLE001
         return None
+
+
+def traced_tool(
+    name: str,
+    tags: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
+    """Trace tool invocations in Langfuse with observation spans.
+
+    Create a tool observation span that shows up in Langfuse's agent graph
+    visualization. Use this for external API calls (Tavily, GitHub, npm, etc.)
+    to track tool usage, cache hits, and execution time.
+
+    Args:
+        name: Name for the tool span (e.g., "tavily_search", "github_api")
+        tags: List of tags for filtering traces
+        metadata: Additional metadata to attach to the tool span
+
+    Returns:
+        Decorated async function with tool tracing enabled
+
+    Example:
+        @traced_tool("tavily_search", tags=["external_api", "search"])
+        async def search(self, query: str) -> dict:
+            # Optionally update trace with runtime metadata
+            update_current_observation(metadata={"cache_hit": True})
+            return results
+
+    """
+
+    def decorator(func: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
+        try:
+            from langfuse import get_client, observe
+
+            # Apply Langfuse @observe decorator with tool type
+            observed_func = observe(
+                name=name,
+                as_type="tool",
+                capture_input=True,
+                capture_output=True,
+            )(func)
+
+            # If we have tags or metadata, wrap to apply them at runtime
+            if tags or metadata:
+                import functools
+
+                @functools.wraps(func)
+                async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                    try:
+                        langfuse = get_client()
+                        update_kwargs: dict[str, Any] = {}
+                        if tags:
+                            update_kwargs["tags"] = tags
+                        if metadata:
+                            update_kwargs["metadata"] = metadata
+                        if update_kwargs:
+                            langfuse.update_current_span(**update_kwargs)
+                    except Exception:  # noqa: BLE001, S110
+                        pass
+
+                    return await observed_func(*args, **kwargs)
+
+                return wrapper  # type: ignore[return-value]
+
+            return observed_func  # type: ignore[return-value]
+
+        except ImportError:
+            # Langfuse not installed - return function unchanged
+            return func
+
+    return decorator
+
+
+def update_current_observation(
+    *,
+    metadata: dict[str, Any] | None = None,
+    output: Any | None = None,
+    level: str | None = None,
+    status_message: str | None = None,
+) -> None:
+    """Update the current Langfuse observation (span) with additional context.
+
+    Use this inside a @traced_tool decorated function to add runtime metadata
+    like cache hits, result counts, or error details.
+
+    Args:
+        metadata: Dictionary of metadata to add to the observation
+        output: Output data to record (if different from return value)
+        level: Log level (DEBUG, DEFAULT, WARNING, ERROR)
+        status_message: Status message for the observation
+
+    Example:
+        @traced_tool("tavily_search")
+        async def search(self, query: str) -> dict:
+            result = await self._do_search(query)
+            update_current_observation(
+                metadata={
+                    "cache_hit": False,
+                    "result_count": len(result["results"]),
+                    "response_time_ms": result["response_time"] * 1000,
+                }
+            )
+            return result
+
+    """
+    try:
+        from langfuse import get_client
+
+        langfuse = get_client()
+
+        update_kwargs: dict[str, Any] = {}
+        if metadata:
+            update_kwargs["metadata"] = metadata
+        if output is not None:
+            update_kwargs["output"] = output
+        if level:
+            update_kwargs["level"] = level
+        if status_message:
+            update_kwargs["status_message"] = status_message
+
+        if update_kwargs:
+            langfuse.update_current_span(**update_kwargs)
+
+    except ImportError:
+        pass
+    except Exception:  # noqa: BLE001, S110
+        pass

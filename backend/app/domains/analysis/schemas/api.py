@@ -87,12 +87,21 @@ class AnalyzeRequest(BaseModel):
         default="intermediate",
         description="User's experience level for personalized output",
     )
+    analysis_mode: Literal["quick", "standard", "deep_dive"] = Field(
+        default="standard",
+        description=(
+            "Analysis depth mode. 'quick' runs Tier 1 universal agents only (4 agents). "
+            "'standard' adds Tier 2 validation agents with external tools (8 agents). "
+            "'deep_dive' includes Tier 3 research agents with memory (12 agents)."
+        ),
+    )
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "url": "https://example.com/article",
                 "skill_level": "intermediate",
+                "analysis_mode": "standard",
             }
         }
     }

@@ -95,6 +95,7 @@ class AnalysisState(TypedDict, total=False):
     url: str
     content_type: str
     skill_level: str  # "beginner" | "intermediate" | "expert"
+    analysis_mode: str  # "quick" | "standard" | "deep_dive" (Issue #436)
     raw_content: str  # DEPRECATED: Use content_ref for new code
     content_ref: ContentRef  # Issue #244: Handle Pattern - lightweight ref
     extraction_metadata: ExtractionMetadata  # Was dict[str, object]

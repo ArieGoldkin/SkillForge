@@ -299,6 +299,16 @@ class Settings(BaseSettings):
     # Content Extraction (to be used in Task 1.4.2)
     JINA_API_KEY: str | None = Field(default=None, description="Jina AI API key (optional for dev)")
 
+    # Tavily Search API (Issue #500 - Tier 2 Validation Agents)
+    TAVILY_API_KEY: str | None = Field(
+        default=None,
+        description=(
+            "Tavily Search API key for Tier 2 validation agents. "
+            "Used by fact_validator and alternatives_finder agents for web search. "
+            "Pricing: $0.01/search. Get key from https://tavily.com"
+        ),
+    )
+
     # Telemetry & Metrics Configuration
     METRICS_ENABLED: bool = Field(
         default=True,

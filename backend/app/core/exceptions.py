@@ -81,6 +81,33 @@ class JinaReaderError(ServiceException):
         self.error_code = error_code or ExtractionErrorCode.UNKNOWN
 
 
+class TavilySearchError(ServiceException):
+    """Exception raised when Tavily Search API call fails.
+
+    This exception is raised when:
+    - HTTP errors occur during search request
+    - Timeout occurs during search
+    - API rate limits are exceeded
+    - Invalid API key or authentication failures
+    - Other search-related errors occur
+
+    Attributes:
+        error_code: Categorized error code for programmatic handling
+
+    """
+
+    def __init__(self, message: str, error_code: ExtractionErrorCode | None = None):
+        """Initialize TavilySearchError with message and optional error code.
+
+        Args:
+            message: Human-readable error message
+            error_code: Categorized error code, defaults to UNKNOWN
+
+        """
+        super().__init__(message)
+        self.error_code = error_code or ExtractionErrorCode.UNKNOWN
+
+
 class WorkflowError(SkillForgeException):
     """Exception raised when workflow execution fails.
 

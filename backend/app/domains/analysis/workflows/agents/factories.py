@@ -427,3 +427,105 @@ async def create_key_insights_agent_with_few_shot(  # noqa: PLR0913
         session=session,
         tools=tools,
     )
+
+
+async def create_fact_validator_agent_with_few_shot(  # noqa: PLR0913
+    content: str,
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    analysis_id: AnalysisID,
+    session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
+) -> Runnable:
+    """Create fact validator agent with optional few-shot prompting.
+
+    Args:
+        content: Input content for analysis
+        system_prompt: System prompt for fact validation
+        response_schema: Expected output schema (FactValidatorOutput)
+        analysis_id: Analysis UUID
+        session: Database session
+        tools: Optional MCP tools (should include tavily_search for Tier 2)
+
+    Returns:
+        Runnable: Fact validator agent instance
+
+    """
+    return await create_agent_with_optional_few_shot(
+        agent_type="fact_validator",
+        content=content,
+        system_prompt=system_prompt,
+        response_schema=response_schema,
+        analysis_id=analysis_id,
+        session=session,
+        tools=tools,
+        tool_call_config=ToolCallConfig(max_tool_calls=10) if tools else None,
+    )
+
+
+async def create_freshness_checker_agent_with_few_shot(  # noqa: PLR0913 - Factory needs all params
+    content: str,
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    analysis_id: AnalysisID,
+    session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
+) -> Runnable:
+    """Create freshness checker agent with optional few-shot prompting.
+
+    Args:
+        content: Input content for analysis
+        system_prompt: System prompt for freshness checker
+        response_schema: Expected output schema (FreshnessCheckerOutput)
+        analysis_id: Analysis UUID
+        session: Database session
+        tools: Optional MCP tools for npm/PyPI version checking
+
+    Returns:
+        Runnable: Freshness checker agent instance
+
+    """
+    return await create_agent_with_optional_few_shot(
+        agent_type="freshness_checker",
+        content=content,
+        system_prompt=system_prompt,
+        response_schema=response_schema,
+        analysis_id=analysis_id,
+        session=session,
+        tools=tools,
+        tool_call_config=ToolCallConfig(max_tool_calls=15) if tools else None,
+    )
+
+
+async def create_alternatives_finder_agent_with_few_shot(  # noqa: PLR0913
+    content: str,
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    analysis_id: AnalysisID,
+    session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
+) -> Runnable:
+    """Create alternatives finder agent with optional few-shot prompting.
+
+    Args:
+        content: Input content for analysis
+        system_prompt: System prompt for alternatives finder
+        response_schema: Expected output schema (AlternativesFinderOutput)
+        analysis_id: Analysis UUID
+        session: Database session
+        tools: Optional MCP tools (should include tavily_search for Tier 2)
+
+    Returns:
+        Runnable: Alternatives finder agent instance
+
+    """
+    return await create_agent_with_optional_few_shot(
+        agent_type="alternatives_finder",
+        content=content,
+        system_prompt=system_prompt,
+        response_schema=response_schema,
+        analysis_id=analysis_id,
+        session=session,
+        tools=tools,
+        tool_call_config=ToolCallConfig(max_tool_calls=10) if tools else None,
+    )

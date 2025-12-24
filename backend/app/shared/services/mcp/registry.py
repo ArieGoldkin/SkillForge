@@ -16,6 +16,10 @@ Agent Tool Access:
     - pros_cons: Tier 1 Universal - artifact loading, memory search
     - actionable: Tier 1 Universal - artifact loading, memory search
     - audience_fit: Tier 1 Universal - artifact loading, memory search
+    - fact_validator: Tier 2 Validation - Tavily search, artifact loading, memory search
+    - source_credibility: Tier 2 Validation - artifact loading, memory search
+    - freshness_checker: Tier 2 Validation - npm/pypi package info, artifact loading, memory search
+    - alternatives_finder: Tier 2 Validation - Tavily search, artifact loading, memory search
 
 Example:
     >>> registry = ToolRegistry()
@@ -278,6 +282,65 @@ AGENT_TOOL_CONFIGS: dict[str, AgentToolConfig] = {
         capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
         max_tool_calls=5,
         tool_timeout=20.0,
+    ),
+    # Tier 2 Validation Agents (Issue #436, #498)
+    # These agents run on Standard+ mode and use external tools for validation
+    "fact_validator": AgentToolConfig(
+        agent_type="fact_validator",
+        enabled=True,
+        capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
+            ToolCapability(
+                server="tavily",
+                tool_name="tavily_search",
+                description="Search the web to verify factual claims",
+            ),
+        ],
+        max_tool_calls=10,
+        tool_timeout=30.0,
+    ),
+    "source_credibility": AgentToolConfig(
+        agent_type="source_credibility",
+        enabled=True,
+        capabilities=[ARTIFACT_LOAD_CAPABILITY, MEMORY_SEARCH_CAPABILITY],
+        max_tool_calls=5,
+        tool_timeout=20.0,
+    ),
+    "freshness_checker": AgentToolConfig(
+        agent_type="freshness_checker",
+        enabled=True,
+        capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
+            ToolCapability(
+                server="npm",
+                tool_name="get-npm-package-details",
+                description="Get npm package metadata and latest version info",
+            ),
+            ToolCapability(
+                server="pypi",
+                tool_name="get-pypi-package-details",
+                description="Get PyPI package metadata and latest version info",
+            ),
+        ],
+        max_tool_calls=15,
+        tool_timeout=25.0,
+    ),
+    "alternatives_finder": AgentToolConfig(
+        agent_type="alternatives_finder",
+        enabled=True,
+        capabilities=[
+            ARTIFACT_LOAD_CAPABILITY,
+            MEMORY_SEARCH_CAPABILITY,
+            ToolCapability(
+                server="tavily",
+                tool_name="tavily_search",
+                description="Search for technology alternatives and competitors",
+            ),
+        ],
+        max_tool_calls=10,
+        tool_timeout=30.0,
     ),
 }
 

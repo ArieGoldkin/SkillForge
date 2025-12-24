@@ -284,7 +284,8 @@ async def create_analysis(
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
         orchestrator = get_orchestrator()
         task: asyncio.Task[None] = asyncio.create_task(
-            orchestrator.run(analysis_uuid, url_str, request.skill_level)  # type: ignore[arg-type]
+            # Issue #436: Pass analysis_mode for tier-based agent filtering
+            orchestrator.run(analysis_uuid, url_str, request.skill_level, request.analysis_mode)  # type: ignore[arg-type]
         )
         background_tasks = fastapi_request.app.state.background_tasks
         background_tasks.add(task)
