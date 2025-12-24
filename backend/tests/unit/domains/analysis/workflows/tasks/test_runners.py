@@ -133,8 +133,9 @@ async def test_run_integration_feasibility_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Issue #436: integration_feasibility now receives tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 
@@ -279,8 +280,9 @@ async def test_run_trend_validator_with_session(
         )
 
     assert result == {"findings": "test"}
+    # Issue #436: trend_validator now receives tools=[] for MCP integration
     mock_run_agent.assert_called_once_with(
-        test_content, test_content_type, mock_analysis_id, mock_session, mock_state
+        test_content, test_content_type, mock_analysis_id, mock_session, mock_state, tools=[]
     )
 
 

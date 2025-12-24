@@ -6,6 +6,9 @@ and identifies modern alternatives for legacy technologies.
 Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -27,12 +30,13 @@ logger = get_logger(__name__)
 PROMPT_NAME = "analysis-agent-trend-validator"
 
 
-async def run_trend_validator(
+async def run_trend_validator(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run trend validator agent to assess technology trends and adoption.
 
@@ -42,6 +46,7 @@ async def run_trend_validator(
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced analysis capabilities
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -103,7 +108,17 @@ async def run_trend_validator(
         response_schema=TrendValidation,
         analysis_id=analysis_id,
         session=session,
+        tools=tools,
     )
+
+    # Log MCP tool usage if tools are provided
+    if tools:
+        logger.info(
+            "trend_validator_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis

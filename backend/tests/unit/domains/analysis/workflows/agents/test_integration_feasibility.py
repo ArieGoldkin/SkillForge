@@ -76,7 +76,7 @@ def mock_state():
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.integration_feasibility.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.integration_feasibility.create_agent_with_optional_few_shot")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.run_agent_with_tracking")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.get_prompt_manager")
 async def test_run_integration_feasibility_success(
@@ -122,7 +122,7 @@ async def test_run_integration_feasibility_success(
 
 
 @pytest.mark.asyncio
-@patch("app.domains.analysis.workflows.agents.integration_feasibility.create_structured_agent")
+@patch("app.domains.analysis.workflows.agents.integration_feasibility.create_agent_with_optional_few_shot")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.run_agent_with_tracking")
 @patch("app.domains.analysis.workflows.agents.integration_feasibility.get_prompt_manager")
 async def test_integration_feasibility_error_handling(

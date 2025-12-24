@@ -304,6 +304,38 @@ async def run_integration_feasibility_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for integration_feasibility if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("integration_feasibility"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("integration_feasibility")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_integration_feasibility",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="integration_feasibility",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -315,7 +347,7 @@ async def run_integration_feasibility_with_session(
             )
 
             return await run_integration_feasibility(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit:
         duration = time.time() - start_time
@@ -717,6 +749,38 @@ async def run_trend_validator_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for trend_validator if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("trend_validator"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("trend_validator")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_trend_validator",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="trend_validator",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -728,7 +792,7 @@ async def run_trend_validator_with_session(
             )
 
             return await run_trend_validator(
-                loaded_content, content_type, analysis_id, session, state
+                loaded_content, content_type, analysis_id, session, state, tools=tools
             )
     except GeneratorExit as gen_exit:
         # GeneratorExit occurs when async generator is closed prematurely
@@ -872,8 +936,37 @@ async def run_actionable_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
-    # Actionable agent does NOT use MCP tools - it's content-agnostic
-    # and extracts actions purely from the provided content
+    # Load MCP tools for actionable if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("actionable"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("actionable")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_actionable",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="actionable",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
 
     try:
         async with AsyncSessionLocal() as session:
@@ -885,7 +978,9 @@ async def run_actionable_with_session(
                 fallback_content=content,
             )
 
-            return await run_actionable(loaded_content, content_type, analysis_id, session, state)
+            return await run_actionable(
+                loaded_content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -930,6 +1025,38 @@ async def run_pros_cons_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for pros_cons if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("pros_cons"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("pros_cons")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_pros_cons",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="pros_cons",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -940,7 +1067,9 @@ async def run_pros_cons_with_session(
                 fallback_content=content,
             )
 
-            return await run_pros_cons(loaded_content, content_type, analysis_id, session, state)
+            return await run_pros_cons(
+                loaded_content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -985,6 +1114,38 @@ async def run_audience_fit_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
+    # Load MCP tools for audience_fit if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("audience_fit"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("audience_fit")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_audience_fit",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="audience_fit",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
     try:
         async with AsyncSessionLocal() as session:
             # Issue #268: Load content from artifact if content_ref available
@@ -995,7 +1156,9 @@ async def run_audience_fit_with_session(
                 fallback_content=content,
             )
 
-            return await run_audience_fit(loaded_content, content_type, analysis_id, session, state)
+            return await run_audience_fit(
+                loaded_content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(
@@ -1040,8 +1203,37 @@ async def run_key_insights_with_session(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
-    # Key insights agent does NOT use MCP tools - it's content-agnostic
-    # and extracts insights purely from the provided content (Tier 1)
+    # Load MCP tools for key_insights if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("key_insights"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("key_insights")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_mcp_tools_for_key_insights",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any MCP loading error
+        # Graceful degradation - continue without tools if MCP loading fails
+        logger.warning(
+            "mcp_tool_loading_failed",
+            agent_type="key_insights",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
 
     try:
         async with AsyncSessionLocal() as session:
@@ -1053,7 +1245,9 @@ async def run_key_insights_with_session(
                 fallback_content=content,
             )
 
-            return await run_key_insights(loaded_content, content_type, analysis_id, session, state)
+            return await run_key_insights(
+                loaded_content, content_type, analysis_id, session, state, tools=tools
+            )
     except GeneratorExit:
         duration = time.time() - start_time
         logger.warning(

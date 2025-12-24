@@ -9,6 +9,9 @@ This universal agent (Tier 1) analyzes any content type to extract:
 Issue #418: Uses PromptManager for Langfuse prompt fetching with multi-level caching.
 """
 
+from collections.abc import Sequence
+
+from langchain_core.tools import BaseTool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
@@ -166,17 +169,18 @@ SKILL LEVEL ADAPTATION:
 """
 
 
-async def run_actionable(
+async def run_actionable(  # noqa: PLR0913 - All parameters required for agent execution
     content: str,
     content_type: str,
     analysis_id: AnalysisID,
     session: AsyncSession,
     state: AnalysisState,
+    tools: Sequence[BaseTool] | None = None,
 ) -> dict[str, object]:
     """Run actionable agent to extract concrete next steps and resources.
 
-    This is a Tier 1 universal agent that does NOT use MCP tools - it extracts
-    actions purely from the provided content in a content-agnostic manner.
+    This is a Tier 1 universal agent that can optionally use MCP tools for
+    enhanced analysis capabilities.
 
     Args:
         content: Extracted text content to analyze
@@ -184,6 +188,7 @@ async def run_actionable(
         analysis_id: Unique identifier for this analysis
         session: Database session for persistence
         state: Current workflow state (for skill_level)
+        tools: Optional MCP tools for enhanced analysis capabilities
 
     Returns:
         Dictionary with agent_type, findings, processing_time_ms
@@ -238,7 +243,7 @@ async def run_actionable(
     # Build prompt with skill level instructions and grounding
     full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
 
-    # Create agent with optional few-shot prompting (no tools - content-agnostic)
+    # Create agent with optional few-shot prompting
     agent = await create_agent_with_optional_few_shot(
         agent_type="actionable",
         content=content,
@@ -246,15 +251,24 @@ async def run_actionable(
         response_schema=ActionableOutput,
         analysis_id=analysis_id,
         session=session,
-        tools=None,  # Actionable agent is content-agnostic and doesn't use tools
+        tools=tools,
     )
 
-    logger.info(
-        "actionable_agent_created",
-        analysis_id=str(analysis_id),
-        skill_level=skill_level,
-        has_tools=False,  # Actionable agent never uses tools
-    )
+    # Log MCP tool usage if tools are provided
+    if tools:
+        logger.info(
+            "actionable_using_mcp_tools",
+            analysis_id=str(analysis_id),
+            tool_count=len(tools),
+            tool_names=[t.name for t in tools],
+        )
+    else:
+        logger.info(
+            "actionable_agent_created",
+            analysis_id=str(analysis_id),
+            skill_level=skill_level,
+            has_tools=False,
+        )
 
     # Run agent with tracking and persistence
     # Issue #300: Pass proactive context for memory-enhanced analysis
