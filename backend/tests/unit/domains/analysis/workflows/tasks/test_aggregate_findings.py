@@ -642,8 +642,9 @@ class TestDetectCoverageGaps:
 
         gaps = detect_coverage_gaps(contributing_agents)
 
-        # Should detect gaps for all other agents (6 gaps for 2 contributing out of 8)
-        assert len(gaps) == 6
+        # Should detect gaps for all other agents (10 gaps for 2 contributing out of 12)
+        # 12 total agents: 8 specialized + 4 universal (key_insights, pros_cons, audience_fit, actionable)
+        assert len(gaps) == 10
         gap_agent_types = [gap["missing_agent"] for gap in gaps]
         assert "implementation_planner" not in gap_agent_types
         assert "security_auditor" not in gap_agent_types
@@ -680,8 +681,8 @@ class TestDetectCoverageGaps:
         """Test gap detection when no agents contribute."""
         gaps = detect_coverage_gaps([])
 
-        # Should detect gaps for all 8 agents
-        assert len(gaps) == 8
+        # Should detect gaps for all 12 agents (8 specialized + 4 universal)
+        assert len(gaps) == 12
 
 
 class TestCalculateCoverageScore:
@@ -693,8 +694,8 @@ class TestCalculateCoverageScore:
 
         score = calculate_coverage_score(contributing_agents)
 
-        # 2 out of 8 agents = 0.25
-        assert score == 0.25
+        # 2 out of 12 agents = 0.1666... (round to 2 decimal places for test)
+        assert round(score, 2) == round(2 / 12, 2)
 
     def test_calculate_coverage_score_all(self):
         """Test coverage score when all agents contribute."""
@@ -709,28 +710,30 @@ class TestCalculateCoverageScore:
 
         score = calculate_coverage_score(all_agents)
 
-        # All 8 agents = 1.0
+        # All 12 agents = 1.0
         assert score == 1.0
 
     def test_calculate_coverage_score_none(self):
         """Test coverage score with no agents."""
         score = calculate_coverage_score([])
 
-        # 0 out of 8 agents = 0.0
+        # 0 out of 12 agents = 0.0
         assert score == 0.0
 
     def test_calculate_coverage_score_half(self):
-        """Test coverage score with half the agents."""
+        """Test coverage score with half the agents (6 out of 12)."""
         contributing_agents = [
             "tech_comparator",
             "security_auditor",
             "implementation_planner",
             "performance_analyst",
+            "key_insights",
+            "pros_cons",
         ]
 
         score = calculate_coverage_score(contributing_agents)
 
-        # 4 out of 8 agents = 0.5
+        # 6 out of 12 agents = 0.5
         assert score == 0.5
 
 
@@ -773,8 +776,8 @@ class TestAggregationCoverageFeatures:
             insights = result["aggregated_insights"]
             # Coverage gaps should be present (even if empty)
             assert "coverage_gaps" in insights
-            # Should have gaps for missing agents (3 contributing, 5 missing)
-            assert len(insights["coverage_gaps"]) == 5
+            # Should have gaps for missing agents (3 contributing, 9 missing out of 12)
+            assert len(insights["coverage_gaps"]) == 9
 
     @pytest.mark.asyncio
     async def test_aggregation_includes_coverage_score(self, sample_state):
