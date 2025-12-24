@@ -12,7 +12,9 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 # Content type definitions
-ContentType = Literal["code", "changelog", "documentation", "article", "video", "repo", "unknown"]
+ContentType = Literal[
+    "code", "changelog", "documentation", "article", "news", "video", "repo", "unknown"
+]
 
 
 def detect_content_type(content: str, content_type_hint: str | None = None) -> ContentType:  # noqa: PLR0911 - Multiple return paths for content type detection
@@ -85,10 +87,28 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         1 for pattern in doc_patterns if re.search(pattern, content_lower, re.MULTILINE)
     )
 
+    # Check for news/announcement patterns (Issue #490)
+    # News content should route to only 2 agents (trend_validator, tech_comparator)
+    news_patterns = [
+        r"\bannounced?\b|\bannouncing\b|\bannouncement\b",  # Announcement keywords
+        r"\blaunched?\b|\blaunching\b|\blaunch\s+of\b",  # Launch keywords
+        r"\bunveiled?\b|\bunveiling\b",  # Unveiling keywords
+        r"\bintroduces?\b|\bintroducing\b|\bnow\s+introducing\b",  # Introduction keywords
+        r"\bbreaking:?\s|\bbreaking\s+news\b",  # Breaking news
+        r"\bpress\s+release\b|\bkeynote\b",  # Press/keynote
+        r"\bnow\s+available\b|\bavailable\s+(now|today)\b",  # Availability announcements
+        r"\bpartnership\b|\bacquisition\b|\bmerger\b",  # Business news
+        r"\bnew\s+(feature|product|service|tool|model|version)\b",  # New product keywords
+    ]
+
+    news_score = sum(
+        1 for pattern in news_patterns if re.search(pattern, content_lower, re.MULTILINE)
+    )
+
     # Use hint if provided and matches patterns
     if content_type_hint:
         hint_lower = content_type_hint.lower()
-        if hint_lower in ("code", "changelog", "documentation", "article", "video", "repo"):
+        if hint_lower in ("code", "changelog", "documentation", "article", "news", "video", "repo"):
             # Validate hint matches patterns
             if hint_lower == "code" and code_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
                 return "code"
@@ -96,6 +116,8 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
                 return "changelog"
             if hint_lower == "documentation" and doc_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
                 return "documentation"
+            if hint_lower == "news" and news_score >= 2:  # noqa: PLR2004 - Score threshold for hint validation
+                return "news"
             if hint_lower in ("article", "video", "repo"):
                 return hint_lower  # type: ignore[return-value]
 
@@ -106,6 +128,12 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
         return "changelog"
     if doc_score >= 2:  # noqa: PLR2004 - Lowered from 3 to 2 to better detect tutorials with code blocks
         return "documentation"
+
+    # Check for news/announcement content BEFORE defaulting to article (Issue #490)
+    # News requires: news patterns present AND low code/tutorial signals
+    # This ensures technical content isn't misclassified as news
+    if news_score >= 2 and code_score < 2 and doc_score < 2:  # noqa: PLR2004 - Score thresholds for news detection
+        return "news"
 
     # Default to article for general text
     return "article"
@@ -118,19 +146,31 @@ def detect_content_type(content: str, content_type_hint: str | None = None) -> C
 # structural analysis that requires parseable source code.
 # dependency_mapper can extract dependency information from prose descriptions
 # in tutorials and documentation (e.g., "Install with pip install fastapi").
+#
+# Issue #490: "news" content type is restricted to only trend_validator and
+# tech_comparator (2 agents) since news/announcements don't need implementation
+# analysis, security audits, or performance evaluation.
 AGENT_CAPABILITIES: dict[str, list[ContentType]] = {
-    "tech_comparator": ["code", "documentation", "article", "changelog"],
-    "security_auditor": ["code", "documentation", "article"],  # Articles discuss security topics
-    "implementation_planner": ["code", "documentation", "article"],
-    "performance_analyst": ["code", "documentation", "article"],  # Articles discuss perf topics
-    "code_quality_critic": ["code"],  # Only code - requires structural analysis
-    "trend_validator": ["code", "documentation", "article", "changelog"],
-    "dependency_mapper": [
+    "tech_comparator": [
         "code",
         "documentation",
         "article",
-    ],  # Tutorials discuss dependencies in prose
-    "integration_feasibility": ["code", "documentation", "article"],
+        "changelog",
+        "news",
+    ],  # News: industry context
+    "security_auditor": ["code", "documentation", "article"],  # No news - no security to audit
+    "implementation_planner": ["code", "documentation", "article"],  # No news - no impl details
+    "performance_analyst": ["code", "documentation", "article"],  # No news - no benchmarks
+    "code_quality_critic": ["code"],  # Only code - requires structural analysis
+    "trend_validator": [
+        "code",
+        "documentation",
+        "article",
+        "changelog",
+        "news",
+    ],  # News: trend analysis
+    "dependency_mapper": ["code", "documentation", "article"],  # No news - no dependencies
+    "integration_feasibility": ["code", "documentation", "article"],  # No news - no integration
 }
 
 
