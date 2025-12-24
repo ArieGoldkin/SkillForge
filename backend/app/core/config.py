@@ -309,6 +309,17 @@ class Settings(BaseSettings):
         ),
     )
 
+    # GitHub API (Issue #500 - Tier 3 Research Agents)
+    GITHUB_TOKEN: str | None = Field(
+        default=None,
+        description=(
+            "GitHub Personal Access Token for Tier 3 research agents. "
+            "Used by community_pulse agent for repository and community analysis. "
+            "Optional - provides higher rate limits (30 req/min vs 10 req/min unauthenticated). "
+            "Get token from https://github.com/settings/tokens"
+        ),
+    )
+
     # Telemetry & Metrics Configuration
     METRICS_ENABLED: bool = Field(
         default=True,

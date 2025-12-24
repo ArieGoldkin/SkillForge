@@ -36,6 +36,10 @@ class MemoryType(str, Enum):
     VULNERABILITY_PATTERN = "vulnerability_pattern"
     BEST_PRACTICE = "best_practice"
     AGENT_FINDING = "agent_finding"
+    # Tier 3 Research Agent memory types
+    USER_PREFERENCE = "user_preference"
+    TREND_HISTORY = "trend_history"
+    KNOWLEDGE_CONNECTION = "knowledge_connection"
 
 
 class AgentMemory(Base):
@@ -103,7 +107,8 @@ class AgentMemory(Base):
     __table_args__ = (
         CheckConstraint(
             "memory_type IN ('analysis_summary', 'vulnerability_pattern', "
-            "'best_practice', 'agent_finding')",
+            "'best_practice', 'agent_finding', 'user_preference', "
+            "'trend_history', 'knowledge_connection')",
             name="chk_memory_type",
         ),
         CheckConstraint(

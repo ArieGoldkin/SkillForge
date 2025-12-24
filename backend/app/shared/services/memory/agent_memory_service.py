@@ -302,6 +302,7 @@ class AgentMemoryService:
         """
         # Agent-specific memory type mappings
         agent_memory_map: dict[str, list[MemoryType]] = {
+            # Tier 1 Content Analysis Agents
             "security_auditor": [
                 MemoryType.VULNERABILITY_PATTERN,
                 MemoryType.BEST_PRACTICE,
@@ -320,6 +321,24 @@ class AgentMemoryService:
             ],
             "practical_applicator": [
                 MemoryType.BEST_PRACTICE,
+                MemoryType.ANALYSIS_SUMMARY,
+            ],
+            # Tier 3 Research Agents
+            "deep_researcher": [
+                MemoryType.ANALYSIS_SUMMARY,
+                MemoryType.BEST_PRACTICE,
+            ],
+            "community_pulse": [
+                MemoryType.TREND_HISTORY,
+                MemoryType.ANALYSIS_SUMMARY,
+            ],
+            "knowledge_curator": [
+                MemoryType.ANALYSIS_SUMMARY,
+                MemoryType.KNOWLEDGE_CONNECTION,
+                MemoryType.BEST_PRACTICE,
+            ],
+            "learning_path_advisor": [
+                MemoryType.USER_PREFERENCE,
                 MemoryType.ANALYSIS_SUMMARY,
             ],
         }
@@ -357,4 +376,42 @@ class AgentMemoryService:
             analysis_id=analysis_id,
             agent_type=agent_type,
             metadata=metadata,
+        )
+
+    async def store_user_preference(
+        self,
+        user_id: UUID,
+        preference_type: str,
+        value: str,
+        metadata: dict | None = None,
+    ) -> AgentMemory:
+        """Store user preference for personalized recommendations.
+
+        Used by Tier 3 agents like learning_path_advisor to remember user's
+        skill levels, learning styles, and interests for future recommendations.
+
+        Args:
+            user_id: The user this preference belongs to
+            preference_type: Type of preference (skill_level, learning_style, interests)
+            value: The preference value
+            metadata: Additional context about the preference
+
+        Returns:
+            The created memory
+
+        """
+        # Build content that includes both type and value for semantic search
+        content = f"{preference_type}: {value}"
+
+        # Add user_id to metadata for filtering
+        enriched_metadata = metadata or {}
+        enriched_metadata["user_id"] = str(user_id)
+        enriched_metadata["preference_type"] = preference_type
+
+        return await self.store(
+            content=content,
+            memory_type=MemoryType.USER_PREFERENCE,
+            analysis_id=None,  # User preferences are not tied to specific analyses
+            agent_type="learning_path_advisor",
+            metadata=enriched_metadata,
         )
