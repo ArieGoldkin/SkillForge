@@ -62,12 +62,11 @@ const RENDER_ROUTES: RenderRoute[] = [
               <ProgressColumn
                 {...extractProgressProps({
                   overallProgress: props.overallProgress,
-                  steps: props.steps,
                   hasFailedStages: props.hasFailedStages,
                   failedStagesCount: props.failedStagesCount,
                   failedStageErrorCodes: props.failedStageErrorCodes,
                   analysisMetadata: props.analysisMetadata,
-                  stageStatuses: props.stageStatuses,
+                  stageStatuses: props.stageStatuses!,
                   analysisMode: props.analysisMode,
                   activities: props.activities,
                   isConnected: props.isConnected,
@@ -120,7 +119,6 @@ const RENDER_ROUTES: RenderRoute[] = [
         effectiveError,
         isFatalError,
         overallProgress,
-        steps,
         failedStagesCount,
         failedStageErrorCodes,
         resolvedArtifactId,
@@ -155,12 +153,11 @@ const RENDER_ROUTES: RenderRoute[] = [
               <ProgressColumn
                 {...extractProgressProps({
                   overallProgress,
-                  steps,
                   hasFailedStages,
                   failedStagesCount,
                   failedStageErrorCodes,
                   analysisMetadata,
-                  stageStatuses: props.stageStatuses,
+                  stageStatuses: props.stageStatuses!,
                   analysisMode: props.analysisMode,
                   activities,
                   isConnected,

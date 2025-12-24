@@ -87,21 +87,19 @@ export interface CompletionProps {
 }
 
 /**
- * Props for progress-related routes
+ * Props for progress-related routes (accordion view)
  */
 export interface ProgressProps {
   overallProgress: OverallProgress
-  steps: AnalysisStep[]
   hasFailedStages: boolean
   failedStagesCount: number
   failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
-  // New props for accordion view
-  stageStatuses?: Map<StageName, StageStatusEntry>
+  /** Stage statuses for accordion groups - required */
+  stageStatuses: Map<StageName, StageStatusEntry>
   analysisMode?: AnalysisMode
   activities?: AgentActivity[]
   isLive?: boolean
   skipReasons?: Record<string, string>
   stageSuccessMetrics?: Map<string, SuccessMetrics>
-  useAccordion?: boolean
 }
