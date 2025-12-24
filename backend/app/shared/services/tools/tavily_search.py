@@ -54,6 +54,7 @@ from app.core.constants import (
     TAVILY_TIMEOUT,
 )
 from app.core.exceptions import ExtractionErrorCode, TavilySearchError
+from app.core.tracing import traced_tool, update_current_observation
 from app.core.types import TavilySearchResult
 from app.shared.services.cache.redis_connection import create_redis_client
 
@@ -212,6 +213,7 @@ class TavilySearch:
 
         return query
 
+    @traced_tool("tavily_search", tags=["external_api", "search", "tier2"])
     @retry(
         stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
         wait=wait_exponential(
@@ -279,6 +281,14 @@ class TavilySearch:
         # Check cache
         cached_result = await self._get_cached_result(cache_key)
         if cached_result:
+            # Update Langfuse observation with cache hit metadata
+            update_current_observation(
+                metadata={
+                    "cache_hit": True,
+                    "query": validated_query[:100],
+                    "search_depth": search_depth,
+                }
+            )
             return cached_result
 
         # Validate API key
@@ -365,6 +375,18 @@ class TavilySearch:
                 num_results=len(result.get("results", [])),  # type: ignore[arg-type]
                 has_answer=bool(result.get("answer")),
                 response_time=result.get("response_time"),
+            )
+
+            # Update Langfuse observation with success metadata
+            update_current_observation(
+                metadata={
+                    "cache_hit": False,
+                    "query": validated_query[:100],
+                    "search_depth": search_depth,
+                    "result_count": len(result.get("results", [])),  # type: ignore[arg-type]
+                    "has_answer": bool(result.get("answer")),
+                    "response_time_ms": (result.get("response_time") or 0) * 1000,
+                }
             )
 
             # Cache result
