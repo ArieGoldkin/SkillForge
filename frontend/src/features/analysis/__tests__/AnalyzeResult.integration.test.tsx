@@ -18,6 +18,22 @@ import { describe, expect, it, vi } from 'vitest'
 
 import AnalyzeResult from '../AnalyzeResult'
 
+// Use vi.hoisted to define mockState before vi.mock hoisting runs
+const { mockState } = vi.hoisted(() => ({
+  mockState: {
+    events: [] as unknown[],
+    isConnected: false,
+    isComplete: false,
+    error: null as string | null,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    reset: vi.fn(),
+    setAnalysisMetadata: vi.fn(),
+    clearError: vi.fn(),
+    reconcileComplete: vi.fn(),
+  },
+}))
+
 // Mock router for integration testing
 vi.mock('@tanstack/react-router', () => ({
   getRouteApi: () => ({
@@ -26,29 +42,40 @@ vi.mock('@tanstack/react-router', () => ({
   }),
 }))
 
-// Mock SSE store for controlled testing
-const mockState = {
-  events: [],
-  isConnected: false,
-  isComplete: false,
-  error: null,
-  connect: vi.fn(),
-  disconnect: vi.fn(),
-  reset: vi.fn(),
-  setAnalysisMetadata: vi.fn(),
-}
-
+// Mock SSE store for controlled testing - using mockState from vi.hoisted
 vi.mock('@stores/sseStore', () => ({
-  useSSEStore: vi.fn((selector) => {
+  useSSEStore: vi.fn((selector: unknown) => {
     if (typeof selector === 'function') {
-      return selector(mockState)
+      return (selector as (s: typeof mockState) => unknown)(mockState)
     }
     return mockState
   }),
-  selectSetAnalysisMetadata: vi.fn(() => mockState.setAnalysisMetadata),
+  // All selector exports need to be mocked explicitly
+  selectSetAnalysisMetadata: (state: typeof mockState) => state.setAnalysisMetadata,
+  selectError: (state: typeof mockState) => state.error,
+  selectClearError: (state: typeof mockState) => state.clearError,
+  selectReconcileComplete: (state: typeof mockState) => state.reconcileComplete,
+  selectArtifactId: () => null,
+  selectTraceId: () => null,
+  selectAnalysisId: () => null,
+  selectOverallProgress: () => 0,
+  selectHasFailedStages: () => false,
+  selectFailedStagesCount: () => 0,
+  selectAnalysisMetadata: () => null,
+  selectValidationFailures: () => 0,
+  selectSetComplete: () => vi.fn(),
+  // Hook exports
   useLoadingState: vi.fn(() => ({ type: 'waiting_for_events' })),
   useShowTimeoutWarning: vi.fn(() => false),
   useShouldShowProgress: vi.fn(() => false),
+  useConnectionMessage: vi.fn(() => ''),
+  useAnalysisPhase: vi.fn(() => 'initializing'),
+  useAnalysisIds: vi.fn(() => ({ analysisId: null, artifactId: null, traceId: null })),
+  useProgressState: vi.fn(() => ({
+    overallProgress: 0,
+    hasFailedStages: false,
+    failedStagesCount: 0,
+  })),
 }))
 
 // Mock stage status processing hook
@@ -82,12 +109,15 @@ describe('AnalyzeResult Integration Tests @integration', () => {
       connect: vi.fn(),
       disconnect: vi.fn(),
       reset: vi.fn(),
+      setAnalysisMetadata: vi.fn(),
+      clearError: vi.fn(),
+      reconcileComplete: vi.fn(),
       ...overrides,
     }
 
-    vi.mocked(useSSEStore).mockImplementation((selector) => {
+    vi.mocked(useSSEStore).mockImplementation((selector: unknown) => {
       if (typeof selector === 'function') {
-        return selector(defaultState)
+        return (selector as (s: typeof defaultState) => unknown)(defaultState)
       }
       return defaultState
     })
