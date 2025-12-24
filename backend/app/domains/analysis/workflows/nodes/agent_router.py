@@ -63,6 +63,12 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
 
     # Map agent types to node names (must match node names in graph_builder)
     agent_node_map = {
+        # Tier 1 Universal agents (Issue #499) - always run on all content types
+        "key_insights": "key_insights",
+        "pros_cons": "pros_cons",
+        "audience_fit": "audience_fit",
+        "actionable": "actionable",
+        # Tier 2/3 Specialized agents - run based on content signals
         "tech_comparator": "tech_comparator",
         "security_auditor": "security_auditor",
         "implementation_planner": "implementation_planner",

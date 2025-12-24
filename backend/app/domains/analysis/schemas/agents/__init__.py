@@ -4,6 +4,15 @@ These schemas define the structured outputs from specialized analysis agents.
 """
 
 # Re-export all agent schemas for convenience
+from app.domains.analysis.schemas.agents.actionable import (
+    Action,
+    ActionableOutput,
+    Resource,
+)
+from app.domains.analysis.schemas.agents.audience_fit import (
+    Audience,
+    AudienceFitOutput,
+)
 from app.domains.analysis.schemas.agents.base import (
     DataAvailabilityLevel,
     DataAvailabilityMixin,
@@ -24,10 +33,15 @@ from app.domains.analysis.schemas.agents.integration_feasibility import (
     CompatibilityScore,
     IntegrationFeasibility,
 )
+from app.domains.analysis.schemas.agents.key_insights import (
+    KeyInsight,
+    KeyInsightsOutput,
+)
 from app.domains.analysis.schemas.agents.performance_analyst import (
     PerformanceAnalysis,
     PerformanceMetric,
 )
+from app.domains.analysis.schemas.agents.pros_cons import ProsConsOutput
 from app.domains.analysis.schemas.agents.security_auditor import (
     SecurityAudit,
     SecurityRisk,
@@ -42,6 +56,10 @@ from app.domains.analysis.schemas.agents.trend_validator import (
 )
 
 __all__ = [
+    "Action",
+    "ActionableOutput",
+    "Audience",
+    "AudienceFitOutput",
     "CodeIssue",
     "CodeQualityReview",
     "CompatibilityScore",
@@ -52,8 +70,12 @@ __all__ = [
     "ImplementationPlan",
     "ImplementationStep",
     "IntegrationFeasibility",
+    "KeyInsight",
+    "KeyInsightsOutput",
     "PerformanceAnalysis",
     "PerformanceMetric",
+    "ProsConsOutput",
+    "Resource",
     "SecurityAudit",
     "SecurityRisk",
     "TechComparison",

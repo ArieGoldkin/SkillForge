@@ -26,11 +26,15 @@ from app.core.types import AnalysisID
 from app.domains.analysis.schemas.api import ArtifactSection
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
 from app.domains.analysis.workflows.agents import (
+    run_actionable,
+    run_audience_fit,
     run_code_quality_critic,
     run_dependency_mapper,
     run_implementation_planner,
     run_integration_feasibility,
+    run_key_insights,
     run_performance_analyst,
+    run_pros_cons,
     run_security_auditor,
     run_tech_comparator,
     run_trend_validator,
@@ -108,6 +112,10 @@ AGENT_SECTION_MAPPING: dict[str, ArtifactSection] = {
     "tech_comparator": ArtifactSection.FIRST_N,  # Needs more than summary for articles
     "trend_validator": ArtifactSection.FIRST_N,  # Needs more context for trend analysis
     "integration_feasibility": ArtifactSection.FIRST_N,  # Integration point overview
+    "pros_cons": ArtifactSection.FIRST_N,  # Universal Tier 1 - balanced analysis
+    "key_insights": ArtifactSection.FIRST_N,  # Universal Tier 1 - critical takeaways
+    "actionable": ArtifactSection.FIRST_N,  # Universal Tier 1 - action extraction
+    "audience_fit": ArtifactSection.FIRST_N,  # Universal Tier 1 - audience analysis
 }
 
 # Max characters for FIRST_N section per agent (Issue #268, #299-304)
@@ -117,6 +125,10 @@ AGENT_MAX_CHARS: dict[str, int | None] = {
     "tech_comparator": 15000,  # Needs more context for tech identification
     "trend_validator": 15000,  # Needs more context for trend analysis
     "performance_analyst": 12000,  # Performance patterns require context
+    "pros_cons": 12000,  # Universal Tier 1 - needs sufficient context
+    "actionable": 12000,  # Universal Tier 1 - needs context for action extraction
+    "key_insights": 12000,  # Universal Tier 1 - needs context for insights
+    "audience_fit": 12000,  # Universal Tier 1 - needs context for audience analysis
 }
 
 
@@ -834,6 +846,232 @@ async def run_dependency_mapper_with_session(
         logger.error(
             "agent_failed",
             agent_type="dependency_mapper",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_actionable_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run actionable agent with its own database session."""
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Actionable agent does NOT use MCP tools - it's content-agnostic
+    # and extracts actions purely from the provided content
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="actionable",
+                fallback_content=content,
+            )
+
+            return await run_actionable(loaded_content, content_type, analysis_id, session, state)
+    except GeneratorExit:
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="actionable",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="actionable",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_pros_cons_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run pros/cons agent with its own database session."""
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="pros_cons",
+                fallback_content=content,
+            )
+
+            return await run_pros_cons(loaded_content, content_type, analysis_id, session, state)
+    except GeneratorExit:
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="pros_cons",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="pros_cons",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_audience_fit_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run audience fit with its own database session."""
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="audience_fit",
+                fallback_content=content,
+            )
+
+            return await run_audience_fit(loaded_content, content_type, analysis_id, session, state)
+    except GeneratorExit:
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="audience_fit",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="audience_fit",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_key_insights_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run key insights agent with its own database session."""
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Key insights agent does NOT use MCP tools - it's content-agnostic
+    # and extracts insights purely from the provided content (Tier 1)
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="key_insights",
+                fallback_content=content,
+            )
+
+            return await run_key_insights(loaded_content, content_type, analysis_id, session, state)
+    except GeneratorExit:
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="key_insights",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="key_insights",
             analysis_id=analysis_id,
             error_type=type(e).__name__,
             error=str(e),

@@ -37,6 +37,11 @@ StageName = Literal[
     "dependencies_analysis",
     "aggregation",
     "artifact_generation",
+    # Tier 1 Universal agents (Issue #499) - always run on all content types
+    "key_insights",
+    "pros_cons",
+    "audience_fit",
+    "actionable",
     # Workflow-level stages (for error handling and metrics)
     "workflow",
     "pattern_comparison",
@@ -139,6 +144,43 @@ AGENT_REGISTRY: dict[str, AgentConfig] = {
         description=(
             "Modern stack integration assessment (Next.js, FastAPI). "
             "Triggers: 'integration', 'stack', 'frontend', 'backend', 'full-stack'"
+        ),
+    ),
+    # Tier 1 Universal agents (Issue #499) - always run on ALL content types
+    "key_insights": AgentConfig(
+        agent_type="key_insights",
+        stage_name="key_insights",
+        display_name="Key Insights",
+        description=(
+            "UNIVERSAL: Extract 3-5 critical takeaways from any content. "
+            "Always runs. Identifies main learnings, novel ideas, and key points."
+        ),
+    ),
+    "pros_cons": AgentConfig(
+        agent_type="pros_cons",
+        stage_name="pros_cons",
+        display_name="Pros & Cons",
+        description=(
+            "UNIVERSAL: Balanced strengths/weaknesses analysis. "
+            "Always runs. Provides verdict and recommendations for any topic."
+        ),
+    ),
+    "audience_fit": AgentConfig(
+        agent_type="audience_fit",
+        stage_name="audience_fit",
+        display_name="Audience Fit",
+        description=(
+            "UNIVERSAL: Target audience and skill level analysis. "
+            "Always runs. Identifies who benefits most and prerequisites needed."
+        ),
+    ),
+    "actionable": AgentConfig(
+        agent_type="actionable",
+        stage_name="actionable",
+        display_name="Actionable Steps",
+        description=(
+            "UNIVERSAL: Concrete next steps and learning resources. "
+            "Always runs. Provides immediate actions, follow-ups, and helpful resources."
         ),
     ),
     # Workflow stages (not agents, but need stage names)

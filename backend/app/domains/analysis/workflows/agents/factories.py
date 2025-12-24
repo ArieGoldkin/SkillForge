@@ -391,3 +391,36 @@ async def create_trend_validator_agent_with_few_shot(
         analysis_id=analysis_id,
         session=session,
     )
+
+
+async def create_key_insights_agent_with_few_shot(  # noqa: PLR0913
+    content: str,
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    analysis_id: AnalysisID,
+    session: AsyncSession,
+    tools: Sequence[BaseTool] | None = None,
+) -> Runnable:
+    """Create key insights agent with optional few-shot prompting.
+
+    Args:
+        content: Input content for analysis
+        system_prompt: System prompt for key insights extraction
+        response_schema: Expected output schema (KeyInsightsOutput)
+        analysis_id: Analysis UUID
+        session: Database session
+        tools: Optional MCP tools (Tier 1 agents typically don't use tools)
+
+    Returns:
+        Runnable: Key insights agent instance
+
+    """
+    return await create_agent_with_optional_few_shot(
+        agent_type="key_insights",
+        content=content,
+        system_prompt=system_prompt,
+        response_schema=response_schema,
+        analysis_id=analysis_id,
+        session=session,
+        tools=tools,
+    )
