@@ -85,6 +85,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     analysis_id = state["analysis_id"]
     aggregated_insights = get_aggregated_insights(state)
     retry_count = state.get("quality_gate_retry_count", 0)
+    analysis_mode = state.get("analysis_mode", "standard")
 
     # Issue #442: Track quality warnings for fail-open transparency
     quality_warnings: list[str] = []
@@ -312,6 +313,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                 retry_count=retry_count,
                 scores=quality_scores,
                 gate_passed=True,
+                analysis_mode=analysis_mode,
             )
         else:
             # Gate failed - emit error event

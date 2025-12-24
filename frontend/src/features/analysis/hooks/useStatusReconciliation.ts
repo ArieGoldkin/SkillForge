@@ -66,7 +66,7 @@ interface VerificationHandlers {
 }
 
 function handleVerificationResult(
-  status: { status: string; artifact_id?: string },
+  status: { status: string; artifact_id?: string | null },
   analysisId: string,
   handlers: VerificationHandlers
 ): void {

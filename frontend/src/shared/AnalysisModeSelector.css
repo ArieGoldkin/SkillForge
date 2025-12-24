@@ -1,0 +1,182 @@
+/* Analysis Mode Selector Styles */
+
+/* Visually hidden utility for screen reader only content */
+.analysis-mode-selector .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.analysis-mode-selector {
+  margin: 1.5rem 0;
+  width: 100%;
+}
+
+.analysis-mode-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  color: hsl(var(--foreground));
+}
+
+.analysis-mode-options {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.analysis-mode-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+  min-width: 110px;
+  max-width: 150px;
+  flex: 1 1 auto;
+  position: relative;
+  z-index: 1;
+  color: hsl(var(--foreground));
+  opacity: 0.7;
+}
+
+.analysis-mode-option:hover:not(.analysis-mode-option--active) {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--accent));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  opacity: 0.9;
+}
+
+/* Focus indicator for keyboard navigation (WCAG 2.4.7) */
+.analysis-mode-option:focus {
+  outline: none;
+}
+
+.analysis-mode-option:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-color: hsl(var(--primary));
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .analysis-mode-option:focus-visible {
+    outline: 3px solid CanvasText;
+  }
+}
+
+/* Active state - default to teal/primary */
+.analysis-mode-option--active {
+  border-width: 4px;
+  box-shadow:
+    0 0 0 2px hsl(var(--primary) / 0.3),
+    0 0 0 6px hsl(var(--primary) / 0.15),
+    0 8px 16px hsl(var(--primary) / 0.3);
+  font-weight: 700;
+  transform: scale(1.08);
+  opacity: 1;
+  z-index: 2;
+}
+
+/* Quick mode - Green */
+.analysis-mode-option--green.analysis-mode-option--active {
+  border-color: var(--chart-5);
+  background: var(--chart-5);
+  color: hsl(var(--primary-foreground));
+  box-shadow:
+    0 0 0 2px hsl(var(--chart-5) / 0.3),
+    0 0 0 6px hsl(var(--chart-5) / 0.15),
+    0 8px 16px hsl(var(--chart-5) / 0.3);
+}
+
+/* Standard mode - Teal (primary) */
+.analysis-mode-option--teal.analysis-mode-option--active {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Deep Dive mode - Purple */
+.analysis-mode-option--purple.analysis-mode-option--active {
+  border-color: var(--chart-2);
+  background: var(--chart-2);
+  color: hsl(var(--primary-foreground));
+  box-shadow:
+    0 0 0 2px hsl(var(--chart-2) / 0.3),
+    0 0 0 6px hsl(var(--chart-2) / 0.15),
+    0 8px 16px hsl(var(--chart-2) / 0.3);
+}
+
+.analysis-mode-option--active .analysis-mode-text strong,
+.analysis-mode-option--active .analysis-mode-text small {
+  color: hsl(var(--primary-foreground));
+}
+
+.analysis-mode-icon {
+  line-height: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.analysis-mode-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  pointer-events: none;
+}
+
+.analysis-mode-text strong {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.analysis-mode-text small {
+  font-size: 0.65rem;
+  color: inherit;
+  opacity: 0.9;
+  line-height: 1.2;
+}
+
+/* Ensure unselected options have proper text colors and are muted */
+.analysis-mode-option:not(.analysis-mode-option--active) .analysis-mode-text strong {
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+.analysis-mode-option:not(.analysis-mode-option--active) .analysis-mode-text small {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+.analysis-mode-option--active .analysis-mode-text strong {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.analysis-mode-option--active .analysis-mode-text small {
+  opacity: 1;
+  font-weight: 500;
+}

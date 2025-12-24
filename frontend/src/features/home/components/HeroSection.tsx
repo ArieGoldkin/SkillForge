@@ -1,7 +1,10 @@
+/* eslint-disable max-lines -- HeroSection requires multiple sub-components for content analysis form */
 import { AlertCircle, FileText, Github, Link, Sparkles, Video } from 'lucide-react'
 
 import { UI_CONSTANTS } from '@/lib/constants'
 
+import { AnalysisModeSelector } from '@shared/AnalysisModeSelector'
+import type { AnalysisMode } from '@shared/AnalysisModeSelector'
 import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
@@ -20,6 +23,8 @@ interface HeroSectionProps {
   setSelectedContentType: (type: ContentType) => void
   skillLevel: SkillLevel
   setSkillLevel: (level: SkillLevel) => void
+  analysisMode: AnalysisMode
+  setAnalysisMode: (mode: AnalysisMode) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
@@ -32,6 +37,8 @@ export function HeroSection({
   setSelectedContentType,
   skillLevel,
   setSkillLevel,
+  analysisMode,
+  setAnalysisMode,
   isSubmitting,
   handleSubmit,
   error,
@@ -57,6 +64,8 @@ export function HeroSection({
           setSelectedContentType={setSelectedContentType}
           skillLevel={skillLevel}
           setSkillLevel={setSkillLevel}
+          analysisMode={analysisMode}
+          setAnalysisMode={setAnalysisMode}
           isSubmitting={isSubmitting}
           handleSubmit={handleSubmit}
           error={error}
@@ -73,11 +82,14 @@ interface ContentAnalysisFormProps {
   setSelectedContentType: (type: ContentType) => void
   skillLevel: SkillLevel
   setSkillLevel: (level: SkillLevel) => void
+  analysisMode: AnalysisMode
+  setAnalysisMode: (mode: AnalysisMode) => void
   isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
 }
 
+// eslint-disable-next-line max-lines-per-function -- Form component requires URL input, content type selection, analysis mode selection, skill level selection, error handling, and submit logic
 function ContentAnalysisForm({
   url,
   setUrl,
@@ -85,6 +97,8 @@ function ContentAnalysisForm({
   setSelectedContentType,
   skillLevel,
   setSkillLevel,
+  analysisMode,
+  setAnalysisMode,
   isSubmitting,
   handleSubmit,
   error,
@@ -109,6 +123,8 @@ function ContentAnalysisForm({
         selectedContentType={selectedContentType}
         setSelectedContentType={setSelectedContentType}
       />
+
+      <AnalysisModeSelector value={analysisMode} onChange={setAnalysisMode} />
 
       <SkillLevelSelector value={skillLevel} onChange={setSkillLevel} />
 

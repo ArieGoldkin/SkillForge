@@ -1,5 +1,7 @@
 /**
  * Tests for annotations API client
+ *
+ * Note: Uses vi.hoisted to ensure env is set BEFORE module loads
  */
 
 import type {
@@ -9,19 +11,32 @@ import type {
   FlagForReviewResponse,
   AnnotationQueueListResponse,
 } from '@app-types/annotations'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Set up env BEFORE the module imports (hoisted to top of file)
+const { mockFetch, API_BASE_URL } = vi.hoisted(() => {
+  const url = 'http://localhost:8500'
+  // Stub the env variable before annotations.ts loads
+  vi.stubEnv('VITE_API_BASE_URL', url)
+  return {
+    mockFetch: vi.fn(),
+    API_BASE_URL: url,
+  }
+})
+
+// eslint-disable-next-line import/first -- Module must import AFTER vi.hoisted stubs the env
 import { annotationsAPI } from '../annotations'
 
-// Mock fetch globally
-const mockFetch = vi.fn()
-global.fetch = mockFetch
+// Set up fetch mock globally
+vi.stubGlobal('fetch', mockFetch)
 
 describe('annotationsAPI', () => {
-  const API_BASE_URL = 'http://localhost:8500'
-
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    // Don't unstub envs - they were set in hoisted block
   })
 
   describe('submitFeedback', () => {

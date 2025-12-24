@@ -128,7 +128,7 @@ AGENT_REGISTRY: dict[str, AgentMetadata] = {
 }
 
 
-def get_agents_for_mode(mode: str) -> list[str]:
+def get_agents_for_mode(mode: str | AnalysisMode) -> list[str]:
     """Return agent names based on analysis mode.
 
     Args:
@@ -137,6 +137,9 @@ def get_agents_for_mode(mode: str) -> list[str]:
     Returns:
         List of agent names available for this mode
 
+    Raises:
+        ValueError: If mode is not a valid AnalysisMode value
+
     Example:
         >>> get_agents_for_mode("quick")
         ['key_insights', 'pros_cons', 'audience_fit', 'actionable']
@@ -144,14 +147,27 @@ def get_agents_for_mode(mode: str) -> list[str]:
         8
         >>> len(get_agents_for_mode("deep_dive"))
         12
+        >>> get_agents_for_mode("invalid")
+        Traceback (most recent call last):
+            ...
+        ValueError: Invalid analysis mode: 'invalid'. Valid modes: quick, standard, deep_dive
 
     """
-    max_tier = {
-        AnalysisMode.QUICK: AgentTier.UNIVERSAL,
-        AnalysisMode.STANDARD: AgentTier.VALIDATION,
-        AnalysisMode.DEEP_DIVE: AgentTier.RESEARCH,
-    }.get(mode, AgentTier.RESEARCH)
+    # Normalize to string for comparison
+    mode_str = mode.value if isinstance(mode, AnalysisMode) else mode
 
+    mode_to_tier = {
+        AnalysisMode.QUICK.value: AgentTier.UNIVERSAL,
+        AnalysisMode.STANDARD.value: AgentTier.VALIDATION,
+        AnalysisMode.DEEP_DIVE.value: AgentTier.RESEARCH,
+    }
+
+    if mode_str not in mode_to_tier:
+        valid_modes = ", ".join(m.value for m in AnalysisMode)
+        msg = f"Invalid analysis mode: '{mode_str}'. Valid modes: {valid_modes}"
+        raise ValueError(msg)
+
+    max_tier = mode_to_tier[mode_str]
     return [name for name, meta in AGENT_REGISTRY.items() if meta.tier <= max_tier]
 
 

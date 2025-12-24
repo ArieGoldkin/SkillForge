@@ -76,8 +76,9 @@ class WorkflowOrchestrator:
                 "analysis_id": str(analysis_id),
                 "url": url,
                 "workflow_version": "1.0",
+                "analysis_mode": analysis_mode,
             },
-            tags=["analysis", "workflow"],
+            tags=["analysis", "workflow", f"mode:{analysis_mode}"],
             session_id=f"analysis-{analysis_id}",  # Group all traces for this analysis
             user_id="anonymous",  # Will be dynamic after auth implementation
         )
@@ -98,8 +99,9 @@ class WorkflowOrchestrator:
                     "url": url,
                     "task_type": "analysis_workflow",
                     "skill_level": skill_level,
+                    "analysis_mode": analysis_mode,
                 },
-                tags=["workflow", "analysis", f"analysis:{analysis_id}"],
+                tags=["workflow", "analysis", f"analysis:{analysis_id}", f"mode:{analysis_mode}"],
             )
 
             # Issue #384: Verify Langfuse callback handler is present for graph visualization

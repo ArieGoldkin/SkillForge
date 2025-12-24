@@ -253,6 +253,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         analysis_id=analysis_id,
         stage=get_stage_name("supervisor"),
         status="running",
+        analysis_mode=analysis_mode,
     )
 
     logger.info(
@@ -310,6 +311,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             agent_count=len(cached_decision.get("agents", [])),
             selected_agents=cached_decision.get("agents"),
             cache_hit=True,
+            analysis_mode=analysis_mode,
         )
 
         return {"supervisor_decision": cached_decision}
@@ -717,6 +719,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             skip_reasons=all_skip_reasons if all_skip_reasons else None,
             confidence=selection.confidence,
             expected_total_stages=expected_total_stages,
+            analysis_mode=analysis_mode,
         )
 
         logger.info(
