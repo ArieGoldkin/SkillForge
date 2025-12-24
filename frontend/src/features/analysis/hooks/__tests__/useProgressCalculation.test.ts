@@ -123,8 +123,8 @@ describe('useProgressCalculation', () => {
         useProgressCalculation(stageStatuses, [], false, undefined, undefined)
       )
 
-      // Should use TOTAL_STAGES (18)
-      expect(result.current.totalSteps).toBe(18)
+      // Should use TOTAL_STAGES (30)
+      expect(result.current.totalSteps).toBe(30)
     })
 
     it('handles expectedTotalStages of 0', () => {

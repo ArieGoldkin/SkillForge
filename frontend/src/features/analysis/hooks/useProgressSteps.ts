@@ -54,7 +54,7 @@ export interface ProgressStep {
  * as the primary agent type.
  */
 const STAGE_TO_AGENT_MAP: Record<StageName, string> = {
-  // Agent stages
+  // Content-based agent stages
   tech_comparison: 'tech_comparator',
   security_audit: 'security_auditor',
   implementation_planning: 'implementation_planner',
@@ -62,6 +62,21 @@ const STAGE_TO_AGENT_MAP: Record<StageName, string> = {
   code_quality_audit: 'code_quality_critic',
   trends_analysis: 'trend_validator',
   dependencies_analysis: 'dependency_mapper',
+  // Tier 1: Universal agents
+  key_insights: 'key_insights',
+  pros_cons: 'pros_cons',
+  audience_fit: 'audience_fit',
+  actionable: 'actionable',
+  // Tier 2: Validation agents
+  fact_validation: 'fact_validator',
+  source_credibility: 'source_credibility',
+  freshness_check: 'freshness_checker',
+  alternatives_finding: 'alternatives_finder',
+  // Tier 3: Research agents
+  deep_research: 'deep_researcher',
+  community_pulse: 'community_pulse',
+  knowledge_curation: 'knowledge_curator',
+  learning_path: 'learning_path_advisor',
   // Workflow stages
   extraction: 'extraction',
   embedding: 'embedding',

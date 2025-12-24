@@ -16,8 +16,8 @@ import {
 
 describe('stageConfig', () => {
   describe('STAGE_CONFIG', () => {
-    it('contains all 18 stages with correct structure', () => {
-      expect(TOTAL_STAGES).toBe(18)
+    it('contains all 30 stages with correct structure', () => {
+      expect(TOTAL_STAGES).toBe(30)
 
       // Verify each stage has required properties
       Object.entries(STAGE_CONFIG).forEach(([_stageName, config]) => {
@@ -36,9 +36,9 @@ describe('stageConfig', () => {
         .map(([name]) => name)
 
       expect(orderedStages[0]).toBe('extraction')
-      // artifact_generation is order 13, position depends on quality_gate/quality_validation (both order 12)
-      // With 18 stages total, artifact_generation should be at index 13 (14th position)
-      expect(orderedStages[13]).toBe('artifact_generation')
+      // artifact_generation is order 25, position depends on quality_gate/quality_validation (both order 24)
+      // With 30 stages total, artifact_generation should be at index 25 (26th position)
+      expect(orderedStages[25]).toBe('artifact_generation')
       expect(orderedStages[orderedStages.length - 1]).toBe('metrics') // Last optional stage
     })
   })
@@ -119,16 +119,16 @@ describe('stageConfig', () => {
       })
 
       it('returns ~1 minute when mid-way through', () => {
-        // With 18 total stages: 18-12=6, 18-13=5, 18-14=4 all fall in "<=6" range
-        expect(estimateTimeRemaining(12)).toBe('~1 minute')
-        expect(estimateTimeRemaining(13)).toBe('~1 minute')
-        expect(estimateTimeRemaining(14)).toBe('~1 minute')
+        // With 30 total stages: 30-24=6, 30-25=5, 30-26=4 all fall in "<=6" range
+        expect(estimateTimeRemaining(24)).toBe('~1 minute')
+        expect(estimateTimeRemaining(25)).toBe('~1 minute')
+        expect(estimateTimeRemaining(26)).toBe('~1 minute')
       })
 
       it('returns ~30 seconds when almost complete', () => {
-        // With 18 total stages: 18-15=3, 18-16=2 fall in "<=3" range
-        expect(estimateTimeRemaining(15)).toBe('~30 seconds')
-        expect(estimateTimeRemaining(16)).toBe('~30 seconds')
+        // With 30 total stages: 30-27=3, 30-28=2 fall in "<=3" range
+        expect(estimateTimeRemaining(27)).toBe('~30 seconds')
+        expect(estimateTimeRemaining(28)).toBe('~30 seconds')
       })
     })
 
@@ -170,10 +170,10 @@ describe('stageConfig', () => {
       })
 
       it('falls back to TOTAL_STAGES when totalStages is undefined', () => {
-        // Without totalStages param, should use TOTAL_STAGES (18)
+        // Without totalStages param, should use TOTAL_STAGES (30)
         // Same behavior as original tests
-        expect(estimateTimeRemaining(15, undefined)).toBe('~30 seconds')
-        expect(estimateTimeRemaining(12, undefined)).toBe('~1 minute')
+        expect(estimateTimeRemaining(27, undefined)).toBe('~30 seconds')
+        expect(estimateTimeRemaining(24, undefined)).toBe('~1 minute')
       })
     })
   })
