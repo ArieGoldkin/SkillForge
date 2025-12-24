@@ -22,6 +22,7 @@
 
 import { memo, useState } from 'react'
 
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertCircle,
   CheckCircle2,
@@ -33,7 +34,6 @@ import {
   MinusCircle,
   XCircle,
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'motion/react'
 
 import type { SuccessMetrics } from '@/schemas/sse'
 

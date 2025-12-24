@@ -1,7 +1,7 @@
 import { memo, type KeyboardEvent } from 'react'
 
+import { motion } from 'framer-motion'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { motion } from 'motion/react'
 
 import type { GroupStatus, StageGroup } from '@/features/analysis/types/accordion'
 

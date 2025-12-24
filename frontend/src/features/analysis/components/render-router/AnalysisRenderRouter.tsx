@@ -59,7 +59,22 @@ const RENDER_ROUTES: RenderRoute[] = [
         progressContent={
           props.shouldShowProgress ? (
             <ErrorBoundary fallback={<div>Error loading progress</div>} name="ProgressColumn">
-              <ProgressColumn {...extractProgressProps(props)} />
+              <ProgressColumn
+                {...extractProgressProps({
+                  overallProgress: props.overallProgress,
+                  steps: props.steps,
+                  hasFailedStages: props.hasFailedStages,
+                  failedStagesCount: props.failedStagesCount,
+                  failedStageErrorCodes: props.failedStageErrorCodes,
+                  analysisMetadata: props.analysisMetadata,
+                  stageStatuses: props.stageStatuses,
+                  analysisMode: props.analysisMode,
+                  activities: props.activities,
+                  isConnected: props.isConnected,
+                  skipReasons: props.skipReasons,
+                  stageSuccessMetrics: props.stageSuccessMetrics,
+                })}
+              />
             </ErrorBoundary>
           ) : undefined
         }
@@ -138,12 +153,20 @@ const RENDER_ROUTES: RenderRoute[] = [
           {!isFatalError && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <ProgressColumn
-                overallProgress={overallProgress}
-                steps={steps}
-                hasFailedStages={hasFailedStages}
-                failedStagesCount={failedStagesCount}
-                failedStageErrorCodes={failedStageErrorCodes}
-                analysisMetadata={analysisMetadata}
+                {...extractProgressProps({
+                  overallProgress,
+                  steps,
+                  hasFailedStages,
+                  failedStagesCount,
+                  failedStageErrorCodes,
+                  analysisMetadata,
+                  stageStatuses: props.stageStatuses,
+                  analysisMode: props.analysisMode,
+                  activities,
+                  isConnected,
+                  skipReasons: props.skipReasons,
+                  stageSuccessMetrics: props.stageSuccessMetrics,
+                })}
               />
               {/* Activity or Completion Column */}
               {isComplete && (resolvedArtifactId || artifactId) ? (

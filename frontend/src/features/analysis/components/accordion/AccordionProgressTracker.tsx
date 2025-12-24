@@ -21,12 +21,13 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react'
 
 import type { StageName } from '@app-types/sse'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion } from 'framer-motion'
 
 import { AgentActivityFeed } from '@/features/analysis/components/activity/AgentActivityFeed'
 import type { StageStatusEntry } from '@/features/analysis/hooks/stageConfig'
 import type { AgentActivity } from '@/features/analysis/hooks/useActivityFeed'
 import { useBreakpoint } from '@/features/analysis/hooks/useBreakpoint'
+import { useStageGroups } from '@/features/analysis/hooks/useStageGroups'
 import type { AnalysisMode } from '@/features/analysis/types/accordion'
 
 import { cn } from '@lib/utils'
@@ -71,33 +72,25 @@ export interface AccordionProgressTrackerProps {
 }
 
 // ============================================================================
-// Placeholder Hooks (To be implemented in separate files)
+// Helper: Detect active group (contains a running stage)
 // ============================================================================
 
 /**
- * PLACEHOLDER: useStageGroups hook
- *
- * TODO: Move to /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/hooks/useStageGroups.ts
- *
- * Transforms stageStatuses map into hierarchical stage groups based on analysis mode.
- * Groups stages by category: Core Workflow, Tier 1 Universal, Tier 2 Validation, etc.
+ * Find the currently active group (contains a running stage)
  */
-function useStageGroups(
-  _stageStatuses: Map<StageName, StageStatusEntry>,
-  _analysisMode: AnalysisMode
-) {
-  // PLACEHOLDER: Return empty array for now
-  // Real implementation will:
-  // 1. Import STAGE_GROUPS from config/stageGroups.ts
-  // 2. Filter groups by analysisMode (Quick = Tier 1, Standard = Tier 1+2, Deep = All)
-  // 3. Compute group status from member stages
-  // 4. Calculate progress percentage per group
-  // 5. Return GroupedStages[] with metadata
-
-  return useMemo(() => {
-    // TODO: Implement real grouping logic
-    return []
-  }, [])
+function findActiveGroupId(
+  groups: ReturnType<typeof useStageGroups>,
+  stageStatuses: Map<StageName, StageStatusEntry>
+): string | null {
+  for (const { group } of groups) {
+    for (const stageName of group.stages) {
+      const stageStatus = stageStatuses.get(stageName)
+      if (stageStatus?.status === 'running' || stageStatus?.status === 'synthesizing') {
+        return group.id
+      }
+    }
+  }
+  return null
 }
 
 /**
@@ -303,7 +296,8 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   // ========================================================================
   // Stage Groups Computation
   // ========================================================================
-  const groups = useStageGroups(stageStatuses, analysisMode)
+  // Note: analysisMode can be used later to filter groups (e.g., Quick = fewer groups)
+  const groups = useStageGroups(stageStatuses)
 
   // ========================================================================
   // Auto-Expand Management
@@ -323,9 +317,8 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   // Active Group Detection
   // ========================================================================
   const activeGroupId = useMemo(() => {
-    const activeGroup = groups.find((g) => g.isActive)
-    return activeGroup?.group.id || null
-  }, [groups])
+    return findActiveGroupId(groups, stageStatuses)
+  }, [groups, stageStatuses])
 
   // ========================================================================
   // MiniMap Data Transformation

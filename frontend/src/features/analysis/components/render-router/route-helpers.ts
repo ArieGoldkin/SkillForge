@@ -37,6 +37,12 @@ export function extractProgressProps(props: {
   failedStagesCount: number
   failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisProps['analysisMetadata']
+  stageStatuses?: AnalysisProps['stageStatuses']
+  analysisMode?: AnalysisProps['analysisMode']
+  activities?: AnalysisProps['activities']
+  isConnected?: boolean
+  skipReasons?: AnalysisProps['skipReasons']
+  stageSuccessMetrics?: AnalysisProps['stageSuccessMetrics']
 }): ProgressProps {
   return {
     overallProgress: props.overallProgress,
@@ -45,6 +51,14 @@ export function extractProgressProps(props: {
     failedStagesCount: props.failedStagesCount,
     failedStageErrorCodes: props.failedStageErrorCodes,
     analysisMetadata: props.analysisMetadata,
+    // New props for accordion view
+    stageStatuses: props.stageStatuses,
+    analysisMode: props.analysisMode,
+    activities: props.activities,
+    isLive: props.isConnected,
+    skipReasons: props.skipReasons,
+    stageSuccessMetrics: props.stageSuccessMetrics,
+    useAccordion: true, // Default to accordion view
   }
 }
 
