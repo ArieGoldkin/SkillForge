@@ -80,8 +80,10 @@ export interface AccordionProgressTrackerProps {
  */
 function findActiveGroupId(
   groups: ReturnType<typeof useStageGroups>,
-  stageStatuses: Map<StageName, StageStatusEntry>
+  stageStatuses: Map<StageName, StageStatusEntry> | undefined
 ): string | null {
+  if (!stageStatuses) return null
+
   for (const { group } of groups) {
     for (const stageName of group.stages) {
       const stageStatus = stageStatuses.get(stageName)
@@ -279,7 +281,7 @@ const MobileBottomSheet = memo(function MobileBottomSheet({
  * ```
  */
 export const AccordionProgressTracker = memo(function AccordionProgressTracker({
-  stageStatuses,
+  stageStatuses: stageStatusesProp,
   skipReasons: _skipReasons,
   stageSuccessMetrics: _stageSuccessMetrics,
   analysisMode,
@@ -287,6 +289,11 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   isLive = false,
   className,
 }: AccordionProgressTrackerProps) {
+  // Defensive guard: provide empty Map if stageStatuses is undefined
+  // This can happen when viewing completed analyses from library
+  const emptyMap = useMemo(() => new Map<StageName, StageStatusEntry>(), [])
+  const stageStatuses = stageStatusesProp ?? emptyMap
+
   // ========================================================================
   // Responsive Breakpoint Detection
   // ========================================================================

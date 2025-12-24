@@ -254,9 +254,12 @@ export function useStageGroups(
   stageStatuses: Map<StageName, StageStatusEntry>
 ): StageGroupWithStatus[] {
   return useMemo(() => {
+    // Defensive guard: provide empty Map if stageStatuses is undefined
+    // This can happen when viewing completed analyses from library
+    const safeStatuses = stageStatuses ?? new Map<StageName, StageStatusEntry>()
     return STAGE_GROUPS.map((group) => ({
       group,
-      status: computeGroupStatusMeta(group, stageStatuses),
+      status: computeGroupStatusMeta(group, safeStatuses),
     }))
   }, [stageStatuses])
 }
