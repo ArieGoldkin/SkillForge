@@ -68,7 +68,7 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
         "pros_cons": "pros_cons",
         "audience_fit": "audience_fit",
         "actionable": "actionable",
-        # Tier 2/3 Specialized agents - run based on content signals
+        # Tier 2 Validation agents - tool-enabled (Standard mode+)
         "tech_comparator": "tech_comparator",
         "security_auditor": "security_auditor",
         "implementation_planner": "implementation_planner",
@@ -77,6 +77,11 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
         "trend_validator": "trend_validator",
         "dependency_mapper": "dependency_mapper",
         "integration_feasibility": "integration_feasibility",
+        # Tier 3 Research agents (Issue #501) - memory-enabled (Deep Dive mode)
+        "deep_researcher": "deep_researcher",
+        "community_pulse": "community_pulse",
+        "knowledge_curator": "knowledge_curator",
+        "learning_path_advisor": "learning_path_advisor",
     }
 
     # Extract content summary for memory queries (Issue #266)

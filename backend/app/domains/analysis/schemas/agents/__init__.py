@@ -25,6 +25,16 @@ from app.domains.analysis.schemas.agents.code_quality_critic import (
     CodeIssue,
     CodeQualityReview,
 )
+from app.domains.analysis.schemas.agents.community_pulse import (
+    CommunityConcern,
+    CommunityPulseOutput,
+    Discussion,
+    GitHubMetrics,
+)
+from app.domains.analysis.schemas.agents.deep_researcher import (
+    DeepResearcherOutput,
+    ResearchFinding,
+)
 from app.domains.analysis.schemas.agents.dependency_mapper import (
     Dependency,
     DependencyMapping,
@@ -44,6 +54,16 @@ from app.domains.analysis.schemas.agents.integration_feasibility import (
 from app.domains.analysis.schemas.agents.key_insights import (
     KeyInsight,
     KeyInsightsOutput,
+)
+from app.domains.analysis.schemas.agents.knowledge_curator import (
+    KnowledgeConnection,
+    KnowledgeCuratorOutput,
+    RecommendedContent,
+)
+from app.domains.analysis.schemas.agents.learning_path_advisor import (
+    LearningPathAdvisorOutput,
+    LearningStep,
+    SkillGap,
 )
 from app.domains.analysis.schemas.agents.performance_analyst import (
     PerformanceAnalysis,
@@ -77,24 +97,36 @@ __all__ = [
     "Claim",
     "CodeIssue",
     "CodeQualityReview",
+    "CommunityConcern",
+    "CommunityPulseOutput",
     "CompatibilityScore",
     "CredibilitySignal",
     "DataAvailabilityLevel",
     "DataAvailabilityMixin",
+    "DeepResearcherOutput",
     "Dependency",
     "DependencyMapping",
+    "Discussion",
     "FactValidatorOutput",
+    "GitHubMetrics",
     "ImplementationPlan",
     "ImplementationStep",
     "IntegrationFeasibility",
     "KeyInsight",
     "KeyInsightsOutput",
+    "KnowledgeConnection",
+    "KnowledgeCuratorOutput",
+    "LearningPathAdvisorOutput",
+    "LearningStep",
     "PerformanceAnalysis",
     "PerformanceMetric",
     "ProsConsOutput",
+    "RecommendedContent",
+    "ResearchFinding",
     "Resource",
     "SecurityAudit",
     "SecurityRisk",
+    "SkillGap",
     "SourceCredibilityOutput",
     "TechComparison",
     "TechComparisonEntry",

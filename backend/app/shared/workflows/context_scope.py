@@ -169,6 +169,49 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         inject_memory=True,
         include_other_findings=True,
     ),
+    # Tier 3 Research agents (Issue #501) - memory-enabled deep analysis
+    "deep_researcher": ContextScope(
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Extended research with 10+ queries
+        inject_memory=True,
+        include_other_findings=True,  # Needs context from Tier 1/2 agents
+    ),
+    "community_pulse": ContextScope(
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+            "content_signals",
+        ],  # Sentiment analysis from community sources
+        inject_memory=True,
+        include_other_findings=False,
+    ),
+    "knowledge_curator": ContextScope(
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+        ],  # Connects to user's knowledge graph via PGVector
+        inject_memory=True,
+        include_other_findings=True,  # Needs all findings for connection mapping
+    ),
+    "learning_path_advisor": ContextScope(
+        include=[
+            "analysis_id",
+            "content_ref",
+            "content_type",
+            "skill_level",
+        ],  # Personalizes learning paths based on user preferences
+        inject_memory=True,
+        include_other_findings=True,  # Needs findings for learning sequence
+    ),
 }
 
 

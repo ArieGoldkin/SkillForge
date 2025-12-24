@@ -11,6 +11,8 @@ from app.domains.analysis.workflows.agents.base import (
     save_agent_finding,
 )
 from app.domains.analysis.workflows.agents.code_quality_critic import run_code_quality_critic
+from app.domains.analysis.workflows.agents.community_pulse import run_community_pulse
+from app.domains.analysis.workflows.agents.deep_researcher import run_deep_researcher
 from app.domains.analysis.workflows.agents.dependency_mapper import run_dependency_mapper
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 from app.domains.analysis.workflows.agents.implementation_planner import run_implementation_planner
@@ -18,6 +20,8 @@ from app.domains.analysis.workflows.agents.integration_feasibility import (
     run_integration_feasibility,
 )
 from app.domains.analysis.workflows.agents.key_insights import run_key_insights
+from app.domains.analysis.workflows.agents.knowledge_curator import run_knowledge_curator
+from app.domains.analysis.workflows.agents.learning_path_advisor import run_learning_path_advisor
 from app.domains.analysis.workflows.agents.performance_analyst import run_performance_analyst
 from app.domains.analysis.workflows.agents.pros_cons import run_pros_cons
 from app.domains.analysis.workflows.agents.security_auditor import run_security_auditor
@@ -31,10 +35,14 @@ __all__ = [
     "run_agent_with_tracking",
     "run_audience_fit",
     "run_code_quality_critic",
+    "run_community_pulse",
+    "run_deep_researcher",
     "run_dependency_mapper",
     "run_implementation_planner",
     "run_integration_feasibility",
     "run_key_insights",
+    "run_knowledge_curator",
+    "run_learning_path_advisor",
     "run_performance_analyst",
     "run_pros_cons",
     "run_security_auditor",

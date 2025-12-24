@@ -9,6 +9,8 @@ from app.domains.analysis.workflows.nodes.agents.audience_fit_node import audien
 from app.domains.analysis.workflows.nodes.agents.code_quality_critic_node import (
     code_quality_critic_node,
 )
+from app.domains.analysis.workflows.nodes.agents.community_pulse_node import community_pulse_node
+from app.domains.analysis.workflows.nodes.agents.deep_researcher_node import deep_researcher_node
 from app.domains.analysis.workflows.nodes.agents.dependency_mapper_node import (
     dependency_mapper_node,
 )
@@ -19,6 +21,12 @@ from app.domains.analysis.workflows.nodes.agents.integration_feasibility_node im
     integration_feasibility_node,
 )
 from app.domains.analysis.workflows.nodes.agents.key_insights_node import key_insights_node
+from app.domains.analysis.workflows.nodes.agents.knowledge_curator_node import (
+    knowledge_curator_node,
+)
+from app.domains.analysis.workflows.nodes.agents.learning_path_advisor_node import (
+    learning_path_advisor_node,
+)
 from app.domains.analysis.workflows.nodes.agents.performance_analyst_node import (
     performance_analyst_node,
 )
@@ -31,10 +39,14 @@ __all__ = [
     "actionable_node",
     "audience_fit_node",
     "code_quality_critic_node",
+    "community_pulse_node",
+    "deep_researcher_node",
     "dependency_mapper_node",
     "implementation_planner_node",
     "integration_feasibility_node",
     "key_insights_node",
+    "knowledge_curator_node",
+    "learning_path_advisor_node",
     "performance_analyst_node",
     "pros_cons_node",
     "security_auditor_node",

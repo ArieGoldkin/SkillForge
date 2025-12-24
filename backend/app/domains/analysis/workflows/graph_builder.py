@@ -26,10 +26,14 @@ from app.domains.analysis.workflows.nodes.agents import (
     actionable_node,
     audience_fit_node,
     code_quality_critic_node,
+    community_pulse_node,
+    deep_researcher_node,
     dependency_mapper_node,
     implementation_planner_node,
     integration_feasibility_node,
     key_insights_node,
+    knowledge_curator_node,
+    learning_path_advisor_node,
     performance_analyst_node,
     pros_cons_node,
     security_auditor_node,
@@ -606,6 +610,11 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     graph.add_node("trend_validator", trend_validator_node)
     graph.add_node("dependency_mapper", dependency_mapper_node)
     graph.add_node("integration_feasibility", integration_feasibility_node)
+    # Tier 3: Research agents (Deep Dive mode) - Issue #501
+    graph.add_node("deep_researcher", deep_researcher_node)
+    graph.add_node("community_pulse", community_pulse_node)
+    graph.add_node("knowledge_curator", knowledge_curator_node)
+    graph.add_node("learning_path_advisor", learning_path_advisor_node)
 
     # Define edges
     # Sequential: extract must complete first
@@ -638,10 +647,12 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
         "supervisor",
         routing_fn,
         [
+            # Tier 1: Universal agents (Quick mode+)
             "actionable",
             "audience_fit",
             "key_insights",
             "pros_cons",
+            # Tier 2: Validation agents (Standard mode+)
             "tech_comparator",
             "security_auditor",
             "implementation_planner",
@@ -650,6 +661,11 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
             "trend_validator",
             "dependency_mapper",
             "integration_feasibility",
+            # Tier 3: Research agents (Deep Dive mode) - Issue #501
+            "deep_researcher",
+            "community_pulse",
+            "knowledge_curator",
+            "learning_path_advisor",
             "aggregate",  # Fallback if no agents selected
         ],
     )
@@ -657,10 +673,12 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     # Fan-in: All agent nodes route to aggregate
     # LangGraph automatically waits for all incoming edges before executing aggregate
     agent_nodes = [
+        # Tier 1: Universal agents
         "actionable",
         "audience_fit",
         "key_insights",
         "pros_cons",
+        # Tier 2: Validation agents
         "tech_comparator",
         "security_auditor",
         "implementation_planner",
@@ -669,6 +687,11 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
         "trend_validator",
         "dependency_mapper",
         "integration_feasibility",
+        # Tier 3: Research agents (Issue #501)
+        "deep_researcher",
+        "community_pulse",
+        "knowledge_curator",
+        "learning_path_advisor",
     ]
     for agent_node in agent_nodes:
         graph.add_edge(agent_node, "aggregate")

@@ -29,10 +29,14 @@ from app.domains.analysis.workflows.agents import (
     run_actionable,
     run_audience_fit,
     run_code_quality_critic,
+    run_community_pulse,
+    run_deep_researcher,
     run_dependency_mapper,
     run_implementation_planner,
     run_integration_feasibility,
     run_key_insights,
+    run_knowledge_curator,
+    run_learning_path_advisor,
     run_performance_analyst,
     run_pros_cons,
     run_security_auditor,
@@ -116,6 +120,8 @@ AGENT_SECTION_MAPPING: dict[str, ArtifactSection] = {
     "key_insights": ArtifactSection.FIRST_N,  # Universal Tier 1 - critical takeaways
     "actionable": ArtifactSection.FIRST_N,  # Universal Tier 1 - action extraction
     "audience_fit": ArtifactSection.FIRST_N,  # Universal Tier 1 - audience analysis
+    "knowledge_curator": ArtifactSection.FIRST_N,  # Tier 3 Research - overview for connections
+    "learning_path_advisor": ArtifactSection.FIRST_N,  # Tier 3 Research - needs context for path creation
 }
 
 # Max characters for FIRST_N section per agent (Issue #268, #299-304)
@@ -129,6 +135,8 @@ AGENT_MAX_CHARS: dict[str, int | None] = {
     "actionable": 12000,  # Universal Tier 1 - needs context for action extraction
     "key_insights": 12000,  # Universal Tier 1 - needs context for insights
     "audience_fit": 12000,  # Universal Tier 1 - needs context for audience analysis
+    "knowledge_curator": 12000,  # Tier 3 Research - needs context for knowledge graph analysis
+    "learning_path_advisor": 12000,  # Tier 3 Research - needs context for learning objectives
 }
 
 
@@ -1266,6 +1274,330 @@ async def run_key_insights_with_session(
         logger.error(
             "agent_failed",
             agent_type="key_insights",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_learning_path_advisor_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run learning path advisor agent with its own database session.
+
+    Issue #500: Tier 3 Research agent that creates personalized learning paths
+    using memory (prior_memory) to adapt to user's skill level and learning history.
+    """
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Tier 3 agents don't typically use external MCP tools - they rely on memory and LLM reasoning
+    # If future requirements need tools, add MCP loading here following the pattern above
+    tools: list[BaseTool] = []
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="learning_path_advisor",
+                fallback_content=content,
+            )
+
+            return await run_learning_path_advisor(
+                loaded_content,
+                content_type,
+                analysis_id,
+                session,
+                state,
+                tools=tools,
+            )
+    except GeneratorExit:
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="learning_path_advisor",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="learning_path_advisor",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_knowledge_curator_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run knowledge curator with its own database session.
+
+    Issue #500: Tier 3 Research agent with proactive memory injection.
+    """
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Note: knowledge_curator does NOT use MCP tools - only memory context
+    # Memory is provided via prior_memory field in state (injected by router)
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="knowledge_curator",
+                fallback_content=content,
+            )
+
+            return await run_knowledge_curator(
+                loaded_content, content_type, analysis_id, session, state, tools=None
+            )
+    except GeneratorExit:
+        # GeneratorExit occurs when timeout cancels the task - handle gracefully
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="knowledge_curator",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}  # Return empty dict for graceful degradation
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="knowledge_curator",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_community_pulse_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run community pulse with its own database session.
+
+    Issue #500: Tier 3 Research agent with Tavily + optional GitHub search tools.
+    """
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Load tools for community_pulse if enabled
+    tools: list[BaseTool] = []
+    try:
+        from app.shared.services.mcp import MCPClientPool, ToolRegistry, get_mcp_settings
+
+        registry = ToolRegistry()
+        if registry.is_tool_enabled("community_pulse"):
+            settings = get_mcp_settings()
+            if settings.enabled:
+                pool = MCPClientPool(
+                    settings.get_enabled_servers(),
+                    settings=settings,
+                    analysis_id=str(analysis_id),
+                )
+                capabilities = registry.get_capabilities("community_pulse")
+                tools = await pool.get_tools_for_capabilities(capabilities)
+                logger.info(
+                    "loaded_tools_for_community_pulse",
+                    analysis_id=str(analysis_id),
+                    tool_count=len(tools),
+                    capabilities=capabilities,
+                )
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for any tool loading error
+        # Graceful degradation - continue without tools if loading fails
+        logger.warning(
+            "tool_loading_failed",
+            agent_type="community_pulse",
+            analysis_id=str(analysis_id),
+            error=str(e),
+        )
+        tools = []
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="community_pulse",
+                fallback_content=content,
+            )
+
+            return await run_community_pulse(
+                loaded_content, content_type, analysis_id, session, state, tools=tools
+            )
+    except GeneratorExit as gen_exit:
+        # GeneratorExit occurs when async generator is closed prematurely
+        duration = time.time() - start_time
+        logger.error(
+            "agent_generator_exit_runner",
+            agent_type="community_pulse",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            error_message=str(gen_exit),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            exc_info=True,
+            context="run_community_pulse_with_session",
+            note=(
+                "GeneratorExit caught in runner function. "
+                "This occurs when LangGraph's pregel module closes an async generator. "
+                "Check LangGraph streaming and timeout configuration."
+            ),
+        )
+        return {}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="community_pulse",
+            analysis_id=analysis_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+            exc_info=True,
+        )
+        return {}
+
+
+async def run_deep_researcher_with_session(
+    content: str,
+    content_type: str,
+    analysis_id: AnalysisID,
+    state: AnalysisState,
+) -> dict[str, object]:
+    """Run deep researcher agent with its own database session.
+
+    Issue #500: Tier 3 Research agent that uses BOTH proactive memory injection
+    (prior_memory field) AND reactive tool-calling (tavily_search) for maximum
+    research depth and comprehensive external investigation.
+    """
+    from app.db.session import AsyncSessionLocal
+
+    start_time = time.time()
+
+    # Get Langfuse trace ID for correlation if available
+    trace_id = get_current_trace_id()
+
+    # Issue #500: deep_researcher uses Tavily search tool for comprehensive external research
+    # Tools are loaded by router/coordinator and passed via state
+    # If tools not in state, create empty list and log warning
+    tools_from_state = state.get("tools", [])
+    if isinstance(tools_from_state, list):
+        tools: list[BaseTool] = tools_from_state
+    else:
+        logger.warning(
+            "deep_researcher_tools_invalid",
+            analysis_id=analysis_id,
+            tools_type=type(tools_from_state).__name__,
+            message="Tools in state not a list - using empty list",
+        )
+        tools = []
+
+    if not tools:
+        logger.warning(
+            "deep_researcher_no_tools",
+            analysis_id=analysis_id,
+            message="Tier 3 deep_researcher expected Tavily tools but none provided - research will be limited",
+        )
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Issue #268: Load content from artifact if content_ref available
+            loaded_content = await _load_content_from_artifact(
+                session=session,
+                state=state,
+                agent_type="deep_researcher",
+                fallback_content=content,
+            )
+
+            return await run_deep_researcher(
+                loaded_content,
+                content_type,
+                analysis_id,
+                session,
+                state,
+                tools=tools,
+            )
+    except GeneratorExit:
+        # GeneratorExit occurs when timeout cancels the task - handle gracefully
+        duration = time.time() - start_time
+        logger.warning(
+            "agent_cancelled",
+            agent_type="deep_researcher",
+            analysis_id=analysis_id,
+            exception_type="GeneratorExit",
+            duration_seconds=duration,
+            step_timeout=STEP_TIMEOUT,
+            trace_id=trace_id,
+            handled_gracefully=True,
+        )
+        return {}  # Return empty dict for graceful degradation
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "agent_failed",
+            agent_type="deep_researcher",
             analysis_id=analysis_id,
             error_type=type(e).__name__,
             error=str(e),
