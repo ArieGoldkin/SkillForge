@@ -321,9 +321,7 @@ def test_filter_agents_by_content_type_news():
 
 def test_agent_capabilities_includes_news():
     """Test that news is in AGENT_CAPABILITIES for exactly 2 agents."""
-    agents_with_news = [
-        agent for agent, types in AGENT_CAPABILITIES.items() if "news" in types
-    ]
+    agents_with_news = [agent for agent, types in AGENT_CAPABILITIES.items() if "news" in types]
     assert len(agents_with_news) == 2
     assert "trend_validator" in agents_with_news
     assert "tech_comparator" in agents_with_news
