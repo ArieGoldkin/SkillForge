@@ -210,9 +210,9 @@ def traced_tool(
     tags: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Decorator for tracing tool invocations in Langfuse.
+    """Trace tool invocations in Langfuse with observation spans.
 
-    Creates a tool observation span that shows up in Langfuse's agent graph
+    Create a tool observation span that shows up in Langfuse's agent graph
     visualization. Use this for external API calls (Tavily, GitHub, npm, etc.)
     to track tool usage, cache hits, and execution time.
 
@@ -259,7 +259,7 @@ def traced_tool(
                         if metadata:
                             update_kwargs["metadata"] = metadata
                         if update_kwargs:
-                            langfuse.update_current_observation(**update_kwargs)
+                            langfuse.update_current_span(**update_kwargs)
                     except Exception:  # noqa: BLE001, S110
                         pass
 
@@ -324,7 +324,7 @@ def update_current_observation(
             update_kwargs["status_message"] = status_message
 
         if update_kwargs:
-            langfuse.update_current_observation(**update_kwargs)
+            langfuse.update_current_span(**update_kwargs)
 
     except ImportError:
         pass
