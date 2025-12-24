@@ -536,6 +536,7 @@ COMPARISON_THRESHOLDS = {
     "trend_validator": 0.50,  # Trends span multiple technologies
     "implementation_planner": 0.35,  # No single implementation path in comparisons
     "dependency_mapper": 0.65,  # Dependencies are still specific even in comparisons
+    "pros_cons": 0.45,  # Universal Tier 1 - balanced analysis works with broad content
 }
 
 # Research/academic content thresholds (Issue #442)
@@ -549,6 +550,7 @@ RESEARCH_THRESHOLDS = {
     "security_auditor": 0.20,  # Security concepts without CVSS scores
     "tech_comparator": 0.30,  # Comparisons can be qualitative
     "dependency_mapper": 0.25,  # Mentioned libraries, not specific versions
+    "pros_cons": 0.25,  # Universal Tier 1 - balanced pros/cons from qualitative content
 }
 
 

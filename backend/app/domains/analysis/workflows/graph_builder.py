@@ -23,11 +23,15 @@ from app.db.session import get_session_factory
 from app.domains.analysis.services.context.artifact_store import ArtifactStore
 from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
 from app.domains.analysis.workflows.nodes.agents import (
+    actionable_node,
+    audience_fit_node,
     code_quality_critic_node,
     dependency_mapper_node,
     implementation_planner_node,
     integration_feasibility_node,
+    key_insights_node,
     performance_analyst_node,
+    pros_cons_node,
     security_auditor_node,
     tech_comparator_node,
     trend_validator_node,
@@ -524,7 +528,7 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     }
 
 
-def build_analysis_graph(
+def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     route_to_agents_fn: Callable[[AnalysisState], list[Send]] | None = None,
     checkpointer_override: Any | None = None,
 ):
@@ -588,6 +592,10 @@ def build_analysis_graph(
     graph.add_node("generate_artifact", generate_artifact)
 
     # Add all agent nodes (each executes independently in parallel)
+    graph.add_node("actionable", actionable_node)
+    graph.add_node("audience_fit", audience_fit_node)
+    graph.add_node("key_insights", key_insights_node)
+    graph.add_node("pros_cons", pros_cons_node)
     graph.add_node("tech_comparator", tech_comparator_node)
     graph.add_node("security_auditor", security_auditor_node)
     graph.add_node("implementation_planner", implementation_planner_node)
@@ -628,6 +636,10 @@ def build_analysis_graph(
         "supervisor",
         routing_fn,
         [
+            "actionable",
+            "audience_fit",
+            "key_insights",
+            "pros_cons",
             "tech_comparator",
             "security_auditor",
             "implementation_planner",
@@ -643,6 +655,10 @@ def build_analysis_graph(
     # Fan-in: All agent nodes route to aggregate
     # LangGraph automatically waits for all incoming edges before executing aggregate
     agent_nodes = [
+        "actionable",
+        "audience_fit",
+        "key_insights",
+        "pros_cons",
         "tech_comparator",
         "security_auditor",
         "implementation_planner",
