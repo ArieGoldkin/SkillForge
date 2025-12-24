@@ -999,3 +999,152 @@ class TestComparisonAwareThresholds:
         for agent, expected_threshold in expected_agents.items():
             assert agent in COMPARISON_THRESHOLDS
             assert COMPARISON_THRESHOLDS[agent] == expected_threshold
+
+
+# =============================================================================
+# Issue #490: News Content Genre Tests
+# =============================================================================
+
+
+class TestNewsGenreDetection:
+    """Tests for NEWS genre detection (Issue #490)."""
+
+    def test_news_genre_announcement(self) -> None:
+        """Should detect news genre from announcement content."""
+        content = """
+        OpenAI Announces GPT-5: Next Generation AI Model
+
+        Today OpenAI unveiled its latest AI breakthrough.
+        The new model introduces revolutionary capabilities and is now available
+        to enterprise customers worldwide.
+        """
+        signals = detect_content_signals(content)
+        assert signals.detected_genre == ContentGenre.NEWS
+
+    def test_news_genre_product_launch(self) -> None:
+        """Should detect news genre from product launch content."""
+        content = """
+        Google Cloud Launches Enhanced AI Platform
+
+        Google introduces new machine learning features available today.
+        This partnership enables broader access to AI capabilities.
+        """
+        signals = detect_content_signals(content)
+        assert signals.detected_genre == ContentGenre.NEWS
+
+    def test_news_genre_partnership(self) -> None:
+        """Should detect news genre from partnership/acquisition news."""
+        content = """
+        Major Tech Acquisition Announced Today
+
+        Company A has unveiled its acquisition of Company B.
+        The merger marks a significant partnership in the industry.
+        """
+        signals = detect_content_signals(content)
+        assert signals.detected_genre == ContentGenre.NEWS
+
+    def test_news_genre_not_tutorial_with_code(self) -> None:
+        """News genre should NOT be detected when code is present."""
+        content = """
+        Company Announces New Framework
+
+        Here's how to use it:
+
+        ```python
+        import new_framework
+        from new_framework import Client
+
+        def hello():
+            return new_framework.greet()
+        ```
+
+        Step 1: Install the package
+        Step 2: Configure your settings
+        """
+        signals = detect_content_signals(content)
+        # Should be TUTORIAL, not NEWS (has code and steps)
+        assert signals.detected_genre != ContentGenre.NEWS
+        assert signals.detected_genre == ContentGenre.TUTORIAL
+
+    def test_news_genre_appropriate_agents(self) -> None:
+        """NEWS genre should return only trend_validator and tech_comparator."""
+        content = """
+        Breaking News: Major Tech Acquisition Announced
+
+        Today it was unveiled that Company A will acquire Company B.
+        The partnership is now available for regulatory review.
+        """
+        signals = detect_content_signals(content)
+        assert signals.detected_genre == ContentGenre.NEWS
+
+        appropriate_agents = signals.get_appropriate_agents()
+        assert len(appropriate_agents) == 2
+        assert "trend_validator" in appropriate_agents
+        assert "tech_comparator" in appropriate_agents
+        # Should NOT include implementation agents
+        assert "implementation_planner" not in appropriate_agents
+        assert "security_auditor" not in appropriate_agents
+        assert "dependency_mapper" not in appropriate_agents
+
+    def test_news_vs_changelog(self) -> None:
+        """NEWS should not be confused with CHANGELOG."""
+        # Changelog has version history structure
+        changelog_content = """
+        # Changelog
+
+        ## [2.0.0] - 2024-01-15
+
+        ### Added
+        - New feature announced
+        - Product now available
+
+        ## [1.9.0] - 2024-01-01
+        - Previous release
+        """
+        signals = detect_content_signals(changelog_content)
+        # Should be CHANGELOG, not NEWS (has version structure)
+        assert signals.detected_genre == ContentGenre.CHANGELOG
+
+    def test_news_vs_opinion(self) -> None:
+        """NEWS (product announcement) should not be confused with OPINION (blog post)."""
+        # News with announcement keywords
+        news_content = """
+        Company Announces New AI Model Now Available
+
+        Today the company unveiled its latest model.
+        The new version is now available to all customers.
+        """
+        signals = detect_content_signals(news_content)
+        assert signals.detected_genre == ContentGenre.NEWS
+
+        # Opinion piece without news announcements
+        opinion_content = """
+        I think the future of AI is exciting.
+        In my opinion, we should adopt this approach.
+        This blog post explores my experience with AI.
+        """
+        signals = detect_content_signals(opinion_content)
+        assert signals.detected_genre == ContentGenre.OPINION
+
+    def test_news_keyword_patterns(self) -> None:
+        """Test various news keyword patterns."""
+        patterns = [
+            ("Announcing new product today", ContentGenre.NEWS),
+            ("The company launched a new service", ContentGenre.NEWS),
+            ("Product unveiled at conference", ContentGenre.NEWS),
+            ("Now available to all customers", ContentGenre.NEWS),
+            ("Press release from company", ContentGenre.NEWS),
+        ]
+
+        for content, expected_genre in patterns:
+            # Add more context to ensure it's not classified as something else
+            full_content = f"""
+            {content}
+
+            The announcement was made today.
+            The new offering is now available globally.
+            """
+            signals = detect_content_signals(full_content)
+            assert signals.detected_genre == expected_genre, (
+                f"Expected {expected_genre} for '{content}', got {signals.detected_genre}"
+            )

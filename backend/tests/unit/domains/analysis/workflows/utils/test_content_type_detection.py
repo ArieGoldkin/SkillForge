@@ -194,3 +194,136 @@ def test_detect_content_type_tutorial_patterns():
     """
     # Should detect as documentation (has markdown headers, pip install, step-by-step)
     assert detect_content_type(tutorial_content) == "documentation"
+
+
+# =============================================================================
+# Issue #490: News Content Type Tests
+# =============================================================================
+
+
+def test_detect_content_type_news_announcement():
+    """Test detection of news/announcement content (Issue #490)."""
+    news_content = """
+    OpenAI Announces GPT-5: The Next Generation of Language Models
+
+    Today, OpenAI unveiled its latest breakthrough in artificial intelligence.
+    The new model, now available to enterprise customers, represents a major
+    leap forward in AI capabilities. This partnership with Microsoft enables
+    global availability starting next month.
+    """
+    assert detect_content_type(news_content) == "news"
+
+
+def test_detect_content_type_news_product_launch():
+    """Test detection of product launch announcements."""
+    launch_content = """
+    Google Cloud Launches New AI Platform Features
+
+    Google introduces enhanced machine learning capabilities
+    with the launch of Vertex AI 2.0. The new version is now available
+    and includes breakthrough performance improvements.
+    """
+    assert detect_content_type(launch_content) == "news"
+
+
+def test_detect_content_type_news_partnership():
+    """Test detection of partnership/acquisition news."""
+    partnership_content = """
+    Major Tech Acquisition Announced Today
+
+    Company A has unveiled its acquisition of Company B, marking a significant
+    partnership in the industry. The merger is now available for regulatory
+    review and expected to close next quarter.
+    """
+    assert detect_content_type(partnership_content) == "news"
+
+
+def test_detect_content_type_news_vs_technical_article():
+    """Test that technical articles with code are NOT classified as news."""
+    # Technical article with code should NOT be news
+    article_with_code = """
+    Announcing Our New Python Library
+
+    Today we're launching our new library. Here's how to use it:
+
+    ```python
+    import new_library
+    from new_library import Client
+
+    client = Client()
+    result = client.process()
+    ```
+
+    Step 1: Install the package
+    Step 2: Configure your settings
+    """
+    # Should NOT be news because it has code patterns
+    result = detect_content_type(article_with_code)
+    assert result != "news"
+    # Should be documentation (has code blocks, step-by-step)
+    assert result == "documentation"
+
+
+def test_detect_content_type_news_hint():
+    """Test news content type hint validation."""
+    news_content = """
+    Breaking: Major AI announcement today.
+    The company unveiled its new product, now available worldwide.
+    """
+    # With hint and matching patterns, should return news
+    assert detect_content_type(news_content, content_type_hint="news") == "news"
+
+
+def test_can_agent_process_news():
+    """Test that only trend_validator and tech_comparator can process news."""
+    # These should process news (Issue #490)
+    assert can_agent_process_content("trend_validator", "news") is True
+    assert can_agent_process_content("tech_comparator", "news") is True
+
+    # These should NOT process news
+    assert can_agent_process_content("security_auditor", "news") is False
+    assert can_agent_process_content("implementation_planner", "news") is False
+    assert can_agent_process_content("performance_analyst", "news") is False
+    assert can_agent_process_content("code_quality_critic", "news") is False
+    assert can_agent_process_content("dependency_mapper", "news") is False
+    assert can_agent_process_content("integration_feasibility", "news") is False
+
+
+def test_filter_agents_by_content_type_news():
+    """Test filtering agents for news content - only 2 should pass."""
+    all_agents = [
+        "tech_comparator",
+        "security_auditor",
+        "implementation_planner",
+        "performance_analyst",
+        "code_quality_critic",
+        "trend_validator",
+        "dependency_mapper",
+        "integration_feasibility",
+    ]
+
+    filtered, skipped = filter_agents_by_content_type(all_agents, "news")
+
+    # Only 2 agents should be filtered (allowed to process news)
+    assert len(filtered) == 2
+    assert "trend_validator" in filtered
+    assert "tech_comparator" in filtered
+
+    # 6 agents should be skipped
+    assert len(skipped) == 6
+    assert "security_auditor" in skipped
+    assert "implementation_planner" in skipped
+    assert "performance_analyst" in skipped
+    assert "code_quality_critic" in skipped
+    assert "dependency_mapper" in skipped
+    assert "integration_feasibility" in skipped
+
+
+def test_agent_capabilities_includes_news():
+    """Test that news is in AGENT_CAPABILITIES for exactly 2 agents."""
+    agents_with_news = [
+        agent for agent, types in AGENT_CAPABILITIES.items() if "news" in types
+    ]
+    assert len(agents_with_news) == 2
+    assert "trend_validator" in agents_with_news
+    assert "tech_comparator" in agents_with_news

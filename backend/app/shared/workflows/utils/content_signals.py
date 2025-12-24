@@ -29,6 +29,7 @@ class ContentGenre(Enum):
     RESEARCH = "research"  # Academic papers, surveys
     QUICKSTART = "quickstart"  # READMEs, getting started guides
     CHANGELOG = "changelog"  # Release notes, version history
+    NEWS = "news"  # Product announcements, tech news (Issue #490)
     UNKNOWN = "unknown"
 
 
@@ -83,6 +84,10 @@ class ContentSignals:
 
     def get_appropriate_agents(self) -> list[str]:
         """Return list of agents that should be routed based on signals."""
+        # Issue #490: NEWS genre routes to only 2 agents
+        if self.detected_genre == ContentGenre.NEWS:
+            return ["trend_validator", "tech_comparator"]
+
         appropriate = []
 
         # Always include these (can work with any content)
@@ -368,6 +373,22 @@ def _detect_genre(  # noqa: PLR0911
     # Reference = API docs, specs
     if re.search(r"api\s+reference|specification|endpoints?|parameters?", content_lower):
         return ContentGenre.REFERENCE
+
+    # Issue #490: NEWS = product announcements, tech news
+    # Check before OPINION since news has distinct announcement language
+    is_news_patterns = re.search(
+        r"announced?|announcing|announcement|"  # Announcement keywords
+        r"launched?|launching|launch\s+of|"  # Launch keywords
+        r"unveiled?|unveiling|"  # Unveiling keywords
+        r"now\s+available|available\s+(now|today)|"  # Availability
+        r"press\s+release|keynote|"  # Press/keynote
+        r"partnership|acquisition|merger|"  # Business news
+        r"new\s+(feature|product|service|tool|model|version)",  # New product
+        content_lower,
+    )
+    # News requires: announcement patterns AND low technical depth
+    if is_news_patterns and not has_code and not has_tutorials:
+        return ContentGenre.NEWS
 
     # Opinion = blog indicators without technical depth
     is_opinion_keywords = re.search(r"i\s+think|in\s+my\s+(opinion|experience)|blog", content_lower)

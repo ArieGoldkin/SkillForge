@@ -64,6 +64,7 @@ MIN_AGENTS_BY_GENRE: dict[ContentGenre, int] = {
     ContentGenre.REFERENCE: 3,  # Standard documentation coverage
     ContentGenre.QUICKSTART: 3,  # Implementation focus
     ContentGenre.CHANGELOG: 2,  # Trends + tech comparison
+    ContentGenre.NEWS: 2,  # Issue #490: trend_validator + tech_comparator only
     ContentGenre.UNKNOWN: 3,  # Safe default
 }
 
