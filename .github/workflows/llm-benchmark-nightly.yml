@@ -25,7 +25,7 @@ concurrency:
 jobs:
   benchmark:
     name: Run LLM Benchmark
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 60
 
     services:

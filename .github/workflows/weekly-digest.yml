@@ -8,7 +8,7 @@ on:
 
 jobs:
   generate-digest:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64]
     permissions:
       issues: write
       contents: read

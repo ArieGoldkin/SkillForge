@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   openai-embedding-sanity:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
