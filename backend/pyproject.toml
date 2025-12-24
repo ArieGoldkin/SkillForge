@@ -319,6 +319,16 @@ omit = [
     "app/evaluation/generate_config.py",   # CLI config generator
     "app/evaluation/llm_benchmark.py",     # Benchmark runner CLI
     "app/evaluation/run_experiments.py",   # Experiment runner CLI
+    # Tier 3 Research Agents - LLM-heavy runners, tested via integration/E2E (Issue #501)
+    "app/domains/analysis/workflows/agents/deep_researcher.py",
+    "app/domains/analysis/workflows/agents/community_pulse.py",
+    "app/domains/analysis/workflows/agents/knowledge_curator.py",
+    "app/domains/analysis/workflows/agents/learning_path_advisor.py",
+    "app/domains/analysis/workflows/agents/learning_path.py",  # Unused legacy schema
+    "app/domains/analysis/workflows/nodes/agents/deep_researcher_node.py",
+    "app/domains/analysis/workflows/nodes/agents/community_pulse_node.py",
+    "app/domains/analysis/workflows/nodes/agents/knowledge_curator_node.py",
+    "app/domains/analysis/workflows/nodes/agents/learning_path_advisor_node.py",
 ]
 
 [tool.coverage.report]
