@@ -84,10 +84,21 @@ class TestAgentRegistryFunctions:
 
         assert len(agents) == 12
 
-    def test_get_agents_for_mode_invalid_defaults_to_all(self):
-        """Invalid mode should default to all tiers (max tier)."""
-        agents = get_agents_for_mode("invalid_mode")
-        assert len(agents) == 12  # All agents
+    def test_get_agents_for_mode_invalid_raises_value_error(self):
+        """Invalid mode raises ValueError with valid options listed.
+
+        Strict validation is intentional:
+        - Frontend TypeScript enum prevents invalid values
+        - Pydantic validates API input
+        - Silent fallback would waste money on Tier 3 agents
+        """
+        with pytest.raises(ValueError, match=r"Invalid analysis mode: 'invalid_mode'") as exc_info:
+            get_agents_for_mode("invalid_mode")
+
+        # Error message should list valid modes for debugging
+        assert "quick" in str(exc_info.value)
+        assert "standard" in str(exc_info.value)
+        assert "deep_dive" in str(exc_info.value)
 
     def test_get_agent_metadata_tier1(self):
         """Tier 1 agents have correct metadata."""
