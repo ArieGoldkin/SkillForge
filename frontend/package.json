@@ -19,7 +19,6 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:debug": "vitest run --reporter=verbose",
-
     "test:unit": "vitest run --testNamePattern=\"@unit\"",
     "test:integration:unit": "vitest run --testNamePattern=\"@integration\"",
     "test:component-e2e": "E2E_READY=true vitest run --testNamePattern=\"@component-e2e\"",
@@ -27,10 +26,8 @@
     "test:slow": "vitest run --testNamePattern=\"@slow\"",
     "test:performance": "RUN_PERFORMANCE_TESTS=true vitest run --testNamePattern=\"@slow\"",
     "test:flaky": "vitest run --retry=3 --testNamePattern=\"@flaky\"",
-
     "test:dev": "vitest run --grep \"@dev\"",
     "test:critical": "vitest run --grep \"@critical\"",
-
     "e2e:playwright": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:headed": "playwright test --headed",
@@ -65,6 +62,7 @@
     "@tanstack/react-router": "^1.141.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.556.0",
     "mermaid": "^11.12.2",
     "prismjs": "^1.30.0",
