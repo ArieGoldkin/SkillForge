@@ -35,12 +35,15 @@ logger = get_logger(__name__)
         "task_type": "extraction",
     },
 )
-async def extract_content(url: str, analysis_id: AnalysisID) -> dict:  # noqa: PLR0915
+async def extract_content(  # noqa: PLR0915
+    url: str, analysis_id: AnalysisID, analysis_mode: str = "standard"
+) -> dict:
     """Extract content from URL using JinaReader.
 
     Args:
         url: The URL to extract content from
         analysis_id: Unique identifier for this analysis
+        analysis_mode: Analysis depth mode (quick, standard, deep_dive)
 
     Returns:
         Dictionary with 'raw_content' and 'extraction_metadata'
@@ -55,6 +58,7 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:  # noqa: P
         analysis_id=analysis_id,
         stage="extraction",
         status="running",
+        analysis_mode=analysis_mode,
     )
 
     # Runtime metadata updates
@@ -112,6 +116,7 @@ async def extract_content(url: str, analysis_id: AnalysisID) -> dict:  # noqa: P
                 "url": url,
                 "word_count": extracted.get("word_count", 0),
             },
+            analysis_mode=analysis_mode,
         )
 
         logger.info(

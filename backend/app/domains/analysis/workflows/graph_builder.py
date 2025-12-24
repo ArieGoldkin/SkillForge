@@ -154,10 +154,11 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
 
     # Normal mode: Extract content from URL via JinaReader
     url = state["url"]
+    analysis_mode = state.get("analysis_mode", "standard")
 
     # Issue #441: Wrap extraction in try/except to catch JinaReaderError
     try:
-        result = await extract_content(url, str(analysis_id or ""))
+        result = await extract_content(url, str(analysis_id or ""), analysis_mode)
     except JinaReaderError as e:
         logger.warning(
             "extraction_failed",

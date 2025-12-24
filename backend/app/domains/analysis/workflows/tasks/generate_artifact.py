@@ -295,6 +295,7 @@ async def generate_artifact(  # noqa: PLR0915
     agent_findings = get_agent_findings(state)
     extraction_metadata = get_extraction_metadata(state)
     url = state.get("url", "")
+    analysis_mode = state.get("analysis_mode", "standard")
 
     # Extract agent_statuses from aggregated_insights
     agent_statuses = (
@@ -311,6 +312,7 @@ async def generate_artifact(  # noqa: PLR0915
         analysis_id=analysis_id,
         stage=get_stage_name("artifact_generation"),
         status="running",
+        analysis_mode=analysis_mode,
     )
 
     # Runtime metadata updates
@@ -451,6 +453,7 @@ async def generate_artifact(  # noqa: PLR0915
             status="complete",
             artifact_id=artifact_id,
             markdown_length=len(markdown_content),
+            analysis_mode=analysis_mode,
         )
 
         # Issue #378-385: Submit G-Eval scores to Langfuse for artifact quality

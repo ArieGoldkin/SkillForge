@@ -3,6 +3,8 @@
 
 export type ContentType = 'article' | 'video' | 'repo'
 
+export type AnalysisMode = 'quick' | 'standard' | 'deep_dive'
+
 // Granular analysis status values with semantic meaning
 // 'complete' is ONLY set when artifact exists and is valid
 export type AnalysisStatus =
@@ -101,6 +103,7 @@ export interface AnalyzeRequest {
   url: string
   content_type?: ContentType
   skill_level?: 'beginner' | 'intermediate' | 'expert'
+  analysis_mode?: AnalysisMode
 }
 
 export interface AnalyzeResponse {
