@@ -141,10 +141,25 @@ class TestGetAgentsForMode:
         assert "fact_validator" in agents  # Tier 2
         assert "deep_researcher" in agents  # Tier 3
 
-    def test_invalid_mode_defaults_to_all(self):
-        """Invalid mode defaults to all agents (Research tier)."""
-        agents = get_agents_for_mode("invalid_mode")
-        assert len(agents) == 12
+    def test_invalid_mode_raises_error(self):
+        """Invalid mode raises ValueError with helpful message (Issue #502 fix)."""
+        with pytest.raises(ValueError) as exc_info:
+            get_agents_for_mode("invalid_mode")
+        # Verify error message includes valid modes
+        assert "Invalid analysis mode: 'invalid_mode'" in str(exc_info.value)
+        assert "quick" in str(exc_info.value)
+        assert "standard" in str(exc_info.value)
+        assert "deep_dive" in str(exc_info.value)
+
+    def test_accepts_string_modes(self):
+        """Function accepts mode as plain string."""
+        agents = get_agents_for_mode("quick")
+        assert len(agents) == 4
+
+    def test_accepts_enum_modes(self):
+        """Function accepts mode as AnalysisMode enum."""
+        agents = get_agents_for_mode(AnalysisMode.STANDARD)
+        assert len(agents) == 8
 
 
 class TestGetAgentMetadata:

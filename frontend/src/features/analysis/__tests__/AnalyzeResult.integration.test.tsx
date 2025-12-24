@@ -5,6 +5,8 @@
  * Focuses on integration between components, hooks, and external services.
  *
  * Tagged with @integration - runs when infrastructure is available
+ *
+ * @note Uses importOriginal pattern for future-proof mocking (Issue #502 review)
  */
 
 import {
@@ -19,20 +21,25 @@ import { describe, expect, it, vi } from 'vitest'
 import AnalyzeResult from '../AnalyzeResult'
 
 // Use vi.hoisted to define mockState before vi.mock hoisting runs
-const { mockState } = vi.hoisted(() => ({
-  mockState: {
-    events: [] as unknown[],
-    isConnected: false,
-    isComplete: false,
-    error: null as string | null,
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    reset: vi.fn(),
-    setAnalysisMetadata: vi.fn(),
-    clearError: vi.fn(),
-    reconcileComplete: vi.fn(),
-  },
-}))
+const { mockState, mockLoadingState, mockShowTimeoutWarning, mockShouldShowProgress } = vi.hoisted(
+  () => ({
+    mockState: {
+      events: [] as unknown[],
+      isConnected: false,
+      isComplete: false,
+      error: null as string | null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      reset: vi.fn(),
+      setAnalysisMetadata: vi.fn(),
+      clearError: vi.fn(),
+      reconcileComplete: vi.fn(),
+    },
+    mockLoadingState: vi.fn(() => ({ type: 'waiting_for_events' })),
+    mockShowTimeoutWarning: vi.fn(() => false),
+    mockShouldShowProgress: vi.fn(() => false),
+  })
+)
 
 // Mock router for integration testing
 vi.mock('@tanstack/react-router', () => ({
@@ -42,41 +49,33 @@ vi.mock('@tanstack/react-router', () => ({
   }),
 }))
 
-// Mock SSE store for controlled testing - using mockState from vi.hoisted
-vi.mock('@stores/sseStore', () => ({
-  useSSEStore: vi.fn((selector: unknown) => {
-    if (typeof selector === 'function') {
-      return (selector as (s: typeof mockState) => unknown)(mockState)
-    }
-    return mockState
-  }),
-  // All selector exports need to be mocked explicitly
-  selectSetAnalysisMetadata: (state: typeof mockState) => state.setAnalysisMetadata,
-  selectError: (state: typeof mockState) => state.error,
-  selectClearError: (state: typeof mockState) => state.clearError,
-  selectReconcileComplete: (state: typeof mockState) => state.reconcileComplete,
-  selectArtifactId: () => null,
-  selectTraceId: () => null,
-  selectAnalysisId: () => null,
-  selectOverallProgress: () => 0,
-  selectHasFailedStages: () => false,
-  selectFailedStagesCount: () => 0,
-  selectAnalysisMetadata: () => null,
-  selectValidationFailures: () => 0,
-  selectSetComplete: () => vi.fn(),
-  // Hook exports
-  useLoadingState: vi.fn(() => ({ type: 'waiting_for_events' })),
-  useShowTimeoutWarning: vi.fn(() => false),
-  useShouldShowProgress: vi.fn(() => false),
-  useConnectionMessage: vi.fn(() => ''),
-  useAnalysisPhase: vi.fn(() => 'initializing'),
-  useAnalysisIds: vi.fn(() => ({ analysisId: null, artifactId: null, traceId: null })),
-  useProgressState: vi.fn(() => ({
-    overallProgress: 0,
-    hasFailedStages: false,
-    failedStagesCount: 0,
-  })),
-}))
+// Mock SSE store using importOriginal pattern for future-proof mocking
+// This automatically includes all exports and only overrides what we need
+vi.mock('@stores/sseStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@stores/sseStore')>()
+  return {
+    ...actual, // Spread all actual exports - new selectors automatically included
+    // Override only what needs test control
+    useSSEStore: vi.fn((selector: unknown) => {
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof mockState) => unknown)(mockState)
+      }
+      return mockState
+    }),
+    // Override computed hooks for test control
+    useLoadingState: mockLoadingState,
+    useShowTimeoutWarning: mockShowTimeoutWarning,
+    useShouldShowProgress: mockShouldShowProgress,
+    useConnectionMessage: vi.fn(() => ''),
+    useAnalysisPhase: vi.fn(() => 'initializing'),
+    useAnalysisIds: vi.fn(() => ({ analysisId: null, artifactId: null, traceId: null })),
+    useProgressState: vi.fn(() => ({
+      overallProgress: 0,
+      hasFailedStages: false,
+      failedStagesCount: 0,
+    })),
+  }
+})
 
 // Mock stage status processing hook
 vi.mock('../hooks/useStageStatusProcessing', () => ({
@@ -97,29 +96,28 @@ vi.mock('../hooks/useActivityFeed', () => ({
 describe('AnalyzeResult Integration Tests @integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset hoisted mocks to default values
+    mockLoadingState.mockReturnValue({ type: 'waiting_for_events' })
+    mockShowTimeoutWarning.mockReturnValue(false)
+    mockShouldShowProgress.mockReturnValue(false)
   })
 
   // Helper function to mock SSE store dynamically for specific tests
+  // Uses the hoisted mockState for consistency with importOriginal pattern
   const mockSSEStore = (overrides: Record<string, unknown> = {}) => {
-    const defaultState = {
-      events: [],
-      isConnected: false,
-      isComplete: false,
-      error: null,
+    const testState = {
+      ...mockState,
       connect: vi.fn(),
       disconnect: vi.fn(),
       reset: vi.fn(),
-      setAnalysisMetadata: vi.fn(),
-      clearError: vi.fn(),
-      reconcileComplete: vi.fn(),
       ...overrides,
     }
 
     vi.mocked(useSSEStore).mockImplementation((selector: unknown) => {
       if (typeof selector === 'function') {
-        return (selector as (s: typeof defaultState) => unknown)(defaultState)
+        return (selector as (s: typeof testState) => unknown)(testState)
       }
-      return defaultState
+      return testState
     })
   }
 
