@@ -5,25 +5,32 @@
  * - URL construction
  * - Error handling and message transformation
  * - Response data mapping
+ *
+ * Note: Uses vi.hoisted + vi.mock to ensure env is set BEFORE module loads
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { analyzeAPI, healthAPI } from '../api.service'
+// Set up env BEFORE the module imports (hoisted to top of file)
+const { mockFetch } = vi.hoisted(() => {
+  // Stub the env variable before any module loads
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8500')
+  return {
+    mockFetch: vi.fn(),
+  }
+})
 
-// Mock fetch globally
-const mockFetch = vi.fn()
+// eslint-disable-next-line import/first -- Module must import AFTER vi.hoisted stubs the env
+import { analyzeAPI, healthAPI } from '../api.service'
 
 describe('api.service', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
-    vi.stubEnv('VITE_API_URL', 'http://localhost:8500')
     mockFetch.mockReset()
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
-    vi.unstubAllEnvs()
   })
 
   describe('analyzeAPI.getSSEEndpoint', () => {
