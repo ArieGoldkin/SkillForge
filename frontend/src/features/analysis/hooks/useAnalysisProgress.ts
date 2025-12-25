@@ -18,7 +18,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 import { isErrorEvent, isFailedStage } from '@app-types/sse'
-import type { SSEEvent } from '@app-types/sse'
+import type { SSEEvent, StageName } from '@app-types/sse'
 import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
@@ -76,7 +76,7 @@ export interface AnalysisProgressData {
       keyInsights?: string[]
     }
   >
-  stageStatuses?: Map<string, import('../hooks/stageConfig').StageStatusEntry>
+  stageStatuses?: Map<StageName, import('../hooks/stageConfig').StageStatusEntry>
 }
 
 // ============================================================================

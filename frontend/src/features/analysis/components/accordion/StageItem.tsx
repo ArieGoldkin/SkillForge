@@ -248,7 +248,7 @@ export const StageItem = memo(function StageItem({
           )}
 
           {/* Success Metrics (for completed stages) */}
-          {hasSuccessMetrics && (
+          {hasSuccessMetrics && stage.successMetrics && (
             <div
               className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
               aria-label="Success metrics"
@@ -313,10 +313,10 @@ export const StageItem = memo(function StageItem({
                     <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 space-y-2">
                       <div className="text-xs text-destructive">
                         <span className="font-medium">Error:</span>{' '}
-                        {stage.errorDetails.error || 'Unknown error'}
+                        {stage.errorDetails?.error || 'Unknown error'}
                       </div>
 
-                      {stage.errorDetails.errorCode && (
+                      {stage.errorDetails?.errorCode && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Code:</span>
                           <Badge variant="destructive" className="text-xs">
@@ -325,7 +325,7 @@ export const StageItem = memo(function StageItem({
                         </div>
                       )}
 
-                      {stage.errorDetails.processingTime && (
+                      {stage.errorDetails?.processingTime && (
                         <div className="text-xs text-muted-foreground">
                           Processing time: {stage.errorDetails.processingTime}ms
                         </div>

@@ -85,7 +85,7 @@ export const ArtifactPreviewPanel = memo(function ArtifactPreviewPanel({
   className,
 }: ArtifactPreviewPanelProps) {
   const artifactId = useSSEStore(selectArtifactId)
-  const { content, isLoading, error } = useArtifact(artifactId)
+  const { content, isLoading, error } = useArtifact(artifactId ?? undefined)
 
   return (
     <main
