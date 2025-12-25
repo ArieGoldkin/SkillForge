@@ -105,6 +105,7 @@ jobs:
           files: ./frontend/coverage/coverage-final.json
           flags: frontend
           fail_ci_if_error: false
+          skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports

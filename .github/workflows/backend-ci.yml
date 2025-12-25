@@ -133,6 +133,9 @@ jobs:
       - name: Verify Python version
         run: python3 --version
 
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
@@ -157,6 +160,7 @@ jobs:
           files: ./backend/coverage.xml
           flags: backend
           fail_ci_if_error: false
+          skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports
