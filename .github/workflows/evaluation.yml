@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       evaluation: ${{ steps.filter.outputs.evaluation }}
     steps:
@@ -59,7 +59,7 @@ jobs:
     name: Run Evaluation Pipeline
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.evaluation == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     timeout-minutes: 30
 
     # Service container for PostgreSQL with pgvector
