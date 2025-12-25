@@ -16,21 +16,12 @@ from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelectio
 
 
 @pytest.mark.unit
-
-# Helper to disable signal-based skipping for isolated enforcement tests
-def mock_no_skip(agent_name, signals, code_patterns=None):
-    """Mock should_skip_agent to never skip - isolates enforcement testing.
-
-    Issue #540: Updated to accept code_patterns parameter for standardized detection.
-    """
-    return False, None
-
-
 class TestSupervisorMinimumAgentEnforcement:
     """Tests for minimum agent count enforcement (Issue #299-304).
 
-    Note: These tests mock should_skip_agent to disable content signal filtering,
-    allowing isolated testing of the minimum 3-agent enforcement logic.
+    Issue #547 (GAP 1): should_skip_agent was removed from supervisor.
+    LLM is now the single source of truth for agent selection.
+    Tests no longer need to mock should_skip_agent.
     """
 
     @pytest.mark.asyncio
@@ -71,10 +62,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Simple one-line tip: use async functions for better performance.",
@@ -123,10 +111,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Quick tip: always hash passwords with bcrypt.",
@@ -174,10 +159,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Tutorial on building secure, performant APIs.",
@@ -230,10 +212,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_filter,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Article about video processing.",
@@ -283,10 +262,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
                 new_callable=AsyncMock,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content=content_with_imports,
@@ -408,10 +384,7 @@ class TestSupervisorMinimumAgentEnforcement:
                 "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
                 new_callable=AsyncMock,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             # Test SHORT content
             mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection_short)
@@ -430,5 +403,5 @@ class TestSupervisorMinimumAgentEnforcement:
                 content_type="article",
                 analysis_id="test-comprehensive",
             )
-            # Should have at least 5 agents (6 selected, signal filtering disabled)
+            # Should have at least 5 agents (6 selected, LLM decision trusted)
             assert len(result_comp["supervisor_decision"]["agents"]) >= 5

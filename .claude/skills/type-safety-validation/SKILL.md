@@ -1,9 +1,9 @@
 ---
 name: type-safety-validation
-description: Achieve end-to-end type safety with Zod runtime validation, tRPC type-safe APIs, Prisma ORM, and TypeScript 5.7+ features. Build fully type-safe applications from database to UI for 2025+ development.
-version: 1.0.0
+description: Achieve end-to-end type safety with Zod runtime validation, tRPC type-safe APIs, Prisma ORM, exhaustive type checking, and TypeScript 5.7+ features. Build fully type-safe applications from database to UI for 2025+ development.
+version: 1.1.0
 author: AI Agent Hub
-tags: [typescript, zod, trpc, prisma, type-safety, validation, 2025]
+tags: [typescript, zod, trpc, prisma, type-safety, validation, exhaustive-types, branded-types, 2025]
 ---
 
 # Type Safety & Validation
@@ -325,6 +325,177 @@ confidence_to_save: float | None = (
 - Nested dict extraction
 - Agent result processing examples
 
+## Exhaustive Type Checking (2025 Pattern)
+
+TypeScript's type system can guarantee compile-time exhaustiveness for union types. This prevents runtime bugs when union members are added or changed.
+
+### The assertNever Pattern
+
+```typescript
+// ✅ ALWAYS use this helper function
+function assertNever(x: never): never {
+  throw new Error(`Unexpected value: ${x}`)
+}
+
+// Example: Status handling
+type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+function getStatusColor(status: AnalysisStatus): string {
+  switch (status) {
+    case 'pending': return 'gray'
+    case 'running': return 'blue'
+    case 'completed': return 'green'
+    case 'failed': return 'red'
+    default: return assertNever(status) // ✅ Compile-time exhaustiveness check
+  }
+}
+
+// If you add a new status 'cancelled', TypeScript will error at compile time:
+// Error: Argument of type 'string' is not assignable to parameter of type 'never'.
+```
+
+### Exhaustive Record Mapping
+
+```typescript
+// For mapping union types to values, use satisfies with Record
+type EventType = 'click' | 'scroll' | 'keypress' | 'hover'
+
+const eventColors = {
+  click: 'red',
+  scroll: 'blue',
+  keypress: 'green',
+  hover: 'yellow',
+} as const satisfies Record<EventType, string>
+
+// TypeScript will error if any EventType is missing from the record
+// Adding new EventType requires updating this record
+```
+
+### Exhaustive Handler Objects
+
+```typescript
+// For complex logic, use handler objects instead of switches
+type ContentType = 'article' | 'video' | 'podcast' | 'repository'
+
+interface ContentHandler<T> {
+  article: (data: ArticleData) => T
+  video: (data: VideoData) => T
+  podcast: (data: PodcastData) => T
+  repository: (data: RepoData) => T
+}
+
+function createContentHandlers<T>(handlers: ContentHandler<T>): ContentHandler<T> {
+  return handlers
+}
+
+// Usage: TypeScript enforces all content types are handled
+const renderContent = createContentHandlers({
+  article: (data) => <ArticleCard {...data} />,
+  video: (data) => <VideoPlayer {...data} />,
+  podcast: (data) => <AudioPlayer {...data} />,
+  repository: (data) => <RepoCard {...data} />,
+})
+```
+
+### Exhaustive Union Checks with Type Guards
+
+```typescript
+// When you need runtime type narrowing with exhaustiveness
+type APIResponse =
+  | { type: 'success'; data: Data }
+  | { type: 'error'; error: Error }
+  | { type: 'loading' }
+
+function handleResponse(response: APIResponse): string {
+  switch (response.type) {
+    case 'success':
+      return `Data: ${response.data.id}`
+    case 'error':
+      return `Error: ${response.error.message}`
+    case 'loading':
+      return 'Loading...'
+    default:
+      return assertNever(response) // Ensures all cases handled
+  }
+}
+```
+
+### Template Literal Exhaustiveness
+
+```typescript
+// For string pattern unions
+type Size = 'sm' | 'md' | 'lg' | 'xl'
+type Variant = 'primary' | 'secondary' | 'danger'
+type ButtonClass = `btn-${Size}-${Variant}`
+
+// Exhaustive size mapping
+const sizeMap = {
+  sm: 'text-sm py-1 px-2',
+  md: 'text-base py-2 px-4',
+  lg: 'text-lg py-3 px-6',
+  xl: 'text-xl py-4 px-8',
+} as const satisfies Record<Size, string>
+
+// Compile-time error if Size is expanded without updating sizeMap
+```
+
+### Branded Types for IDs
+
+```typescript
+import { z } from 'zod'
+
+// Create branded types for different ID kinds
+const UserId = z.string().uuid().brand<'UserId'>()
+const AnalysisId = z.string().uuid().brand<'AnalysisId'>()
+const ArtifactId = z.string().uuid().brand<'ArtifactId'>()
+
+type UserId = z.infer<typeof UserId>
+type AnalysisId = z.infer<typeof AnalysisId>
+type ArtifactId = z.infer<typeof ArtifactId>
+
+// Now TypeScript prevents mixing ID types
+function deleteAnalysis(id: AnalysisId): void { ... }
+function getUser(id: UserId): User { ... }
+
+const userId: UserId = UserId.parse('...')
+const analysisId: AnalysisId = AnalysisId.parse('...')
+
+deleteAnalysis(analysisId) // ✅ OK
+deleteAnalysis(userId)     // ❌ Error: UserId not assignable to AnalysisId
+```
+
+### Common Anti-Patterns
+
+```typescript
+// ❌ NEVER use non-exhaustive switch
+switch (status) {
+  case 'pending': return 'gray'
+  case 'running': return 'blue'
+  // Missing cases! Runtime bugs waiting to happen
+}
+
+// ❌ NEVER use default without assertNever
+switch (status) {
+  case 'pending': return 'gray'
+  case 'running': return 'blue'
+  default: return 'unknown' // Silent bug if new status added
+}
+
+// ❌ NEVER use if-else chains for union types
+if (status === 'pending') return 'gray'
+else if (status === 'running') return 'blue'
+// No compile-time check for missing cases!
+
+// ✅ ALWAYS use switch with assertNever
+switch (status) {
+  case 'pending': return 'gray'
+  case 'running': return 'blue'
+  case 'completed': return 'green'
+  case 'failed': return 'red'
+  default: return assertNever(status)
+}
+```
+
 ## Best Practices
 
 ### Validation
@@ -340,6 +511,9 @@ confidence_to_save: float | None = (
 - ✅ Prefer `unknown` over `any`
 - ✅ Use type guards for narrowing
 - ✅ Leverage inference with `typeof` and `ReturnType`
+- ✅ **Exhaustive switches**: Always use `assertNever` in default case
+- ✅ **Exhaustive records**: Use `satisfies Record<UnionType, Value>`
+- ✅ **Branded types**: Use Zod `.brand<>()` for distinct ID types
 - ✅ **Python/Ty**: Use explicit annotations + `isinstance()` for dict extraction
 
 ### Performance
@@ -355,3 +529,24 @@ confidence_to_save: float | None = (
 - [tRPC Documentation](https://trpc.io)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+
+---
+
+**Skill Version**: 1.1.0
+**Last Updated**: 2025-12-25
+**Maintained by**: AI Agent Hub Team
+
+## Changelog
+
+### v1.1.0 (2025-12-25)
+- Added comprehensive exhaustive type checking section
+- Added `assertNever` pattern for compile-time exhaustiveness
+- Added exhaustive record mapping with `satisfies`
+- Added exhaustive handler objects pattern
+- Added template literal exhaustiveness examples
+- Added branded types for IDs with Zod
+- Added common anti-patterns for non-exhaustive code
+- Updated best practices with exhaustive type checking guidelines
+
+### v1.0.0 (2025-12-14)
+- Initial skill with Zod, tRPC, Prisma, and TypeScript 5.7+ patterns

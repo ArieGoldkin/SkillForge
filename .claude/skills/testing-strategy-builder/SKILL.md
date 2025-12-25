@@ -40,6 +40,11 @@ This skill references the following testing tools. Not all are required - the sk
   - **Install:** `npm install --save-dev vitest`
   - **Config:** Add to vite.config.ts
 
+- **MSW (Mock Service Worker):** Network-level API mocking (2025 STANDARD)
+  - **Install:** `npm install --save-dev msw`
+  - **Setup:** `npx msw init public/ --save`
+  - **Why MSW:** Intercepts at network level, not implementation level
+
 - **Playwright:** End-to-end testing
   - **Install:** `npm install --save-dev @playwright/test`
   - **Setup:** `npx playwright install`
@@ -282,6 +287,243 @@ See `references/code-examples.md` for test isolation patterns.
 
 See `references/code-examples.md` for mocking examples.
 
+### 4. MSW (Mock Service Worker) - 2025 Standard
+
+**MSW is the industry-standard approach for API mocking in frontend tests (Dec 2025).**
+
+MSW intercepts requests at the network level, not by mocking implementation details. This provides several advantages:
+- Tests use the **real fetch/axios code** - no implementation mocking
+- Handlers work across **all test types** (unit, integration, E2E)
+- Easy to simulate **error states, delays, and edge cases**
+- Same handlers work in **browser and Node.js** environments
+
+#### Basic MSW Setup (Vitest/Jest)
+
+```typescript
+// src/mocks/handlers.ts
+import { http, HttpResponse } from 'msw'
+
+export const handlers = [
+  // Success response
+  http.get('/api/v1/analyze/:id', ({ params }) => {
+    return HttpResponse.json({
+      id: params.id,
+      status: 'completed',
+      createdAt: '2025-12-25T00:00:00Z',
+    })
+  }),
+
+  // Error response
+  http.get('/api/v1/analyze/error', () => {
+    return HttpResponse.json(
+      { error: 'Analysis not found' },
+      { status: 404 }
+    )
+  }),
+
+  // Delayed response (simulates slow network)
+  http.get('/api/v1/slow', async () => {
+    await delay(2000) // 2 second delay
+    return HttpResponse.json({ data: 'slow response' })
+  }),
+]
+```
+
+```typescript
+// src/mocks/server.ts (for Vitest/Jest - Node.js)
+import { setupServer } from 'msw/node'
+import { handlers } from './handlers'
+
+export const server = setupServer(...handlers)
+```
+
+```typescript
+// src/mocks/browser.ts (for Storybook/browser tests)
+import { setupWorker } from 'msw/browser'
+import { handlers } from './handlers'
+
+export const worker = setupWorker(...handlers)
+```
+
+#### Test Setup with MSW
+
+```typescript
+// vitest.setup.ts
+import { beforeAll, afterEach, afterAll } from 'vitest'
+import { server } from './src/mocks/server'
+
+// Start server before all tests
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+
+// Reset handlers after each test (removes runtime overrides)
+afterEach(() => server.resetHandlers())
+
+// Close server after all tests
+afterAll(() => server.close())
+```
+
+#### Runtime Handler Overrides
+
+```typescript
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
+
+test('shows error message when API fails', async () => {
+  // Override for this specific test
+  server.use(
+    http.get('/api/v1/analyze/:id', () => {
+      return HttpResponse.json(
+        { error: 'Server error' },
+        { status: 500 }
+      )
+    })
+  )
+
+  render(<AnalysisView id="123" />)
+
+  expect(await screen.findByText('Server error')).toBeInTheDocument()
+})
+
+test('shows loading state while fetching', async () => {
+  // Delay response to test loading state
+  server.use(
+    http.get('/api/v1/analyze/:id', async () => {
+      await delay(100)
+      return HttpResponse.json({ id: '123', status: 'pending' })
+    })
+  )
+
+  render(<AnalysisView id="123" />)
+
+  // Loading skeleton should be visible
+  expect(screen.getByTestId('skeleton')).toBeInTheDocument()
+
+  // Then data appears
+  expect(await screen.findByText('pending')).toBeInTheDocument()
+})
+```
+
+#### MSW with Zod Validation Testing
+
+```typescript
+import { z } from 'zod'
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
+
+const AnalysisSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['pending', 'running', 'completed', 'failed']),
+})
+
+test('handles invalid API response gracefully', async () => {
+  // Return malformed data
+  server.use(
+    http.get('/api/v1/analyze/:id', () => {
+      return HttpResponse.json({
+        id: 'not-a-uuid',  // Invalid!
+        status: 'unknown', // Invalid enum!
+      })
+    })
+  )
+
+  render(<AnalysisView id="123" />)
+
+  // Should show validation error, not crash
+  expect(await screen.findByText(/validation error/i)).toBeInTheDocument()
+})
+```
+
+#### MSW Anti-Patterns
+
+```typescript
+// ❌ NEVER mock fetch/axios directly
+jest.spyOn(global, 'fetch').mockResolvedValue(...)  // BAD!
+jest.mock('axios')  // BAD!
+
+// ❌ NEVER mock your API service module
+jest.mock('../services/api')  // BAD!
+
+// ❌ NEVER test implementation details
+expect(fetch).toHaveBeenCalledWith('/api/...')  // BAD!
+
+// ✅ ALWAYS use MSW handlers
+import { http, HttpResponse } from 'msw'
+server.use(http.get('/api/...', () => HttpResponse.json({...})))
+
+// ✅ ALWAYS test user-visible behavior
+expect(await screen.findByText('Success')).toBeInTheDocument()
+```
+
+#### MSW Integration Testing Example
+
+```typescript
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
+import { server } from '../mocks/server'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+function renderWithProviders(component: React.ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {component}
+    </QueryClientProvider>
+  )
+}
+
+describe('AnalysisForm', () => {
+  test('submits analysis and shows result', async () => {
+    const user = userEvent.setup()
+
+    // Mock the POST endpoint
+    server.use(
+      http.post('/api/v1/analyze', async ({ request }) => {
+        const body = await request.json()
+        return HttpResponse.json({
+          analysis_id: 'new-123',
+          url: body.url,
+          status: 'pending',
+        })
+      })
+    )
+
+    renderWithProviders(<AnalysisForm />)
+
+    // Fill form
+    await user.type(screen.getByLabelText('URL'), 'https://example.com')
+    await user.click(screen.getByRole('button', { name: /analyze/i }))
+
+    // Verify result
+    expect(await screen.findByText(/analysis started/i)).toBeInTheDocument()
+    expect(screen.getByText('new-123')).toBeInTheDocument()
+  })
+
+  test('shows validation error on invalid URL', async () => {
+    const user = userEvent.setup()
+
+    server.use(
+      http.post('/api/v1/analyze', () => {
+        return HttpResponse.json(
+          { detail: 'Invalid URL format' },
+          { status: 422 }
+        )
+      })
+    )
+
+    renderWithProviders(<AnalysisForm />)
+
+    await user.type(screen.getByLabelText('URL'), 'not-a-url')
+    await user.click(screen.getByRole('button', { name: /analyze/i }))
+
+    expect(await screen.findByText(/invalid url/i)).toBeInTheDocument()
+  })
+})
+
 ### 4. Snapshot Testing
 
 **Use for:** UI components, API responses, generated code
@@ -407,6 +649,23 @@ expect(userService.save).toHaveBeenCalledTimes(1);
 // Good: Test behavior, not implementation
 const user = await db.users.findOne({ email: 'test@example.com' });
 expect(user).toBeTruthy();
+```
+
+❌ **Direct Fetch Mocking (2025 Anti-Pattern)**
+```typescript
+// Bad: Mocks implementation, not network behavior
+jest.spyOn(global, 'fetch').mockResolvedValue({
+  json: () => Promise.resolve({ data: 'mocked' })
+});
+
+jest.mock('axios');
+jest.mock('../services/api');
+
+// Good: Use MSW for network-level mocking
+import { http, HttpResponse } from 'msw';
+server.use(
+  http.get('/api/data', () => HttpResponse.json({ data: 'mocked' }))
+);
 ```
 
 ❌ **Flaky Tests**
@@ -630,6 +889,19 @@ When testing LLM integrations, always test these edge cases:
 
 ---
 
-**Skill Version**: 1.1.0
-**Last Updated**: 2025-12-14
+**Skill Version**: 1.2.0
+**Last Updated**: 2025-12-25
 **Maintained by**: AI Agent Hub Team
+
+## Changelog
+
+### v1.2.0 (2025-12-25)
+- Added MSW (Mock Service Worker) as 2025 standard for API mocking
+- Added comprehensive MSW patterns section with Vitest/Jest examples
+- Added MSW + Zod validation testing patterns
+- Added MSW anti-patterns section
+- Flagged direct fetch/axios mocking as anti-pattern
+- Added MSW integration testing example with TanStack Query
+
+### v1.1.0 (2025-12-14)
+- Added AI/LLM testing patterns (async timeout, mock LLM, Pydantic v2)

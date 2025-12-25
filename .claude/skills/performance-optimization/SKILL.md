@@ -1,10 +1,10 @@
 ---
 name: Performance Optimization
-description: Full-stack performance analysis, optimization patterns, and monitoring strategies
-version: 1.0.0
+description: Full-stack performance analysis, optimization patterns, monitoring strategies, React 19 concurrent features, and bundle analysis for 2025+ development
+version: 1.1.0
 category: Quality & Optimization
 agents: [backend-system-architect, frontend-ui-developer, code-quality-reviewer]
-keywords: [performance, optimization, speed, latency, throughput, caching, profiling, bundle, Core Web Vitals]
+keywords: [performance, optimization, speed, latency, throughput, caching, profiling, bundle, Core Web Vitals, react-19, virtualization, code-splitting, tree-shaking]
 ---
 
 # Performance Optimization Skill
@@ -485,6 +485,311 @@ ANALYZE=true npm run build
 
 ---
 
+## Frontend Bundle Analysis (2025 Patterns)
+
+### Complete Vite Bundle Analyzer Setup
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    // Only run visualizer during build:analyze
+    process.env.ANALYZE && visualizer({
+      open: true,
+      filename: 'dist/bundle-stats.html',
+      gzipSize: true,      // Show gzip sizes
+      brotliSize: true,    // Show brotli sizes
+      template: 'treemap', // 'treemap' | 'sunburst' | 'network'
+    }),
+  ].filter(Boolean),
+  build: {
+    rollupOptions: {
+      output: {
+        // Manual chunking for better cache strategy
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['@tanstack/react-router'],
+          'query': ['@tanstack/react-query'],
+          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-tooltip'],
+          // Heavy libraries in separate chunks
+          'mermaid': ['mermaid'],
+          'markdown': ['react-markdown', 'remark-gfm'],
+        },
+      },
+    },
+    // Report chunk sizes
+    chunkSizeWarningLimit: 500, // 500kb warning
+  },
+})
+```
+
+```json
+// package.json
+{
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "build:analyze": "ANALYZE=true npm run build",
+    "bundle:report": "npm run build:analyze && open dist/bundle-stats.html"
+  }
+}
+```
+
+### Bundle Size Budgets
+
+```typescript
+// bundle-budget.config.ts
+export const bundleBudgets = {
+  // Total bundle limits
+  total: {
+    maxSize: 200 * 1024,      // 200KB gzipped
+    warnSize: 150 * 1024,     // Warn at 150KB
+  },
+
+  // Per-chunk limits
+  chunks: {
+    main: 50 * 1024,          // Entry point: 50KB max
+    'react-vendor': 45 * 1024, // React: ~42KB gzipped
+    'router': 30 * 1024,       // TanStack Router
+    'query': 15 * 1024,        // TanStack Query
+    lazy: 30 * 1024,          // Lazy-loaded routes
+  },
+
+  // Individual dependency limits
+  dependencies: {
+    'framer-motion': 30 * 1024, // Watch for growth
+    'mermaid': 150 * 1024,      // Large library (lazy load!)
+    'prismjs': 20 * 1024,       // Syntax highlighter
+  },
+} as const
+```
+
+### CI Bundle Size Check
+
+```yaml
+# .github/workflows/bundle-check.yml
+name: Bundle Size Check
+
+on: [pull_request]
+
+jobs:
+  bundle-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and analyze
+        run: npm run build
+
+      - name: Check bundle size
+        uses: preactjs/compressed-size-action@v2
+        with:
+          pattern: './dist/**/*.{js,css}'
+          # Fail if bundle increases by more than 5KB
+          compression: 'gzip'
+
+      - name: Report bundle stats
+        run: |
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Chunk | Size (gzip) |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------------|" >> $GITHUB_STEP_SUMMARY
+          for file in dist/assets/*.js; do
+            size=$(gzip -c "$file" | wc -c)
+            echo "| $(basename $file) | $(numfmt --to=iec $size) |" >> $GITHUB_STEP_SUMMARY
+          done
+```
+
+### Tree-Shaking Verification
+
+```typescript
+// ❌ BAD: Imports entire library
+import { motion } from 'framer-motion'  // Pulls in ~30KB!
+
+// ✅ GOOD: Import only what you need
+import { motion } from 'framer-motion/m'  // Core motion only
+
+// ❌ BAD: Barrel imports
+import { Button, Card, Dialog } from '@/components'
+
+// ✅ GOOD: Direct imports (better tree-shaking)
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+
+// ❌ BAD: Dynamic string imports break tree-shaking
+const icons = ['Home', 'Settings', 'User']
+icons.forEach(name => import(`lucide-react/dist/esm/icons/${name}`))
+
+// ✅ GOOD: Static imports
+import { Home, Settings, User } from 'lucide-react'
+```
+
+### Code Splitting Strategies
+
+```typescript
+// Route-based splitting (TanStack Router)
+const AnalyzeRoute = createFileRoute('/analyze/$id')({
+  component: lazy(() => import('./features/analysis/AnalyzeResult')),
+  pendingComponent: AnalysisSkeleton,  // Show skeleton while loading
+  errorComponent: AnalysisError,
+})
+
+// Component-based splitting
+const HeavyChart = lazy(() => import('./components/HeavyChart'))
+
+function Dashboard() {
+  return (
+    <Suspense fallback={<ChartSkeleton />}>
+      <HeavyChart data={chartData} />
+    </Suspense>
+  )
+}
+
+// Library-based splitting (heavy dependencies)
+const MermaidRenderer = lazy(() =>
+  import('./components/MermaidRenderer').then(mod => ({ default: mod.MermaidRenderer }))
+)
+
+// Conditional splitting (feature flags)
+const AdminPanel = lazy(() =>
+  import('./features/admin/AdminPanel')
+)
+
+function App() {
+  return isAdmin ? (
+    <Suspense fallback={<AdminSkeleton />}>
+      <AdminPanel />
+    </Suspense>
+  ) : null
+}
+```
+
+### React 19 Performance Patterns
+
+```typescript
+// ✅ useTransition for non-urgent updates
+import { useTransition, startTransition } from 'react'
+
+function SearchResults({ query }: { query: string }) {
+  const [isPending, startTransition] = useTransition()
+  const [results, setResults] = useState([])
+
+  function handleSearch(query: string) {
+    // Immediate UI update
+    setQuery(query)
+
+    // Non-blocking results update
+    startTransition(() => {
+      setResults(searchDatabase(query))
+    })
+  }
+
+  return (
+    <div>
+      <input value={query} onChange={e => handleSearch(e.target.value)} />
+      {isPending && <Spinner />}
+      <ResultsList results={results} />
+    </div>
+  )
+}
+
+// ✅ use() for Suspense-aware data
+import { use } from 'react'
+
+function UserProfile({ userPromise }: { userPromise: Promise<User> }) {
+  const user = use(userPromise) // Suspends until resolved
+  return <div>{user.name}</div>
+}
+
+// ✅ useOptimistic for instant feedback
+import { useOptimistic } from 'react'
+
+function LikeButton({ initialCount }: { initialCount: number }) {
+  const [optimisticCount, addOptimistic] = useOptimistic(
+    initialCount,
+    (state, action) => state + action
+  )
+
+  async function handleLike() {
+    addOptimistic(1) // Instant UI update
+    await api.like(postId) // Background server update
+  }
+
+  return <button onClick={handleLike}>{optimisticCount} likes</button>
+}
+```
+
+### List Virtualization
+
+```typescript
+// ✅ TanStack Virtual for long lists (>100 items)
+import { useVirtualizer } from '@tanstack/react-virtual'
+
+function VirtualizedList({ items }: { items: Analysis[] }) {
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80, // Estimated row height
+    overscan: 5, // Render 5 extra items for smoother scrolling
+  })
+
+  return (
+    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
+      <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+        {virtualizer.getVirtualItems().map(virtualItem => (
+          <div
+            key={virtualItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              transform: `translateY(${virtualItem.start}px)`,
+              height: `${virtualItem.size}px`,
+            }}
+          >
+            <AnalysisCard analysis={items[virtualItem.index]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// When to virtualize:
+// - Lists > 100 items
+// - Tables > 50 rows
+// - Grids with many items
+// - Any scrollable container with many children
+```
+
+### Bundle Analysis Checklist
+
+| Check | Target | Action if Failed |
+|-------|--------|------------------|
+| Total bundle (gzip) | < 200KB | Audit large dependencies |
+| Main chunk | < 50KB | Move code to lazy routes |
+| Vendor chunk | < 80KB | Check for duplicate deps |
+| Largest dependency | < 50KB | Lazy load or find alternative |
+| Tree-shaking | No unused exports | Use direct imports |
+| Code splitting | Routes lazy-loaded | Add lazy() wrappers |
+| Images | WebP/AVIF, lazy | Add next/image or similar |
+
+---
+
 ## Real-World SkillForge Examples
 
 ### Example 1: Hybrid Search Optimization
@@ -627,3 +932,25 @@ Use Opus 4.5 extended thinking for:
 | `frontend-optimization.tsx` | React memo, virtualization, code splitting |
 | `api-optimization.ts` | Compression, ETags, field selection |
 | `performance-metrics.ts` | Prometheus metrics, performance budget |
+
+---
+
+**Skill Version**: 1.1.0
+**Last Updated**: 2025-12-25
+**Maintained by**: AI Agent Hub Team
+
+## Changelog
+
+### v1.1.0 (2025-12-25)
+- Added comprehensive Frontend Bundle Analysis section
+- Added complete Vite bundle analyzer setup with visualizer
+- Added bundle size budgets and CI size checking
+- Added tree-shaking verification patterns
+- Added code splitting strategies (route, component, library)
+- Added React 19 performance patterns (useTransition, use(), useOptimistic)
+- Added TanStack Virtual list virtualization example
+- Added bundle analysis checklist with targets
+- Updated keywords to include react-19, virtualization, code-splitting
+
+### v1.0.0 (2025-12-14)
+- Initial skill with database optimization, caching, and profiling

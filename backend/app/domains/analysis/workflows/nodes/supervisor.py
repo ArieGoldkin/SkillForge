@@ -50,7 +50,8 @@ from app.shared.services.prompts import get_prompt_manager
 from app.shared.workflows.utils.content_signals import (
     ContentGenre,
     detect_content_signals,
-    should_skip_agent,
+    # NOTE: should_skip_agent removed in Issue #547 (GAP 1)
+    # LLM is now the single source of truth for agent selection
 )
 from app.shared.workflows.utils.content_type_detection import (
     detect_content_type,
@@ -536,39 +537,29 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             )
             filtered_agents.append("tech_comparator")
 
-        # ISSUE #299-304: Filter agents that should be skipped based on content signals
-        # Skip agents when there's NO relevant data (different from OPPORTUNISTIC)
-        # Issue #540: Pass code_patterns to should_skip_agent for standardized detection
-        # Issue #533: PROTECT TIER 1 (UNIVERSAL) AGENTS FROM CONTENT SIGNAL SKIPPING
-        #   - Tier 1 agents ALWAYS run on ALL content types - that's why they're "Universal"
-        #   - Only apply content signal filtering to Tier 2+ (Validation, Research) agents
+        # ISSUE #547 (GAP 1): REMOVED should_skip_agent() override
+        # ═══════════════════════════════════════════════════════════════════
+        # REASON: The LLM supervisor already receives content_signals in its prompt
+        # and makes INFORMED decisions about which agents to select. The regex-based
+        # should_skip_agent() was OVERRIDING LLM decisions, causing mismatch between
+        # what LLM selected and what actually ran - leading to stuck aggregation.
+        #
+        # The LLM is now the SINGLE SOURCE OF TRUTH for agent selection.
+        # Content signals inform the LLM, they don't override it.
+        # ═══════════════════════════════════════════════════════════════════
         agents_to_skip: list[str] = []
-        skip_reasons: dict[str, str] = {}  # Track reasons for skipped agents
-        for agent in filtered_agents.copy():
-            # Issue #533: Check if agent is Tier 1 (UNIVERSAL) - never skip these
+        skip_reasons: dict[str, str] = {}  # Track reasons for any content-type skips
+
+        # Log Tier 1 agents that are protected (for observability, not filtering)
+        for agent in filtered_agents:
             agent_meta = get_agent_metadata(agent)
             if agent_meta is not None and agent_meta.tier == AgentTier.UNIVERSAL:
-                # Tier 1 agents run on ALL content - skip content signal filtering
                 logger.debug(
                     "supervisor_tier1_protected",
                     analysis_id=analysis_id,
                     agent=agent,
                     tier="UNIVERSAL",
                     reason="tier1_agents_always_run",
-                )
-                continue
-
-            skip, reason = should_skip_agent(agent, content_signals, code_patterns)
-            if skip:
-                agents_to_skip.append(agent)
-                skip_reasons[agent] = reason
-                filtered_agents.remove(agent)
-                logger.info(
-                    "supervisor_agent_skipped_by_signals",
-                    analysis_id=analysis_id,
-                    agent=agent,
-                    reason=reason,
-                    content_richness=content_signals.content_richness_score,
                 )
 
         # MINIMUM AGENT ENFORCEMENT (Issue #299-304)
@@ -698,11 +689,15 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
 
         # Create supervisor decision with filtered agents and content signals
         # ISSUE #299-304: Include agent expectations so agents know what depth is expected
+        # ISSUE #547 (GAP 4): Include expected_agent_count for fan-in tracking
         supervisor_decision = {
             "agents": filtered_agents,  # Use filtered list
             "priority": [selection.confidence] * len(filtered_agents),
             "reasoning": " ".join(reasoning_parts),
             "confidence": selection.confidence,
+            # Issue #547 (GAP 4): Expected agent count for fan-in validation
+            # This is set by supervisor and verified by router + aggregation
+            "expected_agent_count": len(filtered_agents),
             # Content signals for downstream agents and synthesis
             "content_signals": {
                 "richness_score": content_signals.content_richness_score,

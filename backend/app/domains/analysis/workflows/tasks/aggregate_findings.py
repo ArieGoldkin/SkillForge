@@ -468,10 +468,34 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             selected_agents_raw if isinstance(selected_agents_raw, list) else []
         )
 
+        # Issue #547 (GAP 4): Extract expected_agent_count for fan-in validation
+        # This allows us to detect when agents were selected but didn't run
+        expected_agent_count = supervisor_decision.get("expected_agent_count", len(selected_agents))
+
         # Step 1: Validate and parse findings
         validated_findings, agent_types, confidence_scores = validate_and_parse_findings(
             agent_findings
         )
+
+        # Issue #547 (GAP 4): Log fan-in validation for debugging stuck aggregation
+        actual_agent_count = len(agent_types) if agent_types else 0
+        if actual_agent_count != expected_agent_count:
+            logger.warning(
+                "workflow_aggregation_agent_count_mismatch",
+                analysis_id=analysis_id,
+                expected_agent_count=expected_agent_count,
+                actual_agent_count=actual_agent_count,
+                selected_agents=selected_agents,
+                agents_with_findings=agent_types,
+                missing_agents=[a for a in selected_agents if a not in (agent_types or [])],
+            )
+        else:
+            logger.info(
+                "workflow_aggregation_fan_in_complete",
+                analysis_id=analysis_id,
+                expected_agent_count=expected_agent_count,
+                actual_agent_count=actual_agent_count,
+            )
 
         # Build agent_statuses dict: compare selected_agents vs agent_types
         # Emit error events for agents that were selected but produced no findings

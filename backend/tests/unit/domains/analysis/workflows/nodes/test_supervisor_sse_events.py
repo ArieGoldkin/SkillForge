@@ -85,11 +85,16 @@ async def test_supervisor_emits_expected_total_stages_3_agents(mock_agent_select
 
 @pytest.mark.asyncio
 async def test_supervisor_emits_expected_total_stages_8_agents(mock_agent_selection_8_agents):
-    """Test supervisor emits expected_total_stages with filtered agents.
+    """Test supervisor emits expected_total_stages with LLM-selected + Tier 1 agents.
 
-    Note: Supervisor filters agents based on content type, so not all 8 agents
-    may be selected. The test verifies that expected_total_stages is calculated
-    correctly based on the actual filtered agents.
+    Issue #547 (GAP 1): should_skip_agent removed - LLM decisions are trusted.
+    Issue #544: Tier 1 agents are force-injected after LLM selection.
+
+    Expected behavior:
+    - 8 LLM-selected agents
+    - 4 Tier 1 agents injected (key_insights, pros_cons, audience_fit, actionable)
+    - code_quality_critic filtered out for "article" content type (can only process code)
+    - Total: 8 + 4 - 1 = 11 agents
     """
     # Mock the LCEL chain
     mock_lcel_chain = MagicMock()
@@ -128,6 +133,7 @@ async def test_supervisor_emits_expected_total_stages_8_agents(mock_agent_select
         expected_total = complete_call[1]["expected_total_stages"]
         # Verify calculation: 5 fixed stages + agent_count = expected_total
         assert expected_total == 5 + agent_count
-        # Verify agent_count is reasonable (supervisor may filter some agents)
-        assert agent_count >= 3  # Minimum 3 agents
-        assert agent_count <= 8  # Maximum 8 agents
+        # Verify agent_count includes Tier 1 injection
+        # Issue #547: With 8 LLM-selected + 4 Tier 1 - 1 (code_quality_critic for article) = 11
+        assert agent_count >= 3  # Minimum 3 agents (schema minimum)
+        assert agent_count <= 12  # Maximum 8 LLM-selected + 4 Tier 1 injected

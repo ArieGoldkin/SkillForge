@@ -232,21 +232,12 @@ class TestSupervisorTierFiltering:
 
         return mock_filter
 
-    @pytest.fixture
-    def mock_no_signal_skip(self):
-        """Mock to disable signal-based skipping.
-
-        Issue #540: Updated to accept code_patterns parameter for standardized detection.
-        """
-
-        def mock_skip(agent_name, signals, code_patterns=None):
-            return False, None  # Never skip
-
-        return mock_skip
+    # NOTE: mock_no_signal_skip fixture removed in Issue #547 (GAP 1)
+    # should_skip_agent was removed from supervisor - LLM is single source of truth
 
     @pytest.mark.asyncio
     async def test_quick_mode_excludes_tier2_agents(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Quick mode should exclude Tier 2 agents even if LLM selects them."""
         # LLM selects Tier 1 + Tier 2 agents
@@ -273,10 +264,7 @@ class TestSupervisorTierFiltering:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -300,7 +288,7 @@ class TestSupervisorTierFiltering:
 
     @pytest.mark.asyncio
     async def test_standard_mode_includes_tier2_excludes_tier3(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Standard mode includes Tier 1+2 but excludes Tier 3."""
         mock_model = mock_supervisor_setup(
@@ -324,10 +312,7 @@ class TestSupervisorTierFiltering:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -348,7 +333,7 @@ class TestSupervisorTierFiltering:
 
     @pytest.mark.asyncio
     async def test_deep_dive_includes_all_tiers(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Deep dive mode includes all tier agents."""
         mock_model = mock_supervisor_setup(
@@ -372,10 +357,7 @@ class TestSupervisorTierFiltering:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -394,7 +376,7 @@ class TestSupervisorTierFiltering:
 
     @pytest.mark.asyncio
     async def test_content_specific_agents_always_pass_through(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Content-specific agents (not in registry) pass through all modes."""
         # These are the OLD 8 agents that are NOT in the tier registry
@@ -420,10 +402,7 @@ class TestSupervisorTierFiltering:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             # Test in quick mode - all should still pass (not in tier registry)
             result = await supervisor_route(
@@ -444,9 +423,7 @@ class TestSupervisorTierFiltering:
                 )
 
     @pytest.mark.asyncio
-    async def test_default_mode_is_standard(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
-    ):
+    async def test_default_mode_is_standard(self, mock_supervisor_setup, mock_no_content_filtering):
         """Default analysis_mode should be 'standard' (Tier 1+2)."""
         mock_model = mock_supervisor_setup(
             [
@@ -469,10 +446,7 @@ class TestSupervisorTierFiltering:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             # Call without analysis_mode (uses default)
             result = await supervisor_route(
@@ -606,7 +580,7 @@ class TestTier1ForceInjection:
 
     @pytest.mark.asyncio
     async def test_tier1_agents_injected_when_llm_selects_none(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """When LLM selects NO Tier 1 agents, all 4 are force-injected."""
         # LLM only selects content-specific agents (the original bug)
@@ -627,10 +601,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -654,7 +625,7 @@ class TestTier1ForceInjection:
 
     @pytest.mark.asyncio
     async def test_tier1_agents_injected_when_llm_selects_some(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """When LLM selects SOME Tier 1 agents, only missing ones are injected."""
         # LLM selects some Tier 1 but not all
@@ -675,10 +646,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -704,7 +672,7 @@ class TestTier1ForceInjection:
 
     @pytest.mark.asyncio
     async def test_no_injection_when_llm_selects_all_tier1(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """When LLM selects ALL Tier 1 agents, no injection needed (no-op)."""
         # LLM correctly selects all Tier 1 agents
@@ -724,10 +692,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content for analysis",
@@ -748,7 +713,7 @@ class TestTier1ForceInjection:
 
     @pytest.mark.asyncio
     async def test_tier1_survives_all_filtering_stages(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Tier 1 agents survive content-type, signal, and mode filtering."""
         # LLM selects only content-specific agents (minimum 3 for validation)
@@ -770,10 +735,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             # Test in quick mode - most restrictive
             result = await supervisor_route(
@@ -794,9 +756,7 @@ class TestTier1ForceInjection:
                 )
 
     @pytest.mark.asyncio
-    async def test_tier1_injection_with_content_type_filtering(
-        self, mock_supervisor_setup, mock_no_signal_skip
-    ):
+    async def test_tier1_injection_with_content_type_filtering(self, mock_supervisor_setup):
         """Tier 1 agents are injected before content-type filtering and survive it."""
 
         # Content-type filter that excludes some agents but NEVER Tier 1
@@ -825,10 +785,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=strict_content_filter,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             result = await supervisor_route(
                 content="Test content",
@@ -849,7 +806,7 @@ class TestTier1ForceInjection:
 
     @pytest.mark.asyncio
     async def test_tier1_injection_logs_when_injected(
-        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+        self, mock_supervisor_setup, mock_no_content_filtering
     ):
         """Verify logging occurs when Tier 1 agents are force-injected."""
         mock_model = mock_supervisor_setup(
@@ -870,10 +827,7 @@ class TestTier1ForceInjection:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
             patch("app.domains.analysis.workflows.nodes.supervisor.logger") as mock_logger,
         ):
             result = await supervisor_route(

@@ -518,9 +518,7 @@ class TestAggregateFindings:
             patch(
                 "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_failed"
             ),
-            patch(
-                "app.domains.analysis.services.persistence.error_recorder.error_recorder.record"
-            ),
+            patch("app.domains.analysis.services.persistence.error_recorder.error_recorder.record"),
         ):
             # Simulate LLM error on both synthesis paths (coverage may route to either)
             mock_synthesize.side_effect = Exception("LLM API error")

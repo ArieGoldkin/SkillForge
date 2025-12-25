@@ -2,7 +2,7 @@
   "$schema": "./schemas/agent-registry.schema.json",
   "version": "2.0.0",
   "description": "Dynamic agent and skill registry enabling semantic discovery, progressive loading, and workflow composition",
-  "last_updated": "2025-12-04",
+  "last_updated": "2025-12-25",
 
   "discovery": {
     "protocol": "semantic",
@@ -50,7 +50,9 @@
         "devops-deployment",
         "golden-dataset-management",
         "edge-computing-patterns",
-        "github-cli"
+        "github-cli",
+        "resilience-patterns",
+        "langgraph-workflows"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -150,7 +152,8 @@
         "langgraph-workflows",
         "llm-caching-patterns",
         "pgvector-search",
-        "browser-content-capture"
+        "browser-content-capture",
+        "resilience-patterns"
       ],
       "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch"],
       "boundaries": {
@@ -196,7 +199,8 @@
         "security-checklist",
         "testing-strategy-builder",
         "evidence-verification",
-        "webapp-testing"
+        "webapp-testing",
+        "resilience-patterns"
       ],
       "tools": ["Read", "Bash", "Grep", "Glob"],
       "boundaries": {
@@ -1046,6 +1050,34 @@
         "discovery": 100,
         "overview": 300,
         "full": 800
+      }
+    },
+
+    "resilience-patterns": {
+      "display_name": "Resilience Patterns",
+      "path": ".claude/skills/resilience-patterns",
+      "provides": [
+        "circuit-breaker",
+        "bulkhead-pattern",
+        "retry-strategies",
+        "fallback-chains",
+        "timeout-management",
+        "error-classification",
+        "llm-resilience"
+      ],
+      "used_by_agents": ["backend-system-architect", "ai-ml-engineer", "code-quality-reviewer"],
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/",
+        "examples": "examples/",
+        "checklists": "checklists/"
+      },
+      "token_budget": {
+        "discovery": 100,
+        "overview": 800,
+        "full": 3500
       }
     }
   },
