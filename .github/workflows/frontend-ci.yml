@@ -69,7 +69,7 @@ jobs:
 
       - name: Run TypeScript check
         working-directory: ./frontend
-        run: tsc --noEmit
+        run: npm run typecheck
 
   # ============================================================================
   # Phase 2: UNIT TESTS (1-2 min) - Only run if lint/type pass
