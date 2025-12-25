@@ -16,6 +16,7 @@ import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
 
 import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import { assertNever } from '@/lib/utils'
 import { parseSSEEvent, type SSEEvent } from '@/schemas/sse'
 
 import type { SSEStore, SSEStoreState } from './sseStore'
@@ -57,8 +58,7 @@ function getEventDeduplicationKey(event: SSEEvent): string {
       return `${analysis_id}:${stage}:error`
 
     default:
-      // Unknown event types are not deduplicated
-      return `${analysis_id}:${type}:${stage}:${status}:${Date.now()}`
+      assertNever(type)
   }
 }
 

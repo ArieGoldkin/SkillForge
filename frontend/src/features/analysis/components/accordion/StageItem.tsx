@@ -40,7 +40,7 @@ import type { SuccessMetrics } from '@/schemas/sse'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 
-import { cn } from '@lib/utils'
+import { assertNever, cn } from '@lib/utils'
 
 import type { ProgressStep } from '../../hooks/useProgressSteps'
 import { formatErrorCode } from '../../utils/errorCodeFormatter'
@@ -84,6 +84,8 @@ const getStatusIcon = (status: ProgressStep['status']): React.ReactNode => {
       return <MinusCircle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
     case 'pending':
       return <Circle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
+    default:
+      return assertNever(status)
   }
 }
 
@@ -104,6 +106,8 @@ const getStatusBadgeVariant = (
       return 'secondary'
     case 'pending':
       return 'default'
+    default:
+      return assertNever(status)
   }
 }
 
@@ -122,6 +126,8 @@ const formatStatus = (status: ProgressStep['status']): string => {
       return 'Skipped'
     case 'pending':
       return 'Pending'
+    default:
+      return assertNever(status)
   }
 }
 

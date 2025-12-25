@@ -20,6 +20,12 @@ const { mockFetch } = vi.hoisted(() => {
   }
 })
 
+// Valid UUIDs for tests (Issue #548: Zod validation requires valid UUIDs)
+// UUID format: 8-4-[1-8]xxx-[89ab]xxx-12 (version + variant bytes)
+const VALID_ANALYSIS_ID = '123e4567-e89b-12d3-a456-426614174000'
+const VALID_ANALYSIS_ID_2 = '987fcdeb-51a2-43d7-8f9e-123456789abc'
+const VALID_ARTIFACT_ID = 'aaaabbbb-cccc-1ddd-8eee-ffffffffffff'
+
 // eslint-disable-next-line import/first -- Module must import AFTER vi.hoisted stubs the env
 import { analyzeAPI, healthAPI } from '../api.service'
 
@@ -52,11 +58,11 @@ describe('api.service', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          analysis_id: 'new-analysis-123',
+          analysis_id: VALID_ANALYSIS_ID,
           url: 'https://example.com/article',
           content_type: 'article',
-          status: 'processing',
-          sse_endpoint: '/api/v1/analyze/new-analysis-123/stream',
+          status: 'pending',
+          sse_endpoint: `/api/v1/analyze/${VALID_ANALYSIS_ID}/stream`,
         }),
       })
 
@@ -83,11 +89,11 @@ describe('api.service', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          analysis_id: 'response-123',
+          analysis_id: VALID_ANALYSIS_ID,
           url: 'https://example.com',
           content_type: 'article',
-          status: 'processing',
-          sse_endpoint: '/api/v1/analyze/response-123/stream',
+          status: 'pending',
+          sse_endpoint: `/api/v1/analyze/${VALID_ANALYSIS_ID}/stream`,
         }),
       })
 
@@ -96,10 +102,11 @@ describe('api.service', () => {
         content_type: 'article',
       })
 
-      expect(result).toEqual({
-        analysis_id: 'response-123',
-        sse_endpoint: '/api/v1/analyze/response-123/stream',
-        status: 'processing',
+      // Issue #548: AnalyzeResponseSchema includes optional url and content_type
+      expect(result).toMatchObject({
+        analysis_id: VALID_ANALYSIS_ID,
+        sse_endpoint: `/api/v1/analyze/${VALID_ANALYSIS_ID}/stream`,
+        status: 'pending',
       })
     })
 
@@ -172,27 +179,22 @@ describe('api.service', () => {
 
   describe('analyzeAPI.getAnalysisStatus', () => {
     it('returns analysis status data on success', async () => {
-      const mockAnalysis = {
-        analysis_id: 'analysis-123',
-        url: 'https://example.com',
-        content_type: 'article',
+      // Issue #548: AnalysisStatusResponseSchema only expects { status, artifact_id? }
+      const mockStatusResponse = {
         status: 'complete',
-        title: 'Example',
-        artifact_id: 'artifact-1',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-01T00:00:00Z',
+        artifact_id: VALID_ARTIFACT_ID,
       }
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockAnalysis,
+        json: async () => mockStatusResponse,
       })
 
-      const result = await analyzeAPI.getAnalysisStatus('analysis-123')
+      const result = await analyzeAPI.getAnalysisStatus(VALID_ANALYSIS_ID)
 
-      expect(result).toEqual(mockAnalysis)
+      expect(result).toEqual(mockStatusResponse)
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8500/api/v1/analyze/analysis-123',
+        `http://localhost:8500/api/v1/analyze/${VALID_ANALYSIS_ID}`,
         expect.any(Object)
       )
     })
@@ -210,9 +212,10 @@ describe('api.service', () => {
 
   describe('analyzeAPI.getArtifact', () => {
     it('returns artifact data on success', async () => {
+      // Issue #548: Mock data must match ArtifactMetadataResponseSchema (valid UUIDs)
       const mockArtifact = {
-        artifact_id: 'artifact-123',
-        analysis_id: 'analysis-123',
+        artifact_id: VALID_ARTIFACT_ID,
+        analysis_id: VALID_ANALYSIS_ID,
         markdown_content: '# Implementation Guide',
         created_at: '2025-01-01T00:00:00Z',
       }
@@ -222,7 +225,7 @@ describe('api.service', () => {
         json: async () => mockArtifact,
       })
 
-      const result = await analyzeAPI.getArtifact('analysis-123')
+      const result = await analyzeAPI.getArtifact(VALID_ANALYSIS_ID)
 
       expect(result).toEqual(mockArtifact)
     })
@@ -236,7 +239,7 @@ describe('api.service', () => {
 
       vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      const result = await analyzeAPI.getArtifact('analysis-123')
+      const result = await analyzeAPI.getArtifact(VALID_ANALYSIS_ID)
 
       expect(result).toBe(null)
     })
@@ -244,9 +247,27 @@ describe('api.service', () => {
 
   describe('analyzeAPI.listAnalyses', () => {
     it('returns array of analyses on success', async () => {
+      // Issue #548: Mock data must match AnalysisSchema (full objects with all required fields)
+      // ContentTypeSchema only allows: 'article' | 'video' | 'repo'
       const mockAnalyses = [
-        { id: '1', url: 'https://a.com', status: 'complete' },
-        { id: '2', url: 'https://b.com', status: 'processing' },
+        {
+          id: VALID_ANALYSIS_ID,
+          url: 'https://a.com',
+          content_type: 'article',
+          title: 'Test Analysis 1',
+          status: 'complete',
+          created_at: '2025-12-25T10:00:00Z',
+          artifact_id: VALID_ARTIFACT_ID,
+        },
+        {
+          id: VALID_ANALYSIS_ID_2,
+          url: 'https://b.com',
+          content_type: 'video',
+          title: 'Test Analysis 2',
+          status: 'pending',
+          created_at: '2025-12-25T11:00:00Z',
+          artifact_id: null,
+        },
       ]
 
       mockFetch.mockResolvedValueOnce({

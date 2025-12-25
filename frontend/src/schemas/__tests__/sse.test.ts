@@ -838,15 +838,18 @@ describe('SSE Event Schemas - Invalid Events', () => {
 
 describe('parseSSEEvent helper function', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    // Spy on console.error to verify error logging
+    // Spy on console.error and console.warn to verify logging
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
-    // Restore console.error
+    // Restore console spies
     consoleErrorSpy.mockRestore()
+    consoleWarnSpy.mockRestore()
   })
 
   describe('Valid event parsing', () => {
@@ -963,6 +966,8 @@ describe('parseSSEEvent helper function', () => {
       const result = parseSSEEvent(invalidEvent)
 
       expect(result).toBeNull()
+      // Issue #549: assertNeverSoft now logs a warning for unknown event types
+      expect(consoleWarnSpy).toHaveBeenCalled()
       expect(consoleErrorSpy).toHaveBeenCalled()
     })
 

@@ -18,7 +18,7 @@ import { memo } from 'react'
 
 import { CheckCircle2, Circle, Loader2, MinusCircle, XCircle } from 'lucide-react'
 
-import { cn } from '@lib/utils'
+import { assertNever, cn } from '@lib/utils'
 
 import type { StageStatusEntry } from '../../hooks/stageConfig'
 
@@ -136,6 +136,8 @@ const StatusIcon = ({ status, className }: { status: StageStatus; className?: st
       return <MinusCircle className={iconClass} aria-hidden="true" />
     case 'pending':
       return <Circle className={iconClass} aria-hidden="true" />
+    default:
+      return assertNever(status)
   }
 }
 

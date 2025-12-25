@@ -12,6 +12,7 @@ import { z } from 'zod'
 
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import { assertNeverSoft } from '@/lib/utils'
 
 import {
   StageNameSchema,
@@ -237,6 +238,8 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
       return result.data
     }
     default:
+      // Use assertNeverSoft for graceful handling of unknown event types
+      assertNeverSoft(eventType as never, 'parseSSEEvent')
       logger.error('SSE event validation failed: Unknown event type', {
         eventType,
         receivedData: data,
