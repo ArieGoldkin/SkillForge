@@ -45,18 +45,23 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          # v3: Cache bust to fix corrupted venv paths from cross-runner cache restore
-          key: poetry-v5-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # v6: Better corruption detection (check pytest, not just python)
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v5-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
         run: |
           # Force fresh venv if cache is corrupted
-          if [ -d ".venv" ] && ! poetry run python --version >/dev/null 2>&1; then
-            echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv
+          # Check pytest specifically since that's what fails on corrupted caches
+          if [ -d ".venv" ]; then
+            if ! poetry run pytest --version >/dev/null 2>&1; then
+              echo "⚠️ Cached venv appears corrupted (pytest not found), removing..."
+              rm -rf .venv
+            else
+              echo "✓ Cached venv appears healthy"
+            fi
           fi
           poetry install --no-interaction --no-root
 

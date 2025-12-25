@@ -64,13 +64,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v5-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v5-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check ruff, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run ruff --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run ruff linting
         working-directory: ./backend
@@ -102,13 +108,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v5-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v5-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check ty, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run ty --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run ty type check
         working-directory: ./backend
@@ -142,13 +154,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v5-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v5-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check pytest, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run pytest --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run tests with coverage
         working-directory: ./backend
