@@ -7,6 +7,7 @@
 import { getRouteApi, useLocation } from '@tanstack/react-router'
 
 import {
+  ArtifactSkeleton,
   FeedbackButtons,
   MarkdownPreview,
   QualityWarningBanner,
@@ -16,7 +17,6 @@ import {
   ArtifactEmptyState,
   ArtifactErrorState,
   ArtifactHeader,
-  ArtifactLoadingState,
   BackLink,
 } from './components/internal'
 import { useArtifact } from './hooks'
@@ -94,7 +94,7 @@ export default function ArtifactPage() {
           <BackLink analysisId={analysisId} artifactId={artifactId} />
           <ArtifactHeader showDownload={!!content} onDownload={download} analysisId={analysisId} />
 
-          {isLoading && <ArtifactLoadingState />}
+          {isLoading && <ArtifactSkeleton />}
           {error && !isLoading && (
             <ArtifactErrorState message={error.message} analysisId={analysisId} />
           )}

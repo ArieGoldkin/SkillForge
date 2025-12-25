@@ -1,6 +1,7 @@
 /**
  * API client for feedback and annotation endpoints.
  * Connects to FastAPI backend at /api/v1/annotations
+ * Uses ky HTTP client with interceptors (Issue #550)
  */
 
 import type {
@@ -11,29 +12,7 @@ import type {
   SubmitFeedbackResponse,
 } from '@app-types/annotations'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8500'
-
-/**
- * Generic fetch wrapper with error handling
- */
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || errorData.message || `API error: ${response.status}`)
-  }
-
-  return response.json()
-}
+import { apiClient } from '@/lib/api-client'
 
 /**
  * Annotation API client
@@ -44,10 +23,10 @@ export const annotationsAPI = {
    * POST /api/v1/annotations/feedback
    */
   submitFeedback: async (request: SubmitFeedbackRequest): Promise<SubmitFeedbackResponse> => {
-    return apiFetch<SubmitFeedbackResponse>('/api/v1/annotations/feedback', {
+    return apiClient('api/v1/annotations/feedback', {
       method: 'POST',
-      body: JSON.stringify(request),
-    })
+      json: request,
+    }).json<SubmitFeedbackResponse>()
   },
 
   /**
@@ -55,10 +34,10 @@ export const annotationsAPI = {
    * POST /api/v1/annotations/flag
    */
   flagForReview: async (request: FlagForReviewRequest): Promise<FlagForReviewResponse> => {
-    return apiFetch<FlagForReviewResponse>('/api/v1/annotations/flag', {
+    return apiClient('api/v1/annotations/flag', {
       method: 'POST',
-      body: JSON.stringify(request),
-    })
+      json: request,
+    }).json<FlagForReviewResponse>()
   },
 
   /**
@@ -76,9 +55,9 @@ export const annotationsAPI = {
     if (params?.status) searchParams.set('status', params.status)
 
     const queryString = searchParams.toString()
-    const endpoint = `/api/v1/annotations/queue${queryString ? `?${queryString}` : ''}`
+    const endpoint = `api/v1/annotations/queue${queryString ? `?${queryString}` : ''}`
 
-    return apiFetch<AnnotationQueueListResponse>(endpoint)
+    return apiClient(endpoint).json<AnnotationQueueListResponse>()
   },
 
   /**
@@ -86,12 +65,9 @@ export const annotationsAPI = {
    * PATCH /api/v1/annotations/queue/{id}/reviewed
    */
   markReviewed: async (queueId: number): Promise<{ status: string; message: string }> => {
-    return apiFetch<{ status: string; message: string }>(
-      `/api/v1/annotations/queue/${queueId}/reviewed`,
-      {
-        method: 'PATCH',
-      }
-    )
+    return apiClient(`api/v1/annotations/queue/${queueId}/reviewed`, {
+      method: 'PATCH',
+    }).json<{ status: string; message: string }>()
   },
 }
 

@@ -1,19 +1,15 @@
 import type { Analysis } from '@app-types/api'
 import { useQuery } from '@tanstack/react-query'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8500'
+import { api } from '@/lib/api-client'
+import { AnalysisSchema } from '@/schemas/api'
 
 /**
  * Fetch analysis data by ID
+ * Uses ky-based API client with Zod validation (Issue #550, #548)
  */
 async function fetchAnalysis(analysisId: string): Promise<Analysis> {
-  const response = await fetch(`${API_URL}/api/v1/analyze/${analysisId}`)
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch analysis: ${response.status}`)
-  }
-
-  return response.json()
+  return api(`api/v1/analyze/${analysisId}`, AnalysisSchema)
 }
 
 /**

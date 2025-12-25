@@ -32,11 +32,11 @@ import type { AnalysisMode } from '@/features/analysis/types/accordion'
 
 import { cn } from '@lib/utils'
 
-import { StageItem } from '../progress/StageItem'
-
+import { AccordionStageItem } from './AccordionStageItem'
 import { GroupHeader } from './GroupHeader'
 import { MiniMap } from './MiniMap'
 import type { MiniMapGroup } from './MiniMap'
+import { StageItemSkeleton } from './StageItemSkeleton'
 
 // ============================================================================
 // Type Definitions
@@ -474,28 +474,31 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                       }}
                       className="overflow-hidden"
                     >
-                      <div className="p-4 space-y-2 border-t border-border bg-muted/20">
-                        {group.stages.map((stageName, index) => {
+                      <div className="p-4 space-y-2 border-t border-border bg-muted/20" role="list">
+                        {group.stages.map((stageName) => {
                           const stageStatus = stageStatuses.get(stageName)
-                          if (!stageStatus) return null
 
-                          // Transform to StageState format expected by StageItem
-                          const stageState = {
-                            name: stageName,
-                            label: stageName
-                              .replace(/_/g, ' ')
-                              .replace(/\b\w/g, (l) => l.toUpperCase()),
-                            status: stageStatus.status,
-                            agent: stageStatus.details?.agent_type as string | undefined,
-                            error: stageStatus.details?.error as string | undefined,
-                            errorCode: stageStatus.details?.error_code as string | undefined,
+                          // Show skeleton if stage status not yet available
+                          if (!stageStatus) {
+                            return <StageItemSkeleton key={stageName} showTimestamp={false} />
                           }
 
+                          // Format stage label
+                          const label = stageName
+                            .replace(/_/g, ' ')
+                            .replace(/\b\w/g, (l) => l.toUpperCase())
+
                           return (
-                            <StageItem
+                            <AccordionStageItem
                               key={stageName}
-                              stage={stageState}
-                              isLast={index === group.stages.length - 1}
+                              stageName={stageName}
+                              label={label}
+                              status={stageStatus.status}
+                              agent={stageStatus.details?.agent_type as string | undefined}
+                              error={stageStatus.details?.error as string | undefined}
+                              errorCode={stageStatus.details?.error_code as string | undefined}
+                              skipReason={stageStatus.details?.skip_reason as string | undefined}
+                              showTimestamp={false}
                             />
                           )
                         })}

@@ -3,11 +3,10 @@ import { useEffect, useRef } from 'react'
 
 import { BookOpen, Loader2 } from 'lucide-react'
 
-import { Card } from '@shared/components/ui/card'
-
 import { cn } from '@lib/utils'
 
 import { SkillCard, type SkillCardProps } from './SkillCard'
+import { SkillCardSkeleton } from './SkillCardSkeleton'
 
 /** Stable IDs for loading skeleton placeholders */
 const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
@@ -24,28 +23,6 @@ export interface SkillGridViewProps {
   onLoadMore?: () => void
   canLoadMore?: boolean
   isLoadingMore?: boolean
-}
-
-/**
- * Loading skeleton for skill card
- */
-const SkillCardSkeleton: React.FC = () => {
-  return (
-    <Card className="overflow-hidden">
-      <div className="w-full h-48 bg-muted animate-pulse" />
-      <div className="p-6 space-y-4">
-        <div className="h-6 bg-muted rounded animate-pulse w-3/4" />
-        <div className="space-y-2">
-          <div className="h-4 bg-muted rounded animate-pulse" />
-          <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
-        </div>
-        <div className="flex gap-2">
-          <div className="h-6 bg-muted rounded animate-pulse w-20" />
-          <div className="h-6 bg-muted rounded animate-pulse w-16" />
-        </div>
-      </div>
-    </Card>
-  )
 }
 
 /**

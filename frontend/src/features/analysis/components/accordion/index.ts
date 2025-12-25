@@ -21,3 +21,7 @@ export { GroupHeader, type GroupHeaderProps } from './GroupHeader'
 export { MiniMap, type MiniMapProps, type MiniMapGroup, type AnalysisStatus } from './MiniMap'
 export { MobileBottomSheet, type MobileBottomSheetProps } from './MobileBottomSheet'
 export { StageChip, type StageChipProps } from './StageChip'
+
+// Stage Item Components (with loading skeleton support)
+export { AccordionStageItem, type AccordionStageItemProps } from './AccordionStageItem'
+export { StageItemSkeleton, type StageItemSkeletonProps } from './StageItemSkeleton'
