@@ -426,3 +426,6 @@ backend/.claude/
 # Test coverage JSON
 coverage.json
 backend/coverage.json
+
+# GitHub Actions self-hosted runners (contains tokens)
+runners/
