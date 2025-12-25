@@ -14,6 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -25,7 +26,7 @@ jobs:
   # Phase 0: Detect changes (workaround for GitHub Actions paths filter bug)
   # ============================================================================
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
@@ -44,22 +45,18 @@ jobs:
   lint:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
@@ -67,13 +64,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check ruff, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run ruff --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run ruff linting
         working-directory: ./backend
@@ -86,22 +89,18 @@ jobs:
   type-check:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
@@ -109,13 +108,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check ty, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run ty --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run ty type check
         working-directory: ./backend
@@ -127,22 +132,21 @@ jobs:
   test:
     needs: [changes, lint, type-check]  # Fail-fast: only run if code quality passes
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Verify Python version
+        run: python3 --version
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
@@ -150,13 +154,19 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-v6-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check pytest, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run pytest --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Run tests with coverage
         working-directory: ./backend
@@ -168,6 +178,7 @@ jobs:
           files: ./backend/coverage.xml
           flags: backend
           fail_ci_if_error: false
+          skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports
@@ -185,7 +196,7 @@ jobs:
   build:
     needs: [changes, test]  # Only build if tests pass
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -21,6 +21,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
   pull-requests: write
 
@@ -30,7 +31,7 @@ concurrency:
 
 jobs:
   smoke-tests:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     timeout-minutes: 10
 
     services:

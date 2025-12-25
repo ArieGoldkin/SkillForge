@@ -28,6 +28,7 @@ on:
         type: boolean
 
 permissions:
+  pull-requests: read
   contents: read
   actions: read
   pull-requests: write
@@ -38,7 +39,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       evaluation: ${{ steps.filter.outputs.evaluation }}
     steps:
@@ -59,7 +60,7 @@ jobs:
     name: Run Evaluation Pipeline
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.evaluation == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     timeout-minutes: 30
 
     # Service container for PostgreSQL with pgvector
@@ -113,7 +114,14 @@ jobs:
           poetry install --no-interaction --no-root
 
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: |
+          if command -v psql &> /dev/null; then
+            echo "PostgreSQL client already installed"
+          elif [[ "$OSTYPE" == "darwin"* ]]; then
+            brew install postgresql@16
+          else
+            sudo apt-get update && sudo apt-get install -y postgresql-client
+          fi
 
       - name: Setup database
         working-directory: backend

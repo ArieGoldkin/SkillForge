@@ -636,3 +636,192 @@ async def test_validate_content_exists_uuid_parsing(orchestrator, db_session):
     # Should return False when UUID parsing fails
     exists = await workflow_result.validate_content_exists(db_session)
     assert exists is False
+
+
+# ============================================================================
+# Stage Resumption Tests (Issue #544)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_retry_from_analyzing_stage_loads_existing_data(
+    orchestrator, mock_workflow, mock_analysis_id, valid_completed_result
+):
+    """Test retry from analyzing stage loads existing data and sets skip flags."""
+    mock_persister = AsyncMock(spec=DataPersister)
+    mock_status = AsyncMock(spec=StatusUpdater)
+    mock_emitter = AsyncMock(spec=WorkflowEventEmitter)
+
+    orchestrator.data_persister = mock_persister
+    orchestrator.status_updater = mock_status
+    orchestrator.event_emitter = mock_emitter
+
+    # Mock existing analysis with extraction data
+    mock_analysis = MagicMock()
+    mock_analysis.raw_content = "Existing content"
+    mock_analysis.content_type = "article"
+    mock_analysis.extraction_metadata = {
+        "title": "Existing Title",
+        "word_count": 500,
+    }
+    mock_analysis.content_embedding = [0.2] * 1536
+
+    mock_repo = AsyncMock()
+    mock_repo.get_by_id = AsyncMock(return_value=mock_analysis)
+
+    # Configure workflow to return valid result
+    mock_workflow.ainvoke = AsyncMock(return_value=valid_completed_result)
+
+    # Mock artifact
+    mock_artifact = MagicMock()
+    mock_artifact.id = uuid.uuid4()
+    mock_repo_instance = MagicMock()
+    mock_repo_instance.get_artifact_by_analysis_id = AsyncMock(return_value=mock_artifact)
+
+    with (
+        patch(
+            "app.db.repositories.analysis_repository.AnalysisRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "app.domains.analysis.services.workflow.orchestrator.ArtifactRepository",
+            return_value=mock_repo_instance,
+        ),
+        patch(
+            "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
+        ) as mock_session_local,
+        patch(
+            "app.domains.analysis.services.workflow.orchestrator.get_current_trace_id",
+            return_value="trace-123",
+        ),
+    ):
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        mock_session_local.return_value = mock_session
+
+        # Run with start_from_stage="analyzing"
+        await orchestrator.run(
+            mock_analysis_id,
+            "https://example.com",
+            start_from_stage="analyzing",
+        )
+
+        # Verify workflow was invoked with existing data and skip flags
+        workflow_call = mock_workflow.ainvoke.call_args
+        input_state = workflow_call[0][0]
+
+        # Should have loaded existing data
+        assert input_state["raw_content"] == "Existing content"
+        assert input_state["content_type"] == "article"
+        assert input_state["extraction_metadata"]["title"] == "Existing Title"
+        assert len(input_state["content_embedding"]) == 1536
+
+        # Should have set skip flags
+        assert input_state["skip_extraction"] is True
+        assert input_state["skip_embedding"] is True
+        assert input_state["extraction_status"] == "success"
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_retry_from_analyzing_fails_if_analysis_not_found(
+    orchestrator, mock_workflow, mock_analysis_id
+):
+    """Test retry from analyzing fails gracefully if analysis not found."""
+    mock_persister = AsyncMock(spec=DataPersister)
+    mock_status = AsyncMock(spec=StatusUpdater)
+    mock_emitter = AsyncMock(spec=WorkflowEventEmitter)
+
+    orchestrator.data_persister = mock_persister
+    orchestrator.status_updater = mock_status
+    orchestrator.event_emitter = mock_emitter
+
+    # Mock repository to return None (analysis not found)
+    mock_repo = AsyncMock()
+    mock_repo.get_by_id = AsyncMock(return_value=None)
+
+    with (
+        patch(
+            "app.db.repositories.analysis_repository.AnalysisRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
+        ) as mock_session_local,
+    ):
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        mock_session_local.return_value = mock_session
+
+        # Run with start_from_stage="analyzing"
+        await orchestrator.run(
+            mock_analysis_id,
+            "https://example.com",
+            start_from_stage="analyzing",
+        )
+
+        # Should not invoke workflow (returned early)
+        mock_workflow.ainvoke.assert_not_called()
+
+        # Should update status to failed
+        mock_status.update.assert_called_with(mock_analysis_id, "failed")
+
+        # Should emit error
+        mock_emitter.emit_error.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_retry_from_analyzing_fails_if_missing_raw_content(
+    orchestrator, mock_workflow, mock_analysis_id
+):
+    """Test retry from analyzing fails if raw_content is missing."""
+    mock_persister = AsyncMock(spec=DataPersister)
+    mock_status = AsyncMock(spec=StatusUpdater)
+    mock_emitter = AsyncMock(spec=WorkflowEventEmitter)
+
+    orchestrator.data_persister = mock_persister
+    orchestrator.status_updater = mock_status
+    orchestrator.event_emitter = mock_emitter
+
+    # Mock existing analysis WITHOUT raw_content
+    mock_analysis = MagicMock()
+    mock_analysis.raw_content = None  # Missing!
+    mock_analysis.content_type = "article"
+    mock_analysis.extraction_metadata = {"title": "Test"}
+    mock_analysis.content_embedding = [0.2] * 1536
+
+    mock_repo = AsyncMock()
+    mock_repo.get_by_id = AsyncMock(return_value=mock_analysis)
+
+    with (
+        patch(
+            "app.db.repositories.analysis_repository.AnalysisRepository",
+            return_value=mock_repo,
+        ),
+        patch(
+            "app.domains.analysis.services.workflow.orchestrator.AsyncSessionLocal"
+        ) as mock_session_local,
+    ):
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        mock_session_local.return_value = mock_session
+
+        # Run with start_from_stage="analyzing"
+        await orchestrator.run(
+            mock_analysis_id,
+            "https://example.com",
+            start_from_stage="analyzing",
+        )
+
+        # Should not invoke workflow (returned early)
+        mock_workflow.ainvoke.assert_not_called()
+
+        # Should update status to failed
+        mock_status.update.assert_called_with(mock_analysis_id, "failed")
+
+        # Should emit error with helpful message
+        error_call = mock_emitter.emit_error.call_args
+        error = error_call[0][1]
+        assert "missing raw_content" in str(error)

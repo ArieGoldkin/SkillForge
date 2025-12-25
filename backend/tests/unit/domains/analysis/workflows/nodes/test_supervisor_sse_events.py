@@ -39,7 +39,12 @@ def mock_agent_selection_8_agents():
 
 @pytest.mark.asyncio
 async def test_supervisor_emits_expected_total_stages_3_agents(mock_agent_selection_3_agents):
-    """Test supervisor emits expected_total_stages with 3 agents (expect 8 total stages)."""
+    """Test supervisor emits expected_total_stages with 3 agents + 4 Tier 1 agents.
+
+    Issue #544: Tier 1 agents (key_insights, pros_cons, audience_fit, actionable)
+    are force-injected after LLM selection. So 3 LLM-selected + 4 Tier 1 = 7 agents.
+    Expected total stages: 5 fixed + 7 agents = 12.
+    """
     # Mock the LCEL chain
     mock_lcel_chain = MagicMock()
     mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection_3_agents)
@@ -71,10 +76,11 @@ async def test_supervisor_emits_expected_total_stages_3_agents(mock_agent_select
         assert len(complete_calls) > 0, "Expected complete event to be emitted"
 
         complete_call = complete_calls[0]
-        # Verify expected_total_stages: 5 fixed stages + 3 agents = 8
+        # Issue #544: 3 LLM-selected + 4 Tier 1 = 7 agents
+        # expected_total_stages: 5 fixed stages + 7 agents = 12
         assert "expected_total_stages" in complete_call[1]
-        assert complete_call[1]["expected_total_stages"] == 8
-        assert complete_call[1]["agent_count"] == 3
+        assert complete_call[1]["expected_total_stages"] == 12
+        assert complete_call[1]["agent_count"] == 7
 
 
 @pytest.mark.asyncio

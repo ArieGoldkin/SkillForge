@@ -62,9 +62,14 @@ def test_retry_configuration() -> None:
 
 
 def test_database_pool_configuration() -> None:
-    """Test database pool configuration constants."""
-    assert DB_POOL_SIZE == 5
-    assert DB_MAX_OVERFLOW == 10
+    """Test database pool configuration constants.
+
+    Issue #537: Increased pool size to handle 16 parallel agents during fan-out.
+    """
+    # Issue #537: Increased from 5 to 20 for 16 parallel agents
+    assert DB_POOL_SIZE == 20
+    # Issue #537: Increased from 10 to 30 for overflow headroom
+    assert DB_MAX_OVERFLOW == 30
     assert DB_POOL_RECYCLE == 3600
     assert all(isinstance(v, int) for v in [DB_POOL_SIZE, DB_MAX_OVERFLOW, DB_POOL_RECYCLE])
 

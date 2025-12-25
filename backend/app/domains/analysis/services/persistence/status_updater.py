@@ -57,14 +57,14 @@ VALID_TRANSITIONS: Mapping[str, set[str]] = {
         "cancelled",
     },
     "generating_artifact": {"complete", "artifact_failed", "failed", "cancelled"},
-    # Failure states (terminal - can only transition to other failure states or cancelled)
-    "extraction_failed": {"failed", "cancelled"},
-    "analysis_failed": {"failed", "cancelled"},
-    "artifact_failed": {"failed", "cancelled"},
-    "quality_gate_failed": {"failed", "cancelled"},
-    "failed": {"cancelled"},  # Generic failed is terminal
-    # Complete is terminal (no transitions allowed)
-    "complete": set(),
+    # Failure states (allow retry via transition to pending)
+    "extraction_failed": {"failed", "cancelled", "pending"},  # +pending for retry
+    "analysis_failed": {"failed", "cancelled", "pending"},  # +pending for retry
+    "artifact_failed": {"failed", "cancelled", "pending"},  # +pending for retry
+    "quality_gate_failed": {"failed", "cancelled", "pending"},  # +pending for retry
+    "failed": {"cancelled", "pending"},  # +pending for retry
+    # Complete allows rerun (skip extraction, go straight to analyzing)
+    "complete": {"analyzing"},  # +analyzing for rerun
     # Cancelled is terminal (no transitions allowed)
     "cancelled": set(),
 }

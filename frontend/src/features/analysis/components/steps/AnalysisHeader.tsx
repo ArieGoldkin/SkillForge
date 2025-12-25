@@ -1,9 +1,10 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 
 import { FileText, Github, Video } from 'lucide-react'
 
 import { GoldenDatasetBadge } from '@features/artifact/components/internal/GoldenDatasetBadge'
 import { isGoldenDatasetUrl, extractDocumentName } from '@features/artifact/utils/urlHelpers'
+import { normalizeTitle } from '@features/library/utils'
 
 import { Badge } from '@shared/components/ui/badge'
 
@@ -52,10 +53,13 @@ export const AnalysisHeader = memo(function AnalysisHeader({
   const contentTypeConfig = contentType ? CONTENT_TYPE_CONFIG[contentType] : null
   const ContentIcon = contentTypeConfig?.icon
 
+  // Normalize title to remove "Title:" prefix from backend data
+  const displayTitle = useMemo(() => normalizeTitle(title ?? null), [title])
+
   return (
     <div className="mb-8" data-testid="analysis-header">
       <div className="flex items-center gap-3 mb-2">
-        <h1 className="text-3xl font-bold">{title || 'Content Analysis'}</h1>
+        <h1 className="text-3xl font-bold">{displayTitle}</h1>
         {contentTypeConfig && ContentIcon && (
           <Badge
             variant="outline"

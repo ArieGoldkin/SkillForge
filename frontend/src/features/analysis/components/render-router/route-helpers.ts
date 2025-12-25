@@ -12,6 +12,10 @@ export function extractCompletionProps(props: {
   hasFailedStages: boolean
   failedStagesCount: number
   analysisMetadata?: AnalysisProps['analysisMetadata']
+  stageStatuses?: AnalysisProps['stageStatuses']
+  analysisMode?: AnalysisProps['analysisMode']
+  skipReasons?: AnalysisProps['skipReasons']
+  stageSuccessMetrics?: AnalysisProps['stageSuccessMetrics']
 }): CompletionProps {
   if (!props.id) {
     throw new Error('Analysis ID is required for completion props')
@@ -24,27 +28,41 @@ export function extractCompletionProps(props: {
     hasFailedStages: props.hasFailedStages,
     failedStagesCount: props.failedStagesCount,
     analysisMetadata: props.analysisMetadata,
+    stageStatuses: props.stageStatuses ?? new Map(),
+    analysisMode: props.analysisMode,
+    skipReasons: props.skipReasons,
+    stageSuccessMetrics: props.stageSuccessMetrics,
   }
 }
 
 /**
- * Extracts props needed for progress views (ProgressColumn)
+ * Extracts props needed for progress views (ProgressColumn with accordion)
  */
 export function extractProgressProps(props: {
   overallProgress: AnalysisProps['overallProgress']
-  steps: AnalysisProps['steps']
   hasFailedStages: boolean
   failedStagesCount: number
   failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisProps['analysisMetadata']
+  stageStatuses: NonNullable<AnalysisProps['stageStatuses']>
+  analysisMode?: AnalysisProps['analysisMode']
+  activities?: AnalysisProps['activities']
+  isConnected?: boolean
+  skipReasons?: AnalysisProps['skipReasons']
+  stageSuccessMetrics?: AnalysisProps['stageSuccessMetrics']
 }): ProgressProps {
   return {
     overallProgress: props.overallProgress,
-    steps: props.steps,
     hasFailedStages: props.hasFailedStages,
     failedStagesCount: props.failedStagesCount,
     failedStageErrorCodes: props.failedStageErrorCodes,
     analysisMetadata: props.analysisMetadata,
+    stageStatuses: props.stageStatuses,
+    analysisMode: props.analysisMode,
+    activities: props.activities,
+    isLive: props.isConnected,
+    skipReasons: props.skipReasons,
+    stageSuccessMetrics: props.stageSuccessMetrics,
   }
 }
 

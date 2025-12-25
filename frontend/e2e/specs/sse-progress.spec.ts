@@ -32,16 +32,13 @@ test.describe('SSE Progress Updates', () => {
     // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(library.items[0].analysis_id);
     await expect(page).toHaveURL(/\/analyze\/.+/);
-    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
-    await Promise.race([
-      expect(page.getByRole('heading', { name: /analysis complete|complete/i })).toBeVisible({ timeout: 5000 }),
-      expect(analyzePage.viewArtifactButton).toBeVisible({ timeout: 5000 }),
-    ]).catch(() => {
-      expect(page.url()).toMatch(/\/analyze\/.+/);
-    });
+    // Issue #533: Wait for page to fully load
+    // HeroSummaryCard shows either "Analysis In Progress" or "Analysis Complete" heading
+    // and is rendered in both active and completed views
+    await analyzePage.waitForPageLoad();
   });
 
-  test('should show progress bar for completed analysis', async ({ page, request }) => {
+  test('should show completion state for completed analysis', async ({ page, request }) => {
     // Get a completed analysis from seed data
     const completed = await getCompletedAnalysis(request);
 
@@ -55,18 +52,18 @@ test.describe('SSE Progress Updates', () => {
     const analyzePage = new AnalyzePage(page);
     await analyzePage.goto(completed.analysis_id);
 
-    // Progress bar should be visible
-    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
+    // Issue #533: Wait for page to load first
+    await analyzePage.waitForPageLoad();
 
-    // For completed analyses, progress should be 100%
-    const progress = await analyzePage.getProgress();
-    expect(progress).toBeGreaterThanOrEqual(0);
-    expect(progress).toBeLessThanOrEqual(100);
+    // Completed analyses can show one of two UIs:
+    // 1. CompletedAnalysisView with HeroSummaryCard (Priority 100/90/60)
+    // 2. Fallback view with AnalysisCompleteCard (Priority 10)
+    // Both have an analysis heading, so we check for that
+    await expect(analyzePage.analysisHeading).toBeVisible({ timeout: 15000 });
 
-    // Completed analysis should show completion state
-    await analyzePage.waitForComplete();
-
-    // Artifact button should be visible for completed analyses
+    // Completed analysis should show an artifact button:
+    // - HeroSummaryCard: "View Results" button
+    // - AnalysisCompleteCard: "View Guide" link
     await expect(analyzePage.viewArtifactButton).toBeVisible();
   });
 

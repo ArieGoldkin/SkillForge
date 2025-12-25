@@ -81,6 +81,13 @@ STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 300.0  
 # Workflow-level timeout (in seconds) - for entire workflow
 WORKFLOW_TIMEOUT: float = 900.0  # 900 seconds (15 minutes) - entire workflow should complete faster
 
+# Issue #536: Per-evaluator timeout for quality gate (in seconds)
+# EXCEPTION TO THE asyncio.timeout() RULE - See docstring for why this is acceptable:
+# 1. Wraps non-generator async call (no yield, no PEP 789 violation)
+# 2. Provides graceful degradation (neutral score on timeout, not failure)
+# 3. Prevents one slow evaluator from consuming entire step_timeout budget
+EVALUATOR_TIMEOUT: float = 30.0  # 30 seconds per evaluator call
+
 
 def create_runnable_config(
     thread_id: str | None = None,

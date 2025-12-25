@@ -477,22 +477,45 @@ def _compute_agent_expectations(  # noqa: PLR0912 - Multiple branches needed for
     return expectations
 
 
-def should_skip_agent(agent_name: str, signals: ContentSignals) -> tuple[bool, str]:
+def should_skip_agent(  # noqa: PLR0911
+    agent_name: str,
+    signals: ContentSignals,
+    code_patterns: dict[str, bool | list[str]] | None = None,
+) -> tuple[bool, str]:
     """Determine if an agent should be skipped entirely.
 
     Some agents should not run at all if there's zero relevant data.
     This is different from OPPORTUNISTIC (might find something).
 
+    Issue #540: Enhanced with content-aware selection matrix to prevent
+    agents from running when there's no relevant data, reducing 73% failure
+    rates for dependency_mapper and tech_comparator.
+
+    STANDARDIZATION: Uses code_patterns (from import_detection) when provided,
+    falling back to signals for backwards compatibility. This ensures consistent
+    detection thresholds with supervisor auto-activation logic.
+
     Args:
         agent_name: Name of the agent
         signals: Detected content signals
+        code_patterns: Optional code patterns from detect_code_patterns()
 
     Returns:
         Tuple of (should_skip, reason)
 
     """
+    # Use code_patterns when available for consistent detection with auto-activation
+    has_imports = code_patterns.get("has_imports", False) if code_patterns else False
+    has_frameworks = code_patterns.get("has_frameworks", False) if code_patterns else False
+    has_comparison_indicators = (
+        code_patterns.get("has_comparison_indicators", False) if code_patterns else False
+    )
+
+    # Consolidated code detection: use sensitive import_detection OR signals threshold
+    has_code = has_imports or has_frameworks or signals.has_code_patterns
+
     # Code quality critic needs actual code
-    if agent_name == "code_quality_critic" and not signals.has_code_patterns:
+    if agent_name == "code_quality_critic" and not has_code:
         return True, "No code patterns detected for structural analysis"
 
     # Security auditor on pure opinion pieces
@@ -510,6 +533,32 @@ def should_skip_agent(agent_name: str, signals: ContentSignals) -> tuple[bool, s
         and not signals.has_architecture
     ):
         return True, "No performance-relevant patterns detected"
+
+    # Issue #540: Dependency mapper needs dependencies or code
+    # Skip when there's no dependency info AND no code to analyze
+    if agent_name == "dependency_mapper" and not signals.has_dependencies and not has_code:
+        return True, "No dependency or code patterns detected"
+
+    # Issue #540: Tech comparator needs comparisons or architecture
+    # Skip when there's no comparison content AND no architectural discussion
+    has_comparisons = has_comparison_indicators or signals.has_comparisons
+    if (
+        agent_name == "tech_comparator"
+        and not has_comparisons
+        and not signals.has_architecture
+        and signals.detected_genre not in [ContentGenre.TUTORIAL, ContentGenre.REFERENCE]
+    ):
+        return True, "No comparison or architecture patterns detected"
+
+    # Issue #540: Integration feasibility needs code + architecture
+    # Skip when there's no integration context
+    if (
+        agent_name == "integration_feasibility"
+        and not has_code
+        and not signals.has_architecture
+        and not signals.has_tutorials
+    ):
+        return True, "No integration-relevant patterns detected"
 
     return False, ""
 

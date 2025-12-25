@@ -2,12 +2,18 @@
 
 This module provides utilities to detect content types and determine
 which agents can process specific content types.
+
+Issue #533: Tier 1 (UNIVERSAL) agents ALWAYS run on ALL content types.
+They should never be filtered by content type capabilities.
 """
 
 import re
 from typing import Literal
 
 from app.core.logging import get_logger
+
+# Issue #533: Import AgentTier to protect UNIVERSAL agents from content type filtering
+from app.domains.analysis.agents.registry import AgentTier, get_agent_metadata
 
 logger = get_logger(__name__)
 
@@ -194,6 +200,9 @@ def filter_agents_by_content_type(
 ) -> tuple[list[str], list[str]]:
     """Filter agents based on content type capabilities.
 
+    Issue #533: Tier 1 (UNIVERSAL) agents are NEVER filtered by content type.
+    They always run on ALL content types - that's what makes them "Universal".
+
     Args:
         agent_names: List of agent names to filter
         content_type: Detected content type
@@ -206,6 +215,20 @@ def filter_agents_by_content_type(
     skipped: list[str] = []
 
     for agent_name in agent_names:
+        # Issue #533: Check if agent is Tier 1 (UNIVERSAL) - never skip these
+        agent_meta = get_agent_metadata(agent_name)
+        if agent_meta is not None and agent_meta.tier == AgentTier.UNIVERSAL:
+            # Tier 1 agents run on ALL content types - bypass content type filtering
+            filtered.append(agent_name)
+            logger.debug(
+                "tier1_agent_protected",
+                agent_name=agent_name,
+                tier="UNIVERSAL",
+                content_type=content_type,
+                reason="tier1_agents_always_run",
+            )
+            continue
+
         if can_agent_process_content(agent_name, content_type):
             filtered.append(agent_name)
         else:

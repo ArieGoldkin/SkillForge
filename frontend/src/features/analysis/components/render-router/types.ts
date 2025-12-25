@@ -1,8 +1,13 @@
 import type { ReactElement } from 'react'
 
+import type { StageName } from '@app-types/sse'
+
 import type { OverallProgress, AnalysisMetadata } from '../../../../stores/sseStore'
 import type { LoadingState } from '../../../../types/loading'
+import type { StageStatusEntry } from '../../hooks/stageConfig'
 import type { AgentActivity } from '../../hooks/useActivityFeed'
+import type { AnalysisMode } from '../../types/accordion'
+import type { SuccessMetrics } from '../accordion/AccordionProgressTracker'
 import type { AnalysisStep } from '../steps/AnalysisStepList'
 
 /**
@@ -49,6 +54,11 @@ export interface AnalysisProps {
   failedStagesCount: number
   failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
+  // New props for accordion view
+  stageStatuses?: Map<StageName, StageStatusEntry>
+  analysisMode?: AnalysisMode
+  skipReasons?: Record<string, string>
+  stageSuccessMetrics?: Map<string, SuccessMetrics>
 
   // Error states
   error: Error | null
@@ -74,16 +84,27 @@ export interface CompletionProps {
   hasFailedStages: boolean
   failedStagesCount: number
   analysisMetadata?: AnalysisMetadata
+  /** Stage statuses for accordion groups */
+  stageStatuses: Map<StageName, StageStatusEntry>
+  analysisMode?: AnalysisMode
+  skipReasons?: Record<string, string>
+  stageSuccessMetrics?: Map<string, SuccessMetrics>
 }
 
 /**
- * Props for progress-related routes
+ * Props for progress-related routes (accordion view)
  */
 export interface ProgressProps {
   overallProgress: OverallProgress
-  steps: AnalysisStep[]
   hasFailedStages: boolean
   failedStagesCount: number
   failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
+  /** Stage statuses for accordion groups - required */
+  stageStatuses: Map<StageName, StageStatusEntry>
+  analysisMode?: AnalysisMode
+  activities?: AgentActivity[]
+  isLive?: boolean
+  skipReasons?: Record<string, string>
+  stageSuccessMetrics?: Map<string, SuccessMetrics>
 }

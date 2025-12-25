@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Main analysis orchestrator composing SSE lifecycle, status polling, and render routing */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SSEStore } from '@stores/sseStore'
@@ -195,6 +196,9 @@ export default function AnalyzeResult() {
     failedStagesCount,
     failedStageErrorCodes,
     analysisMetadata,
+    skipReasons,
+    stageSuccessMetrics,
+    stageStatuses,
   } = useAnalysisProgress(mergedEvents)
 
   useSSELifecycle({
@@ -280,6 +284,10 @@ export default function AnalyzeResult() {
     failedStagesCount,
     failedStageErrorCodes,
     analysisMetadata,
+    skipReasons,
+    stageSuccessMetrics,
+    stageStatuses,
+    // analysisMode is not available yet - will default to 'standard' in ProgressColumn
 
     // Error states
     error,

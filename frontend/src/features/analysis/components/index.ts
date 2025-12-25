@@ -60,4 +60,14 @@ export { TimeoutWarningBanner } from './TimeoutWarningBanner'
 // Error Handling
 export { AnalysisErrorFallback } from './AnalysisErrorFallback'
 
+// Accordion Components (Hierarchical Stage Grouping)
+export {
+  GroupHeader,
+  type GroupHeaderProps,
+  MiniMap,
+  type MiniMapProps,
+  type MiniMapGroup,
+  type AnalysisStatus,
+} from './accordion'
+
 // Note: ActiveAnalysisView is used internally by the router

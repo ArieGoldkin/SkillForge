@@ -86,7 +86,7 @@ def detect_code_patterns(content: str) -> dict[str, bool | list[str]]:
     # ISSUE #177: Comparison Logic
     # Detects multiple frameworks or explicit comparison keywords
     comparison_pattern = re.compile(
-        r"\b(?:vs|versus|compare|comparison|alternative|migration|benchmark)", re.IGNORECASE
+        r"\b(?:vs|versus|compare|comparison|alternative|migrat(?:e|ion)|benchmark)", re.IGNORECASE
     )
     has_comparison_keywords = bool(comparison_pattern.search(content))
 

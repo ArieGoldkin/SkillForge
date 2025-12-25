@@ -62,6 +62,43 @@ class AnalysisStatus(str, Enum):
         """
         return status == cls.COMPLETE
 
+    @classmethod
+    def is_retryable(cls, status: str) -> bool:
+        """Check if status allows retry (transition to pending).
+
+        Retryable states are all failure states that can restart from pending.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status can transition to 'pending' for retry, False otherwise
+
+        """
+        return status in {
+            cls.EXTRACTION_FAILED,
+            cls.ANALYSIS_FAILED,
+            cls.ARTIFACT_FAILED,
+            cls.QUALITY_GATE_FAILED,
+            cls.FAILED,
+        }
+
+    @classmethod
+    def is_rerunnable(cls, status: str) -> bool:
+        """Check if status allows rerun (transition to analyzing, skipping extraction).
+
+        Only completed analyses can be rerun. Rerun skips extraction and goes
+        straight to the analyzing stage using existing extracted content.
+
+        Args:
+            status: Status string to check
+
+        Returns:
+            True if status can transition to 'analyzing' for rerun, False otherwise
+
+        """
+        return status == cls.COMPLETE
+
 
 class AnalyzeRequest(BaseModel):
     """Request schema for creating a new analysis.
@@ -207,6 +244,36 @@ class AnalysisProgressResponse(BaseModel):
     events: list[ProgressEventResponse] = Field(
         ..., description="Progress events ordered by timestamp"
     )
+
+
+class AnalysisRerunResponse(BaseModel):
+    """Response schema for analysis rerun request.
+
+    Returned when a completed analysis is queued for re-analysis with
+    updated agents while preserving the original extraction.
+    """
+
+    analysis_id: str = Field(..., description="Analysis identifier")
+    status: str = Field(
+        default="analyzing", description="New analysis status (always 'analyzing' on rerun)"
+    )
+    rerun_count: int = Field(..., description="Number of times this analysis has been rerun")
+    previous_artifact_id: str | None = Field(
+        None, description="ID of the artifact from the previous run (archived for comparison)"
+    )
+    sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "analyzing",
+                "rerun_count": 1,
+                "previous_artifact_id": "987e6543-e21b-43c1-a123-789012345678",
+                "sse_endpoint": "/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+            }
+        }
+    }
 
 
 class ErrorResponse(BaseModel):
@@ -399,3 +466,33 @@ class LoadArtifactResponse(BaseModel):
     section: ArtifactSection = Field(..., description="Section that was loaded")
     truncated: bool = Field(default=False, description="Whether content was truncated")
     original_size: int = Field(..., description="Original content size")
+
+
+class AnalysisRetryResponse(BaseModel):
+    """Response schema for retrying a failed analysis.
+
+    Returned when a failed analysis is queued for retry.
+
+    Attributes:
+        analysis_id: UUID of the analysis being retried
+        status: New status after retry preparation (pending, analyzing, or generating_artifact)
+        retry_count: Number of retry attempts (including this one)
+        sse_endpoint: SSE endpoint URL for streaming progress updates
+
+    """
+
+    analysis_id: str = Field(..., description="Analysis identifier")
+    status: str = Field(..., description="New status after retry preparation")
+    retry_count: int = Field(..., description="Number of retry attempts")
+    sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "analysis_id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "pending",
+                "retry_count": 1,
+                "sse_endpoint": "/api/v1/analyze/123e4567-e89b-12d3-a456-426614174000/stream",
+            }
+        }
+    }

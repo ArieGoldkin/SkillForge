@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -14,7 +15,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -30,7 +31,7 @@ jobs:
               - 'frontend/**'
 
   backend-security:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: changes
     # Run on schedule/manual, or if backend files changed on push
     if: |
@@ -93,7 +94,7 @@ jobs:
           fi
 
   frontend-security:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: changes
     # Run on schedule/manual, or if frontend files changed on push
     if: |
@@ -144,7 +145,7 @@ jobs:
           fi
 
   dependabot-alerts:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: changes
     # Run on schedule/manual only (Dependabot alerts are repo-wide, not path-specific)
     if: |
@@ -191,7 +192,7 @@ jobs:
             }
 
   security-report:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: [changes, backend-security, frontend-security, dependabot-alerts]
     # Always run to generate report (handles skipped jobs gracefully)
     if: always()

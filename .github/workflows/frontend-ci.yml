@@ -14,6 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -25,17 +26,18 @@ jobs:
   # Phase 1: FAST GATES (30-60 sec) - Fail fast on code quality issues
   # ============================================================================
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Configure PATH
+        run: |
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Verify Node version
+        run: node --version && npm --version
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -50,17 +52,18 @@ jobs:
         run: npm run format:check
 
   type-check:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Configure PATH
+        run: |
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Verify Node version
+        run: node --version && npm --version
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -68,24 +71,25 @@ jobs:
 
       - name: Run TypeScript check
         working-directory: ./frontend
-        run: tsc --noEmit
+        run: npm run typecheck
 
   # ============================================================================
   # Phase 2: UNIT TESTS (1-2 min) - Only run if lint/type pass
   # ============================================================================
   test:
     needs: [lint, type-check]
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Configure PATH
+        run: |
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Verify Node version
+        run: node --version && npm --version
 
       - name: Install dependencies
         working-directory: ./frontend
@@ -101,6 +105,7 @@ jobs:
           files: ./frontend/coverage/coverage-final.json
           flags: frontend
           fail_ci_if_error: false
+          skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test reports
@@ -118,17 +123,18 @@ jobs:
   # ============================================================================
   build:
     needs: [test]
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+      - name: Configure PATH
+        run: |
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Verify Node version
+        run: node --version && npm --version
 
       - name: Install dependencies
         working-directory: ./frontend

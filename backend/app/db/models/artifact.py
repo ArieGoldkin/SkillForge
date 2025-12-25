@@ -39,7 +39,13 @@ class Artifact(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    analysis = relationship("Analysis", backref="artifacts")
+    # Note: explicit foreign_keys needed because Analysis.previous_artifact_id
+    # creates a second FK path between Analysis and Artifact tables
+    analysis = relationship(
+        "Analysis",
+        foreign_keys=[analysis_id],
+        backref="artifacts",
+    )
     annotation_queues: Mapped[list["AnnotationQueue"]] = relationship(
         "AnnotationQueue",
         back_populates="artifact",

@@ -119,7 +119,11 @@ async def test_supervisor_uses_strict_structured_output():
 
 @pytest.mark.asyncio
 async def test_supervisor_route_success(mock_agent_selection):
-    """Test supervisor_route with successful agent selection."""
+    """Test supervisor_route with successful agent selection.
+
+    Issue #540: Content must include comparison/architecture patterns
+    to prevent tech_comparator from being skipped by should_skip_agent().
+    """
     # Mock the LCEL chain (structured model with retry and fallback support)
     mock_lcel_chain = MagicMock()
     mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection)
@@ -140,10 +144,10 @@ async def test_supervisor_route_success(mock_agent_selection):
             new_callable=AsyncMock,
         ) as mock_emit,
     ):
-        # Use "code" content type so both agents can process it
-        # security_auditor can only process "code" and "documentation", not "article"
+        # Issue #540: Content includes comparison patterns (vs, compare, better than)
+        # to prevent tech_comparator from being skipped by should_skip_agent()
         result = await supervisor_route(
-            content="import os\nfrom typing import List\n\ndef hello_world():\n    print('Hello, World!')",
+            content="import os\nfrom typing import List\n# React vs Vue.js comparison - which framework is better?\nclass Service:\n    '''Service architecture for comparing frontend frameworks'''",
             content_type="code",
             analysis_id="test-analysis-id",
         )
@@ -210,25 +214,37 @@ async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_min
             analysis_id="test-analysis-id",
         )
 
-        # Verify decision structure - MINIMUM 3 AGENTS enforced
+        # Verify decision structure
+        # Issue #544: Tier 1 agents are now force-injected on top of LLM selection
         assert "supervisor_decision" in result
         decision = result["supervisor_decision"]
-        # CHANGED: Minimum enforcement means exactly 3 agents from fixture
-        assert len(decision["agents"]) == 3, (
-            f"Expected 3 agents from fixture, got {len(decision['agents'])}: {decision['agents']}"
-        )
-        # All agents from fixture should be present
+
+        # Issue #544: Tier 1 agents (key_insights, pros_cons, audience_fit, actionable)
+        # are ALWAYS present after injection, regardless of LLM selection
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in decision["agents"], (
+                f"Tier 1 agent {tier1_agent} should be force-injected"
+            )
+
+        # Original LLM-selected agents should be present (except any skipped by content signals)
+        # Note: dependency_mapper may be skipped for simple content without code patterns
         assert "implementation_planner" in decision["agents"]
-        assert "dependency_mapper" in decision["agents"]
         assert "trend_validator" in decision["agents"]
+
+        # Agent count should be >= 4 (minimum: 4 Tier 1 agents)
+        assert len(decision["agents"]) >= 4, (
+            f"Expected at least 4 agents (Tier 1), got {len(decision['agents'])}: {decision['agents']}"
+        )
         assert len(decision["priority"]) == len(decision["agents"])
         assert decision["confidence"] == 0.7
 
-        # Verify complete event was emitted with agent_count = 3
+        # Verify complete event was emitted
         complete_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "complete"]
         assert len(complete_calls) > 0
         complete_call = complete_calls[0]
-        assert complete_call[1]["agent_count"] == 3
+        # Agent count should match decision agents
+        assert complete_call[1]["agent_count"] == len(decision["agents"])
 
 
 @pytest.mark.asyncio
@@ -672,12 +688,16 @@ def test_genre_aware_minimum_agents():
 async def test_supervisor_enforces_genre_aware_minimum_research():
     """Test supervisor enforces minimum 2 agents for RESEARCH genre.
 
-    Note: AgentSelection schema has min_length=3, so LLM must return 3+ agents.
-    This test verifies the genre-aware logic doesn't ADD extra agents unnecessarily
-    for research content (which needs less comprehensive analysis).
+    Note: AgentSelection schema has min_length=3, so LLM returns 3 agents.
+    However, Issue #540 content-aware filtering may skip agents without
+    relevant content (e.g., tech_comparator on pure theoretical research).
+
+    This test verifies:
+    1. Genre-aware minimum (2 for research) is met
+    2. Content-aware filtering correctly skips irrelevant agents
     """
     # Mock selection with 3 agents (schema minimum)
-    # For research, this is already MORE than the genre-aware minimum of 2
+    # tech_comparator will be skipped due to no comparison patterns in content
     mock_selection = AgentSelection(
         agents=["trend_validator", "tech_comparator", "implementation_planner"],
         reasoning="Research paper needs trend analysis and concept comparison",
@@ -692,6 +712,7 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
     mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Research paper content (will be detected as RESEARCH genre)
+    # Note: No comparison patterns, so tech_comparator will be skipped
     content = """
     Abstract: This paper explores the theoretical foundations of neural architecture search.
     We present a novel framework for understanding optimization landscapes in deep learning.
@@ -722,10 +743,20 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
         result = await supervisor_route(content, "article", "test-research")
         agents = result["supervisor_decision"]["agents"]
 
-        # For research, minimum is 2 (per genre-aware logic), but schema enforces 3
-        # Supervisor should NOT add extra agents beyond what LLM selected
-        assert len(agents) == 3  # Exactly what LLM returned, no extras
+        # Issue #544: Tier 1 agents are always injected
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
+
+        # Issue #540: tech_comparator skipped (no comparison patterns)
+        # Original selection: trend_validator, implementation_planner (tech_comparator filtered)
         assert "trend_validator" in agents
+        assert "implementation_planner" in agents
+        # Verify tech_comparator was correctly filtered out
+        assert "tech_comparator" not in agents
+
+        # Total: 4 Tier 1 + 2 content-specific = 6 agents (minimum)
+        assert len(agents) >= 6
 
 
 @pytest.mark.asyncio
@@ -770,9 +801,14 @@ async def test_supervisor_enforces_genre_aware_minimum_opinion():
         result = await supervisor_route(content, "article", "test-opinion")
         agents = result["supervisor_decision"]["agents"]
 
-        # Opinion needs minimum 1, but schema enforces 3
-        # Supervisor should NOT add extras beyond LLM selection
-        assert len(agents) == 3  # Exactly what LLM returned
+        # Issue #544: Tier 1 agents are always injected
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
+
+        # LLM selected 3 content-specific agents + 4 Tier 1 = 7 agents
+        # (some content-specific may be filtered by content signals)
+        assert len(agents) >= 4  # At minimum, all 4 Tier 1 agents
 
 
 @pytest.mark.asyncio

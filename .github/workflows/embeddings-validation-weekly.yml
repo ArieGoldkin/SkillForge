@@ -15,6 +15,7 @@ on:
         type: boolean
 
 permissions:
+  pull-requests: read
   contents: read
   actions: read
 
@@ -25,7 +26,7 @@ concurrency:
 jobs:
   validate:
     name: Validate Real Embeddings
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     timeout-minutes: 45
 
     services:
@@ -77,7 +78,14 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
         run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
+          # Install PostgreSQL client (cross-platform)
+          if ! command -v psql &> /dev/null; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              brew install postgresql@16
+            else
+              sudo apt-get update && sudo apt-get install -y postgresql-client
+            fi
+          fi
           PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
           poetry run alembic upgrade head
 

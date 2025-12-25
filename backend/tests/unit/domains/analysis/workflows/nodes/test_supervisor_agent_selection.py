@@ -18,8 +18,11 @@ from app.domains.analysis.workflows.nodes.supervisor_schema import AgentSelectio
 @pytest.mark.unit
 
 # Helper to disable signal-based skipping for isolated enforcement tests
-def mock_no_skip(agent_name, signals):
-    """Mock should_skip_agent to never skip - isolates enforcement testing."""
+def mock_no_skip(agent_name, signals, code_patterns=None):
+    """Mock should_skip_agent to never skip - isolates enforcement testing.
+
+    Issue #540: Updated to accept code_patterns parameter for standardized detection.
+    """
     return False, None
 
 

@@ -45,7 +45,10 @@ export function CommonAnalysisLayout({
   progressContent,
 }: CommonAnalysisLayoutProps) {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl" data-testid="common-analysis-layout">
+    <div
+      className="container mx-auto px-4 py-6 max-w-[1800px] 2xl:px-8"
+      data-testid="common-analysis-layout"
+    >
       <AnalysisHeader
         title={analysisMetadata?.title || 'Content Analysis'}
         url={analysisMetadata?.url || (analysisId ? `Analysis ID: ${analysisId}` : '')}

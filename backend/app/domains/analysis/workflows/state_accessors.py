@@ -29,9 +29,12 @@ from app.domains.analysis.workflows.state_types import (
 from app.shared.types import AgentFinding, WorkflowMetrics
 
 
-def get_analysis_id(state: AnalysisState) -> AnalysisID:
-    """Get analysis_id - required field, direct access."""
-    return state["analysis_id"]
+def get_analysis_id(state: AnalysisState) -> AnalysisID | None:
+    """Get analysis_id with defensive guard.
+
+    Returns None if analysis_id is missing, allowing callers to handle gracefully.
+    """
+    return state.get("analysis_id")  # type: ignore[return-value]
 
 
 def get_agent_findings(state: AnalysisState) -> list[AgentFinding]:

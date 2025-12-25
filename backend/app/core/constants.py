@@ -44,8 +44,10 @@ RETRY_MIN_WAIT_TAVILY_TEST = 0.5  # Faster retries in tests (seconds)
 RETRY_MAX_WAIT_TAVILY_TEST = 2  # Shorter max wait in tests (seconds)
 
 # Database Connection Pool Configuration
-DB_POOL_SIZE = 5  # Number of connections to maintain in pool
-DB_MAX_OVERFLOW = 10  # Maximum number of connections beyond pool_size
+# Issue #537: Increased pool size to handle 16 parallel agents during fan-out
+# 16 agents + API requests + background tasks = need ~25 connections headroom
+DB_POOL_SIZE = 20  # Number of connections to maintain in pool (was 5)
+DB_MAX_OVERFLOW = 30  # Maximum connections beyond pool_size (was 10)
 DB_POOL_RECYCLE = 3600  # Recycle connections after 1 hour (seconds)
 
 # Content Types
@@ -147,6 +149,16 @@ STRUCTURAL_WEIGHT_HEADING = 0.10  # Boost for heading chunks
 STRUCTURAL_PATH_DEPTH_THRESHOLD = 2  # Path depth above this triggers penalty
 STRUCTURAL_POSITION_EARLY_THRESHOLD = 0.2  # First 20% of section considered "early"
 STRUCTURAL_POSITION_LATE_THRESHOLD = 0.8  # Last 20% of section considered "late"
+
+# G-Eval Content Validation (Issue #454 - Prevent depth=0.0 on empty content)
+# If output content for evaluation is below this threshold, skip G-Eval and return
+# neutral scores (0.5) instead of sending garbage to the evaluator
+MIN_EVALUABLE_LENGTH = 100  # Minimum characters required for meaningful evaluation
+
+# Agent Self-Correction (Issue #507 - Detect and retry empty agent outputs)
+# If an agent produces fewer than this many insights, retry before accepting
+# This catches agents that produce valid structure but zero useful content
+MIN_AGENT_FINDINGS = 1  # Minimum findings required (0 = useless output)
 
 # Tavily Search Configuration (Issue #500 - Tier 2 Validation Agents)
 TAVILY_API_URL = "https://api.tavily.com/search"  # Tavily Search API endpoint

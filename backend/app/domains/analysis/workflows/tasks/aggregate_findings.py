@@ -11,6 +11,7 @@ import time
 from typing import Any, cast
 from uuid import UUID
 
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
@@ -118,10 +119,7 @@ async def _handle_aggregation_error(
     start_time: float,
     agent_types: list[str] | None,
 ) -> dict[str, object]:
-    """Handle aggregation errors by returning fallback insights.
-
-    Issue #299-304: Error State Pattern - capture errors in state, don't propagate.
-    This ensures the workflow ALWAYS reaches a terminal state.
+    """Handle aggregation errors by wrapping with WorkflowStageError.
 
     Args:
         analysis_id: UUID of the analysis
@@ -129,8 +127,8 @@ async def _handle_aggregation_error(
         start_time: Start time for calculating processing duration
         agent_types: List of agent types that produced findings (may be None)
 
-    Returns:
-        Dictionary with aggregated_insights containing fallback data
+    Raises:
+        WorkflowStageError: Wrapped exception with stage context
 
     """
     # Record error to database FIRST to make failure visible
@@ -144,56 +142,39 @@ async def _handle_aggregation_error(
             error_message=str(error),
             stage="aggregate_findings",
         )
-    except Exception:  # noqa: S110, BLE001
+    except Exception:  # noqa: S110, BLE001 - Graceful degradation for error recording failures
         # Don't fail if error recording fails (e.g., invalid UUID in tests)
         pass
 
     await emit_aggregation_failed(analysis_id, str(error))
 
-    logger.error(
-        "workflow_aggregation_failed_with_fallback",
-        analysis_id=analysis_id,
-        error=str(error),
-        error_type=type(error).__name__,
-        exc_info=error,  # Pass exception object instead of True
-        fallback="returning_empty_insights_to_prevent_hang",
-    )
-
-    # Build a meaningful executive summary with agent count if available
-    # This provides better context for the fallback response
+    # Build a meaningful error message with agent count if available
     try:
         agent_count = len(agent_types) if agent_types else 0
     except (NameError, UnboundLocalError):
         agent_count = 0
 
     if agent_count > 0:
-        exec_summary = (
-            f"Synthesized findings from {agent_count} agents. "
-            f"LLM synthesis failed but basic findings are available."
-        )
+        error_message = f"Aggregation failed after processing {agent_count} agents: {error}"
     else:
-        exec_summary = f"Analysis could not be completed due to error: {type(error).__name__}"
+        error_message = f"Aggregation failed: {error}"
 
-    # Return empty insights with error metadata instead of raising
-    # This allows the workflow to continue to artifact generation (which will handle empty insights)
-    return {
-        "aggregated_insights": {
-            "executive_summary": exec_summary,
-            "key_findings": ["Analysis encountered an error during synthesis"],
-            "synthesis": "Unable to synthesize findings due to processing error.",
-            "metadata": {
-                "synthesis_status": "failed",
-                "synthesis_error": str(error),
-                "error_type": type(error).__name__,
-                "processing_time_ms": int((time.time() - start_time) * 1000),
-                "fallback_used": True,
-                "llm_synthesis_failed": True,
-                "total_agents": agent_count,
-            },
-            "coverage_gaps": [],
-            "coverage_score": 0.0,
-        }
-    }
+    logger.error(
+        "workflow_aggregation_failed",
+        analysis_id=analysis_id,
+        error=str(error),
+        error_type=type(error).__name__,
+        exc_info=error,
+        agent_count=agent_count,
+        processing_time_ms=int((time.time() - start_time) * 1000),
+    )
+
+    # Wrap with WorkflowStageError to provide stage context
+    raise WorkflowStageError(
+        stage="aggregation",
+        original_exception=error,
+        message=error_message,
+    ) from error
 
 
 async def _store_findings_as_memories(
@@ -282,7 +263,7 @@ async def _store_findings_as_memories(
                         content_length=len(content),
                     )
 
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:  # noqa: BLE001 - Graceful degradation: individual memory storage failures
                     # Log but don't fail - individual memory failures shouldn't break flow
                     logger.warning(
                         "finding_memory_store_error",
@@ -292,7 +273,7 @@ async def _store_findings_as_memories(
                         error_type=type(e).__name__,
                     )
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: memory storage is optional
         # Database connection or session errors
         logger.warning(
             "findings_memory_store_session_error",
@@ -775,15 +756,16 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
         # Return only updated fields, not entire state
         return {"aggregated_insights": aggregated_insights_dict}
 
-    except Exception as e:  # noqa: BLE001 - Error State Pattern: catch all to ensure workflow reaches terminal state
-        # Issue #299-304: Error State Pattern - capture errors in state, don't propagate
-        # This ensures the workflow ALWAYS reaches a terminal state
-        return await _handle_aggregation_error(
+    except Exception as e:
+        # Handle and wrap error with WorkflowStageError for proper stage context
+        await _handle_aggregation_error(
             analysis_id=analysis_id,
             error=e,
             start_time=start_time,
             agent_types=agent_types,
         )
+        # This line is never reached - _handle_aggregation_error always raises
+        raise  # pragma: no cover
 
 
 @robust_traceable(

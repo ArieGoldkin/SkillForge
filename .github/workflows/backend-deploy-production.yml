@@ -13,6 +13,7 @@ on:
         required: true
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -21,7 +22,7 @@ concurrency:
 
 jobs:
   pre-deployment-checks:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,7 +63,7 @@ jobs:
             }
 
   deploy:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: pre-deployment-checks
     environment:
       name: production
@@ -127,7 +128,7 @@ jobs:
           api-key: ${{ secrets.RENDER_API_KEY }}
 
   migrate:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: deploy
     environment:
       name: production
@@ -172,7 +173,7 @@ jobs:
         run: poetry run alembic current
 
   health-check:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: migrate
     environment:
       name: production
@@ -199,7 +200,7 @@ jobs:
           exit 1
 
   smoke-tests:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: health-check
     environment:
       name: production
@@ -233,7 +234,7 @@ jobs:
           echo "Production smoke tests passed!"
 
   notify:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: smoke-tests
     if: always()
     environment:

@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -17,7 +18,7 @@ concurrency:
 
 jobs:
   verify-reversible:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,7 +72,7 @@ jobs:
           echo "All migrations appear to have downgrade functions"
 
   test-migrations:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     services:
       postgres:
         image: pgvector/pgvector:pg16

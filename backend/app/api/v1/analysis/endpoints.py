@@ -19,6 +19,9 @@ from app.db.repositories.analysis_repository import IAnalysisRepository, get_ana
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
 from app.domains.analysis.schemas.api import (
     AnalysisProgressResponse,
+    AnalysisRerunResponse,
+    AnalysisRetryResponse,
+    AnalysisStatus,
     AnalyzeCreateResponse,
     AnalyzeRequest,
     AnalyzeStatusResponse,
@@ -458,4 +461,283 @@ async def get_analysis_progress(
     return AnalysisProgressResponse(
         analysis_id=str(analysis_id),
         events=events,
+    )
+
+
+@router.post(
+    "/analyze/{analysis_id}/rerun",
+    responses={
+        400: {"model": ErrorResponse, "description": "Analysis not rerunnable"},
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def rerun_analysis(
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    fastapi_request: Request,
+    analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
+    artifact_repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
+) -> AnalysisRerunResponse:
+    """Rerun a completed analysis with updated agents.
+
+    This endpoint allows re-analyzing a completed analysis using updated agents
+    while preserving the original extraction (raw_content, embeddings). The workflow
+    starts from the 'analyzing' stage, skipping extraction.
+
+    The previous artifact is archived (previous_artifact_id) and a new artifact
+    will be generated. This enables comparison between different agent versions.
+
+    Args:
+        analysis_id: UUID of the completed analysis to rerun
+        fastapi_request: FastAPI Request object for accessing app.state
+        analysis_repo: Analysis repository dependency
+        artifact_repo: Artifact repository dependency
+
+    Returns:
+        AnalysisRerunResponse with rerun details and SSE endpoint
+
+    Raises:
+        HTTPException: 404 if analysis not found
+        HTTPException: 400 if analysis status is not 'complete'
+        HTTPException: 500 if database operation fails
+
+    """
+    # Verify analysis exists
+    analysis = await analysis_repo.get_by_id(analysis_id)
+    if not analysis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Analysis {analysis_id} not found",
+        )
+
+    # Check if analysis can be rerun (only 'complete' status is rerunnable)
+    # Type guard: analysis.status is a str in the database model
+    if not AnalysisStatus.is_rerunnable(str(analysis.status)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Analysis must be in 'complete' status to rerun. Current status: {analysis.status}",
+        )
+
+    # Get current artifact to archive
+    current_artifact = await artifact_repo.get_latest_artifact_by_analysis(analysis_id)
+    # Type guard: current_artifact.id is a UUID in the database model
+    current_artifact_id: uuid.UUID | None = (
+        uuid.UUID(str(current_artifact.id)) if current_artifact else None
+    )
+
+    # Prepare analysis for rerun
+    try:
+        new_rerun_count, archived_artifact_id = await analysis_repo.prepare_for_rerun(
+            analysis_id, current_artifact_id
+        )
+
+        logger.info(
+            "analysis_rerun_initiated",
+            analysis_id=str(analysis_id),
+            rerun_count=new_rerun_count,
+            archived_artifact_id=str(archived_artifact_id) if archived_artifact_id else None,
+        )
+    except Exception as e:
+        logger.error(
+            "analysis_rerun_preparation_failed",
+            analysis_id=str(analysis_id),
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to prepare analysis for rerun",
+        ) from e
+
+    # Start workflow asynchronously from 'analyzing' stage
+    # E2E cost control: allow CI/docker E2E to create reruns without triggering
+    # expensive external workflows. E2E tests can still validate HTTP + SSE plumbing.
+    if os.environ.get("SKILLFORGE_E2E_DISABLE_WORKFLOW") == "true":
+        logger.info(
+            "analysis_workflow_skipped_for_e2e",
+            analysis_id=str(analysis_id),
+            url=str(analysis.url),
+            rerun=True,
+        )
+    else:
+        # Type ignore: mypy strictness - create_task accepts coroutines from async functions
+        orchestrator = get_orchestrator()
+        task: asyncio.Task[None] = asyncio.create_task(
+            orchestrator.run(
+                analysis_id,
+                str(analysis.url),
+                "intermediate",  # Default skill level for rerun
+                "standard",  # Default analysis mode for rerun
+                start_from_stage="analyzing",  # Skip extraction, reuse existing content
+            )  # type: ignore[arg-type]
+        )
+        background_tasks = fastapi_request.app.state.background_tasks
+        background_tasks.add(task)
+        # Use functools.partial to bind background_tasks to callback
+        from functools import partial
+
+        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
+
+    # Build SSE endpoint URL
+    sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"
+
+    return AnalysisRerunResponse(
+        analysis_id=str(analysis_id),
+        status="analyzing",
+        rerun_count=new_rerun_count,
+        previous_artifact_id=str(archived_artifact_id) if archived_artifact_id else None,
+        sse_endpoint=sse_endpoint,
+    )
+
+
+@router.post(
+    "/analyze/{analysis_id}/retry",
+    responses={
+        404: {"model": ErrorResponse, "description": "Analysis not found"},
+        400: {
+            "model": ErrorResponse,
+            "description": "Analysis not retryable or retry limit reached",
+        },
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def retry_analysis(
+    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    fastapi_request: Request,
+    analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
+) -> AnalysisRetryResponse:
+    """Retry a failed analysis.
+
+    Retries a failed analysis by clearing error state, incrementing retry count,
+    and restarting the workflow from an appropriate stage based on where it failed.
+
+    Restart stage logic:
+    - extraction_failed → restart from "pending" (full restart including extraction)
+    - analysis_failed, quality_gate_failed → restart from "analyzing" (reuse extraction)
+    - artifact_failed → restart from "generating_artifact" (reuse analysis)
+
+    Args:
+        analysis_id: UUID of the analysis to retry
+        fastapi_request: FastAPI Request object for accessing app.state
+        analysis_repo: Repository for analysis persistence operations
+
+    Returns:
+        AnalysisRetryResponse with analysis_id, status, retry_count, and sse_endpoint
+
+    Raises:
+        HTTPException: 404 if analysis not found
+        HTTPException: 400 if analysis not retryable or retry limit exceeded
+        HTTPException: 500 if retry preparation fails
+
+    """
+    from app.core.constants import MAX_RETRY_ATTEMPTS
+
+    # Get analysis by ID
+    analysis = await analysis_repo.get_by_id(analysis_id)
+
+    if not analysis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Analysis {analysis_id} not found",
+        )
+
+    # Check if status is retryable (must be a failed state)
+    current_status = str(analysis.status)
+    if not AnalysisStatus.is_retryable(current_status):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Analysis status '{current_status}' is not retryable. Only failed analyses can be retried.",
+        )
+
+    # Check retry limit (must be < MAX_RETRY_ATTEMPTS)
+    if analysis.retry_count >= MAX_RETRY_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Retry limit exceeded ({analysis.retry_count}/{MAX_RETRY_ATTEMPTS} attempts)",
+        )
+
+    # Determine restart stage based on failed_at_stage
+    # extraction_failed → restart from "pending" (full restart)
+    # supervisor, analysis, any agent → restart from "analyzing" (reuse extraction)
+    # artifact_generation, quality_gate → restart from "generating_artifact"
+    failed_stage = analysis.failed_at_stage or ""
+
+    if failed_stage == "extraction" or analysis.status == "extraction_failed":
+        restart_stage = "pending"  # Full restart including extraction
+    elif failed_stage in {"artifact_generation", "quality_gate"} or analysis.status in {
+        "artifact_failed",
+        "quality_gate_failed",
+    }:
+        restart_stage = "generating_artifact"  # Reuse extraction and analysis
+    else:
+        # Default: restart from analyzing (covers supervisor, analysis, agent failures)
+        restart_stage = "analyzing"
+
+    # Prepare for retry (clear error state, increment retry_count)
+    try:
+        await analysis_repo.prepare_for_retry(analysis_id, restart_stage)
+    except Exception as e:
+        logger.error(
+            "retry_preparation_failed",
+            analysis_id=str(analysis_id),
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to prepare analysis for retry",
+        ) from e
+
+    # Queue background workflow (skip if E2E test mode)
+    if os.environ.get("SKILLFORGE_E2E_DISABLE_WORKFLOW") == "true":
+        logger.info(
+            "retry_workflow_skipped_for_e2e",
+            analysis_id=str(analysis_id),
+        )
+    else:
+        # Start workflow asynchronously
+        orchestrator = get_orchestrator()
+        # Note: WorkflowOrchestrator.run() doesn't currently support start_from_stage parameter
+        # For now, we'll restart from pending and let the workflow handle status transitions
+        # TODO(#544): Add start_from_stage parameter to WorkflowOrchestrator.run() for efficiency
+        task: asyncio.Task[None] = asyncio.create_task(
+            orchestrator.run(
+                analysis_id,
+                str(analysis.url),
+                "intermediate",  # Default skill level
+                "standard",  # Default analysis mode
+            )  # type: ignore[arg-type]
+        )
+        background_tasks = fastapi_request.app.state.background_tasks
+        background_tasks.add(task)
+        from functools import partial
+
+        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
+
+    # Build SSE endpoint URL
+    sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"
+
+    # Re-fetch analysis to get updated retry_count
+    updated_analysis = await analysis_repo.get_by_id(analysis_id)
+    if not updated_analysis:
+        # Should not happen, but handle gracefully
+        logger.error("retry_analysis_disappeared", analysis_id=str(analysis_id))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Analysis disappeared after retry preparation",
+        )
+
+    logger.info(
+        "analysis_retry_queued",
+        analysis_id=str(analysis_id),
+        restart_stage=restart_stage,
+        retry_count=updated_analysis.retry_count,
+    )
+
+    retry_count: int = updated_analysis.retry_count or 0  # type: ignore[assignment]
+    return AnalysisRetryResponse(
+        analysis_id=str(analysis_id),
+        status=restart_stage,
+        retry_count=retry_count,
+        sse_endpoint=sse_endpoint,
     )

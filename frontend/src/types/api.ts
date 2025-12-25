@@ -147,6 +147,21 @@ export interface ArtifactMetadataResponse {
   created_at?: string
 }
 
+export interface AnalysisRetryResponse {
+  analysis_id: string
+  status: AnalysisStatus
+  retry_count: number
+  sse_endpoint: string
+}
+
+export interface AnalysisRerunResponse {
+  analysis_id: string
+  status: AnalysisStatus
+  rerun_count: number
+  archived_artifact_id: string | null
+  sse_endpoint: string
+}
+
 export interface APIError {
   error: {
     code: string

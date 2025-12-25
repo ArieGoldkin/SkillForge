@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from langchain_core.runnables import Runnable
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import MIN_AGENT_FINDINGS
 from app.core.logging import get_logger
 from app.core.timeout_config import AGENT_TIMEOUT
 from app.core.types import AnalysisID
@@ -22,6 +23,7 @@ from app.domains.analysis.workflows.agents.invocation import invoke_agent
 from app.domains.analysis.workflows.agents.prompt_builders import build_agent_user_prompt
 from app.domains.analysis.workflows.agents.response_processing import extract_structured_response
 from app.domains.analysis.workflows.agents.result_processing import (
+    _count_insights,
     handle_agent_cancellation,
     handle_agent_error,
     process_agent_result,
@@ -52,6 +54,18 @@ def get_specificity_max_retries() -> int:
 
     """
     return int(os.environ.get("SPECIFICITY_MAX_RETRIES", "1"))
+
+
+def get_min_agent_findings() -> int:
+    """Get minimum required findings from environment or default.
+
+    Issue #507: Can be set to 0 to disable empty findings validation for tests.
+
+    Returns:
+        Minimum findings required (default: MIN_AGENT_FINDINGS)
+
+    """
+    return int(os.environ.get("MIN_AGENT_FINDINGS", str(MIN_AGENT_FINDINGS)))
 
 
 @dataclass
@@ -188,6 +202,38 @@ async def _run_agent_with_tracking_impl(
 
             # Extract structured response (validated Pydantic model)
             findings = extract_structured_response(final_result, params.agent_type)
+
+            # Issue #507: Check for empty findings BEFORE specificity validation
+            # An agent can return valid structure with ZERO useful content
+            # Can be disabled by setting MIN_AGENT_FINDINGS=0 in environment
+            min_findings = get_min_agent_findings()
+            insights_count = _count_insights(findings, params.agent_type)
+            if min_findings > 0 and insights_count < min_findings:
+                if attempts >= max_retries:
+                    logger.error(
+                        "agent_empty_findings_exhausted",
+                        agent_type=params.agent_type,
+                        analysis_id=params.analysis_id,
+                        insights_count=insights_count,
+                        min_required=min_findings,
+                        retries=attempts,
+                    )
+                    error_message = (
+                        f"Agent produced {insights_count} findings "
+                        f"(minimum {min_findings} required)"
+                    )
+                    raise ValueError(error_message)
+
+                attempts += 1
+                logger.warning(
+                    "agent_empty_findings_retry",
+                    agent_type=params.agent_type,
+                    analysis_id=params.analysis_id,
+                    attempt=attempts,
+                    insights_count=insights_count,
+                    min_required=min_findings,
+                )
+                continue  # Retry the agent invocation
 
             # Validate specificity; retry once if below threshold
             # Skip validation if threshold is 0.0 (disabled for tests)

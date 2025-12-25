@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  pull-requests: read
   contents: read
 
 concurrency:
@@ -17,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     environment:
       name: staging
     env:
@@ -66,7 +67,7 @@ jobs:
           api-key: ${{ secrets.RENDER_API_KEY }}
 
   health-check:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: deploy
     environment:
       name: staging
@@ -92,7 +93,7 @@ jobs:
           exit 1
 
   smoke-tests:
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     needs: health-check
     environment:
       name: staging

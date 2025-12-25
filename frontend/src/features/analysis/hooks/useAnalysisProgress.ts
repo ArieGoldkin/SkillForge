@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Orchestrator hook composing 6 sub-hooks with comprehensive SSE processing logic */
 /**
  * useAnalysisProgress - Transform SSE events into UI-friendly progress data
  *
@@ -17,7 +18,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 import { isErrorEvent, isFailedStage } from '@app-types/sse'
-import type { SSEEvent } from '@app-types/sse'
+import type { SSEEvent, StageName } from '@app-types/sse'
 import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
@@ -75,6 +76,7 @@ export interface AnalysisProgressData {
       keyInsights?: string[]
     }
   >
+  stageStatuses?: Map<StageName, import('../hooks/stageConfig').StageStatusEntry>
 }
 
 // ============================================================================
@@ -313,5 +315,6 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     analysisMetadata,
     skipReasons,
     stageSuccessMetrics,
+    stageStatuses, // For accordion view
   }
 }

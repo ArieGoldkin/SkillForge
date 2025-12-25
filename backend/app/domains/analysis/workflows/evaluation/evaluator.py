@@ -41,7 +41,13 @@ async def evaluate_agent_quality(state: AnalysisState) -> AnalysisState:
         Updated state with evaluation_results populated
 
     """
-    analysis_id = state["analysis_id"]
+    # Issue #539: Defensive state access
+    analysis_id = state.get("analysis_id")
+    if not analysis_id:
+        logger.error("evaluation_missing_analysis_id")
+        state["evaluation_results"] = {}
+        return state
+
     agent_findings = get_agent_findings(state)
 
     if not agent_findings:

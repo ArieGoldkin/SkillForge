@@ -46,6 +46,7 @@ on:
         type: string
 
 permissions:
+  pull-requests: read
   contents: read
   pull-requests: write
 
@@ -56,7 +57,7 @@ concurrency:
 jobs:
   run-experiments:
     name: Run Langfuse Experiments
-    runs-on: ubuntu-24.04
+    runs-on: self-hosted
     timeout-minutes: 30
 
     steps:

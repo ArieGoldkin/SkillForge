@@ -233,7 +233,8 @@ describe('AnalyzeResult Loading States Integration', () => {
 
       render(<AnalyzeResult />)
 
-      expect(screen.getByText('Overall Progress')).toBeInTheDocument()
+      // New HeroSummaryCard shows "Total Stages" instead of "Overall Progress"
+      expect(screen.getByText('Total Stages')).toBeInTheDocument()
     })
   })
 
@@ -263,7 +264,8 @@ describe('AnalyzeResult Loading States Integration', () => {
 
       render(<AnalyzeResult />)
 
-      expect(screen.getByText('Overall Progress')).toBeInTheDocument()
+      // New HeroSummaryCard shows "Total Stages" instead of "Overall Progress"
+      expect(screen.getByText('Total Stages')).toBeInTheDocument()
     })
   })
 
@@ -334,7 +336,8 @@ describe('AnalyzeResult Loading States Integration', () => {
 
       render(<AnalyzeResult />)
 
-      expect(screen.getByText('Overall Progress')).toBeInTheDocument()
+      // New HeroSummaryCard shows "Total Stages" instead of "Overall Progress"
+      expect(screen.getByText('Total Stages')).toBeInTheDocument()
     })
   })
 
