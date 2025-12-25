@@ -345,28 +345,6 @@ export const COMPONENT_CONSTANTS = {
 } as const
 
 // ============================================================================
-// LEGACY CONSTANTS (to be migrated)
-// ============================================================================
-
-/**
- * These constants are kept for backward compatibility during migration.
- * They should be replaced with the new structured constants above.
- *
- * @deprecated Use TIME_CONSTANTS, LIMIT_CONSTANTS, etc. instead
- */
-export const LEGACY_CONSTANTS = {
-  // Time constants (use TIME_CONSTANTS instead)
-  SECOND: 1000,
-  MINUTE: 60 * 1000,
-
-  // Limits (use LIMIT_CONSTANTS instead)
-  MAX_EVENTS: 500,
-
-  // Content (use CONTENT_CONSTANTS instead)
-  SAMPLE_WORD_COUNT: 1200,
-} as const
-
-// ============================================================================
 // DEMO/SHOWCASE DATA CONSTANTS
 // ============================================================================
 

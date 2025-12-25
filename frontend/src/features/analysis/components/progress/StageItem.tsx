@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type * as React from 'react'
 
-import type { StageStatus } from '@app-types/sse'
+import type { StageStatus } from '@/schemas/sse'
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'

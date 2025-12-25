@@ -17,8 +17,8 @@
  */
 import { useEffect, useMemo, useRef } from 'react'
 
-import { isErrorEvent, isFailedStage } from '@app-types/sse'
-import type { SSEEvent, StageName } from '@app-types/sse'
+import { isErrorEvent, isFailedStage } from '@/schemas/sse'
+import type { SSEEvent, StageName } from '@/schemas/sse'
 import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'

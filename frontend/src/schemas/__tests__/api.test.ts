@@ -86,12 +86,12 @@ describe('API Schemas - Valid Responses', () => {
       expect(result.success).toBe(true)
     })
 
-    it('should validate legacy status values', () => {
-      const legacyStatuses = ['running', 'in-progress', 'completed']
+    it('should reject invalid status values', () => {
+      const invalidStatuses = ['running', 'in-progress', 'completed', 'invalid', 'unknown']
 
-      legacyStatuses.forEach((status) => {
+      invalidStatuses.forEach((status) => {
         const result = AnalysisStatusSchema.safeParse(status)
-        expect(result.success).toBe(true)
+        expect(result.success).toBe(false)
       })
     })
   })

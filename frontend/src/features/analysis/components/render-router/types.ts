@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from '@/schemas/sse'
 
 import type { OverallProgress, AnalysisMetadata } from '../../../../stores/sseStore'
 import type { LoadingState } from '../../../../types/loading'

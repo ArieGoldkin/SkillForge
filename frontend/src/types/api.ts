@@ -22,9 +22,6 @@ export type AnalysisStatus =
   | 'failed' // Generic fallback
   // User actions
   | 'cancelled'
-  // Legacy (for backward compatibility)
-  | 'running' // Deprecated - use specific lifecycle states
-  | 'in-progress' // Deprecated - use specific lifecycle states
   | 'completed' // Backend returns 'completed', normalized to 'complete' in api.service.ts
 
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'

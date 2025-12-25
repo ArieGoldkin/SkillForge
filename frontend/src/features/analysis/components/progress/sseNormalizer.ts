@@ -15,7 +15,7 @@ import type {
   SSEProgressEvent,
   SSECompleteEvent,
   SSEErrorEvent,
-} from '@app-types/sse'
+} from '@/schemas/sse'
 
 import { logger } from '@/lib/logger'
 

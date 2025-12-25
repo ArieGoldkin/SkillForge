@@ -5,7 +5,7 @@
  * The hook itself is tested via integration tests.
  */
 
-import type { SSEEvent } from '@app-types/sse'
+import type { SSEEvent } from '@/schemas/sse'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

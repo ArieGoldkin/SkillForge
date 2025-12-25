@@ -20,7 +20,7 @@
 
 import { memo, useCallback, useMemo, useRef, useState } from 'react'
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from '@/schemas/sse'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { AgentActivityFeed } from '@/features/analysis/components/activity/AgentActivityFeed'

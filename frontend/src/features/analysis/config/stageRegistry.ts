@@ -10,7 +10,7 @@
  * @see Issue #397: Create unified stage registry
  */
 
-import type { AgentStageName, StageName, WorkflowStageName } from '@app-types/sse'
+import type { AgentStageName, StageName, WorkflowStageName } from '@/schemas/sse'
 
 import { STAGE_ORDER_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
@@ -361,8 +361,8 @@ export const STAGE_REGISTRY: Record<StageName, StageRegistryEntry> = {
 // ============================================================================
 
 /**
- * Stage configuration compatible with existing code
- * Maps to the old STAGE_CONFIG format for backward compatibility
+ * Stage configuration for existing code
+ * Derived from the complete stage registry
  */
 export const STAGE_CONFIG: Record<
   StageName,

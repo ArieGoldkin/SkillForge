@@ -4,7 +4,9 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { extractHeadings, slugify } from '../utils'
+import { slugify } from '../../../utils/markdownHeadingParser'
+
+import { extractHeadings } from '../utils'
 
 describe('slugify', () => {
   it('converts text to lowercase slug', () => {

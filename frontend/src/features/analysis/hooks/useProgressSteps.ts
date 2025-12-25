@@ -10,12 +10,13 @@
 
 import { useMemo } from 'react'
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from '@/schemas/sse'
 
 import type { SuccessMetrics } from '@/schemas/sse'
 
+import { STAGE_CONFIG } from '../config/stageRegistry'
+
 import type { StageStatusEntry } from './stageConfig'
-import { STAGE_CONFIG } from './stageConfig'
 import { mapStageStatus, getStageDescription } from './stageHelpers'
 
 // ============================================================================

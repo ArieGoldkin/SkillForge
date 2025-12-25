@@ -20,13 +20,9 @@ import { useMemo } from 'react'
 import type { StageName, StageStatus } from '@/schemas/base'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
+import { STAGE_CONFIG, getStageNameFromAgentType } from '../config/stageRegistry'
 
-import {
-  STAGE_CONFIG,
-  TOTAL_STAGES,
-  estimateTimeRemaining,
-  getStageNameFromAgentType,
-} from './stageConfig'
+import { TOTAL_STAGES, estimateTimeRemaining } from './stageConfig'
 
 // ============================================================================
 // Types
@@ -186,7 +182,6 @@ export function useProgressCalculation(
     } else {
       // Fallback: No supervisor info available, count all finished stages
       // Failed stages are tracked separately for error display, not counted toward progress
-      // This maintains backward compatibility with tests and early events
       finishedStages = completedStages + skippedStages
     }
 

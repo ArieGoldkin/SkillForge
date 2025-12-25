@@ -19,7 +19,7 @@ import { ContentTypeSchema } from './base'
 
 /**
  * Analysis status values matching backend AnalysisStatus enum
- * Includes lifecycle states, failure states, and legacy values
+ * Includes lifecycle states, failure states, and user actions
  */
 export const AnalysisStatusSchema = z.enum([
   // Lifecycle states
@@ -36,10 +36,6 @@ export const AnalysisStatusSchema = z.enum([
   'failed',
   // User actions
   'cancelled',
-  // Legacy (backend may still return these)
-  'running',
-  'in-progress',
-  'completed',
 ])
 
 /**

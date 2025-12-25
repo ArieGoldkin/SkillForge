@@ -10,7 +10,7 @@
  * 4. Complete reset on disconnect (permanentlyFailed flag)
  */
 
-import type { SSEProgressEvent } from '@app-types/sse'
+import type { SSEProgressEvent } from '@/schemas/sse'
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 

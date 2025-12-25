@@ -1,4 +1,4 @@
-import type { SSECompleteEvent, SSEErrorEvent, SSEProgressEvent } from '@app-types/sse'
+import type { SSECompleteEvent, SSEErrorEvent, SSEProgressEvent } from '@/schemas/sse'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSSEStore } from '../sseStore'

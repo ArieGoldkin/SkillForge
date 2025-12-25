@@ -59,7 +59,6 @@ export function applyTheme(theme: Theme): void {
   const resolvedTheme = getResolvedTheme(theme)
   document.documentElement.dataset.theme = resolvedTheme
 
-  // Also apply class for backwards compatibility with existing CSS
   document.documentElement.classList.remove('light', 'dark')
   document.documentElement.classList.add(resolvedTheme)
 }

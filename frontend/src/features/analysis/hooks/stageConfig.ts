@@ -11,23 +11,21 @@
  * @see ../config/stageRegistry.ts for the complete stage registry
  */
 
-import type { StageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@/schemas/sse'
 
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
-// Import only what we need for the business logic functions
-import { AGENT_TO_STAGE_MAP, TOTAL_STAGES, getOptionalStages } from '../config/stageRegistry'
-
-// Re-export everything from registry for backward compatibility
-export {
+// Import from the stage registry
+import {
   AGENT_TO_STAGE_MAP,
   STAGE_CONFIG,
   TOTAL_STAGES,
   getOptionalStages,
-  getStageNameFromAgentType,
-  isAgentStage,
   normalizeStageNameFromBackend,
 } from '../config/stageRegistry'
+
+// Re-export stage registry constants for convenience
+export { STAGE_CONFIG, TOTAL_STAGES, normalizeStageNameFromBackend }
 
 /** Stage status entry for the status map */
 export interface StageStatusEntry {
@@ -101,7 +99,7 @@ export function markSkippedAgents(
  *
  * @param completedStages - Number of stages that have completed
  * @param totalStages - Dynamic total stages from supervisor (Issue #443)
- *                      Falls back to TOTAL_STAGES constant for backwards compatibility
+ *                      Falls back to TOTAL_STAGES constant if not provided
  */
 export function estimateTimeRemaining(
   completedStages: number,

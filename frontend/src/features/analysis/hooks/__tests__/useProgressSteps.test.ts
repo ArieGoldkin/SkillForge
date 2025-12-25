@@ -12,7 +12,7 @@
  * - Correct title and description for each stage
  */
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from '@/schemas/sse'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 

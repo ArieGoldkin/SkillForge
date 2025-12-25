@@ -12,9 +12,8 @@
  * - Proper listener cleanup on disconnect
  */
 
-import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
-
 import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
+import { isCompleteEvent, isErrorEvent } from '@/schemas/sse'
 import { logger } from '@/lib/logger'
 import { assertNever } from '@/lib/utils'
 import { parseSSEEvent, type SSEEvent } from '@/schemas/sse'
@@ -28,11 +27,6 @@ const MAX_RECONNECT_DELAY = LIMIT_CONSTANTS.SSE_RECONNECT_DELAY_MAX
 
 /** Maximum events to keep in memory (prevents unbounded growth) */
 export const MAX_EVENTS = LIMIT_CONSTANTS.MAX_EVENTS
-
-// Event retention policies imported from shared constants
-
-// Re-export for backward compatibility
-export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS }
 
 /**
  * Generate a deduplication key for an SSE event

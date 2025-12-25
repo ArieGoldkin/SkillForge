@@ -48,8 +48,6 @@ const selectAnalysisState = (state: SSEStore) => ({
   reset: state.reset,
 })
 
-// Legacy selectors removed - now using consolidated selectors
-
 const useSSELifecycle = ({
   analysisId,
   shouldConnect,

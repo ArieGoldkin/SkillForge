@@ -17,7 +17,7 @@
 import { memo, useState } from 'react'
 import type React from 'react'
 
-import type { StageStatus } from '@app-types/sse'
+import type { StageStatus } from '@/schemas/sse'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertCircle,

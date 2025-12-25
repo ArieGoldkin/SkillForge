@@ -5,7 +5,7 @@
  * without external middleware dependencies.
  */
 
-import type { StageName, SSEEvent } from '@app-types/sse'
+import type { StageName, SSEEvent } from '@/schemas/sse'
 import type { SSEStore } from '@stores/sseStore'
 
 import { shallowEqual } from '@/lib/utils'

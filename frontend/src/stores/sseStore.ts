@@ -1,6 +1,6 @@
 /* eslint-disable max-lines -- SSE Store orchestrates complex state management: event lifecycle, connection management, memory monitoring, and store actions. File length reflects necessary complexity for robust SSE handling. */
 
-import type { SSEEvent } from '@app-types/sse'
+import type { SSEEvent } from '@/schemas/sse'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 
