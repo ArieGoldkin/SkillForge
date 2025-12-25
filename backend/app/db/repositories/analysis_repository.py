@@ -89,6 +89,22 @@ class IAnalysisRepository(Protocol):
         """Get all progress events for an analysis."""
         ...
 
+    async def prepare_for_retry(
+        self,
+        analysis_id: uuid.UUID,
+        restart_stage: str,
+    ) -> None:
+        """Prepare analysis for retry by clearing error state and updating retry tracking."""
+        ...
+
+    async def prepare_for_rerun(
+        self,
+        analysis_id: uuid.UUID,
+        current_artifact_id: uuid.UUID | None,
+    ) -> tuple[int, uuid.UUID | None]:
+        """Prepare analysis for rerun by archiving current state and resetting for re-analysis."""
+        ...
+
 
 class AnalysisRepository:
     """Repository implementation for analysis database operations with vector search."""
@@ -456,6 +472,122 @@ class AnalysisRepository:
             .order_by(AnalysisProgress.created_at)
         )
         return list(result.scalars().all())
+
+    async def prepare_for_retry(
+        self,
+        analysis_id: uuid.UUID,
+        restart_stage: str,
+    ) -> None:
+        """Prepare analysis for retry by clearing error state and updating retry tracking.
+
+        Clears error fields, increments retry_count, sets last_retry_at timestamp,
+        and updates status to the restart stage. Does not validate retry limits
+        (caller must check retry_count < MAX_RETRIES before calling).
+
+        Args:
+            analysis_id: UUID of the analysis to prepare for retry
+            restart_stage: Status to transition to (e.g., "pending", "analyzing")
+
+        Raises:
+            NoResultFound: If analysis_id doesn't exist
+
+        """
+        from datetime import UTC, datetime
+
+        stmt = (
+            update(Analysis)
+            .where(Analysis.id == analysis_id)
+            .values(
+                status=restart_stage,
+                error_code=None,
+                error_message=None,
+                failed_at_stage=None,
+                retry_count=Analysis.retry_count + 1,  # Increment retry counter
+                last_retry_at=datetime.now(UTC),
+            )
+        )
+        result = await self.session.execute(stmt)
+
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        await self.session.commit()
+
+        logger.info(
+            "analysis_prepared_for_retry",
+            analysis_id=str(analysis_id),
+            restart_stage=restart_stage,
+        )
+
+    async def prepare_for_rerun(
+        self,
+        analysis_id: uuid.UUID,
+        current_artifact_id: uuid.UUID | None,
+    ) -> tuple[int, uuid.UUID | None]:
+        """Prepare analysis for rerun by archiving current state and resetting for re-analysis.
+
+        Archives the current artifact (if exists), increments rerun_count, clears error state,
+        and transitions to 'analyzing' status to skip extraction and reuse existing content.
+
+        This operation preserves the original extraction (raw_content, content_embedding) and
+        starts fresh analysis with updated agents while keeping the previous artifact for comparison.
+
+        Args:
+            analysis_id: UUID of the analysis to prepare for rerun
+            current_artifact_id: ID of the current artifact to archive (None if no artifact exists)
+
+        Returns:
+            Tuple of (new_rerun_count, archived_artifact_id)
+
+        Raises:
+            NoResultFound: If analysis_id doesn't exist
+
+        """
+        # First get the current analysis to retrieve rerun_count for returning
+        analysis = await self.get_by_id(analysis_id)
+        if not analysis:
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        # Calculate new rerun count before update
+        # Type guard: rerun_count is an int column with default 0
+        # Type ignore: SQLAlchemy Column type inference - rerun_count is int in runtime
+        current_rerun_count = int(analysis.rerun_count) if analysis.rerun_count is not None else 0  # type: ignore[arg-type]
+        new_rerun_count = current_rerun_count + 1
+
+        # Archive current artifact and increment rerun count
+        stmt = (
+            update(Analysis)
+            .where(Analysis.id == analysis_id)
+            .values(
+                status="analyzing",  # Skip extraction, go straight to analysis
+                previous_artifact_id=current_artifact_id,  # Archive current artifact
+                rerun_count=new_rerun_count,  # Increment rerun counter
+                # Clear error state if any
+                error_code=None,
+                error_message=None,
+                failed_at_stage=None,
+            )
+        )
+        result = await self.session.execute(stmt)
+
+        # Type guard: result from execute() is a Result object with rowcount attribute
+        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+            msg = f"Analysis {analysis_id} not found"
+            raise NoResultFound(msg)
+
+        await self.session.commit()
+
+        logger.info(
+            "analysis_prepared_for_rerun",
+            analysis_id=str(analysis_id),
+            rerun_count=new_rerun_count,
+            archived_artifact_id=str(current_artifact_id) if current_artifact_id else None,
+        )
+
+        return (new_rerun_count, current_artifact_id)
 
 
 def get_analysis_repository(

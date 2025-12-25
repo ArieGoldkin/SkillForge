@@ -126,3 +126,6 @@ class AnalysisState(TypedDict, total=False):
     )  # Error code from ExtractionErrorCode enum if extraction failed
     workflow_status: Literal["running", "completed", "failed"]  # Final workflow status
     final_error: str | None  # Final error message if workflow failed
+    # Issue #544: Stage resumption skip flags (for retry/rerun from specific stages)
+    skip_extraction: bool  # True to skip extraction node (data already loaded from DB)
+    skip_embedding: bool  # True to skip embedding node (data already loaded from DB)

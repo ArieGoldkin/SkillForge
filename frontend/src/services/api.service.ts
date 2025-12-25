@@ -6,6 +6,8 @@
 import type {
   Analysis,
   AnalysisProgressResponse,
+  AnalysisRerunResponse,
+  AnalysisRetryResponse,
   AnalysisStatusResponse,
   AnalyzeRequest,
   AnalyzeResponse,
@@ -197,6 +199,26 @@ export const analyzeAPI = {
    */
   getSSEEndpoint: (analysisId: string): string => {
     return `${API_BASE_URL}/api/v1/analyze/${analysisId}/stream`
+  },
+
+  /**
+   * Retry a failed analysis
+   * POST /api/v1/analyze/{id}/retry
+   */
+  retryAnalysis: async (analysisId: string): Promise<AnalysisRetryResponse> => {
+    return apiFetch<AnalysisRetryResponse>(`/api/v1/analyze/${analysisId}/retry`, {
+      method: 'POST',
+    })
+  },
+
+  /**
+   * Rerun a completed analysis with latest AI models/prompts
+   * POST /api/v1/analyze/{id}/rerun
+   */
+  rerunAnalysis: async (analysisId: string): Promise<AnalysisRerunResponse> => {
+    return apiFetch<AnalysisRerunResponse>(`/api/v1/analyze/${analysisId}/rerun`, {
+      method: 'POST',
+    })
   },
 
   /**

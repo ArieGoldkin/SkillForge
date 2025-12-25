@@ -100,10 +100,11 @@ def _get_checkpointer():
 async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     """Extract content from URL or passthrough if already provided.
 
-    This node supports two modes:
+    This node supports three modes:
     1. URL extraction: Fetch content via JinaReader (normal workflow)
     2. Content passthrough: Skip extraction if raw_content is already in state
        (used for golden dataset regeneration with fixture content)
+    3. Skip mode: Skip if skip_extraction flag is set (Issue #544 - retry/rerun support)
 
     Issue #299-304: Handle Pattern Implementation
     After extraction, creates content_ref for lightweight agent state passing.
@@ -123,6 +124,22 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
         "extraction_status": "pending",
         "extraction_error_code": None,
     }
+
+    # Issue #544: Skip mode - extraction already done (retry/rerun from analyzing stage)
+    # When skip_extraction is set, raw_content and metadata are already loaded from DB
+    if state.get("skip_extraction"):
+        logger.info(
+            "extract_skipped_already_completed",
+            analysis_id=analysis_id,
+            has_content=bool(state.get("raw_content")),
+            has_metadata=bool(get_extraction_metadata(state)),
+            reason="retry_from_analyzing_stage",
+        )
+        # Don't update state - extraction data already loaded by orchestrator
+        # Return minimal update to mark extraction as completed
+        return {
+            "extraction_status": "success",
+        }
 
     # Passthrough mode: Skip extraction if raw_content is already provided
     # This enables regeneration scripts to inject fixture content directly
@@ -263,6 +280,16 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
     # Issue #441: Skip if workflow is aborting
     if state.get("should_abort"):
         logger.debug("generate_embedding_skipped_abort", analysis_id=state.get("analysis_id"))
+        return {}
+
+    # Issue #544: Skip if embedding already loaded from DB (retry/rerun from analyzing stage)
+    if state.get("skip_embedding"):
+        logger.info(
+            "generate_embedding_skipped_already_completed",
+            analysis_id=state.get("analysis_id"),
+            has_embedding=bool(state.get("content_embedding")),
+            reason="retry_from_analyzing_stage",
+        )
         return {}
 
     # Issue #539: Defensive state access

@@ -4,9 +4,10 @@ import uuid
 from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
-from sqlalchemy import Column, DateTime, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -56,3 +57,19 @@ class Analysis(Base):
     content_summary = Column(Text)
     # Section metadata for partial loading: code_blocks, headings, word_count
     content_sections = Column(JSONB, default=dict)
+    # Retry/Rerun tracking (Issue #544 follow-up)
+    retry_count = Column(Integer, default=0, nullable=False)
+    last_retry_at = Column(DateTime(timezone=True), nullable=True)
+    rerun_count = Column(Integer, default=0, nullable=False)
+    previous_artifact_id = Column(
+        PostgresUUID(as_uuid=True),
+        ForeignKey("artifacts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    # Relationships
+    previous_artifact = relationship(
+        "Artifact",
+        foreign_keys=[previous_artifact_id],
+        uselist=False,
+    )

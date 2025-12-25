@@ -48,6 +48,7 @@ class WorkflowOrchestrator:
         url: str,
         skill_level: str = "intermediate",
         analysis_mode: str = "standard",
+        start_from_stage: str | None = None,
     ) -> None:
         """Run analysis workflow and handle post-processing.
 
@@ -66,6 +67,15 @@ class WorkflowOrchestrator:
             url: URL to analyze
             skill_level: User's experience level (beginner, intermediate, expert)
             analysis_mode: Analysis depth mode (quick, standard, deep_dive) - Issue #436
+            start_from_stage: Optional stage to start from for retry/rerun workflows (Issue #544)
+                            - None or "pending" or "extracting": Normal flow from extraction
+                            - "analyzing": Skip extraction/embedding (reuse from DB), restart from supervisor
+                            - "generating_artifact": Not yet implemented, falls back to "analyzing"
+
+                            When a stage is specified, the orchestrator:
+                            1. Loads existing data from DB (raw_content, embeddings, etc.)
+                            2. Sets skip flags in state (skip_extraction, skip_embedding)
+                            3. Graph nodes check skip flags and bypass work if already done
 
         """
         workflow_completed = False  # Track completion status for GeneratorExit handling
@@ -120,12 +130,108 @@ class WorkflowOrchestrator:
                     message="Langfuse disabled or not configured - graph visualization unavailable",
                 )
 
-            input_state: dict[str, str] = {
+            # Build initial state - may be augmented with existing data for retry/rerun
+            input_state: dict[str, Any] = {
                 "url": url,
                 "analysis_id": str(analysis_id),
                 "skill_level": skill_level,
                 "analysis_mode": analysis_mode,  # Issue #436: Tier-based agent filtering
             }
+
+            # Issue #544: Load existing data when starting from intermediate stage
+            if start_from_stage and start_from_stage not in ["pending", "extracting"]:
+                from app.db.repositories.analysis_repository import AnalysisRepository
+
+                async with AsyncSessionLocal() as db_session:
+                    repo = AnalysisRepository(session=db_session)
+                    existing_analysis = await repo.get_by_id(analysis_id, validate=False)
+
+                    if not existing_analysis:
+                        logger.error(
+                            "retry_analysis_not_found",
+                            analysis_id=str(analysis_id),
+                            start_from_stage=start_from_stage,
+                        )
+                        await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
+                        await self.event_emitter.emit_error(
+                            analysis_id,
+                            ValueError(
+                                f"Analysis {analysis_id} not found for retry from {start_from_stage}"
+                            ),
+                            stage="validation",
+                        )
+                        return
+
+                    # Load existing data based on start stage
+                    if start_from_stage == "analyzing":
+                        # Reuse extraction and embedding, restart from supervisor
+                        if not existing_analysis.raw_content:
+                            logger.error(
+                                "retry_missing_raw_content",
+                                analysis_id=str(analysis_id),
+                            )
+                            await self.status_updater.update(
+                                analysis_id, AnalysisStatus.FAILED.value
+                            )
+                            await self.event_emitter.emit_error(
+                                analysis_id,
+                                ValueError(
+                                    "Cannot restart from analyzing stage: missing raw_content"
+                                ),
+                                stage="validation",
+                            )
+                            return
+
+                        # Load extraction data into state
+                        input_state["raw_content"] = existing_analysis.raw_content
+                        input_state["content_type"] = existing_analysis.content_type
+                        if existing_analysis.extraction_metadata:
+                            input_state["extraction_metadata"] = (
+                                existing_analysis.extraction_metadata
+                            )
+                        if existing_analysis.content_embedding:
+                            input_state["content_embedding"] = existing_analysis.content_embedding
+
+                        # Set skip flags so graph bypasses extraction/embedding nodes
+                        # These flags are checked by conditional edges in graph_builder
+                        input_state["skip_extraction"] = True
+                        input_state["skip_embedding"] = True
+                        input_state["extraction_status"] = "success"  # Mark as already completed
+
+                        logger.info(
+                            "retry_loaded_extraction_data",
+                            analysis_id=str(analysis_id),
+                            start_from_stage=start_from_stage,
+                            skip_extraction=True,
+                            skip_embedding=True,
+                        )
+
+                    elif start_from_stage == "generating_artifact":
+                        # Reuse everything up to aggregation, restart from artifact generation
+                        # Note: This requires aggregated_insights to be stored in DB
+                        # For now, log warning and fall back to "analyzing" stage
+                        logger.warning(
+                            "retry_artifact_stage_not_implemented",
+                            analysis_id=str(analysis_id),
+                            message="generating_artifact stage requires persisted aggregated_insights - falling back to analyzing",
+                        )
+                        # Fall back to analyzing stage
+                        if existing_analysis.raw_content:
+                            input_state["raw_content"] = existing_analysis.raw_content
+                            input_state["content_type"] = existing_analysis.content_type
+                            if existing_analysis.extraction_metadata:
+                                input_state["extraction_metadata"] = (
+                                    existing_analysis.extraction_metadata
+                                )
+                            if existing_analysis.content_embedding:
+                                input_state["content_embedding"] = (
+                                    existing_analysis.content_embedding
+                                )
+
+                            # Set skip flags for fallback to analyzing stage
+                            input_state["skip_extraction"] = True
+                            input_state["skip_embedding"] = True
+                            input_state["extraction_status"] = "success"
 
             # Execute workflow with callbacks (Issue #384: enables graph visualization)
             logger.debug(
