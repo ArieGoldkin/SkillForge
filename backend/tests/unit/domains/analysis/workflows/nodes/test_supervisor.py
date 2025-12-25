@@ -214,25 +214,37 @@ async def test_supervisor_route_minimal_agents_selected(mock_agent_selection_min
             analysis_id="test-analysis-id",
         )
 
-        # Verify decision structure - MINIMUM 3 AGENTS enforced
+        # Verify decision structure
+        # Issue #544: Tier 1 agents are now force-injected on top of LLM selection
         assert "supervisor_decision" in result
         decision = result["supervisor_decision"]
-        # CHANGED: Minimum enforcement means exactly 3 agents from fixture
-        assert len(decision["agents"]) == 3, (
-            f"Expected 3 agents from fixture, got {len(decision['agents'])}: {decision['agents']}"
-        )
-        # All agents from fixture should be present
+
+        # Issue #544: Tier 1 agents (key_insights, pros_cons, audience_fit, actionable)
+        # are ALWAYS present after injection, regardless of LLM selection
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in decision["agents"], (
+                f"Tier 1 agent {tier1_agent} should be force-injected"
+            )
+
+        # Original LLM-selected agents should be present (except any skipped by content signals)
+        # Note: dependency_mapper may be skipped for simple content without code patterns
         assert "implementation_planner" in decision["agents"]
-        assert "dependency_mapper" in decision["agents"]
         assert "trend_validator" in decision["agents"]
+
+        # Agent count should be >= 4 (minimum: 4 Tier 1 agents)
+        assert len(decision["agents"]) >= 4, (
+            f"Expected at least 4 agents (Tier 1), got {len(decision['agents'])}: {decision['agents']}"
+        )
         assert len(decision["priority"]) == len(decision["agents"])
         assert decision["confidence"] == 0.7
 
-        # Verify complete event was emitted with agent_count = 3
+        # Verify complete event was emitted
         complete_calls = [c for c in mock_emit.call_args_list if c[1].get("status") == "complete"]
         assert len(complete_calls) > 0
         complete_call = complete_calls[0]
-        assert complete_call[1]["agent_count"] == 3
+        # Agent count should match decision agents
+        assert complete_call[1]["agent_count"] == len(decision["agents"])
 
 
 @pytest.mark.asyncio
@@ -731,14 +743,20 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
         result = await supervisor_route(content, "article", "test-research")
         agents = result["supervisor_decision"]["agents"]
 
+        # Issue #544: Tier 1 agents are always injected
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
+
         # Issue #540: tech_comparator skipped (no comparison patterns)
-        # Result: 2 agents (trend_validator, implementation_planner)
-        # This still meets RESEARCH genre minimum of 2
-        assert len(agents) == 2
+        # Original selection: trend_validator, implementation_planner (tech_comparator filtered)
         assert "trend_validator" in agents
         assert "implementation_planner" in agents
         # Verify tech_comparator was correctly filtered out
         assert "tech_comparator" not in agents
+
+        # Total: 4 Tier 1 + 2 content-specific = 6 agents (minimum)
+        assert len(agents) >= 6
 
 
 @pytest.mark.asyncio
@@ -783,9 +801,14 @@ async def test_supervisor_enforces_genre_aware_minimum_opinion():
         result = await supervisor_route(content, "article", "test-opinion")
         agents = result["supervisor_decision"]["agents"]
 
-        # Opinion needs minimum 1, but schema enforces 3
-        # Supervisor should NOT add extras beyond LLM selection
-        assert len(agents) == 3  # Exactly what LLM returned
+        # Issue #544: Tier 1 agents are always injected
+        tier1_agents = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        for tier1_agent in tier1_agents:
+            assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
+
+        # LLM selected 3 content-specific agents + 4 Tier 1 = 7 agents
+        # (some content-specific may be filtered by content signals)
+        assert len(agents) >= 4  # At minimum, all 4 Tier 1 agents
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,4 @@
-"""Unit tests for supervisor tier-based agent routing (Issue #436).
+"""Unit tests for supervisor tier-based agent routing (Issue #436, #544).
 
 Tests verify:
 1. Analysis mode correctly filters agents by tier
@@ -7,6 +7,7 @@ Tests verify:
 4. Tier 3 (Research) agents run on Deep Dive only
 5. Content-specific agents (not in registry) pass through all modes
 6. Tier filtering integrates correctly with content signal filtering
+7. Issue #544: Tier 1 agents are force-injected when LLM doesn't select them
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -548,3 +549,343 @@ class TestAgentMetadataDataclass:
         assert meta.tier == AgentTier.RESEARCH
         assert meta.tools == ["tavily_search", "github_api"]
         assert meta.requires_memory is True
+
+
+@pytest.mark.unit
+class TestTier1ForceInjection:
+    """Tests for Issue #544: Tier 1 agents are force-injected when LLM doesn't select them.
+
+    The problem: LLM prompt examples didn't include Tier 1 agents, so LLM learned to
+    only select content-specific agents (security_auditor, implementation_planner, etc.)
+    but never the 4 universal agents (key_insights, pros_cons, audience_fit, actionable).
+
+    Solution: Force-inject Tier 1 agents after LLM selection, before any filtering.
+    This ensures Tier 1 agents ALWAYS run regardless of LLM behavior.
+    """
+
+    @pytest.fixture
+    def mock_no_content_filtering(self):
+        """Mock to disable content-type filtering (allow all agents through)."""
+
+        def mock_filter(agents, content_type):
+            return agents, []  # No agents excluded by content type
+
+        return mock_filter
+
+    @pytest.fixture
+    def mock_no_signal_skip(self):
+        """Mock to disable signal-based skipping."""
+
+        def mock_skip(agent_name, signals, code_patterns=None):
+            return False, None  # Never skip
+
+        return mock_skip
+
+    @pytest.fixture
+    def mock_supervisor_setup(self):
+        """Create mock setup for supervisor tests."""
+
+        def setup(llm_selected_agents: list[str]):
+            """Create mock that returns specified agents from LLM."""
+            mock_selection = AgentSelection(
+                agents=llm_selected_agents,
+                reasoning="Test selection",
+                confidence=0.8,
+            )
+
+            mock_lcel_chain = MagicMock()
+            mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_selection)
+            mock_lcel_chain.with_retry = MagicMock(return_value=mock_lcel_chain)
+            mock_lcel_chain.with_fallbacks = MagicMock(return_value=mock_lcel_chain)
+            mock_model = MagicMock()
+            mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
+
+            return mock_model
+
+        return setup
+
+    @pytest.mark.asyncio
+    async def test_tier1_agents_injected_when_llm_selects_none(
+        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+    ):
+        """When LLM selects NO Tier 1 agents, all 4 are force-injected."""
+        # LLM only selects content-specific agents (the original bug)
+        mock_model = mock_supervisor_setup(
+            ["security_auditor", "implementation_planner", "dependency_mapper"]
+        )
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=mock_no_content_filtering,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+        ):
+            result = await supervisor_route(
+                content="Test content for analysis",
+                content_type="article",
+                analysis_id="test-tier1-inject-all",
+                analysis_mode="standard",
+            )
+
+            decision = result["supervisor_decision"]
+            agents = decision["agents"]
+
+            # All 4 Tier 1 agents should be present (force-injected)
+            tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
+            for tier1_agent in tier1_agents:
+                assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be force-injected"
+
+            # Original content-specific agents should also be present
+            assert "security_auditor" in agents
+            assert "implementation_planner" in agents
+            assert "dependency_mapper" in agents
+
+    @pytest.mark.asyncio
+    async def test_tier1_agents_injected_when_llm_selects_some(
+        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+    ):
+        """When LLM selects SOME Tier 1 agents, only missing ones are injected."""
+        # LLM selects some Tier 1 but not all
+        mock_model = mock_supervisor_setup(
+            ["key_insights", "pros_cons", "security_auditor"]  # Missing: audience_fit, actionable
+        )
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=mock_no_content_filtering,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+        ):
+            result = await supervisor_route(
+                content="Test content for analysis",
+                content_type="article",
+                analysis_id="test-tier1-inject-some",
+                analysis_mode="standard",
+            )
+
+            decision = result["supervisor_decision"]
+            agents = decision["agents"]
+
+            # All 4 Tier 1 agents should be present
+            tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
+            for tier1_agent in tier1_agents:
+                assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
+
+            # No duplicates - each agent should appear exactly once
+            from collections import Counter
+
+            agent_counts = Counter(agents)
+            for agent, count in agent_counts.items():
+                assert count == 1, f"Agent {agent} appears {count} times (should be 1)"
+
+    @pytest.mark.asyncio
+    async def test_no_injection_when_llm_selects_all_tier1(
+        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+    ):
+        """When LLM selects ALL Tier 1 agents, no injection needed (no-op)."""
+        # LLM correctly selects all Tier 1 agents
+        all_tier1 = get_agents_by_tier(AgentTier.UNIVERSAL)
+        mock_model = mock_supervisor_setup([*list(all_tier1), "security_auditor"])
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=mock_no_content_filtering,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+        ):
+            result = await supervisor_route(
+                content="Test content for analysis",
+                content_type="article",
+                analysis_id="test-tier1-no-inject",
+                analysis_mode="standard",
+            )
+
+            decision = result["supervisor_decision"]
+            agents = decision["agents"]
+
+            # All Tier 1 agents should be present (LLM selected them)
+            for tier1_agent in all_tier1:
+                assert tier1_agent in agents
+
+            # Total agent count should match what LLM selected + content-specific
+            assert len(agents) == len(all_tier1) + 1  # 4 tier1 + security_auditor
+
+    @pytest.mark.asyncio
+    async def test_tier1_survives_all_filtering_stages(
+        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+    ):
+        """Tier 1 agents survive content-type, signal, and mode filtering."""
+        # LLM selects only content-specific agents (minimum 3 for validation)
+        # All Tier 1 should be injected and survive
+        mock_model = mock_supervisor_setup(
+            ["tech_comparator", "security_auditor", "implementation_planner"]
+        )
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=mock_no_content_filtering,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+        ):
+            # Test in quick mode - most restrictive
+            result = await supervisor_route(
+                content="Test content",
+                content_type="article",
+                analysis_id="test-tier1-survives",
+                analysis_mode="quick",
+            )
+
+            decision = result["supervisor_decision"]
+            agents = decision["agents"]
+
+            # All 4 Tier 1 agents should survive all filtering
+            tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
+            for tier1_agent in tier1_agents:
+                assert tier1_agent in agents, (
+                    f"Tier 1 agent {tier1_agent} should survive all filtering"
+                )
+
+    @pytest.mark.asyncio
+    async def test_tier1_injection_with_content_type_filtering(
+        self, mock_supervisor_setup, mock_no_signal_skip
+    ):
+        """Tier 1 agents are injected before content-type filtering and survive it."""
+
+        # Content-type filter that excludes some agents but NEVER Tier 1
+        def strict_content_filter(agents, content_type):
+            # Exclude some content-specific agents (simulating video content)
+            excluded = ["code_quality_critic", "dependency_mapper"]
+            filtered = [a for a in agents if a not in excluded]
+            skipped = [a for a in agents if a in excluded]
+            return filtered, skipped
+
+        mock_model = mock_supervisor_setup(
+            # Minimum 3 agents for validation, two will be filtered by content type
+            ["code_quality_critic", "dependency_mapper", "tech_comparator"]
+        )
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=strict_content_filter,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+        ):
+            result = await supervisor_route(
+                content="Test content",
+                content_type="video",  # Video content type
+                analysis_id="test-tier1-content-filter",
+                analysis_mode="standard",
+            )
+
+            decision = result["supervisor_decision"]
+            agents = decision["agents"]
+
+            # Tier 1 agents should be present despite content filtering
+            tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
+            for tier1_agent in tier1_agents:
+                assert tier1_agent in agents, (
+                    f"Tier 1 agent {tier1_agent} should survive content-type filtering"
+                )
+
+    @pytest.mark.asyncio
+    async def test_tier1_injection_logs_when_injected(
+        self, mock_supervisor_setup, mock_no_content_filtering, mock_no_signal_skip
+    ):
+        """Verify logging occurs when Tier 1 agents are force-injected."""
+        mock_model = mock_supervisor_setup(
+            # Minimum 3 agents for validation, no Tier 1 - will trigger injection
+            ["security_auditor", "implementation_planner", "dependency_mapper"]
+        )
+
+        with (
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.get_chat_model",
+                return_value=mock_model,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.emit_streaming_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
+                side_effect=mock_no_content_filtering,
+            ),
+            patch(
+                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
+                side_effect=mock_no_signal_skip,
+            ),
+            patch("app.domains.analysis.workflows.nodes.supervisor.logger") as mock_logger,
+        ):
+            result = await supervisor_route(
+                content="Test content",
+                content_type="article",
+                analysis_id="test-tier1-logging",
+                analysis_mode="standard",
+            )
+
+            # Check that info logging was called for tier1 injection
+            info_calls = list(mock_logger.info.call_args_list)
+            tier1_injection_logged = any(
+                "supervisor_tier1_force_injected" in str(call) for call in info_calls
+            )
+            assert tier1_injection_logged, "Should log when Tier 1 agents are force-injected"

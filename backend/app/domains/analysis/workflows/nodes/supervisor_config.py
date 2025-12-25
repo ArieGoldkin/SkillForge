@@ -73,6 +73,18 @@ AGENT SELECTION GUIDELINES:
 3. MEDIUM content (1000-3000 words): 4-6 agents covering main themes
 4. COMPREHENSIVE content (>3000 words): 6-8 agents for thorough analysis
 
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY TIER 1 AGENTS (ALWAYS INCLUDE - NON-NEGOTIABLE):
+These 4 universal agents MUST be selected for EVERY analysis, regardless of content:
+  - key_insights: Extract core takeaways and main points
+  - pros_cons: Identify advantages and disadvantages
+  - audience_fit: Determine target audience suitability
+  - actionable: Generate concrete action items
+
+CRITICAL: Every response MUST include all 4 Tier 1 agents. They provide foundational
+value for ANY content type - news, tutorials, research, opinion, reference, etc.
+═══════════════════════════════════════════════════════════════════════════════
+
 IMPORTANT: Never select fewer than 3 agents. Even simple content benefits from:
 - implementation_planner (how to use)
 - At least one perspective agent (security_auditor, performance_analyst, or tech_comparator)
@@ -100,30 +112,33 @@ CODE PATTERN TRIGGERS (REQUIRED):
 
 Select based on: content type, keywords, complexity, analysis needs.
 
-Examples:
+Examples (note: ALL examples include the 4 Tier 1 agents):
 - Quick tip/snippet → {{
-    "agents": ["implementation_planner", "dependency_mapper", "security_auditor"],
-    "reasoning": "Even simple content needs implementation guidance, dependency context, "
-                 "and security basics",
+    "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
+               "implementation_planner", "dependency_mapper", "security_auditor"],
+    "reasoning": "Tier 1 universals + implementation guidance, dependency context, security basics",
   "confidence": 0.85}}
 - Framework tutorial → {{
-    "agents": [
-        "implementation_planner", "security_auditor", "performance_analyst", "dependency_mapper"
-    ],
-  "reasoning": "Comprehensive tutorial needs multi-perspective analysis",
+    "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
+               "implementation_planner", "security_auditor", "performance_analyst",
+               "dependency_mapper"],
+  "reasoning": "Tier 1 universals + comprehensive tutorial multi-perspective analysis",
   "confidence": 0.85}}
-- Security deep-dive → {{"agents": ["security_auditor", "trend_validator", "code_quality_critic"],
-  "reasoning": "Security focus with code patterns and trend validation",
+- Security deep-dive → {{
+    "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
+               "security_auditor", "trend_validator", "code_quality_critic"],
+  "reasoning": "Tier 1 universals + security focus with code patterns and trend validation",
   "confidence": 0.95}}
 - Architecture comparison → {{
-    "agents": [
-        "tech_comparator", "performance_analyst", "integration_feasibility",
-        "trend_validator", "dependency_mapper"
-    ],
-  "reasoning": "Architecture decisions need comprehensive technical analysis",
+    "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
+               "tech_comparator", "performance_analyst", "integration_feasibility",
+               "trend_validator", "dependency_mapper"],
+  "reasoning": "Tier 1 universals + comprehensive technical architecture analysis",
   "confidence": 0.8}}
-- API quickstart → {{"agents": ["implementation_planner", "security_auditor"],
-  "reasoning": "API setup needs implementation and security basics",
+- API quickstart → {{
+    "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
+               "implementation_planner", "security_auditor"],
+  "reasoning": "Tier 1 universals + API setup implementation and security basics",
   "confidence": 0.9}}"""  # noqa: S608
 
 

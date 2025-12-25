@@ -46,7 +46,14 @@ class TestBuildSupervisorPrompt:
         assert "Output JSON" in prompt
         assert "Agents:" in prompt
         assert "Select based on:" in prompt
-        assert "Examples:" in prompt
+        # Issue #544: Examples section now has a note about Tier 1 agents
+        assert "Examples" in prompt
+        # Issue #544: Prompt should include MANDATORY TIER 1 section
+        assert "MANDATORY TIER 1" in prompt
+        assert "key_insights" in prompt
+        assert "pros_cons" in prompt
+        assert "audience_fit" in prompt
+        assert "actionable" in prompt
 
     def test_build_supervisor_prompt_is_consistent(self):
         """Test that prompt building returns consistent results."""
@@ -114,31 +121,42 @@ class TestBuildSupervisorPrompt:
         assert "FastAPI" in prompt or "React" in prompt or "Django" in prompt
 
     def test_supervisor_prompt_has_diverse_examples(self):
-        """Test prompt has examples with varying agent counts (1, 3, 4, 5 agents)."""
+        """Test prompt has examples with varying agent counts.
+
+        Issue #544: All examples now include 4 Tier 1 agents (key_insights, pros_cons,
+        audience_fit, actionable) plus content-specific agents. This changes the expected
+        agent counts from (1, 3, 4, 5) to (6, 7, 8, 9) range.
+        """
         prompt = build_supervisor_prompt()
 
         # Check for examples with different agent counts
-        # Should have at least one example with 1 agent, one with 3+, one with 4+
-        examples_section = prompt.split("Examples:")[1] if "Examples:" in prompt else ""
+        examples_section = prompt.split("Examples")[1] if "Examples" in prompt else ""
 
         # Count agents in each example
         import re
 
-        # Find all agent lists in examples
-        agent_lists = re.findall(r'"agents":\s*\[(.*?)\]', examples_section)
+        # Find all agent lists in examples (handle multiline with DOTALL)
+        agent_lists = re.findall(r'"agents":\s*\[(.*?)\]', examples_section, re.DOTALL)
 
         agent_counts = []
         for agent_list in agent_lists:
-            # Count agents in this list
-            agents = [a.strip().strip('"') for a in agent_list.split(",") if a.strip()]
+            # Count agents in this list (handle multiline and extra whitespace)
+            agents = [
+                a.strip().strip('"').strip("'")
+                for a in agent_list.replace("\n", " ").split(",")
+                if a.strip() and a.strip().strip('"').strip("'")
+            ]
             agent_counts.append(len(agents))
 
         # Should have examples with different counts
         assert len(set(agent_counts)) >= 2, (
             f"Prompt should have examples with varying agent counts, got: {agent_counts}"
         )
-        # Should have at least one example with 1 agent and one with 3+ agents
-        assert 1 in agent_counts or min(agent_counts) <= 2, (
-            f"Should have example with 1-2 agents, got: {agent_counts}"
+        # Issue #544: All examples include 4 Tier 1 agents, so minimum is 6 (4+2)
+        # and maximum should be at least 8+ for comprehensive examples
+        assert min(agent_counts) >= 6, (
+            f"All examples should have 4 Tier 1 + content agents (min 6), got: {agent_counts}"
         )
-        assert max(agent_counts) >= 3, f"Should have example with 3+ agents, got: {agent_counts}"
+        assert max(agent_counts) >= 7, (
+            f"Should have comprehensive examples with 7+ agents, got: {agent_counts}"
+        )

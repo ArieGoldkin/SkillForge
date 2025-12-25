@@ -28,7 +28,13 @@ from app.core.types import AnalysisID
 
 # Issue #436: Tier-based agent filtering
 # Issue #533: Import AgentTier to protect Universal agents from content signal skipping
-from app.domains.analysis.agents.registry import AgentTier, get_agent_metadata, get_agents_for_mode
+# Issue #544: Import get_agents_by_tier for force-injecting Tier 1 agents
+from app.domains.analysis.agents.registry import (
+    AgentTier,
+    get_agent_metadata,
+    get_agents_by_tier,
+    get_agents_for_mode,
+)
 from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.domains.analysis.workflows.nodes.supervisor_config import (
     SUPERVISOR_PROMPT,
@@ -447,9 +453,36 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             analysis_id,
         )
 
+        # ═══════════════════════════════════════════════════════════════════
+        # ISSUE #544: Force-inject Tier 1 (UNIVERSAL) agents as safety net
+        # LLM may forget to include them despite prompt instructions.
+        # Tier 1 agents provide foundational value for ALL content types.
+        # NOTE: We don't recreate AgentSelection because the schema has max_length=8
+        #       for LLM output validation. After injection, we may have >8 agents
+        #       (LLM selection + 4 Tier 1), so we use the list directly.
+        # ═══════════════════════════════════════════════════════════════════
+        tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
+        selected_agents = list(selection.agents)  # Mutable copy
+        tier1_injected = []
+
+        for tier1_agent in tier1_agents:
+            if tier1_agent not in selected_agents:
+                selected_agents.append(tier1_agent)
+                tier1_injected.append(tier1_agent)
+
+        if tier1_injected:
+            logger.info(
+                "supervisor_tier1_force_injected",
+                analysis_id=analysis_id,
+                injected_agents=tier1_injected,
+                original_agents=list(selection.agents),
+                reason="tier1_universals_always_required",
+            )
+
         # Filter agents based on content type capabilities
+        # Use selected_agents (with Tier 1 injected) instead of selection.agents
         filtered_agents, skipped_agents = filter_agents_by_content_type(
-            selection.agents, detected_content_type
+            selected_agents, detected_content_type
         )
 
         # Auto-activate dependency_mapper if code patterns detected and not already selected
