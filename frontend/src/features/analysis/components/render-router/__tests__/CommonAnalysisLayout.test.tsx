@@ -171,7 +171,15 @@ describe('CommonAnalysisLayout', () => {
     )
 
     const layoutDiv = container.firstChild as HTMLElement
-    expect(layoutDiv).toHaveClass('container', 'mx-auto', 'px-4', 'py-8', 'max-w-7xl')
+    // Updated layout: wider container (1800px), reduced vertical padding, extra padding on 2xl screens
+    expect(layoutDiv).toHaveClass(
+      'container',
+      'mx-auto',
+      'px-4',
+      'py-6',
+      'max-w-[1800px]',
+      '2xl:px-8'
+    )
   })
 
   it('renders all sections in correct order', () => {
