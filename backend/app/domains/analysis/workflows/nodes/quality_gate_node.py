@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from app.core.logging import get_logger
+from app.core.timeout_config import EVALUATOR_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import (
@@ -197,8 +198,9 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             evaluator = create_quality_evaluator(aspect=aspect)
 
             # Wrap evaluator call with timeout protection to prevent hanging
+            # Issue #536: Uses EVALUATOR_TIMEOUT from timeout_config.py (documented exception)
             try:
-                async with asyncio.timeout(30):
+                async with asyncio.timeout(EVALUATOR_TIMEOUT):
                     result = await evaluator(mock_run, mock_example)
                     score = result.get("score", 0.0)
                     quality_scores[aspect] = {
@@ -213,12 +215,12 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                     "quality_evaluator_timeout",
                     analysis_id=analysis_id,
                     aspect=aspect,
-                    timeout_seconds=30,
+                    timeout_seconds=EVALUATOR_TIMEOUT,
                     message=warning_msg,
                 )
                 quality_scores[aspect] = {
                     "score": 0.5,  # Neutral score - reflects uncertainty
-                    "comment": "Evaluation timed out after 30 seconds",
+                    "comment": f"Evaluation timed out after {EVALUATOR_TIMEOUT}s",
                     "timeout": True,
                 }
 

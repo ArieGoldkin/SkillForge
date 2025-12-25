@@ -44,8 +44,10 @@ RETRY_MIN_WAIT_TAVILY_TEST = 0.5  # Faster retries in tests (seconds)
 RETRY_MAX_WAIT_TAVILY_TEST = 2  # Shorter max wait in tests (seconds)
 
 # Database Connection Pool Configuration
-DB_POOL_SIZE = 5  # Number of connections to maintain in pool
-DB_MAX_OVERFLOW = 10  # Maximum number of connections beyond pool_size
+# Issue #537: Increased pool size to handle 16 parallel agents during fan-out
+# 16 agents + API requests + background tasks = need ~25 connections headroom
+DB_POOL_SIZE = 20  # Number of connections to maintain in pool (was 5)
+DB_MAX_OVERFLOW = 30  # Maximum connections beyond pool_size (was 10)
 DB_POOL_RECYCLE = 3600  # Recycle connections after 1 hour (seconds)
 
 # Content Types
