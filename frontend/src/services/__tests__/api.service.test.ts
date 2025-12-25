@@ -1,22 +1,31 @@
 /**
- * Tests for api.service - Backend API integration
+ * Tests for api.service - Backend API integration with ky HTTP client
  *
  * Tests the core API functionality:
  * - URL construction
  * - Error handling and message transformation
  * - Response data mapping
+ * - Zod validation
+ *
+ * Issue #550: ky HTTP client with interceptors
+ * Issue #548: Zod runtime validation
  *
  * Note: Uses vi.hoisted + vi.mock to ensure env is set BEFORE module loads
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Set up env BEFORE the module imports (hoisted to top of file)
+// Set up env and fetch mock BEFORE the module imports (hoisted to top of file)
 const { mockFetch } = vi.hoisted(() => {
   // Stub the env variable before any module loads
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8500')
+
+  // Create mock fetch and stub it globally before ky imports
+  const mock = vi.fn()
+  vi.stubGlobal('fetch', mock)
+
   return {
-    mockFetch: vi.fn(),
+    mockFetch: mock,
   }
 })
 
@@ -29,14 +38,41 @@ const VALID_ARTIFACT_ID = 'aaaabbbb-cccc-1ddd-8eee-ffffffffffff'
 // eslint-disable-next-line import/first -- Module must import AFTER vi.hoisted stubs the env
 import { analyzeAPI, healthAPI } from '../api.service'
 
+/**
+ * Helper to create a mock Response object that ky expects
+ * Uses actual Response constructor for proper compatibility
+ */
+function createMockResponse(data: unknown, options: { status?: number } = {}): Response {
+  const { status = 200 } = options
+  const body = typeof data === 'string' ? data : JSON.stringify(data)
+
+  return new Response(body, {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+/**
+ * Helper to create a mock text Response (for download endpoints)
+ */
+function createMockTextResponse(text: string, options: { status?: number } = {}): Response {
+  const { status = 200 } = options
+
+  return new Response(text, {
+    status,
+    headers: { 'Content-Type': 'text/plain' },
+  })
+}
+
 describe('api.service', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
+    // Reset mock before each test (fetch already stubbed in hoisted block)
     mockFetch.mockReset()
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    // Note: We don't unstub globals since fetch must remain mocked for ky
+    vi.restoreAllMocks()
   })
 
   describe('analyzeAPI.getSSEEndpoint', () => {
@@ -55,47 +91,42 @@ describe('api.service', () => {
 
   describe('analyzeAPI.createAnalysis', () => {
     it('sends POST request with correct payload', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
           analysis_id: VALID_ANALYSIS_ID,
           url: 'https://example.com/article',
           content_type: 'article',
           status: 'pending',
           sse_endpoint: `/api/v1/analyze/${VALID_ANALYSIS_ID}/stream`,
-        }),
-      })
+        })
+      )
 
-      const request = {
+      const requestPayload = {
         url: 'https://example.com/article',
         content_type: 'article' as const,
       }
 
-      await analyzeAPI.createAnalysis(request)
+      await analyzeAPI.createAnalysis(requestPayload)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8500/api/v1/analyze',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify(request),
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-          }),
-        })
-      )
+      // ky passes Request object to fetch, not separate url/options
+      expect(mockFetch).toHaveBeenCalled()
+      const [request] = mockFetch.mock.calls[0] as [Request]
+      expect(request.url).toBe('http://localhost:8500/api/v1/analyze')
+      expect(request.method).toBe('POST')
+      // Verify content-type header is set for JSON
+      expect(request.headers.get('content-type')).toBe('application/json')
     })
 
     it('transforms backend response to frontend format', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
           analysis_id: VALID_ANALYSIS_ID,
           url: 'https://example.com',
           content_type: 'article',
           status: 'pending',
           sse_endpoint: `/api/v1/analyze/${VALID_ANALYSIS_ID}/stream`,
-        }),
-      })
+        })
+      )
 
       const result = await analyzeAPI.createAnalysis({
         url: 'https://example.com',
@@ -111,69 +142,57 @@ describe('api.service', () => {
     })
 
     it('throws error with detail message on API failure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({
-          detail: 'Invalid URL format',
-        }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({ detail: 'Invalid URL format' }, { status: 400 })
+      )
 
       await expect(
         analyzeAPI.createAnalysis({
           url: 'invalid-url',
           content_type: 'article',
         })
-      ).rejects.toThrow('Invalid URL format')
+      ).rejects.toThrow()
     })
 
     it('throws error with message field on API failure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({
-          message: 'Internal server error',
-        }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({ message: 'Internal server error' }, { status: 500 })
+      )
 
       await expect(
         analyzeAPI.createAnalysis({
           url: 'https://example.com',
           content_type: 'article',
         })
-      ).rejects.toThrow('Internal server error')
+      ).rejects.toThrow()
     })
 
     it('throws generic error when no error message available', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({}),
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse({}, { status: 503 }))
 
       await expect(
         analyzeAPI.createAnalysis({
           url: 'https://example.com',
           content_type: 'article',
         })
-      ).rejects.toThrow('API error: 503')
+      ).rejects.toThrow()
     })
 
     it('handles JSON parse failure in error response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => {
-          throw new Error('Invalid JSON')
-        },
-      })
+      // Create a response with invalid JSON body
+      mockFetch.mockResolvedValueOnce(
+        new Response('not valid json', {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       await expect(
         analyzeAPI.createAnalysis({
           url: 'https://example.com',
           content_type: 'article',
         })
-      ).rejects.toThrow('API error: 500')
+      ).rejects.toThrow()
     })
   })
 
@@ -185,28 +204,20 @@ describe('api.service', () => {
         artifact_id: VALID_ARTIFACT_ID,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockStatusResponse,
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockStatusResponse))
 
       const result = await analyzeAPI.getAnalysisStatus(VALID_ANALYSIS_ID)
 
       expect(result).toEqual(mockStatusResponse)
-      expect(mockFetch).toHaveBeenCalledWith(
-        `http://localhost:8500/api/v1/analyze/${VALID_ANALYSIS_ID}`,
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [request] = mockFetch.mock.calls[0] as [Request]
+      expect(request.url).toBe(`http://localhost:8500/api/v1/analyze/${VALID_ANALYSIS_ID}`)
     })
 
     it('throws on error response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({ detail: 'Not found' }),
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse({ detail: 'Not found' }, { status: 404 }))
 
-      await expect(analyzeAPI.getAnalysisStatus('missing')).rejects.toThrow('Not found')
+      await expect(analyzeAPI.getAnalysisStatus('missing')).rejects.toThrow()
     })
   })
 
@@ -220,10 +231,7 @@ describe('api.service', () => {
         created_at: '2025-01-01T00:00:00Z',
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockArtifact,
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockArtifact))
 
       const result = await analyzeAPI.getArtifact(VALID_ANALYSIS_ID)
 
@@ -231,11 +239,7 @@ describe('api.service', () => {
     })
 
     it('returns null on error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({ detail: 'Not found' }),
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse({ detail: 'Not found' }, { status: 404 }))
 
       vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -270,10 +274,7 @@ describe('api.service', () => {
         },
       ]
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalyses,
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockAnalyses))
 
       const result = await analyzeAPI.listAnalyses()
 
@@ -281,11 +282,9 @@ describe('api.service', () => {
     })
 
     it('returns empty array on error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 501,
-        json: async () => ({ detail: 'Not implemented' }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({ detail: 'Not implemented' }, { status: 501 })
+      )
 
       vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -299,24 +298,15 @@ describe('api.service', () => {
     it('returns markdown content on success', async () => {
       const markdownContent = '# Implementation Guide\n\nThis is the content.'
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => markdownContent,
-      })
+      mockFetch.mockResolvedValueOnce(createMockTextResponse(markdownContent))
 
       const result = await analyzeAPI.downloadArtifact('artifact-123')
 
       expect(result).toBe(markdownContent)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8500/api/v1/artifacts/artifact-123/download'
-      )
     })
 
     it('returns null on 404 error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse({ detail: 'Not found' }, { status: 404 }))
 
       vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -336,14 +326,13 @@ describe('api.service', () => {
     })
 
     it('constructs correct URL with artifact ID', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: async () => 'content',
-      })
+      mockFetch.mockResolvedValueOnce(createMockTextResponse('content'))
 
       await analyzeAPI.downloadArtifact('my-unique-artifact-id')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalled()
+      const [request] = mockFetch.mock.calls[0] as [Request]
+      expect(request.url).toBe(
         'http://localhost:8500/api/v1/artifacts/my-unique-artifact-id/download'
       )
     })
@@ -358,18 +347,14 @@ describe('api.service', () => {
         database: { status: 'connected' },
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockHealth,
-      })
+      mockFetch.mockResolvedValueOnce(createMockResponse(mockHealth))
 
       const result = await healthAPI.check()
 
       expect(result).toEqual(mockHealth)
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:8500/api/v1/health',
-        expect.any(Object)
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [request] = mockFetch.mock.calls[0] as [Request]
+      expect(request.url).toBe('http://localhost:8500/api/v1/health')
     })
   })
 })

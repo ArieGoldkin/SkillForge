@@ -198,6 +198,14 @@ export const HealthCheckResponseSchema = z.object({
   }),
 })
 
+// Alias for consistency with other schemas
+export const HealthResponseSchema = HealthCheckResponseSchema
+
+/**
+ * GET /api/v1/analyze (list) response
+ */
+export const AnalysisListSchema = z.array(AnalysisSchema)
+
 // ============================================================================
 // Type Inference - Export TypeScript types from Zod schemas
 // ============================================================================
@@ -217,6 +225,7 @@ export type Analysis = z.infer<typeof AnalysisSchema>
 export type LibrarySearchResult = z.infer<typeof LibrarySearchResultSchema>
 export type LibraryListResponse = z.infer<typeof LibraryListResponseSchema>
 export type HealthCheckResponse = z.infer<typeof HealthCheckResponseSchema>
+export type AnalysisList = z.infer<typeof AnalysisListSchema>
 
 // ============================================================================
 // Validation Helper Functions
