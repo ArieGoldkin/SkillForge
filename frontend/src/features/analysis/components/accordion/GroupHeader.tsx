@@ -1,40 +1,36 @@
 import { memo, type KeyboardEvent } from 'react'
 
 import { motion } from 'framer-motion'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Clock, Loader2, XCircle } from 'lucide-react'
 
-import type { GroupStatus, StageGroup } from '@/features/analysis/types/accordion'
+import type { GroupStatus, GroupStatusMeta, StageGroup } from '@/features/analysis/types/accordion'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Progress } from '@shared/components/ui/progress'
 
 import { cn } from '@lib/utils'
 
-/**
- * Props for GroupHeader component
- */
+/** Props for GroupHeader component */
 export interface GroupHeaderProps {
-  /** Stage group configuration (id, label, icon, stages) */
   group: StageGroup
-  /** Current group status */
   status: GroupStatus
-  /** Progress percentage (0-100) */
   progress: number
-  /** Whether the group is currently expanded */
   isExpanded: boolean
-  /** Callback when user toggles expand/collapse */
   onToggle: () => void
-  /** Number of completed stages */
   stagesCompleted: number
-  /** Total number of stages in group */
   stagesTotal: number
-  /** Optional className for customization */
+  statusMeta?: GroupStatusMeta
   className?: string
 }
 
-/**
- * Get badge variant and styling for each group status
- */
+/** Get estimated time for a group based on stage count */
+function getEstimatedTime(stageCount: number): string {
+  if (stageCount <= 3) return '1-2 min'
+  if (stageCount <= 7) return '3-5 min'
+  return '5-10 min'
+}
+
+/** Get badge variant and styling for each group status */
 const getStatusConfig = (
   status: GroupStatus
 ): { variant: 'default' | 'success' | 'warning' | 'info' | 'destructive'; label: string } => {
@@ -53,30 +49,10 @@ const getStatusConfig = (
 }
 
 /**
- * GroupHeader - Collapsible header for stage groups in accordion
- *
- * Features:
- * - Click/tap to expand/collapse
- * - Keyboard accessible (Enter/Space to toggle)
- * - Shows group icon, title, status badge, and progress
- * - Smooth expand/collapse animation via Framer Motion
- * - Touch targets: 56px mobile, 64px tablet, 48px desktop
- * - Status-based visual feedback
- *
- * @example
- * ```tsx
- * <GroupHeader
- *   group={coreWorkflowGroup}
- *   status="in-progress"
- *   progress={67}
- *   isExpanded={true}
- *   onToggle={() => setExpanded(!expanded)}
- *   stagesCompleted={2}
- *   stagesTotal={3}
- * />
- * ```
+ * GroupHeader - Collapsible header for stage groups with keyboard support,
+ * status-based coloring, and rich preview content when collapsed.
  */
-/* eslint-disable max-lines-per-function -- Complete JSX layout for accordion group header requires full structure (chevron, icon, label, progress bar, status badge) with responsive touch targets and accessibility attributes */
+/* eslint-disable max-lines-per-function, complexity -- Layout-heavy component with multiple conditional rows */
 export const GroupHeader = memo(function GroupHeader({
   group,
   status,
@@ -85,16 +61,13 @@ export const GroupHeader = memo(function GroupHeader({
   onToggle,
   stagesCompleted,
   stagesTotal,
+  statusMeta,
   className,
 }: GroupHeaderProps) {
   const statusConfig = getStatusConfig(status)
   const Icon = group.icon
-  const ChevronIcon = isExpanded ? ChevronDown : ChevronRight
 
-  /**
-   * Handle keyboard navigation (Enter/Space to toggle)
-   * WCAG 2.1.1 Keyboard: All functionality available via keyboard
-   */
+  // WCAG 2.1.1: Keyboard navigation (Enter/Space to toggle)
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
@@ -110,15 +83,15 @@ export const GroupHeader = memo(function GroupHeader({
       aria-expanded={isExpanded}
       aria-controls={`group-content-${group.id}`}
       className={cn(
-        // Base layout
-        'w-full flex items-center gap-3 text-left',
-        // Touch targets (WCAG 2.5.5)
-        // Mobile: 56px (h-14)
-        'h-14',
-        // Tablet: 64px (md:h-16)
-        'md:h-16',
-        // Desktop: 48px (lg:h-12)
-        'lg:h-12',
+        // Base layout - flex-col for stacking rows
+        'w-full flex flex-col gap-1.5 text-left',
+        // Touch targets (WCAG 2.5.5) - TALLER headers for more info
+        // Mobile: 72px minimum (min-h-[72px])
+        'min-h-[72px] py-3',
+        // Tablet: 80px (md:min-h-20)
+        'md:min-h-20 md:py-4',
+        // Desktop: 72px (lg:min-h-[72px]) - taller than before for description
+        'lg:min-h-[72px] lg:py-3',
         // Padding
         'px-4 md:px-5 lg:px-4',
         // Background and border
@@ -133,58 +106,113 @@ export const GroupHeader = memo(function GroupHeader({
       )}
       aria-label={`${group.label} group: ${statusConfig.label}, ${stagesCompleted} of ${stagesTotal} stages completed`}
     >
-      {/* Chevron Icon - Expand/Collapse indicator */}
-      <motion.div
-        animate={{ rotate: isExpanded ? 90 : 0 }}
-        transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="shrink-0"
-      >
-        <ChevronIcon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-      </motion.div>
+      {/* Row 1: Main header content */}
+      <div className="flex items-center gap-3 w-full">
+        {/* Chevron with rotation animation */}
+        <motion.div
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="shrink-0"
+        >
+          <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        </motion.div>
 
-      {/* Group Icon */}
-      <div className="shrink-0">
-        <Icon
-          className={cn(
-            'h-5 w-5',
-            // Status-based coloring
-            status === 'in-progress' && 'text-primary animate-pulse',
-            status === 'completed' && 'text-[oklch(0.6959_0.1491_162.4796)]',
-            status === 'failed' && 'text-destructive',
-            status === 'partial' && 'text-[oklch(0.7686_0.1647_70.0804)]',
-            status === 'pending' && 'text-muted-foreground'
-          )}
-          aria-hidden="true"
-        />
-      </div>
+        {/* Group Icon with status-based coloring */}
+        <div className="shrink-0">
+          <Icon
+            className={cn(
+              'h-5 w-5',
+              status === 'in-progress' && 'text-primary animate-pulse',
+              status === 'completed' && 'text-[oklch(0.6959_0.1491_162.4796)]',
+              status === 'failed' && 'text-destructive',
+              status === 'partial' && 'text-[oklch(0.7686_0.1647_70.0804)]',
+              status === 'pending' && 'text-muted-foreground'
+            )}
+            aria-hidden="true"
+          />
+        </div>
 
-      {/* Group Label and Progress Info */}
-      <div className="flex-1 min-w-0 space-y-1">
-        {/* Title and Stage Count */}
-        <div className="flex items-center gap-2">
+        {/* Group Label and Stage Count */}
+        <div className="flex-1 min-w-0 flex items-center gap-2">
           <h3 className="text-sm font-semibold text-foreground truncate">{group.label}</h3>
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {stagesCompleted}/{stagesTotal}
           </span>
         </div>
 
-        {/* Progress Bar (only show if not pending) */}
-        {status !== 'pending' && (
+        {/* Status Badge */}
+        <div className="shrink-0">
+          <Badge variant={statusConfig.variant} className="text-xs">
+            {statusConfig.label}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Row 2: Description + Progress Bar (when collapsed) */}
+      {!isExpanded && (
+        <div className="flex items-center gap-3 pl-8 w-full">
+          {group.description && (
+            <p className="text-xs text-muted-foreground/80 truncate flex-1 min-w-0">
+              {group.description}
+            </p>
+          )}
+
+          {status !== 'pending' && (
+            <div className="w-24 shrink-0">
+              <Progress
+                value={progress}
+                className="h-1.5"
+                aria-label={`${group.label} progress`}
+                aria-valuetext={`${progress}% complete`}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Row 3: Stage Preview (collapsed, has activity) */}
+      {!isExpanded && statusMeta && (statusMeta.running > 0 || statusMeta.failed > 0) && (
+        <div className="flex items-center gap-3 pl-8 text-xs">
+          {statusMeta.running > 0 && (
+            <span className="flex items-center gap-1 text-blue-500">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {statusMeta.running} running
+            </span>
+          )}
+          {statusMeta.failed > 0 && (
+            <span className="flex items-center gap-1 text-destructive">
+              <XCircle className="h-3 w-3" />
+              {statusMeta.failed} failed
+            </span>
+          )}
+          {statusMeta.completed > 0 && status !== 'completed' && (
+            <span className="flex items-center gap-1 text-green-500">
+              <CheckCircle2 className="h-3 w-3" />
+              {statusMeta.completed} done
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Row 4: Estimated Time (collapsed, pending or in-progress) */}
+      {!isExpanded && (status === 'pending' || status === 'in-progress') && (
+        <div className="flex items-center gap-1.5 pl-8 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>Est. {getEstimatedTime(stagesTotal)}</span>
+        </div>
+      )}
+
+      {/* Progress Bar for expanded state */}
+      {isExpanded && status !== 'pending' && (
+        <div className="pl-8 pr-2 w-full">
           <Progress
             value={progress}
-            className="h-1.5 w-full"
+            className="h-1.5"
             aria-label={`${group.label} progress`}
             aria-valuetext={`${progress}% complete`}
           />
-        )}
-      </div>
-
-      {/* Status Badge */}
-      <div className="shrink-0">
-        <Badge variant={statusConfig.variant} className="text-xs">
-          {statusConfig.label}
-        </Badge>
-      </div>
+        </div>
+      )}
     </button>
   )
 })

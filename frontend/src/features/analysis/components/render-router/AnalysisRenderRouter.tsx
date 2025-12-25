@@ -149,7 +149,16 @@ const RENDER_ROUTES: RenderRoute[] = [
           />
           {hasErrors && <ErrorAlert message={effectiveError} />}
           {!isFatalError && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div
+              className={
+                // Use 3-column grid only when sidebar has content, otherwise full width
+                isComplete && (resolvedArtifactId || artifactId)
+                  ? 'grid grid-cols-1 lg:grid-cols-3 gap-6'
+                  : activities.length > 0
+                    ? 'grid grid-cols-1 lg:grid-cols-3 gap-6'
+                    : 'w-full'
+              }
+            >
               <ProgressColumn
                 {...extractProgressProps({
                   overallProgress,
@@ -165,7 +174,7 @@ const RENDER_ROUTES: RenderRoute[] = [
                   stageSuccessMetrics: props.stageSuccessMetrics,
                 })}
               />
-              {/* Activity or Completion Column */}
+              {/* Activity or Completion Column - only render when there's content */}
               {isComplete && (resolvedArtifactId || artifactId) ? (
                 <div
                   ref={completionRef}
@@ -177,9 +186,9 @@ const RENDER_ROUTES: RenderRoute[] = [
                 >
                   <AnalysisCompleteCard variant="column" />
                 </div>
-              ) : (
+              ) : activities.length > 0 ? (
                 <ActivityColumn activities={activities} isLive={isConnected} />
-              )}
+              ) : null}
             </div>
           )}
         </div>

@@ -12,6 +12,10 @@ export function extractCompletionProps(props: {
   hasFailedStages: boolean
   failedStagesCount: number
   analysisMetadata?: AnalysisProps['analysisMetadata']
+  stageStatuses?: AnalysisProps['stageStatuses']
+  analysisMode?: AnalysisProps['analysisMode']
+  skipReasons?: AnalysisProps['skipReasons']
+  stageSuccessMetrics?: AnalysisProps['stageSuccessMetrics']
 }): CompletionProps {
   if (!props.id) {
     throw new Error('Analysis ID is required for completion props')
@@ -24,6 +28,10 @@ export function extractCompletionProps(props: {
     hasFailedStages: props.hasFailedStages,
     failedStagesCount: props.failedStagesCount,
     analysisMetadata: props.analysisMetadata,
+    stageStatuses: props.stageStatuses ?? new Map(),
+    analysisMode: props.analysisMode,
+    skipReasons: props.skipReasons,
+    stageSuccessMetrics: props.stageSuccessMetrics,
   }
 }
 

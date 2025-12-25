@@ -110,15 +110,30 @@ function useAutoExpand(
   maxExpanded: number,
   _autoExpandEnabled: boolean = true
 ) {
-  // PLACEHOLDER: Return basic state for now
-  // Real implementation will:
-  // 1. Track expandedGroups Set
-  // 2. Auto-expand group with active stage
-  // 3. Auto-collapse least-recently-used groups when exceeding maxExpanded
-  // 4. Provide toggleGroup, expandAll, collapseAll actions
-  // 5. Handle mobile auto-collapse on group change
+  // Compute initial expanded groups synchronously (lazy initial state)
+  // Priority: 1) Failed/in-progress groups, 2) First N groups if all pending
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    // First, check for failed or in-progress groups
+    const failedAndActiveGroups = groups
+      .filter((g) => g.status === 'failed' || g.status === 'partial' || g.status === 'in-progress')
+      .slice(0, maxExpanded)
+      .map((g) => g.id)
 
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+    if (failedAndActiveGroups.length > 0) {
+      return new Set(failedAndActiveGroups)
+    }
+
+    // If all groups are pending/completed, expand first 2 groups to fill space
+    const allPendingOrCompleted = groups.every(
+      (g) => g.status === 'pending' || g.status === 'completed'
+    )
+    if (allPendingOrCompleted && groups.length > 0) {
+      const firstGroups = groups.slice(0, Math.min(2, maxExpanded)).map((g) => g.id)
+      return new Set(firstGroups)
+    }
+
+    return new Set()
+  })
 
   const toggleGroup = useCallback(
     (groupId: string) => {
@@ -309,8 +324,19 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   // ========================================================================
   // Auto-Expand Management
   // ========================================================================
+  // Transform groups to the shape expected by useAutoExpand
+  const expandableGroups = useMemo(
+    () =>
+      groups.map((g) => ({
+        id: g.group.id,
+        status: g.status.status,
+        isActive: g.status.status === 'in-progress',
+      })),
+    [groups]
+  )
+
   const { expandedGroups, toggleGroup } = useAutoExpand(
-    groups,
+    expandableGroups,
     maxExpanded,
     true // autoExpandEnabled
   )
@@ -386,14 +412,23 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   // Render
   // ========================================================================
   return (
-    <div className={cn('flex gap-4', className)}>
-      {/* Main Accordion Container */}
-      <div className="flex-1 min-w-0">
+    <div className={cn('flex gap-4 h-full', className)}>
+      {/* Main Accordion Container - fills viewport to eliminate dead space */}
+      <div className="flex-1 min-w-0 min-h-[calc(100vh-280px)] flex flex-col">
         {/* Accordion List */}
-        <div className="space-y-2" role="list" aria-label="Stage groups">
-          {groups.map((groupedStage) => {
+        <div
+          className={cn(
+            'space-y-2 flex-1',
+            // Flex layout when few groups to distribute space
+            groups.length <= 4 && 'flex flex-col'
+          )}
+          role="list"
+          aria-label="Stage groups"
+        >
+          {groups.map((groupedStage, groupIndex) => {
             const { group, status } = groupedStage
             const isCurrentlyExpanded = expandedGroups.has(group.id)
+            const isLastGroup = groupIndex === groups.length - 1
 
             return (
               <div
@@ -405,7 +440,11 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                     groupRefs.current.delete(group.id)
                   }
                 }}
-                className="rounded-lg border border-border bg-background overflow-hidden"
+                className={cn(
+                  'rounded-lg border border-border bg-background overflow-hidden',
+                  // Grow last group when few groups to fill available space
+                  groups.length <= 4 && isLastGroup && 'flex-1'
+                )}
                 role="listitem"
               >
                 {/* Group Header */}
@@ -417,6 +456,7 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                   onToggle={() => toggleGroup(group.id)}
                   stagesCompleted={status.completed}
                   stagesTotal={status.total}
+                  statusMeta={status}
                 />
 
                 {/* Collapsible Stage List */}

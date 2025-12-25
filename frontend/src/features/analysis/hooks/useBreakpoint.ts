@@ -80,21 +80,21 @@ const BREAKPOINT_CONFIGS: Record<Breakpoint, BreakpointConfig> = {
   laptop: {
     maxExpanded: 3, // Three sections open
     autoCollapseDelay: 0, // No auto-collapse
-    showMiniMap: true, // Full mini-map
+    showMiniMap: false, // Hide redundant mini-map (all groups visible on screen)
     showActivityFeed: true, // Show activity feed
     touchOptimized: false, // Mouse/keyboard optimized
   },
   desktop: {
     maxExpanded: 5, // Up to 5 sections open
     autoCollapseDelay: 0, // No auto-collapse
-    showMiniMap: true, // Full mini-map with details
+    showMiniMap: false, // Hide redundant mini-map (all groups visible on screen)
     showActivityFeed: true, // Full activity feed
     touchOptimized: false, // Mouse/keyboard optimized
   },
   ultrawide: {
     maxExpanded: 8, // All sections can be open
     autoCollapseDelay: 0, // No auto-collapse
-    showMiniMap: true, // Full mini-map with enhanced details
+    showMiniMap: false, // Hide redundant mini-map (all groups visible on screen)
     showActivityFeed: true, // Full activity feed with extended history
     touchOptimized: false, // Mouse/keyboard optimized
   },
