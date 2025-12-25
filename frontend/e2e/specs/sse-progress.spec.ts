@@ -34,17 +34,14 @@ test.describe('SSE Progress Updates', () => {
     await expect(page).toHaveURL(/\/analyze\/.+/);
     // Issue #533: Analysis page now uses HeroSummaryCard for completed analyses
     // Analysis from library may be completed (shows HeroSummaryCard) or in-progress (shows progressBar)
-    // Accept any of these completion indicators:
-    // 1. progressBar (traditional in-progress view)
-    // 2. completionHeading (Issue #533 - "Analysis Complete", "Complete with Errors", "Analysis In Progress")
-    // 3. viewArtifactButton (Issue #533 - "View Results" button)
-    // 4. heroSummaryCard (Issue #533 - the entire hero card)
-    await Promise.race([
-      expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 }),
-      expect(analyzePage.completionHeading).toBeVisible({ timeout: 10000 }),
-      expect(analyzePage.viewArtifactButton).toBeVisible({ timeout: 10000 }),
-      expect(analyzePage.heroSummaryCard).toBeVisible({ timeout: 10000 }),
-    ]);
+    // Use Playwright's .or() locator composition - accepts any of these indicators:
+    // - progressBar (traditional in-progress view)
+    // - completionHeading (Issue #533 - "Analysis Complete", "Complete with Errors", "Analysis In Progress")
+    // - viewArtifactButton (Issue #533 - "View Results" or "View Guide" button/link)
+    const anyAnalysisIndicator = analyzePage.progressBar
+      .or(analyzePage.completionHeading)
+      .or(analyzePage.viewArtifactButton);
+    await expect(anyAnalysisIndicator).toBeVisible({ timeout: 15000 });
   });
 
   test('should show completion state for completed analysis', async ({ page, request }) => {
