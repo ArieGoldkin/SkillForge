@@ -1,5 +1,6 @@
 import type * as React from 'react'
 
+import { usePrefetch } from '@hooks/usePrefetch'
 import { Trash2 } from 'lucide-react'
 
 import { Card, CardContent } from '@shared/components/ui/card'
@@ -110,6 +111,8 @@ export const SkillCard: React.FC<SkillCardProps> = ({
   onDelete,
   className,
 }) => {
+  const { prefetchAnalysis } = usePrefetch()
+
   const handleClick = () => {
     onSelect(id)
   }
@@ -121,6 +124,16 @@ export const SkillCard: React.FC<SkillCardProps> = ({
     }
   }
 
+  const handleMouseEnter = () => {
+    // Prefetch analysis data on hover for instant navigation
+    prefetchAnalysis(id)
+  }
+
+  const handleFocus = () => {
+    // Prefetch on focus for keyboard navigation accessibility
+    prefetchAnalysis(id)
+  }
+
   return (
     <Card
       data-testid="analysis-card"
@@ -130,6 +143,8 @@ export const SkillCard: React.FC<SkillCardProps> = ({
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onMouseEnter={handleMouseEnter}
+      onFocus={handleFocus}
       tabIndex={0}
       role="button"
       aria-label={`${title} - ${formatStatus(status)}`}

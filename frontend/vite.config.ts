@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Sourcemaps: hidden in production (for error tracking), inline in development
+    sourcemap: mode === 'production' ? 'hidden' : true,
     // Warn when chunk size exceeds 500KB
     chunkSizeWarningLimit: 500,
     rollupOptions: {
@@ -63,6 +65,8 @@ export default defineConfig(({ mode }) => ({
           // Markdown rendering - only loaded when needed
           markdown: ['react-markdown'],
         },
+        // Ensure sourcemaps have accurate file paths
+        sourcemapExcludeSources: mode === 'production',
       },
     },
   },

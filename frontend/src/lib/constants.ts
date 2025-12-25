@@ -21,6 +21,7 @@ export const TIME_CONSTANTS = {
 
   // Query stale times
   QUERY_STALE_TIME: 60 * 1000, // 1 minute
+  PREFETCH_STALE_TIME: 5 * 60 * 1000, // 5 minutes - longer for prefetched data
 
   // Test timeouts
   TEST_TIMEOUT_CI: 10000, // 10 seconds in CI
