@@ -43,6 +43,7 @@ on:
 
 # Minimal permissions - only read access to repository contents
 permissions:
+  pull-requests: read
   contents: read
 
 # Prevent concurrent E2E runs on the same branch to avoid resource conflicts

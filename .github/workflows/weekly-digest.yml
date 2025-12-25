@@ -10,6 +10,7 @@ jobs:
   generate-digest:
     runs-on: self-hosted
     permissions:
+  pull-requests: read
       issues: write
       contents: read
 

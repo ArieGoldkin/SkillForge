@@ -46,6 +46,7 @@ on:
         type: string
 
 permissions:
+  pull-requests: read
   contents: read
   pull-requests: write
 

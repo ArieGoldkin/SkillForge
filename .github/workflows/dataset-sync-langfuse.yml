@@ -25,6 +25,7 @@ on:
         type: string
 
 permissions:
+  pull-requests: read
   contents: read
   actions: read
 
