@@ -150,6 +150,16 @@ STRUCTURAL_PATH_DEPTH_THRESHOLD = 2  # Path depth above this triggers penalty
 STRUCTURAL_POSITION_EARLY_THRESHOLD = 0.2  # First 20% of section considered "early"
 STRUCTURAL_POSITION_LATE_THRESHOLD = 0.8  # Last 20% of section considered "late"
 
+# G-Eval Content Validation (Issue #454 - Prevent depth=0.0 on empty content)
+# If output content for evaluation is below this threshold, skip G-Eval and return
+# neutral scores (0.5) instead of sending garbage to the evaluator
+MIN_EVALUABLE_LENGTH = 100  # Minimum characters required for meaningful evaluation
+
+# Agent Self-Correction (Issue #507 - Detect and retry empty agent outputs)
+# If an agent produces fewer than this many insights, retry before accepting
+# This catches agents that produce valid structure but zero useful content
+MIN_AGENT_FINDINGS = 1  # Minimum findings required (0 = useless output)
+
 # Tavily Search Configuration (Issue #500 - Tier 2 Validation Agents)
 TAVILY_API_URL = "https://api.tavily.com/search"  # Tavily Search API endpoint
 TAVILY_SEARCH_DEPTH_BASIC = "basic"  # Basic search depth (faster, less comprehensive)

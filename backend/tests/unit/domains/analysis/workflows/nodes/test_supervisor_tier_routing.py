@@ -233,9 +233,12 @@ class TestSupervisorTierFiltering:
 
     @pytest.fixture
     def mock_no_signal_skip(self):
-        """Mock to disable signal-based skipping."""
+        """Mock to disable signal-based skipping.
 
-        def mock_skip(agent_name, signals):
+        Issue #540: Updated to accept code_patterns parameter for standardized detection.
+        """
+
+        def mock_skip(agent_name, signals, code_patterns=None):
             return False, None  # Never skip
 
         return mock_skip

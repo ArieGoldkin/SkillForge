@@ -178,7 +178,10 @@ class TestQualityGateNode:
         assert result["quality_scores"] == {}
 
     async def test_quality_gate_fail_closed_on_error(self, monkeypatch):
-        """Test that quality gate raises WorkflowStageError on evaluation error."""
+        """Test that quality gate raises WorkflowStageError on evaluation error.
+
+        Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+        """
         from app.core.exceptions import WorkflowStageError
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -194,11 +197,16 @@ class TestQualityGateNode:
             mock_create_evaluator,
         )
 
+        # Issue #454: Content must be >= 100 chars formatted for G-Eval
         state: AnalysisState = {
             "analysis_id": "test-id",
-            "raw_content": "Test content",
+            "raw_content": "Test content with sufficient length for evaluation and analysis purposes",
             "aggregated_insights": {
-                "executive_summary": "Test summary",
+                "executive_summary": "Test summary with comprehensive details covering technical implementation patterns and best practices for development workflows",
+                "key_findings": [
+                    "Finding 1: Technical pattern analysis",
+                    "Finding 2: Implementation recommendation",
+                ],
             },
         }  # type: ignore
 

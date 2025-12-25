@@ -547,13 +547,20 @@ def test_should_retry_synthesis_trigger_retry():
 
 @pytest.fixture
 def low_coverage_state() -> AnalysisState:
-    """State with low coverage_score (triggers adjusted thresholds)."""
+    """State with low coverage_score (triggers adjusted thresholds).
+
+    Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+    """
     return {
         "analysis_id": "test-low-coverage",
-        "raw_content": "Short content about AI concepts",
+        "raw_content": "Short content about AI concepts and machine learning patterns for analysis",
         "aggregated_insights": {
-            "executive_summary": "Brief analysis of AI",
-            "key_findings": ["AI is evolving rapidly"],
+            "executive_summary": "Brief analysis of AI concepts covering machine learning fundamentals and best practices for implementation",
+            "key_findings": [
+                "AI is evolving rapidly with new architectures",
+                "Machine learning requires quality data pipelines",
+                "Model training benefits from distributed computing",
+            ],
             "coverage_score": 0.3,  # Below 0.5 threshold
         },
         "quality_gate_retry_count": 0,
@@ -562,13 +569,20 @@ def low_coverage_state() -> AnalysisState:
 
 @pytest.fixture
 def high_coverage_state() -> AnalysisState:
-    """State with high coverage_score (uses normal thresholds)."""
+    """State with high coverage_score (uses normal thresholds).
+
+    Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+    """
     return {
         "analysis_id": "test-high-coverage",
-        "raw_content": "Comprehensive content with code examples and benchmarks",
+        "raw_content": "Comprehensive content with code examples and benchmarks for performance testing and optimization",
         "aggregated_insights": {
-            "executive_summary": "Full technical analysis",
-            "key_findings": ["Performance improved 4x"],
+            "executive_summary": "Full technical analysis covering performance optimization, code quality improvements, and architectural best practices",
+            "key_findings": [
+                "Performance improved 4x with async patterns",
+                "Memory usage reduced by 30% with streaming",
+                "Latency decreased from 500ms to 120ms with caching",
+            ],
             "coverage_score": 0.8,  # Above 0.5 threshold
         },
         "quality_gate_retry_count": 0,
@@ -719,13 +733,17 @@ async def test_quality_gate_aspect_minimum_failure_with_adjusted():
     """Test that aspect below adjusted minimum still fails gate.
 
     Even with adjusted thresholds, aspects below adjusted minimums fail.
+    Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
     """
     state: AnalysisState = {
         "analysis_id": "test-aspect-fail",
-        "raw_content": "Short conceptual content",
+        "raw_content": "Short conceptual content about technical patterns and implementation strategies for analysis",
         "aggregated_insights": {
-            "executive_summary": "Very brief analysis",
-            "key_findings": [],
+            "executive_summary": "Very brief analysis of technical concepts covering implementation patterns and best practices for developers",
+            "key_findings": [
+                "Pattern A provides modular architecture",
+                "Pattern B improves code maintainability",
+            ],
             "coverage_score": 0.2,  # Low coverage
         },
         "quality_gate_retry_count": 0,
@@ -819,13 +837,19 @@ async def test_quality_gate_logs_coverage_context(low_coverage_state: AnalysisSt
 
 @pytest.mark.asyncio
 async def test_quality_gate_default_coverage_score():
-    """Test that missing coverage_score defaults to 1.0 (normal thresholds)."""
+    """Test that missing coverage_score defaults to 1.0 (normal thresholds).
+
+    Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+    """
     state: AnalysisState = {
         "analysis_id": "test-no-coverage",
-        "raw_content": "Content without coverage score",
+        "raw_content": "Content without coverage score but with sufficient length for evaluation and analysis",
         "aggregated_insights": {
-            "executive_summary": "Analysis without coverage tracking",
-            "key_findings": ["Finding 1"],
+            "executive_summary": "Analysis without coverage tracking but with comprehensive executive summary for proper evaluation",
+            "key_findings": [
+                "Finding 1: Important technical discovery",
+                "Finding 2: Performance improvement opportunity",
+            ],
             # No coverage_score field
         },
         "quality_gate_retry_count": 0,

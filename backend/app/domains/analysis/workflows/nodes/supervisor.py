@@ -504,10 +504,11 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
 
         # ISSUE #299-304: Filter agents that should be skipped based on content signals
         # Skip agents when there's NO relevant data (different from OPPORTUNISTIC)
+        # Issue #540: Pass code_patterns to should_skip_agent for standardized detection
         agents_to_skip: list[str] = []
         skip_reasons: dict[str, str] = {}  # Track reasons for skipped agents
         for agent in filtered_agents.copy():
-            skip, reason = should_skip_agent(agent, content_signals)
+            skip, reason = should_skip_agent(agent, content_signals, code_patterns)
             if skip:
                 agents_to_skip.append(agent)
                 skip_reasons[agent] = reason

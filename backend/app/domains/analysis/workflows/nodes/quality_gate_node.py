@@ -11,6 +11,7 @@ import asyncio
 import time
 from typing import Any
 
+from app.core.constants import MIN_EVALUABLE_LENGTH
 from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.timeout_config import EVALUATOR_TIMEOUT
@@ -158,6 +159,61 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
         # Prepare input (original content) and output (synthesized insights)
         input_content = state.get("raw_content", "")
         output_content = _format_insights_for_evaluation(aggregated_insights)
+
+        # Issue #454: Check if output content is too short for meaningful evaluation
+        # This prevents G-Eval from returning depth=0.0 on empty/sparse agent outputs
+        if len(output_content) < MIN_EVALUABLE_LENGTH:
+            warning_msg = (
+                f"Insufficient content for evaluation: {len(output_content)} chars "
+                f"< {MIN_EVALUABLE_LENGTH} minimum"
+            )
+            quality_warnings.append(warning_msg)
+            logger.warning(
+                "quality_gate_insufficient_content",
+                analysis_id=analysis_id,
+                content_length=len(output_content),
+                min_required=MIN_EVALUABLE_LENGTH,
+                message=warning_msg,
+            )
+
+            # Return neutral scores instead of sending garbage to G-Eval
+            # Neutral score (0.5) = "we don't know" rather than "it's bad" (0.0)
+            neutral_scores = {
+                aspect: {
+                    "score": 0.5,
+                    "comment": f"Skipped: insufficient content ({len(output_content)} chars)",
+                    "insufficient_content": True,
+                }
+                for aspect in QUALITY_ASPECTS
+            }
+
+            # Submit latency metric for skipped evaluation
+            from app.core.langfuse_service import get_langfuse_service
+
+            langfuse_service = get_langfuse_service()
+            if langfuse_service and langfuse_service.sdk_client:
+                try:
+                    latency_seconds = time.time() - start_time
+                    current_trace_id = get_current_trace_id()
+                    if current_trace_id:
+                        langfuse_service.sdk_client.create_score(
+                            trace_id=str(current_trace_id),
+                            name="latency_seconds",
+                            value=latency_seconds,
+                            data_type="NUMERIC",
+                            comment=f"Quality gate skipped (insufficient content) in {latency_seconds:.2f}s",
+                        )
+                        langfuse_service.sdk_client.flush()
+                except Exception as e:  # noqa: BLE001 - Graceful degradation
+                    logger.debug("latency_score_failed_insufficient_content", error=str(e))
+
+            return {
+                "quality_scores": neutral_scores,
+                "quality_gate_avg_score": 0.5,  # Neutral average
+                "quality_gate_passed": True,  # Don't block - it's an agent issue, not synthesis
+                "quality_gate_retry_count": retry_count,
+                "quality_warnings": quality_warnings,
+            }
 
         # Convert analysis_id to UUID if it's a string
         try:

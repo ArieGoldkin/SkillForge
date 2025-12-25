@@ -1,10 +1,28 @@
 """Shared fixtures for agent execution tests."""
 
+import os
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from langchain.messages import AIMessage
 from pydantic import BaseModel
+
+
+@pytest.fixture(autouse=True)
+def disable_empty_findings_check():
+    """Disable empty findings check for tests.
+
+    Issue #507: Tests use mock agents that return MockAgentSchema without
+    agent-specific fields (like 'alternatives' for tech_comparator).
+    Setting MIN_AGENT_FINDINGS=0 disables this validation in tests.
+    """
+    original = os.environ.get("MIN_AGENT_FINDINGS")
+    os.environ["MIN_AGENT_FINDINGS"] = "0"
+    yield
+    if original is None:
+        os.environ.pop("MIN_AGENT_FINDINGS", None)
+    else:
+        os.environ["MIN_AGENT_FINDINGS"] = original
 
 
 class MockAgentSchema(BaseModel):

@@ -31,6 +31,7 @@ class TestQualityGateNodeErrorWrapping:
 
         When evaluation raises ValueError, WorkflowStageError should be raised
         with stage="quality_gate" and the original exception preserved.
+        Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -48,10 +49,13 @@ class TestQualityGateNodeErrorWrapping:
 
         state: AnalysisState = {
             "analysis_id": "test-analysis-id",
-            "raw_content": "Test content for evaluation",
+            "raw_content": "Test content for evaluation with sufficient length to pass minimum requirements",
             "aggregated_insights": {
-                "executive_summary": "Test summary for evaluation",
-                "key_findings": ["Finding 1", "Finding 2"],
+                "executive_summary": "Comprehensive test summary for evaluation covering technical patterns and implementation best practices",
+                "key_findings": [
+                    "Finding 1: Technical pattern analysis with detailed context",
+                    "Finding 2: Implementation recommendation with examples",
+                ],
             },
         }
 
@@ -75,6 +79,7 @@ class TestQualityGateNodeErrorWrapping:
 
         The error message should include the error type and original message
         to provide useful debugging information.
+        Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -92,9 +97,13 @@ class TestQualityGateNodeErrorWrapping:
 
         state: AnalysisState = {
             "analysis_id": "test-analysis-id",
-            "raw_content": "Test content",
+            "raw_content": "Test content with sufficient length for proper evaluation and error handling testing",
             "aggregated_insights": {
-                "executive_summary": "Test summary",
+                "executive_summary": "Comprehensive test summary covering error handling patterns and exception wrapping best practices",
+                "key_findings": [
+                    "Finding 1: Error context preservation mechanism",
+                    "Finding 2: Exception chain maintenance pattern",
+                ],
             },
         }
 
@@ -112,6 +121,7 @@ class TestQualityGateNodeErrorWrapping:
 
         Python's __cause__ mechanism should preserve the full exception chain,
         allowing debuggers and error handlers to trace the root cause.
+        Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -130,8 +140,14 @@ class TestQualityGateNodeErrorWrapping:
 
         state: AnalysisState = {
             "analysis_id": "test-analysis-id",
-            "raw_content": "Test",
-            "aggregated_insights": {"executive_summary": "Test"},
+            "raw_content": "Test content for exception chain testing with sufficient length for validation",
+            "aggregated_insights": {
+                "executive_summary": "Comprehensive summary for testing exception chain preservation in quality gate validation workflow",
+                "key_findings": [
+                    "Finding 1: Exception chain testing with full context",
+                    "Finding 2: Traceback preservation verification",
+                ],
+            },
         }
 
         with pytest.raises(WorkflowStageError) as exc_info:
@@ -152,6 +168,7 @@ class TestQualityGateNodeErrorWrapping:
 
         The wrapping should work for any exception type (ValueError, RuntimeError,
         KeyError, etc.) while preserving the original exception type.
+        Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -180,8 +197,14 @@ class TestQualityGateNodeErrorWrapping:
 
             state: AnalysisState = {
                 "analysis_id": f"test-{type(original_error).__name__}",
-                "raw_content": "Test",
-                "aggregated_insights": {"executive_summary": "Test"},
+                "raw_content": "Test content for multiple error types testing with sufficient length for proper evaluation",
+                "aggregated_insights": {
+                    "executive_summary": "Comprehensive summary for testing multiple error type wrapping in quality gate workflow",
+                    "key_findings": [
+                        f"Finding 1: Testing {type(original_error).__name__} wrapping with context",
+                        "Finding 2: Error type preservation verification mechanism",
+                    ],
+                },
             }
 
             with pytest.raises(WorkflowStageError) as exc_info:

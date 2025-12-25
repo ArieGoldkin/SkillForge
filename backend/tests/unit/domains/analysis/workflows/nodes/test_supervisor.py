@@ -119,7 +119,11 @@ async def test_supervisor_uses_strict_structured_output():
 
 @pytest.mark.asyncio
 async def test_supervisor_route_success(mock_agent_selection):
-    """Test supervisor_route with successful agent selection."""
+    """Test supervisor_route with successful agent selection.
+
+    Issue #540: Content must include comparison/architecture patterns
+    to prevent tech_comparator from being skipped by should_skip_agent().
+    """
     # Mock the LCEL chain (structured model with retry and fallback support)
     mock_lcel_chain = MagicMock()
     mock_lcel_chain.ainvoke = AsyncMock(return_value=mock_agent_selection)
@@ -140,10 +144,10 @@ async def test_supervisor_route_success(mock_agent_selection):
             new_callable=AsyncMock,
         ) as mock_emit,
     ):
-        # Use "code" content type so both agents can process it
-        # security_auditor can only process "code" and "documentation", not "article"
+        # Issue #540: Content includes comparison patterns (vs, compare, better than)
+        # to prevent tech_comparator from being skipped by should_skip_agent()
         result = await supervisor_route(
-            content="import os\nfrom typing import List\n\ndef hello_world():\n    print('Hello, World!')",
+            content="import os\nfrom typing import List\n# React vs Vue.js comparison - which framework is better?\nclass Service:\n    '''Service architecture for comparing frontend frameworks'''",
             content_type="code",
             analysis_id="test-analysis-id",
         )
@@ -672,12 +676,16 @@ def test_genre_aware_minimum_agents():
 async def test_supervisor_enforces_genre_aware_minimum_research():
     """Test supervisor enforces minimum 2 agents for RESEARCH genre.
 
-    Note: AgentSelection schema has min_length=3, so LLM must return 3+ agents.
-    This test verifies the genre-aware logic doesn't ADD extra agents unnecessarily
-    for research content (which needs less comprehensive analysis).
+    Note: AgentSelection schema has min_length=3, so LLM returns 3 agents.
+    However, Issue #540 content-aware filtering may skip agents without
+    relevant content (e.g., tech_comparator on pure theoretical research).
+
+    This test verifies:
+    1. Genre-aware minimum (2 for research) is met
+    2. Content-aware filtering correctly skips irrelevant agents
     """
     # Mock selection with 3 agents (schema minimum)
-    # For research, this is already MORE than the genre-aware minimum of 2
+    # tech_comparator will be skipped due to no comparison patterns in content
     mock_selection = AgentSelection(
         agents=["trend_validator", "tech_comparator", "implementation_planner"],
         reasoning="Research paper needs trend analysis and concept comparison",
@@ -692,6 +700,7 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
     mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Research paper content (will be detected as RESEARCH genre)
+    # Note: No comparison patterns, so tech_comparator will be skipped
     content = """
     Abstract: This paper explores the theoretical foundations of neural architecture search.
     We present a novel framework for understanding optimization landscapes in deep learning.
@@ -722,10 +731,14 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
         result = await supervisor_route(content, "article", "test-research")
         agents = result["supervisor_decision"]["agents"]
 
-        # For research, minimum is 2 (per genre-aware logic), but schema enforces 3
-        # Supervisor should NOT add extra agents beyond what LLM selected
-        assert len(agents) == 3  # Exactly what LLM returned, no extras
+        # Issue #540: tech_comparator skipped (no comparison patterns)
+        # Result: 2 agents (trend_validator, implementation_planner)
+        # This still meets RESEARCH genre minimum of 2
+        assert len(agents) == 2
         assert "trend_validator" in agents
+        assert "implementation_planner" in agents
+        # Verify tech_comparator was correctly filtered out
+        assert "tech_comparator" not in agents
 
 
 @pytest.mark.asyncio
