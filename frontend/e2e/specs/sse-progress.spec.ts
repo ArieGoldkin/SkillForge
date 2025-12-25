@@ -32,13 +32,13 @@ test.describe('SSE Progress Updates', () => {
     // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(library.items[0].analysis_id);
     await expect(page).toHaveURL(/\/analyze\/.+/);
-    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
+    // Analysis from library may be completed (no progressBar) or in-progress (has progressBar)
+    // Accept either: progressBar visible OR completion indicators visible
     await Promise.race([
-      expect(page.getByRole('heading', { name: /analysis complete|complete/i })).toBeVisible({ timeout: 5000 }),
-      expect(analyzePage.viewArtifactButton).toBeVisible({ timeout: 5000 }),
-    ]).catch(() => {
-      expect(page.url()).toMatch(/\/analyze\/.+/);
-    });
+      expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 }),
+      expect(page.getByRole('heading', { name: /analysis complete|complete/i })).toBeVisible({ timeout: 10000 }),
+      expect(analyzePage.viewArtifactButton).toBeVisible({ timeout: 10000 }),
+    ]);
   });
 
   test('should show progress bar for completed analysis', async ({ page, request }) => {
