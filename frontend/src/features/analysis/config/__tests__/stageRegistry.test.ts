@@ -8,8 +8,9 @@
  * @see Issue #397: Create unified stage registry
  */
 
-import type { AgentStageName, StageName } from '@/schemas/sse'
 import { describe, expect, it } from 'vitest'
+
+import type { AgentStageName, StageName } from '@/schemas/sse'
 
 import type { AnalysisStage } from '../../components/steps/AnalysisProgressCard'
 import {

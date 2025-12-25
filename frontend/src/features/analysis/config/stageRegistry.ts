@@ -10,10 +10,9 @@
  * @see Issue #397: Create unified stage registry
  */
 
-import type { AgentStageName, StageName, WorkflowStageName } from '@/schemas/sse'
-
 import { STAGE_ORDER_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import type { AgentStageName, StageName, WorkflowStageName } from '@/schemas/sse'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 

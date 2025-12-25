@@ -5,7 +5,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { slugify } from '../../../utils/markdownHeadingParser'
-
 import { extractHeadings } from '../utils'
 
 describe('slugify', () => {

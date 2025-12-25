@@ -2,9 +2,8 @@
  * Stage helper functions - Transform stage data for UI display
  */
 /* eslint-disable max-lines -- File contains multiple helper functions for stage descriptions with rich detail extraction */
-import type { StageName, StageStatus } from '@/schemas/sse'
-
 import { VALIDATION_CONSTANTS } from '@/lib/constants'
+import type { StageName, StageStatus } from '@/schemas/sse'
 
 import type { AnalysisStepStatus } from '../components/steps/AnalysisStepList'
 import { STAGE_CONFIG } from '../config/stageRegistry'

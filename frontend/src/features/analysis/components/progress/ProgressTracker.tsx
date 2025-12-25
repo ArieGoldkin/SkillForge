@@ -1,8 +1,9 @@
 import type * as React from 'react'
 import { useMemo } from 'react'
 
-import type { AgentStageName } from '@/schemas/sse'
 import { useSSEStore, useLoadingState, useShouldShowProgress } from '@stores/sseStore'
+
+import type { AgentStageName } from '@/schemas/sse'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 

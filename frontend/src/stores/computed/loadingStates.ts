@@ -5,10 +5,10 @@
  * without external middleware dependencies.
  */
 
-import type { StageName, SSEEvent } from '@/schemas/sse'
 import type { SSEStore } from '@stores/sseStore'
 
 import { shallowEqual } from '@/lib/utils'
+import type { StageName, SSEEvent } from '@/schemas/sse'
 import type { ComputedLoadingStates, LoadingState } from '@/types/loading'
 
 import { ALL_STAGES, isWorkflowStage, getStageOrder } from '@features/analysis/config/stageRegistry'

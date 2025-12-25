@@ -5,6 +5,7 @@ import type {
   AnalysisStatus,
   AnalysisStatusResponse,
 } from '@app-types/api'
+
 import type { SSEEvent } from '@/schemas/sse'
 
 import { analyzeAPI } from '@services/api.service'

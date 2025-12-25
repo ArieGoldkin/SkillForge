@@ -8,6 +8,7 @@
  * @see Issue #397: Create unified stage registry
  */
 
+import { logger } from '@/lib/logger'
 import type {
   StageName,
   StageStatus,
@@ -16,8 +17,6 @@ import type {
   SSECompleteEvent,
   SSEErrorEvent,
 } from '@/schemas/sse'
-
-import { logger } from '@/lib/logger'
 
 import {
   VALID_STAGES,

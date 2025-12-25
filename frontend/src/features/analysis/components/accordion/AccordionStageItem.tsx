@@ -17,7 +17,6 @@
 import { memo, useState } from 'react'
 import type React from 'react'
 
-import type { StageStatus } from '@/schemas/sse'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertCircle,
@@ -30,6 +29,8 @@ import {
   MinusCircle,
   XCircle,
 } from 'lucide-react'
+
+import type { StageStatus } from '@/schemas/sse'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'

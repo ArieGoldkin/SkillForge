@@ -11,9 +11,8 @@
  * @see ../config/stageRegistry.ts for the complete stage registry
  */
 
-import type { StageName, StageStatus } from '@/schemas/sse'
-
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
+import type { StageName, StageStatus } from '@/schemas/sse'
 
 // Import from the stage registry
 import {

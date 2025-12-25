@@ -20,7 +20,6 @@
 
 import { memo, useCallback, useMemo, useRef, useState } from 'react'
 
-import type { StageName } from '@/schemas/sse'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { AgentActivityFeed } from '@/features/analysis/components/activity/AgentActivityFeed'
@@ -29,6 +28,7 @@ import type { AgentActivity } from '@/features/analysis/hooks/useActivityFeed'
 import { useBreakpoint } from '@/features/analysis/hooks/useBreakpoint'
 import { useStageGroups } from '@/features/analysis/hooks/useStageGroups'
 import type { AnalysisMode } from '@/features/analysis/types/accordion'
+import type { StageName } from '@/schemas/sse'
 
 import { cn } from '@lib/utils'
 

@@ -17,9 +17,10 @@
  */
 import { useEffect, useMemo, useRef } from 'react'
 
+import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
+
 import { isErrorEvent, isFailedStage } from '@/schemas/sse'
 import type { SSEEvent, StageName } from '@/schemas/sse'
-import { selectSetAnalysisMetadata, useSSEStore } from '@stores/sseStore'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'

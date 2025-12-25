@@ -10,9 +10,7 @@
 
 import { useMemo } from 'react'
 
-import type { StageName } from '@/schemas/sse'
-
-import type { SuccessMetrics } from '@/schemas/sse'
+import type { StageName, SuccessMetrics } from '@/schemas/sse'
 
 import { STAGE_CONFIG } from '../config/stageRegistry'
 
