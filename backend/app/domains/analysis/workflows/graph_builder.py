@@ -265,8 +265,17 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
         logger.debug("generate_embedding_skipped_abort", analysis_id=state.get("analysis_id"))
         return {}
 
-    content = state["raw_content"]
-    analysis_id = state["analysis_id"]
+    # Issue #539: Defensive state access
+    content = state.get("raw_content", "")
+    analysis_id = state.get("analysis_id")
+    if not content or not analysis_id:
+        logger.error(
+            "generate_embedding_missing_state",
+            has_content=bool(content),
+            has_analysis_id=bool(analysis_id),
+        )
+        return {}
+
     embedding = await generate_embedding(content, analysis_id)
     # Return only updated fields, not entire state
     return {
@@ -293,8 +302,19 @@ async def _chunk_and_embed_node(state: AnalysisState) -> dict[str, object]:
             "dedup_stats": {"kept": 0, "dropped": 0},
         }
 
-    content = state["raw_content"]
-    analysis_id = state["analysis_id"]
+    # Issue #539: Defensive state access
+    content = state.get("raw_content", "")
+    analysis_id = state.get("analysis_id")
+    if not content or not analysis_id:
+        logger.error(
+            "chunk_and_embed_missing_state",
+            has_content=bool(content),
+            has_analysis_id=bool(analysis_id),
+        )
+        return {
+            "chunk_counts": {"coarse": 0, "fine": 0, "summaries": 0},
+            "dedup_stats": {"kept": 0, "dropped": 0},
+        }
 
     # SSE: chunking started
     from app.shared.services.messaging.sse_helpers import (
@@ -368,9 +388,18 @@ async def _supervisor_node(state: AnalysisState) -> dict[str, object]:
     if abort_result is None:
         return {}
 
-    content = state["raw_content"]
-    content_type = state["content_type"]
-    analysis_id = state["analysis_id"]
+    # Issue #539: Defensive state access
+    content = state.get("raw_content", "")
+    content_type = state.get("content_type", "article")
+    analysis_id = state.get("analysis_id")
+    if not content or not analysis_id:
+        logger.error(
+            "supervisor_missing_state",
+            has_content=bool(content),
+            has_analysis_id=bool(analysis_id),
+        )
+        return {}
+
     # Issue #436: Pass analysis_mode for tier-based agent filtering
     analysis_mode = state.get("analysis_mode", "standard")
     result = await supervisor_route(content, content_type, analysis_id, analysis_mode=analysis_mode)

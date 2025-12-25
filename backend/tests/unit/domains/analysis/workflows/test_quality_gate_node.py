@@ -178,7 +178,8 @@ class TestQualityGateNode:
         assert result["quality_scores"] == {}
 
     async def test_quality_gate_fail_closed_on_error(self, monkeypatch):
-        """Test that quality gate fails closed on evaluation error (best practice)."""
+        """Test that quality gate raises WorkflowStageError on evaluation error."""
+        from app.core.exceptions import WorkflowStageError
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         # Mock evaluator to raise exception
@@ -201,8 +202,9 @@ class TestQualityGateNode:
             },
         }  # type: ignore
 
-        result = await quality_gate_node(state)
+        # Should raise WorkflowStageError with stage context
+        with pytest.raises(WorkflowStageError) as exc_info:
+            await quality_gate_node(state)
 
-        # Should fail closed (reject) on error - best practice for safety
-        assert result["quality_gate_passed"] is False
-        assert "quality_gate_error" in result
+        assert exc_info.value.stage == "quality_gate"
+        assert isinstance(exc_info.value.original_exception, ValueError)

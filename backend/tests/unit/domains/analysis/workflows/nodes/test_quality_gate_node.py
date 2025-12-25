@@ -425,7 +425,9 @@ async def test_should_retry_synthesis_max_retries():
 
 @pytest.mark.asyncio
 async def test_quality_gate_fail_closed_on_exception(base_state: AnalysisState):
-    """Test exception during evaluation returns passed=False (fail closed - best practice)."""
+    """Test exception during evaluation raises WorkflowStageError with stage context."""
+    from app.core.exceptions import WorkflowStageError
+
     with (
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
@@ -436,7 +438,7 @@ async def test_quality_gate_fail_closed_on_exception(base_state: AnalysisState):
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
+        patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger"),
         patch("app.evaluation.types.Run") as mock_run_class,
         patch("app.evaluation.types.Example") as mock_example_class,
     ):
@@ -453,28 +455,14 @@ async def test_quality_gate_fail_closed_on_exception(base_state: AnalysisState):
         # Mock Run to raise exception on construction
         mock_run_class.side_effect = ValueError("Unexpected error during evaluation")
 
-        result = await quality_gate_node(base_state)
+        # Should raise WorkflowStageError with stage context
+        with pytest.raises(WorkflowStageError) as exc_info:
+            await quality_gate_node(base_state)
 
-        # Gate should fail (fail closed - best practice for safety)
-        assert result["quality_gate_passed"] is False
-
-        # Should have empty scores
-        assert result["quality_scores"] == {}
-        assert result["quality_gate_avg_score"] == 0.0
-
-        # Should have error field
-        assert "quality_gate_error" in result
-        error_msg = result["quality_gate_error"]
-        assert isinstance(error_msg, str)
-        assert "Unexpected error" in error_msg
-
-        # Verify error was logged
-        mock_logger.error.assert_called_once()
-        call_args = mock_logger.error.call_args
-        assert call_args[0][0] == "quality_gate_evaluation_failed"
-        kwargs = call_args[1]
-        assert kwargs["analysis_id"] == "test-analysis-123"
-        assert kwargs["error_type"] == "ValueError"
+        # Verify exception has proper stage context
+        assert exc_info.value.stage == "quality_gate"
+        assert isinstance(exc_info.value.original_exception, ValueError)
+        assert "quality gate" in str(exc_info.value).lower()
 
 
 # Test helper function

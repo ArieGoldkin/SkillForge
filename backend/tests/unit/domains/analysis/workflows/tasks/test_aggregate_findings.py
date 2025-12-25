@@ -499,7 +499,9 @@ class TestAggregateFindings:
 
     @pytest.mark.asyncio
     async def test_aggregate_llm_error_handling(self, sample_state):
-        """Test graceful fallback when LLM synthesis fails."""
+        """Test that LLM errors raise WorkflowStageError with stage context."""
+        from app.core.exceptions import WorkflowStageError
+
         with (
             patch(
                 "app.domains.analysis.workflows.tasks.aggregate_findings.synthesize_with_llm"
@@ -518,24 +520,19 @@ class TestAggregateFindings:
             ),
             patch(
                 "app.domains.analysis.services.persistence.error_recorder.error_recorder.record"
-            ) as mock_error_record,
+            ),
         ):
             # Simulate LLM error on both synthesis paths (coverage may route to either)
             mock_synthesize.side_effect = Exception("LLM API error")
             mock_trend.side_effect = Exception("LLM API error")
 
-            result = await aggregate_findings(sample_state)
+            # Should raise WorkflowStageError with stage context
+            with pytest.raises(WorkflowStageError) as exc_info:
+                await aggregate_findings(sample_state)
 
-            # Should return fallback aggregation
-            assert "aggregated_insights" in result
-            insights = result["aggregated_insights"]
-            assert insights["metadata"]["fallback_used"] is True
-            assert insights["metadata"]["llm_synthesis_failed"] is True
-            # Check for either error message pattern
-            assert (
-                "Synthesized findings from" in insights["executive_summary"]
-                or "error" in insights["executive_summary"].lower()
-            )
+            # Verify exception has proper stage context
+            assert exc_info.value.stage == "aggregation"
+            assert "LLM API error" in str(exc_info.value.original_exception)
 
     @pytest.mark.asyncio
     async def test_aggregate_executive_summary_validation(self, sample_state):

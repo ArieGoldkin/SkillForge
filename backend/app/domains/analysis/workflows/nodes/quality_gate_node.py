@@ -11,6 +11,7 @@ import asyncio
 import time
 from typing import Any
 
+from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.core.timeout_config import EVALUATOR_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
@@ -544,18 +545,12 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             error_details=str(e)[:500],
         )
 
-        # FAIL CLOSED - reject on error (best practice)
-        # Prevents shipping artifacts when quality cannot be verified
-        error_warning = f"Quality evaluation failed: {type(e).__name__}: {e!s}"
-
-        return {
-            "quality_scores": {},
-            "quality_gate_avg_score": 0.0,
-            "quality_gate_passed": False,  # FAIL CLOSED - best practice
-            "quality_gate_retry_count": retry_count,
-            "quality_gate_error": str(e),
-            "quality_warnings": [error_warning],
-        }
+        # Wrap with WorkflowStageError to provide stage context
+        raise WorkflowStageError(
+            stage="quality_gate",
+            original_exception=e,
+            message=f"Quality gate evaluation failed: {type(e).__name__}: {e!s}",
+        ) from e
 
 
 def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> str:

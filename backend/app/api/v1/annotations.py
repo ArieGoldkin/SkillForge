@@ -82,15 +82,16 @@ async def submit_feedback(
 
         return SubmitFeedbackResponse(**result)
 
-    except Exception:
+    except Exception as e:
         logger.exception(
             "feedback_submission_failed",
             artifact_id=str(request.artifact_id),
+            error_type=type(e).__name__,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to submit feedback",
-        ) from None
+        ) from e
 
 
 @router.post(
@@ -151,15 +152,16 @@ async def flag_for_review(
 
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         logger.exception(
             "flag_for_review_failed",
             artifact_id=str(request.artifact_id),
+            error_type=type(e).__name__,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to flag artifact for review",
-        ) from None
+        ) from e
 
 
 @router.get(
@@ -214,12 +216,12 @@ async def get_annotation_queue(
             offset=offset,
         )
 
-    except Exception:
-        logger.exception("get_annotation_queue_failed")
+    except Exception as e:
+        logger.exception("get_annotation_queue_failed", error_type=type(e).__name__)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve annotation queue",
-        ) from None
+        ) from e
 
 
 @router.patch(
@@ -266,12 +268,13 @@ async def mark_as_reviewed(
 
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         logger.exception(
             "mark_as_reviewed_failed",
             queue_id=queue_id,
+            error_type=type(e).__name__,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to mark as reviewed",
-        ) from None
+        ) from e
