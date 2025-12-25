@@ -21,10 +21,12 @@ export class AnalyzePage extends BasePage {
   readonly stageIndicator: Locator;
   /** Status text test ID */
   readonly statusText: Locator;
-  /** View Results button - Issue #533 changed from link to button */
+  /** View Results button in HeroSummaryCard (Issue #533) */
+  readonly viewResultsButton: Locator;
+  /** View Guide link/button in AnalysisCompleteCard (fallback view) */
+  readonly viewGuideButton: Locator;
+  /** Combined: Any button/link that leads to artifact (View Results OR View Guide) */
   readonly viewArtifactButton: Locator;
-  /** Legacy link selector for backward compatibility */
-  readonly viewArtifactLink: Locator;
   /** Error message alert */
   readonly errorMessage: Locator;
   /** Analysis complete heading (Issue #533 - HeroSummaryCard h2) */
@@ -40,12 +42,21 @@ export class AnalyzePage extends BasePage {
     });
     this.stageIndicator = page.getByTestId('stage-indicator');
     this.statusText = page.getByTestId('status-text');
-    // Issue #533: View Results is now a BUTTON, not a link
-    this.viewArtifactButton = page.getByRole('button', { name: /view.*result/i });
-    // Legacy: Keep link selector for backward compatibility
-    this.viewArtifactLink = page.getByRole('link', { name: /view.*guide|view.*artifact|view.*result/i });
+
+    // View Results button in HeroSummaryCard (Issue #533)
+    this.viewResultsButton = page.getByRole('button', { name: /view.*result/i });
+    // View Guide link/button in AnalysisCompleteCard (fallback completion view)
+    this.viewGuideButton = page.getByRole('link', { name: /view.*guide/i });
+    // Combined: Find any button/link that leads to artifact
+    // This covers both CompletedAnalysisView (View Results) and AnalysisCompleteCard (View Guide)
+    this.viewArtifactButton = page
+      .getByRole('button', { name: /view.*result/i })
+      .or(page.getByRole('link', { name: /view.*guide/i }));
+
     this.errorMessage = page.getByRole('alert');
-    // Issue #533: Completion heading in HeroSummaryCard
+    // Completion heading - covers both UIs:
+    // - HeroSummaryCard: "Analysis Complete", "Complete with Errors", "Analysis In Progress"
+    // - CompleteCardContent: "Analysis Complete", "Analysis Completed with Errors"
     this.completionHeading = page.getByRole('heading', {
       name: /analysis complete|complete with errors|analysis in progress/i,
     });

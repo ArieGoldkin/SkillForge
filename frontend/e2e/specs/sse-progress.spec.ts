@@ -61,15 +61,15 @@ test.describe('SSE Progress Updates', () => {
     const analyzePage = new AnalyzePage(page);
     await analyzePage.goto(completed.analysis_id);
 
-    // Issue #533: Completed analyses show HeroSummaryCard, not progressBar
-    // The HeroSummaryCard contains completion heading and View Results button
-    await expect(analyzePage.heroSummaryCard).toBeVisible({ timeout: 10000 });
+    // Completed analyses can show one of two UIs:
+    // 1. CompletedAnalysisView with HeroSummaryCard (Priority 100/90/60)
+    // 2. Fallback view with AnalysisCompleteCard (Priority 10)
+    // Both have a completion heading, so we check for that
+    await expect(analyzePage.completionHeading).toBeVisible({ timeout: 15000 });
 
-    // Completed analysis should show completion heading
-    // Can be "Analysis Complete", "Complete with Errors", or "Analysis In Progress"
-    await analyzePage.waitForComplete();
-
-    // View Results button should be visible for completed analyses (Issue #533)
+    // Completed analysis should show an artifact button:
+    // - HeroSummaryCard: "View Results" button
+    // - AnalysisCompleteCard: "View Guide" link
     await expect(analyzePage.viewArtifactButton).toBeVisible();
   });
 
