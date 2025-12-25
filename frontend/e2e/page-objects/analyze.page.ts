@@ -13,10 +13,10 @@ import { BasePage } from './base.page';
  * - No more traditional progressbar - uses stage completion stats instead
  */
 export class AnalyzePage extends BasePage {
-  /** Progress bar (for in-progress analyses with traditional progress view) */
-  readonly progressBar: Locator;
-  /** Hero summary card (for completed analyses - Issue #533) */
+  /** Hero summary card (for both in-progress and completed - Issue #533) */
   readonly heroSummaryCard: Locator;
+  /** Active analysis view container (default fallback view) */
+  readonly activeAnalysisView: Locator;
   /** Stage indicator test ID */
   readonly stageIndicator: Locator;
   /** Status text test ID */
@@ -29,17 +29,15 @@ export class AnalyzePage extends BasePage {
   readonly viewArtifactButton: Locator;
   /** Error message alert */
   readonly errorMessage: Locator;
-  /** Analysis complete heading (Issue #533 - HeroSummaryCard h2) */
-  readonly completionHeading: Locator;
+  /** Analysis heading (Issue #533 - HeroSummaryCard h2) - covers all states */
+  readonly analysisHeading: Locator;
 
   constructor(page: Page) {
     super(page);
-    // Traditional progress bar (in-progress view)
-    this.progressBar = page.getByRole('progressbar');
-    // Issue #533: HeroSummaryCard is an article with aria-label
-    this.heroSummaryCard = page.getByRole('article').filter({
-      has: page.locator('h2'),
-    });
+    // Issue #533: HeroSummaryCard has data-testid="hero-summary-card"
+    this.heroSummaryCard = page.getByTestId('hero-summary-card');
+    // Active analysis view container (present in default fallback route)
+    this.activeAnalysisView = page.getByTestId('active-analysis-view');
     this.stageIndicator = page.getByTestId('stage-indicator');
     this.statusText = page.getByTestId('status-text');
 
@@ -54,10 +52,12 @@ export class AnalyzePage extends BasePage {
       .or(page.getByRole('link', { name: /view.*guide/i }));
 
     this.errorMessage = page.getByRole('alert');
-    // Completion heading - covers both UIs:
-    // - HeroSummaryCard: "Analysis Complete", "Complete with Errors", "Analysis In Progress"
-    // - CompleteCardContent: "Analysis Complete", "Analysis Completed with Errors"
-    this.completionHeading = page.getByRole('heading', {
+    // Analysis heading - covers all states in HeroSummaryCard:
+    // - "Analysis Complete" (completed successfully)
+    // - "Complete with Errors" (completed with failures)
+    // - "Analysis In Progress" (still running)
+    // - "Analysis Completed with Errors" (legacy CompleteCardContent)
+    this.analysisHeading = page.getByRole('heading', {
       name: /analysis complete|complete with errors|analysis in progress/i,
     });
   }
@@ -71,14 +71,18 @@ export class AnalyzePage extends BasePage {
   }
 
   async waitForComplete(timeout = 60000) {
-    // Issue #533: HeroSummaryCard shows completion heading
+    // Issue #533: HeroSummaryCard shows analysis heading
     // Accept "Analysis Complete" or "Complete with Errors" as valid completion states
-    await expect(this.completionHeading).toBeVisible({ timeout });
+    await expect(this.analysisHeading).toBeVisible({ timeout });
   }
 
-  async getProgress(): Promise<number> {
-    const progressValue = await this.progressBar.getAttribute('aria-valuenow');
-    return progressValue ? parseInt(progressValue, 10) : 0;
+  /**
+   * Wait for page to fully load (HeroSummaryCard or ActiveAnalysisView visible)
+   */
+  async waitForPageLoad(timeout = 20000) {
+    // Wait for either HeroSummaryCard or ActiveAnalysisView to be visible
+    const pageLoaded = this.heroSummaryCard.or(this.activeAnalysisView);
+    await expect(pageLoaded).toBeVisible({ timeout });
   }
 
   async expectComplete() {

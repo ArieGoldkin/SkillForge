@@ -97,6 +97,7 @@ export const HeroSummaryCard = memo(function HeroSummaryCard({
 
   return (
     <article
+      data-testid="hero-summary-card"
       className={cn(
         // Card styling
         'bg-gradient-to-br from-card to-muted/20',

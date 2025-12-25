@@ -32,16 +32,10 @@ test.describe('SSE Progress Updates', () => {
     // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(library.items[0].analysis_id);
     await expect(page).toHaveURL(/\/analyze\/.+/);
-    // Issue #533: Analysis page now uses HeroSummaryCard for completed analyses
-    // Analysis from library may be completed (shows HeroSummaryCard) or in-progress (shows progressBar)
-    // Use Playwright's .or() locator composition - accepts any of these indicators:
-    // - progressBar (traditional in-progress view)
-    // - completionHeading (Issue #533 - "Analysis Complete", "Complete with Errors", "Analysis In Progress")
-    // - viewArtifactButton (Issue #533 - "View Results" or "View Guide" button/link)
-    const anyAnalysisIndicator = analyzePage.progressBar
-      .or(analyzePage.completionHeading)
-      .or(analyzePage.viewArtifactButton);
-    await expect(anyAnalysisIndicator).toBeVisible({ timeout: 15000 });
+    // Issue #533: Wait for page to fully load
+    // HeroSummaryCard shows either "Analysis In Progress" or "Analysis Complete" heading
+    // and is rendered in both active and completed views
+    await analyzePage.waitForPageLoad();
   });
 
   test('should show completion state for completed analysis', async ({ page, request }) => {
@@ -58,11 +52,14 @@ test.describe('SSE Progress Updates', () => {
     const analyzePage = new AnalyzePage(page);
     await analyzePage.goto(completed.analysis_id);
 
+    // Issue #533: Wait for page to load first
+    await analyzePage.waitForPageLoad();
+
     // Completed analyses can show one of two UIs:
     // 1. CompletedAnalysisView with HeroSummaryCard (Priority 100/90/60)
     // 2. Fallback view with AnalysisCompleteCard (Priority 10)
-    // Both have a completion heading, so we check for that
-    await expect(analyzePage.completionHeading).toBeVisible({ timeout: 15000 });
+    // Both have an analysis heading, so we check for that
+    await expect(analyzePage.analysisHeading).toBeVisible({ timeout: 15000 });
 
     // Completed analysis should show an artifact button:
     // - HeroSummaryCard: "View Results" button
