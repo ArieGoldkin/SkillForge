@@ -134,8 +134,12 @@ const RENDER_ROUTES: RenderRoute[] = [
         : 'Analysis complete. Review your results below.'
 
       // Inline the ActiveAnalysisView logic to avoid type conflicts
+      // Issue #533: Use max-w-[1800px] for consistency with CompletedAnalysisView
       return (
-        <div className="container mx-auto px-4 py-8 max-w-7xl" data-testid="active-analysis-view">
+        <div
+          className="container mx-auto px-4 py-6 max-w-[1800px] 2xl:px-8"
+          data-testid="active-analysis-view"
+        >
           <div aria-live="polite" aria-atomic="true" className="sr-only">
             {isComplete && ariaMessage}
           </div>
@@ -151,11 +155,12 @@ const RENDER_ROUTES: RenderRoute[] = [
           {!isFatalError && (
             <div
               className={
-                // Use 3-column grid only when sidebar has content, otherwise full width
+                // Issue #533: 2fr:1fr grid gives ProgressColumn 2/3 width for better grid layout
+                // Use 2-column grid when sidebar has content, otherwise full width
                 isComplete && (resolvedArtifactId || artifactId)
-                  ? 'grid grid-cols-1 lg:grid-cols-3 gap-6'
+                  ? 'grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6'
                   : activities.length > 0
-                    ? 'grid grid-cols-1 lg:grid-cols-3 gap-6'
+                    ? 'grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6'
                     : 'w-full'
               }
             >

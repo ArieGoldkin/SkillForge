@@ -27,7 +27,8 @@ from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
 
 # Issue #436: Tier-based agent filtering
-from app.domains.analysis.agents.registry import get_agent_metadata, get_agents_for_mode
+# Issue #533: Import AgentTier to protect Universal agents from content signal skipping
+from app.domains.analysis.agents.registry import AgentTier, get_agent_metadata, get_agents_for_mode
 from app.domains.analysis.workflows.agents.prompt_builders import build_supervisor_user_prompt
 from app.domains.analysis.workflows.nodes.supervisor_config import (
     SUPERVISOR_PROMPT,
@@ -505,9 +506,25 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         # ISSUE #299-304: Filter agents that should be skipped based on content signals
         # Skip agents when there's NO relevant data (different from OPPORTUNISTIC)
         # Issue #540: Pass code_patterns to should_skip_agent for standardized detection
+        # Issue #533: PROTECT TIER 1 (UNIVERSAL) AGENTS FROM CONTENT SIGNAL SKIPPING
+        #   - Tier 1 agents ALWAYS run on ALL content types - that's why they're "Universal"
+        #   - Only apply content signal filtering to Tier 2+ (Validation, Research) agents
         agents_to_skip: list[str] = []
         skip_reasons: dict[str, str] = {}  # Track reasons for skipped agents
         for agent in filtered_agents.copy():
+            # Issue #533: Check if agent is Tier 1 (UNIVERSAL) - never skip these
+            agent_meta = get_agent_metadata(agent)
+            if agent_meta is not None and agent_meta.tier == AgentTier.UNIVERSAL:
+                # Tier 1 agents run on ALL content - skip content signal filtering
+                logger.debug(
+                    "supervisor_tier1_protected",
+                    analysis_id=analysis_id,
+                    agent=agent,
+                    tier="UNIVERSAL",
+                    reason="tier1_agents_always_run",
+                )
+                continue
+
             skip, reason = should_skip_agent(agent, content_signals, code_patterns)
             if skip:
                 agents_to_skip.append(agent)
