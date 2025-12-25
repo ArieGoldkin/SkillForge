@@ -46,9 +46,9 @@ jobs:
             backend/.venv
             ~/.cache/pypoetry
           # v3: Cache bust to fix corrupted venv paths from cross-runner cache restore
-          key: poetry-v3-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-v5-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v3-${{ runner.os }}-py3.13-
+            poetry-v5-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
