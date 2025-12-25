@@ -642,10 +642,11 @@ async def retry_analysis(
         )
 
     # Check if status is retryable (must be a failed state)
-    if not AnalysisStatus.is_retryable(analysis.status):
+    current_status = str(analysis.status)
+    if not AnalysisStatus.is_retryable(current_status):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Analysis status '{analysis.status}' is not retryable. Only failed analyses can be retried.",
+            detail=f"Analysis status '{current_status}' is not retryable. Only failed analyses can be retried.",
         )
 
     # Check retry limit (must be < MAX_RETRY_ATTEMPTS)
@@ -733,9 +734,10 @@ async def retry_analysis(
         retry_count=updated_analysis.retry_count,
     )
 
+    retry_count: int = updated_analysis.retry_count or 0  # type: ignore[assignment]
     return AnalysisRetryResponse(
         analysis_id=str(analysis_id),
         status=restart_stage,
-        retry_count=updated_analysis.retry_count,
+        retry_count=retry_count,
         sse_endpoint=sse_endpoint,
     )
