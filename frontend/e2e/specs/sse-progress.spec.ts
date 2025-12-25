@@ -32,16 +32,22 @@ test.describe('SSE Progress Updates', () => {
     // Direct navigation to analysis URL (storageState enables fast navigation)
     await analyzePage.goto(library.items[0].analysis_id);
     await expect(page).toHaveURL(/\/analyze\/.+/);
-    // Analysis from library may be completed (no progressBar) or in-progress (has progressBar)
-    // Accept either: progressBar visible OR completion indicators visible
+    // Issue #533: Analysis page now uses HeroSummaryCard for completed analyses
+    // Analysis from library may be completed (shows HeroSummaryCard) or in-progress (shows progressBar)
+    // Accept any of these completion indicators:
+    // 1. progressBar (traditional in-progress view)
+    // 2. completionHeading (Issue #533 - "Analysis Complete", "Complete with Errors", "Analysis In Progress")
+    // 3. viewArtifactButton (Issue #533 - "View Results" button)
+    // 4. heroSummaryCard (Issue #533 - the entire hero card)
     await Promise.race([
       expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 }),
-      expect(page.getByRole('heading', { name: /analysis complete|complete/i })).toBeVisible({ timeout: 10000 }),
+      expect(analyzePage.completionHeading).toBeVisible({ timeout: 10000 }),
       expect(analyzePage.viewArtifactButton).toBeVisible({ timeout: 10000 }),
+      expect(analyzePage.heroSummaryCard).toBeVisible({ timeout: 10000 }),
     ]);
   });
 
-  test('should show progress bar for completed analysis', async ({ page, request }) => {
+  test('should show completion state for completed analysis', async ({ page, request }) => {
     // Get a completed analysis from seed data
     const completed = await getCompletedAnalysis(request);
 
@@ -55,18 +61,15 @@ test.describe('SSE Progress Updates', () => {
     const analyzePage = new AnalyzePage(page);
     await analyzePage.goto(completed.analysis_id);
 
-    // Progress bar should be visible
-    await expect(analyzePage.progressBar).toBeVisible({ timeout: 10000 });
+    // Issue #533: Completed analyses show HeroSummaryCard, not progressBar
+    // The HeroSummaryCard contains completion heading and View Results button
+    await expect(analyzePage.heroSummaryCard).toBeVisible({ timeout: 10000 });
 
-    // For completed analyses, progress should be 100%
-    const progress = await analyzePage.getProgress();
-    expect(progress).toBeGreaterThanOrEqual(0);
-    expect(progress).toBeLessThanOrEqual(100);
-
-    // Completed analysis should show completion state
+    // Completed analysis should show completion heading
+    // Can be "Analysis Complete", "Complete with Errors", or "Analysis In Progress"
     await analyzePage.waitForComplete();
 
-    // Artifact button should be visible for completed analyses
+    // View Results button should be visible for completed analyses (Issue #533)
     await expect(analyzePage.viewArtifactButton).toBeVisible();
   });
 
