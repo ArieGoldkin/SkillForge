@@ -178,22 +178,22 @@ class TestQualityGateNode:
         assert result["quality_scores"] == {}
 
     async def test_quality_gate_fail_closed_on_error(self, monkeypatch):
-        """Test that quality gate raises WorkflowStageError on evaluation error.
+        """Test that quality gate raises WorkflowStageError on evaluator creation error.
 
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+
+        Note: Evaluator EXECUTION errors are now handled gracefully (default score 0.5).
+        This test verifies that evaluator CREATION errors still raise WorkflowStageError.
         """
         from app.core.exceptions import WorkflowStageError
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
-        # Mock evaluator to raise exception
+        # Mock evaluator creation to raise exception (not execution)
         def mock_create_evaluator(*args, **kwargs):
-            async def failing_evaluator(run, example):
-                raise ValueError("Evaluator error")
-
-            return failing_evaluator
+            raise ValueError("Evaluator creation error")
 
         monkeypatch.setattr(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
             mock_create_evaluator,
         )
 
