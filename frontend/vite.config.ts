@@ -2,13 +2,23 @@ import path from 'path'
 
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig, type PluginOption } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     tanstackRouter(), // Must come before react plugin
     react(),
+    // Bundle analysis - only in analyze mode
+    mode === 'analyze' &&
+      (visualizer({
+        filename: 'bundle-stats.html',
+        open: true,
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
+      }) as PluginOption),
   ],
   resolve: {
     alias: {
@@ -35,4 +45,25 @@ export default defineConfig({
       },
     },
   },
-})
+  build: {
+    // Warn when chunk size exceeds 500KB
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        // Strategic chunk splitting for optimal caching
+        manualChunks: {
+          // Core React - rarely changes
+          'react-vendor': ['react', 'react-dom'],
+          // Router - own chunk for route-based splitting
+          router: ['@tanstack/react-router'],
+          // Data fetching - shared across features
+          query: ['@tanstack/react-query'],
+          // UI components - large but shared
+          ui: ['framer-motion', 'lucide-react'],
+          // Markdown rendering - only loaded when needed
+          markdown: ['react-markdown'],
+        },
+      },
+    },
+  },
+}))
