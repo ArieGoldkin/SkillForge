@@ -22,7 +22,7 @@ export function NavLink({ to, children, badge, onMouseEnter, onFocus }: NavLinkP
     <Link
       to={to}
       className={linkClass}
-      activeProps={{ className: 'text-primary' }}
+      activeProps={{ className: 'text-primary', 'aria-current': 'page' as const }}
       onMouseEnter={onMouseEnter}
       onFocus={onFocus}
     >

@@ -437,6 +437,7 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
       store.setState({
         _reconnectAttempts: newAttempts,
         _reconnectTimeoutId: timeoutId,
+        connectionState: 'reconnecting',
       })
     } else {
       logger.error('SSE max reconnection attempts reached, starting polling fallback', {
@@ -497,7 +498,7 @@ function cleanupEventListeners(source: EventSource, refs: ListenerRefs): void {
  * Network recovery handler for SSE connections
  * Automatically clears network errors when connection is restored
  */
-function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void {
+function setupNetworkRecovery(analysisId: string, store: StoreAPI): () => void {
   const handleOnline = () => {
     // Only retry if we have a network-related error
     const error = store.getState().error
@@ -507,9 +508,10 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
         error.message.includes('fetch') ||
         error.message.includes('connection lost'))
     ) {
-      logger.info('Network recovered, clearing error state', { service: 'sse' })
+      logger.info('Network recovered, reconnecting to SSE', { service: 'sse', analysisId })
       store.setState({ error: null })
-      // The UI will handle reconnection automatically
+      // Reconnect after network recovery
+      store.getState().connect(analysisId)
     }
   }
 

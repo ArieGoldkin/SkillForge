@@ -41,6 +41,14 @@ export function AppShell({ children, sidebar, showSidebar = false }: AppShellPro
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Skip to main content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
       {/* Navigation Header */}
       <Navigation />
 
@@ -97,7 +105,7 @@ export function AppShell({ children, sidebar, showSidebar = false }: AppShellPro
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-x-hidden">
+        <main id="main-content" className="flex-1 overflow-x-hidden">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>

@@ -182,21 +182,29 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   // ========================================================================
   // 8. Calculate Failed Stages Count and Collect Error Codes
   // ========================================================================
-  // Count failures from both error events and failed progress events
-  // This ensures we detect all failures regardless of how the backend emits them
+  // Count unique failed stages by deduplicating stage names
+  // Backend sends BOTH progress events (status="failed") AND error events for the same failure
+  // We must deduplicate to avoid double-counting (Issue: frontend bug)
   const { hasFailedStages, failedStagesCount, failedStageErrorCodes } = useMemo(() => {
-    // Count failed stages from stageStatuses (progress events with status="failed")
-    const failedFromStatuses = Array.from(stageStatuses.values()).filter(
-      (s) => s.status === 'failed'
-    ).length
+    // Use Set to track unique failed stage names (prevents double-counting)
+    const failedStageNames = new Set<string>()
 
-    // Count all failed events (both error events and failed progress events)
-    // Note: We use isFailedStage to ensure we're counting both types correctly
-    const totalFailed = events.filter(isFailedStage).length
+    // Add failed stages from stageStatuses (progress events with status="failed")
+    for (const [stageName, status] of stageStatuses.entries()) {
+      if (status.status === 'failed') {
+        failedStageNames.add(stageName)
+      }
+    }
 
-    // Use the maximum of the two counts to handle edge cases where
-    // stageStatuses might not have been updated yet but error events exist
-    const failedCount = Math.max(failedFromStatuses, totalFailed)
+    // Add failed stages from error events (isFailedStage checks for error events)
+    for (const event of events) {
+      if (isFailedStage(event) && event.stage) {
+        failedStageNames.add(event.stage)
+      }
+    }
+
+    // Count unique failed stages (deduplicated)
+    const failedCount = failedStageNames.size
 
     // Collect error codes from failed stages and events
     const errorCodes = new Set<string>()

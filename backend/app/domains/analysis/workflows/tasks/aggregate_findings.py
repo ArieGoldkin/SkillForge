@@ -79,6 +79,7 @@ async def _build_agent_statuses(
     analysis_id: AnalysisID,
     selected_agents: list[str],
     agent_types: list[str],
+    validated_findings: list[dict[str, object]],
 ) -> dict[str, str]:
     """Build agent statuses dict and emit error events for failed agents.
 
@@ -86,20 +87,31 @@ async def _build_agent_statuses(
         analysis_id: UUID of the analysis
         selected_agents: List of agent types selected by supervisor
         agent_types: List of agent types that produced findings
+        validated_findings: List of validated findings with status markers
 
     Returns:
-        Dictionary mapping agent_type to "success" or "failed"
+        Dictionary mapping agent_type to "success", "no_data", or "failed"
 
     """
     from app.core.agent_config import get_stage_name
     from app.shared.services.messaging.sse_helpers import emit_error_event
 
+    # Build lookup for findings with "no_data" status
+    no_data_agents = {
+        finding.get("agent_type")
+        for finding in validated_findings
+        if finding.get("status") == "no_data"
+    }
+
     agent_statuses: dict[str, str] = {}
     for agent_type in selected_agents:
-        if agent_type in agent_types:
+        if agent_type in no_data_agents:
+            # Agent ran but returned no findings - not a failure
+            agent_statuses[agent_type] = "no_data"
+        elif agent_type in agent_types:
             agent_statuses[agent_type] = "success"
         else:
-            # Selected but no findings = failed
+            # Selected but no findings and not marked as "no_data" = failed
             agent_statuses[agent_type] = "failed"
             # Emit error event for agent failure
             await emit_error_event(
@@ -503,6 +515,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             analysis_id=analysis_id,
             selected_agents=selected_agents,
             agent_types=agent_types,
+            validated_findings=validated_findings,
         )
 
         if not validated_findings:

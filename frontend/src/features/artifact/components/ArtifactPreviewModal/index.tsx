@@ -1,4 +1,7 @@
+/* eslint-disable max-lines-per-function -- Accessibility hooks for focus management require additional lines */
 /** ArtifactPreviewModal - Modal for previewing implementation guide before download */
+
+import { useEffect, useRef } from 'react'
 
 import { FileText, Link as LinkIcon } from 'lucide-react'
 
@@ -17,6 +20,24 @@ import type { ArtifactPreviewModalProps } from './types'
 
 export function ArtifactPreviewModal(props: ArtifactPreviewModalProps) {
   const { isOpen, onClose, content, isLoading, error, onDownload, sourceUrl, artifactId } = props
+
+  // Store reference to the trigger element for focus return
+  const triggerElementRef = useRef<HTMLElement | null>(null)
+
+  // Store the active element when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      triggerElementRef.current = document.activeElement as HTMLElement
+    }
+  }, [isOpen])
+
+  // Return focus to trigger element when modal closes
+  useEffect(() => {
+    if (!isOpen && triggerElementRef.current) {
+      triggerElementRef.current.focus()
+      triggerElementRef.current = null
+    }
+  }, [isOpen])
 
   const handleDownload = () => {
     onDownload?.()

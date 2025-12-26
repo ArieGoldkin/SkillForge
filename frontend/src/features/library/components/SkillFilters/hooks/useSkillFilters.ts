@@ -5,7 +5,7 @@
  * Abstracts filter logic from UI components.
  */
 
-import { useMemo } from 'react'
+import { useMemo, useOptimistic } from 'react'
 
 import type { AnalysisStatus } from '@app-types/api'
 
@@ -49,58 +49,76 @@ export interface UseSkillFiltersReturn {
  * @param onChange - Callback when filters change
  * @returns Filter state, handlers, and active count
  */
+/* eslint-disable max-lines-per-function -- React 19 optimistic updates add handlers for UX improvement */
 export const useSkillFilters = (
   filters: SkillFilters,
   onChange: (filters: SkillFilters) => void
 ): UseSkillFiltersReturn => {
+  // React 19: Use optimistic updates for immediate UI feedback on filter changes
+  const [optimisticFilters, setOptimisticFilters] = useOptimistic(
+    filters,
+    (_currentFilters, newFilters: SkillFilters) => newFilters
+  )
+
   // Calculate active filter count
   const activeFilterCount = useMemo(
     () =>
-      filters.difficulty.length +
-      filters.status.length +
-      filters.tags.length +
-      (filters.durationRange[0] > 0 ||
-      filters.durationRange[1] < COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX
+      optimisticFilters.difficulty.length +
+      optimisticFilters.status.length +
+      optimisticFilters.tags.length +
+      (optimisticFilters.durationRange[0] > 0 ||
+      optimisticFilters.durationRange[1] < COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX
         ? 1
         : 0),
-    [filters]
+    [optimisticFilters]
   )
 
-  // Difficulty change handler
+  // Difficulty change handler with optimistic update
   const handleDifficultyChange = (difficulty: SkillDifficulty, checked: boolean) => {
     const newDifficulties = checked
-      ? [...filters.difficulty, difficulty]
-      : filters.difficulty.filter((d) => d !== difficulty)
+      ? [...optimisticFilters.difficulty, difficulty]
+      : optimisticFilters.difficulty.filter((d) => d !== difficulty)
 
-    onChange({ ...filters, difficulty: newDifficulties })
+    const newFilters = { ...optimisticFilters, difficulty: newDifficulties }
+    setOptimisticFilters(newFilters)
+    onChange(newFilters)
   }
 
-  // Status change handler
+  // Status change handler with optimistic update
   const handleStatusChange = (status: AnalysisStatus, checked: boolean) => {
     // Treat status as radio: only one status at a time
     const newStatuses = checked ? [status] : []
-    onChange({ ...filters, status: newStatuses })
+    const newFilters = { ...optimisticFilters, status: newStatuses }
+    setOptimisticFilters(newFilters)
+    onChange(newFilters)
   }
 
-  // Tag change handler
+  // Tag change handler with optimistic update
   const handleTagChange = (tag: string, checked: boolean) => {
-    const newTags = checked ? [...filters.tags, tag] : filters.tags.filter((t) => t !== tag)
+    const newTags = checked
+      ? [...optimisticFilters.tags, tag]
+      : optimisticFilters.tags.filter((t) => t !== tag)
 
-    onChange({ ...filters, tags: newTags })
+    const newFilters = { ...optimisticFilters, tags: newTags }
+    setOptimisticFilters(newFilters)
+    onChange(newFilters)
   }
 
-  // Clear all filters
+  // Clear all filters with optimistic update
   const handleClearAll = () => {
-    onChange({
+    const newFilters = {
       difficulty: [],
       status: [],
       tags: [],
       durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
-    })
+    } as const
+
+    setOptimisticFilters(newFilters)
+    onChange(newFilters)
   }
 
   return {
-    filters,
+    filters: optimisticFilters,
     handlers: {
       handleDifficultyChange,
       handleStatusChange,

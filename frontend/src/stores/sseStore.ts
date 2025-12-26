@@ -337,9 +337,18 @@ const baseStore = create<SSEStore>((set, get) => ({
    * intermediate state where error is cleared but isComplete is still false.
    * This is critical because components subscribed to the store would otherwise
    * see an inconsistent state between two separate set() calls.
+   *
+   * Also clears failure state and removes error events from the events array.
    */
   reconcileComplete: () => {
-    set({ error: null, isComplete: true })
+    set((state) => ({
+      error: null,
+      isComplete: true,
+      hasFailedStages: false,
+      failedStagesCount: 0,
+      // Filter out error events from the events array
+      events: state.events.filter((event) => event.type !== 'error'),
+    }))
   },
 
   /**

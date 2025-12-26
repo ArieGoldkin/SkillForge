@@ -18,7 +18,7 @@
  * @module features/analysis/components/accordion/AccordionProgressTracker
  */
 
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -409,6 +409,49 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   )
 
   // ========================================================================
+  // Keyboard Navigation Handler (Arrow keys for group navigation)
+  // ========================================================================
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>, groupIndex: number) => {
+      const groupIds = groups.map((g) => g.group.id)
+      let targetIndex = -1
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault()
+          targetIndex = Math.min(groupIndex + 1, groups.length - 1)
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          targetIndex = Math.max(groupIndex - 1, 0)
+          break
+        case 'Home':
+          event.preventDefault()
+          targetIndex = 0
+          break
+        case 'End':
+          event.preventDefault()
+          targetIndex = groups.length - 1
+          break
+        default:
+          return
+      }
+
+      if (targetIndex !== -1 && targetIndex !== groupIndex) {
+        const targetGroupId = groupIds[targetIndex]
+        const targetElement = groupRefs.current.get(targetGroupId)
+        if (targetElement) {
+          // Focus the button within the target group
+          const button = targetElement.querySelector('button')
+          button?.focus()
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      }
+    },
+    [groups]
+  )
+
+  // ========================================================================
   // Render
   // ========================================================================
   return (
@@ -446,6 +489,7 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                   groups.length <= 4 && isLastGroup && 'flex-1'
                 )}
                 role="listitem"
+                onKeyDown={(e) => handleKeyDown(e, groupIndex)}
               >
                 {/* Group Header */}
                 <GroupHeader

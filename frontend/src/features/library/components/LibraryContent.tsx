@@ -29,6 +29,7 @@ interface LibraryContentProps {
   onRetry: () => void
   onSelectSkill: (id: string) => void
   onLoadMore?: () => void
+  isPending?: boolean
 }
 
 export function LibraryContent(props: LibraryContentProps) {
@@ -72,6 +73,7 @@ export function LibraryContent(props: LibraryContentProps) {
         isFetchingNextPage={props.isFetchingNextPage}
         onSelectSkill={props.onSelectSkill}
         onLoadMore={props.onLoadMore}
+        isPending={props.isPending}
       />
     </>
   )
