@@ -316,15 +316,66 @@ class ErrorResponse(BaseModel):
 # Artifact schemas
 
 
+class QualityScoreDetail(BaseModel):
+    """Individual quality score with comment."""
+
+    score: float = Field(..., ge=0, le=1)
+    comment: str | None = None
+
+
+class QualitySchema(BaseModel):
+    """Quality gate results."""
+
+    passed: bool
+    avg_score: float = Field(0.0, ge=0, le=1)
+    scores: dict[str, float] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ArtifactMetadataSchema(BaseModel):
+    """Typed artifact_metadata JSONB schema."""
+
+    topics: list[str] = Field(default_factory=list)
+    complexity: Literal["simple", "intermediate", "advanced"] | None = None
+    agent_count: int | None = Field(None, ge=0)
+    avg_confidence: float | None = Field(None, ge=0, le=1)
+    quality: QualitySchema | None = None
+
+
+class ArtifactSummary(BaseModel):
+    """Lightweight artifact for list responses."""
+
+    artifact_id: str
+    analysis_id: str
+    title: str | None = None
+    created_at: str
+    download_count: int = 0
+    complexity: str | None = None
+
+
+class ArtifactListResponse(BaseModel):
+    """Paginated artifact list response."""
+
+    items: list[ArtifactSummary]
+    total: int
+    page: int
+    pages: int
+    has_next: bool
+    has_prev: bool
+
+
 class ArtifactMetadataResponse(BaseModel):
     """Metadata and content for an artifact."""
 
     artifact_id: str = Field(..., description="Artifact identifier")
     analysis_id: str = Field(..., description="Parent analysis identifier")
     markdown_content: str = Field(..., description="Artifact markdown content")
-    artifact_metadata: dict | None = Field(None, description="Optional artifact metadata")
+    artifact_metadata: dict[str, object] | None = Field(
+        None, description="Optional artifact metadata"
+    )
     trace_id: str | None = Field(None, description="Langfuse trace ID for feedback")
     created_at: str = Field(..., description="Creation timestamp")
+    download_count: int = Field(0, ge=0, description="Number of downloads")
 
 
 # Context engineering schemas (Handle Pattern)

@@ -12,7 +12,10 @@ from dotenv import dotenv_values, load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 # CRITICAL: Load .env and override system env vars BEFORE any LangChain imports
 # This ensures SkillForge uses the correct Langfuse project configuration
@@ -40,6 +43,7 @@ from app.core.langfuse_service import (  # noqa: E402
     shutdown_langfuse_service,
 )
 from app.core.logging import get_logger, setup_logging  # noqa: E402
+from app.middleware.rate_limit import limiter  # noqa: E402
 
 # Setup logging first
 setup_logging()
@@ -285,6 +289,15 @@ app = FastAPI(
     lifespan=lifespan,
     default_response_class=ORJSONResponse,  # 2-3x faster JSON serialization
 )
+
+# Rate Limiting Middleware
+# Attach limiter to app state and register exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Compression Middleware
+# Compresses responses > 1000 bytes with gzip (reduces bandwidth usage)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # CORS Middleware
 app.add_middleware(

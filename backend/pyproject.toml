@@ -42,6 +42,8 @@ pypdf = "^5.1.0"
 # Langfuse observability (replaces LangSmith - Issue #372)
 langfuse = "^3.0.0"
 orjson = "^3.11.5"
+# Rate limiting middleware
+slowapi = "^0.1.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

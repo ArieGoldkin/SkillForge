@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 from sqlalchemy.orm import Mapped, relationship
@@ -37,6 +37,14 @@ class Artifact(Base):
     download_count = Column(Integer, default=0, nullable=False)
     trace_id = Column(String(255), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    is_deleted = Column(Boolean, default=False, nullable=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     # Note: explicit foreign_keys needed because Analysis.previous_artifact_id
