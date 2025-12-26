@@ -44,10 +44,13 @@ runs:
       if: steps.npm-cache.outputs.cache_hit != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      timeout-minutes: 5
       run: |
         echo "⏳ Installing npm dependencies..."
-        npm ci --prefer-offline --no-audit --no-fund
+        # Use timeout command to prevent hanging (300s = 5 minutes)
+        timeout 300 npm ci --prefer-offline --no-audit --no-fund || {
+          echo "::error::npm ci timed out after 5 minutes"
+          exit 1
+        }
         echo "✓ npm ci complete"
 
     # Self-hosted runner optimization: Check if Playwright browsers already installed
@@ -84,13 +87,16 @@ runs:
       if: steps.playwright-cache.outputs.cache_hit != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      timeout-minutes: 3
       run: |
         echo "⏳ Installing Playwright Chromium..."
         # NOTE: Do NOT use --with-deps on self-hosted runners
         # It tries to install system deps via apt/brew which hangs or takes forever
         # Self-hosted runners should already have required deps installed
-        npx playwright install chromium
+        # Use timeout command to prevent hanging (180s = 3 minutes)
+        timeout 180 npx playwright install chromium || {
+          echo "::error::Playwright install timed out after 3 minutes"
+          exit 1
+        }
         echo "✓ Playwright Chromium installed"
 
     - name: Prepare .auth directory
