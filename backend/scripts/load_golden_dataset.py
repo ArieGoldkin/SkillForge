@@ -198,6 +198,8 @@ async def main(replace: bool = False) -> int:
                 title=doc_title,
             )
             session.add(analysis)
+            # Flush analysis first to satisfy foreign key constraint for artifact
+            await session.flush()
 
             # Generate placeholder artifact (needs real workflow for full quality)
             markdown_content = generate_placeholder_artifact(doc)
