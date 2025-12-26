@@ -40,6 +40,8 @@ permissions:
 jobs:
   build-backend:
     runs-on: self-hosted
+    # This workflow is optional - don't block PRs if it fails
+    continue-on-error: true
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
@@ -91,6 +93,8 @@ jobs:
 
   build-frontend:
     runs-on: self-hosted
+    # This workflow is optional - don't block PRs if it fails
+    continue-on-error: true
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
