@@ -52,7 +52,7 @@ class IArtifactRepository(Protocol):
         ...
 
     async def list_artifacts(
-        self, page: int, limit: int, include_deleted: bool
+        self, page: int = 1, limit: int = 20, include_deleted: bool = False
     ) -> tuple[list[Artifact], int]:
         """List artifacts with pagination."""
         ...

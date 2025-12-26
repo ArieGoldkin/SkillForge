@@ -80,8 +80,8 @@ async def send_message(
     new_message: TutorMessage = {
         "role": "user",
         "content": request.content,
-        "created_at": message.created_at.isoformat(),  # type: ignore[union-attr]
-        "metadata": message.message_metadata,  # type: ignore[typeddict-item]
+        "created_at": message.created_at.isoformat(),
+        "metadata": message.message_metadata,
     }
     updated_history: list[TutorMessage] = [*complete_state["conversation_history"], new_message]
     updated_state: TutorState = {

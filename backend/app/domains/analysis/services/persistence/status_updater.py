@@ -138,7 +138,7 @@ class StatusUpdater:
                         raise ValueError(error_msg)
 
                     # Update status
-                    analysis.status = status  # type: ignore[assignment]
+                    analysis.status = status
                     await db_session.commit()
 
                     logger.info(

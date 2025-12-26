@@ -4,18 +4,55 @@ Extracts state building logic from API endpoints.
 """
 
 import uuid
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from app.core.logging import get_logger
 from app.db.models.tutoring import TutoringSession
 from app.domains.tutor.repositories import ITutorRepository
 from app.domains.tutor.workflows.graph_builder import tutor_workflow
 from app.domains.tutor.workflows.state import TutorState
+from app.domains.tutor.workflows.state_types import SessionMetadata, Syllabus
 
 if TYPE_CHECKING:
     from app.shared.types import TutorMessage
 
 logger = get_logger(__name__)
+
+
+def _parse_syllabus(data: dict[str, Any] | None) -> Syllabus | None:
+    """Parse JSONB dict to Syllabus TypedDict.
+
+    TypedDict is structurally typed, so a dict matching the shape is compatible.
+    We use cast() since JSONB data was originally serialized from a Syllabus.
+
+    Args:
+        data: Raw dict from JSONB column or None
+
+    Returns:
+        Syllabus TypedDict or None
+
+    """
+    if data is None:
+        return None
+    return cast("Syllabus", data)
+
+
+def _parse_session_metadata(data: dict[str, Any] | None) -> SessionMetadata | None:
+    """Parse JSONB dict to SessionMetadata TypedDict.
+
+    TypedDict is structurally typed, so a dict matching the shape is compatible.
+    We use cast() since JSONB data was originally serialized from a SessionMetadata.
+
+    Args:
+        data: Raw dict from JSONB column or None
+
+    Returns:
+        SessionMetadata TypedDict or None
+
+    """
+    if data is None:
+        return None
+    return cast("SessionMetadata", data)
 
 
 async def load_state_from_session(
@@ -41,9 +78,8 @@ async def load_state_from_session(
         current_state = {}
 
     # Load conversation history from database
-    # session.id is a UUID when accessed from instance, not Column[UUID]
-    session_id: uuid.UUID = session.id  # type: ignore[assignment]
-    _, messages = await repo.get_session_with_messages(session_id)
+    # session.id returns uuid.UUID with SQLAlchemy 2.0 Mapped[] annotations
+    _, messages = await repo.get_session_with_messages(session.id)
     conversation_history: list[TutorMessage] = [
         cast(
             "TutorMessage",
@@ -57,28 +93,28 @@ async def load_state_from_session(
         for msg in messages
     ]
 
-    # Build complete state
-    # SQLAlchemy Column types return actual values when accessed from instances
+    # Parse JSONB fields to proper TypedDict types
+    syllabus_from_db = _parse_syllabus(session.syllabus)
+    syllabus_from_checkpoint = current_state.get("syllabus")
+    syllabus = syllabus_from_db if syllabus_from_db is not None else syllabus_from_checkpoint
+
+    # Build complete state with proper types
     state: TutorState = {
         "session_id": str(session.id),
         "analysis_id": str(session.analysis_id) if session.analysis_id else None,
-        "syllabus": (dict(session.syllabus) if session.syllabus else current_state.get("syllabus")),
-        "current_section": int(session.current_section),
-        "current_lesson": int(session.current_lesson),
-        "current_phase": str(session.current_phase),
-        "user_level": str(session.user_level),
-        "understanding_scores": (
-            dict(session.understanding_scores) if session.understanding_scores else {}
-        ),
+        "syllabus": syllabus,
+        "current_section": session.current_section,
+        "current_lesson": session.current_lesson,
+        "current_phase": session.current_phase,
+        "user_level": session.user_level,
+        "understanding_scores": cast("dict[str, float]", session.understanding_scores or {}),
         "conversation_history": conversation_history,
-        "conversation_summary": (
-            str(session.conversation_summary) if session.conversation_summary else None
-        ),
+        "conversation_summary": session.conversation_summary,
         "last_user_message": None,
         "last_assistant_response": current_state.get("last_assistant_response"),
         "user_ready": current_state.get("user_ready", False),
         "attempts_current_lesson": current_state.get("attempts_current_lesson", 0),
-        "session_metadata": (dict(session.session_metadata) if session.session_metadata else None),
+        "session_metadata": _parse_session_metadata(session.session_metadata),
     }
     return state
 

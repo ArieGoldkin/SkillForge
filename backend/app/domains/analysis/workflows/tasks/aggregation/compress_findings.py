@@ -244,7 +244,7 @@ async def compress_single_finding(
         )
     else:
         # Already a CompressedFinding from structured output
-        compressed = result  # type: ignore[assignment]
+        compressed = result
 
     logger.info(
         "finding_compression_complete",
@@ -433,7 +433,7 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
             compressed_findings.append(compressed)
         else:
             # Already a CompressedFinding from structured output
-            compressed_findings.append(result)  # type: ignore[arg-type]
+            compressed_findings.append(result)
 
     # Calculate total tokens and log batch usage
     batch_total_tokens = batch_input_tokens + batch_output_tokens

@@ -32,18 +32,18 @@ def update_session_fields(  # noqa: PLR0913 - Repository method needs many optio
 
     """
     if syllabus is not None:
-        session.syllabus = syllabus  # type: ignore[assignment]
+        session.syllabus = syllabus
     if current_section is not None:
-        session.current_section = current_section  # type: ignore[assignment]
+        session.current_section = current_section
     if current_lesson is not None:
-        session.current_lesson = current_lesson  # type: ignore[assignment]
+        session.current_lesson = current_lesson
     if current_phase is not None:
-        session.current_phase = current_phase  # type: ignore[assignment]
+        session.current_phase = current_phase
     if understanding_scores is not None:
-        session.understanding_scores = understanding_scores  # type: ignore[assignment]
+        session.understanding_scores = understanding_scores
     if conversation_summary is not None:
-        session.conversation_summary = conversation_summary  # type: ignore[assignment]
+        session.conversation_summary = conversation_summary
     if status is not None:
-        session.status = status  # type: ignore[assignment]
+        session.status = status
         if status in ("completed", "abandoned"):
-            session.completed_at = datetime.now(UTC)  # type: ignore[assignment]
+            session.completed_at = datetime.now(UTC)

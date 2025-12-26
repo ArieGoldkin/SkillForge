@@ -67,7 +67,7 @@ async def run_trend_validator(  # noqa: PLR0913 - All parameters required for ag
     expectation = state.get("agent_expectation")
 
     # Issue #299-304, #442: Get content signals for comparison/research-aware thresholds
-    content_signals_dict: dict[str, object] = state.get("content_signals", {})  # type: ignore[assignment]
+    content_signals_dict: dict[str, object] = state.get("content_signals", {})
     has_comparisons = bool(content_signals_dict.get("has_comparisons", False))
     # Issue #442: Detect research/conceptual content for very low thresholds
     detected_genre = str(content_signals_dict.get("detected_genre", "unknown"))

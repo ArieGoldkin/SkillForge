@@ -241,7 +241,7 @@ class WorkflowOrchestrator:
                 thread_id=str(analysis_id),
                 callbacks_enabled=callbacks_enabled,
             )
-            result = await self.workflow.ainvoke(input_state, config=config)  # type: ignore[arg-type]
+            result = await self.workflow.ainvoke(input_state, config=config)
             logger.debug(
                 "workflow_execution_completed",
                 analysis_id=str(analysis_id),

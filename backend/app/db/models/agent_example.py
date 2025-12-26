@@ -7,7 +7,7 @@ Used by SemanticExampleSelector to improve agent output quality.
 import uuid
 from datetime import UTC, datetime
 
-from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import Boolean, Column, DateTime, Float, String, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811

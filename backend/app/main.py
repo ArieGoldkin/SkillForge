@@ -295,11 +295,13 @@ app = FastAPI(
 # Rate Limiting Middleware
 # Attach limiter to app state and register exception handler
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# slowapi's handler type is compatible but ty doesn't recognize the exception subtype
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Compression Middleware
 # Compresses responses > 1000 bytes with gzip (reduces bandwidth usage)
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+# Starlette middleware classes are runtime-compatible but ty's strict typing requires ignore
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # type: ignore[arg-type]
 
 # CORS Middleware
 app.add_middleware(

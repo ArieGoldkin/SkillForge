@@ -147,10 +147,10 @@ async def download_artifact(
 
         # Extract title from analysis metadata
         title: str | None = None
-        if analysis.extraction_metadata:  # type: ignore[attr-defined]
-            extraction_metadata = analysis.extraction_metadata  # type: ignore[attr-defined]
+        if analysis.extraction_metadata:
+            extraction_metadata = analysis.extraction_metadata
             if isinstance(extraction_metadata, dict):
-                title = extraction_metadata.get("title")  # type: ignore[assignment]
+                title = extraction_metadata.get("title")
 
         # Generate filename
         filename = generate_filename(title, str(artifact.analysis_id))
@@ -198,9 +198,12 @@ async def list_artifacts(
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
     page: Annotated[int, Query(ge=1)] = 1,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    include_deleted: Annotated[bool, Query(description="Include soft-deleted artifacts")] = False,
 ) -> dict:
     """List artifacts with pagination."""
-    artifacts, total = await repo.list_artifacts(page=page, limit=limit)
+    artifacts, total = await repo.list_artifacts(
+        page=page, limit=limit, include_deleted=include_deleted
+    )
     pages = ceil(total / limit) if total > 0 else 0
 
     items = [

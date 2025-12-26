@@ -642,7 +642,7 @@ def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> 
         parts.append(f"\nKey Findings:\n{findings_text}")
 
     # Extract synthesis sections
-    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})  # type: ignore[assignment]
+    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})
     if synthesis and isinstance(synthesis, dict):
         for section, content in list(synthesis.items())[:5]:
             if content:

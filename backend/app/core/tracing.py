@@ -119,9 +119,9 @@ def robust_traceable(
 
                     return await observed_func(*args, **kwargs)
 
-                return wrapper  # type: ignore[return-value]
+                return wrapper
 
-            return observed_func  # type: ignore[return-value]
+            return observed_func
 
         except ImportError:
             # Langfuse not installed - return function unchanged
@@ -265,9 +265,9 @@ def traced_tool(
 
                     return await observed_func(*args, **kwargs)
 
-                return wrapper  # type: ignore[return-value]
+                return wrapper
 
-            return observed_func  # type: ignore[return-value]
+            return observed_func
 
         except ImportError:
             # Langfuse not installed - return function unchanged

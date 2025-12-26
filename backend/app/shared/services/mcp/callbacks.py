@@ -82,7 +82,7 @@ except ImportError:
     from dataclasses import dataclass
 
     @dataclass
-    class CallbackContext:  # type: ignore[no-redef]
+    class CallbackContext:
         """Context provided to MCP callbacks (placeholder).
 
         Attributes:
@@ -95,7 +95,7 @@ except ImportError:
         tool_name: str | None = None
 
     @dataclass
-    class LoggingMessageNotificationParams:  # type: ignore[no-redef]
+    class LoggingMessageNotificationParams:
         """Parameters for logging message notifications (placeholder).
 
         Attributes:
@@ -110,7 +110,7 @@ except ImportError:
         logger: str | None = None
 
     @dataclass
-    class Callbacks:  # type: ignore[no-redef]
+    class Callbacks:
         """Callbacks for the LangChain MCP client (placeholder)."""
 
         on_logging_message: Any = None

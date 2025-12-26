@@ -75,10 +75,10 @@ class ErrorRecorder:
                     )
 
                 # Update error tracking fields
-                analysis.error_code = error_code  # type: ignore[assignment]
-                analysis.error_message = truncated_message  # type: ignore[assignment]
-                analysis.failed_at_stage = stage  # type: ignore[assignment]
-                analysis.updated_at = datetime.now(UTC)  # type: ignore[assignment]
+                analysis.error_code = error_code
+                analysis.error_message = truncated_message
+                analysis.failed_at_stage = stage
+                analysis.updated_at = datetime.now(UTC)
 
                 await db_session.commit()
 

@@ -73,7 +73,7 @@ async def create_session(
 
         # Initialize tutor workflow state
         # session.id is a UUID when accessed from instance, not Column[UUID]
-        session_id: uuid.UUID = session.id  # type: ignore[assignment]
+        session_id: uuid.UUID = session.id
         initial_state = build_tutor_state(
             session_id,
             request.analysis_id,
@@ -95,9 +95,9 @@ async def create_session(
 
         # SQLAlchemy Column types return actual values when accessed from instances
         return CreateSessionResponse(
-            session_id=session.id,  # type: ignore[arg-type]
-            status=str(session.status),  # type: ignore[arg-type]
-            sse_endpoint=f"/api/v1/tutor/sessions/{session.id}/stream",  # type: ignore[arg-type]
+            session_id=session.id,
+            status=str(session.status),
+            sse_endpoint=f"/api/v1/tutor/sessions/{session.id}/stream",
         )
 
     except ValueError as e:
@@ -155,14 +155,14 @@ async def get_session(
 
         # SQLAlchemy Column types return actual values when accessed from instances
         return GetSessionResponse(
-            session_id=session.id,  # type: ignore[arg-type]
-            analysis_id=session.analysis_id,  # type: ignore[arg-type]
-            status=str(session.status),  # type: ignore[arg-type]
-            syllabus=session.syllabus,  # type: ignore[arg-type]
-            current_section=int(session.current_section),  # type: ignore[arg-type]
-            current_lesson=int(session.current_lesson),  # type: ignore[arg-type]
-            current_phase=str(session.current_phase),  # type: ignore[arg-type]
-            user_level=str(session.user_level),  # type: ignore[arg-type]
+            session_id=session.id,
+            analysis_id=session.analysis_id,
+            status=str(session.status),
+            syllabus=session.syllabus,
+            current_section=int(session.current_section),
+            current_lesson=int(session.current_lesson),
+            current_phase=str(session.current_phase),
+            user_level=str(session.user_level),
             messages=formatted_messages,
             started_at=session.started_at.isoformat(),
             completed_at=session.completed_at.isoformat() if session.completed_at else None,

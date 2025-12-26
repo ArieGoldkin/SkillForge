@@ -116,7 +116,7 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
 
     """
     # Check for runtime model override in config
-    runtime_config: dict[str, object] = config.get("configurable", {}) if config else {}  # type: ignore[union-attr]
+    runtime_config: dict[str, object] = config.get("configurable", {}) if config else {}
     runtime_model = runtime_config.get("model")
 
     # Task-based routing takes precedence over config, then runtime model, then settings
@@ -260,20 +260,20 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
             "model": model_identifier_to_use,
         }
         if "api_key" in init_kwargs:
-            anthropic_kwargs["api_key"] = init_kwargs["api_key"]  # type: ignore[assignment]
+            anthropic_kwargs["api_key"] = init_kwargs["api_key"]
         if "temperature" in init_kwargs:
-            anthropic_kwargs["temperature"] = init_kwargs["temperature"]  # type: ignore[assignment]
+            anthropic_kwargs["temperature"] = init_kwargs["temperature"]
         if "max_tokens" in init_kwargs:
-            anthropic_kwargs["max_tokens"] = init_kwargs["max_tokens"]  # type: ignore[assignment]
+            anthropic_kwargs["max_tokens"] = init_kwargs["max_tokens"]
         if "timeout" in init_kwargs:
-            anthropic_kwargs["timeout"] = init_kwargs["timeout"]  # type: ignore[assignment]
+            anthropic_kwargs["timeout"] = init_kwargs["timeout"]
         if "max_retries" in init_kwargs:
-            anthropic_kwargs["max_retries"] = init_kwargs["max_retries"]  # type: ignore[assignment]
+            anthropic_kwargs["max_retries"] = init_kwargs["max_retries"]
         if betas_list:
-            anthropic_kwargs["betas"] = betas_list  # type: ignore[assignment]
+            anthropic_kwargs["betas"] = betas_list
         # Add Redis semantic cache
         if redis_cache is not None:
-            anthropic_kwargs["cache"] = redis_cache  # type: ignore[assignment]
+            anthropic_kwargs["cache"] = redis_cache
 
         return ChatAnthropic(**anthropic_kwargs)  # type: ignore[arg-type,return-value]
 
@@ -295,7 +295,7 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
 
     # Add Redis semantic cache if available
     if redis_cache is not None:
-        init_kwargs["cache"] = redis_cache  # type: ignore[typeddict-item]
+        init_kwargs["cache"] = redis_cache
 
     # Create configurable model that can be switched at invocation time
     # If no runtime model was provided, the model is still configurable via config at invoke time

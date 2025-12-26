@@ -223,9 +223,9 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
                 "created_at": datetime.now(UTC).isoformat(),
                 "metadata": {"phase": "readiness_assessment"},
             }
-            updated_history: list[TutorMessage] = [*conversation_history, new_message]  # type: ignore[list-item]
+            updated_history: list[TutorMessage] = [*conversation_history, new_message]
         else:
-            updated_history = list(conversation_history)  # type: ignore[arg-type]
+            updated_history = list(conversation_history)
 
         # Return only updated fields
         return {

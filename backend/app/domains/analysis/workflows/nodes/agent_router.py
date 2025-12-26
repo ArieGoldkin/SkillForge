@@ -101,7 +101,7 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
             if scope and scope.inject_memory and content_summary:
                 prior_memory = await _fetch_agent_memory(agent_type, content_summary)
                 if prior_memory:
-                    scoped_state["prior_memory"] = prior_memory  # type: ignore[typeddict-unknown-key]
+                    scoped_state["prior_memory"] = prior_memory
                     logger.debug(
                         "agent_router_memory_injected",
                         agent_type=agent_type,
