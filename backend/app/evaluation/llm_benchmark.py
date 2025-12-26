@@ -957,8 +957,8 @@ class LLMBenchmark:
         """
         from uuid import uuid4
 
-        from app.evaluation.types import Example as LSExample
-        from app.evaluation.types import Run as LSRun
+        from app.evaluation.types import EvalExample as LSExample
+        from app.evaluation.types import EvalRun as LSRun
 
         all_scores: dict[str, list[float]] = {}
         latencies: list[float] = []

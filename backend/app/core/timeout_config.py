@@ -123,14 +123,16 @@ def create_runnable_config(
         >>> # If Langfuse enabled, config["callbacks"] contains CallbackHandler
 
     """
-    from app.core.langfuse_service import get_langfuse_callback_handler
+    from app.core.langfuse_service import get_langfuse_service
 
     config: RunnableConfig = {}
 
     # Add Langfuse callback for LLM token/cost tracking
-    callback = get_langfuse_callback_handler()
-    if callback:
-        config["callbacks"] = [callback]
+    service = get_langfuse_service()
+    if service:
+        callback = service.get_callback_handler()
+        if callback:
+            config["callbacks"] = [callback]
 
     if metadata:
         config["metadata"] = metadata

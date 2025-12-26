@@ -63,8 +63,3 @@ class EvalRun:
     trace_id: UUID | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     id: UUID = field(default_factory=uuid4)
-
-
-# Type aliases for backwards compatibility with existing code
-Example = EvalExample
-Run = EvalRun

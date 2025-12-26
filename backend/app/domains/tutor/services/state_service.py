@@ -60,25 +60,25 @@ async def load_state_from_session(
     # Build complete state
     # SQLAlchemy Column types return actual values when accessed from instances
     state: TutorState = {
-        "session_id": str(session.id),  # type: ignore[arg-type]
-        "analysis_id": str(session.analysis_id) if session.analysis_id else None,  # type: ignore[arg-type]
-        "syllabus": (dict(session.syllabus) if session.syllabus else current_state.get("syllabus")),  # type: ignore[typeddict-item]
-        "current_section": int(session.current_section),  # type: ignore[arg-type]
-        "current_lesson": int(session.current_lesson),  # type: ignore[arg-type]
-        "current_phase": str(session.current_phase),  # type: ignore[arg-type]
-        "user_level": str(session.user_level),  # type: ignore[arg-type]
+        "session_id": str(session.id),
+        "analysis_id": str(session.analysis_id) if session.analysis_id else None,
+        "syllabus": (dict(session.syllabus) if session.syllabus else current_state.get("syllabus")),
+        "current_section": int(session.current_section),
+        "current_lesson": int(session.current_lesson),
+        "current_phase": str(session.current_phase),
+        "user_level": str(session.user_level),
         "understanding_scores": (
-            dict(session.understanding_scores) if session.understanding_scores else {}  # type: ignore[no-matching-overload]
+            dict(session.understanding_scores) if session.understanding_scores else {}
         ),
         "conversation_history": conversation_history,
         "conversation_summary": (
             str(session.conversation_summary) if session.conversation_summary else None
-        ),  # type: ignore[arg-type]
+        ),
         "last_user_message": None,
-        "last_assistant_response": current_state.get("last_assistant_response"),  # type: ignore[typeddict-item]
-        "user_ready": current_state.get("user_ready", False),  # type: ignore[typeddict-item]
-        "attempts_current_lesson": current_state.get("attempts_current_lesson", 0),  # type: ignore[typeddict-item]
-        "session_metadata": (dict(session.session_metadata) if session.session_metadata else None),  # type: ignore[typeddict-item]
+        "last_assistant_response": current_state.get("last_assistant_response"),
+        "user_ready": current_state.get("user_ready", False),
+        "attempts_current_lesson": current_state.get("attempts_current_lesson", 0),
+        "session_metadata": (dict(session.session_metadata) if session.session_metadata else None),
     }
     return state
 

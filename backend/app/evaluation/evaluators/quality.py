@@ -23,7 +23,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
-from app.evaluation.types import Example, Run
+from app.evaluation.types import EvalExample, EvalRun
 
 logger = get_logger(__name__)
 
@@ -310,7 +310,7 @@ async def _get_evaluator_prompt(aspect: str) -> str:
 def create_quality_evaluator(
     aspect: str = "overall",
     judge_model: str | None = None,
-) -> Callable[[Run, Example], Coroutine[Any, Any, dict[str, Any]]]:
+) -> Callable[[EvalRun, EvalExample], Coroutine[Any, Any, dict[str, Any]]]:
     """Create an LLM-as-judge quality evaluator.
 
     This factory function creates evaluators that use an LLM to judge
@@ -334,7 +334,7 @@ def create_quality_evaluator(
 
     """
 
-    async def quality_evaluator(run: Run, example: Example) -> dict[str, Any]:
+    async def quality_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
         """Evaluate output quality using LLM-as-judge.
 
         Args:

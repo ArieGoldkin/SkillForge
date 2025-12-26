@@ -303,8 +303,13 @@ class TestLangfuseScoreSubmission:
         # Create mock cache that returns pre-populated scores to avoid LLM calls
         with (
             patch("app.shared.services.g_eval.scorer.get_cache") as mock_cache_factory,
-            patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
+            patch("app.core.langfuse_service.get_langfuse_service") as mock_get_service,
         ):
+            # Mock Langfuse service with submit_score method
+            mock_service = MagicMock()
+            mock_service.submit_score = MagicMock()
+            mock_get_service.return_value = mock_service
+
             # Mock cache to return scores (simulates cache hits)
             mock_cache = MagicMock()
 
@@ -335,10 +340,10 @@ class TestLangfuseScoreSubmission:
 
             # Verify scores were submitted to Langfuse
             # Cache hits submit analytics: 2 cache hit scores + 2 criteria scores + 1 overall = 5
-            assert mock_submit.call_count == 5
+            assert mock_service.submit_score.call_count == 5
 
             # Verify individual criterion scores
-            calls = mock_submit.call_args_list
+            calls = mock_service.submit_score.call_args_list
             criterion_calls = [c for c in calls if c[1]["name"].startswith("g_eval_")]
 
             # Check completeness score
@@ -362,9 +367,14 @@ class TestLangfuseScoreSubmission:
 
         with (
             patch("app.shared.services.g_eval.scorer.get_cache") as mock_cache_factory,
-            patch("app.core.langfuse_service.submit_langfuse_score") as mock_submit,
+            patch("app.core.langfuse_service.get_langfuse_service") as mock_get_service,
             patch("app.shared.services.g_eval.scorer.get_agent_rubrics") as mock_rubrics,
         ):
+            # Mock Langfuse service with failing submit_score method
+            mock_service = MagicMock()
+            mock_service.submit_score = MagicMock(side_effect=Exception("Langfuse connection error"))
+            mock_get_service.return_value = mock_service
+
             # Mock agent rubrics to return only the criteria we're testing
             mock_rubrics.return_value = {
                 "criteria": ["completeness"],
@@ -381,9 +391,6 @@ class TestLangfuseScoreSubmission:
 
             mock_cache.get.return_value = completeness_cached
             mock_cache_factory.return_value = mock_cache
-
-            # Mock Langfuse failure
-            mock_submit.side_effect = Exception("Langfuse connection error")
 
             # Should still complete successfully despite Langfuse failure
             result = await g_eval_score(

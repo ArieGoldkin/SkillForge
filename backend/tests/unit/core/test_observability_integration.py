@@ -18,8 +18,12 @@ class TestRunnableConfigObservability:
     @pytest.mark.unit
     def test_workflow_config_includes_full_context(self):
         """Workflow runner should create config with analysis context."""
-        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
-            mock_handler.return_value = MagicMock()
+        mock_handler = MagicMock()
+        mock_service = MagicMock()
+        mock_service.get_callback_handler.return_value = mock_handler
+
+        with patch("app.core.langfuse_service.get_langfuse_service") as mock_get_service:
+            mock_get_service.return_value = mock_service
 
             from app.core.timeout_config import create_runnable_config
 
@@ -48,8 +52,11 @@ class TestRunnableConfigObservability:
     @pytest.mark.unit
     def test_agent_config_includes_agent_context(self):
         """Agent execution should create config with agent-specific context."""
-        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
-            mock_handler.return_value = None
+        mock_service = MagicMock()
+        mock_service.get_callback_handler.return_value = None
+
+        with patch("app.core.langfuse_service.get_langfuse_service") as mock_get_service:
+            mock_get_service.return_value = mock_service
 
             from app.core.timeout_config import create_runnable_config
 
@@ -247,9 +254,12 @@ class TestEndToEndObservability:
     @pytest.mark.unit
     def test_complete_observability_pipeline(self):
         """Test complete observability pipeline from config to usage extraction."""
-        with patch("app.core.langfuse_service.get_langfuse_callback_handler") as mock_handler:
-            mock_callback = MagicMock()
-            mock_handler.return_value = mock_callback
+        mock_callback = MagicMock()
+        mock_service = MagicMock()
+        mock_service.get_callback_handler.return_value = mock_callback
+
+        with patch("app.core.langfuse_service.get_langfuse_service") as mock_get_service:
+            mock_get_service.return_value = mock_service
 
             from app.core.timeout_config import create_runnable_config
 

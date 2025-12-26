@@ -220,7 +220,7 @@ def _submit_token_metrics_to_langfuse(
 
     """
     try:
-        from app.core.langfuse_service import submit_langfuse_score
+        from app.core.langfuse_service import get_langfuse_service
         from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 
         # Extract token usage from response
@@ -258,21 +258,23 @@ def _submit_token_metrics_to_langfuse(
             total_tokens = input_tokens + output_tokens
 
         # Submit token metrics to Langfuse
-        submit_langfuse_score(
-            name="token_count_input",
-            value=float(input_tokens),
-            comment=f"G-Eval {criterion}: Input tokens for {agent_type}",
-        )
-        submit_langfuse_score(
-            name="token_count_output",
-            value=float(output_tokens),
-            comment=f"G-Eval {criterion}: Output tokens for {agent_type}",
-        )
-        submit_langfuse_score(
-            name="token_count_total",
-            value=float(total_tokens),
-            comment=f"G-Eval {criterion}: Total tokens for {agent_type}",
-        )
+        langfuse_service = get_langfuse_service()
+        if langfuse_service:
+            langfuse_service.submit_score(
+                name="token_count_input",
+                value=float(input_tokens),
+                comment=f"G-Eval {criterion}: Input tokens for {agent_type}",
+            )
+            langfuse_service.submit_score(
+                name="token_count_output",
+                value=float(output_tokens),
+                comment=f"G-Eval {criterion}: Output tokens for {agent_type}",
+            )
+            langfuse_service.submit_score(
+                name="token_count_total",
+                value=float(total_tokens),
+                comment=f"G-Eval {criterion}: Total tokens for {agent_type}",
+            )
 
         # Record usage in cost tracker for session-level analytics
         cost_tracker = GEvalCostTracker.get_instance()
@@ -301,11 +303,12 @@ def _submit_token_metrics_to_langfuse(
         )
 
         # Submit cost metric to Langfuse
-        submit_langfuse_score(
-            name="cost_usd",
-            value=cost.total_cost,
-            comment=f"G-Eval {criterion}: ${cost.total_cost:.6f} for {agent_type} ({model_name})",
-        )
+        if langfuse_service:
+            langfuse_service.submit_score(
+                name="cost_usd",
+                value=cost.total_cost,
+                comment=f"G-Eval {criterion}: ${cost.total_cost:.6f} for {agent_type} ({model_name})",
+            )
 
         logger.debug(
             "token_metrics_submitted_to_langfuse",
@@ -350,11 +353,19 @@ def _submit_g_eval_scores_to_langfuse(
 
     """
     try:
-        from app.core.langfuse_service import submit_langfuse_score
+        from app.core.langfuse_service import get_langfuse_service
+
+        langfuse_service = get_langfuse_service()
+        if not langfuse_service:
+            logger.debug(
+                "g_eval_scores_skipped_no_service",
+                message="Langfuse service not available for score submission",
+            )
+            return
 
         # Submit each criterion score individually for detailed analytics
         for criterion, score_obj in criteria_scores.items():
-            submit_langfuse_score(
+            langfuse_service.submit_score(
                 trace_id=trace_id,
                 name=f"g_eval_{criterion}",
                 value=score_obj.normalized,
@@ -362,7 +373,7 @@ def _submit_g_eval_scores_to_langfuse(
             )
 
         # Submit overall G-Eval score
-        submit_langfuse_score(
+        langfuse_service.submit_score(
             trace_id=trace_id,
             name="g_eval_overall",
             value=overall,
@@ -425,13 +436,15 @@ async def _score_criterion(
             )
             # Submit cache hit metric to Langfuse
             try:
-                from app.core.langfuse_service import submit_langfuse_score
+                from app.core.langfuse_service import get_langfuse_service
 
-                submit_langfuse_score(
-                    name="g_eval_cache_hit",
-                    value=1,
-                    comment=f"G-Eval file cache hit: {criterion}",
-                )
+                langfuse_service = get_langfuse_service()
+                if langfuse_service:
+                    langfuse_service.submit_score(
+                        name="g_eval_cache_hit",
+                        value=1,
+                        comment=f"G-Eval file cache hit: {criterion}",
+                    )
             except Exception as e:  # noqa: BLE001 - Graceful degradation
                 logger.warning("g_eval_cache_hit_score_submission_failed", error=str(e))
 
@@ -450,13 +463,15 @@ async def _score_criterion(
     # Submit cache miss metric to Langfuse (only if cache was enabled)
     if use_cache:
         try:
-            from app.core.langfuse_service import submit_langfuse_score
+            from app.core.langfuse_service import get_langfuse_service
 
-            submit_langfuse_score(
-                name="g_eval_cache_hit",
-                value=0,
-                comment=f"G-Eval file cache miss: {criterion}",
-            )
+            langfuse_service = get_langfuse_service()
+            if langfuse_service:
+                langfuse_service.submit_score(
+                    name="g_eval_cache_hit",
+                    value=0,
+                    comment=f"G-Eval file cache miss: {criterion}",
+                )
         except Exception as e:  # noqa: BLE001 - Graceful degradation
             logger.warning("g_eval_cache_miss_score_submission_failed", error=str(e))
 
@@ -688,13 +703,15 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
                 )
                 # Submit cache hit metric to Langfuse
                 try:
-                    from app.core.langfuse_service import submit_langfuse_score
+                    from app.core.langfuse_service import get_langfuse_service
 
-                    submit_langfuse_score(
-                        name="g_eval_cache_hit",
-                        value=1,
-                        comment=f"G-Eval file cache hit: {criterion}",
-                    )
+                    langfuse_service = get_langfuse_service()
+                    if langfuse_service:
+                        langfuse_service.submit_score(
+                            name="g_eval_cache_hit",
+                            value=1,
+                            comment=f"G-Eval file cache hit: {criterion}",
+                        )
                 except Exception as e:  # noqa: BLE001 - Graceful degradation
                     logger.warning("g_eval_cache_hit_score_submission_failed", error=str(e))
 
@@ -709,13 +726,15 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
                 criteria_to_score.append(criterion)
                 # Submit cache miss metric to Langfuse
                 try:
-                    from app.core.langfuse_service import submit_langfuse_score
+                    from app.core.langfuse_service import get_langfuse_service
 
-                    submit_langfuse_score(
-                        name="g_eval_cache_hit",
-                        value=0,
-                        comment=f"G-Eval file cache miss: {criterion}",
-                    )
+                    langfuse_service = get_langfuse_service()
+                    if langfuse_service:
+                        langfuse_service.submit_score(
+                            name="g_eval_cache_hit",
+                            value=0,
+                            comment=f"G-Eval file cache miss: {criterion}",
+                        )
                 except Exception as e:  # noqa: BLE001 - Graceful degradation
                     logger.warning("g_eval_cache_miss_score_submission_failed", error=str(e))
     else:

@@ -39,7 +39,7 @@ from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
 from app.core.langfuse_service import (  # noqa: E402
     configure_langfuse_service,
-    flush_langfuse,
+    get_langfuse_service,
     shutdown_langfuse_service,
 )
 from app.core.logging import get_logger, setup_logging  # noqa: E402
@@ -180,10 +180,12 @@ async def lifespan(app: FastAPI):
     # Flush and shutdown Langfuse with timeout protection
     try:
         # Give Langfuse 10 seconds to flush remaining events
-        await asyncio.wait_for(
-            asyncio.to_thread(flush_langfuse),
-            timeout=10.0,
-        )
+        service = get_langfuse_service()
+        if service:
+            await asyncio.wait_for(
+                asyncio.to_thread(service.flush),
+                timeout=10.0,
+            )
     except TimeoutError:
         logger.warning(
             "langfuse_flush_timeout",
