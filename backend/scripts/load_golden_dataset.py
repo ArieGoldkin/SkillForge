@@ -190,12 +190,25 @@ async def main(replace: bool = False) -> int:
                 )
                 return 1
 
+            # Build raw_content from sections (required for status='complete')
+            # This satisfies the check_complete_has_content constraint
+            raw_content_parts = [f"# {doc_title}", ""]
+            for section in sections:
+                section_title = section.get("title", "Section")
+                section_content = section.get("content", "")
+                raw_content_parts.append(f"## {section_title}")
+                raw_content_parts.append("")
+                raw_content_parts.append(section_content)
+                raw_content_parts.append("")
+            raw_content = "\n".join(raw_content_parts)
+
             analysis = Analysis(
                 id=analysis_id,
                 url=source_url,
                 content_type=content_type,
                 status="complete",
                 title=doc_title,
+                raw_content=raw_content,
             )
             session.add(analysis)
             # Flush analysis first to satisfy foreign key constraint for artifact
