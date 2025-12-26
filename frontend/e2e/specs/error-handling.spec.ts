@@ -17,11 +17,12 @@ test.describe('Error Handling Tests', () => {
 
   test('should handle API errors gracefully on invalid URL submission', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    // Wait for React to render the URL input (lazy-loaded component)
+    const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
 
     // Submit a URL that looks valid but will fail backend validation
     // Use a proper URL format to bypass HTML5 validation
-    const urlInput = page.getByPlaceholder(/url/i);
     await urlInput.fill('https://this-domain-does-not-exist-12345.invalid');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
@@ -51,8 +52,11 @@ test.describe('Error Handling Tests', () => {
   test('should handle malformed URL submission', async ({ page }) => {
     await page.goto('/');
 
-    // Submit a malformed URL
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Submit a malformed URL
     await urlInput.fill('htp://broken-url-format');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
@@ -73,7 +77,10 @@ test.describe('Error Handling Tests', () => {
 
     await page.goto('/');
 
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
     await urlInput.fill('https://example.com');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
@@ -135,8 +142,11 @@ test.describe('Error Handling Tests', () => {
   test('should handle missing required fields in URL submission', async ({ page }) => {
     await page.goto('/');
 
-    // Try to submit without entering a URL
+    // Wait for React to render the submit button (lazy-loaded component)
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
+    await submitButton.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Try to submit without entering a URL
 
     // Check if button is disabled or shows validation
     const isDisabled = await submitButton.isDisabled().catch(() => false);
@@ -159,7 +169,10 @@ test.describe('Error Handling Tests', () => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
     await urlInput.fill('https://example.com');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
@@ -200,8 +213,11 @@ test.describe('Error Handling Tests', () => {
   test('should maintain UI functionality after API errors', async ({ page }) => {
     await page.goto('/');
 
-    // Submit an invalid URL
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Submit an invalid URL
     await urlInput.fill('invalid-url');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
@@ -230,7 +246,10 @@ test.describe('Error Handling Tests', () => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });
 
     // Submit a URL
@@ -282,8 +301,11 @@ test.describe('Error Handling Tests', () => {
   test('should recover and work normally after temporary errors', async ({ page }) => {
     await page.goto('/');
 
-    // First try with invalid URL
+    // Wait for React to render the URL input (lazy-loaded component)
     const urlInput = page.getByPlaceholder(/url/i);
+    await urlInput.waitFor({ state: 'visible', timeout: 10000 });
+
+    // First try with invalid URL
     await urlInput.fill('not-valid');
 
     const submitButton = page.getByRole('button', { name: /analyze|submit/i });

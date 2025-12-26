@@ -15,13 +15,10 @@ test.describe('Home Page - URL Submission', () => {
 
   test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
-    // With storageState, page already starts at baseURL (/)
-    // Only navigate if we need to ensure we're on home page
-    // Most tests can skip this since storageState preserves the home page state
-    const currentUrl = page.url();
-    if (!currentUrl.endsWith('/')) {
-      await homePage.goto();
-    }
+    // Always navigate to home page - storageState only preserves cookies/localStorage, not URL
+    await homePage.goto();
+    // Wait for React to render the URL input (lazy-loaded component)
+    await homePage.urlInput.waitFor({ state: 'visible', timeout: 10000 });
   });
 
   test('should display the URL input and submit button', async () => {
