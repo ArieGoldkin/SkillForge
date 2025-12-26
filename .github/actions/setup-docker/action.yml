@@ -1,10 +1,14 @@
 name: 'Setup Docker with Layer Caching'
-description: 'Configure Docker Buildx with multi-layer caching for faster builds'
+description: 'Configure Docker Buildx with multi-layer caching and pre-pulled base images'
 inputs:
   cache-path:
     description: 'Path to Docker layer cache'
     required: false
     default: '/tmp/.buildx-cache'
+  pre-pull-images:
+    description: 'Pre-pull base images for faster builds'
+    required: false
+    default: 'true'
 
 runs:
   using: 'composite'
@@ -15,62 +19,54 @@ runs:
         driver-opts: |
           image=moby/buildkit:latest
           network=host
-      # Note: timeout-minutes not supported in composite actions, handled by caller
-      continue-on-error: true  # Buildx is optional - native BuildKit works too
+      continue-on-error: true
 
-    - name: Cache Docker layers
-      uses: actions/cache@v5
-      with:
-        path: ${{ inputs.cache-path }}
-        key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*', '**/poetry.lock', '**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
-    - name: Configure Docker BuildKit cache
+    - name: Configure Docker environment
       shell: bash
       run: |
-        # Enable BuildKit caching for docker compose builds
+        # Enable BuildKit caching
         echo "BUILDKIT_INLINE_CACHE=1" >> $GITHUB_ENV
         echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
         echo "COMPOSE_DOCKER_CLI_BUILD=1" >> $GITHUB_ENV
-
-        # Configure BuildKit to use cache mount
         mkdir -p ${{ inputs.cache-path }}
+        echo "✓ Docker BuildKit configured"
 
-        echo "✓ Docker BuildKit caching configured"
-
-    - name: Verify Docker readiness and cleanup
+    # Pre-pull base images in parallel for faster builds
+    - name: Pre-pull base images (parallel)
+      if: inputs.pre-pull-images == 'true'
       shell: bash
       run: |
-        # Wait for Docker daemon to be fully ready
-        echo "Checking Docker daemon health..."
-        for i in {1..30}; do
-          if docker info >/dev/null 2>&1; then
-            echo "✓ Docker ready after $i attempts"
-            break
-          fi
-          if [ $i -eq 30 ]; then
-            echo "✗ Docker not ready after 30 attempts"
-            exit 1
-          fi
-          echo "Waiting for Docker... ($i/30)"
-          sleep 2
-        done
+        echo "⏳ Pre-pulling base images..."
 
-        # Verify Docker API is responsive
-        docker version
+        # Pull images in parallel using background jobs
+        docker pull python:3.13-slim &
+        PID1=$!
+        docker pull node:20-slim &
+        PID2=$!
+        docker pull pgvector/pgvector:pg17 &
+        PID3=$!
+        docker pull redis/redis-stack-server:7.4.0-v1 &
+        PID4=$!
 
-        # Clean up stale test containers/volumes from previous runs
-        echo "Cleaning up stale test resources..."
+        # Wait for all pulls to complete
+        wait $PID1 $PID2 $PID3 $PID4 2>/dev/null || true
+
+        echo "✓ Base images ready"
+
+    - name: Verify Docker and cleanup stale resources
+      shell: bash
+      run: |
+        # Quick Docker health check
+        docker info >/dev/null 2>&1 || { echo "Docker not ready"; exit 1; }
+
+        # Clean up stale test containers (fast)
         docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
-
-        # Remove any dangling containers from previous runs
         docker container prune -f 2>/dev/null || true
 
-        # Verify no stale skillforge-test containers exist
-        if docker ps -a | grep -q "skillforge.*test"; then
-          echo "⚠️  Found stale containers, force removing..."
-          docker rm -f $(docker ps -aq -f name="skillforge.*test") 2>/dev/null || true
+        # Remove stale skillforge containers if any
+        STALE=$(docker ps -aq -f name="skillforge.*test" 2>/dev/null)
+        if [ -n "$STALE" ]; then
+          docker rm -f $STALE 2>/dev/null || true
         fi
 
-        echo "✓ Docker ready and clean"
+        echo "✓ Docker ready"

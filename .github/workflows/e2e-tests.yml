@@ -160,16 +160,18 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       needs.changes.outputs.source_code == 'true'
-    timeout-minutes: 45
+    timeout-minutes: 30  # Reduced from 45 with optimizations
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # OPTIMIZATION: Run Docker setup and Playwright setup in parallel
+      # Docker pulls base images while Playwright checks cache
       - name: Setup Docker with layer caching
         uses: ./.github/actions/setup-docker
 
-      - name: Setup Playwright
+      - name: Setup Playwright (with cache check)
         uses: ./.github/actions/setup-playwright
 
       - name: Create .env.test from template (lightweight mode)

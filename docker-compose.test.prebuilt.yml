@@ -1,0 +1,159 @@
+## Docker Compose for E2E Tests with Pre-built Images
+## =============================================================================
+## This file uses pre-built images from GHCR instead of building locally.
+## Use this for faster CI runs when images are already built.
+##
+## Usage:
+##   # Set image tags (from docker-build workflow)
+##   export BACKEND_IMAGE=ghcr.io/owner/skillforge/backend:pr-123
+##   export FRONTEND_IMAGE=ghcr.io/owner/skillforge/frontend:pr-123
+##
+##   docker compose -f docker-compose.test.prebuilt.yml up -d --wait
+##
+## Falls back to local build if images not specified.
+## =============================================================================
+
+name: skillforge-test
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: skillforge-postgres-test
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev}
+      POSTGRES_DB: skillforge-test
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d skillforge-test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis/redis-stack-server:7.4.0-v1
+    container_name: skillforge-redis-test
+    ports:
+      - "6381:6379"
+    environment:
+      REDIS_ARGS: >-
+        --requirepass ${REDIS_PASSWORD:-redis-dev}
+        --timeout 0
+        --tcp-keepalive 60
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis-dev}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-test-data:/data
+
+  # Backend uses pre-built image if BACKEND_IMAGE is set, otherwise builds
+  backend:
+    image: ${BACKEND_IMAGE:-}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-test
+    env_file:
+      - ./backend/.env.test
+    environment:
+      ENVIRONMENT: test
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/skillforge-test
+      API_V1_PREFIX: /api/v1
+      HOST: 0.0.0.0
+      PORT: 8500
+      CORS_ORIGINS: '["http://localhost:5174","http://localhost:5175"]'
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis-dev}@redis:6379
+      LANGFUSE_HOST: http://langfuse-web:3000
+      SKILLFORGE_E2E_DISABLE_WORKFLOW: ${SKILLFORGE_E2E_DISABLE_WORKFLOW:-false}
+    ports:
+      - "8501:8500"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/api/v1/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    volumes:
+      - ./backend/app:/app/app:ro
+      - ./backend/alembic:/app/alembic:ro
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+      - ./backend/scripts:/app/scripts:ro
+      - ./backend/data:/app/data:ro
+    command: >
+      sh -c "
+        echo 'Running migrations...' &&
+        /app/.venv/bin/alembic upgrade head &&
+        echo 'Starting backend...' &&
+        /app/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
+      "
+
+  # Frontend uses pre-built image if FRONTEND_IMAGE is set, otherwise builds
+  frontend:
+    image: ${FRONTEND_IMAGE:-}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: skillforge-frontend-test
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:8501
+    ports:
+      - "5174:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+      start_period: 20s
+
+  # Backend seed always uses same image as backend
+  backend-seed:
+    image: ${BACKEND_IMAGE:-}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: skillforge-backend-seed-test
+    env_file:
+      - ./backend/.env.test
+    environment:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/skillforge-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./backend/scripts:/app/scripts:ro
+      - ./backend/data:/app/data:ro
+      - ./backend/tests/smoke/retrieval/fixtures:/app/tests/smoke/retrieval/fixtures:ro
+    command: >
+      sh -c "
+        echo 'Loading golden dataset...' &&
+        cd /app && /app/.venv/bin/python scripts/load_golden_dataset.py &&
+        echo 'Golden dataset loaded successfully'
+      "
+    restart: "no"
+
+volumes:
+  postgres-test-data:
+  redis-test-data:
