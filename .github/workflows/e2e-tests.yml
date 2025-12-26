@@ -274,6 +274,41 @@ jobs:
 
           echo "✓ Created comprehensive .env.test for CI lightweight E2E mode"
 
+      - name: Verify Docker readiness and cleanup
+        run: |
+          # Wait for Docker daemon to be fully ready
+          echo "Checking Docker daemon health..."
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "✓ Docker ready after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Docker not ready after 30 attempts"
+              exit 1
+            fi
+            echo "Waiting for Docker... ($i/30)"
+            sleep 2
+          done
+
+          # Verify Docker API is responsive
+          docker version
+
+          # Clean up stale test containers/volumes from previous runs
+          echo "Cleaning up stale test resources..."
+          docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+
+          # Remove any dangling containers from previous runs
+          docker container prune -f 2>/dev/null || true
+
+          # Verify no stale skillforge-test containers exist
+          if docker ps -a | grep -q "skillforge.*test"; then
+            echo "⚠️  Found stale containers, force removing..."
+            docker rm -f $(docker ps -aq -f name="skillforge.*test") 2>/dev/null || true
+          fi
+
+          echo "✓ Docker ready and clean"
+
       - name: Build and start test environment (lightweight mode)
         run: |
           export DOCKER_BUILDKIT=1
@@ -474,6 +509,41 @@ jobs:
           EOF
 
           echo "✓ Created .env.test for full E2E mode with real API keys"
+
+      - name: Verify Docker readiness and cleanup
+        run: |
+          # Wait for Docker daemon to be fully ready
+          echo "Checking Docker daemon health..."
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "✓ Docker ready after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Docker not ready after 30 attempts"
+              exit 1
+            fi
+            echo "Waiting for Docker... ($i/30)"
+            sleep 2
+          done
+
+          # Verify Docker API is responsive
+          docker version
+
+          # Clean up stale test containers/volumes from previous runs
+          echo "Cleaning up stale test resources..."
+          docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+
+          # Remove any dangling containers from previous runs
+          docker container prune -f 2>/dev/null || true
+
+          # Verify no stale skillforge-test containers exist
+          if docker ps -a | grep -q "skillforge.*test"; then
+            echo "⚠️  Found stale containers, force removing..."
+            docker rm -f $(docker ps -aq -f name="skillforge.*test") 2>/dev/null || true
+          fi
+
+          echo "✓ Docker ready and clean"
 
       - name: Build and start E2E stack (with LLM + Langfuse)
         env:
