@@ -10,7 +10,6 @@ jobs:
   stale:
     runs-on: self-hosted
     permissions:
-  pull-requests: read
       issues: write
       pull-requests: write
 

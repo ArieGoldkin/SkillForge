@@ -318,7 +318,7 @@ services:
       target: runtime
     container_name: skillforge-backend-seed-test
     env_file:
-      - ./backend/.env.test  # Test environment uses separate .env.test file.test  # Test environment uses separate .env.test file
+      - ./backend/.env.test  # Test environment uses separate .env.test file
     environment:
       ENVIRONMENT: test
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/skillforge-test
@@ -350,7 +350,7 @@ services:
       target: runtime
     container_name: skillforge-langfuse-restore-test
     env_file:
-      - ./backend/.env.test  # Test environment uses separate .env.test file.test  # Test environment uses separate .env.test file
+      - ./backend/.env.test  # Test environment uses separate .env.test file
     environment:
       ENVIRONMENT: test
       # LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are loaded from .env.test via env_file
