@@ -15,7 +15,7 @@ runs:
         driver-opts: |
           image=moby/buildkit:latest
           network=host
-      timeout-minutes: 5
+      # Note: timeout-minutes not supported in composite actions, handled by caller
       continue-on-error: true  # Buildx is optional - native BuildKit works too
 
     - name: Cache Docker layers
