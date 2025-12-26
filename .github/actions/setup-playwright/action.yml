@@ -46,11 +46,8 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         echo "⏳ Installing npm dependencies..."
-        # Use timeout command to prevent hanging (300s = 5 minutes)
-        timeout 300 npm ci --prefer-offline --no-audit --no-fund || {
-          echo "::error::npm ci timed out after 5 minutes"
-          exit 1
-        }
+        # Note: Rely on job-level timeout. We removed GitHub cache: 'npm' which was causing hangs.
+        npm ci --prefer-offline --no-audit --no-fund
         echo "✓ npm ci complete"
 
     # Self-hosted runner optimization: Check if Playwright browsers already installed
@@ -92,11 +89,7 @@ runs:
         # NOTE: Do NOT use --with-deps on self-hosted runners
         # It tries to install system deps via apt/brew which hangs or takes forever
         # Self-hosted runners should already have required deps installed
-        # Use timeout command to prevent hanging (180s = 3 minutes)
-        timeout 180 npx playwright install chromium || {
-          echo "::error::Playwright install timed out after 3 minutes"
-          exit 1
-        }
+        npx playwright install chromium
         echo "✓ Playwright Chromium installed"
 
     - name: Prepare .auth directory
