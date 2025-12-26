@@ -24,7 +24,7 @@ import { availableTags, createSkills } from './showcase-data'
 /**
  * LibraryTab component
  */
-export const LibraryTab: React.FC = () => {
+export function LibraryTab(): React.ReactNode {
   // Use useState initializer to ensure factory is called only once
   const [skills] = React.useState(createSkills)
   const [filters, setFilters] = React.useState<SkillFiltersType>({

@@ -58,13 +58,13 @@ export interface SkillFiltersProps {
  * ```
  */
 // eslint-disable-next-line max-lines-per-function
-export const SkillFilters: React.FC<SkillFiltersProps> = ({
+export function SkillFilters({
   filters,
   onChange,
   availableTags,
   availableStatuses = ['complete', 'in-progress', 'failed'],
   className,
-}) => {
+}: SkillFiltersProps): React.ReactNode {
   const { handlers, activeFilterCount } = useSkillFilters(filters, onChange)
 
   return (

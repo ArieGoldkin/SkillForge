@@ -24,7 +24,7 @@ import { TopicBadges } from './TopicBadges'
  * />
  * ```
  */
-export const MetadataHeader: React.FC<MetadataHeaderProps> = ({ metadata, className }) => {
+export function MetadataHeader({ metadata, className }: MetadataHeaderProps): React.ReactNode {
   const { topics = [], complexity, word_count, agent_count } = metadata
 
   return (

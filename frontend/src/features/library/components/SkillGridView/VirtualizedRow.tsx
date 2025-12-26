@@ -20,12 +20,12 @@ import type { VirtualizedRowProps } from './types'
  * />
  * ```
  */
-export const VirtualizedRow: React.FC<VirtualizedRowProps> = ({
+export function VirtualizedRow({
   skills,
   startIndex,
   columnsPerRow,
   onSelectSkill,
-}) => {
+}: VirtualizedRowProps): React.ReactNode {
   const rowSkills = skills.slice(startIndex, startIndex + columnsPerRow)
 
   return (

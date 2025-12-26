@@ -22,7 +22,7 @@ export interface SkillCardProgressProps {
  * Displays progress for in-progress skills.
  * For failed status, shows a clear failed indicator instead of a progress bar.
  */
-export const SkillCardProgress: React.FC<SkillCardProgressProps> = ({ status, progress }) => {
+export function SkillCardProgress({ status, progress }: SkillCardProgressProps): React.ReactNode {
   if (status === 'failed') {
     return (
       <div className="flex items-center justify-between text-xs text-destructive font-medium">

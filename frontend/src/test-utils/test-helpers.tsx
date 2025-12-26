@@ -31,7 +31,7 @@ export function renderWithProviders(ui: React.ReactElement, options: RenderOptio
     },
   })
 
-  const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  function AllTheProviders({ children }: { children: React.ReactNode }): React.ReactNode {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   }
 

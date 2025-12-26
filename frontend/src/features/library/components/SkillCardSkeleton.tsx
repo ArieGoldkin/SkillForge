@@ -24,7 +24,7 @@ import { Skeleton, SkeletonText, SkeletonBlock } from '@shared/components/ui/ske
  * - Parent should have aria-busy="true" during loading
  * - Maintains same visual structure as loaded card for layout stability
  */
-export const SkillCardSkeleton: React.FC = () => {
+export function SkillCardSkeleton(): React.ReactNode {
   return (
     <Card className="overflow-hidden" data-testid="skill-card-skeleton">
       {/* Thumbnail skeleton - matches h-48 from SkillCardThumbnail */}

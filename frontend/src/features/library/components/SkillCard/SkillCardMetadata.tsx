@@ -76,11 +76,11 @@ const formatDuration = (minutes: number): string => {
  *
  * Displays difficulty, duration, and status badges.
  */
-export const SkillCardMetadata: React.FC<SkillCardMetadataProps> = ({
+export function SkillCardMetadata({
   difficulty,
   duration,
   status,
-}) => {
+}: SkillCardMetadataProps): React.ReactNode {
   return (
     <div className="flex flex-wrap gap-2">
       <Badge variant={getDifficultyVariant(difficulty)} className="capitalize">

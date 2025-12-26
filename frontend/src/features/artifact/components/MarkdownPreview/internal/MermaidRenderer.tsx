@@ -126,7 +126,7 @@ const renderMermaidDiagram = async (element: HTMLDivElement, code: string) => {
  * - Error handling with fallback to code display
  * - Custom CSS for proper text rendering (Issue #299-304)
  */
-export const MermaidRenderer: React.FC<MermaidRendererProps> = ({ code, className }) => {
+export function MermaidRenderer({ code, className }: MermaidRendererProps): React.ReactNode {
   const elementRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

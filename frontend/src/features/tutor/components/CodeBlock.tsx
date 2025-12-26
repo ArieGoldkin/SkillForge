@@ -39,13 +39,13 @@ export interface CodeBlockProps {
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires complete code block UI (header with filename/language/copy button, line numbers, pre/code elements with syntax highlighting). Copy functionality and line rendering logic necessitate current structure. */
-export const CodeBlock: React.FC<CodeBlockProps> = ({
+export function CodeBlock({
   code,
   language,
   filename,
   showLineNumbers = false,
   className,
-}) => {
+}: CodeBlockProps): React.ReactNode {
   const [isCopied, setIsCopied] = React.useState(false)
 
   const handleCopy = async () => {

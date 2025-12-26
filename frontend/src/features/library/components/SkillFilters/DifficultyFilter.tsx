@@ -27,10 +27,10 @@ const difficulties: SkillDifficulty[] = ['beginner', 'intermediate', 'advanced']
  *
  * Provides checkboxes for filtering by skill difficulty level.
  */
-export const DifficultyFilter: React.FC<DifficultyFilterProps> = ({
+export function DifficultyFilter({
   selectedDifficulties,
   onChange,
-}) => {
+}: DifficultyFilterProps): React.ReactNode {
   return (
     <FilterSection title="Difficulty">
       {difficulties.map((difficulty) => (

@@ -40,10 +40,10 @@ export interface StageItemSkeletonProps {
  * - Optional timestamp (hidden on mobile via md:flex)
  * - Compact py-2 px-3 spacing
  */
-export const StageItemSkeleton: React.FC<StageItemSkeletonProps> = ({
+export function StageItemSkeleton({
   showTimestamp = false,
   className,
-}) => {
+}: StageItemSkeletonProps): React.ReactNode {
   return (
     <div
       className={cn(

@@ -192,163 +192,163 @@ const formatAgentName = (agent: string): string => {
  * - Compact py-2 px-3 spacing
  */
 /* eslint-disable max-lines-per-function, complexity -- Stage item component requires complete JSX layout for all status states with conditional rendering for error expansion, skip reasons, and timestamps */
-export const AccordionStageItem: React.FC<AccordionStageItemProps> = memo(
-  function AccordionStageItem({
-    stageName,
-    label,
-    status,
-    agent,
-    error,
-    errorCode,
-    skipReason,
-    showTimestamp = false,
-    timestamp,
-    className,
-  }) {
-    const [isErrorExpanded, setIsErrorExpanded] = useState(false)
+const AccordionStageItemBase = memo(function AccordionStageItem({
+  stageName,
+  label,
+  status,
+  agent,
+  error,
+  errorCode,
+  skipReason,
+  showTimestamp = false,
+  timestamp,
+  className,
+}: AccordionStageItemProps): React.ReactNode {
+  const [isErrorExpanded, setIsErrorExpanded] = useState(false)
 
-    const hasError = (status === 'failed' || status === 'static_fallback') && error
-    const isActive =
-      status === 'running' || status === 'synthesizing' || status === 'detecting_conflicts'
-    const isSkipped = status === 'skipped'
+  const hasError = (status === 'failed' || status === 'static_fallback') && error
+  const isActive =
+    status === 'running' || status === 'synthesizing' || status === 'detecting_conflicts'
+  const isSkipped = status === 'skipped'
 
-    return (
-      <div
-        className={cn(
-          'py-2 px-3 rounded-md',
-          'hover:bg-muted/50 transition-colors duration-200',
-          // Active stage highlight
-          isActive && 'bg-primary/5 border-l-2 border-primary shadow-sm',
-          className
-        )}
-        role="listitem"
-        aria-label={`${label}: ${formatStatus(status)}`}
-        data-testid="accordion-stage-item"
-        data-stage-id={stageName}
-        data-stage-status={status}
-      >
-        <div className="flex items-start gap-3">
-          {/* Status icon - matches h-4 w-4 from getStatusIcon */}
-          <div className="mt-0.5">{getStatusIcon(status)}</div>
+  return (
+    <div
+      className={cn(
+        'py-2 px-3 rounded-md',
+        'hover:bg-muted/50 transition-colors duration-200',
+        // Active stage highlight
+        isActive && 'bg-primary/5 border-l-2 border-primary shadow-sm',
+        className
+      )}
+      role="listitem"
+      aria-label={`${label}: ${formatStatus(status)}`}
+      data-testid="accordion-stage-item"
+      data-stage-id={stageName}
+      data-stage-status={status}
+    >
+      <div className="flex items-start gap-3">
+        {/* Status icon - matches h-4 w-4 from getStatusIcon */}
+        <div className="mt-0.5">{getStatusIcon(status)}</div>
 
-          {/* Stage info */}
-          <div className="flex-1 min-w-0">
-            {/* Stage name + status badge row */}
-            <div className="flex items-center justify-between gap-2">
-              {/* Stage name - matches text-sm font-medium */}
-              <h5
-                className={cn(
-                  'text-sm font-medium truncate',
-                  isActive ? 'text-foreground' : 'text-foreground/80'
-                )}
-                title={label}
-              >
-                {label}
-              </h5>
+        {/* Stage info */}
+        <div className="flex-1 min-w-0">
+          {/* Stage name + status badge row */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Stage name - matches text-sm font-medium */}
+            <h5
+              className={cn(
+                'text-sm font-medium truncate',
+                isActive ? 'text-foreground' : 'text-foreground/80'
+              )}
+              title={label}
+            >
+              {label}
+            </h5>
 
-              {/* Right side: timestamp + status badge */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Timestamp (responsive - hidden on mobile) */}
-                {showTimestamp && timestamp && (
-                  <div
-                    className="hidden md:flex items-center gap-1 text-xs text-muted-foreground"
-                    aria-label={`Completed at ${formatTimestamp(timestamp)}`}
-                  >
-                    <Clock className="h-3 w-3" aria-hidden="true" />
-                    <span>{formatTimestamp(timestamp)}</span>
-                  </div>
-                )}
-
-                {/* Status badge - matches Badge component */}
-                <Badge
-                  variant={getStatusBadgeVariant(status)}
-                  className="text-xs"
-                  role="status"
-                  aria-live={isActive ? 'polite' : 'off'}
+            {/* Right side: timestamp + status badge */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Timestamp (responsive - hidden on mobile) */}
+              {showTimestamp && timestamp && (
+                <div
+                  className="hidden md:flex items-center gap-1 text-xs text-muted-foreground"
+                  aria-label={`Completed at ${formatTimestamp(timestamp)}`}
                 >
-                  {formatStatus(status)}
-                </Badge>
-              </div>
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  <span>{formatTimestamp(timestamp)}</span>
+                </div>
+              )}
+
+              {/* Status badge - matches Badge component */}
+              <Badge
+                variant={getStatusBadgeVariant(status)}
+                className="text-xs"
+                role="status"
+                aria-live={isActive ? 'polite' : 'off'}
+              >
+                {formatStatus(status)}
+              </Badge>
             </div>
-
-            {/* Agent info (for active stages) */}
-            {isActive && agent && (
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden="true" />
-                <span>{formatAgentName(agent)}</span>
-              </div>
-            )}
-
-            {/* Skip Reason (for skipped stages) */}
-            {isSkipped && skipReason && (
-              <div
-                className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground"
-                role="note"
-                aria-label={`Skip reason: ${skipReason}`}
-                title={skipReason}
-              >
-                <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                <span className="line-clamp-2">{skipReason}</span>
-              </div>
-            )}
-
-            {/* Error Details (expandable for failed stages) */}
-            {hasError && (
-              <div className="mt-2 space-y-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsErrorExpanded(!isErrorExpanded)}
-                  className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent"
-                  aria-expanded={isErrorExpanded}
-                  aria-controls={`error-details-${stageName}`}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {isErrorExpanded ? (
-                      <ChevronDown className="h-3 w-3" aria-hidden="true" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" aria-hidden="true" />
-                    )}
-                    <span className="font-medium">Error Details</span>
-                  </span>
-                </Button>
-
-                <AnimatePresence>
-                  {isErrorExpanded && (
-                    <motion.div
-                      id={`error-details-${stageName}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                      role="region"
-                      aria-label={`Error details for ${label}`}
-                    >
-                      <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 space-y-2">
-                        <div className="text-xs text-destructive">
-                          <span className="font-medium">Error:</span> {error}
-                        </div>
-
-                        {errorCode && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">Code:</span>
-                            <Badge variant="destructive" className="text-xs">
-                              {formatErrorCode(errorCode)}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
           </div>
+
+          {/* Agent info (for active stages) */}
+          {isActive && agent && (
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden="true" />
+              <span>{formatAgentName(agent)}</span>
+            </div>
+          )}
+
+          {/* Skip Reason (for skipped stages) */}
+          {isSkipped && skipReason && (
+            <div
+              className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground"
+              role="note"
+              aria-label={`Skip reason: ${skipReason}`}
+              title={skipReason}
+            >
+              <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <span className="line-clamp-2">{skipReason}</span>
+            </div>
+          )}
+
+          {/* Error Details (expandable for failed stages) */}
+          {hasError && (
+            <div className="mt-2 space-y-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsErrorExpanded(!isErrorExpanded)}
+                className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent"
+                aria-expanded={isErrorExpanded}
+                aria-controls={`error-details-${stageName}`}
+              >
+                <span className="flex items-center gap-1.5">
+                  {isErrorExpanded ? (
+                    <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                  )}
+                  <span className="font-medium">Error Details</span>
+                </span>
+              </Button>
+
+              <AnimatePresence>
+                {isErrorExpanded && (
+                  <motion.div
+                    id={`error-details-${stageName}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                    role="region"
+                    aria-label={`Error details for ${label}`}
+                  >
+                    <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 space-y-2">
+                      <div className="text-xs text-destructive">
+                        <span className="font-medium">Error:</span> {error}
+                      </div>
+
+                      {errorCode && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Code:</span>
+                          <Badge variant="destructive" className="text-xs">
+                            {formatErrorCode(errorCode)}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
-    )
-  }
-)
+    </div>
+  )
+})
+
+export const AccordionStageItem = AccordionStageItemBase
 
 AccordionStageItem.displayName = 'AccordionStageItem'

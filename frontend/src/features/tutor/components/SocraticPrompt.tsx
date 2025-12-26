@@ -56,12 +56,12 @@ const getDifficultyVariant = (
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires complete Socratic prompt layout (header with icon/difficulty, question text, expandable hints section with toggle button, hint list). Interactive state management and conditional rendering necessitate current structure. */
-export const SocraticPrompt: React.FC<SocraticPromptProps> = ({
+export function SocraticPrompt({
   question,
   hints = [],
   difficulty,
   className,
-}) => {
+}: SocraticPromptProps): React.ReactNode {
   const [showHints, setShowHints] = React.useState(false)
 
   const processedHints = React.useMemo(

@@ -12,7 +12,7 @@ import { FilterSection } from './FilterSection'
  * Placeholder for duration range filtering.
  * Currently displays a "coming soon" message.
  */
-export const DurationFilter: React.FC = () => {
+export function DurationFilter(): React.ReactNode {
   return (
     <FilterSection title="Duration">
       <div className="space-y-2 px-3 py-2">

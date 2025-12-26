@@ -23,7 +23,7 @@ import type { CopyButtonProps } from '../types'
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires complete JSX with conditional styling and structured error logging */
-export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
+export function CopyButton({ text, className }: CopyButtonProps): React.ReactNode {
   const [optimisticCopied, setOptimisticCopied] = useOptimistic(
     false,
     (_current, newValue: boolean) => newValue

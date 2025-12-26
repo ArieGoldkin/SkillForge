@@ -22,14 +22,14 @@ export interface CheckboxItemProps {
  * Styled checkbox with label for filter sections.
  * Provides hover effects and keyboard accessibility.
  */
-export const CheckboxItem: React.FC<CheckboxItemProps> = ({
+export function CheckboxItem({
   id,
   label,
   checked,
   onChange,
   type = 'checkbox',
   name,
-}) => {
+}: CheckboxItemProps): React.ReactNode {
   return (
     <label
       htmlFor={id}

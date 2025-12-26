@@ -25,7 +25,7 @@ import { TutorTab } from './TutorTab'
  * Simplified main component that delegates to specialized tab components.
  * Each tab is responsible for its own demo data and component showcase.
  */
-export const FeaturesShowcase: React.FC = () => {
+export function FeaturesShowcase(): React.ReactNode {
   return (
     <div className="min-h-screen bg-background p-8">
       <div

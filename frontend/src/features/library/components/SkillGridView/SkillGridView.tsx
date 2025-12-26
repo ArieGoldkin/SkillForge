@@ -16,7 +16,7 @@ const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
 /**
  * Empty state component
  */
-const EmptyState: React.FC<{ message: string }> = ({ message }) => {
+function EmptyState({ message }: { message: string }): React.ReactNode {
   return (
     <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
       <div className="rounded-full bg-muted p-6 mb-4">
@@ -51,7 +51,7 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => {
  * />
  * ```
  */
-export const SkillGridView: React.FC<SkillGridViewProps> = ({
+export function SkillGridView({
   skills,
   onSelectSkill,
   loading = false,
@@ -60,7 +60,7 @@ export const SkillGridView: React.FC<SkillGridViewProps> = ({
   onLoadMore,
   canLoadMore = false,
   isLoadingMore = false,
-}) => {
+}: SkillGridViewProps): React.ReactNode {
   const sentinelRef = useInfiniteScroll(onLoadMore, canLoadMore)
 
   return (

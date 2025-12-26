@@ -96,14 +96,15 @@ function findActiveGroupId(
 }
 
 /**
- * PLACEHOLDER: useAutoExpand hook
- *
- * TODO: Move to /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/hooks/useAutoExpand.ts
+ * Local useAutoExpand hook for accordion group management
  *
  * Manages auto-expansion and auto-collapse of accordion groups based on:
  * - Active stage detection (expand group containing running stage)
  * - Breakpoint-based maxExpanded limits (mobile: 1, desktop: 5)
  * - User preferences (auto-expand enabled/disabled)
+ *
+ * Note: A more comprehensive version exists at hooks/useAutoExpand.ts
+ * for advanced FIFO collapse and delayed collapse features.
  */
 function useAutoExpand(
   groups: Array<{ id: string; status: string; isActive: boolean }>,
@@ -169,11 +170,10 @@ function useAutoExpand(
 // ============================================================================
 
 /**
- * PLACEHOLDER: FloatingActionButton component
+ * FloatingActionButton component
  *
- * TODO: Create /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/components/accordion/FloatingActionButton.tsx
- *
- * Mobile FAB for quick navigation and group controls
+ * Mobile FAB for quick navigation and group controls.
+ * Implemented inline for simplicity - extract to separate file if complexity grows.
  */
 const FloatingActionButton = memo(function FloatingActionButton({
   onClick,
@@ -216,11 +216,10 @@ const FloatingActionButton = memo(function FloatingActionButton({
 })
 
 /**
- * PLACEHOLDER: MobileBottomSheet component
+ * MobileBottomSheet component
  *
- * TODO: Create /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/components/accordion/MobileBottomSheet.tsx
- *
- * Mobile bottom sheet for group selection
+ * Mobile bottom sheet for group selection.
+ * Implemented inline for simplicity - extract to separate file if complexity grows.
  */
 const MobileBottomSheet = memo(function MobileBottomSheet({
   isOpen,

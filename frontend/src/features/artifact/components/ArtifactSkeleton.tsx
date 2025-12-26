@@ -39,32 +39,37 @@ const LIST_ITEM_SKELETON_IDS = ['list-sk-1', 'list-sk-2', 'list-sk-3'] as const
 /**
  * TOC Sidebar Skeleton Component
  */
-const TOCSidebarSkeleton: React.FC = () => (
-  <aside className="mb-6 lg:mb-0 lg:sticky lg:top-8 lg:self-start">
-    <Card className="p-4">
-      <SkeletonText width="1/2" className="h-5 mb-4" />
-      <div className="space-y-3">
-        {TOC_SKELETON_IDS.map((id) => (
-          <div key={id} className="space-y-2">
-            <SkeletonText width="3/4" className="h-4" />
-            <div className="pl-4 space-y-2">
-              <SkeletonText width="2/3" className="h-3" />
-              <SkeletonText width="1/2" className="h-3" />
+function TOCSidebarSkeleton(): React.ReactNode {
+  return (
+    <aside className="mb-6 lg:mb-0 lg:sticky lg:top-8 lg:self-start">
+      <Card className="p-4">
+        <SkeletonText width="1/2" className="h-5 mb-4" />
+        <div className="space-y-3">
+          {TOC_SKELETON_IDS.map((id) => (
+            <div key={id} className="space-y-2">
+              <SkeletonText width="3/4" className="h-4" />
+              <div className="pl-4 space-y-2">
+                <SkeletonText width="2/3" className="h-3" />
+                <SkeletonText width="1/2" className="h-3" />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  </aside>
-)
+          ))}
+        </div>
+      </Card>
+    </aside>
+  )
+}
 
 /**
  * Content Section Skeleton Component
  */
-const ContentSectionSkeleton: React.FC<{ sectionId: string; isFirst: boolean }> = ({
+function ContentSectionSkeleton({
   sectionId,
   isFirst,
-}) => {
+}: {
+  sectionId: string
+  isFirst: boolean
+}): React.ReactNode {
   const showCodeBlock = sectionId === 'content-sk-1' || sectionId === 'content-sk-3'
   const showListItems = sectionId === 'content-sk-1' || sectionId === 'content-sk-4'
 
@@ -121,7 +126,7 @@ const ContentSectionSkeleton: React.FC<{ sectionId: string; isFirst: boolean }> 
  * - xl:grid-cols-[280px_1fr] - Wider sidebar on XL screens
  */
 /* eslint-disable max-lines-per-function -- Skeleton component requires complete JSX layout structure for all sections */
-export const ArtifactSkeleton: React.FC = () => {
+export function ArtifactSkeleton(): React.ReactNode {
   return (
     <div
       className="space-y-8"

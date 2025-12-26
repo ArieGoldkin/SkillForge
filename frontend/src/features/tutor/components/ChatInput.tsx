@@ -38,13 +38,13 @@ export interface ChatInputProps {
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires auto-grow textarea logic with useEffect, keyboard event handlers, character counter, and complete input/button layout. Further extraction would fragment cohesive input functionality. */
-export const ChatInput: React.FC<ChatInputProps> = ({
+export function ChatInput({
   onSend,
   disabled = false,
   placeholder = 'Type your message...',
   maxLength = 2000,
   className,
-}) => {
+}: ChatInputProps): React.ReactNode {
   const [message, setMessage] = React.useState('')
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 

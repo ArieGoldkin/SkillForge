@@ -27,11 +27,11 @@ import { VirtualizedRow } from './VirtualizedRow'
  * />
  * ```
  */
-export const VirtualizedGrid: React.FC<VirtualizedGridProps> = ({
+export function VirtualizedGrid({
   skills,
   onSelectSkill,
   className,
-}) => {
+}: VirtualizedGridProps): React.ReactNode {
   const { parentRef, rowVirtualizer, columnsPerRow } = useSkillGridVirtualization(skills.length)
 
   const virtualItems = rowVirtualizer.getVirtualItems()

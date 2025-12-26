@@ -35,12 +35,12 @@ export interface SkillSearchProps {
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires debounce logic with useEffect, event handlers, and complete JSX layout (search icon, input, loading/clear button). Further extraction would reduce cohesion. */
-export const SkillSearch: React.FC<SkillSearchProps> = ({
+export function SkillSearch({
   placeholder = 'Search...',
   onSearch,
   debounceMs = COMPONENT_CONSTANTS.SEARCH_DEBOUNCE_MS,
   className,
-}) => {
+}: SkillSearchProps): React.ReactNode {
   const [query, setQuery] = React.useState('')
   const [isSearching, setIsSearching] = React.useState(false)
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)

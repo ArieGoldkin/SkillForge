@@ -18,7 +18,11 @@ export interface ShowcaseSectionProps {
  *
  * Provides consistent styling for showcase sections with title.
  */
-export const ShowcaseSection: React.FC<ShowcaseSectionProps> = ({ title, children, className }) => {
+export function ShowcaseSection({
+  title,
+  children,
+  className,
+}: ShowcaseSectionProps): React.ReactNode {
   return (
     <div className={className}>
       <h3 className="text-lg font-medium mb-3">{title}</h3>

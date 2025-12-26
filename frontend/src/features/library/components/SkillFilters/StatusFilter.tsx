@@ -23,11 +23,11 @@ export interface StatusFilterProps {
  *
  * Provides checkboxes for filtering by skill completion status.
  */
-export const StatusFilter: React.FC<StatusFilterProps> = ({
+export function StatusFilter({
   selectedStatuses,
   availableStatuses,
   onChange,
-}) => {
+}: StatusFilterProps): React.ReactNode {
   const statuses = availableStatuses.length
     ? availableStatuses
     : (['complete', 'in-progress', 'failed'] as AnalysisStatus[])

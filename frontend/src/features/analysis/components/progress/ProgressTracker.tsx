@@ -60,12 +60,12 @@ export interface ProgressTrackerProps {
  * <ProgressTracker analysisId="abc-123" stages={WORKING_STAGES} />
  * ```
  */
-export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
+export function ProgressTracker({
   className,
   stages = ALL_STAGES,
   onComplete,
   onError,
-}) => {
+}: ProgressTrackerProps): React.ReactNode {
   // Use computed loading states (Issue #399)
   const { events, error, isComplete } = useSSEStore()
   const loadingState = useLoadingState()
