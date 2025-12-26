@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 
 import { useSSEStore, useLoadingState, useShouldShowProgress } from '@stores/sseStore'
 
-import type { AgentStageName } from '@/schemas/sse'
+import type { StageName } from '@/schemas/sse'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -44,7 +44,7 @@ export interface ProgressTrackerProps {
   /** Optional CSS class name */
   className?: string
   /** Stages to display (default: ALL_STAGES) */
-  stages?: AgentStageName[]
+  stages?: StageName[]
   /** Callback when analysis completes with artifact ID */
   onComplete?: (artifactId: string) => void
   /** Callback when an error occurs */

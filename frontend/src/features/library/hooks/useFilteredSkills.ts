@@ -2,6 +2,7 @@ import type { AnalysisStatus } from '@app-types/api'
 
 import type { SkillStatus } from '../components/SkillCard'
 import type { SkillFilters as SkillFiltersType } from '../components/SkillFilters'
+import { mapAnalysisStatusToFilterStatus } from '../utils/statusMapping'
 
 interface Skill {
   id: string
@@ -25,7 +26,11 @@ export function useFilteredSkills(skills: Skill[], searchQuery: string, filters:
     if (filters.difficulty.length && !filters.difficulty.includes(skill.difficulty)) {
       return false
     }
-    if (filters.status.length && !filters.status.includes(skill.analysisStatus)) {
+    // Map AnalysisStatus to FilterStatus for comparison
+    if (
+      filters.status.length &&
+      !filters.status.includes(mapAnalysisStatusToFilterStatus(skill.analysisStatus))
+    ) {
       return false
     }
     if (filters.tags.length && !filters.tags.some((tag) => skill.tags.includes(tag))) {

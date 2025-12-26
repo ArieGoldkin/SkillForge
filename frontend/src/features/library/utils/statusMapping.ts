@@ -1,4 +1,4 @@
-import type { AnalysisStatus } from '@app-types/api'
+import type { AnalysisStatus, FilterStatus } from '@app-types/api'
 
 import type { SkillStatus } from '../components/SkillCard'
 
@@ -36,4 +36,35 @@ export function mapAnalysisStatusToSkillStatus(status: AnalysisStatus): SkillSta
 
   // Default to in-progress for unknown statuses
   return 'in-progress'
+}
+
+/**
+ * Maps backend AnalysisStatus to FilterStatus for filter comparisons.
+ * FilterStatus is the simplified status used by the backend filter API.
+ */
+export function mapAnalysisStatusToFilterStatus(status: AnalysisStatus): FilterStatus {
+  // Complete status
+  if (status === 'complete' || status === 'completed') return 'complete'
+
+  // All failure statuses map to 'failed'
+  if (
+    status === 'failed' ||
+    status === 'extraction_failed' ||
+    status === 'analysis_failed' ||
+    status === 'artifact_failed' ||
+    status === 'quality_gate_failed'
+  ) {
+    return 'failed'
+  }
+
+  // All lifecycle states map to 'running'
+  if (status === 'extracting' || status === 'analyzing' || status === 'generating_artifact') {
+    return 'running'
+  }
+
+  // Pending and cancelled map to 'pending'
+  if (status === 'pending' || status === 'cancelled') return 'pending'
+
+  // Default to 'running' for unknown statuses
+  return 'running'
 }

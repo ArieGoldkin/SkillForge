@@ -7,18 +7,18 @@
 
 import { useMemo, useOptimistic } from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 
 import type { SkillDifficulty } from '../../SkillCard'
 
 /**
- * Filter configuration
+ * Filter configuration - uses FilterStatus for backend API compatibility
  */
 export interface SkillFilters {
   difficulty: SkillDifficulty[]
-  status: AnalysisStatus[]
+  status: FilterStatus[]
   tags: string[]
   durationRange: [number, number]
 }
@@ -28,7 +28,7 @@ export interface SkillFilters {
  */
 export interface SkillFiltersHandlers {
   handleDifficultyChange: (difficulty: SkillDifficulty, checked: boolean) => void
-  handleStatusChange: (status: AnalysisStatus, checked: boolean) => void
+  handleStatusChange: (status: FilterStatus, checked: boolean) => void
   handleTagChange: (tag: string, checked: boolean) => void
   handleClearAll: () => void
 }
