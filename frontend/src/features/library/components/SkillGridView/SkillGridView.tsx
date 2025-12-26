@@ -18,7 +18,10 @@ const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
  */
 function EmptyState({ message }: { message: string }): React.ReactNode {
   return (
-    <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+    <div
+      className="col-span-full flex flex-col items-center justify-center py-16 text-center"
+      data-testid="empty-state"
+    >
       <div className="rounded-full bg-muted p-6 mb-4">
         <BookOpen className="h-12 w-12 text-muted-foreground" />
       </div>
