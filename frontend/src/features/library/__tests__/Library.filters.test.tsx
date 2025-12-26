@@ -91,7 +91,7 @@ describe('Library filters', () => {
     const user = userEvent.setup()
     renderWithProviders()
 
-    const completed = screen.getByLabelText(/completed/i, { selector: '#status-completed' })
+    const completed = screen.getByLabelText(/completed/i, { selector: '#status-complete' })
     await user.click(completed)
 
     // Verify that useLibraryData was called with the correct filters

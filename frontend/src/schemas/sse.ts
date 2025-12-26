@@ -328,3 +328,28 @@ export function isFailedStage(event: unknown): boolean {
 
   return false
 }
+
+// ============================================================================
+// Re-exports from base schema for convenience
+// ============================================================================
+
+/**
+ * Re-export base schema types for use throughout the application
+ * These are imported from base.ts to maintain single source of truth
+ */
+export {
+  StageName,
+  StageStatus,
+  AgentStageName,
+  WorkflowStageName,
+  StageNameSchema,
+  StageStatusSchema,
+  AgentStageNameSchema,
+  WorkflowStageNameSchema,
+  ContentType,
+  ContentTypeSchema,
+  FindingsQuality,
+  FindingsQualitySchema,
+  Coverage,
+  CoverageSchema,
+} from './base'

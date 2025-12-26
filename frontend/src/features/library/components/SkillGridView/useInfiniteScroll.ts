@@ -13,7 +13,7 @@ import { useEffect, useRef } from 'react'
 export function useInfiniteScroll(
   onLoadMore: (() => void) | undefined,
   canLoadMore: boolean
-): React.RefObject<HTMLDivElement> {
+): React.RefObject<HTMLDivElement | null> {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {

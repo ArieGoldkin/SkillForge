@@ -318,7 +318,7 @@ class ArxivPDFExtractor:
                             and not stripped_line.startswith("arXiv")
                         ):
                             return stripped_line[:200]  # Truncate very long titles
-            except Exception:  # noqa: S110, BLE001 - Best effort title extraction
+            except Exception:  # noqa: BLE001 - Best effort title extraction
                 pass
 
         # Fallback to paper ID

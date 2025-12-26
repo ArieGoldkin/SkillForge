@@ -458,7 +458,7 @@ class AnnotationService:
             return False
 
         # Type guard: Validation ensures trace_id is not None
-        assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"  # noqa: S101 - Type guard for validation
+        assert trace_id is not None, "trace_id validated in _validate_langfuse_queue_config"
 
         try:
             # Use LangfuseService which handles annotation queue REST API

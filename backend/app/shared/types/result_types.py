@@ -124,22 +124,22 @@ class Ok(Result[T, E]):
         msg = "Called unwrap_err on Ok value"
         raise UnwrapError(msg)
 
-    def unwrap_or(self, default: T) -> T:  # noqa: ARG002
+    def unwrap_or(self, default: T) -> T:
         return self._value  # type: ignore[return-value]
 
-    def unwrap_or_else(self, op: Callable[[E], T]) -> T:  # noqa: ARG002
+    def unwrap_or_else(self, op: Callable[[E], T]) -> T:
         return self._value  # type: ignore[return-value]
 
     def map(self, op: Callable[[T], U]) -> Result[U, E]:
         return Ok(op(self._value))  # type: ignore[arg-type]
 
-    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:  # noqa: ARG002
+    def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         return Ok(self._value)
 
     def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         return op(self._value)  # type: ignore[arg-type]
 
-    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:  # noqa: ARG002
+    def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:
         return Ok(self._value)
 
 
@@ -169,13 +169,13 @@ class Err(Result[T, E]):
     def unwrap_or_else(self, op: Callable[[E], T]) -> T:
         return op(self._value)  # type: ignore[arg-type]
 
-    def map(self, op: Callable[[T], U]) -> Result[U, E]:  # noqa: ARG002
+    def map(self, op: Callable[[T], U]) -> Result[U, E]:
         return Err(self._value)
 
     def map_err(self, op: Callable[[E], U]) -> Result[T, U]:
         return Err(op(self._value))  # type: ignore
 
-    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:  # noqa: ARG002
+    def and_then(self, op: Callable[[T], Result[U, E]]) -> Result[U, E]:
         return Err(self._value)
 
     def or_else(self, op: Callable[[E], Result[T, U]]) -> Result[T, U]:

@@ -49,13 +49,7 @@ export const analyzeAPI = {
       json: request,
     })
 
-    return {
-      analysis_id: response.analysis_id,
-      sse_endpoint: response.sse_endpoint,
-      status: response.status,
-      url: response.url,
-      content_type: response.content_type,
-    }
+    return response
   },
 
   /**

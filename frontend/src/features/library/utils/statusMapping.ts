@@ -26,9 +26,7 @@ export function mapAnalysisStatusToSkillStatus(status: AnalysisStatus): SkillSta
     status === 'pending' ||
     status === 'extracting' ||
     status === 'analyzing' ||
-    status === 'generating_artifact' ||
-    status === 'running' ||
-    status === 'in-progress'
+    status === 'generating_artifact'
   ) {
     return 'in-progress'
   }

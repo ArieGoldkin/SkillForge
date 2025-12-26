@@ -4,8 +4,7 @@ import { useFormStatus } from 'react-dom'
 
 import { UI_CONSTANTS } from '@/lib/constants'
 
-import { AnalysisModeSelector } from '@shared/AnalysisModeSelector'
-import type { AnalysisMode } from '@shared/AnalysisModeSelector'
+import { AnalysisModeSelector, type AnalysisMode } from '@shared/AnalysisModeSelector'
 import { Alert, AlertDescription } from '@shared/components/ui/alert'
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'

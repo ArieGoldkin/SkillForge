@@ -106,12 +106,12 @@ export const useSkillFilters = (
 
   // Clear all filters with optimistic update
   const handleClearAll = () => {
-    const newFilters = {
+    const newFilters: SkillFilters = {
       difficulty: [],
       status: [],
       tags: [],
       durationRange: [0, COMPONENT_CONSTANTS.SKILL_DURATION_FILTER_MAX],
-    } as const
+    }
 
     setOptimisticFilters(newFilters)
     onChange(newFilters)

@@ -252,7 +252,7 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001, S110 - Langfuse may not be available
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     # Emit SSE event: supervisor started

@@ -21,7 +21,7 @@ class PIIType(str, Enum):
     IPV4 = "ipv4"
     IPV6 = "ipv6"
     AWS_KEY = "aws_key"
-    GITHUB_TOKEN = "github_token"  # noqa: S105 - PII pattern name, not actual token
+    GITHUB_TOKEN = "github_token"
     STRIPE_KEY = "stripe_key"
     NAME = "name"  # Presidio only (future)
     ORGANIZATION = "organization"  # Presidio only (future)

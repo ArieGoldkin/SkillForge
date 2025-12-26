@@ -153,3 +153,6 @@ export function AnalysisModeSelector({
     </div>
   )
 }
+
+// Re-export AnalysisMode for consumers who import from this component
+export type { AnalysisMode } from '@/types/api'

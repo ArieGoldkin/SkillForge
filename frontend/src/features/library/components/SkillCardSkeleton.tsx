@@ -37,7 +37,7 @@ export function SkillCardSkeleton(): React.ReactNode {
         {/* Description skeleton - 2 lines matching text-sm */}
         <div className="space-y-2">
           <SkeletonText width="full" className="h-4" />
-          <SkeletonText width="5/6" className="h-4" />
+          <SkeletonText width="3/4" className="h-4" />
         </div>
 
         {/* Metadata row skeleton - difficulty, duration, status badges */}

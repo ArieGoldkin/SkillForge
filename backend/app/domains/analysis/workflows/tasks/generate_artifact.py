@@ -145,7 +145,7 @@ async def _queue_low_quality_artifact_for_review(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: S110, BLE001
+        except Exception:  # noqa: BLE001
             pass  # Don't let warning recording break the flow
 
         logger.warning(
@@ -241,7 +241,7 @@ async def _submit_artifact_quality_scores(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: S110, BLE001
+        except Exception:  # noqa: BLE001
             pass  # Don't let warning recording break the flow
 
         logger.warning(
@@ -324,7 +324,7 @@ async def generate_artifact(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     logger.info(

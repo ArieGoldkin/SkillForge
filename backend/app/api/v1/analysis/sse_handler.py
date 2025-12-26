@@ -34,7 +34,7 @@ def _get_broadcaster_backend() -> BroadcasterBackend:
 
 async def stream_analysis_progress(
     analysis_id: uuid.UUID,
-    request: Request,  # noqa: ARG001 - Required by SSE framework for disconnect detection
+    request: Request,
 ) -> EventSourceResponse:
     """Stream real-time analysis progress via Server-Sent Events (SSE).
 

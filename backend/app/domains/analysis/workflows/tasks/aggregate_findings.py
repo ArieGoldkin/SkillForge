@@ -154,7 +154,7 @@ async def _handle_aggregation_error(
             error_message=str(error),
             stage="aggregate_findings",
         )
-    except Exception:  # noqa: S110, BLE001 - Graceful degradation for error recording failures
+    except Exception:  # noqa: BLE001 - Graceful degradation for error recording failures
         # Don't fail if error recording fails (e.g., invalid UUID in tests)
         pass
 
@@ -457,7 +457,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     # Emit SSE event: aggregation started

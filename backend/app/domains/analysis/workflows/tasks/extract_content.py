@@ -70,7 +70,7 @@ async def extract_content(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
@@ -180,7 +180,7 @@ async def extract_content(  # noqa: PLR0915
                 error_message=str(e),
                 stage="extraction",
             )
-        except Exception:  # noqa: S110, BLE001
+        except Exception:  # noqa: BLE001
             pass  # Don't let error recording break the flow
 
         # Emit error event using standardized helper

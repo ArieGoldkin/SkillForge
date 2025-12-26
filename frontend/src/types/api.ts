@@ -95,6 +95,10 @@ export interface TutoringMessage {
   created_at: string
 }
 
+// Library filter status - subset of AnalysisStatus supported by backend filtering
+// Backend pattern: ^(pending|running|complete|failed)$
+export type FilterStatus = 'pending' | 'running' | 'complete' | 'failed'
+
 // API Request/Response types
 export interface AnalyzeRequest {
   url: string
@@ -173,7 +177,7 @@ export type SearchMode = 'hybrid' | 'fulltext' | 'semantic'
 export interface LibrarySearchParams {
   query?: string
   content_type?: ContentType
-  status?: AnalysisStatus
+  status?: FilterStatus
   search_mode?: SearchMode
   limit?: number
   offset?: number

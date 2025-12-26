@@ -10,7 +10,7 @@
 
 import * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 
 import { DEMO_CONSTANTS, COMPONENT_CONSTANTS } from '@/lib/constants'
 
@@ -57,7 +57,7 @@ export function LibraryTab(): React.ReactNode {
               filters={filters}
               onChange={setFilters}
               availableTags={availableTags}
-              availableStatuses={['complete', 'in-progress', 'failed'] satisfies AnalysisStatus[]}
+              availableStatuses={['complete', 'running', 'failed'] satisfies FilterStatus[]}
             />
           </div>
 

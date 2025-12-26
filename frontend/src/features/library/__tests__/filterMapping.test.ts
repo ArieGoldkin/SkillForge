@@ -17,7 +17,7 @@ describe('mapFiltersToQuery', () => {
   })
 
   it('maps first status selection to backend status', () => {
-    const filters: SkillFilters = { ...baseFilters, status: ['in-progress'] }
+    const filters: SkillFilters = { ...baseFilters, status: ['running'] }
     const result = mapFiltersToQuery(filters, false)
     expect(result.status).toBe('running')
   })
