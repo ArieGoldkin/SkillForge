@@ -36,7 +36,7 @@ export default function Home() {
   const [skillLevel, setSkillLevel] = useState<SkillLevel>('intermediate')
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('standard')
 
-  const [state, submitAction, isPending] = useActionState<AnalysisState, AnalysisFormData>(
+  const [state, submitAction] = useActionState<AnalysisState, AnalysisFormData>(
     async (_prevState, formData) => {
       try {
         logger.info('Creating analysis', {
@@ -111,7 +111,6 @@ export default function Home() {
         setSkillLevel={setSkillLevel}
         analysisMode={analysisMode}
         setAnalysisMode={setAnalysisMode}
-        isSubmitting={isPending}
         handleSubmit={handleSubmit}
         error={state.error}
       />

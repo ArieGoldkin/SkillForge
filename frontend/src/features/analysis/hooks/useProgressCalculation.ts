@@ -17,6 +17,7 @@
  */
 import { useMemo } from 'react'
 
+import { PROGRESS_CONSTANTS } from '@/lib/constants'
 import type { StageName, StageStatus } from '@/schemas/base'
 
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
@@ -201,12 +202,12 @@ export function useProgressCalculation(
       // Issue #439: Backend says complete → show 100% for consistent UI
       // The artifact exists, so the analysis is done regardless of stage counts.
       // hasFailedStages is handled separately in the completion card (error badge).
-      progress = 100
+      progress = PROGRESS_CONSTANTS.COMPLETE_THRESHOLD
     } else {
       // In-progress: Calculate actual progress from finished stages
       // Guard: Ensure division is safe (progressTotalStages guaranteed >= 1 from Phase 2)
       const safeFinishedStages = Number.isFinite(finishedStages) ? finishedStages : 0
-      progress = Math.round((safeFinishedStages / progressTotalStages) * 100)
+      progress = Math.round((safeFinishedStages / progressTotalStages) * PROGRESS_CONSTANTS.MAX)
 
       // Guard: Ensure progress is within valid bounds (0-99 while in progress)
       progress = Math.max(0, Math.min(99, progress))

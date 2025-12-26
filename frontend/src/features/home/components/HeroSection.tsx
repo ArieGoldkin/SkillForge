@@ -1,5 +1,6 @@
 /* eslint-disable max-lines -- HeroSection requires multiple sub-components for content analysis form */
 import { AlertCircle, FileText, Github, Link, Sparkles, Video } from 'lucide-react'
+import { useFormStatus } from 'react-dom'
 
 import { UI_CONSTANTS } from '@/lib/constants'
 
@@ -25,7 +26,6 @@ interface HeroSectionProps {
   setSkillLevel: (level: SkillLevel) => void
   analysisMode: AnalysisMode
   setAnalysisMode: (mode: AnalysisMode) => void
-  isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
 }
@@ -39,7 +39,6 @@ export function HeroSection({
   setSkillLevel,
   analysisMode,
   setAnalysisMode,
-  isSubmitting,
   handleSubmit,
   error,
 }: HeroSectionProps) {
@@ -66,7 +65,6 @@ export function HeroSection({
           setSkillLevel={setSkillLevel}
           analysisMode={analysisMode}
           setAnalysisMode={setAnalysisMode}
-          isSubmitting={isSubmitting}
           handleSubmit={handleSubmit}
           error={error}
         />
@@ -84,12 +82,10 @@ interface ContentAnalysisFormProps {
   setSkillLevel: (level: SkillLevel) => void
   analysisMode: AnalysisMode
   setAnalysisMode: (mode: AnalysisMode) => void
-  isSubmitting: boolean
   handleSubmit: (e: React.FormEvent) => void
   error?: string | null
 }
 
-// eslint-disable-next-line max-lines-per-function -- Form component requires URL input, content type selection, analysis mode selection, skill level selection, error handling, and submit logic
 function ContentAnalysisForm({
   url,
   setUrl,
@@ -99,7 +95,6 @@ function ContentAnalysisForm({
   setSkillLevel,
   analysisMode,
   setAnalysisMode,
-  isSubmitting,
   handleSubmit,
   error,
 }: ContentAnalysisFormProps) {
@@ -135,17 +130,29 @@ function ContentAnalysisForm({
         </Alert>
       )}
 
-      <Button
-        type="submit"
-        disabled={isSubmitting || !url.trim()}
-        size="lg"
-        className="gap-2"
-        aria-busy={isSubmitting}
-      >
-        <Sparkles className="w-5 h-5" />
-        {isSubmitting ? 'Analyzing...' : 'Analyze Content'}
-      </Button>
+      <SubmitButton url={url} />
     </form>
+  )
+}
+
+/**
+ * Submit button that uses React 19's useFormStatus hook
+ * to automatically detect form pending state without prop drilling
+ */
+function SubmitButton({ url }: { url: string }) {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button
+      type="submit"
+      disabled={pending || !url.trim()}
+      size="lg"
+      className="gap-2"
+      aria-busy={pending}
+    >
+      <Sparkles className="w-5 h-5" />
+      {pending ? 'Analyzing...' : 'Analyze Content'}
+    </Button>
   )
 }
 

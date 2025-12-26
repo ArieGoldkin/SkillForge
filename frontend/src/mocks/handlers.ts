@@ -11,6 +11,8 @@
 
 import { http, HttpResponse, delay } from 'msw'
 
+import { MOCK_DELAY_CONSTANTS } from '@/lib/constants'
+
 import {
   mockAnalyzeResponse,
   mockAnalysisStatus,
@@ -35,7 +37,7 @@ export const handlers = [
 
   // POST /api/v1/analyze - Create new analysis
   http.post(`${API_BASE}/api/v1/analyze`, async ({ request }) => {
-    await delay(100) // Simulate network latency
+    await delay(MOCK_DELAY_CONSTANTS.NETWORK_LATENCY) // Simulate network latency
     const body = (await request.json()) as { url: string; content_type: string }
     return HttpResponse.json(
       mockAnalyzeResponse({ url: body.url, content_type: body.content_type })
@@ -44,7 +46,7 @@ export const handlers = [
 
   // GET /api/v1/analyze/:id - Get analysis status
   http.get(`${API_BASE}/api/v1/analyze/:id`, async ({ params }) => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     const id = params.id as string
 
     // Special IDs for testing error scenarios
@@ -60,13 +62,13 @@ export const handlers = [
 
   // GET /api/v1/analyze/:id/progress - Get progress events
   http.get(`${API_BASE}/api/v1/analyze/:id/progress`, async ({ params }) => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     return HttpResponse.json(mockAnalysisProgress(params.id as string))
   }),
 
   // GET /api/v1/analyze/:id/artifact - Get artifact by analysis
   http.get(`${API_BASE}/api/v1/analyze/:id/artifact`, async () => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     return HttpResponse.json(mockArtifact())
   }),
 
@@ -79,7 +81,7 @@ export const handlers = [
     const stream = new ReadableStream({
       async start(controller) {
         for (const event of events) {
-          await delay(100)
+          await delay(MOCK_DELAY_CONSTANTS.SSE_EVENT)
           const data = `data: ${JSON.stringify(event)}\n\n`
           controller.enqueue(encoder.encode(data))
         }
@@ -98,13 +100,13 @@ export const handlers = [
 
   // GET /api/v1/analyze - List all analyses
   http.get(`${API_BASE}/api/v1/analyze`, async () => {
-    await delay(100)
+    await delay(MOCK_DELAY_CONSTANTS.NORMAL)
     return HttpResponse.json(mockAnalysisList())
   }),
 
   // POST /api/v1/analyze/:id/retry - Retry failed analysis
   http.post(`${API_BASE}/api/v1/analyze/:id/retry`, async ({ params }) => {
-    await delay(100)
+    await delay(MOCK_DELAY_CONSTANTS.NORMAL)
     const id = params.id as string
     return HttpResponse.json({
       analysis_id: id,
@@ -116,7 +118,7 @@ export const handlers = [
 
   // POST /api/v1/analyze/:id/rerun - Rerun completed analysis
   http.post(`${API_BASE}/api/v1/analyze/:id/rerun`, async ({ params }) => {
-    await delay(100)
+    await delay(MOCK_DELAY_CONSTANTS.NORMAL)
     const id = params.id as string
     return HttpResponse.json({
       analysis_id: id,
@@ -129,7 +131,7 @@ export const handlers = [
 
   // DELETE /api/v1/analyses/:id - Delete analysis
   http.delete(`${API_BASE}/api/v1/analyses/:id`, async () => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     return new HttpResponse(null, { status: 204 })
   }),
 
@@ -139,13 +141,13 @@ export const handlers = [
 
   // GET /api/v1/artifacts/:id - Get artifact metadata
   http.get(`${API_BASE}/api/v1/artifacts/:id`, async () => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     return HttpResponse.json(mockArtifact())
   }),
 
   // GET /api/v1/artifacts/:id/download - Download artifact markdown
   http.get(`${API_BASE}/api/v1/artifacts/:id/download`, async () => {
-    await delay(50)
+    await delay(MOCK_DELAY_CONSTANTS.FAST)
     return new HttpResponse(mockArtifact().markdown_content, {
       headers: { 'Content-Type': 'text/markdown' },
     })
@@ -157,7 +159,7 @@ export const handlers = [
 
   // GET /api/v1/library - Search library
   http.get(`${API_BASE}/api/v1/library`, async () => {
-    await delay(100)
+    await delay(MOCK_DELAY_CONSTANTS.NORMAL)
     return HttpResponse.json(mockLibraryList())
   }),
 

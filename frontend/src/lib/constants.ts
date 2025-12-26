@@ -130,13 +130,81 @@ export const ROUTING_PRIORITIES = {
 } as const
 
 // ============================================================================
+// PROGRESS CONSTANTS
+// ============================================================================
+
+export const PROGRESS_CONSTANTS = {
+  // Progress percentage ranges
+  MIN: 0,
+  MAX: 100,
+  COMPLETE_THRESHOLD: 100,
+
+  // Initial states
+  INITIAL_PROGRESS: 0,
+  ZERO_PROGRESS: 0,
+} as const
+
+// ============================================================================
+// ICON SIZE CONSTANTS
+// ============================================================================
+
+export const ICON_SIZE_CONSTANTS = {
+  // Numeric sizes (for size prop)
+  XS: 12,
+  SM: 14,
+  MD: 16,
+  LG: 18,
+  XL: 20,
+  XXL: 24,
+
+  // Tailwind class sizes (for className)
+  TAILWIND_XS: 'h-3 w-3', // 12px
+  TAILWIND_SM: 'h-4 w-4', // 16px
+  TAILWIND_MD: 'h-6 w-6', // 24px
+  TAILWIND_LG: 'h-8 w-8', // 32px
+  TAILWIND_XL: 'h-12 w-12', // 48px
+  TAILWIND_XXL: 'h-16 w-16', // 64px
+} as const
+
+// ============================================================================
+// OPACITY CONSTANTS
+// ============================================================================
+
+export const OPACITY_CONSTANTS = {
+  // Tailwind opacity values (as strings for className)
+  INVISIBLE: 'opacity-0',
+  SUBTLE: 'opacity-50',
+  MEDIUM: 'opacity-70',
+  VISIBLE: 'opacity-90',
+  FULL: 'opacity-100',
+
+  // Numeric opacity values (for inline styles)
+  SUBTLE_NUM: 0.5,
+  MEDIUM_NUM: 0.7,
+  PING_NUM: 0.75,
+  VISIBLE_NUM: 0.9,
+  FULL_NUM: 1.0,
+} as const
+
+// ============================================================================
+// MOCK/TEST DELAY CONSTANTS
+// ============================================================================
+
+export const MOCK_DELAY_CONSTANTS = {
+  // Mock API delays (milliseconds)
+  FAST: 50, // Quick responses (GET requests)
+  NORMAL: 100, // Standard latency
+  SSE_EVENT: 100, // Delay between SSE events
+
+  // Test scenario delays
+  NETWORK_LATENCY: 100,
+} as const
+
+// ============================================================================
 // BUSINESS LOGIC CONSTANTS
 // ============================================================================
 
 export const BUSINESS_CONSTANTS = {
-  // Progress and completion
-  PROGRESS_COMPLETE_PERCENTAGE: 100,
-
   // Priority levels (higher = more important)
   PRIORITY_LEGACY_COMPLETION: 100,
 
@@ -325,12 +393,21 @@ export const COMPONENT_CONSTANTS = {
   TIME_LIMIT_60: 60, // seconds
   TIME_LIMIT_5000: 5000, // milliseconds
 
-  // Dimension values
+  // Dimension values (pixels)
+  DIMENSION_4: 4,
   DIMENSION_12: 12,
   DIMENSION_16: 16,
   DIMENSION_20: 20,
+  DIMENSION_24: 24,
   DIMENSION_48: 48,
+  DIMENSION_64: 64,
   DIMENSION_80: 80,
+
+  // Drag and gesture thresholds (pixels)
+  DRAG_THRESHOLD: 100, // Distance to drag before dismissing
+
+  // Width values (pixels)
+  WIDTH_HANDLE: 12, // Drag handle width
 
   // Data truncation limits
   DATA_TRUNCATION_LIMIT: 500,
@@ -342,6 +419,11 @@ export const COMPONENT_CONSTANTS = {
   DIAGRAM_NODE_SPACING: 80,
   DIAGRAM_RANK_SPACING: 80,
   DIAGRAM_WRAPPING_WIDTH: 300, // Wider wrapping to prevent truncation in diamonds
+
+  // Grid column counts
+  GRID_COLS_1: 1,
+  GRID_COLS_2: 2,
+  GRID_COLS_4: 4,
 } as const
 
 // ============================================================================

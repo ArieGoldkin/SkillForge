@@ -51,15 +51,20 @@ const getVariantClasses = (variant: ProgressVariant) => {
  * <Progress value={75} aria-label="Upload progress" />
  * <Progress value={50} variant="success" aria-valuetext="Halfway through analysis" />
  */
-const Progress = React.forwardRef<
-  React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
-    /** Human-readable progress description for screen readers */
-    'aria-valuetext'?: string
-    /** Visual variant for different states */
-    variant?: ProgressVariant
-  }
->(({ className, value, variant = 'default', 'aria-valuetext': ariaValueText, ...props }, ref) => {
+function Progress({
+  className,
+  value,
+  variant = 'default',
+  'aria-valuetext': ariaValueText,
+  ref,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+  /** Human-readable progress description for screen readers */
+  'aria-valuetext'?: string
+  /** Visual variant for different states */
+  variant?: ProgressVariant
+  ref?: React.Ref<React.ElementRef<typeof ProgressPrimitive.Root>>
+}) {
   const currentValue = value || 0
   const defaultValueText = `${currentValue}% complete`
   const variantClasses = getVariantClasses(variant)
@@ -84,7 +89,6 @@ const Progress = React.forwardRef<
       />
     </ProgressPrimitive.Root>
   )
-})
-Progress.displayName = ProgressPrimitive.Root.displayName
+}
 
 export { Progress }
