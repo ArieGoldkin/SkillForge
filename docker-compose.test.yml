@@ -330,6 +330,7 @@ services:
     volumes:
       - ./backend/scripts:/app/scripts:ro
       - ./backend/data:/app/data:ro
+      - ./backend/tests/smoke/retrieval/fixtures:/app/tests/smoke/retrieval/fixtures:ro  # Fixtures for golden dataset
     command: >
       sh -c "
         echo 'Waiting for backend to be ready...' &&
