@@ -192,11 +192,13 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Create .auth directory for storageState
+      - name: Create fresh .auth directory for storageState
         working-directory: ./frontend
         run: |
+          # Clean up stale storageState from previous runs on self-hosted runners
+          rm -rf .auth
           mkdir -p .auth
-          echo "Created .auth directory for Playwright storageState"
+          echo "Created fresh .auth directory for Playwright storageState"
 
       - name: Create .env.test from template (lightweight mode)
         working-directory: ./backend
@@ -469,11 +471,13 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Create .auth directory for storageState
+      - name: Create fresh .auth directory for storageState
         working-directory: ./frontend
         run: |
+          # Clean up stale storageState from previous runs on self-hosted runners
+          rm -rf .auth
           mkdir -p .auth
-          echo "Created .auth directory for Playwright storageState"
+          echo "Created fresh .auth directory for Playwright storageState"
 
       - name: Create .env.test from template (with LLM mode)
         working-directory: ./backend
