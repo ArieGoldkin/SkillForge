@@ -84,7 +84,10 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         echo "⏳ Installing Playwright Chromium..."
-        npx playwright install chromium --with-deps
+        # NOTE: Do NOT use --with-deps on self-hosted runners
+        # It tries to install system deps via apt/brew which hangs or takes forever
+        # Self-hosted runners should already have required deps installed
+        npx playwright install chromium
         echo "✓ Playwright Chromium installed"
 
     - name: Prepare .auth directory
