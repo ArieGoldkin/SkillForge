@@ -160,7 +160,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       needs.changes.outputs.source_code == 'true'
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
