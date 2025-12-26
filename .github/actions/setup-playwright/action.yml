@@ -13,12 +13,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Set up Node.js (cached)
+    # IMPORTANT: Do NOT use cache: 'npm' on self-hosted runners!
+    # It downloads from GitHub's cloud cache which can be slower than local install
+    # and may hang on connectivity issues. We use local node_modules persistence instead.
+    - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        cache: 'npm'
-        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
     # Self-hosted runner optimization: Check if node_modules already exists and is valid
     - name: Check npm cache status
@@ -43,6 +44,7 @@ runs:
       if: steps.npm-cache.outputs.cache_hit != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: 5
       run: |
         echo "⏳ Installing npm dependencies..."
         npm ci --prefer-offline --no-audit --no-fund
@@ -82,6 +84,7 @@ runs:
       if: steps.playwright-cache.outputs.cache_hit != 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      timeout-minutes: 3
       run: |
         echo "⏳ Installing Playwright Chromium..."
         # NOTE: Do NOT use --with-deps on self-hosted runners
