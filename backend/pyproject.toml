@@ -38,7 +38,7 @@ alembic = "^1.17.2"
 tiktoken = "^0.12.0"
 jinja2 = "^3.1.0"
 # PDF extraction for research papers (Issue #299-304)
-pypdf = "^5.1.0"
+pypdf = "^6.5.0"
 # Langfuse observability (replaces LangSmith - Issue #372)
 langfuse = "^3.0.0"
 orjson = "^3.11.5"
