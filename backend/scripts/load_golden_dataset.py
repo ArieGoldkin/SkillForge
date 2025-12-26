@@ -168,6 +168,9 @@ async def main(replace: bool = False) -> int:
 
         # Process each document as a separate analysis
         total_chunks = 0
+        seen_urls: set[str] = set()  # Track URLs to skip duplicates
+        skipped_count = 0
+
         for doc_idx, doc in enumerate(documents):
             doc_id = doc["id"]
             doc_title = doc["title"]
@@ -175,6 +178,15 @@ async def main(replace: bool = False) -> int:
             source_url = doc.get("source_url")
             tags = doc.get("tags", [])
             sections = doc.get("sections", [])
+
+            # Skip duplicate URLs (fixture data has some duplicates)
+            if source_url in seen_urls:
+                logger.warning(
+                    f"[{doc_idx + 1}/{len(documents)}] Skipping duplicate URL: {doc_title}"
+                )
+                skipped_count += 1
+                continue
+            seen_urls.add(source_url)
 
             logger.info(f"[{doc_idx + 1}/{len(documents)}] Creating: {doc_title}")
 
@@ -314,6 +326,8 @@ async def main(replace: bool = False) -> int:
         logger.info(f"   Analyses:  {analyses_count}")
         logger.info(f"   Artifacts: {artifacts_count}")
         logger.info(f"   Chunks:    {chunks_count}")
+        if skipped_count > 0:
+            logger.info(f"   Skipped:   {skipped_count} (duplicate URLs)")
         logger.info("=" * 60)
 
         return 0
