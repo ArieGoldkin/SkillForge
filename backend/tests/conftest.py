@@ -525,6 +525,32 @@ async def cleanup_event_broadcaster():
     await reset_broadcaster()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def cleanup_resilience_infrastructure():
+    """Async-safe reset of resilience infrastructure after each test.
+
+    GAP 2 (Issue #574): The ResilienceManager and BulkheadRegistry are singletons
+    with state that persists between tests:
+    - Circuit breakers stay OPEN for 60s after failures
+    - Bulkheads can have acquired semaphores from incomplete tests
+
+    This fixture uses async-safe reset functions with:
+    - asyncio.Lock to prevent concurrent reset race conditions
+    - Proper semaphore cleanup before clearing bulkhead state
+    - Explicit circuit breaker reset to CLOSED state
+    - Production safety guards (only works during pytest execution)
+
+    This fixture resets both singletons to prevent test pollution in parallel runs.
+    """
+    yield
+    # Import inside fixture to avoid circular imports at module load time
+    from app.core.bulkhead import reset_bulkhead_registry
+    from app.core.resilience import reset_resilience_manager
+
+    await reset_resilience_manager()
+    await reset_bulkhead_registry()
+
+
 @pytest_asyncio.fixture
 async def db_session(
     requires_database, reset_engine_connections, check_database_available

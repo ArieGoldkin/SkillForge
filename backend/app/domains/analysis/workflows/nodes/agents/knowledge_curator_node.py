@@ -18,6 +18,7 @@ from langfuse import get_client, observe
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
+from app.domains.analysis.agents.registry import get_agent_metadata
 from app.domains.analysis.constants.error_codes import (
     AGENT_CANCELLED,
     AGENT_LLM_ERROR,
@@ -29,6 +30,9 @@ from app.domains.analysis.workflows.agents.base import (
     emit_agent_progress,
     record_agent_execution,
 )
+from app.domains.analysis.workflows.agents.resilience_wrapper import (
+    execute_with_resilience,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
     get_fallback_content,
@@ -39,7 +43,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="knowledge_curator", capture_input=True, capture_output=True)
-async def knowledge_curator_node(state: AnalysisState) -> dict[str, object]:
+async def knowledge_curator_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915 - Agent node requires comprehensive error handling
     """Knowledge curator agent node.
 
     Executes knowledge graph curation and returns findings.
@@ -137,11 +141,19 @@ async def knowledge_curator_node(state: AnalysisState) -> dict[str, object]:
             run_knowledge_curator_with_session,
         )
 
-        result = await run_knowledge_curator_with_session(
-            content=get_fallback_content(state),
-            content_type=content_type,
-            analysis_id=str(analysis_id),
-            state=state,
+        # Issue #574: Execute with tier-based resilience (bulkhead + circuit breaker)
+        agent_meta = get_agent_metadata("knowledge_curator")
+        tier = agent_meta.tier if agent_meta else 3  # Tier 3 RESEARCH
+
+        result = await execute_with_resilience(
+            agent_type="knowledge_curator",
+            tier=tier,
+            fn=lambda: run_knowledge_curator_with_session(
+                content=get_fallback_content(state),
+                content_type=content_type,
+                analysis_id=str(analysis_id),
+                state=state,
+            ),
         )
 
         duration = time.time() - start_time

@@ -27,24 +27,24 @@ class TestQualityGateNodeErrorWrapping:
     """Test WorkflowStageError wrapping in quality_gate_node."""
 
     async def test_evaluation_error_wrapped_with_stage_context(self, monkeypatch):
-        """Test that evaluator creation errors are wrapped with WorkflowStageError.
+        """Test that run_multi_judge_evaluation errors are wrapped with WorkflowStageError.
 
-        When evaluator creation raises ValueError, WorkflowStageError should be raised
-        with stage="quality_gate" and the original exception preserved.
+        GAP 5 (#576): Multi-judge integration catches individual evaluator errors gracefully
+        and returns default scores. To test error propagation, we must mock
+        run_multi_judge_evaluation itself to raise an exception.
+
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
-
-        Note: Evaluator EXECUTION errors are now handled gracefully (default score 0.5).
-        This test verifies that CREATION errors still raise WorkflowStageError.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
-        # Mock evaluator creation to raise ValueError during CREATION (not execution)
-        def mock_create_evaluator(*args, **kwargs):
-            raise ValueError("Evaluator creation failed: invalid configuration")
+        # GAP 5: Mock run_multi_judge_evaluation to raise ValueError
+        # (Individual evaluator errors are now caught gracefully with default 0.5 scores)
+        def mock_run_multi_judge(*args, **kwargs):
+            raise ValueError("Multi-judge evaluation failed: invalid configuration")
 
         monkeypatch.setattr(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
-            mock_create_evaluator,
+            "app.shared.services.g_eval.multi_judge.run_multi_judge_evaluation",
+            mock_run_multi_judge,
         )
 
         state: AnalysisState = {
@@ -68,7 +68,7 @@ class TestQualityGateNodeErrorWrapping:
 
         # Verify original exception is preserved
         assert isinstance(exc_info.value.original_exception, ValueError)
-        assert "Evaluator creation failed" in str(exc_info.value.original_exception)
+        assert "Multi-judge evaluation failed" in str(exc_info.value.original_exception)
 
         # Verify exception chain is preserved (__cause__)
         assert exc_info.value.__cause__ is exc_info.value.original_exception
@@ -81,17 +81,18 @@ class TestQualityGateNodeErrorWrapping:
         to provide useful debugging information.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
 
-        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
+        GAP 5 (#576): Multi-judge catches individual evaluator errors gracefully.
+        To test error wrapping, mock run_multi_judge_evaluation directly.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
-        # Mock evaluator creation to raise RuntimeError with specific message
-        def mock_create_evaluator(*args, **kwargs):
+        # GAP 5: Mock run_multi_judge_evaluation to raise RuntimeError
+        def mock_run_multi_judge(*args, **kwargs):
             raise RuntimeError("LLM service unavailable")
 
         monkeypatch.setattr(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
-            mock_create_evaluator,
+            "app.shared.services.g_eval.multi_judge.run_multi_judge_evaluation",
+            mock_run_multi_judge,
         )
 
         state: AnalysisState = {
@@ -122,18 +123,20 @@ class TestQualityGateNodeErrorWrapping:
         allowing debuggers and error handlers to trace the root cause.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
 
-        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
+        GAP 5 (#576): Multi-judge catches individual evaluator errors gracefully.
+        To test error wrapping, mock run_multi_judge_evaluation directly.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         original_error = ValueError("Original validation error")
 
-        def mock_create_evaluator(*args, **kwargs):
+        # GAP 5: Mock run_multi_judge_evaluation to raise the original error
+        def mock_run_multi_judge(*args, **kwargs):
             raise original_error
 
         monkeypatch.setattr(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
-            mock_create_evaluator,
+            "app.shared.services.g_eval.multi_judge.run_multi_judge_evaluation",
+            mock_run_multi_judge,
         )
 
         state: AnalysisState = {
@@ -168,7 +171,8 @@ class TestQualityGateNodeErrorWrapping:
         KeyError, etc.) while preserving the original exception type.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
 
-        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
+        GAP 5 (#576): Multi-judge catches individual evaluator errors gracefully.
+        To test error wrapping, mock run_multi_judge_evaluation directly.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -180,16 +184,16 @@ class TestQualityGateNodeErrorWrapping:
         ]
 
         for original_error in error_types:
-            # Fix B023: Bind loop variable in closure to avoid late binding
-            def make_mock_evaluator(error):
-                def mock_create_evaluator(*args, **kwargs):
+            # GAP 5: Mock run_multi_judge_evaluation to raise the error
+            def make_mock_multi_judge(error):
+                def mock_run_multi_judge(*args, **kwargs):
                     raise error
 
-                return mock_create_evaluator
+                return mock_run_multi_judge
 
             monkeypatch.setattr(
-                "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
-                make_mock_evaluator(original_error),
+                "app.shared.services.g_eval.multi_judge.run_multi_judge_evaluation",
+                make_mock_multi_judge(original_error),
             )
 
             state: AnalysisState = {

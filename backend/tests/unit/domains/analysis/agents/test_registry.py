@@ -77,9 +77,9 @@ class TestAgentMetadata:
 class TestAgentRegistry:
     """Tests for AGENT_REGISTRY."""
 
-    def test_registry_has_12_agents(self):
-        """Verify registry contains all 12 agents."""
-        assert len(AGENT_REGISTRY) == 12
+    def test_registry_has_20_agents(self):
+        """Verify registry contains all 20 agents."""
+        assert len(AGENT_REGISTRY) == 20
 
     def test_tier1_has_4_agents(self):
         """Tier 1 (Universal) should have 4 agents."""
@@ -90,14 +90,24 @@ class TestAgentRegistry:
         assert "audience_fit" in tier1
         assert "actionable" in tier1
 
-    def test_tier2_has_4_agents(self):
-        """Tier 2 (Validation) should have 4 agents."""
+    def test_tier2_has_12_agents(self):
+        """Tier 2 (Validation) should have 12 agents."""
         tier2 = get_agents_by_tier(AgentTier.VALIDATION)
-        assert len(tier2) == 4
+        assert len(tier2) == 12
+        # Original validation agents
         assert "fact_validator" in tier2
         assert "source_credibility" in tier2
         assert "freshness_checker" in tier2
         assert "alternatives_finder" in tier2
+        # Content analysis agents added in GAP integration
+        assert "tech_comparator" in tier2
+        assert "security_auditor" in tier2
+        assert "implementation_planner" in tier2
+        assert "performance_analyst" in tier2
+        assert "dependency_mapper" in tier2
+        assert "code_quality_critic" in tier2
+        assert "trend_validator" in tier2
+        assert "integration_feasibility" in tier2
 
     def test_tier3_has_4_agents(self):
         """Tier 3 (Research) should have 4 agents."""
@@ -128,7 +138,7 @@ class TestGetAgentsForMode:
     def test_standard_mode_returns_tier1_and_tier2(self):
         """Standard mode returns Tier 1 + Tier 2 agents."""
         agents = get_agents_for_mode(AnalysisMode.STANDARD)
-        assert len(agents) == 8
+        assert len(agents) == 16  # 4 Tier 1 + 12 Tier 2
         assert "key_insights" in agents  # Tier 1
         assert "fact_validator" in agents  # Tier 2
         assert "deep_researcher" not in agents  # Tier 3
@@ -136,7 +146,7 @@ class TestGetAgentsForMode:
     def test_deep_dive_returns_all_agents(self):
         """Deep dive mode returns all agents."""
         agents = get_agents_for_mode(AnalysisMode.DEEP_DIVE)
-        assert len(agents) == 12
+        assert len(agents) == 20  # 4 Tier 1 + 12 Tier 2 + 4 Tier 3
         assert "key_insights" in agents  # Tier 1
         assert "fact_validator" in agents  # Tier 2
         assert "deep_researcher" in agents  # Tier 3
@@ -159,7 +169,7 @@ class TestGetAgentsForMode:
     def test_accepts_enum_modes(self):
         """Function accepts mode as AnalysisMode enum."""
         agents = get_agents_for_mode(AnalysisMode.STANDARD)
-        assert len(agents) == 8
+        assert len(agents) == 16  # 4 Tier 1 + 12 Tier 2
 
 
 class TestGetAgentMetadata:
@@ -184,10 +194,15 @@ class TestToolEnabledAgents:
     def test_returns_agents_with_tools(self):
         """Returns only agents with tool capabilities."""
         agents = get_tool_enabled_agents()
-        # Agents with tools: fact_validator, freshness_checker,
-        # alternatives_finder, deep_researcher
+        # Agents with tools: fact_validator (tavily_search),
+        # freshness_checker (github_api, npm_api),
+        # alternatives_finder (tavily_search),
+        # deep_researcher (tavily_search)
         assert len(agents) == 4
         assert "fact_validator" in agents
+        assert "freshness_checker" in agents
+        assert "alternatives_finder" in agents
+        assert "deep_researcher" in agents
         assert "key_insights" not in agents  # No tools
 
 

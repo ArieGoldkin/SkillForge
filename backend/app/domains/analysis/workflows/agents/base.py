@@ -526,8 +526,11 @@ async def handle_agent_node_error(
         )
         return {"agent_findings": []}
 
-    if isinstance(error, TimeoutError):
-        # Agent execution exceeded timeout
+    # Import BulkheadTimeoutError for resilience wrapper timeout handling
+    from app.core.bulkhead import BulkheadTimeoutError
+
+    if isinstance(error, (TimeoutError, BulkheadTimeoutError)):
+        # Agent execution exceeded timeout (direct or via bulkhead)
         error_code = f"{agent_type.upper()}_TIMEOUT"
         error_message = "Agent execution timed out"
 

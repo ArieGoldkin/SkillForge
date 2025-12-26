@@ -16,6 +16,7 @@ from langfuse import observe
 
 from app.core.logging import get_logger
 from app.core.tracing import get_current_trace_id, update_current_trace
+from app.domains.analysis.agents.registry import get_agent_metadata
 from app.domains.analysis.constants.error_codes import (
     AGENT_NO_CONTENT,
     AgentStatus,
@@ -23,6 +24,9 @@ from app.domains.analysis.constants.error_codes import (
 from app.domains.analysis.workflows.agents.base import (
     handle_agent_node_error,
     record_agent_execution,
+)
+from app.domains.analysis.workflows.agents.resilience_wrapper import (
+    execute_with_resilience,
 )
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
@@ -107,13 +111,21 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
     )
 
     try:
+        # Issue #574: Execute with tier-based resilience (bulkhead + circuit breaker)
+        agent_meta = get_agent_metadata("performance_analyst")
+        tier = agent_meta.tier if agent_meta else 2  # Tier 2 VALIDATION
+
         # Issue #244: Run agent with Handle Pattern - runner loads from artifact
         # get_fallback_content provides raw_content as fallback if artifact unavailable
-        result = await run_performance_analyst_with_session(
-            content=get_fallback_content(state),
-            content_type=content_type,
-            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
-            state=state,
+        result = await execute_with_resilience(
+            agent_type="performance_analyst",
+            tier=tier,
+            fn=lambda: run_performance_analyst_with_session(
+                content=get_fallback_content(state),
+                content_type=content_type,
+                analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
+                state=state,
+            ),
         )
 
         duration = time.time() - start_time

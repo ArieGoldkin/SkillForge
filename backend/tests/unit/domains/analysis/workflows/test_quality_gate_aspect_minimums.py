@@ -55,7 +55,7 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
     """
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -107,7 +107,7 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
     """Test that quality gate passes when all aspects meet minimums."""
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -154,7 +154,7 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when depth is below minimum (0.4)."""
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -196,7 +196,7 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when coherence is below minimum (0.4)."""
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -238,7 +238,7 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
     """Test that quality gate fails when multiple aspects are below minimums."""
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -250,20 +250,36 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
     ):
         mock_run_tree.return_value = None
 
-        # All aspects below minimums
+        # GAP5 multi-judge: All aspects below minimums
         # relevance: 0.4 < 0.5
         # depth: 0.3 < 0.4
         # coherence: 0.2 < 0.4
         # Average: (0.4 + 0.3 + 0.2) / 3 = 0.3 < 0.7
-        def low_score_evaluator(*, input, output, _expected_output=None):
-            return MockEvaluation(value=0.3, comment="3/10 - poor quality")
+        def create_evaluator_side_effect(*args, **kwargs):
+            criterion = kwargs.get("criterion", "")
 
-        mock_create.return_value = low_score_evaluator
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "relevance":
+                    return MockEvaluation(value=0.4, comment="4/10 - poor quality")
+                elif criterion == "depth":
+                    return MockEvaluation(value=0.3, comment="3/10 - poor quality")
+                else:  # coherence
+                    return MockEvaluation(value=0.2, comment="2/10 - poor quality")
+
+            return evaluator
+
+        mock_create.side_effect = create_evaluator_side_effect
 
         result = await quality_gate_node(base_state)
 
         # Gate should FAIL
         assert result["quality_gate_passed"] is False
+
+        # Verify quality scores match expected values
+        scores = result["quality_scores"]
+        assert scores["relevance"]["score"] == 0.4
+        assert scores["depth"]["score"] == 0.3
+        assert scores["coherence"]["score"] == 0.2
 
         # Verify multiple warnings were logged
         warning_calls = [
@@ -271,8 +287,8 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
             for call in mock_logger.warning.call_args_list
             if call[0][0] == "quality_aspect_below_minimum"
         ]
-        # Should have at least 2 warnings for failed aspects
-        assert len(warning_calls) >= 2
+        # Should have 3 warnings (all aspects failed)
+        assert len(warning_calls) == 3
 
 
 def test_should_retry_synthesis_fail_closed_max_retries():
@@ -345,7 +361,7 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
     """Test that quality gate logs which aspects failed minimum thresholds."""
     with (
         patch(
-            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
+            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
