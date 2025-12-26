@@ -77,10 +77,10 @@ Use this checklist when implementing features with React Server Components and N
 - [ ] Clear form after successful submission
 - [ ] Prevent double submissions
 
-### Client Integration
-- [ ] Use `useFormState()` for form state management
-- [ ] Use `useFormStatus()` for loading states
-- [ ] Use `useOptimistic()` for optimistic UI updates
+### Client Integration (React 19)
+- [ ] Use `useActionState()` for form state management (replaces useFormState)
+- [ ] Use `useFormStatus()` for loading states in submit buttons
+- [ ] Use `useOptimistic()` with `useTransition()` for optimistic UI updates
 - [ ] Handle errors gracefully with user feedback
 
 ## Routing
@@ -158,7 +158,7 @@ Use this checklist when implementing features with React Server Components and N
 - [ ] Validate on both client and server
 - [ ] Show field-level errors
 - [ ] Prevent form submission if invalid
-- [ ] Use `useFormState()` for server-side errors
+- [ ] Use `useActionState()` for server-side errors (React 19)
 - [ ] Clear errors when user corrects input
 
 ## Performance Optimization

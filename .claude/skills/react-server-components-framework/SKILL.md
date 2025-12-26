@@ -112,8 +112,8 @@ export async function createPost(formData: FormData) {
 
 **Detailed Implementation**: See `references/server-actions.md` for:
 - Progressive enhancement patterns
-- useFormStatus and useFormState hooks
-- Optimistic UI with useOptimistic
+- useFormStatus and useActionState hooks (React 19)
+- Optimistic UI with useOptimistic + useTransition
 - Validation with Zod
 - Inline vs exported Server Actions
 
