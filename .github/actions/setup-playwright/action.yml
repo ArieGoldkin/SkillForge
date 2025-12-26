@@ -25,18 +25,22 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: npm ci
 
-    - name: Cache Playwright browsers
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles(format('{0}/package-lock.json', inputs.working-directory)) }}
-        restore-keys: |
-          playwright-${{ runner.os }}-
-
-    - name: Install Playwright browsers
+    - name: Check Playwright browsers and install if needed
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: npx playwright install --with-deps chromium
+      run: |
+        # On self-hosted runners, browsers persist between runs
+        # Check if chromium is already installed to avoid 7GB download
+        PLAYWRIGHT_BROWSERS_PATH="${HOME}/.cache/ms-playwright"
+
+        if [ -d "${PLAYWRIGHT_BROWSERS_PATH}" ] && ls "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* 1>/dev/null 2>&1; then
+          echo "✓ Playwright Chromium already installed, skipping download"
+          ls -la "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* | head -3
+        else
+          echo "⏳ Installing Playwright Chromium (this may take a few minutes)..."
+          npx playwright install --with-deps chromium
+          echo "✓ Playwright Chromium installed"
+        fi
 
     - name: Create fresh .auth directory for storageState
       shell: bash
