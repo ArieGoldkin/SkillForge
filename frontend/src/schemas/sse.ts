@@ -336,20 +336,26 @@ export function isFailedStage(event: unknown): boolean {
 /**
  * Re-export base schema types for use throughout the application
  * These are imported from base.ts to maintain single source of truth
+ *
+ * IMPORTANT: Type-only exports must use `export type` to prevent runtime errors.
+ * Without `type`, bundlers try to import these as values which don't exist at runtime.
  */
-export {
+export type {
   StageName,
   StageStatus,
   AgentStageName,
   WorkflowStageName,
+  ContentType,
+  FindingsQuality,
+  Coverage,
+} from './base'
+
+export {
   StageNameSchema,
   StageStatusSchema,
   AgentStageNameSchema,
   WorkflowStageNameSchema,
-  ContentType,
   ContentTypeSchema,
-  FindingsQuality,
   FindingsQualitySchema,
-  Coverage,
   CoverageSchema,
 } from './base'
