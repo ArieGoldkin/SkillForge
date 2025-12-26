@@ -202,6 +202,17 @@ async def main(replace: bool = False) -> int:
                 raw_content_parts.append("")
             raw_content = "\n".join(raw_content_parts)
 
+            # Build extraction_metadata (required for status='complete')
+            # This satisfies the check_complete_has_metadata constraint
+            extraction_metadata = {
+                "source": "golden-dataset",
+                "document_id": doc_id,
+                "section_count": len(sections),
+                "word_count": len(raw_content.split()),
+                "language": doc.get("language", "en"),
+                "tags": tags,
+            }
+
             analysis = Analysis(
                 id=analysis_id,
                 url=source_url,
@@ -209,6 +220,7 @@ async def main(replace: bool = False) -> int:
                 status="complete",
                 title=doc_title,
                 raw_content=raw_content,
+                extraction_metadata=extraction_metadata,
             )
             session.add(analysis)
             # Flush analysis first to satisfy foreign key constraint for artifact
