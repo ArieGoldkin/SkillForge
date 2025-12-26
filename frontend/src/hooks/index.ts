@@ -1,4 +1,5 @@
 export { useAnalysis } from './useAnalysis'
+export { useFocusReturn } from './useFocusReturn'
 export { useKeyboardShortcuts, formatShortcut, type Shortcut } from './useKeyboardShortcuts'
 export { usePrefetch, PREFETCH_TARGETS, type UsePrefetchReturn } from './usePrefetch'
 export { useSSE } from './useSSE'

@@ -5,10 +5,12 @@
  * to display detailed stage information for a selected group. Features drag-to-dismiss,
  * backdrop overlay, safe area support, and smooth animations.
  *
+ * Uses React 19's useCallback for optimized event handler memoization.
+ *
  * @module features/analysis/components/accordion/MobileBottomSheet
  */
 /* eslint-disable max-lines -- Bottom sheet component requires comprehensive implementation with keyboard handling, focus trap, drag gestures, body scroll lock, and complete JSX structure. All sections are well-organized and necessary. */
-import * as React from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { X } from 'lucide-react'
 import { createPortal } from 'react-dom'
@@ -78,17 +80,17 @@ export function MobileBottomSheet({
   stages,
   title,
 }: MobileBottomSheetProps): React.ReactPortal | null {
-  const sheetRef = React.useRef<HTMLDivElement>(null)
-  const dragStartY = React.useRef<number>(0)
-  const dragCurrentY = React.useRef<number>(0)
-  const [isDragging, setIsDragging] = React.useState(false)
-  const [translateY, setTranslateY] = React.useState(0)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const dragStartY = useRef<number>(0)
+  const dragCurrentY = useRef<number>(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const [translateY, setTranslateY] = useState(0)
 
   // ============================================================================
   // Keyboard Handling
   // ============================================================================
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return
 
     const handleEscape = (e: KeyboardEvent): void => {
@@ -107,7 +109,7 @@ export function MobileBottomSheet({
   // Focus Trap
   // ============================================================================
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen || !sheetRef.current) return
 
     const sheet = sheetRef.current
@@ -144,30 +146,33 @@ export function MobileBottomSheet({
   }, [isOpen])
 
   // ============================================================================
-  // Drag Gesture Handling
+  // Drag Gesture Handling (Memoized with useCallback)
   // ============================================================================
 
-  const handleDragStart = (e: React.TouchEvent | React.MouseEvent): void => {
+  const handleDragStart = useCallback((e: React.TouchEvent | React.MouseEvent): void => {
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
     dragStartY.current = clientY
     dragCurrentY.current = clientY
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragMove = (e: React.TouchEvent | React.MouseEvent): void => {
-    if (!isDragging) return
+  const handleDragMove = useCallback(
+    (e: React.TouchEvent | React.MouseEvent): void => {
+      if (!isDragging) return
 
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    dragCurrentY.current = clientY
-    const deltaY = clientY - dragStartY.current
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+      dragCurrentY.current = clientY
+      const deltaY = clientY - dragStartY.current
 
-    // Only allow dragging down (positive deltaY)
-    if (deltaY > 0) {
-      setTranslateY(deltaY)
-    }
-  }
+      // Only allow dragging down (positive deltaY)
+      if (deltaY > 0) {
+        setTranslateY(deltaY)
+      }
+    },
+    [isDragging]
+  )
 
-  const handleDragEnd = (): void => {
+  const handleDragEnd = useCallback((): void => {
     if (!isDragging) return
 
     const deltaY = dragCurrentY.current - dragStartY.current
@@ -182,13 +187,13 @@ export function MobileBottomSheet({
     setTranslateY(0)
     dragStartY.current = 0
     dragCurrentY.current = 0
-  }
+  }, [isDragging, onClose])
 
   // ============================================================================
   // Body Scroll Lock
   // ============================================================================
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       // Prevent body scroll when sheet is open
       document.body.style.overflow = 'hidden'

@@ -10,6 +10,8 @@
 
 import { useState, type KeyboardEvent } from 'react'
 
+import { useFocusReturn } from '@/hooks'
+
 import { Button } from '@shared/components/ui/button'
 import {
   Dialog,
@@ -33,6 +35,9 @@ const MAX_COMMENT_LENGTH = 1000
 export function CommentDialog({ open, onOpenChange, onSubmit, onCancel }: CommentDialogProps) {
   const [comment, setComment] = useState('')
   const [error, setError] = useState('')
+
+  // WCAG 2.1 AA: Return focus to trigger element when modal closes
+  useFocusReturn(open)
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {

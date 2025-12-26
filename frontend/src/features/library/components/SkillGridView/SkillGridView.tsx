@@ -1,29 +1,17 @@
 import type React from 'react'
-import { useEffect, useRef } from 'react'
 
 import { BookOpen, Loader2 } from 'lucide-react'
 
 import { cn } from '@lib/utils'
 
-import { SkillCard, type SkillCardProps } from './SkillCard'
-import { SkillCardSkeleton } from './SkillCardSkeleton'
+import { SkillCardSkeleton } from '../SkillCardSkeleton'
+
+import type { SkillGridViewProps } from './types'
+import { useInfiniteScroll } from './useInfiniteScroll'
+import { VirtualizedGrid } from './VirtualizedGrid'
 
 /** Stable IDs for loading skeleton placeholders */
 const SKELETON_IDS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'] as const
-
-/**
- * Props for SkillGridView component
- */
-export interface SkillGridViewProps {
-  skills: SkillCardProps[]
-  onSelectSkill: (id: string) => void
-  loading?: boolean
-  emptyMessage?: string
-  className?: string
-  onLoadMore?: () => void
-  canLoadMore?: boolean
-  isLoadingMore?: boolean
-}
 
 /**
  * Empty state component
@@ -41,10 +29,10 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => {
 }
 
 /**
- * SkillGridView - Grid layout for SkillCards
+ * SkillGridView - Virtualized grid layout for SkillCards
  *
- * Displays skills in a responsive grid layout with loading states and empty state.
- * Automatically adjusts columns based on screen size.
+ * Displays skills in a responsive virtualized grid with loading states,
+ * empty state, and infinite scroll support.
  *
  * Grid breakpoints:
  * - Mobile: 1 column
@@ -58,10 +46,11 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => {
  *   onSelectSkill={(id) => router.push(`/skills/${id}`)}
  *   loading={isLoading}
  *   emptyMessage="Try adjusting your filters or search query"
+ *   onLoadMore={loadNextPage}
+ *   canLoadMore={hasNextPage}
  * />
  * ```
  */
-// eslint-disable-next-line max-lines-per-function
 export const SkillGridView: React.FC<SkillGridViewProps> = ({
   skills,
   onSelectSkill,
@@ -72,54 +61,27 @@ export const SkillGridView: React.FC<SkillGridViewProps> = ({
   canLoadMore = false,
   isLoadingMore = false,
 }) => {
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!onLoadMore || !canLoadMore) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (entry.isIntersecting) {
-          onLoadMore()
-        }
-      },
-      {
-        root: null,
-        rootMargin: '200px', // trigger slightly before reaching the end
-        threshold: 0.1,
-      }
-    )
-
-    const sentinel = sentinelRef.current
-    if (sentinel) observer.observe(sentinel)
-
-    return () => {
-      if (sentinel) observer.unobserve(sentinel)
-      observer.disconnect()
-    }
-  }, [onLoadMore, canLoadMore])
+  const sentinelRef = useInfiniteScroll(onLoadMore, canLoadMore)
 
   return (
     <div className="space-y-4">
-      <div
-        className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', className)}
-        role="list"
-        aria-label="Skills grid"
-      >
-        {loading ? (
-          // Loading skeletons
-          SKELETON_IDS.map((id) => <SkillCardSkeleton key={id} />)
-        ) : skills.length === 0 ? (
-          // Empty state
-          <EmptyState message={emptyMessage} />
-        ) : (
-          // Skill cards
-          skills.map((skill) => <SkillCard key={skill.id} {...skill} onSelect={onSelectSkill} />)
-        )}
-      </div>
+      {loading ? (
+        <div
+          className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', className)}
+          role="list"
+          aria-label="Skills grid loading"
+        >
+          {SKELETON_IDS.map((id) => (
+            <SkillCardSkeleton key={id} />
+          ))}
+        </div>
+      ) : skills.length === 0 ? (
+        <EmptyState message={emptyMessage} />
+      ) : (
+        <VirtualizedGrid skills={skills} onSelectSkill={onSelectSkill} className={className} />
+      )}
 
-      {/* Infinite scroll sentinel + loading indicator */}
+      {/* Infinite scroll sentinel */}
       {onLoadMore && canLoadMore && (
         <div ref={sentinelRef} className="flex justify-center py-4">
           {isLoadingMore ? (

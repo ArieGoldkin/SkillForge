@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as artifactModule from '@features/artifact'
+import type { UseArtifactPreviewReturn } from '@features/artifact'
 
 import { CompactActionCard } from '../CompactActionCard'
 
@@ -25,6 +26,7 @@ import { CompactActionCard } from '../CompactActionCard'
 const mockNavigate = vi.fn()
 const mockOpenPreview = vi.fn()
 const mockDownload = vi.fn()
+const mockClosePreview = vi.fn()
 
 // Mock @tanstack/react-router
 vi.mock('@tanstack/react-router', () => ({
@@ -61,12 +63,14 @@ describe('CompactActionCard', () => {
     )
 
     vi.mocked(artifactModule.useArtifactPreview).mockReturnValue({
+      isOpen: false,
       openPreview: mockOpenPreview,
-      download: mockDownload,
+      closePreview: mockClosePreview,
+      content: null,
       isLoading: false,
       error: null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+      download: mockDownload,
+    } satisfies UseArtifactPreviewReturn)
   })
 
   describe('success state (no errors)', () => {
@@ -256,12 +260,14 @@ describe('CompactActionCard', () => {
 
     it('disables Download button when loading', () => {
       vi.mocked(artifactModule.useArtifactPreview).mockReturnValue({
+        isOpen: false,
         openPreview: mockOpenPreview,
-        download: mockDownload,
+        closePreview: mockClosePreview,
+        content: null,
         isLoading: true,
         error: null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+        download: mockDownload,
+      } satisfies UseArtifactPreviewReturn)
 
       render(<CompactActionCard hasErrors={false} />)
 
