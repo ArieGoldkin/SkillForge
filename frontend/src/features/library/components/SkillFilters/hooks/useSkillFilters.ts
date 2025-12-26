@@ -85,7 +85,7 @@ export const useSkillFilters = (
   }
 
   // Status change handler with optimistic update
-  const handleStatusChange = (status: AnalysisStatus, checked: boolean) => {
+  const handleStatusChange = (status: FilterStatus, checked: boolean) => {
     // Treat status as radio: only one status at a time
     const newStatuses = checked ? [status] : []
     const newFilters = { ...optimisticFilters, status: newStatuses }

@@ -1,4 +1,4 @@
-import type { AnalysisStatus } from '@/types/api'
+import type { FilterStatus } from '@/types/api'
 
 import { ContentGrid } from './ContentGrid'
 import { FiltersSidebar } from './FiltersSidebar'
@@ -22,7 +22,7 @@ interface LibraryContentMainProps {
   filters: SkillFiltersType
   onFiltersChange: (filters: SkillFiltersType) => void
   availableTags: string[]
-  availableStatuses: AnalysisStatus[]
+  availableStatuses: FilterStatus[]
   filteredSkills: Skill[]
   isLoading: boolean
   isFetching: boolean

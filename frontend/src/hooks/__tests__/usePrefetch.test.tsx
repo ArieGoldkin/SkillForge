@@ -54,7 +54,7 @@ describe('usePrefetch', () => {
     })
 
     it('should provide queryFn that fetches analysis data', async () => {
-      const mockResponse = { id: 'test-123', status: 'completed' }
+      const mockResponse = { id: 'test-123', status: 'complete' }
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,

@@ -8,7 +8,7 @@ import type { SkillStatus } from '../components/SkillCard'
  */
 export function mapAnalysisStatusToSkillStatus(status: AnalysisStatus): SkillStatus {
   // Complete status
-  if (status === 'complete' || status === 'completed') return 'completed'
+  if (status === 'complete') return 'completed'
 
   // All failure statuses map to 'failed'
   if (
@@ -44,7 +44,7 @@ export function mapAnalysisStatusToSkillStatus(status: AnalysisStatus): SkillSta
  */
 export function mapAnalysisStatusToFilterStatus(status: AnalysisStatus): FilterStatus {
   // Complete status
-  if (status === 'complete' || status === 'completed') return 'complete'
+  if (status === 'complete') return 'complete'
 
   // All failure statuses map to 'failed'
   if (

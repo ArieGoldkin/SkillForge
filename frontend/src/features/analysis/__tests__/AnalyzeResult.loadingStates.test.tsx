@@ -58,7 +58,7 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
   useAnalysisStatus: () => ({
     shouldConnect: false,
     statusLoading: false,
-    resolvedStatus: 'completed',
+    resolvedStatus: 'complete',
   }),
 }))
 
@@ -128,7 +128,7 @@ vi.mock('../hooks/useAnalysisStatus', () => ({
   useAnalysisStatus: () => ({
     shouldConnect: false,
     statusLoading: false,
-    resolvedStatus: 'completed',
+    resolvedStatus: 'complete',
   }),
 }))
 

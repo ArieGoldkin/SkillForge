@@ -22,7 +22,6 @@ export type AnalysisStatus =
   | 'failed' // Generic fallback
   // User actions
   | 'cancelled'
-  | 'completed' // Backend returns 'completed', normalized to 'complete' in api.service.ts
 
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
 

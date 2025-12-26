@@ -126,22 +126,6 @@ describe('useSkillsData', () => {
       expect(result.current[0].progress).toBe(100)
     })
 
-    it('maps completed status correctly', () => {
-      const analyses = [
-        {
-          id: 'analysis-1',
-          title: 'Test',
-          content_type: 'article',
-          status: 'completed',
-        },
-      ]
-
-      const { result } = renderHook(() => useSkillsData(analyses))
-
-      expect(result.current[0].status).toBe('completed')
-      expect(result.current[0].progress).toBe(100)
-    })
-
     it('maps failed status correctly', () => {
       const analyses = [
         {

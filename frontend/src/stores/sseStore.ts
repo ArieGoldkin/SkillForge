@@ -437,11 +437,7 @@ const baseStore = create<SSEStore>((set, get) => ({
 
           // Check if analysis is complete
           const statusData = await analyzeAPI.getAnalysisStatus(analysisId)
-          if (
-            statusData.status === 'complete' ||
-            statusData.status === 'completed' ||
-            statusData.status === 'failed'
-          ) {
+          if (statusData.status === 'complete' || statusData.status === 'failed') {
             get().stopPolling()
             set({ isComplete: true })
           }

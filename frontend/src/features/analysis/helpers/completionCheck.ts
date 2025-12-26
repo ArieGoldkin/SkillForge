@@ -9,8 +9,7 @@ export const checkIsTrulyComplete = (params: {
   isComplete: boolean
   overallProgress: { stage: string; progress: number }
 }) => {
-  const isStatusComplete =
-    params.resolvedStatus === 'completed' || params.resolvedStatus === 'complete'
+  const isStatusComplete = params.resolvedStatus === 'complete'
   return (
     !params.hasFailedStages &&
     ((params.completed && Boolean(params.urlArtifactId)) ||

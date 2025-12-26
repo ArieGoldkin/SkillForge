@@ -84,7 +84,7 @@ const useStatusRequest = (analysisId?: string, completedParam?: boolean) => {
 
       // If analysis is completed, fetch progress events from database
       // This allows displaying stage progress for already-completed analyses
-      if (completedParam || data.status === 'complete' || data.status === 'completed') {
+      if (completedParam || data.status === 'complete') {
         try {
           const progressData = await analyzeAPI.getAnalysisProgress(analysisId)
           const sseEvents = convertProgressEventsToSSE(progressData)
@@ -152,7 +152,6 @@ export function useAnalysisStatus({
   const isCompleteOrFailed = useMemo(() => {
     if (!resolvedStatus) return false
     return (
-      resolvedStatus === 'completed' ||
       resolvedStatus === 'complete' ||
       resolvedStatus === 'failed' ||
       resolvedStatus === 'extraction_failed' ||
