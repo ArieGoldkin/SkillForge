@@ -20,25 +20,50 @@ runs:
         cache: 'npm'
         cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
-    - name: Install frontend dependencies
+    - name: Install frontend dependencies (skip if cached on self-hosted)
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: npm ci
+      run: |
+        # On self-hosted runners, node_modules persists - only reinstall if needed
+        if [ -d "node_modules" ] && [ -f "node_modules/.package-lock.json" ]; then
+          # Check if package-lock.json changed
+          if diff -q package-lock.json node_modules/.package-lock.json >/dev/null 2>&1; then
+            echo "✓ node_modules up-to-date, skipping npm ci"
+          else
+            echo "⏳ package-lock.json changed, running npm ci..."
+            npm ci
+          fi
+        else
+          echo "⏳ No cached node_modules, running npm ci..."
+          npm ci
+        fi
 
     - name: Check Playwright browsers and install if needed
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
         # On self-hosted runners, browsers persist between runs
-        # Check if chromium is already installed to avoid 7GB download
         PLAYWRIGHT_BROWSERS_PATH="${HOME}/.cache/ms-playwright"
 
+        # Get expected Playwright version from package.json
+        EXPECTED_VERSION=$(node -p "require('./node_modules/@playwright/test/package.json').version" 2>/dev/null || echo "unknown")
+        echo "Expected Playwright version: ${EXPECTED_VERSION}"
+
+        # Check if chromium for this version exists
         if [ -d "${PLAYWRIGHT_BROWSERS_PATH}" ] && ls "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* 1>/dev/null 2>&1; then
-          echo "✓ Playwright Chromium already installed, skipping download"
-          ls -la "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* | head -3
+          INSTALLED_BROWSER=$(ls -d "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* 2>/dev/null | head -1)
+          echo "✓ Found installed browser: ${INSTALLED_BROWSER}"
+
+          # Verify browser works by checking executable exists
+          if [ -x "${INSTALLED_BROWSER}/chrome-linux/chrome" ] || [ -x "${INSTALLED_BROWSER}/chrome-mac/Chromium.app/Contents/MacOS/Chromium" ]; then
+            echo "✓ Browser executable found, skipping download"
+          else
+            echo "⚠️ Browser directory exists but executable missing, reinstalling..."
+            npx playwright install chromium
+          fi
         else
-          echo "⏳ Installing Playwright Chromium (this may take a few minutes)..."
-          npx playwright install --with-deps chromium
+          echo "⏳ Installing Playwright Chromium..."
+          npx playwright install chromium
           echo "✓ Playwright Chromium installed"
         fi
 
