@@ -176,7 +176,9 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     logTestStep('Navigate to home page');
     const homePage = new HomePage(page);
     await homePage.goto();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    // Wait for URL input to be visible (indicates page is ready)
+    await expect(homePage.urlInput).toBeVisible({ timeout: 10000 });
     await takeScreenshot('01_home_page_initial');
 
     // Verify home page loaded
@@ -208,8 +210,13 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 15000 });
     logger.info('Progress bar visible');
 
-    // Wait for initial progress
-    await page.waitForTimeout(2000);
+    // Wait for initial progress by checking that progress > 0
+    await expect
+      .poll(() => analyzePage.getProgress(), {
+        timeout: 10000,
+        intervals: [500, 1000],
+      })
+      .toBeGreaterThan(0);
     const initialProgress = await analyzePage.getProgress();
     logger.info('Initial progress', { progress: initialProgress });
     await takeScreenshot('04_sse_connected');
@@ -231,7 +238,17 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     // Poll for stages with timeout protection
     // Continue until we see all 6 core stages OR reach max wait time OR progress is 100%
     while (coreStagesEncountered() < CORE_STAGES.length && stagnantCount < maxStagnantChecks) {
-      await page.waitForTimeout(5000);
+      // Wait for progress to change or timeout after 5 seconds
+      const previousProgress = lastProgress;
+      await expect
+        .poll(() => analyzePage.getProgress(), {
+          timeout: 5000,
+          intervals: [1000],
+        })
+        .not.toBe(previousProgress)
+        .catch(() => {
+          // Progress didn't change, that's ok - will be handled by stagnant count
+        });
 
       const currentProgress = await analyzePage.getProgress();
       const coreCount = coreStagesEncountered();
@@ -406,8 +423,13 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     const analyzePage = new AnalyzePage(page);
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 15000 });
 
-    // Verify UI remains responsive during rapid updates
-    await page.waitForTimeout(10000);
+    // Verify UI remains responsive during rapid updates by waiting for progress to advance
+    await expect
+      .poll(() => analyzePage.getProgress(), {
+        timeout: 10000,
+        intervals: [1000, 2000],
+      })
+      .toBeGreaterThan(0);
 
     const progress = await analyzePage.getProgress();
     logger.info('UI remained responsive', { progress });
@@ -431,8 +453,13 @@ test.describe('Full Workflow - 13 Stages Validation', () => {
     const analyzePage = new AnalyzePage(page);
     await expect(analyzePage.progressBar).toBeVisible({ timeout: 15000 });
 
-    // Wait for some progress
-    await page.waitForTimeout(15000);
+    // Wait for some progress to be made
+    await expect
+      .poll(() => analyzePage.getProgress(), {
+        timeout: 15000,
+        intervals: [2000, 3000],
+      })
+      .toBeGreaterThan(10); // Wait for at least 10% progress
 
     const progress = await analyzePage.getProgress();
     logger.info('Current progress', { progress });

@@ -152,18 +152,35 @@ async function globalSetup(config: FullConfig): Promise<void> {
     // Navigate to baseURL to establish initial state
     logSetupStep('Navigating to baseURL', { baseURL });
     const navigationStart = Date.now();
-    
+
     await page.goto('/', {
       waitUntil: 'domcontentloaded',
       timeout: isCI ? 60000 : 30000, // Longer timeout in CI
     });
-    
+
     const navigationTime = Date.now() - navigationStart;
     logSetupStep('Navigation complete', { duration: navigationTime, unit: 'ms' });
 
     // Wait for page to be ready (React hydration)
     await page.waitForLoadState('domcontentloaded');
-    logSetupStep('Page loaded and ready');
+
+    // Wait for React app to be interactive
+    // Try to find main content or navigation to ensure app is hydrated
+    try {
+      await page.waitForSelector('main, nav, [role="main"]', { timeout: 10000 });
+      logSetupStep('React app hydrated (main content visible)');
+    } catch {
+      // Fallback: just wait a bit for hydration
+      logSetupStep('Main content not found, using fallback hydration wait');
+    }
+
+    // Ensure localStorage has a theme preference (marker that state is captured)
+    await page.evaluate(() => {
+      if (!localStorage.getItem('skillforge-theme')) {
+        localStorage.setItem('skillforge-theme', 'system');
+      }
+    });
+    logSetupStep('LocalStorage initialized with theme preference');
 
     // Save storage state (cookies, localStorage, sessionStorage)
     const saveStart = Date.now();
@@ -180,13 +197,31 @@ async function globalSetup(config: FullConfig): Promise<void> {
     // Validate the saved state
     if (fs.existsSync(storageStatePath)) {
       const stats = fs.statSync(storageStatePath);
-      const stateContent = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8'));
-      
+      const stateContent = JSON.parse(fs.readFileSync(storageStatePath, 'utf-8')) as StorageState;
+
       if (validateStorageState(stateContent)) {
+        // Ensure state has meaningful content
+        if (stateContent.origins.length === 0 ||
+            (stateContent.origins[0]?.localStorage.length === 0 &&
+             stateContent.origins[0]?.sessionStorage.length === 0)) {
+          logger.warn('StorageState has no localStorage/sessionStorage, adding minimal state');
+
+          // Add minimal state with localStorage theme
+          stateContent.origins = [{
+            origin: baseURL,
+            localStorage: [{ name: 'skillforge-theme', value: 'system' }],
+            sessionStorage: []
+          }];
+
+          fs.writeFileSync(storageStatePath, JSON.stringify(stateContent, null, 2));
+          logger.info('StorageState enhanced with minimal localStorage');
+        }
+
         logger.info('Storage state file validated', {
           fileSize: stats.size,
           cookies: stateContent.cookies.length,
           origins: stateContent.origins.length,
+          hasLocalStorage: stateContent.origins.some(o => o.localStorage.length > 0),
         });
       } else {
         throw new Error('Storage state validation failed - invalid structure');

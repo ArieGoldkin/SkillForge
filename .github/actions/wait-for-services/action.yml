@@ -1,0 +1,100 @@
+name: 'Wait for Services'
+description: 'Wait for backend, frontend, and optionally Langfuse services to be ready'
+inputs:
+  backend-url:
+    description: 'Backend health check URL'
+    required: false
+    default: 'http://localhost:8501/api/v1/health'
+  frontend-url:
+    description: 'Frontend URL'
+    required: false
+    default: 'http://localhost:5174'
+  wait-for-langfuse:
+    description: 'Whether to wait for Langfuse'
+    required: false
+    default: 'false'
+  langfuse-url:
+    description: 'Langfuse health check URL'
+    required: false
+    default: 'http://localhost:3001/api/public/health'
+  compose-file:
+    description: 'Docker Compose file path'
+    required: false
+    default: 'docker-compose.test.yml'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for backend health check
+      shell: bash
+      run: |
+        echo "Waiting for backend health check..."
+        for i in {1..60}; do
+          if curl -fsS ${{ inputs.backend-url }} >/dev/null 2>&1; then
+            echo "✓ Backend healthy after $i attempts"
+            break
+          fi
+          if [ $i -eq 60 ]; then
+            echo "✗ Backend health check timed out"
+            docker compose -f ${{ inputs.compose-file }} logs backend
+            exit 1
+          fi
+          sleep 2
+        done
+
+    - name: Wait for frontend
+      shell: bash
+      run: |
+        echo "Waiting for frontend..."
+        for i in {1..30}; do
+          if curl -fsS ${{ inputs.frontend-url }} >/dev/null 2>&1; then
+            echo "✓ Frontend ready after $i attempts"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "✗ Frontend health check timed out"
+            docker compose -f ${{ inputs.compose-file }} logs frontend
+            exit 1
+          fi
+          sleep 2
+        done
+
+    - name: Wait for Langfuse observability stack
+      if: inputs.wait-for-langfuse == 'true'
+      shell: bash
+      run: |
+        echo "Waiting for Langfuse observability..."
+        for i in {1..60}; do
+          if curl -fsS ${{ inputs.langfuse-url }} >/dev/null 2>&1; then
+            echo "✓ Langfuse ready after $i attempts"
+            break
+          fi
+          if [ $i -eq 60 ]; then
+            echo "⚠️  Langfuse health check timed out (observability may be unavailable)"
+            # Don't fail - Langfuse is optional for core E2E tests
+            break
+          fi
+          sleep 2
+        done
+
+    - name: Verify Langfuse config restored
+      if: inputs.wait-for-langfuse == 'true'
+      shell: bash
+      run: |
+        echo "Checking Langfuse restore logs..."
+        docker compose -f ${{ inputs.compose-file }} logs langfuse-restore | tail -20 || \
+          echo "⚠️  Langfuse restore logs not found (may have completed already)"
+
+        # Export test IDs from golden dataset (first analysis)
+        echo "E2E_ARTIFACT_ID=test-artifact-001" >> $GITHUB_ENV
+        echo "E2E_ANALYSIS_ID=test-analysis-001" >> $GITHUB_ENV
+        echo "E2E_TRACE_ID=test-trace-langfuse-integration" >> $GITHUB_ENV
+
+    - name: Verify API key configuration (for LLM tests)
+      if: inputs.wait-for-langfuse == 'true'
+      shell: bash
+      run: |
+        echo "Checking API key configuration..."
+        docker compose -f ${{ inputs.compose-file }} logs backend 2>&1 | grep -q "api_key_configuration" && \
+          echo "✓ API key validation logged" || \
+          echo "⚠️  API key validation not found in logs"
