@@ -76,7 +76,13 @@ export function SkillGridView({
           ))}
         </div>
       ) : skills.length === 0 ? (
-        <EmptyState message={emptyMessage} />
+        <div
+          className={cn('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6', className)}
+          role="list"
+          aria-label="Skills grid"
+        >
+          <EmptyState message={emptyMessage} />
+        </div>
       ) : (
         <VirtualizedGrid skills={skills} onSelectSkill={onSelectSkill} className={className} />
       )}

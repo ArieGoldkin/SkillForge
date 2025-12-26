@@ -82,11 +82,16 @@ export class LibraryPage extends BasePage {
    * Useful after navigation or search operations.
    */
   async waitForCards(timeout = 10000) {
-    // Wait for the list container to be visible first
-    await this.page.locator('[role="list"]').waitFor({ state: 'visible', timeout });
+    // Wait for either the list container OR empty state to be visible
+    await Promise.race([
+      this.page.locator('[role="list"]').waitFor({ state: 'visible', timeout }),
+      this.emptyState.waitFor({ state: 'visible', timeout }),
+    ]).catch(() => {
+      // Neither appeared - page might still be loading
+    });
 
     // Then wait for at least one card (if data exists)
-    // Using a shorter timeout since grid is already visible
+    // Using a shorter timeout since grid or empty state is already visible
     await this.analysisCards.first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
       // No cards might be valid (empty state)
     });
