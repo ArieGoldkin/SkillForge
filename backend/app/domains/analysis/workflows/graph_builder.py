@@ -69,32 +69,92 @@ try:
 except Exception:  # noqa: BLE001
     PostgresSaver = None
 
+# Try to import RedisSaver dynamically to avoid hard dependency in lint
+try:
+    import importlib
+
+    _lg_redis = importlib.import_module("langgraph.checkpoint.redis")
+    RedisSaver = getattr(_lg_redis, "RedisSaver", None)
+except Exception:  # noqa: BLE001
+    RedisSaver = None
+
 logger = get_logger(__name__)
 
 
 def _get_checkpointer():
-    """Get checkpointer instance (PostgresSaver or MemorySaver)."""
-    # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
+    """Get checkpointer instance (RedisSaver, PostgresSaver, or MemorySaver).
+
+    Issue #576 (GAP 3): Supports Redis checkpointing via USE_REDIS_CHECKPOINT flag.
+    Checkpointer selection priority:
+    1. MemorySaver for tests (PYTEST_CURRENT_TEST is set)
+    2. RedisSaver if USE_REDIS_CHECKPOINT=true and REDIS_URL is set
+    3. PostgresSaver if DATABASE_URL is set
+    4. MemorySaver as fallback
+
+    Redis checkpointing benefits:
+    - Distributed checkpointing across multiple backend instances
+    - Automatic TTL-based cleanup (no manual garbage collection)
+    - Better horizontal scaling for high-concurrency workflows
+
+    PostgreSQL checkpointing benefits:
+    - Single source of truth (same DB as application data)
+    - Simpler deployment (no Redis dependency)
+    - Persistent checkpoints (no TTL expiration)
+    """
     # Use MemorySaver in tests to avoid database connection hangs
-    if (
-        settings.DATABASE_URL
-        and PostgresSaver is not None
-        and not os.environ.get("PYTEST_CURRENT_TEST")
-    ):
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        logger.info("workflow_checkpointer_initialized", type="MemorySaver", reason="test_mode")
+        return MemorySaver()
+
+    # Try RedisSaver if enabled and configured
+    if settings.USE_REDIS_CHECKPOINT and settings.REDIS_URL and RedisSaver is not None:
+        try:
+            # RedisSaver.from_conn_string creates a Redis connection pool
+            # with automatic TTL-based cleanup of checkpoints
+            # TTL format: {"default_ttl": X} where X is in MINUTES
+            # Convert seconds to minutes for RedisSaver
+            ttl_minutes = settings.REDIS_CHECKPOINT_TTL / 60.0
+            checkpointer = RedisSaver.from_conn_string(
+                settings.REDIS_URL,
+                # Set checkpoint TTL for automatic cleanup
+                # RedisSaver expects TTL in minutes via "default_ttl" key
+                ttl={"default_ttl": ttl_minutes},
+            )
+            logger.info(
+                "workflow_checkpointer_initialized",
+                type="RedisSaver",
+                ttl_seconds=settings.REDIS_CHECKPOINT_TTL,
+                ttl_minutes=ttl_minutes,
+                redis_url=settings.REDIS_URL.split("@")[-1],  # Log host only, not credentials
+            )
+            return checkpointer
+        except (ValueError, ConnectionError) as e:
+            logger.warning(
+                "workflow_checkpointer_fallback_from_redis",
+                error=str(e),
+                fallback="PostgresSaver or MemorySaver",
+            )
+            # Fall through to PostgresSaver/MemorySaver
+
+    # Try PostgresSaver if configured
+    if settings.DATABASE_URL and PostgresSaver is not None:
         try:
             checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
             logger.info("workflow_checkpointer_initialized", type="PostgresSaver")
             return checkpointer
         except (ValueError, ConnectionError) as e:
             logger.warning(
-                "workflow_checkpointer_fallback",
+                "workflow_checkpointer_fallback_from_postgres",
                 error=str(e),
                 fallback="MemorySaver",
             )
             return MemorySaver()
-    else:
-        logger.info("workflow_checkpointer_initialized", type="MemorySaver")
-        return MemorySaver()
+
+    # Fallback to MemorySaver (development/local mode)
+    logger.info(
+        "workflow_checkpointer_initialized", type="MemorySaver", reason="no_backend_configured"
+    )
+    return MemorySaver()
 
 
 async def _extract_content_node(state: AnalysisState) -> dict[str, object]:

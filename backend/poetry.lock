@@ -2047,6 +2047,25 @@ langchain-core = ">=0.2.38"
 ormsgpack = ">=1.12.0"
 
 [[package]]
+name = "langgraph-checkpoint-redis"
+version = "0.3.1"
+description = "Redis implementation of the LangGraph agent checkpoint saver and store."
+optional = false
+python-versions = "<3.14,>=3.10"
+groups = ["main"]
+markers = "python_version == \"3.13\""
+files = [
+    {file = "langgraph_checkpoint_redis-0.3.1-py3-none-any.whl", hash = "sha256:6085b781e24f4a35f1110b52e29e759ff260a2661e086fe1df4c5b09ef0b015d"},
+    {file = "langgraph_checkpoint_redis-0.3.1.tar.gz", hash = "sha256:7439cf0024a4a34075eb00b7734f73bc1b7e0d4ec7a0cb722bfddd630d0ea99c"},
+]
+
+[package.dependencies]
+langgraph-checkpoint = ">=3.0.0,<4.0.0"
+orjson = ">=3.9.0,<4.0.0"
+redis = ">=5.2.1"
+redisvl = ">=0.11.0,<1.0.0"
+
+[[package]]
 name = "langgraph-prebuilt"
 version = "1.0.5"
 description = "Library with high-level APIs for creating and executing LangGraph agents and tools."
@@ -5392,4 +5411,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.13"
-content-hash = "5eaaa322f4e102f3995ec882213123ae06290800f3d26ba508587d0dbc3c4322"
+content-hash = "19c0ad8e06279ce15b1e0a1e62dda4bd8794317367a2aabe11782bed16d1db31"

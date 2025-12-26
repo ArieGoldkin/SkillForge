@@ -13,7 +13,6 @@ from typing import Any
 from app.core.constants import MIN_EVALUABLE_LENGTH
 from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
-from app.core.timeout_config import EVALUATOR_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import (
@@ -211,93 +210,46 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             }
 
         # Issue GAP5: Wire Langfuse multi-judge G-Eval evaluators for quality assessment
-        from app.shared.services.g_eval.langfuse_evaluators import create_g_eval_evaluator
+        # Use multi-judge abstraction for cleaner evaluation orchestration
+        from app.shared.services.g_eval.multi_judge import run_multi_judge_evaluation
 
         # Determine agent type from state (defaults to "tech_comparator")
         agent_type = state.get("agent_type", "tech_comparator")
 
-        # Run G-Eval evaluators for each aspect (uses G-Eval scorer under the hood)
-        quality_scores = {}
-        for aspect in QUALITY_ASPECTS:
-            # Create G-Eval evaluator for this criterion
-            # This uses the agent-specific rubrics and G-Eval's chain-of-thought scoring
-            evaluator = create_g_eval_evaluator(
-                criterion=aspect, agent_type=agent_type, use_cache=True
-            )
+        # Run multi-judge evaluation (handles errors/timeouts internally)
+        # Returns dict[aspect] -> {score, comment, metadata}
+        quality_scores = await run_multi_judge_evaluation(
+            input_content=input_content,
+            output_content=output_content,
+            agent_type=agent_type,
+            aspects=QUALITY_ASPECTS,
+            use_cache=True,
+        )
 
-            # Note: G-Eval evaluators are synchronous (they handle async internally)
-            # so we can't use asyncio.timeout here - timeout is handled in G-Eval scorer
-            try:
-                # G-Eval evaluators expect Langfuse experiment signature:
-                # evaluator(*, input, output, expected_output=None)
-                result = evaluator(
-                    input={"content": input_content},
-                    output=output_content,
-                    _expected_output=None,
-                )
-
-                # Extract score from Langfuse Evaluation object
-                # The evaluator returns a Langfuse Evaluation with value, comment, metadata
-                score_value = result.value if hasattr(result, "value") else 0.0
-                score_comment = result.comment if hasattr(result, "comment") else ""
-
-                quality_scores[aspect] = {
-                    "score": score_value,
-                    "comment": score_comment,
-                    "metadata": result.metadata if hasattr(result, "metadata") else {},
-                }
-
-            except TimeoutError:
-                # Issue #442: Timeout - use neutral score (0.5) and track warning
+        # Track warnings from multi-judge evaluation
+        for aspect, score_data in quality_scores.items():
+            if "error" in score_data:
+                warning_msg = f"G-Eval evaluation failed for {aspect}: {score_data['comment']}"
+                quality_warnings.append(warning_msg)
+            elif score_data.get("timeout"):
                 warning_msg = f"G-Eval evaluation timed out for {aspect}"
                 quality_warnings.append(warning_msg)
-                logger.warning(
-                    "quality_evaluator_timeout",
-                    analysis_id=analysis_id,
-                    aspect=aspect,
-                    timeout_seconds=EVALUATOR_TIMEOUT,
-                    message=warning_msg,
-                )
-                quality_scores[aspect] = {
-                    "score": 0.5,  # Neutral score - reflects uncertainty
-                    "comment": f"G-Eval evaluation timed out after {EVALUATOR_TIMEOUT}s",
-                    "timeout": True,
-                }
-            except Exception as e:  # noqa: BLE001 - Graceful degradation for quality evaluation
-                # Handle G-Eval errors gracefully
-                warning_msg = f"G-Eval evaluation failed for {aspect}: {type(e).__name__}"
-                quality_warnings.append(warning_msg)
-                logger.warning(
-                    "quality_evaluator_error",
-                    analysis_id=analysis_id,
-                    aspect=aspect,
-                    error=str(e),
-                    error_type=type(e).__name__,
-                    message=warning_msg,
-                    exc_info=True,
-                )
-                quality_scores[aspect] = {
-                    "score": 0.5,  # Neutral score on error
-                    "comment": f"G-Eval error: {type(e).__name__}",
-                    "error": str(e),
-                }
 
             logger.debug(
                 "quality_aspect_evaluated",
                 analysis_id=analysis_id,
                 aspect=aspect,
-                evaluator="g_eval",
+                evaluator="g_eval_multi_judge",
                 agent_type=agent_type,
-                score=quality_scores[aspect]["score"],
-                comment=quality_scores[aspect]["comment"][:200],
+                score=score_data["score"],
+                comment=score_data["comment"][:200],
             )
 
-        # Calculate average quality score (guard against division by zero)
-        avg_score = (
-            sum(s["score"] for s in quality_scores.values()) / len(quality_scores)
-            if quality_scores
-            else 0.0
-        )
+        # Calculate average quality score using multi-judge helper
+        from app.shared.services.g_eval.multi_judge import calculate_weighted_score
+
+        # Use equal weighting for all aspects (default behavior)
+        avg_score = calculate_weighted_score(quality_scores)
 
         # Issue #299-304: Determine effective thresholds based on coverage score
         # For content with limited data, use adjusted thresholds
@@ -343,6 +295,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
 
         duration = time.time() - start_time
 
+        # Issue GAP5: Enhanced logging with multi-judge evaluation details
         logger.info(
             "quality_gate_evaluated",
             analysis_id=analysis_id,
@@ -356,6 +309,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             # Issue #299-304: Include coverage-aware context
             coverage_score=coverage_score,
             using_adjusted_thresholds=use_adjusted_thresholds,
+            # Issue GAP5: Multi-judge evaluation metadata
+            multi_judge_enabled=True,
+            evaluated_aspects=list(quality_scores.keys()),
+            evaluation_warnings=quality_warnings if quality_warnings else None,
             duration_seconds=duration,
             trace_id=trace_id,
         )
@@ -466,15 +423,11 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                 message="Langfuse not available - G-Eval scores not submitted",
             )
 
-        # Issue #413: Quality-based auto-tagging for trace classification
+        # Issue #413 + GAP5: Quality-based auto-tagging using multi-judge helper
         # Tag traces with quality tier for filtering/analytics in Langfuse
-        quality_tier = (
-            "quality:high"
-            if avg_score >= QUALITY_TIER_HIGH_THRESHOLD
-            else "quality:medium"
-            if avg_score >= QUALITY_TIER_MEDIUM_THRESHOLD
-            else "quality:low"
-        )
+        from app.shared.services.g_eval.multi_judge import get_quality_tier
+
+        quality_tier = get_quality_tier(avg_score)
         quality_tags = [quality_tier, f"gate:{'passed' if gate_passed else 'failed'}"]
         if use_adjusted_thresholds:
             quality_tags.append("coverage:limited")
@@ -487,8 +440,10 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             "quality_gate_auto_tagged",
             analysis_id=analysis_id,
             quality_tier=quality_tier,
+            avg_score=avg_score,
             tags=quality_tags,
             trace_id=trace_id,
+            multi_judge_enabled=True,
         )
 
         # Submit latency metric to Langfuse

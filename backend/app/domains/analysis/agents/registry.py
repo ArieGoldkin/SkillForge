@@ -125,6 +125,42 @@ AGENT_REGISTRY: dict[str, AgentMetadata] = {
         tier=AgentTier.RESEARCH,
         requires_memory=True,
     ),
+    # ═══════════════════════════════════════════════════════════════════
+    # CONTENT ANALYSIS AGENTS - Run based on content type (VALIDATION tier)
+    # These are optional agents selected by supervisor based on content signals
+    # ═══════════════════════════════════════════════════════════════════
+    "tech_comparator": AgentMetadata(
+        name="TECH_COMPARATOR",
+        tier=AgentTier.VALIDATION,
+    ),
+    "security_auditor": AgentMetadata(
+        name="SECURITY_AUDITOR",
+        tier=AgentTier.VALIDATION,
+    ),
+    "implementation_planner": AgentMetadata(
+        name="IMPLEMENTATION_PLANNER",
+        tier=AgentTier.VALIDATION,
+    ),
+    "performance_analyst": AgentMetadata(
+        name="PERFORMANCE_ANALYST",
+        tier=AgentTier.VALIDATION,
+    ),
+    "dependency_mapper": AgentMetadata(
+        name="DEPENDENCY_MAPPER",
+        tier=AgentTier.VALIDATION,
+    ),
+    "code_quality_critic": AgentMetadata(
+        name="CODE_QUALITY_CRITIC",
+        tier=AgentTier.VALIDATION,
+    ),
+    "trend_validator": AgentMetadata(
+        name="TREND_VALIDATOR",
+        tier=AgentTier.VALIDATION,
+    ),
+    "integration_feasibility": AgentMetadata(
+        name="INTEGRATION_FEASIBILITY",
+        tier=AgentTier.VALIDATION,
+    ),
 }
 
 

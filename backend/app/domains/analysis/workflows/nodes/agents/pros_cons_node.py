@@ -17,6 +17,7 @@ from langfuse import get_client, observe
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
+from app.domains.analysis.agents.registry import get_agent_metadata
 from app.domains.analysis.constants.error_codes import (
     AGENT_CANCELLED,
     AGENT_LLM_ERROR,
@@ -27,6 +28,9 @@ from app.domains.analysis.constants.error_codes import (
 from app.domains.analysis.workflows.agents.base import (
     emit_agent_progress,
     record_agent_execution,
+)
+from app.domains.analysis.workflows.agents.resilience_wrapper import (
+    execute_with_resilience,
 )
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.tasks.runners import (
@@ -123,11 +127,19 @@ async def pros_cons_node(state: AnalysisState) -> dict[str, object]:
     try:
         # Issue #244: Run agent with Handle Pattern - runner loads from artifact
         # get_fallback_content provides raw_content as fallback if artifact unavailable
-        result = await run_pros_cons_with_session(
-            content=get_fallback_content(state),
-            content_type=content_type,
-            analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
-            state=state,
+        # Issue #574: Execute with tier-based resilience (bulkhead + circuit breaker)
+        agent_meta = get_agent_metadata("pros_cons")
+        tier = agent_meta.tier if agent_meta else 1  # Default to Tier 1 if not found
+
+        result = await execute_with_resilience(
+            agent_type="pros_cons",
+            tier=tier,
+            fn=lambda: run_pros_cons_with_session(
+                content=get_fallback_content(state),
+                content_type=content_type,
+                analysis_id=str(analysis_id),
+                state=state,
+            ),
         )
 
         duration = time.time() - start_time

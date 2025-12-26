@@ -507,6 +507,24 @@ class Settings(BaseSettings):
         description="Seconds between Redis connection health checks",
     )
 
+    # Redis Checkpointing Configuration (Issue #576 - GAP 3)
+    USE_REDIS_CHECKPOINT: bool = Field(
+        default=False,
+        description=(
+            "Use Redis for LangGraph checkpointing instead of PostgreSQL. "
+            "Enables distributed checkpointing across multiple backend instances "
+            "with automatic TTL-based cleanup. When disabled, uses PostgreSQL checkpointing."
+        ),
+    )
+    REDIS_CHECKPOINT_TTL: int = Field(
+        default=3600,
+        description=(
+            "TTL in seconds for Redis checkpoints (default: 1 hour). "
+            "Checkpoints are automatically cleaned up after this duration. "
+            "Set higher for long-running workflows or debugging."
+        ),
+    )
+
     # Anthropic Prompt Caching Configuration
     ANTHROPIC_PROMPT_CACHE_TTL: str = Field(
         default="1h",
