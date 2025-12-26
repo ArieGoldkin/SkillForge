@@ -119,6 +119,8 @@ def generate_placeholder_artifact(doc: dict) -> str:
 
 async def main(replace: bool = False) -> int:
     """Load golden dataset as individual analyses."""
+    import os
+
     from sqlalchemy import text
 
     from app.core.logging import get_logger
@@ -126,9 +128,17 @@ async def main(replace: bool = False) -> int:
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
     from app.db.session import AsyncSessionLocal
-    from app.shared.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings import DeterministicEmbeddingService, EmbeddingService
 
     logger = get_logger(__name__)
+
+    # Use deterministic embeddings in CI/test mode (no API keys required)
+    use_deterministic = os.getenv("SKILLFORGE_DETERMINISTIC_EMBEDDINGS", "").lower() == "true"
+    if use_deterministic:
+        logger.info("Using deterministic embeddings (no API keys required)")
+        embedding_service = DeterministicEmbeddingService()
+    else:
+        embedding_service = EmbeddingService()
 
     # Load fixture data
     fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
@@ -146,9 +156,6 @@ async def main(replace: bool = False) -> int:
     total_sections = sum(len(doc.get("sections", [])) for doc in documents)
 
     logger.info(f"Found {len(documents)} documents with {total_sections} sections")
-
-    # Initialize embedding service
-    embedding_service = EmbeddingService()
 
     async with AsyncSessionLocal() as session:
         if replace:
