@@ -324,7 +324,11 @@ jobs:
         run: |
           echo "## Docker Compose Logs (Test Environment)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          docker compose -f docker-compose.test.yml logs --tail=100 >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          # Print backend-seed logs to console for debugging
+          echo "=== Backend Seed Logs ==="
+          docker compose -f docker-compose.test.yml logs backend-seed --tail=200 2>&1 || true
+          echo "=== All Container Logs ==="
+          docker compose -f docker-compose.test.yml logs --tail=100 2>&1 | tee -a $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Cleanup test environment
