@@ -47,11 +47,21 @@ class TestAgentRegistryFunctions:
 
         # Should include Tier 1 + Tier 2
         expected_tier1 = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        # GAP integration (#574-576) added 8 content analysis agents to Tier 2
         expected_tier2 = [
             "fact_validator",
             "source_credibility",
             "freshness_checker",
             "alternatives_finder",
+            # Content analysis agents added in GAP integration
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "dependency_mapper",
+            "code_quality_critic",
+            "trend_validator",
+            "integration_feasibility",
         ]
 
         for agent in expected_tier1:
@@ -59,7 +69,7 @@ class TestAgentRegistryFunctions:
         for agent in expected_tier2:
             assert agent in agents, f"Tier 2 agent {agent} missing from standard mode"
 
-        assert len(agents) == 8
+        assert len(agents) == 16  # 4 Tier 1 + 12 Tier 2
 
     def test_get_agents_for_mode_deep_dive(self):
         """Deep dive mode returns all tier agents."""
@@ -67,11 +77,21 @@ class TestAgentRegistryFunctions:
 
         # Should include all tiers
         expected_tier1 = ["key_insights", "pros_cons", "audience_fit", "actionable"]
+        # GAP integration (#574-576) added 8 content analysis agents to Tier 2
         expected_tier2 = [
             "fact_validator",
             "source_credibility",
             "freshness_checker",
             "alternatives_finder",
+            # Content analysis agents added in GAP integration
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "dependency_mapper",
+            "code_quality_critic",
+            "trend_validator",
+            "integration_feasibility",
         ]
         expected_tier3 = [
             "deep_researcher",
@@ -83,7 +103,7 @@ class TestAgentRegistryFunctions:
         for agent in expected_tier1 + expected_tier2 + expected_tier3:
             assert agent in agents, f"Agent {agent} missing from deep_dive mode"
 
-        assert len(agents) == 12
+        assert len(agents) == 20  # 4 Tier 1 + 12 Tier 2 + 4 Tier 3
 
     def test_get_agents_for_mode_invalid_raises_value_error(self):
         """Invalid mode raises ValueError with valid options listed.
@@ -130,15 +150,16 @@ class TestAgentRegistryFunctions:
         assert meta.requires_memory is True
 
     def test_get_agent_metadata_unknown_returns_none(self):
-        """Unknown agent returns None (content-specific agents not in registry)."""
-        # Content-specific agents are NOT in the tier registry
-        meta = get_agent_metadata("tech_comparator")
+        """Unknown agent returns None (non-existent agents not in registry)."""
+        # GAP integration (#574-576) added content analysis agents to Tier 2
+        # Now they ARE in the registry, so we test with truly unknown agents
+        meta = get_agent_metadata("nonexistent_agent")
         assert meta is None
 
-        meta = get_agent_metadata("security_auditor")
+        meta = get_agent_metadata("fake_analyzer")
         assert meta is None
 
-        meta = get_agent_metadata("implementation_planner")
+        meta = get_agent_metadata("imaginary_validator")
         assert meta is None
 
     def test_get_tool_enabled_agents(self):
@@ -175,12 +196,22 @@ class TestAgentRegistryFunctions:
         tier1_agents = get_agents_by_tier(AgentTier.UNIVERSAL)
         assert set(tier1_agents) == {"key_insights", "pros_cons", "audience_fit", "actionable"}
 
+        # GAP integration (#574-576) added 8 content analysis agents to Tier 2
         tier2_agents = get_agents_by_tier(AgentTier.VALIDATION)
         assert set(tier2_agents) == {
             "fact_validator",
             "source_credibility",
             "freshness_checker",
             "alternatives_finder",
+            # Content analysis agents added in GAP integration
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "dependency_mapper",
+            "code_quality_critic",
+            "trend_validator",
+            "integration_feasibility",
         }
 
         tier3_agents = get_agents_by_tier(AgentTier.RESEARCH)
@@ -239,7 +270,11 @@ class TestSupervisorTierFiltering:
     async def test_quick_mode_excludes_tier2_agents(
         self, mock_supervisor_setup, mock_no_content_filtering
     ):
-        """Quick mode should exclude Tier 2 agents even if LLM selects them."""
+        """Quick mode should exclude Tier 2 agents even if LLM selects them.
+
+        GAP integration (#574-576) added content analysis agents to Tier 2,
+        so they are now filtered out in quick mode along with other Tier 2 agents.
+        """
         # LLM selects Tier 1 + Tier 2 agents
         mock_model = mock_supervisor_setup(
             [
@@ -247,7 +282,7 @@ class TestSupervisorTierFiltering:
                 "pros_cons",  # Tier 1 - should pass
                 "actionable",  # Tier 1 - should pass
                 "fact_validator",  # Tier 2 - should be filtered out
-                "implementation_planner",  # Content-specific - should pass (not in registry)
+                "implementation_planner",  # Tier 2 (since GAP) - should be filtered out
             ]
         )
 
@@ -276,15 +311,16 @@ class TestSupervisorTierFiltering:
             decision = result["supervisor_decision"]
             agents = decision["agents"]
 
-            # Tier 1 agents should be present
+            # Tier 1 agents should be present (force-injected)
             assert "key_insights" in agents
             assert "pros_cons" in agents
+            assert "actionable" in agents
+            assert "audience_fit" in agents  # Force-injected even if not selected
 
-            # Tier 2 agent should be filtered out by tier filtering
+            # Tier 2 agents should be filtered out by tier filtering
             assert "fact_validator" not in agents
-
-            # Content-specific agent should pass through (not in registry)
-            assert "implementation_planner" in agents
+            # GAP integration: implementation_planner is now Tier 2
+            assert "implementation_planner" not in agents
 
     @pytest.mark.asyncio
     async def test_standard_mode_includes_tier2_excludes_tier3(
@@ -375,19 +411,23 @@ class TestSupervisorTierFiltering:
             assert "deep_researcher" in agents
 
     @pytest.mark.asyncio
-    async def test_content_specific_agents_always_pass_through(
+    async def test_content_specific_agents_in_standard_mode(
         self, mock_supervisor_setup, mock_no_content_filtering
     ):
-        """Content-specific agents (not in registry) pass through all modes."""
-        # These are the OLD 8 agents that are NOT in the tier registry
-        content_specific_agents = [
+        """Content analysis agents (now Tier 2) pass through in standard mode.
+
+        GAP integration (#574-576) added content analysis agents to Tier 2.
+        They are now filtered by tier rules: excluded in quick mode, included in standard+.
+        """
+        # These agents are now in Tier 2 (VALIDATION) after GAP integration
+        content_analysis_agents = [
             "tech_comparator",
             "security_auditor",
             "implementation_planner",
             "dependency_mapper",
         ]
 
-        mock_model = mock_supervisor_setup(content_specific_agents)
+        mock_model = mock_supervisor_setup(content_analysis_agents)
 
         with (
             patch(
@@ -404,22 +444,21 @@ class TestSupervisorTierFiltering:
             ),
             # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
-            # Test in quick mode - all should still pass (not in tier registry)
+            # Test in standard mode - Tier 2 agents should pass through
             result = await supervisor_route(
                 content="Test content for analysis",
                 content_type="article",
                 analysis_id="test-content-specific",
-                analysis_mode="quick",  # Most restrictive mode
+                analysis_mode="standard",  # Standard mode = Tier 1 + Tier 2
             )
 
             decision = result["supervisor_decision"]
             agents = decision["agents"]
 
-            # Content-specific agents should pass through regardless of mode
-            # (they're not in tier registry, so tier filtering doesn't affect them)
-            for agent in content_specific_agents:
+            # Content analysis agents (now Tier 2) should pass through in standard mode
+            for agent in content_analysis_agents:
                 assert agent in agents, (
-                    f"Content-specific agent {agent} should pass through in quick mode"
+                    f"Content analysis agent {agent} should pass through in standard mode"
                 )
 
     @pytest.mark.asyncio

@@ -77,12 +77,27 @@ def _handle_progress_task_completion(task: asyncio.Task[None]) -> None:
     and logs them appropriately. Errors in persistence should not break
     the SSE stream, so they are logged at WARNING level.
 
+    Note: task.exception() re-raises CancelledError if the task was cancelled,
+    so we must handle that case explicitly to avoid noisy error logs during
+    shutdown or test teardown.
+
     Args:
         task: Completed asyncio task
 
     """
     _progress_tasks.discard(task)
-    exception = task.exception()
+
+    # Handle CancelledError explicitly - task.exception() re-raises it
+    # This is expected during shutdown/test teardown, not an error
+    try:
+        exception = task.exception()
+    except asyncio.CancelledError:
+        logger.debug(
+            "progress_persistence_task_cancelled",
+            context="task_cancelled_during_shutdown",
+        )
+        return
+
     if exception is not None:
         logger.warning(
             "progress_persistence_task_failed",
@@ -104,13 +119,27 @@ async def persist_progress_event(event_data: EventData) -> None:
         event_data: SSE event data dictionary
 
     """
+    # Validate UUID BEFORE opening database session (fail-fast pattern)
+    # This prevents ValueError during session cleanup which causes confusing
+    # CancelledError chains during test teardown or shutdown
+    try:
+        analysis_id = uuid.UUID(str(event_data["analysis_id"]))
+    except (ValueError, KeyError) as e:
+        logger.warning(
+            "progress_persistence_invalid_analysis_id",
+            analysis_id=event_data.get("analysis_id"),
+            stage=event_data.get("stage"),
+            error=str(e),
+        )
+        return  # Early exit - don't open session for invalid data
+
     try:
         # Serialize UUID objects to strings for JSONB storage
         serialized_data = _serialize_event_data(event_data)
 
         async with AsyncSessionLocal() as db_session:
             progress = AnalysisProgress(
-                analysis_id=uuid.UUID(str(event_data["analysis_id"])),
+                analysis_id=analysis_id,  # Already validated above
                 stage=event_data["stage"],
                 status=event_data["status"],
                 progress_data=serialized_data,  # Store serialized event data as JSONB
@@ -120,18 +149,17 @@ async def persist_progress_event(event_data: EventData) -> None:
 
             logger.debug(
                 "progress_event_persisted",
-                analysis_id=event_data["analysis_id"],
+                analysis_id=str(analysis_id),
                 stage=event_data["stage"],
                 status=event_data["status"],
             )
-    except (SQLAlchemyError, ValueError, KeyError) as e:
+    except (SQLAlchemyError, KeyError) as e:
         # Log but don't raise - persistence failure shouldn't break SSE
         # SQLAlchemyError: Database errors (connection, constraint violations)
-        # ValueError: UUID conversion errors
-        # KeyError: Missing required event_data fields
+        # KeyError: Missing required event_data fields (stage, status)
         logger.warning(
             "progress_persistence_failed",
-            analysis_id=event_data.get("analysis_id"),
+            analysis_id=str(analysis_id),
             stage=event_data.get("stage"),
             error=str(e),
             exc_info=True,

@@ -227,3 +227,21 @@ def get_resilience_manager() -> ResilienceManager:
     if _resilience_manager is None:
         _resilience_manager = ResilienceManager()
     return _resilience_manager
+
+
+def reset_resilience_manager() -> None:
+    """Reset resilience manager singleton for testing.
+
+    This function clears the singleton instance and circuit breaker state
+    to prevent test pollution. The circuit breaker can stay OPEN for 60s
+    after failures, causing unrelated tests to fail.
+
+    Note: Only use in test fixtures, never in production code.
+    """
+    global _resilience_manager  # noqa: PLW0603 - Required for reset
+    if _resilience_manager is not None:
+        # Clear all circuit breakers by resetting their state
+        ResilienceManager._circuit_breakers = {}
+        ResilienceManager._instance = None
+        _resilience_manager = None
+        logger.debug("resilience_manager_reset", reason="test_cleanup")

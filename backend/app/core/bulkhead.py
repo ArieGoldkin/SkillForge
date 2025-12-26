@@ -361,3 +361,18 @@ class BulkheadRegistry:
 def get_bulkhead_registry() -> BulkheadRegistry:
     """Get global bulkhead registry."""
     return BulkheadRegistry()
+
+
+def reset_bulkhead_registry() -> None:
+    """Reset bulkhead registry singleton for testing.
+
+    This clears all semaphores and active task counts to prevent
+    test pollution. Bulkheads with acquired semaphores can cause
+    subsequent tests to fail with BulkheadTimeoutError.
+
+    Note: Only use in test fixtures, never in production code.
+    """
+    # Clear all bulkheads
+    BulkheadRegistry._bulkheads = {}
+    BulkheadRegistry._instance = None
+    logger.debug("bulkhead_registry_reset", reason="test_cleanup")
