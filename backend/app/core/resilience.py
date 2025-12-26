@@ -33,6 +33,8 @@ References:
 
 from __future__ import annotations
 
+import asyncio
+import sys
 from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from app.core.bulkhead import Bulkhead, BulkheadRegistry, Tier, get_bulkhead_registry
@@ -229,19 +231,51 @@ def get_resilience_manager() -> ResilienceManager:
     return _resilience_manager
 
 
-def reset_resilience_manager() -> None:
-    """Reset resilience manager singleton for testing.
+# Lock for thread-safe reset operations
+_reset_lock: asyncio.Lock | None = None
 
-    This function clears the singleton instance and circuit breaker state
-    to prevent test pollution. The circuit breaker can stay OPEN for 60s
-    after failures, causing unrelated tests to fail.
 
-    Note: Only use in test fixtures, never in production code.
+def _get_reset_lock() -> asyncio.Lock:
+    """Get or create the reset lock (lazy init for event loop compatibility)."""
+    global _reset_lock  # noqa: PLW0603 - Required for lazy initialization
+    if _reset_lock is None:
+        _reset_lock = asyncio.Lock()
+    return _reset_lock
+
+
+async def reset_resilience_manager() -> None:
+    """Async-safe reset of resilience manager singleton for testing.
+
+    This function:
+    1. Acquires a lock to prevent concurrent reset operations
+    2. Explicitly resets each circuit breaker to CLOSED state
+    3. Clears all singleton state to prevent test pollution
+
+    The circuit breaker can stay OPEN for 60s after failures, causing
+    unrelated tests to fail if not properly reset.
+
+    Raises:
+        RuntimeError: If called outside of pytest (production safety guard)
+
+    Note:
+        Only use in test fixtures via @pytest_asyncio.fixture, never in production.
+
     """
+    # Production safety guard - prevent accidental production usage
+    if "pytest" not in sys.modules:
+        msg = "reset_resilience_manager() can only be called during tests"
+        raise RuntimeError(msg)
+
     global _resilience_manager  # noqa: PLW0603 - Required for reset
-    if _resilience_manager is not None:
-        # Clear all circuit breakers by resetting their state
-        ResilienceManager._circuit_breakers = {}
-        ResilienceManager._instance = None
-        _resilience_manager = None
-        logger.debug("resilience_manager_reset", reason="test_cleanup")
+
+    async with _get_reset_lock():
+        if _resilience_manager is not None:
+            # Explicitly reset each circuit breaker to CLOSED state
+            for cb in ResilienceManager._circuit_breakers.values():
+                cb.reset()
+
+            # Clear singleton state
+            ResilienceManager._circuit_breakers = {}
+            ResilienceManager._instance = None
+            _resilience_manager = None
+            logger.debug("resilience_manager_reset", reason="test_cleanup")

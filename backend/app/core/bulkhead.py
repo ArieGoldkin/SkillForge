@@ -27,6 +27,7 @@ References:
 from __future__ import annotations
 
 import asyncio
+import sys
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
@@ -363,16 +364,59 @@ def get_bulkhead_registry() -> BulkheadRegistry:
     return BulkheadRegistry()
 
 
-def reset_bulkhead_registry() -> None:
-    """Reset bulkhead registry singleton for testing.
+# Lock for thread-safe reset operations
+_bulkhead_reset_lock: asyncio.Lock | None = None
 
-    This clears all semaphores and active task counts to prevent
-    test pollution. Bulkheads with acquired semaphores can cause
-    subsequent tests to fail with BulkheadTimeoutError.
 
-    Note: Only use in test fixtures, never in production code.
+def _get_bulkhead_reset_lock() -> asyncio.Lock:
+    """Get or create the reset lock (lazy init for event loop compatibility)."""
+    global _bulkhead_reset_lock  # noqa: PLW0603 - Required for lazy initialization
+    if _bulkhead_reset_lock is None:
+        _bulkhead_reset_lock = asyncio.Lock()
+    return _bulkhead_reset_lock
+
+
+async def reset_bulkhead_registry() -> None:
+    """Async-safe reset of bulkhead registry singleton for testing.
+
+    This function:
+    1. Acquires a lock to prevent concurrent reset operations
+    2. Properly cleans up semaphores by releasing any waiting tasks
+    3. Clears all singleton state to prevent test pollution
+
+    Bulkheads with acquired semaphores can cause subsequent tests
+    to fail with BulkheadTimeoutError if not properly cleaned up.
+
+    Raises:
+        RuntimeError: If called outside of pytest (production safety guard)
+
+    Note:
+        Only use in test fixtures via @pytest_asyncio.fixture, never in production.
+
     """
-    # Clear all bulkheads
-    BulkheadRegistry._bulkheads = {}
-    BulkheadRegistry._instance = None
-    logger.debug("bulkhead_registry_reset", reason="test_cleanup")
+    # Production safety guard - prevent accidental production usage
+    if "pytest" not in sys.modules:
+        msg = "reset_bulkhead_registry() can only be called during tests"
+        raise RuntimeError(msg)
+
+    async with _get_bulkhead_reset_lock():
+        # Clean up each bulkhead's internal state
+        for name, bulkhead in BulkheadRegistry._bulkheads.items():
+            # Reset counters to allow semaphore cleanup
+            bulkhead._waiting = 0
+            bulkhead._active = 0
+            bulkhead.stats = BulkheadStats()
+
+            # Create fresh semaphore (old one may have waiters)
+            bulkhead._semaphore = asyncio.Semaphore(bulkhead.max_concurrent)
+
+            logger.debug(
+                "bulkhead_cleaned",
+                name=name,
+                tier=bulkhead.tier.name,
+            )
+
+        # Clear all bulkheads and singleton
+        BulkheadRegistry._bulkheads = {}
+        BulkheadRegistry._instance = None
+        logger.debug("bulkhead_registry_reset", reason="test_cleanup")
