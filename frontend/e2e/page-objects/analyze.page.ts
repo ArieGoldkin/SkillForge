@@ -17,6 +17,8 @@ export class AnalyzePage extends BasePage {
   readonly heroSummaryCard: Locator;
   /** Active analysis view container (default fallback view) */
   readonly activeAnalysisView: Locator;
+  /** Common analysis layout (present during loading states) */
+  readonly commonAnalysisLayout: Locator;
   /** Stage indicator test ID */
   readonly stageIndicator: Locator;
   /** Status text test ID */
@@ -38,6 +40,8 @@ export class AnalyzePage extends BasePage {
     this.heroSummaryCard = page.getByTestId('hero-summary-card');
     // Active analysis view container (present in default fallback route)
     this.activeAnalysisView = page.getByTestId('active-analysis-view');
+    // Common analysis layout (present during loading states)
+    this.commonAnalysisLayout = page.getByTestId('common-analysis-layout');
     this.stageIndicator = page.getByTestId('stage-indicator');
     this.statusText = page.getByTestId('status-text');
 
@@ -77,11 +81,15 @@ export class AnalyzePage extends BasePage {
   }
 
   /**
-   * Wait for page to fully load (HeroSummaryCard or ActiveAnalysisView visible)
+   * Wait for page to fully load.
+   * The page can be in different states:
+   * - HeroSummaryCard: Completed analysis view
+   * - ActiveAnalysisView: Default fallback view
+   * - CommonAnalysisLayout: Loading/processing states
    */
   async waitForPageLoad(timeout = 20000) {
-    // Wait for either HeroSummaryCard or ActiveAnalysisView to be visible
-    const pageLoaded = this.heroSummaryCard.or(this.activeAnalysisView);
+    // Wait for any of the analysis page containers to be visible
+    const pageLoaded = this.heroSummaryCard.or(this.activeAnalysisView).or(this.commonAnalysisLayout);
     await expect(pageLoaded).toBeVisible({ timeout });
   }
 

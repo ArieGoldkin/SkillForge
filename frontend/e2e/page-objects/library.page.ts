@@ -26,7 +26,9 @@ export class LibraryPage extends BasePage {
     this.searchModeToggle = page.getByTestId('search-mode-toggle').or(page.getByRole('combobox', { name: /mode/i }));
     // Cards can be in various formats - look for article elements or card-like structures
     this.analysisCards = page.getByTestId('analysis-card').or(page.locator('article, [class*="card"]').filter({ hasText: /.+/ }));
-    this.emptyState = page.getByTestId('empty-state').or(page.getByText(/no.*results|no.*found/i));
+    // Use only the test ID for empty state - the text fallback matches multiple elements (heading + paragraph)
+    // causing strict mode violations. Use .first() on the text fallback to avoid matching multiple elements.
+    this.emptyState = page.getByTestId('empty-state').or(page.getByText(/no.*results|no.*found/i).first());
     this.loadingState = page.getByTestId('loading-state').or(page.locator('[aria-busy="true"]'));
     this.pagination = page.getByTestId('pagination').or(page.getByRole('navigation', { name: /pagination/i }));
   }
