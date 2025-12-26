@@ -79,6 +79,7 @@ async def _build_agent_statuses(
     analysis_id: AnalysisID,
     selected_agents: list[str],
     agent_types: list[str],
+    validated_findings: list[dict[str, object]],
 ) -> dict[str, str]:
     """Build agent statuses dict and emit error events for failed agents.
 
@@ -86,20 +87,31 @@ async def _build_agent_statuses(
         analysis_id: UUID of the analysis
         selected_agents: List of agent types selected by supervisor
         agent_types: List of agent types that produced findings
+        validated_findings: List of validated findings with status markers
 
     Returns:
-        Dictionary mapping agent_type to "success" or "failed"
+        Dictionary mapping agent_type to "success", "no_data", or "failed"
 
     """
     from app.core.agent_config import get_stage_name
     from app.shared.services.messaging.sse_helpers import emit_error_event
 
+    # Build lookup for findings with "no_data" status
+    no_data_agents = {
+        finding.get("agent_type")
+        for finding in validated_findings
+        if finding.get("status") == "no_data"
+    }
+
     agent_statuses: dict[str, str] = {}
     for agent_type in selected_agents:
-        if agent_type in agent_types:
+        if agent_type in no_data_agents:
+            # Agent ran but returned no findings - not a failure
+            agent_statuses[agent_type] = "no_data"
+        elif agent_type in agent_types:
             agent_statuses[agent_type] = "success"
         else:
-            # Selected but no findings = failed
+            # Selected but no findings and not marked as "no_data" = failed
             agent_statuses[agent_type] = "failed"
             # Emit error event for agent failure
             await emit_error_event(
@@ -142,7 +154,7 @@ async def _handle_aggregation_error(
             error_message=str(error),
             stage="aggregate_findings",
         )
-    except Exception:  # noqa: S110, BLE001 - Graceful degradation for error recording failures
+    except Exception:  # noqa: BLE001 - Graceful degradation for error recording failures
         # Don't fail if error recording fails (e.g., invalid UUID in tests)
         pass
 
@@ -445,7 +457,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: S110, BLE001 - Langfuse may not be available
+    except Exception:  # noqa: BLE001 - Langfuse may not be available
         pass
 
     # Emit SSE event: aggregation started
@@ -468,10 +480,34 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             selected_agents_raw if isinstance(selected_agents_raw, list) else []
         )
 
+        # Issue #547 (GAP 4): Extract expected_agent_count for fan-in validation
+        # This allows us to detect when agents were selected but didn't run
+        expected_agent_count = supervisor_decision.get("expected_agent_count", len(selected_agents))
+
         # Step 1: Validate and parse findings
         validated_findings, agent_types, confidence_scores = validate_and_parse_findings(
             agent_findings
         )
+
+        # Issue #547 (GAP 4): Log fan-in validation for debugging stuck aggregation
+        actual_agent_count = len(agent_types) if agent_types else 0
+        if actual_agent_count != expected_agent_count:
+            logger.warning(
+                "workflow_aggregation_agent_count_mismatch",
+                analysis_id=analysis_id,
+                expected_agent_count=expected_agent_count,
+                actual_agent_count=actual_agent_count,
+                selected_agents=selected_agents,
+                agents_with_findings=agent_types,
+                missing_agents=[a for a in selected_agents if a not in (agent_types or [])],
+            )
+        else:
+            logger.info(
+                "workflow_aggregation_fan_in_complete",
+                analysis_id=analysis_id,
+                expected_agent_count=expected_agent_count,
+                actual_agent_count=actual_agent_count,
+            )
 
         # Build agent_statuses dict: compare selected_agents vs agent_types
         # Emit error events for agents that were selected but produced no findings
@@ -479,6 +515,7 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             analysis_id=analysis_id,
             selected_agents=selected_agents,
             agent_types=agent_types,
+            validated_findings=validated_findings,
         )
 
         if not validated_findings:

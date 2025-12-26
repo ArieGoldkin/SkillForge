@@ -18,9 +18,8 @@
  * @module features/analysis/components/accordion/AccordionProgressTracker
  */
 
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 
-import type { StageName } from '@app-types/sse'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import { AgentActivityFeed } from '@/features/analysis/components/activity/AgentActivityFeed'
@@ -29,14 +28,15 @@ import type { AgentActivity } from '@/features/analysis/hooks/useActivityFeed'
 import { useBreakpoint } from '@/features/analysis/hooks/useBreakpoint'
 import { useStageGroups } from '@/features/analysis/hooks/useStageGroups'
 import type { AnalysisMode } from '@/features/analysis/types/accordion'
+import type { StageName } from '@/schemas/sse'
 
 import { cn } from '@lib/utils'
 
-import { StageItem } from '../progress/StageItem'
-
+import { AccordionStageItem } from './AccordionStageItem'
 import { GroupHeader } from './GroupHeader'
 import { MiniMap } from './MiniMap'
 import type { MiniMapGroup } from './MiniMap'
+import { StageItemSkeleton } from './StageItemSkeleton'
 
 // ============================================================================
 // Type Definitions
@@ -96,14 +96,15 @@ function findActiveGroupId(
 }
 
 /**
- * PLACEHOLDER: useAutoExpand hook
- *
- * TODO: Move to /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/hooks/useAutoExpand.ts
+ * Local useAutoExpand hook for accordion group management
  *
  * Manages auto-expansion and auto-collapse of accordion groups based on:
  * - Active stage detection (expand group containing running stage)
  * - Breakpoint-based maxExpanded limits (mobile: 1, desktop: 5)
  * - User preferences (auto-expand enabled/disabled)
+ *
+ * Note: A more comprehensive version exists at hooks/useAutoExpand.ts
+ * for advanced FIFO collapse and delayed collapse features.
  */
 function useAutoExpand(
   groups: Array<{ id: string; status: string; isActive: boolean }>,
@@ -169,11 +170,10 @@ function useAutoExpand(
 // ============================================================================
 
 /**
- * PLACEHOLDER: FloatingActionButton component
+ * FloatingActionButton component
  *
- * TODO: Create /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/components/accordion/FloatingActionButton.tsx
- *
- * Mobile FAB for quick navigation and group controls
+ * Mobile FAB for quick navigation and group controls.
+ * Implemented inline for simplicity - extract to separate file if complexity grows.
  */
 const FloatingActionButton = memo(function FloatingActionButton({
   onClick,
@@ -216,11 +216,10 @@ const FloatingActionButton = memo(function FloatingActionButton({
 })
 
 /**
- * PLACEHOLDER: MobileBottomSheet component
+ * MobileBottomSheet component
  *
- * TODO: Create /Users/yonatangross/coding/SkillForge/frontend/src/features/analysis/components/accordion/MobileBottomSheet.tsx
- *
- * Mobile bottom sheet for group selection
+ * Mobile bottom sheet for group selection.
+ * Implemented inline for simplicity - extract to separate file if complexity grows.
  */
 const MobileBottomSheet = memo(function MobileBottomSheet({
   isOpen,
@@ -409,6 +408,49 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
   )
 
   // ========================================================================
+  // Keyboard Navigation Handler (Arrow keys for group navigation)
+  // ========================================================================
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>, groupIndex: number) => {
+      const groupIds = groups.map((g) => g.group.id)
+      let targetIndex = -1
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault()
+          targetIndex = Math.min(groupIndex + 1, groups.length - 1)
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          targetIndex = Math.max(groupIndex - 1, 0)
+          break
+        case 'Home':
+          event.preventDefault()
+          targetIndex = 0
+          break
+        case 'End':
+          event.preventDefault()
+          targetIndex = groups.length - 1
+          break
+        default:
+          return
+      }
+
+      if (targetIndex !== -1 && targetIndex !== groupIndex) {
+        const targetGroupId = groupIds[targetIndex]
+        const targetElement = groupRefs.current.get(targetGroupId)
+        if (targetElement) {
+          // Focus the button within the target group
+          const button = targetElement.querySelector('button')
+          button?.focus()
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      }
+    },
+    [groups]
+  )
+
+  // ========================================================================
   // Render
   // ========================================================================
   return (
@@ -446,6 +488,7 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                   groups.length <= 4 && isLastGroup && 'flex-1'
                 )}
                 role="listitem"
+                onKeyDown={(e) => handleKeyDown(e, groupIndex)}
               >
                 {/* Group Header */}
                 <GroupHeader
@@ -474,28 +517,31 @@ export const AccordionProgressTracker = memo(function AccordionProgressTracker({
                       }}
                       className="overflow-hidden"
                     >
-                      <div className="p-4 space-y-2 border-t border-border bg-muted/20">
-                        {group.stages.map((stageName, index) => {
+                      <div className="p-4 space-y-2 border-t border-border bg-muted/20" role="list">
+                        {group.stages.map((stageName) => {
                           const stageStatus = stageStatuses.get(stageName)
-                          if (!stageStatus) return null
 
-                          // Transform to StageState format expected by StageItem
-                          const stageState = {
-                            name: stageName,
-                            label: stageName
-                              .replace(/_/g, ' ')
-                              .replace(/\b\w/g, (l) => l.toUpperCase()),
-                            status: stageStatus.status,
-                            agent: stageStatus.details?.agent_type as string | undefined,
-                            error: stageStatus.details?.error as string | undefined,
-                            errorCode: stageStatus.details?.error_code as string | undefined,
+                          // Show skeleton if stage status not yet available
+                          if (!stageStatus) {
+                            return <StageItemSkeleton key={stageName} showTimestamp={false} />
                           }
 
+                          // Format stage label
+                          const label = stageName
+                            .replace(/_/g, ' ')
+                            .replace(/\b\w/g, (l) => l.toUpperCase())
+
                           return (
-                            <StageItem
+                            <AccordionStageItem
                               key={stageName}
-                              stage={stageState}
-                              isLast={index === group.stages.length - 1}
+                              stageName={stageName}
+                              label={label}
+                              status={stageStatus.status}
+                              agent={stageStatus.details?.agent_type as string | undefined}
+                              error={stageStatus.details?.error as string | undefined}
+                              errorCode={stageStatus.details?.error_code as string | undefined}
+                              skipReason={stageStatus.details?.skip_reason as string | undefined}
+                              showTimestamp={false}
                             />
                           )
                         })}

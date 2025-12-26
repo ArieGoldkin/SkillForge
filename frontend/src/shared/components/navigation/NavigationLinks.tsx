@@ -1,3 +1,4 @@
+import { usePrefetch } from '@hooks/usePrefetch'
 import { Link } from '@tanstack/react-router'
 import { GraduationCap } from 'lucide-react'
 
@@ -8,6 +9,8 @@ import { ExternalNavLink, NavLink } from './NavLink'
  * Includes branding and main nav items. Hidden on mobile (shown via menu).
  */
 export function NavigationLinks() {
+  const { prefetchLibrary } = usePrefetch()
+
   return (
     <div className="flex items-center gap-6 lg:gap-8">
       <Link
@@ -20,7 +23,9 @@ export function NavigationLinks() {
       </Link>
       <div className="hidden gap-4 md:flex lg:gap-6">
         <NavLink to="/">Home</NavLink>
-        <NavLink to="/library">Library</NavLink>
+        <NavLink to="/library" onMouseEnter={() => prefetchLibrary()}>
+          Library
+        </NavLink>
         <ExternalNavLink href="#about">About</ExternalNavLink>
         <NavLink to="/showcase" badge="DEV">
           Showcase

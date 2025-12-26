@@ -4,8 +4,8 @@
  * Extracts error codes from failed stages and SSE events for UI display.
  */
 
-import { isErrorEvent, isProgressEvent } from '@app-types/sse'
-import type { SSEEvent } from '@app-types/sse'
+import { isErrorEvent, isProgressEvent } from '@/schemas/sse'
+import type { SSEEvent } from '@/schemas/sse'
 
 import type { StageStatusEntry } from './stageConfig'
 

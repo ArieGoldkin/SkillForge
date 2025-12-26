@@ -12,7 +12,8 @@ import { useMemo } from 'react'
 import { isProgressEvent, isCompleteEvent } from '@/schemas/sse'
 import type { SSEEvent } from '@/schemas/sse'
 
-import { normalizeStageNameFromBackend } from './stageConfig'
+import { normalizeStageNameFromBackend } from '../config/stageRegistry'
+
 import { getAgentName, getActionDescription } from './stageHelpers'
 
 /**

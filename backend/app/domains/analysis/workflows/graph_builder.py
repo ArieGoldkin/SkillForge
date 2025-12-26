@@ -65,9 +65,9 @@ try:
     import importlib
 
     _lg_pg = importlib.import_module("langgraph.checkpoint.postgres")
-    PostgresSaver = getattr(_lg_pg, "PostgresSaver", None)  # type: ignore[var-annotated]
+    PostgresSaver = getattr(_lg_pg, "PostgresSaver", None)
 except Exception:  # noqa: BLE001
-    PostgresSaver = None  # type: ignore[var-annotated]
+    PostgresSaver = None
 
 logger = get_logger(__name__)
 

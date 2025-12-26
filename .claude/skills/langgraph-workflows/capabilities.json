@@ -125,6 +125,42 @@
       ],
       "reference_file": "SKILL.md#migration-from-langchain-chains",
       "token_cost": 110
+    },
+    "semantic-routing": {
+      "keywords": ["semantic routing", "embedding router", "agent selection", "content routing", "semantic similarity"],
+      "solves": [
+        "How do I route content to relevant agents semantically?",
+        "Replace keyword-based routing with semantic understanding",
+        "Embedding-based agent selection",
+        "Fix routing mismatch between supervisor and signal filter"
+      ],
+      "reference_file": "references/semantic-routing.md",
+      "template_file": "templates/semantic-router.py",
+      "token_cost": 200
+    },
+    "fan-in-fan-out": {
+      "keywords": ["fan out", "fan in", "parallel", "Send API", "dynamic agents", "expected count"],
+      "solves": [
+        "How do I implement dynamic fan-out to agents?",
+        "Track agent completion for fan-in",
+        "Fix stuck aggregation when agents are skipped",
+        "Use Send() API for parallel execution"
+      ],
+      "reference_file": "references/fan-in-fan-out-patterns.md",
+      "template_file": "templates/parallel-agent-fanout.py",
+      "token_cost": 220
+    },
+    "resilience-integration": {
+      "keywords": ["circuit breaker", "bulkhead", "resilience", "fault tolerance", "retry"],
+      "solves": [
+        "How do I add circuit breakers to LangGraph nodes?",
+        "Integrate bulkhead pattern for resource isolation",
+        "Wrap agents with resilience patterns",
+        "Handle failures gracefully in multi-agent workflows"
+      ],
+      "reference_file": "references/resilience-integration.md",
+      "related_skill": "resilience-patterns",
+      "token_cost": 180
     }
   },
 
@@ -148,7 +184,8 @@
     "langfuse-observability",
     "ai-native-development",
     "llm-caching-patterns",
-    "performance-optimization"
+    "performance-optimization",
+    "resilience-patterns"
   ],
 
   "progressive_loading": {

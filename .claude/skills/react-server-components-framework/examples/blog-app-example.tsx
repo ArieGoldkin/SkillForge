@@ -346,17 +346,19 @@ export async function CommentList({ postId }: { postId: string }) {
 
 'use client' // Client Component for interactivity
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react' // React 19: useActionState replaces useFormState
+import { useFormStatus } from 'react-dom'
 import { addComment } from '@/app/actions/posts'
 import { useRef, useEffect } from 'react'
 
-function SubmitButton() {
+function SubmitButton(): React.ReactNode {
   const { pending } = useFormStatus()
 
   return (
     <button
       type="submit"
       disabled={pending}
+      aria-busy={pending}
       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
     >
       {pending ? 'Posting...' : 'Post Comment'}
@@ -364,9 +366,10 @@ function SubmitButton() {
   )
 }
 
-export function CommentForm({ postId }: { postId: string }) {
+export function CommentForm({ postId }: { postId: string }): React.ReactNode {
   const formRef = useRef<HTMLFormElement>(null)
-  const [state, formAction] = useFormState(
+  // React 19: useActionState replaces useFormState from react-dom
+  const [state, formAction] = useActionState(
     async (prevState: any, formData: FormData) => {
       const content = formData.get('content') as string
       return addComment(postId, content)

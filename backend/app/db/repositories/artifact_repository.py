@@ -51,6 +51,24 @@ class IArtifactRepository(Protocol):
         """Increment download count for an artifact."""
         ...
 
+    async def list_artifacts(
+        self, page: int = 1, limit: int = 20, include_deleted: bool = False
+    ) -> tuple[list[Artifact], int]:
+        """List artifacts with pagination."""
+        ...
+
+    async def soft_delete(self, artifact_id: uuid.UUID) -> bool:
+        """Soft delete an artifact."""
+        ...
+
+    async def restore(self, artifact_id: uuid.UUID) -> bool:
+        """Restore a soft-deleted artifact."""
+        ...
+
+    async def generate_etag(self, artifact_id: uuid.UUID) -> str | None:
+        """Generate ETag for caching."""
+        ...
+
 
 class ArtifactRepository:
     """Repository implementation for artifact database operations."""
@@ -128,11 +146,78 @@ class ArtifactRepository:
         return (row[0], row[1]) if row else None
 
     async def increment_download_count(self, artifact_id: uuid.UUID) -> None:
-        """Increment download count for an artifact."""
+        """Increment download count atomically."""
+        from sqlalchemy import update
+
+        await self.session.execute(
+            update(Artifact)
+            .where(Artifact.id == artifact_id)
+            .values(download_count=Artifact.download_count + 1)
+        )
+        await self.session.commit()
+
+    async def list_artifacts(
+        self, page: int = 1, limit: int = 20, include_deleted: bool = False
+    ) -> tuple[list[Artifact], int]:
+        """List artifacts with pagination."""
+        from sqlalchemy import func
+
+        query = select(Artifact)
+        count_query = select(func.count(Artifact.id))
+
+        if not include_deleted:
+            query = query.where(Artifact.is_deleted == False)  # noqa: E712
+            count_query = count_query.where(Artifact.is_deleted == False)  # noqa: E712
+
+        # Get total count
+        count_result = await self.session.execute(count_query)
+        total = count_result.scalar() or 0
+
+        # Get paginated results
+        offset = (page - 1) * limit
+        query = query.order_by(Artifact.created_at.desc()).offset(offset).limit(limit)
+        result = await self.session.execute(query)
+        artifacts = list(result.scalars().all())
+
+        return artifacts, total
+
+    async def soft_delete(self, artifact_id: uuid.UUID) -> bool:
+        """Soft delete an artifact."""
+        from datetime import UTC, datetime
+
         artifact = await self.get_artifact_by_id(artifact_id)
-        if artifact:
-            artifact.download_count = artifact.download_count + 1  # type: ignore[assignment]
-            await self.session.commit()
+        if not artifact or artifact.is_deleted:
+            return False
+
+        artifact.is_deleted = True
+        artifact.deleted_at = datetime.now(UTC)
+        await self.session.commit()
+        return True
+
+    async def restore(self, artifact_id: uuid.UUID) -> bool:
+        """Restore a soft-deleted artifact."""
+        result = await self.session.execute(select(Artifact).where(Artifact.id == artifact_id))
+        artifact = result.scalar_one_or_none()
+        if not artifact or not artifact.is_deleted:
+            return False
+
+        artifact.is_deleted = False
+        artifact.deleted_at = None
+        await self.session.commit()
+        return True
+
+    async def generate_etag(self, artifact_id: uuid.UUID) -> str | None:
+        """Generate ETag for caching."""
+        import hashlib
+
+        artifact = await self.get_artifact_by_id(artifact_id)
+        if not artifact:
+            return None
+
+        # Use updated_at or created_at + id for ETag
+        timestamp = artifact.updated_at or artifact.created_at
+        etag_source = f"{artifact_id}-{timestamp.isoformat() if timestamp else ''}"
+        return hashlib.md5(etag_source.encode()).hexdigest()  # noqa: S324
 
 
 def get_artifact_repository(

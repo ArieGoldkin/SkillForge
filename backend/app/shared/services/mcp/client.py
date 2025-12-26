@@ -724,7 +724,7 @@ try:
     from langchain_mcp_adapters.client import MultiServerMCPClient
 except ImportError:
 
-    class MultiServerMCPClient:  # type: ignore[no-redef]
+    class MultiServerMCPClient:
         """Placeholder when langchain-mcp-adapters not installed."""
 
         def __init__(self, config: dict) -> None:

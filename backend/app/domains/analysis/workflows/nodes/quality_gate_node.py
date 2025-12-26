@@ -7,7 +7,6 @@ below threshold, it triggers a retry (up to 2 attempts).
 Issue #301: Add quality validation gate to ensure high-quality artifacts.
 """
 
-import asyncio
 import time
 from typing import Any
 
@@ -22,7 +21,6 @@ from app.domains.analysis.workflows.state_accessors import (
     get_quality_scores,
 )
 from app.domains.analysis.workflows.state_types import AggregatedInsights
-from app.evaluation.evaluators.quality import create_quality_evaluator
 
 logger = get_logger(__name__)
 
@@ -151,10 +149,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
     try:
         # Create mock Run and Example for evaluators
         # The evaluators expect Langfuse Run/Example objects
-        from datetime import UTC, datetime
-        from uuid import UUID, uuid4
-
-        from app.evaluation.types import Example, Run
+        from uuid import UUID
 
         # Prepare input (original content) and output (synthesized insights)
         input_content = state.get("raw_content", "")
@@ -215,58 +210,46 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                 "quality_warnings": quality_warnings,
             }
 
-        # Convert analysis_id to UUID if it's a string
-        try:
-            run_uuid = UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
-        except (ValueError, TypeError):
-            # If analysis_id is not a valid UUID, generate a new one for the mock run
-            run_uuid = uuid4()
-            logger.warning(
-                "quality_gate_invalid_analysis_id",
-                analysis_id=analysis_id,
-                using_generated_uuid=str(run_uuid),
-            )
+        # Issue GAP5: Wire Langfuse multi-judge G-Eval evaluators for quality assessment
+        from app.shared.services.g_eval.langfuse_evaluators import create_g_eval_evaluator
 
-        # Generate trace_id if not available
-        trace_uuid = UUID(trace_id) if trace_id else uuid4()
+        # Determine agent type from state (defaults to "tech_comparator")
+        agent_type = state.get("agent_type", "tech_comparator")
 
-        # Create mock Run object with all required fields
-        # Langfuse Run requires: id, name, start_time, run_type, trace_id
-        mock_run = Run(
-            id=run_uuid,
-            name="synthesis",
-            run_type="chain",
-            start_time=datetime.now(UTC),
-            trace_id=trace_uuid,
-            inputs={"content": input_content},
-            outputs={"insights": output_content},
-        )
-
-        # Create mock Example object with inputs
-        mock_example = Example(
-            id=run_uuid,
-            inputs={"content": input_content},
-            outputs={},  # No reference outputs for online evaluation
-        )
-
-        # Run evaluators for each aspect
+        # Run G-Eval evaluators for each aspect (uses G-Eval scorer under the hood)
         quality_scores = {}
         for aspect in QUALITY_ASPECTS:
-            evaluator = create_quality_evaluator(aspect=aspect)
+            # Create G-Eval evaluator for this criterion
+            # This uses the agent-specific rubrics and G-Eval's chain-of-thought scoring
+            evaluator = create_g_eval_evaluator(
+                criterion=aspect, agent_type=agent_type, use_cache=True
+            )
 
-            # Wrap evaluator call with timeout protection to prevent hanging
-            # Issue #536: Uses EVALUATOR_TIMEOUT from timeout_config.py (documented exception)
+            # Note: G-Eval evaluators are synchronous (they handle async internally)
+            # so we can't use asyncio.timeout here - timeout is handled in G-Eval scorer
             try:
-                async with asyncio.timeout(EVALUATOR_TIMEOUT):
-                    result = await evaluator(mock_run, mock_example)
-                    score = result.get("score", 0.0)
-                    quality_scores[aspect] = {
-                        "score": score,
-                        "comment": result.get("comment", ""),
-                    }
+                # G-Eval evaluators expect Langfuse experiment signature:
+                # evaluator(*, input, output, expected_output=None)
+                result = evaluator(
+                    input={"content": input_content},
+                    output=output_content,
+                    _expected_output=None,
+                )
+
+                # Extract score from Langfuse Evaluation object
+                # The evaluator returns a Langfuse Evaluation with value, comment, metadata
+                score_value = result.value if hasattr(result, "value") else 0.0
+                score_comment = result.comment if hasattr(result, "comment") else ""
+
+                quality_scores[aspect] = {
+                    "score": score_value,
+                    "comment": score_comment,
+                    "metadata": result.metadata if hasattr(result, "metadata") else {},
+                }
+
             except TimeoutError:
                 # Issue #442: Timeout - use neutral score (0.5) and track warning
-                warning_msg = f"Evaluation timed out for {aspect}"
+                warning_msg = f"G-Eval evaluation timed out for {aspect}"
                 quality_warnings.append(warning_msg)
                 logger.warning(
                     "quality_evaluator_timeout",
@@ -277,16 +260,36 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                 )
                 quality_scores[aspect] = {
                     "score": 0.5,  # Neutral score - reflects uncertainty
-                    "comment": f"Evaluation timed out after {EVALUATOR_TIMEOUT}s",
+                    "comment": f"G-Eval evaluation timed out after {EVALUATOR_TIMEOUT}s",
                     "timeout": True,
+                }
+            except Exception as e:  # noqa: BLE001 - Graceful degradation for quality evaluation
+                # Handle G-Eval errors gracefully
+                warning_msg = f"G-Eval evaluation failed for {aspect}: {type(e).__name__}"
+                quality_warnings.append(warning_msg)
+                logger.warning(
+                    "quality_evaluator_error",
+                    analysis_id=analysis_id,
+                    aspect=aspect,
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    message=warning_msg,
+                    exc_info=True,
+                )
+                quality_scores[aspect] = {
+                    "score": 0.5,  # Neutral score on error
+                    "comment": f"G-Eval error: {type(e).__name__}",
+                    "error": str(e),
                 }
 
             logger.debug(
                 "quality_aspect_evaluated",
                 analysis_id=analysis_id,
                 aspect=aspect,
+                evaluator="g_eval",
+                agent_type=agent_type,
                 score=quality_scores[aspect]["score"],
-                comment=quality_scores[aspect]["comment"],
+                comment=quality_scores[aspect]["comment"][:200],
             )
 
         # Calculate average quality score (guard against division by zero)
@@ -639,7 +642,7 @@ def _format_insights_for_evaluation(aggregated_insights: AggregatedInsights) -> 
         parts.append(f"\nKey Findings:\n{findings_text}")
 
     # Extract synthesis sections
-    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})  # type: ignore[assignment]
+    synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})
     if synthesis and isinstance(synthesis, dict):
         for section, content in list(synthesis.items())[:5]:
             if content:

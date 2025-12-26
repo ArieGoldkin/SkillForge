@@ -2,6 +2,48 @@ import '@testing-library/jest-dom/vitest'
 import { expect } from 'vitest'
 import type { ProfiledComponent } from 'vitest-react-profiler'
 
+// Polyfill ResizeObserver for jsdom (used by @tanstack/react-virtual)
+global.ResizeObserver = class ResizeObserver {
+  private callback: ResizeObserverCallback
+  private targets: Element[] = []
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback
+  }
+
+  observe(target: Element): void {
+    this.targets.push(target)
+    // Simulate initial resize with realistic dimensions for virtualization
+    const entry = {
+      target,
+      contentRect: { width: 1024, height: 800, top: 0, left: 0, bottom: 800, right: 1024, x: 0, y: 0, toJSON: () => ({}) },
+      borderBoxSize: [{ blockSize: 800, inlineSize: 1024 }],
+      contentBoxSize: [{ blockSize: 800, inlineSize: 1024 }],
+      devicePixelContentBoxSize: [{ blockSize: 800, inlineSize: 1024 }],
+    } as unknown as ResizeObserverEntry
+    // Delay callback to allow React to mount
+    setTimeout(() => this.callback([entry], this), 0)
+  }
+
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+// Mock element dimensions for virtualization (jsdom returns 0 by default)
+Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+  configurable: true,
+  get() {
+    return 1024
+  },
+})
+
+Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+  configurable: true,
+  get() {
+    return 800
+  },
+})
+
 // Custom matchers for render budget testing
 declare module 'vitest' {
   interface Assertion<T = any> {

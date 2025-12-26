@@ -5,8 +5,9 @@
  * 2. Infinite reconnection loop (permanentlyFailed flag)
  */
 
-import type { SSEErrorEvent, SSEProgressEvent } from '@app-types/sse'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { SSEErrorEvent, SSEProgressEvent } from '@/schemas/sse'
 
 import type { SSEStore } from '../sseStore'
 import { closeConnection, createConnection, type ListenerRefs } from '../sseStoreHelpers'

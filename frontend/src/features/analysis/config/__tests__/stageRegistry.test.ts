@@ -8,8 +8,9 @@
  * @see Issue #397: Create unified stage registry
  */
 
-import type { AgentStageName, StageName } from '@app-types/sse'
 import { describe, expect, it } from 'vitest'
+
+import type { AgentStageName, StageName } from '@/schemas/sse'
 
 import type { AnalysisStage } from '../../components/steps/AnalysisProgressCard'
 import {
@@ -379,7 +380,7 @@ describe('Stage Registry Structure', () => {
 
 describe('Derived Exports', () => {
   describe('STAGE_CONFIG', () => {
-    it('should have correct shape for backward compatibility', () => {
+    it('should have correct shape', () => {
       expect(STAGE_CONFIG).toBeDefined()
       expect(typeof STAGE_CONFIG).toBe('object')
 

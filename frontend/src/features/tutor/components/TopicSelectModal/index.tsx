@@ -6,6 +6,8 @@ import { useState } from 'react'
 
 import { ArrowRight, GraduationCap, Info } from 'lucide-react'
 
+import { useFocusReturn } from '@/hooks'
+
 import { Button } from '@shared/components/ui/button'
 import {
   Dialog,
@@ -22,6 +24,9 @@ import type { TopicSelectModalProps } from './types'
 export function TopicSelectModal(props: TopicSelectModalProps) {
   const { isOpen, onClose, onSelect, topics, isLoading = false, analysisTitle } = props
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
+
+  // WCAG 2.1 AA: Return focus to trigger element when modal closes
+  useFocusReturn(isOpen)
 
   const handleClose = () => {
     setSelectedTopicId(null)

@@ -10,7 +10,7 @@
 
 import * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 
 import { DEMO_CONSTANTS, COMPONENT_CONSTANTS } from '@/lib/constants'
 
@@ -24,7 +24,7 @@ import { availableTags, createSkills } from './showcase-data'
 /**
  * LibraryTab component
  */
-export const LibraryTab: React.FC = () => {
+export function LibraryTab(): React.ReactNode {
   // Use useState initializer to ensure factory is called only once
   const [skills] = React.useState(createSkills)
   const [filters, setFilters] = React.useState<SkillFiltersType>({
@@ -57,7 +57,7 @@ export const LibraryTab: React.FC = () => {
               filters={filters}
               onChange={setFilters}
               availableTags={availableTags}
-              availableStatuses={['complete', 'in-progress', 'failed'] satisfies AnalysisStatus[]}
+              availableStatuses={['complete', 'running', 'failed'] satisfies FilterStatus[]}
             />
           </div>
 

@@ -1,4 +1,4 @@
-import type { AnalysisStatus } from '@/types/api'
+import type { FilterStatus } from '@/types/api'
 
 import { ContentGrid } from './ContentGrid'
 import { FiltersSidebar } from './FiltersSidebar'
@@ -22,7 +22,7 @@ interface LibraryContentMainProps {
   filters: SkillFiltersType
   onFiltersChange: (filters: SkillFiltersType) => void
   availableTags: string[]
-  availableStatuses: AnalysisStatus[]
+  availableStatuses: FilterStatus[]
   filteredSkills: Skill[]
   isLoading: boolean
   isFetching: boolean
@@ -30,6 +30,7 @@ interface LibraryContentMainProps {
   isFetchingNextPage: boolean
   onSelectSkill: (id: string) => void
   onLoadMore?: () => void
+  isPending?: boolean
 }
 
 export function LibraryContentMain({
@@ -44,6 +45,7 @@ export function LibraryContentMain({
   isFetchingNextPage,
   onSelectSkill,
   onLoadMore,
+  isPending,
 }: LibraryContentMainProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -53,7 +55,10 @@ export function LibraryContentMain({
         availableTags={availableTags}
         availableStatuses={availableStatuses}
       />
-      <div className="lg:col-span-3">
+      <div
+        className="lg:col-span-3"
+        style={{ opacity: isPending ? 0.6 : 1, transition: 'opacity 0.2s' }}
+      >
         <ContentGrid
           isLoading={isLoading}
           skills={filteredSkills}

@@ -1,6 +1,11 @@
 /**
- * Real API service for backend integration
+ * API Service for Backend Integration
+ *
  * Connects to the FastAPI backend at /api/v1/*
+ * Uses ky HTTP client with interceptors (Issue #550)
+ * Includes Zod validation for type-safe responses (Issue #548)
+ *
+ * @module services/api.service
  */
 
 import type {
@@ -16,33 +21,19 @@ import type {
   LibrarySearchParams,
 } from '@app-types/api'
 
+import { api, apiRaw, getApiBaseUrl, isHTTPError, safeApi } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
-
-// API base URL - uses Vite env variable or defaults to localhost:8500
-// Note: Use relative path '' for Vite proxy, or full URL for direct backend access
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8500'
-
-/**
- * Generic fetch wrapper with error handling
- */
-async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || errorData.message || `API error: ${response.status}`)
-  }
-
-  return response.json()
-}
+import {
+  AnalysisListSchema,
+  AnalysisProgressResponseSchema,
+  AnalysisRerunResponseSchema,
+  AnalysisRetryResponseSchema,
+  AnalysisStatusResponseSchema,
+  AnalyzeResponseSchema,
+  ArtifactMetadataResponseSchema,
+  HealthResponseSchema,
+  LibraryListResponseSchema,
+} from '@/schemas/api'
 
 /**
  * Analysis API - connects to real backend
@@ -53,22 +44,12 @@ export const analyzeAPI = {
    * POST /api/v1/analyze
    */
   createAnalysis: async (request: AnalyzeRequest): Promise<AnalyzeResponse> => {
-    const response = await apiFetch<{
-      analysis_id: string
-      url: string
-      content_type: string
-      status: string
-      sse_endpoint: string
-    }>('/api/v1/analyze', {
+    const response = await api('api/v1/analyze', AnalyzeResponseSchema, {
       method: 'POST',
-      body: JSON.stringify(request),
+      json: request,
     })
 
-    return {
-      analysis_id: response.analysis_id,
-      sse_endpoint: response.sse_endpoint,
-      status: response.status as AnalyzeResponse['status'],
-    }
+    return response
   },
 
   /**
@@ -76,7 +57,7 @@ export const analyzeAPI = {
    * GET /api/v1/analyze/{id}
    */
   getAnalysisStatus: async (id: string): Promise<AnalysisStatusResponse> => {
-    return apiFetch<AnalysisStatusResponse>(`/api/v1/analyze/${id}`)
+    return api(`api/v1/analyze/${id}`, AnalysisStatusResponseSchema)
   },
 
   /**
@@ -84,7 +65,7 @@ export const analyzeAPI = {
    * GET /api/v1/analyze/{id}/progress
    */
   getAnalysisProgress: async (id: string): Promise<AnalysisProgressResponse> => {
-    return apiFetch<AnalysisProgressResponse>(`/api/v1/analyze/${id}/progress`)
+    return api(`api/v1/analyze/${id}/progress`, AnalysisProgressResponseSchema)
   },
 
   /**
@@ -92,16 +73,7 @@ export const analyzeAPI = {
    * GET /api/v1/analyze/{id}/artifact
    */
   getArtifactByAnalysis: async (analysisId: string): Promise<ArtifactMetadataResponse | null> => {
-    try {
-      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
-    } catch (error) {
-      logger.warn('getArtifactByAnalysis not available', {
-        analysisId,
-        error: error instanceof Error ? error.message : String(error),
-        endpoint: `/api/v1/analyze/${analysisId}/artifact`,
-      })
-      return null
-    }
+    return safeApi(`api/v1/analyze/${analysisId}/artifact`, ArtifactMetadataResponseSchema)
   },
 
   /**
@@ -109,16 +81,7 @@ export const analyzeAPI = {
    * GET /api/v1/analyze/{id}/artifact
    */
   getArtifact: async (analysisId: string): Promise<ArtifactMetadataResponse | null> => {
-    try {
-      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/analyze/${analysisId}/artifact`)
-    } catch (error) {
-      logger.warn('getArtifact not available', {
-        analysisId,
-        error: error instanceof Error ? error.message : String(error),
-        endpoint: `/api/v1/analyze/${analysisId}/artifact`,
-      })
-      return null
-    }
+    return safeApi(`api/v1/analyze/${analysisId}/artifact`, ArtifactMetadataResponseSchema)
   },
 
   /**
@@ -127,16 +90,7 @@ export const analyzeAPI = {
    * Returns artifact metadata including trace_id
    */
   getArtifactById: async (artifactId: string): Promise<ArtifactMetadataResponse | null> => {
-    try {
-      return await apiFetch<ArtifactMetadataResponse>(`/api/v1/artifacts/${artifactId}`)
-    } catch (error) {
-      logger.warn('getArtifactById failed', {
-        artifactId,
-        error: error instanceof Error ? error.message : String(error),
-        endpoint: `/api/v1/artifacts/${artifactId}`,
-      })
-      return null
-    }
+    return safeApi(`api/v1/artifacts/${artifactId}`, ArtifactMetadataResponseSchema)
   },
 
   /**
@@ -146,19 +100,13 @@ export const analyzeAPI = {
    */
   downloadArtifact: async (artifactId: string): Promise<string | null> => {
     try {
-      const url = `${API_BASE_URL}/api/v1/artifacts/${artifactId}/download`
-      const response = await fetch(url)
-
-      if (!response.ok) {
-        throw new Error(`Failed to download artifact: ${response.status}`)
-      }
-
+      const response = await apiRaw(`api/v1/artifacts/${artifactId}/download`)
       return await response.text()
     } catch (error) {
       logger.warn('downloadArtifact failed', {
         artifactId,
         error: error instanceof Error ? error.message : String(error),
-        endpoint: `/api/v1/artifacts/${artifactId}/download`,
+        status: isHTTPError(error) ? error.response.status : undefined,
       })
       return null
     }
@@ -167,18 +115,10 @@ export const analyzeAPI = {
   /**
    * List all analyses
    * GET /api/v1/analyze
-   * Note: Not yet implemented in backend
    */
   listAnalyses: async (): Promise<Analysis[]> => {
-    try {
-      return await apiFetch<Analysis[]>('/api/v1/analyze')
-    } catch (error) {
-      logger.warn('listAnalyses not available', {
-        error: error instanceof Error ? error.message : String(error),
-        endpoint: '/api/v1/analyze',
-      })
-      return []
-    }
+    const result = await safeApi('api/v1/analyze', AnalysisListSchema)
+    return result ?? []
   },
 
   /**
@@ -186,19 +126,14 @@ export const analyzeAPI = {
    * DELETE /api/v1/analyses/{id}
    */
   deleteAnalysis: async (analysisId: string): Promise<void> => {
-    const url = `${API_BASE_URL}/api/v1/analyses/${analysisId}`
-    const response = await fetch(url, { method: 'DELETE' })
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `Failed to delete analysis (${response.status})`)
-    }
+    await apiRaw(`api/v1/analyses/${analysisId}`, { method: 'DELETE' })
   },
 
   /**
    * Get the SSE endpoint URL for streaming progress
    */
   getSSEEndpoint: (analysisId: string): string => {
-    return `${API_BASE_URL}/api/v1/analyze/${analysisId}/stream`
+    return `${getApiBaseUrl()}/api/v1/analyze/${analysisId}/stream`
   },
 
   /**
@@ -206,7 +141,7 @@ export const analyzeAPI = {
    * POST /api/v1/analyze/{id}/retry
    */
   retryAnalysis: async (analysisId: string): Promise<AnalysisRetryResponse> => {
-    return apiFetch<AnalysisRetryResponse>(`/api/v1/analyze/${analysisId}/retry`, {
+    return api(`api/v1/analyze/${analysisId}/retry`, AnalysisRetryResponseSchema, {
       method: 'POST',
     })
   },
@@ -216,7 +151,7 @@ export const analyzeAPI = {
    * POST /api/v1/analyze/{id}/rerun
    */
   rerunAnalysis: async (analysisId: string): Promise<AnalysisRerunResponse> => {
-    return apiFetch<AnalysisRerunResponse>(`/api/v1/analyze/${analysisId}/rerun`, {
+    return api(`api/v1/analyze/${analysisId}/rerun`, AnalysisRerunResponseSchema, {
       method: 'POST',
     })
   },
@@ -235,9 +170,9 @@ export const analyzeAPI = {
     if (params.offset) searchParams.set('offset', params.offset.toString())
 
     const queryString = searchParams.toString()
-    const endpoint = `/api/v1/library${queryString ? `?${queryString}` : ''}`
+    const endpoint = `api/v1/library${queryString ? `?${queryString}` : ''}`
 
-    return apiFetch<LibraryListResponse>(endpoint)
+    return api(endpoint, LibraryListResponseSchema)
   },
 }
 
@@ -249,13 +184,8 @@ export const healthAPI = {
    * Check backend health
    * GET /api/v1/health
    */
-  check: async (): Promise<{
-    status: string
-    version: string
-    environment: string
-    database: { status: string }
-  }> => {
-    return apiFetch('/api/v1/health')
+  check: async () => {
+    return api('api/v1/health', HealthResponseSchema)
   },
 }
 

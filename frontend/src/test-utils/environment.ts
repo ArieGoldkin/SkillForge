@@ -184,7 +184,7 @@ export const createTestData = {
     id: CONTENT_CONSTANTS.SAMPLE_ANALYSIS_ID,
     url: 'https://example.com',
     title: 'Test Analysis',
-    status: 'completed',
+    status: 'complete',
     wordCount: CONTENT_CONSTANTS.SAMPLE_WORD_COUNT,
   }),
 

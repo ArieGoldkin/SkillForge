@@ -1,8 +1,9 @@
 import type * as React from 'react'
 import { useMemo } from 'react'
 
-import type { AgentStageName } from '@app-types/sse'
 import { useSSEStore, useLoadingState, useShouldShowProgress } from '@stores/sseStore'
+
+import type { StageName } from '@/schemas/sse'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
 
@@ -43,7 +44,7 @@ export interface ProgressTrackerProps {
   /** Optional CSS class name */
   className?: string
   /** Stages to display (default: ALL_STAGES) */
-  stages?: AgentStageName[]
+  stages?: StageName[]
   /** Callback when analysis completes with artifact ID */
   onComplete?: (artifactId: string) => void
   /** Callback when an error occurs */
@@ -59,12 +60,12 @@ export interface ProgressTrackerProps {
  * <ProgressTracker analysisId="abc-123" stages={WORKING_STAGES} />
  * ```
  */
-export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
+export function ProgressTracker({
   className,
   stages = ALL_STAGES,
   onComplete,
   onError,
-}) => {
+}: ProgressTrackerProps): React.ReactNode {
   // Use computed loading states (Issue #399)
   const { events, error, isComplete } = useSSEStore()
   const loadingState = useLoadingState()

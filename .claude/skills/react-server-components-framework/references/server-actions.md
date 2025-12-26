@@ -55,24 +55,26 @@ Add loading states and error handling:
 'use client'
 
 import { createPost } from '@/app/actions'
-import { useFormStatus, useFormState } from 'react-dom'
+import { useActionState } from 'react' // React 19: replaces useFormState
+import { useFormStatus } from 'react-dom'
 
-function SubmitButton() {
+function SubmitButton(): React.ReactNode {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={pending}>
+    <button type="submit" disabled={pending} aria-busy={pending}>
       {pending ? 'Creating...' : 'Create Post'}
     </button>
   )
 }
 
-export function PostForm() {
-  const [state, formAction] = useFormState(createPost, { error: null })
+export function PostForm(): React.ReactNode {
+  // React 19: useActionState replaces useFormState from react-dom
+  const [state, formAction, isPending] = useActionState(createPost, { error: null })
 
   return (
     <form action={formAction}>
-      <input type="text" name="title" required />
-      <textarea name="content" required />
+      <input type="text" name="title" required disabled={isPending} />
+      <textarea name="content" required disabled={isPending} />
       {state?.error && <p className="error">{state.error}</p>}
       <SubmitButton />
     </form>

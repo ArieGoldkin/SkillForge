@@ -1,5 +1,4 @@
-/* eslint-disable max-lines-per-function -- Function includes structured logging for clipboard errors */
-import * as React from 'react'
+import { startTransition, useOptimistic } from 'react'
 
 import { Check, Copy } from 'lucide-react'
 
@@ -13,32 +12,45 @@ import type { CopyButtonProps } from '../types'
 /**
  * CopyButton - Copy text to clipboard with visual feedback
  *
- * Shows a copy icon by default, transitions to a check icon with success
- * styling after successful copy for 2 seconds.
+ * Uses React 19's useOptimistic hook for instant UI feedback before
+ * the async clipboard operation completes. Shows a copy icon by default,
+ * transitions to a check icon with success styling after successful copy
+ * for 2 seconds. Automatically rolls back on error.
  *
  * @example
  * ```tsx
  * <CopyButton text="const example = 'Hello World';" />
  * ```
  */
-export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
-  const [isCopied, setIsCopied] = React.useState(false)
+/* eslint-disable max-lines-per-function -- Component requires complete JSX with conditional styling and structured error logging */
+export function CopyButton({ text, className }: CopyButtonProps): React.ReactNode {
+  const [optimisticCopied, setOptimisticCopied] = useOptimistic(
+    false,
+    (_current, newValue: boolean) => newValue
+  )
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch (error) {
-      logger.error('Failed to copy text to clipboard', {
-        textLength: text.length,
-        textPreview:
-          text.substring(0, VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH) +
-          (text.length > VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH ? '...' : ''),
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      })
-    }
+    // Optimistic update - instant feedback
+    setOptimisticCopied(true)
+
+    startTransition(async () => {
+      try {
+        await navigator.clipboard.writeText(text)
+        // Auto-reset after 2 seconds
+        setTimeout(() => setOptimisticCopied(false), 2000)
+      } catch (error) {
+        // On error, the optimistic state rolls back automatically
+        logger.error('Failed to copy text to clipboard', {
+          textLength: text.length,
+          textPreview:
+            text.substring(0, VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH) +
+            (text.length > VALIDATION_CONSTANTS.PREVIEW_TEXT_LENGTH ? '...' : ''),
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        })
+        setOptimisticCopied(false)
+      }
+    })
   }
 
   return (
@@ -54,7 +66,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
         'transition-all duration-200',
         'hover:bg-zinc-600 hover:text-white',
         'active:scale-95',
-        isCopied && [
+        optimisticCopied && [
           'bg-(--copy-success)',
           'text-white',
           'border-(--copy-success)',
@@ -62,9 +74,9 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
         ],
         className
       )}
-      aria-label={isCopied ? 'Copied!' : 'Copy to clipboard'}
+      aria-label={optimisticCopied ? 'Copied!' : 'Copy to clipboard'}
     >
-      {isCopied ? (
+      {optimisticCopied ? (
         <>
           <Check className="w-3.5 h-3.5" />
           <span>Copied!</span>

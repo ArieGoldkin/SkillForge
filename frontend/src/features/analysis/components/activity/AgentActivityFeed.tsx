@@ -72,10 +72,13 @@ const getAgentColor = (agentName: string): string => {
 /**
  * Individual activity log entry
  */
-const ActivityEntry: React.FC<{ activity: AgentActivity; isNew?: boolean }> = ({
+function ActivityEntry({
   activity,
   isNew,
-}) => {
+}: {
+  activity: AgentActivity
+  isNew?: boolean
+}): React.ReactNode {
   const agentInitial = activity.agentName.charAt(0).toUpperCase()
   const agentColor = getAgentColor(activity.agentName)
 
@@ -141,12 +144,12 @@ const ActivityEntry: React.FC<{ activity: AgentActivity; isNew?: boolean }> = ({
  * ```
  */
 /* eslint-disable max-lines-per-function -- Main component requires comprehensive JSX layout for feed UI (header, empty state, scrollable list, footer). Well-structured with extracted ActivityEntry sub-component. */
-export const AgentActivityFeed: React.FC<AgentActivityFeedProps> = ({
+export function AgentActivityFeed({
   activities,
   isLive = false,
   maxItems = COMPONENT_CONSTANTS.MAX_ITEMS_DEFAULT,
   className,
-}) => {
+}: AgentActivityFeedProps): React.ReactNode {
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const [previousCount, setPreviousCount] = React.useState(activities.length)
 

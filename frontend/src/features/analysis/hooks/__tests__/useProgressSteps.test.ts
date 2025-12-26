@@ -12,11 +12,10 @@
  * - Correct title and description for each stage
  */
 
-import type { StageName } from '@app-types/sse'
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type { SuccessMetrics } from '@/schemas/sse'
+import type { StageName, SuccessMetrics } from '@/schemas/sse'
 
 import type { StageStatusEntry } from '../stageConfig'
 import { useProgressSteps } from '../useProgressSteps'

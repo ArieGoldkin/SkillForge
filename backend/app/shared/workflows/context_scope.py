@@ -348,7 +348,7 @@ def build_scoped_context(
         # Type narrowing: check if field exists in full_state
         value = full_state.get(field)
         if value is not None:
-            scoped_state[field] = value  # type: ignore[assignment]
+            scoped_state[field] = value
 
     # Apply exclusions
     for field in scope.exclude:

@@ -14,7 +14,7 @@ interface CodeBlockHeaderProps {
 /**
  * CodeBlockHeader - Header section with language label and copy button
  */
-export const CodeBlockHeader: React.FC<CodeBlockHeaderProps> = ({ language, code }) => {
+export function CodeBlockHeader({ language, code }: CodeBlockHeaderProps): React.ReactNode {
   const languageColor = LANGUAGE_COLORS[language.toLowerCase()] || LANGUAGE_COLORS.default
 
   return (

@@ -9,7 +9,7 @@ interface TopicBadgesProps {
 /**
  * TopicBadges - Render a list of topic badges
  */
-export const TopicBadges: React.FC<TopicBadgesProps> = ({ topics }) => {
+export function TopicBadges({ topics }: TopicBadgesProps): React.ReactNode {
   if (topics.length === 0) {
     return null
   }

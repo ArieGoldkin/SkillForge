@@ -147,7 +147,7 @@ def build_claude_code_prompt(
     synthesis: dict[str, Any] = aggregated_insights.get("synthesis", {})  # type: ignore[assignment]
     implementation = (
         synthesis.get("implementation_guidance", "") if isinstance(synthesis, dict) else ""
-    )  # type: ignore[union-attr]
+    )
 
     prompt_parts = [
         f"# Implementation Guide: {title}",

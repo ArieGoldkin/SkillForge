@@ -8,7 +8,7 @@ import uuid
 from typing import TYPE_CHECKING, Annotated, Protocol
 
 from fastapi import Depends
-from pgvector.sqlalchemy import BIT, Vector  # type: ignore[import-untyped]
+from pgvector.sqlalchemy import BIT, Vector
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -291,9 +291,7 @@ class AnalysisRepository:
         # Reuse the query_vector_expr from stage 1 for consistency
         results = await self.session.scalars(
             select(subquery)
-            .order_by(
-                subquery.c.content_embedding.cosine_distance(query_vector_expr)  # type: ignore[attr-defined]
-            )
+            .order_by(subquery.c.content_embedding.cosine_distance(query_vector_expr))
             .limit(limit)
         )
 
@@ -393,7 +391,7 @@ class AnalysisRepository:
         result = await self.session.execute(stmt)
 
         # Type guard: result from execute() is a Result object with rowcount attribute
-        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+        if not hasattr(result, "rowcount") or result.rowcount == 0:
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 
@@ -440,7 +438,7 @@ class AnalysisRepository:
         result = await self.session.execute(stmt)
 
         # Type guard: result from execute() is a Result object with rowcount attribute
-        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+        if not hasattr(result, "rowcount") or result.rowcount == 0:
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 
@@ -509,7 +507,7 @@ class AnalysisRepository:
         result = await self.session.execute(stmt)
 
         # Type guard: result from execute() is a Result object with rowcount attribute
-        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+        if not hasattr(result, "rowcount") or result.rowcount == 0:
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 
@@ -574,7 +572,7 @@ class AnalysisRepository:
         result = await self.session.execute(stmt)
 
         # Type guard: result from execute() is a Result object with rowcount attribute
-        if not hasattr(result, "rowcount") or result.rowcount == 0:  # type: ignore[attr-defined]
+        if not hasattr(result, "rowcount") or result.rowcount == 0:
             msg = f"Analysis {analysis_id} not found"
             raise NoResultFound(msg)
 

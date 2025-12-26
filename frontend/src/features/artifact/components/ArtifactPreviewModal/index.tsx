@@ -2,6 +2,8 @@
 
 import { FileText, Link as LinkIcon } from 'lucide-react'
 
+import { useFocusReturn } from '@/hooks'
+
 import { Button } from '@shared/components/ui/button'
 import {
   Dialog,
@@ -17,6 +19,9 @@ import type { ArtifactPreviewModalProps } from './types'
 
 export function ArtifactPreviewModal(props: ArtifactPreviewModalProps) {
   const { isOpen, onClose, content, isLoading, error, onDownload, sourceUrl, artifactId } = props
+
+  // WCAG 2.1 AA: Return focus to trigger element when modal closes
+  useFocusReturn(isOpen)
 
   const handleDownload = () => {
     onDownload?.()

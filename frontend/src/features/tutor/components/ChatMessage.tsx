@@ -35,7 +35,7 @@ const formatTimestamp = (timestamp: Date): string => {
 /**
  * Streaming cursor animation
  */
-const StreamingCursor: React.FC = () => {
+function StreamingCursor(): React.ReactNode {
   return (
     <span className="inline-block w-1 h-4 ml-0.5 bg-current animate-pulse" aria-hidden="true" />
   )
@@ -70,13 +70,13 @@ const StreamingCursor: React.FC = () => {
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires complete chat bubble layout with role-based styling, avatar, content, timestamp, and streaming indicator. Already well-structured with extracted StreamingCursor sub-component. */
-export const ChatMessage: React.FC<ChatMessageProps> = ({
+export function ChatMessage({
   role,
   content,
   timestamp,
   isStreaming = false,
   className,
-}) => {
+}: ChatMessageProps): React.ReactNode {
   const isUser = role === 'user'
 
   return (

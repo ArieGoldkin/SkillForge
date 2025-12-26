@@ -17,9 +17,6 @@ import type { AnalysisMode } from '@/types/api'
 
 import './AnalysisModeSelector.css'
 
-// Re-export for backward compatibility - consumers can import from either location
-export type { AnalysisMode } from '@/types/api'
-
 interface AnalysisModeSelectorProps {
   value: AnalysisMode
   onChange: (mode: AnalysisMode) => void
@@ -156,3 +153,6 @@ export function AnalysisModeSelector({
     </div>
   )
 }
+
+// Re-export AnalysisMode for consumers who import from this component
+export type { AnalysisMode } from '@/types/api'

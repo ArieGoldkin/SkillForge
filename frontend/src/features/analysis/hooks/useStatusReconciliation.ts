@@ -25,7 +25,7 @@ import { analyzeAPI } from '@services/api.service'
 const VERIFICATION_DELAY_MS = 2000 // Wait 2 seconds before verifying (debounce)
 
 // Known status values from backend - use explicit list instead of .includes()
-const COMPLETE_STATUSES = ['complete', 'completed'] as const
+const COMPLETE_STATUSES = ['complete'] as const
 const FAILED_STATUSES = ['failed', 'error'] as const
 
 interface UseStatusReconciliationParams {

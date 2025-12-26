@@ -15,7 +15,7 @@ interface ConnectionStatusProps {
  *
  * Issue #399: Shows contextual connection messages instead of simple connected/disconnected
  */
-export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ loadingState }) => {
+export function ConnectionStatus({ loadingState }: ConnectionStatusProps): React.ReactNode {
   const getStatusDisplay = (): { icon: React.ReactNode; text: string; className: string } => {
     switch (loadingState.type) {
       case 'connecting':

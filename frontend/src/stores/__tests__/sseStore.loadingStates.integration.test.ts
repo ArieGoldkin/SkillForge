@@ -8,8 +8,9 @@
  * - Computed properties update efficiently
  */
 
-import type { SSEEvent } from '@app-types/sse'
 import { describe, expect, it, beforeEach } from 'vitest'
+
+import type { SSEEvent } from '@/schemas/sse'
 
 import { deriveLoadingState, getConnectionMessage } from '../computed/loadingStates'
 import { useSSEStore } from '../sseStore'

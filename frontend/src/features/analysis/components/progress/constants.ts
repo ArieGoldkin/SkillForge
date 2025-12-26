@@ -5,9 +5,11 @@
  * Stage configuration now comes from stageRegistry.ts
  */
 
-import type { StageName, StageStatus } from '@app-types/sse'
+import type { StageName, StageStatus } from '@/schemas/sse'
 
 import { ALL_STAGES, getStageTitle } from '../../config/stageRegistry'
+
+export { ALL_STAGES }
 
 /**
  * Internal state for each stage
@@ -102,6 +104,3 @@ export function getStatusBadgeVariant(
     }
   }
 }
-
-// Re-export ALL_STAGES for backward compatibility
-export { ALL_STAGES }

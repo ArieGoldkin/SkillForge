@@ -227,7 +227,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 # Type casts needed: SQLAlchemy Column types to Python types
                 items.append(
                     LibrarySearchResult(
-                        analysis_id=str(analysis.id),  # type: ignore[arg-type]
+                        analysis_id=str(analysis.id),
                         url=str(analysis.url),
                         title=str(analysis.title) if analysis.title else None,
                         content_type=str(analysis.content_type),
@@ -289,7 +289,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
         # Type casts needed: SQLAlchemy Column types to Python types
         items = [
             LibrarySearchResult(
-                analysis_id=str(analysis.id),  # type: ignore[arg-type]
+                analysis_id=str(analysis.id),
                 url=str(analysis.url),
                 title=str(analysis.title) if analysis.title else None,
                 content_type=str(analysis.content_type),

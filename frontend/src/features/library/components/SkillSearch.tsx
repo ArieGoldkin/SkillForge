@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useDeferredValue } from 'react'
 
 import { Loader2, Search, X } from 'lucide-react'
 
@@ -34,17 +35,20 @@ export interface SkillSearchProps {
  * ```
  */
 /* eslint-disable max-lines-per-function -- Component requires debounce logic with useEffect, event handlers, and complete JSX layout (search icon, input, loading/clear button). Further extraction would reduce cohesion. */
-export const SkillSearch: React.FC<SkillSearchProps> = ({
+export function SkillSearch({
   placeholder = 'Search...',
   onSearch,
   debounceMs = COMPONENT_CONSTANTS.SEARCH_DEBOUNCE_MS,
   className,
-}) => {
+}: SkillSearchProps): React.ReactNode {
   const [query, setQuery] = React.useState('')
   const [isSearching, setIsSearching] = React.useState(false)
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounced search
+  // React 19: Use deferred value to prevent UI blocking during heavy search
+  const deferredQuery = useDeferredValue(query)
+
+  // Debounced search - uses deferred query to prevent input lag
   React.useEffect(() => {
     // Clear existing timeout
     if (timeoutRef.current) {
@@ -52,13 +56,13 @@ export const SkillSearch: React.FC<SkillSearchProps> = ({
     }
 
     // Set loading state for non-empty queries
-    if (query.trim()) {
+    if (deferredQuery.trim()) {
       setIsSearching(true)
     }
 
     // Create new timeout
     timeoutRef.current = setTimeout(() => {
-      onSearch(query.trim())
+      onSearch(deferredQuery.trim())
       setIsSearching(false)
     }, debounceMs)
 
@@ -68,7 +72,7 @@ export const SkillSearch: React.FC<SkillSearchProps> = ({
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [query, debounceMs, onSearch])
+  }, [deferredQuery, debounceMs, onSearch])
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value)

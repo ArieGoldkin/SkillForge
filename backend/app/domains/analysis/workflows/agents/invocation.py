@@ -1,4 +1,4 @@
-"""Agent invocation logic with fallback strategies.
+"""Agent invocation logic with fallback strategies and circuit breaker.
 
 This module handles different agent invocation methods:
 - Async invoke (preferred)
@@ -14,6 +14,9 @@ raises TimeoutError after the specified duration, which:
 1. Triggers the with_fallbacks() chain to use fallback model
 2. Ensures the workflow doesn't hang forever at "synthesizing"
 3. Provides explicit timeout control independent of LangGraph
+
+Issue #533: Added circuit breaker for LLM API calls.
+Prevents cascade failures by detecting repeated LLM failures and failing fast.
 """
 
 import asyncio
@@ -23,6 +26,7 @@ from typing import cast
 from langchain_core.runnables import Runnable
 
 from app.core.logging import get_logger
+from app.core.resilience import get_resilience_manager
 from app.core.timeout_config import AGENT_TIMEOUT, STEP_TIMEOUT, create_runnable_config
 from app.core.tracing import get_current_trace_id
 from app.core.types import AnalysisID
@@ -70,10 +74,15 @@ async def invoke_agent(
     # Create RunnableConfig (timeout handled by step_timeout on graph)
     config = create_runnable_config()
 
+    # Issue #533: Get circuit breaker for LLM API resilience
+    resilience_manager = get_resilience_manager()
+    circuit_breaker = resilience_manager.get_circuit_breaker("llm_api")
+
     # Use ainvoke (preferred) - avoids GeneratorExit issues with astream
     # astream creates async generators that trigger false error logs in Langfuse
     if hasattr(agent, "ainvoke"):
         # Issue #299-304: Wrap with asyncio.timeout to prevent indefinite hanging
+        # Issue #533: Wrap with circuit breaker to prevent cascade failures
         # The timeout parameter is now actively used (not just for logging)
         # This raises TimeoutError which triggers with_fallbacks() chain
         try:
@@ -84,11 +93,17 @@ async def invoke_agent(
                 invocation_method="ainvoke",
                 timeout_seconds=timeout,
                 trace_id=trace_id,
+                circuit_state=circuit_breaker.state.value,
             )
-            # asyncio.timeout raises TimeoutError if the call exceeds timeout
-            # This is essential for triggering with_fallbacks() on hanging LLM calls
-            async with asyncio.timeout(timeout):
-                result = await agent.ainvoke(input_messages, config=config)
+
+            # Issue #533: Wrap LLM call with circuit breaker
+            async def protected_llm_call() -> dict[str, object]:
+                # asyncio.timeout raises TimeoutError if the call exceeds timeout
+                # This is essential for triggering with_fallbacks() on hanging LLM calls
+                async with asyncio.timeout(timeout):
+                    return await agent.ainvoke(input_messages, config=config)
+
+            result = await circuit_breaker.call(protected_llm_call)
             duration = time.time() - start_time
 
             # Extract usage metadata (LangChain-Core 1.2.4+ feature)
@@ -98,9 +113,9 @@ async def invoke_agent(
                     "agent_token_usage",
                     agent_type=agent_type,
                     analysis_id=str(analysis_id),
-                    input_tokens=usage.get("input_tokens", 0),
-                    output_tokens=usage.get("output_tokens", 0),
-                    total_tokens=usage.get("total_tokens", 0),
+                    input_tokens=usage.get("input_tokens", 0),  # type: ignore[union-attr]
+                    output_tokens=usage.get("output_tokens", 0),  # type: ignore[union-attr]
+                    total_tokens=usage.get("total_tokens", 0),  # type: ignore[union-attr]
                 )
 
             logger.info(

@@ -128,7 +128,7 @@ const getStatusBadgeVariant = (
  * Individual step item component
  */
 /* eslint-disable max-lines-per-function, complexity -- StepItem requires complete timeline step layout (dot, connecting line, expandable content with button, timestamp/duration, description). Interactive expandable state and conditional rendering with success metrics, skip reasons, and error details necessitate current structure. */
-const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isLast }) => {
+function StepItem({ step, isLast }: { step: AnalysisStep; isLast: boolean }): React.ReactNode {
   const [isExpanded, setIsExpanded] = React.useState(false)
 
   return (
@@ -329,7 +329,7 @@ const StepItem: React.FC<{ step: AnalysisStep; isLast: boolean }> = ({ step, isL
  * />
  * ```
  */
-export const AnalysisStepList: React.FC<AnalysisStepListProps> = ({ steps, className }) => {
+export function AnalysisStepList({ steps, className }: AnalysisStepListProps): React.ReactNode {
   return (
     <Card className={cn('animate-in fade-in-50 duration-300', className)}>
       <CardHeader>

@@ -12,6 +12,7 @@ import { z } from 'zod'
 
 import { COMPONENT_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import { assertNeverSoft } from '@/lib/utils'
 
 import {
   StageNameSchema,
@@ -237,6 +238,8 @@ export function parseSSEEvent(data: unknown): SSEEvent | null {
       return result.data
     }
     default:
+      // Use assertNeverSoft for graceful handling of unknown event types
+      assertNeverSoft(eventType as never, 'parseSSEEvent')
       logger.error('SSE event validation failed: Unknown event type', {
         eventType,
         receivedData: data,
@@ -325,3 +328,34 @@ export function isFailedStage(event: unknown): boolean {
 
   return false
 }
+
+// ============================================================================
+// Re-exports from base schema for convenience
+// ============================================================================
+
+/**
+ * Re-export base schema types for use throughout the application
+ * These are imported from base.ts to maintain single source of truth
+ *
+ * IMPORTANT: Type-only exports must use `export type` to prevent runtime errors.
+ * Without `type`, bundlers try to import these as values which don't exist at runtime.
+ */
+export type {
+  StageName,
+  StageStatus,
+  AgentStageName,
+  WorkflowStageName,
+  ContentType,
+  FindingsQuality,
+  Coverage,
+} from './base'
+
+export {
+  StageNameSchema,
+  StageStatusSchema,
+  AgentStageNameSchema,
+  WorkflowStageNameSchema,
+  ContentTypeSchema,
+  FindingsQualitySchema,
+  CoverageSchema,
+} from './base'

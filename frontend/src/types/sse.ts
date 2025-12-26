@@ -1,31 +1,22 @@
 /**
- * SSE Event Types for SkillForge Analysis Workflow
- * Based on: docs/issues/040-sse-endpoint/SSE_SCHEMA.md
+ * SSE Type Re-exports
+ * Re-exports SSE types from Zod schemas for use across the application
  *
- * This file re-exports types from Zod schemas for backward compatibility.
- * Single source of truth: @/schemas/sse and @/schemas/base
+ * This file serves as a convenience layer that consolidates all SSE-related
+ * types from both the SSE schema and base schema modules. By importing from
+ * this file, components get a single source of truth for SSE types.
  *
- * @deprecated Import directly from @/schemas/sse for runtime validation
+ * @module types/sse
  */
 
 // ============================================================================
-// Re-export Base Types from Zod Schemas
+// SSE Event Types
 // ============================================================================
 
-export type {
-  AgentStageName,
-  WorkflowStageName,
-  StageName,
-  StageStatus,
-  ContentType,
-  FindingsQuality,
-  Coverage,
-} from '@/schemas/base'
-
-// ============================================================================
-// Re-export SSE Event Types from Zod Schemas
-// ============================================================================
-
+/**
+ * Re-export all SSE event types from the SSE schema (single source of truth)
+ * These types are inferred from Zod schemas and validated at runtime
+ */
 export type {
   SSEEvent,
   SSEProgressEvent,
@@ -36,13 +27,34 @@ export type {
 } from '@/schemas/sse'
 
 // ============================================================================
-// Re-export Type Guards and Helper Functions
+// Base Schema Types
 // ============================================================================
 
+/**
+ * Re-export base schema types used in SSE events
+ * These include stage names, statuses, and content types
+ */
+export type {
+  StageName,
+  StageStatus,
+  AgentStageName,
+  WorkflowStageName,
+  ContentType,
+  FindingsQuality,
+  Coverage,
+} from '@/schemas/sse'
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Re-export SSE helper functions for event parsing and type guards
+ */
 export {
+  parseSSEEvent,
   isProgressEvent,
   isCompleteEvent,
   isErrorEvent,
   isFailedStage,
-  parseSSEEvent,
 } from '@/schemas/sse'

@@ -83,7 +83,7 @@ def get_logger(name: str = __name__) -> structlog.BoundLogger:
         Configured structlog BoundLogger instance
 
     """
-    logger: structlog.BoundLogger = structlog.get_logger(name)  # type: ignore[assignment]
+    logger: structlog.BoundLogger = structlog.get_logger(name)
     return logger
 
 

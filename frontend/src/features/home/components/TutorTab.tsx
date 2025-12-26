@@ -21,7 +21,7 @@ import { ShowcaseSection } from './ShowcaseSection'
 /**
  * TutorTab component
  */
-export const TutorTab: React.FC = () => {
+export function TutorTab(): React.ReactNode {
   // Use useState initializer to ensure Date.now() is called only once (React purity)
   const [messages] = React.useState(createChatMessages)
 

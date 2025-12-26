@@ -11,7 +11,7 @@
  */
 import { memo, useMemo } from 'react'
 
-import type { StageName } from '@app-types/sse'
+import type { StageName } from '@/schemas/sse'
 
 import type { StageStatusEntry } from '../../hooks/stageConfig'
 import type { OverallProgress } from '../../hooks/useAnalysisProgress'

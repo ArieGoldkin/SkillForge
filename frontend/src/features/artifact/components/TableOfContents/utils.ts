@@ -6,9 +6,6 @@ import { parseMarkdownHeadings } from '../../utils/markdownHeadingParser'
 
 import type { TocHeading } from './types'
 
-// Re-export slugify for backwards compatibility with any external consumers
-export { slugify } from '../../utils/markdownHeadingParser'
-
 /**
  * Extract headings from markdown content
  * Returns hierarchical structure with h3s nested under h2s

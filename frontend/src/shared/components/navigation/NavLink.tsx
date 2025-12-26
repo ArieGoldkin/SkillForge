@@ -10,14 +10,22 @@ interface NavLinkProps {
   to: string
   children: ReactNode
   badge?: string
+  onMouseEnter?: () => void
+  onFocus?: () => void
 }
 
 const linkClass =
   'relative font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm px-2 py-1'
 
-export function NavLink({ to, children, badge }: NavLinkProps) {
+export function NavLink({ to, children, badge, onMouseEnter, onFocus }: NavLinkProps) {
   return (
-    <Link to={to} className={linkClass} activeProps={{ className: 'text-primary' }}>
+    <Link
+      to={to}
+      className={linkClass}
+      activeProps={{ className: 'text-primary', 'aria-current': 'page' as const }}
+      onMouseEnter={onMouseEnter}
+      onFocus={onFocus}
+    >
       {children}
       {badge && <span className="ml-1 text-xs align-super opacity-60">{badge}</span>}
     </Link>

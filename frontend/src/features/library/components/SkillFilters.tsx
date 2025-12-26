@@ -1,6 +1,6 @@
 import type * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 import { Filter, X } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
@@ -21,7 +21,7 @@ import { TagFilter } from './SkillFilters/TagFilter'
  */
 export interface SkillFilters {
   difficulty: SkillDifficulty[]
-  status: AnalysisStatus[]
+  status: FilterStatus[]
   tags: string[]
   durationRange: [number, number]
 }
@@ -33,7 +33,7 @@ export interface SkillFiltersProps {
   filters: SkillFilters
   onChange: (filters: SkillFilters) => void
   availableTags: string[]
-  availableStatuses?: AnalysisStatus[]
+  availableStatuses?: FilterStatus[]
   className?: string
 }
 
@@ -48,7 +48,7 @@ export interface SkillFiltersProps {
  * <SkillFilters
  *   filters={{
  *     difficulty: ['intermediate'],
- *     status: ['in-progress'],
+ *     status: ['running'],
  *     tags: ['React'],
  *     durationRange: [0, 120]
  *   }}
@@ -58,13 +58,13 @@ export interface SkillFiltersProps {
  * ```
  */
 // eslint-disable-next-line max-lines-per-function
-export const SkillFilters: React.FC<SkillFiltersProps> = ({
+export function SkillFilters({
   filters,
   onChange,
   availableTags,
-  availableStatuses = ['complete', 'in-progress', 'failed'],
+  availableStatuses = ['complete', 'running', 'failed'],
   className,
-}) => {
+}: SkillFiltersProps): React.ReactNode {
   const { handlers, activeFilterCount } = useSkillFilters(filters, onChange)
 
   return (

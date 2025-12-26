@@ -272,34 +272,6 @@ describe('useStatusReconciliation', () => {
       expect(storeState.isComplete).toBe(true)
     })
 
-    it('should reconcile to complete for "completed" status variant', async () => {
-      mockGetAnalysisStatus.mockResolvedValueOnce({
-        ...baseStatus,
-        status: 'completed', // variant
-        artifact_id: 'artifact-456',
-      })
-
-      const { result } = renderHook(() =>
-        useStatusReconciliation({
-          analysisId: 'test-analysis-123',
-          enabled: true,
-        })
-      )
-
-      // Set error AFTER rendering (triggers effect)
-      act(() => {
-        useSSEStore.setState({ error: new Error('SSE error') })
-      })
-
-      // Advance time and wait for async operations
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(VERIFICATION_DELAY_MS + 100)
-        await flushPromises()
-      })
-
-      expect(result.current.reconciledStatus).toBe('complete')
-    })
-
     it('should reconcile to failed when REST API confirms failed', async () => {
       mockGetAnalysisStatus.mockResolvedValueOnce({
         ...baseStatus,

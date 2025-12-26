@@ -1,6 +1,6 @@
 """Unified tutor repository interface.
 
-Maintains backwards compatibility by composing session and message repositories.
+Composes session and message repositories for tutoring operations.
 """
 
 from typing import Protocol
@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 
 class ITutorRepository(Protocol):
-    """Protocol interface for tutor repository operations (backwards compatible)."""
+    """Protocol interface for tutor repository operations."""
 
     async def create_session(
         self,
@@ -76,9 +76,9 @@ class ITutorRepository(Protocol):
 
 
 class TutorRepository:
-    """Unified repository implementation (backwards compatible).
+    """Unified repository implementation.
 
-    Composes session and message repositories to maintain API compatibility.
+    Composes session and message repositories for tutoring operations.
     """
 
     def __init__(
@@ -170,7 +170,7 @@ class TutorRepository:
 def get_tutor_repository(
     session: AsyncSession = Depends(get_db),  # noqa: B008 - FastAPI dependency injection pattern
 ) -> ITutorRepository:
-    """Dependency injection for tutor repository (backwards compatible).
+    """Dependency injection for tutor repository.
 
     Args:
         session: Database session from dependency injection

@@ -12,10 +12,10 @@
  * - Proper listener cleanup on disconnect
  */
 
-import { isCompleteEvent, isErrorEvent } from '@app-types/sse'
-
 import { LIMIT_CONSTANTS, EVENT_RETENTION_POLICIES, MEMORY_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import { assertNever } from '@/lib/utils'
+import { isCompleteEvent, isErrorEvent } from '@/schemas/sse'
 import { parseSSEEvent, type SSEEvent } from '@/schemas/sse'
 
 import type { SSEStore, SSEStoreState } from './sseStore'
@@ -27,11 +27,6 @@ const MAX_RECONNECT_DELAY = LIMIT_CONSTANTS.SSE_RECONNECT_DELAY_MAX
 
 /** Maximum events to keep in memory (prevents unbounded growth) */
 export const MAX_EVENTS = LIMIT_CONSTANTS.MAX_EVENTS
-
-// Event retention policies imported from shared constants
-
-// Re-export for backward compatibility
-export { MEMORY_CONSTANTS as MEMORY_THRESHOLDS }
 
 /**
  * Generate a deduplication key for an SSE event
@@ -57,8 +52,7 @@ function getEventDeduplicationKey(event: SSEEvent): string {
       return `${analysis_id}:${stage}:error`
 
     default:
-      // Unknown event types are not deduplicated
-      return `${analysis_id}:${type}:${stage}:${status}:${Date.now()}`
+      assertNever(type)
   }
 }
 
@@ -443,6 +437,7 @@ function handleConnectionError(analysisId: string, store: StoreAPI): (error: Eve
       store.setState({
         _reconnectAttempts: newAttempts,
         _reconnectTimeoutId: timeoutId,
+        connectionState: 'reconnecting',
       })
     } else {
       logger.error('SSE max reconnection attempts reached, starting polling fallback', {
@@ -503,7 +498,7 @@ function cleanupEventListeners(source: EventSource, refs: ListenerRefs): void {
  * Network recovery handler for SSE connections
  * Automatically clears network errors when connection is restored
  */
-function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void {
+function setupNetworkRecovery(analysisId: string, store: StoreAPI): () => void {
   const handleOnline = () => {
     // Only retry if we have a network-related error
     const error = store.getState().error
@@ -513,9 +508,10 @@ function setupNetworkRecovery(_analysisId: string, store: StoreAPI): () => void 
         error.message.includes('fetch') ||
         error.message.includes('connection lost'))
     ) {
-      logger.info('Network recovered, clearing error state', { service: 'sse' })
+      logger.info('Network recovered, reconnecting to SSE', { service: 'sse', analysisId })
       store.setState({ error: null })
-      // The UI will handle reconnection automatically
+      // Reconnect after network recovery
+      store.getState().connect(analysisId)
     }
   }
 

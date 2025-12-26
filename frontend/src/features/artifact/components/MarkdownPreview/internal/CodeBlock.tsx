@@ -28,7 +28,7 @@ import { CodeBlockHeader } from './CodeBlockHeader'
  * />
  * ```
  */
-export const CodeBlock: React.FC<CodeBlockComponentProps> = ({ code, language, className }) => {
+export function CodeBlock({ code, language, className }: CodeBlockComponentProps): React.ReactNode {
   const codeRef = React.useRef<HTMLElement>(null)
 
   React.useEffect(() => {

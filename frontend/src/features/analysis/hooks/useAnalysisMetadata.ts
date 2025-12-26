@@ -14,10 +14,10 @@
 
 import { useMemo } from 'react'
 
-import { isProgressEvent } from '@app-types/sse'
-import type { SSEEvent, SSEProgressEvent, SuccessMetrics } from '@app-types/sse'
+import { isProgressEvent } from '@/schemas/sse'
+import type { SSEEvent, SSEProgressEvent, SuccessMetrics } from '@/schemas/sse'
 
-import { normalizeStageNameFromBackend } from './stageConfig'
+import { normalizeStageNameFromBackend } from '../config/stageRegistry'
 
 // ============================================================================
 // Types

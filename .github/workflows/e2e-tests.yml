@@ -160,7 +160,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       needs.changes.outputs.source_code == 'true'
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -168,6 +168,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        timeout-minutes: 5
+        continue-on-error: true  # Buildx is optional - native BuildKit works too
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -192,11 +194,13 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Create .auth directory for storageState
+      - name: Create fresh .auth directory for storageState
         working-directory: ./frontend
         run: |
+          # Clean up stale storageState from previous runs on self-hosted runners
+          rm -rf .auth
           mkdir -p .auth
-          echo "Created .auth directory for Playwright storageState"
+          echo "Created fresh .auth directory for Playwright storageState"
 
       - name: Create .env.test from template (lightweight mode)
         working-directory: ./backend
@@ -273,6 +277,41 @@ jobs:
           EOF
 
           echo "✓ Created comprehensive .env.test for CI lightweight E2E mode"
+
+      - name: Verify Docker readiness and cleanup
+        run: |
+          # Wait for Docker daemon to be fully ready
+          echo "Checking Docker daemon health..."
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "✓ Docker ready after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Docker not ready after 30 attempts"
+              exit 1
+            fi
+            echo "Waiting for Docker... ($i/30)"
+            sleep 2
+          done
+
+          # Verify Docker API is responsive
+          docker version
+
+          # Clean up stale test containers/volumes from previous runs
+          echo "Cleaning up stale test resources..."
+          docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+
+          # Remove any dangling containers from previous runs
+          docker container prune -f 2>/dev/null || true
+
+          # Verify no stale skillforge-test containers exist
+          if docker ps -a | grep -q "skillforge.*test"; then
+            echo "⚠️  Found stale containers, force removing..."
+            docker rm -f $(docker ps -aq -f name="skillforge.*test") 2>/dev/null || true
+          fi
+
+          echo "✓ Docker ready and clean"
 
       - name: Build and start test environment (lightweight mode)
         run: |
@@ -410,6 +449,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        timeout-minutes: 5
+        continue-on-error: true  # Buildx is optional - native BuildKit works too
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -434,11 +475,13 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Create .auth directory for storageState
+      - name: Create fresh .auth directory for storageState
         working-directory: ./frontend
         run: |
+          # Clean up stale storageState from previous runs on self-hosted runners
+          rm -rf .auth
           mkdir -p .auth
-          echo "Created .auth directory for Playwright storageState"
+          echo "Created fresh .auth directory for Playwright storageState"
 
       - name: Create .env.test from template (with LLM mode)
         working-directory: ./backend
@@ -474,6 +517,41 @@ jobs:
           EOF
 
           echo "✓ Created .env.test for full E2E mode with real API keys"
+
+      - name: Verify Docker readiness and cleanup
+        run: |
+          # Wait for Docker daemon to be fully ready
+          echo "Checking Docker daemon health..."
+          for i in {1..30}; do
+            if docker info >/dev/null 2>&1; then
+              echo "✓ Docker ready after $i attempts"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "✗ Docker not ready after 30 attempts"
+              exit 1
+            fi
+            echo "Waiting for Docker... ($i/30)"
+            sleep 2
+          done
+
+          # Verify Docker API is responsive
+          docker version
+
+          # Clean up stale test containers/volumes from previous runs
+          echo "Cleaning up stale test resources..."
+          docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+
+          # Remove any dangling containers from previous runs
+          docker container prune -f 2>/dev/null || true
+
+          # Verify no stale skillforge-test containers exist
+          if docker ps -a | grep -q "skillforge.*test"; then
+            echo "⚠️  Found stale containers, force removing..."
+            docker rm -f $(docker ps -aq -f name="skillforge.*test") 2>/dev/null || true
+          fi
+
+          echo "✓ Docker ready and clean"
 
       - name: Build and start E2E stack (with LLM + Langfuse)
         env:
@@ -696,6 +774,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        timeout-minutes: 5
+        continue-on-error: true  # Buildx is optional - native BuildKit works too
 
       - name: Build and run E2E tests in Docker
         run: |

@@ -1,10 +1,16 @@
+import { useTransition } from 'react'
+
 import { LibraryContent } from './components/LibraryContent'
 import { LibraryHeader } from './components/LibraryHeader'
 import { useLibraryContentProps, useLibraryData, useLibraryFilters, useLibraryState } from './hooks'
 
 const LIMIT = 15
 
+/* eslint-disable max-lines-per-function -- React 19 transition wrappers add lines for UX improvement */
 export default function Library() {
+  // React 19: Use transition for non-blocking filter/search updates
+  const [isPending, startTransition] = useTransition()
+
   const {
     searchQuery,
     setSearchQuery,
@@ -30,22 +36,41 @@ export default function Library() {
     setFilters,
   })
 
+  // Wrap handlers in transitions for smooth UI
+  const handleSearchQueryChange = (query: string) => {
+    startTransition(() => {
+      setSearchQuery(query)
+    })
+  }
+
+  const handleSearchModeChange = (mode: typeof searchMode) => {
+    startTransition(() => {
+      setSearchMode(mode)
+    })
+  }
+
+  const handleFiltersChangeTransition = (newFilters: typeof filters) => {
+    startTransition(() => {
+      handleFiltersChange(newFilters)
+    })
+  }
+
   const contentProps = useLibraryContentProps({
     searchQuery,
-    setSearchQuery,
+    setSearchQuery: handleSearchQueryChange,
     searchMode,
-    setSearchMode,
+    setSearchMode: handleSearchModeChange,
     showCompletedOnly,
     setShowCompletedOnly,
     filters,
-    handleFiltersChange,
+    handleFiltersChange: handleFiltersChangeTransition,
     libraryData,
   })
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <LibraryHeader />
-      <LibraryContent {...contentProps} />
+      <LibraryContent {...contentProps} isPending={isPending} />
     </div>
   )
 }

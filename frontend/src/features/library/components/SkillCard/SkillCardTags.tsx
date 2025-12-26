@@ -18,7 +18,7 @@ export interface SkillCardTagsProps {
  * Displays skill tags with optional "+N more" indicator.
  * Limits visible tags to prevent overflow.
  */
-export const SkillCardTags: React.FC<SkillCardTagsProps> = ({ tags, maxVisible = 3 }) => {
+export function SkillCardTags({ tags, maxVisible = 3 }: SkillCardTagsProps): React.ReactNode {
   const visibleTags = tags.slice(0, maxVisible)
   const hiddenTagsCount = tags.length - visibleTags.length
 

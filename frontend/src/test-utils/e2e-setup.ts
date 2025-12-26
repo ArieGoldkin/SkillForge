@@ -109,7 +109,7 @@ class E2ETestContext {
       'sampleAnalysis',
       testDataFactory.createAnalysis({
         url: 'https://example.com/article',
-        status: 'completed',
+        status: 'complete',
         wordCount: 1200,
       })
     )
@@ -135,7 +135,7 @@ class E2ETestContext {
       return testDataFactory.createApiResponse({
         ...analysis,
         id: request.params.id,
-        status: 'completed',
+        status: 'complete',
         progress: 100,
       })
     })
@@ -336,7 +336,7 @@ export const e2eSetup = {
       const analysis = e2eContext.get('currentAnalysis')
       if (analysis) {
         analysis.progress = progress
-        analysis.status = progress === 100 ? 'completed' : 'processing'
+        analysis.status = progress === 100 ? 'complete' : 'processing'
         e2eContext.set('currentAnalysis', analysis)
       }
     },
@@ -344,7 +344,7 @@ export const e2eSetup = {
     complete: () => {
       const analysis = e2eContext.get('currentAnalysis')
       if (analysis) {
-        analysis.status = 'completed'
+        analysis.status = 'complete'
         analysis.progress = 100
         analysis.completedAt = new Date().toISOString()
         e2eContext.set('currentAnalysis', analysis)

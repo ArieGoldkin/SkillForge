@@ -139,7 +139,7 @@ Examples (note: ALL examples include the 4 Tier 1 agents):
     "agents": ["key_insights", "pros_cons", "audience_fit", "actionable",
                "implementation_planner", "security_auditor"],
   "reasoning": "Tier 1 universals + API setup implementation and security basics",
-  "confidence": 0.9}}"""  # noqa: S608
+  "confidence": 0.9}}"""
 
 
 # Supervisor prompt (built from registry at module load time)

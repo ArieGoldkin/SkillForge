@@ -67,7 +67,7 @@ async def run_security_auditor(  # noqa: PLR0913 - All parameters required for a
     # Read from flat field injected by build_scoped_context()
     expectation = state.get("agent_expectation")
     # Issue #442: Get content signals for research/conceptual-aware thresholds
-    content_signals_dict: dict[str, object] = state.get("content_signals", {})  # type: ignore[assignment]
+    content_signals_dict: dict[str, object] = state.get("content_signals", {})
     detected_genre = str(content_signals_dict.get("detected_genre", "unknown"))
     is_research = detected_genre == "research"
     is_conceptual = bool(content_signals_dict.get("has_conceptual_only", False))

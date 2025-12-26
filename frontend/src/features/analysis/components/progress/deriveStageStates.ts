@@ -1,5 +1,5 @@
-import type { StageName, SSEEvent } from '@app-types/sse'
-import { isCompleteEvent, isErrorEvent, isProgressEvent } from '@app-types/sse'
+import type { StageName, SSEEvent } from '@/schemas/sse'
+import { isCompleteEvent, isErrorEvent, isProgressEvent } from '@/schemas/sse'
 
 import { createInitialStages, type StageState } from './constants'
 import { normalizeSSEEvent } from './sseNormalizer'

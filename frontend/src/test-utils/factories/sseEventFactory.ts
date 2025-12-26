@@ -7,7 +7,7 @@
  * @module test-utils/factories/sseEventFactory
  */
 
-import type { SSEProgressEvent } from '@app-types/sse'
+import type { SSEProgressEvent } from '@/schemas/sse'
 
 /**
  * Create a type-safe SSE progress event with optional extra fields

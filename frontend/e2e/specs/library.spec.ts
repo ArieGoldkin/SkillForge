@@ -16,8 +16,9 @@ test.describe('Library Page - Search and Filter', () => {
     logger.info('Library data loaded', { totalItems: library.total });
 
     libraryPage = new LibraryPage(page);
-    // With storageState, navigation to /library is optimized (reuses browser state)
     await libraryPage.goto();
+    // Wait for React to render the search input (lazy-loaded component)
+    await libraryPage.searchInput.waitFor({ state: 'visible', timeout: 10000 });
   });
 
   test('should display the library page with search input', async () => {

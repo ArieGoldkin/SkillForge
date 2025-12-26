@@ -30,6 +30,8 @@ export type ComponentSize = 'sm' | 'md' | 'lg';
 
 /**
  * Props for the Component
+ *
+ * React 19 Pattern: ref is passed as a regular prop, not via forwardRef
  */
 export interface ComponentProps {
   /**
@@ -69,6 +71,11 @@ export interface ComponentProps {
    * ARIA label for accessibility
    */
   'aria-label'?: string;
+
+  /**
+   * Ref for the root element (React 19 ref-as-prop pattern)
+   */
+  ref?: React.Ref<HTMLDivElement>;
 }
 
 // ============================================================================
@@ -93,74 +100,74 @@ const componentStyles = {
 };
 
 // ============================================================================
-// Component Implementation
+// Component Implementation (React 19 Pattern)
 // ============================================================================
 
-export const Component = React.forwardRef<HTMLDivElement, ComponentProps>(
-  (
-    {
-      variant = 'primary',
-      size = 'md',
-      disabled = false,
-      className,
-      children,
-      onClick,
-      'aria-label': ariaLabel,
-    },
-    ref
-  ) => {
-    // =========================================================================
-    // State & Hooks
-    // =========================================================================
+/**
+ * React 19 Component Pattern:
+ * - Use function declaration instead of React.FC or forwardRef
+ * - Accept ref as a regular prop
+ * - Return React.ReactNode explicitly
+ */
+export function Component({
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  className,
+  children,
+  onClick,
+  ref,
+  'aria-label': ariaLabel,
+}: ComponentProps): React.ReactNode {
+  // =========================================================================
+  // State & Hooks
+  // =========================================================================
 
-    // Example: Track internal state if needed
-    // const [isActive, setIsActive] = React.useState(false);
+  // Example: Track internal state if needed
+  // const [isActive, setIsActive] = React.useState(false);
 
-    // =========================================================================
-    // Event Handlers
-    // =========================================================================
+  // =========================================================================
+  // Event Handlers
+  // =========================================================================
 
-    const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
-      if (disabled) return;
-      onClick?.(event);
-    };
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    onClick?.(event);
+  };
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-      // Handle Enter and Space for keyboard accessibility
-      if (disabled) return;
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onClick?.(event as any);
-      }
-    };
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle Enter and Space for keyboard accessibility
+    if (disabled) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onClick?.(event as any);
+    }
+  };
 
-    // =========================================================================
-    // Render
-    // =========================================================================
+  // =========================================================================
+  // Render
+  // =========================================================================
 
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          componentStyles.base,
-          componentStyles.variants[variant],
-          componentStyles.sizes[size],
-          className
-        )}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        aria-disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-
-Component.displayName = 'Component';
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        componentStyles.base,
+        componentStyles.variants[variant],
+        componentStyles.sizes[size],
+        className
+      )}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-label={ariaLabel}
+    >
+      {children}
+    </div>
+  );
+}
 
 // ============================================================================
 // Compound Components (if applicable)

@@ -18,12 +18,12 @@ export interface SkillCardThumbnailProps {
  * Displays either a provided thumbnail image or a gradient placeholder
  * with the first letter of the skill title.
  */
-export const SkillCardThumbnail: React.FC<SkillCardThumbnailProps> = ({ title, thumbnail }) => {
+export function SkillCardThumbnail({ title, thumbnail }: SkillCardThumbnailProps): React.ReactNode {
   if (thumbnail) {
     return (
       <img
         src={thumbnail}
-        alt={title}
+        alt={`${title} thumbnail`}
         className="w-full h-48 object-cover rounded-t-xl"
         loading="lazy"
       />
@@ -31,8 +31,14 @@ export const SkillCardThumbnail: React.FC<SkillCardThumbnailProps> = ({ title, t
   }
 
   return (
-    <div className="w-full h-48 bg-linear-to-br from-primary/20 to-primary/5 rounded-t-xl flex items-center justify-center">
-      <div className="text-4xl font-bold text-primary/30">{title.charAt(0)}</div>
+    <div
+      className="w-full h-48 bg-linear-to-br from-primary/20 to-primary/5 rounded-t-xl flex items-center justify-center"
+      role="img"
+      aria-label={`${title} placeholder thumbnail`}
+    >
+      <div className="text-4xl font-bold text-primary/30" aria-hidden="true">
+        {title.charAt(0)}
+      </div>
     </div>
   )
 }

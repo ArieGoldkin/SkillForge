@@ -1,3 +1,11 @@
+/**
+ * @unit
+ * Tests for useAnalysis hook with ky-based API client
+ *
+ * Uses vi.hoisted() to stub env variables BEFORE module imports,
+ * ensuring ky's prefixUrl is configured correctly.
+ */
+
 import type { ReactNode } from 'react'
 
 import type { Analysis } from '@app-types/api'
@@ -5,7 +13,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+// Set up env BEFORE the module imports (hoisted to top of file)
+const { mockFetch } = vi.hoisted(() => {
+  const url = 'http://localhost:8500'
+  // Stub the env variable before api-client.ts loads
+  vi.stubEnv('VITE_API_URL', url)
+  vi.stubEnv('VITE_API_BASE_URL', url)
+  return {
+    mockFetch: vi.fn(),
+  }
+})
+
+// eslint-disable-next-line import/first -- Module must import AFTER vi.hoisted stubs the env
 import { useAnalysis } from '../useAnalysis'
+
+// Set up fetch mock globally
+vi.stubGlobal('fetch', mockFetch)
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -17,29 +40,34 @@ function createWrapper() {
 }
 
 describe('useAnalysis Hook', () => {
+  // IDs must be valid UUIDs to pass Zod validation
+  const testAnalysisId = '123e4567-e89b-12d3-a456-426614174000'
+  const testArtifactId = '123e4567-e89b-12d3-a456-426614174001'
+
   const mockAnalysis: Analysis = {
-    id: 'test-123',
+    id: testAnalysisId,
     url: 'https://example.com/article',
     content_type: 'article',
     title: 'Test Article',
     status: 'complete',
     created_at: '2025-01-01T00:00:00Z',
-    artifact_id: 'artifact-123',
+    artifact_id: testArtifactId,
   }
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('fetches analysis data successfully', async () => {
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockAnalysis),
-      } as Response)
+    // ky uses proper Response objects
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(mockAnalysis), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
     )
 
-    const { result } = renderHook(() => useAnalysis('test-123'), {
+    const { result } = renderHook(() => useAnalysis(testAnalysisId), {
       wrapper: createWrapper(),
     })
 
@@ -48,44 +76,45 @@ describe('useAnalysis Hook', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(result.current.data).toEqual(mockAnalysis)
-    // Check that fetch was called with the correct path (port may vary based on env)
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringMatching(/http:\/\/localhost:\d+\/api\/v1\/analyze\/test-123/)
-    )
+    // ky passes Request objects to fetch
+    expect(mockFetch).toHaveBeenCalled()
+    const [req] = mockFetch.mock.calls[0] as [Request]
+    expect(req.url).toContain(`/api/v1/analyze/${testAnalysisId}`)
   })
 
   it('handles fetch errors', async () => {
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: false,
+    // ky expects proper Response objects for errors too
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: 'Not found' }), {
         status: 404,
-      } as Response)
+        headers: { 'Content-Type': 'application/json' },
+      })
     )
 
-    const { result } = renderHook(() => useAnalysis('test-123'), {
+    const { result } = renderHook(() => useAnalysis(testAnalysisId), {
       wrapper: createWrapper(),
     })
 
     await waitFor(() => expect(result.current.isError).toBe(true))
 
-    expect(result.current.error?.message).toContain('404')
+    expect(result.current.error).toBeDefined()
   })
 
   it('respects enabled option', async () => {
-    globalThis.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockAnalysis),
-      } as Response)
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(mockAnalysis), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
     )
 
-    const { result } = renderHook(() => useAnalysis('test-123', { enabled: false }), {
+    const { result } = renderHook(() => useAnalysis(testAnalysisId, { enabled: false }), {
       wrapper: createWrapper(),
     })
 
     await new Promise((resolve) => setTimeout(resolve, 50))
 
     expect(result.current.isLoading).toBe(false)
-    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

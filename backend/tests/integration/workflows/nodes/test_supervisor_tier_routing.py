@@ -28,14 +28,8 @@ def mock_no_content_filtering():
     return mock_filter
 
 
-@pytest.fixture
-def mock_no_signal_skip():
-    """Mock to disable signal-based skipping."""
-
-    def mock_skip(agent_name, signals):
-        return False, None
-
-    return mock_skip
+# NOTE: mock_no_signal_skip fixture removed in Issue #547 (GAP 1)
+# should_skip_agent was removed from supervisor - LLM is single source of truth
 
 
 @pytest.mark.integration
@@ -44,9 +38,7 @@ class TestSupervisorTierRoutingIntegration:
     """Integration tests for tier-based agent routing."""
 
     @pytest.mark.asyncio
-    async def test_analysis_mode_parameter_is_respected(
-        self, mock_no_content_filtering, mock_no_signal_skip
-    ):
+    async def test_analysis_mode_parameter_is_respected(self, mock_no_content_filtering):
         """Test that analysis_mode parameter controls tier filtering."""
         # Create mock that returns agents from all tiers
         all_tier_agents = (
@@ -86,10 +78,7 @@ class TestSupervisorTierRoutingIntegration:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
         ):
             # Test QUICK mode - should only include Tier 1
             result_quick = await asyncio.wait_for(
@@ -147,9 +136,7 @@ class TestSupervisorTierRoutingIntegration:
             assert len(deep_agents) > 0
 
     @pytest.mark.asyncio
-    async def test_tier_filtering_logs_excluded_agents(
-        self, mock_no_content_filtering, mock_no_signal_skip
-    ):
+    async def test_tier_filtering_logs_excluded_agents(self, mock_no_content_filtering):
         """Test that tier filtering logs which agents were excluded."""
         # Select Tier 2 agents
         tier2_agents = ["fact_validator", "source_credibility", "freshness_checker"]
@@ -180,10 +167,7 @@ class TestSupervisorTierRoutingIntegration:
                 "app.domains.analysis.workflows.nodes.supervisor.filter_agents_by_content_type",
                 side_effect=mock_no_content_filtering,
             ),
-            patch(
-                "app.domains.analysis.workflows.nodes.supervisor.should_skip_agent",
-                side_effect=mock_no_signal_skip,
-            ),
+            # Issue #547: should_skip_agent removed - LLM is single source of truth
             patch("app.domains.analysis.workflows.nodes.supervisor.logger") as mock_logger,
         ):
             # Quick mode should filter out all Tier 2 agents

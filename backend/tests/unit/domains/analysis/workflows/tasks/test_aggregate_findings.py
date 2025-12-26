@@ -113,7 +113,7 @@ class TestValidateAndParseFindings:
         assert len(agent_types) == 0
 
     def test_validate_empty_findings_data(self):
-        """Test validation skips findings with empty data."""
+        """Test validation marks findings with empty data as 'no_data'."""
         findings = [
             {
                 "agent_type": "tech_comparator",
@@ -124,10 +124,12 @@ class TestValidateAndParseFindings:
 
         validated, agent_types, confidence_scores = validate_and_parse_findings(findings)
 
-        # Changed behavior: empty findings are now skipped to prevent "Unknown Agent"
-        assert len(validated) == 0  # Empty findings skipped
-        assert agent_types == []
-        assert "tech_comparator" not in confidence_scores
+        # Changed behavior: empty findings are marked as "no_data" instead of being skipped
+        # This prevents agents that ran successfully but returned no findings from appearing as "failed"
+        assert len(validated) == 1  # Empty findings included with "no_data" status
+        assert agent_types == ["tech_comparator"]
+        assert validated[0]["status"] == "no_data"
+        assert confidence_scores["tech_comparator"] == 0.75
 
     def test_validate_invalid_finding_type(self):
         """Test validation skips invalid finding types."""
@@ -518,9 +520,7 @@ class TestAggregateFindings:
             patch(
                 "app.domains.analysis.workflows.tasks.aggregate_findings.emit_aggregation_failed"
             ),
-            patch(
-                "app.domains.analysis.services.persistence.error_recorder.error_recorder.record"
-            ),
+            patch("app.domains.analysis.services.persistence.error_recorder.error_recorder.record"),
         ):
             # Simulate LLM error on both synthesis paths (coverage may route to either)
             mock_synthesize.side_effect = Exception("LLM API error")

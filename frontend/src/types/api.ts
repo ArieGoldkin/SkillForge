@@ -22,10 +22,6 @@ export type AnalysisStatus =
   | 'failed' // Generic fallback
   // User actions
   | 'cancelled'
-  // Legacy (for backward compatibility)
-  | 'running' // Deprecated - use specific lifecycle states
-  | 'in-progress' // Deprecated - use specific lifecycle states
-  | 'completed' // Backend returns 'completed', normalized to 'complete' in api.service.ts
 
 export type StageStatus = 'pending' | 'running' | 'complete' | 'failed'
 
@@ -97,6 +93,10 @@ export interface TutoringMessage {
   content: string
   created_at: string
 }
+
+// Library filter status - subset of AnalysisStatus supported by backend filtering
+// Backend pattern: ^(pending|running|complete|failed)$
+export type FilterStatus = 'pending' | 'running' | 'complete' | 'failed'
 
 // API Request/Response types
 export interface AnalyzeRequest {
@@ -176,7 +176,7 @@ export type SearchMode = 'hybrid' | 'fulltext' | 'semantic'
 export interface LibrarySearchParams {
   query?: string
   content_type?: ContentType
-  status?: AnalysisStatus
+  status?: FilterStatus
   search_mode?: SearchMode
   limit?: number
   offset?: number

@@ -43,7 +43,7 @@ interface TocLinkProps {
   onClick: (id: string) => void
 }
 
-const TocLink: React.FC<TocLinkProps> = ({ heading, isActive, onClick }) => {
+function TocLink({ heading, isActive, onClick }: TocLinkProps): React.ReactNode {
   const isH3 = heading.level === 3
 
   return (
@@ -74,26 +74,28 @@ interface TocToggleProps {
   onToggle: () => void
 }
 
-const TocToggle: React.FC<TocToggleProps> = ({ isCollapsed, onToggle }) => (
-  <button
-    type="button"
-    onClick={onToggle}
-    className="lg:hidden w-full flex items-center justify-between px-4 py-3 mb-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
-    aria-expanded={!isCollapsed}
-    aria-label={isCollapsed ? 'Show table of contents' : 'Hide table of contents'}
-  >
-    <span className="font-semibold text-sm">Table of Contents</span>
-    <svg
-      className={cn('w-4 h-4 transition-transform', !isCollapsed && 'rotate-180')}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
+function TocToggle({ isCollapsed, onToggle }: TocToggleProps): React.ReactNode {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="lg:hidden w-full flex items-center justify-between px-4 py-3 mb-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+      aria-expanded={!isCollapsed}
+      aria-label={isCollapsed ? 'Show table of contents' : 'Hide table of contents'}
     >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  </button>
-)
+      <span className="font-semibold text-sm">Table of Contents</span>
+      <svg
+        className={cn('w-4 h-4 transition-transform', !isCollapsed && 'rotate-180')}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  )
+}
 
 /**
  * TOC content with headings list
@@ -105,38 +107,40 @@ interface TocContentProps {
   onLinkClick: (id: string) => void
 }
 
-const TocContent: React.FC<TocContentProps> = ({
+function TocContent({
   headings,
   activeId,
   isCollapsed,
   onLinkClick,
-}) => (
-  <div
-    className={cn(
-      'toc-content',
-      'lg:block', // Always visible on desktop
-      isCollapsed && 'hidden' // Hidden when collapsed on mobile
-    )}
-  >
-    <div className="space-y-1">
-      {headings.map((heading) => (
-        <div key={heading.id}>
-          <TocLink heading={heading} isActive={activeId === heading.id} onClick={onLinkClick} />
-          {heading.children &&
-            heading.children.length > 0 &&
-            heading.children.map((child) => (
-              <TocLink
-                key={child.id}
-                heading={child}
-                isActive={activeId === child.id}
-                onClick={onLinkClick}
-              />
-            ))}
-        </div>
-      ))}
+}: TocContentProps): React.ReactNode {
+  return (
+    <div
+      className={cn(
+        'toc-content',
+        'lg:block', // Always visible on desktop
+        isCollapsed && 'hidden' // Hidden when collapsed on mobile
+      )}
+    >
+      <div className="space-y-1">
+        {headings.map((heading) => (
+          <div key={heading.id}>
+            <TocLink heading={heading} isActive={activeId === heading.id} onClick={onLinkClick} />
+            {heading.children &&
+              heading.children.length > 0 &&
+              heading.children.map((child) => (
+                <TocLink
+                  key={child.id}
+                  heading={child}
+                  isActive={activeId === child.id}
+                  onClick={onLinkClick}
+                />
+              ))}
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 /**
  * Main TableOfContents component
@@ -147,7 +151,7 @@ const TocContent: React.FC<TocContentProps> = ({
  * counter per content. They stay in sync because they process the same markdown
  * in the same order with the same ID generation rules.
  */
-export const TableOfContents: React.FC<TableOfContentsProps> = ({ content, className }) => {
+export function TableOfContents({ content, className }: TableOfContentsProps): React.ReactNode {
   const headings = useMemo(() => extractHeadings(content), [content])
 
   const activeId = useActiveHeading(headings)

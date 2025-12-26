@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { AnalysisStatus, FilterStatus } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
 
 import { normalizeTitle } from '../utils'
 import { dedupeByAnalysisId } from '../utils/libraryTransform'
-import { mapAnalysisStatusToSkillStatus } from '../utils/statusMapping'
+import {
+  mapAnalysisStatusToSkillStatus,
+  mapAnalysisStatusToFilterStatus,
+} from '../utils/statusMapping'
 
 interface SearchResultItem {
   analysis_id: string
@@ -86,13 +89,16 @@ export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
     return Array.from(tagSet)
   }, [searchResults])
 
-  const availableStatuses = useMemo<AnalysisStatus[]>(() => {
-    const statusSet = new Set<AnalysisStatus>()
+  // Map AnalysisStatus to FilterStatus for filter component compatibility
+  const availableStatuses = useMemo<FilterStatus[]>(() => {
+    const filterStatusSet = new Set<FilterStatus>()
     const items = extractAllItems(searchResults)
     items.forEach((item) => {
-      if (item.status) statusSet.add(item.status)
+      if (item.status) {
+        filterStatusSet.add(mapAnalysisStatusToFilterStatus(item.status))
+      }
     })
-    return Array.from(statusSet)
+    return Array.from(filterStatusSet)
   }, [searchResults])
 
   return { skills, availableTags, availableStatuses }

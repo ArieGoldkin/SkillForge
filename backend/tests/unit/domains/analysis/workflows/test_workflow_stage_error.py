@@ -27,23 +27,23 @@ class TestQualityGateNodeErrorWrapping:
     """Test WorkflowStageError wrapping in quality_gate_node."""
 
     async def test_evaluation_error_wrapped_with_stage_context(self, monkeypatch):
-        """Test that evaluation errors are wrapped with WorkflowStageError.
+        """Test that evaluator creation errors are wrapped with WorkflowStageError.
 
-        When evaluation raises ValueError, WorkflowStageError should be raised
+        When evaluator creation raises ValueError, WorkflowStageError should be raised
         with stage="quality_gate" and the original exception preserved.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+
+        Note: Evaluator EXECUTION errors are now handled gracefully (default score 0.5).
+        This test verifies that CREATION errors still raise WorkflowStageError.
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
-        # Mock evaluator to raise ValueError
+        # Mock evaluator creation to raise ValueError during CREATION (not execution)
         def mock_create_evaluator(*args, **kwargs):
-            async def failing_evaluator(run, example):
-                raise ValueError("Evaluation failed: invalid input")
-
-            return failing_evaluator
+            raise ValueError("Evaluator creation failed: invalid configuration")
 
         monkeypatch.setattr(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
             mock_create_evaluator,
         )
 
@@ -68,7 +68,7 @@ class TestQualityGateNodeErrorWrapping:
 
         # Verify original exception is preserved
         assert isinstance(exc_info.value.original_exception, ValueError)
-        assert "Evaluation failed: invalid input" in str(exc_info.value.original_exception)
+        assert "Evaluator creation failed" in str(exc_info.value.original_exception)
 
         # Verify exception chain is preserved (__cause__)
         assert exc_info.value.__cause__ is exc_info.value.original_exception
@@ -80,18 +80,17 @@ class TestQualityGateNodeErrorWrapping:
         The error message should include the error type and original message
         to provide useful debugging information.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+
+        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
-        # Mock evaluator to raise RuntimeError with specific message
+        # Mock evaluator creation to raise RuntimeError with specific message
         def mock_create_evaluator(*args, **kwargs):
-            async def failing_evaluator(run, example):
-                raise RuntimeError("LLM service unavailable")
-
-            return failing_evaluator
+            raise RuntimeError("LLM service unavailable")
 
         monkeypatch.setattr(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
             mock_create_evaluator,
         )
 
@@ -122,19 +121,18 @@ class TestQualityGateNodeErrorWrapping:
         Python's __cause__ mechanism should preserve the full exception chain,
         allowing debuggers and error handlers to trace the root cause.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+
+        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
         original_error = ValueError("Original validation error")
 
         def mock_create_evaluator(*args, **kwargs):
-            async def failing_evaluator(run, example):
-                raise original_error
-
-            return failing_evaluator
+            raise original_error
 
         monkeypatch.setattr(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
             mock_create_evaluator,
         )
 
@@ -169,6 +167,8 @@ class TestQualityGateNodeErrorWrapping:
         The wrapping should work for any exception type (ValueError, RuntimeError,
         KeyError, etc.) while preserving the original exception type.
         Issue #454: Requires >= 100 chars formatted content for G-Eval evaluation.
+
+        Note: Tests evaluator CREATION errors (not execution errors which are gracefully handled).
         """
         from app.domains.analysis.workflows.nodes.quality_gate_node import quality_gate_node
 
@@ -183,15 +183,12 @@ class TestQualityGateNodeErrorWrapping:
             # Fix B023: Bind loop variable in closure to avoid late binding
             def make_mock_evaluator(error):
                 def mock_create_evaluator(*args, **kwargs):
-                    async def failing_evaluator(run, example):
-                        raise error
-
-                    return failing_evaluator
+                    raise error
 
                 return mock_create_evaluator
 
             monkeypatch.setattr(
-                "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator",
+                "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator",
                 make_mock_evaluator(original_error),
             )
 

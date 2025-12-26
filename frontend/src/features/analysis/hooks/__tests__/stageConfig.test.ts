@@ -108,7 +108,7 @@ describe('stageConfig', () => {
   })
 
   describe('estimateTimeRemaining', () => {
-    describe('with default TOTAL_STAGES (backward compatibility)', () => {
+    describe('with default TOTAL_STAGES fallback', () => {
       it('returns ~2-3 minutes when no stages completed', () => {
         expect(estimateTimeRemaining(0)).toBe('~2-3 minutes')
       })

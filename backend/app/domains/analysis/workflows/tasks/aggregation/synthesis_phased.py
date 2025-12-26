@@ -108,7 +108,7 @@ async def synthesize_with_llm_phased(
     for finding in validated_findings:
         agent_type = finding.get("agent_type")
         if agent_type:
-            agent_findings_dict[str(agent_type)] = finding  # type: ignore[arg-type]
+            agent_findings_dict[str(agent_type)] = finding
 
     try:
         # Import compression and phase functions
@@ -201,7 +201,7 @@ async def synthesize_with_llm_phased(
             "phase2_learning_success": not isinstance(learning_result, Exception),
             "phase3_docs_success": not isinstance(docs_result, Exception),
         }
-        result["metadata"] = synthesis_meta  # type: ignore[assignment]
+        result["metadata"] = synthesis_meta
 
         elapsed = time.time() - start_time
         logger.info(

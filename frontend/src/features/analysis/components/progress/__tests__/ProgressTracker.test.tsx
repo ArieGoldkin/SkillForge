@@ -1,7 +1,8 @@
-import type { SSEProgressEvent, SSEErrorEvent } from '@app-types/sse'
 import { useSSEStore, useShouldShowProgress, useLoadingState } from '@stores/sseStore'
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { SSEProgressEvent, SSEErrorEvent } from '@/schemas/sse'
 
 import { ProgressTracker, WORKING_STAGES } from '../'
 import { normalizeSSEEvent, getMappedStageName, getMappedStatus } from '../sseNormalizer'

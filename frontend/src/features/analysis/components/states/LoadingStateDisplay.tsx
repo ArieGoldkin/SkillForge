@@ -82,7 +82,7 @@ const getDefaultContent = () => ({
   subtitle: 'Please wait',
 })
 
-export const LoadingStateDisplay: React.FC<LoadingStateDisplayProps> = ({ loadingState }) => {
+export function LoadingStateDisplay({ loadingState }: LoadingStateDisplayProps): React.ReactNode {
   const getDisplayContent = (): { icon?: React.ReactNode; text: string; subtitle?: string } => {
     switch (loadingState.type) {
       case 'waiting_for_events':

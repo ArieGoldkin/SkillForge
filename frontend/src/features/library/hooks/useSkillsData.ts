@@ -18,9 +18,9 @@ export function useSkillsData(analyses: Analysis[] | undefined) {
     duration: 25,
     difficulty: 'intermediate' as const,
     tags: [analysis.content_type, analysis.status],
-    progress: analysis.status === 'complete' || analysis.status === 'completed' ? 100 : 65,
+    progress: analysis.status === 'complete' ? 100 : 65,
     status:
-      analysis.status === 'complete' || analysis.status === 'completed'
+      analysis.status === 'complete'
         ? ('completed' as const)
         : analysis.status === 'failed' ||
             analysis.status === 'extraction_failed' ||

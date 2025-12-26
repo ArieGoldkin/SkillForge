@@ -35,10 +35,10 @@ interface GoldenDatasetBadgeProps {
  * <GoldenDatasetBadge documentName="Chain Of Thought" />
  * ```
  */
-export const GoldenDatasetBadge: React.FC<GoldenDatasetBadgeProps> = ({
+export function GoldenDatasetBadge({
   documentName,
   badgeText = '📚 Golden Dataset',
-}) => {
+}: GoldenDatasetBadgeProps): React.ReactNode {
   return (
     <TooltipProvider>
       <Tooltip>

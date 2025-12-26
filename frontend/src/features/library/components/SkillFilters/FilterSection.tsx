@@ -21,11 +21,11 @@ export interface FilterSectionProps {
  * Provides collapsible section wrapper for filter groups.
  * Supports keyboard navigation and screen readers.
  */
-export const FilterSection: React.FC<FilterSectionProps> = ({
+export function FilterSection({
   title,
   children,
   defaultOpen = true,
-}) => {
+}: FilterSectionProps): React.ReactNode {
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
 
   return (

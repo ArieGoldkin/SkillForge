@@ -12,7 +12,10 @@ from dotenv import dotenv_values, load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 # CRITICAL: Load .env and override system env vars BEFORE any LangChain imports
 # This ensures SkillForge uses the correct Langfuse project configuration
@@ -36,10 +39,11 @@ from app.core.config import settings  # noqa: E402
 from app.core.exceptions import SkillForgeException  # noqa: E402
 from app.core.langfuse_service import (  # noqa: E402
     configure_langfuse_service,
-    flush_langfuse,
+    get_langfuse_service,
     shutdown_langfuse_service,
 )
 from app.core.logging import get_logger, setup_logging  # noqa: E402
+from app.middleware.rate_limit import limiter  # noqa: E402
 
 # Setup logging first
 setup_logging()
@@ -176,10 +180,12 @@ async def lifespan(app: FastAPI):
     # Flush and shutdown Langfuse with timeout protection
     try:
         # Give Langfuse 10 seconds to flush remaining events
-        await asyncio.wait_for(
-            asyncio.to_thread(flush_langfuse),
-            timeout=10.0,
-        )
+        service = get_langfuse_service()
+        if service:
+            await asyncio.wait_for(
+                asyncio.to_thread(service.flush),
+                timeout=10.0,
+            )
     except TimeoutError:
         logger.warning(
             "langfuse_flush_timeout",
@@ -285,6 +291,17 @@ app = FastAPI(
     lifespan=lifespan,
     default_response_class=ORJSONResponse,  # 2-3x faster JSON serialization
 )
+
+# Rate Limiting Middleware
+# Attach limiter to app state and register exception handler
+app.state.limiter = limiter
+# slowapi's handler type is compatible but ty doesn't recognize the exception subtype
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+
+# Compression Middleware
+# Compresses responses > 1000 bytes with gzip (reduces bandwidth usage)
+# Starlette middleware classes are runtime-compatible but ty's strict typing requires ignore
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # type: ignore[arg-type]
 
 # CORS Middleware
 app.add_middleware(

@@ -31,7 +31,7 @@ export function renderWithProviders(ui: React.ReactElement, options: RenderOptio
     },
   })
 
-  const AllTheProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  function AllTheProviders({ children }: { children: React.ReactNode }): React.ReactNode {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   }
 
@@ -97,7 +97,7 @@ export class TestDataFactory {
       url: 'https://example.com/article',
       title: 'Test Analysis Title',
       content: 'This is test content for analysis.',
-      status: 'completed',
+      status: 'complete',
       wordCount: 1200,
       readingTime: 6,
       metadata: {

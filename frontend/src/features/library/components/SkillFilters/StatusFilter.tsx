@@ -4,7 +4,7 @@
 
 import type * as React from 'react'
 
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 
 import { CheckboxItem } from './CheckboxItem'
 import { FilterSection } from './FilterSection'
@@ -13,9 +13,9 @@ import { FilterSection } from './FilterSection'
  * Props for StatusFilter component
  */
 export interface StatusFilterProps {
-  selectedStatuses: AnalysisStatus[]
-  availableStatuses: AnalysisStatus[]
-  onChange: (status: AnalysisStatus, checked: boolean) => void
+  selectedStatuses: FilterStatus[]
+  availableStatuses: FilterStatus[]
+  onChange: (status: FilterStatus, checked: boolean) => void
 }
 
 /**
@@ -23,22 +23,29 @@ export interface StatusFilterProps {
  *
  * Provides checkboxes for filtering by skill completion status.
  */
-export const StatusFilter: React.FC<StatusFilterProps> = ({
+export function StatusFilter({
   selectedStatuses,
   availableStatuses,
   onChange,
-}) => {
+}: StatusFilterProps): React.ReactNode {
   const statuses = availableStatuses.length
     ? availableStatuses
-    : (['complete', 'in-progress', 'failed'] as AnalysisStatus[])
+    : (['complete', 'running', 'failed'] as FilterStatus[])
+
+  const statusLabels: Record<FilterStatus, string> = {
+    complete: 'Completed',
+    running: 'In Progress',
+    pending: 'Pending',
+    failed: 'Failed',
+  }
 
   return (
     <FilterSection title="Status">
       {statuses.map((status) => (
         <CheckboxItem
           key={status}
-          id={`status-${status === 'complete' ? 'completed' : status}`}
-          label={status === 'complete' ? 'completed' : status.replace('-', ' ')}
+          id={`status-${status}`}
+          label={statusLabels[status]}
           checked={selectedStatuses.includes(status)}
           onChange={(checked) => onChange(status, checked)}
           type="radio"

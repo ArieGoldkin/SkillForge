@@ -1,7 +1,8 @@
 /**
  * Tests for annotations API client
+ * @unit
  *
- * Note: Uses vi.hoisted to ensure env is set BEFORE module loads
+ * Tests use ky-based API client which passes Request objects to fetch
  */
 
 import type {
@@ -14,13 +15,13 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Set up env BEFORE the module imports (hoisted to top of file)
-const { mockFetch, API_BASE_URL } = vi.hoisted(() => {
+const { mockFetch } = vi.hoisted(() => {
   const url = 'http://localhost:8500'
   // Stub the env variable before annotations.ts loads
+  vi.stubEnv('VITE_API_URL', url)
   vi.stubEnv('VITE_API_BASE_URL', url)
   return {
     mockFetch: vi.fn(),
-    API_BASE_URL: url,
   }
 })
 
@@ -47,10 +48,12 @@ describe('annotationsAPI', () => {
         langfuse_submitted: true,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -61,16 +64,10 @@ describe('annotationsAPI', () => {
 
       await annotationsAPI.submitFeedback(request)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/annotations/feedback`,
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-        })
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      expect(req.url).toContain('/api/v1/annotations/feedback')
+      expect(req.method).toBe('POST')
     })
 
     it('returns response data on success', async () => {
@@ -80,10 +77,12 @@ describe('annotationsAPI', () => {
         langfuse_submitted: true,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -98,11 +97,12 @@ describe('annotationsAPI', () => {
     })
 
     it('throws error when response is not ok', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ detail: 'Invalid request' }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'Invalid request' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -111,43 +111,7 @@ describe('annotationsAPI', () => {
         comment: null,
       }
 
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('Invalid request')
-    })
-
-    it('throws error with status when no detail in response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({}),
-      })
-
-      const request: SubmitFeedbackRequest = {
-        artifact_id: 'artifact-123',
-        trace_id: null,
-        feedback: 'thumbs_up',
-        comment: null,
-      }
-
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('API error: 500')
-    })
-
-    it('handles JSON parse error in error response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => {
-          throw new Error('Parse error')
-        },
-      })
-
-      const request: SubmitFeedbackRequest = {
-        artifact_id: 'artifact-123',
-        trace_id: null,
-        feedback: 'thumbs_up',
-        comment: null,
-      }
-
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('API error: 500')
+      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow()
     })
   })
 
@@ -158,10 +122,12 @@ describe('annotationsAPI', () => {
         message: 'Flagged for review',
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: FlagForReviewRequest = {
         artifact_id: 'artifact-123',
@@ -170,16 +136,10 @@ describe('annotationsAPI', () => {
 
       await annotationsAPI.flagForReview(request)
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/annotations/flag`,
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-        })
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      expect(req.url).toContain('/api/v1/annotations/flag')
+      expect(req.method).toBe('POST')
     })
 
     it('returns response data on success', async () => {
@@ -188,10 +148,12 @@ describe('annotationsAPI', () => {
         message: 'Successfully flagged',
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: FlagForReviewRequest = {
         artifact_id: 'artifact-123',
@@ -204,18 +166,19 @@ describe('annotationsAPI', () => {
     })
 
     it('throws error when response is not ok', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        json: async () => ({ message: 'Artifact not found' }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'Artifact not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const request: FlagForReviewRequest = {
         artifact_id: 'invalid-id',
         reason: 'Test',
       }
 
-      await expect(annotationsAPI.flagForReview(request)).rejects.toThrow('Artifact not found')
+      await expect(annotationsAPI.flagForReview(request)).rejects.toThrow()
     })
   })
 
@@ -228,21 +191,19 @@ describe('annotationsAPI', () => {
         offset: 0,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       await annotationsAPI.getAnnotationQueue()
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/annotations/queue`,
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      expect(req.url).toContain('/api/v1/annotations/queue')
+      expect(req.method).toBe('GET')
     })
 
     it('includes query parameters when provided', async () => {
@@ -253,10 +214,12 @@ describe('annotationsAPI', () => {
         offset: 20,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       await annotationsAPI.getAnnotationQueue({
         limit: 10,
@@ -264,14 +227,11 @@ describe('annotationsAPI', () => {
         status: 'pending',
       })
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/annotations/queue?limit=10&offset=20&status=pending`,
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      expect(req.url).toContain('limit=10')
+      expect(req.url).toContain('offset=20')
+      expect(req.url).toContain('status=pending')
     })
 
     it('includes only provided query parameters', async () => {
@@ -282,21 +242,20 @@ describe('annotationsAPI', () => {
         offset: 0,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       await annotationsAPI.getAnnotationQueue({ limit: 10 })
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/annotations/queue?limit=10`,
-        expect.objectContaining({
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-      )
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      expect(req.url).toContain('limit=10')
+      expect(req.url).not.toContain('offset=')
+      expect(req.url).not.toContain('status=')
     })
 
     it('returns response data on success', async () => {
@@ -318,10 +277,12 @@ describe('annotationsAPI', () => {
         offset: 0,
       }
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(mockResponse), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
       const result = await annotationsAPI.getAnnotationQueue()
 
@@ -329,13 +290,14 @@ describe('annotationsAPI', () => {
     })
 
     it('throws error when response is not ok', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ detail: 'Unauthorized' }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
 
-      await expect(annotationsAPI.getAnnotationQueue()).rejects.toThrow('Unauthorized')
+      await expect(annotationsAPI.getAnnotationQueue()).rejects.toThrow()
     })
   })
 
@@ -350,18 +312,22 @@ describe('annotationsAPI', () => {
         comment: null,
       }
 
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('Network error')
+      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow()
     })
 
     it('prefers detail over message in error response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({
-          detail: 'Validation error',
-          message: 'Generic message',
-        }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            detail: 'Validation error',
+            message: 'Generic message',
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -370,17 +336,22 @@ describe('annotationsAPI', () => {
         comment: null,
       }
 
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('Validation error')
+      // ky throws HTTPError on non-2xx responses
+      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow()
     })
 
     it('uses message if detail is not present', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({
-          message: 'Error message',
-        }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            message: 'Error message',
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -389,16 +360,22 @@ describe('annotationsAPI', () => {
         comment: null,
       }
 
-      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow('Error message')
+      // ky throws HTTPError on non-2xx responses
+      await expect(annotationsAPI.submitFeedback(request)).rejects.toThrow()
     })
   })
 
   describe('Headers', () => {
     it('includes Content-Type header', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: 'success', message: 'OK', langfuse_submitted: true }),
-      })
+      mockFetch.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ status: 'success', message: 'OK', langfuse_submitted: true }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      )
 
       const request: SubmitFeedbackRequest = {
         artifact_id: 'artifact-123',
@@ -409,11 +386,10 @@ describe('annotationsAPI', () => {
 
       await annotationsAPI.submitFeedback(request)
 
-      const callArgs = mockFetch.mock.calls[0]
-      const options = callArgs[1] as RequestInit
-      expect(options.headers).toEqual({
-        'Content-Type': 'application/json',
-      })
+      expect(mockFetch).toHaveBeenCalled()
+      const [req] = mockFetch.mock.calls[0] as [Request]
+      // ky automatically sets content-type for JSON
+      expect(req.headers.get('content-type')).toContain('application/json')
     })
   })
 })

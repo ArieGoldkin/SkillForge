@@ -63,10 +63,18 @@ def validate_and_parse_findings(
             logger.warning(
                 "aggregation_empty_findings",
                 agent_type=agent_type,
-                action="skipping_finding",
+                action="marking_as_no_data",
             )
-            # Skip findings with no data - don't include them in validated_findings
-            # This prevents "No findings available for this agent" from appearing
+            # Don't skip - mark as "no_data" so agent doesn't appear as "failed"
+            # Agent ran successfully but returned no findings
+            finding_dict = dict(finding)
+            finding_dict["status"] = "no_data"
+            validated_findings.append(finding_dict)
+            agent_types.append(agent_type)
+            score = finding.get("confidence_score", 0.0) or 0.0
+            confidence_scores[agent_type] = (
+                float(score) if isinstance(score, (int, float, str)) else 0.0
+            )
             continue
 
         validated_findings.append(dict(finding))

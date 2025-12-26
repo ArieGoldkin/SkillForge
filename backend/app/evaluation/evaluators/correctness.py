@@ -22,7 +22,7 @@ from pydantic import ValidationError
 from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit
 from app.domains.analysis.schemas.agents.tech_comparator import TechComparison
 from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
-from app.evaluation.types import Example, Run
+from app.evaluation.types import EvalExample, EvalRun
 
 
 def _calculate_supervisor_metrics(
@@ -77,7 +77,7 @@ def _calculate_supervisor_metrics(
     }
 
 
-def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def supervisor_correctness_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
     """Evaluate supervisor routing correctness with multiple metrics.
 
     Uses a combination of metrics to fairly evaluate routing:
@@ -156,7 +156,7 @@ def supervisor_correctness_evaluator(run: Run, example: Example) -> dict[str, An
     }
 
 
-def supervisor_coverage_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def supervisor_coverage_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
     """Evaluate supervisor coverage - did it select all REQUIRED agents.
 
     This metric rewards thoroughness. Selecting extra agents is OK.
@@ -203,7 +203,7 @@ def supervisor_coverage_evaluator(run: Run, example: Example) -> dict[str, Any]:
     }
 
 
-def supervisor_precision_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def supervisor_precision_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
     """Evaluate supervisor precision - were selected agents relevant.
 
     This metric penalizes selecting completely irrelevant agents.
@@ -259,7 +259,7 @@ def supervisor_precision_evaluator(run: Run, example: Example) -> dict[str, Any]
     }
 
 
-def agent_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def agent_correctness_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
     """Evaluate agent analysis correctness.
 
     Measures accuracy of agent analysis outputs across multiple dimensions:
@@ -380,7 +380,7 @@ def agent_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
     }
 
 
-def synthesis_correctness_evaluator(run: Run, example: Example) -> dict[str, Any]:
+def synthesis_correctness_evaluator(run: EvalRun, example: EvalExample) -> dict[str, Any]:
     """Evaluate synthesis/aggregation correctness.
 
     Measures quality of synthesis across multiple dimensions:

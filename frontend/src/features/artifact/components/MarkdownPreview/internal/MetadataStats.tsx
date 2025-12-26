@@ -14,11 +14,11 @@ interface MetadataStatsProps {
 /**
  * MetadataStats - Display complexity, word count, and agent count
  */
-export const MetadataStats: React.FC<MetadataStatsProps> = ({
+export function MetadataStats({
   complexity,
   word_count,
   agent_count,
-}) => {
+}: MetadataStatsProps): React.ReactNode {
   const ComplexityIcon = complexity ? COMPLEXITY_ICONS[complexity] : null
   const complexityColor = complexity ? COMPLEXITY_COLORS[complexity] : undefined
 

@@ -1,5 +1,6 @@
 import type * as React from 'react'
 
+import { usePrefetch } from '@hooks/usePrefetch'
 import { Trash2 } from 'lucide-react'
 
 import { Card, CardContent } from '@shared/components/ui/card'
@@ -48,7 +49,7 @@ const formatStatus = (status: SkillStatus): string => {
   return labels[status]
 }
 
-const SkillCardBody: React.FC<SkillCardProps> = ({
+function SkillCardBody({
   id,
   title,
   description,
@@ -59,44 +60,46 @@ const SkillCardBody: React.FC<SkillCardProps> = ({
   thumbnail,
   progress,
   onDelete,
-}) => (
-  <CardContent className="p-0 relative">
-    {onDelete && (
-      <button
-        type="button"
-        className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
-        onClick={(event) => {
-          event.stopPropagation()
-          onDelete(id)
-        }}
-        aria-label="Delete analysis"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    )}
-    <SkillCardThumbnail title={title} thumbnail={thumbnail} />
+}: SkillCardProps): React.ReactNode {
+  return (
+    <CardContent className="p-0 relative">
+      {onDelete && (
+        <button
+          type="button"
+          className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
+          onClick={(event) => {
+            event.stopPropagation()
+            onDelete(id)
+          }}
+          aria-label="Delete analysis"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+      <SkillCardThumbnail title={title} thumbnail={thumbnail} />
 
-    <div className="p-6 space-y-4">
-      <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-        {title}
-      </h3>
+      <div className="p-6 space-y-4">
+        <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+          {title}
+        </h3>
 
-      <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
 
-      <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
+        <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
 
-      <SkillCardProgress status={status} progress={progress} />
+        <SkillCardProgress status={status} progress={progress} />
 
-      <SkillCardTags tags={tags} />
-    </div>
-  </CardContent>
-)
+        <SkillCardTags tags={tags} />
+      </div>
+    </CardContent>
+  )
+}
 
 /**
  * SkillCard - Individual skill/learning resource card
  */
 // eslint-disable-next-line max-lines-per-function
-export const SkillCard: React.FC<SkillCardProps> = ({
+export function SkillCard({
   id,
   title,
   description,
@@ -109,7 +112,9 @@ export const SkillCard: React.FC<SkillCardProps> = ({
   onSelect,
   onDelete,
   className,
-}) => {
+}: SkillCardProps): React.ReactNode {
+  const { prefetchAnalysis } = usePrefetch()
+
   const handleClick = () => {
     onSelect(id)
   }
@@ -121,6 +126,16 @@ export const SkillCard: React.FC<SkillCardProps> = ({
     }
   }
 
+  const handleMouseEnter = () => {
+    // Prefetch analysis data on hover for instant navigation
+    prefetchAnalysis(id)
+  }
+
+  const handleFocus = () => {
+    // Prefetch on focus for keyboard navigation accessibility
+    prefetchAnalysis(id)
+  }
+
   return (
     <Card
       data-testid="analysis-card"
@@ -130,6 +145,8 @@ export const SkillCard: React.FC<SkillCardProps> = ({
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onMouseEnter={handleMouseEnter}
+      onFocus={handleFocus}
       tabIndex={0}
       role="button"
       aria-label={`${title} - ${formatStatus(status)}`}

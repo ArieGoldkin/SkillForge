@@ -113,15 +113,15 @@ def robust_traceable(
                                 update_kwargs["metadata"] = metadata
                             if update_kwargs:
                                 langfuse.update_current_trace(**update_kwargs)
-                    except Exception:  # noqa: BLE001, S110 - Silent fallback when Langfuse unavailable
+                    except Exception:  # noqa: BLE001 - Silent fallback when Langfuse unavailable
                         # Langfuse context not available - continue without
                         pass
 
                     return await observed_func(*args, **kwargs)
 
-                return wrapper  # type: ignore[return-value]
+                return wrapper
 
-            return observed_func  # type: ignore[return-value]
+            return observed_func
 
         except ImportError:
             # Langfuse not installed - return function unchanged
@@ -178,7 +178,7 @@ def update_current_trace(
     except ImportError:
         # Langfuse not installed - silently skip
         pass
-    except Exception:  # noqa: BLE001, S110 - Silent fallback for trace context errors
+    except Exception:  # noqa: BLE001 - Silent fallback for trace context errors
         # Not in trace context or other error - silently skip
         pass
 
@@ -260,14 +260,14 @@ def traced_tool(
                             update_kwargs["metadata"] = metadata
                         if update_kwargs:
                             langfuse.update_current_span(**update_kwargs)
-                    except Exception:  # noqa: BLE001, S110
+                    except Exception:  # noqa: BLE001
                         pass
 
                     return await observed_func(*args, **kwargs)
 
-                return wrapper  # type: ignore[return-value]
+                return wrapper
 
-            return observed_func  # type: ignore[return-value]
+            return observed_func
 
         except ImportError:
             # Langfuse not installed - return function unchanged
@@ -328,5 +328,5 @@ def update_current_observation(
 
     except ImportError:
         pass
-    except Exception:  # noqa: BLE001, S110
+    except Exception:  # noqa: BLE001
         pass

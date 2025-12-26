@@ -6,7 +6,7 @@ must be met regardless of average score.
 Issue #ARTIFACT-QUALITY: Quality gate now enforces minimum thresholds per aspect.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -18,7 +18,16 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
     should_retry_synthesis,
 )
 from app.domains.analysis.workflows.state import AnalysisState
-from app.evaluation.types import Example, Run
+
+
+class MockEvaluation:
+    """Mock Langfuse Evaluation object for G-Eval tests."""
+
+    def __init__(self, value: float, comment: str = "", metadata: dict | None = None):
+        """Initialize mock evaluation with score value and optional comment/metadata."""
+        self.value = value
+        self.comment = comment
+        self.metadata = metadata or {}
 
 
 @pytest.fixture
@@ -46,7 +55,7 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
     """
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -54,12 +63,8 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # Return scores where relevance is below minimum (0.4 < 0.5)
         # but average is above threshold: (0.4 + 0.9 + 0.9) / 3 = 0.733 > 0.7
@@ -68,14 +73,14 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            aspect = kwargs.get("aspect", "")
+            criterion = kwargs.get("criterion", "")
 
-            async def evaluator(run: Run, example: Example) -> dict:
-                if aspect == "relevance":
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "relevance":
                     # BELOW MINIMUM (0.4 < 0.5)
-                    return {"key": "quality_test", "score": 0.4, "comment": "4/10 - not relevant"}
+                    return MockEvaluation(value=0.4, comment="4/10 - not relevant")
                 # High scores for other aspects
-                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+                return MockEvaluation(value=0.9, comment="9/10")
 
             return evaluator
 
@@ -102,7 +107,7 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
     """Test that quality gate passes when all aspects meet minimums."""
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -110,12 +115,8 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # Return scores where all aspects are at or above minimums
         # relevance: 0.6 >= 0.5
@@ -127,15 +128,15 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            aspect = kwargs.get("aspect", "")
+            criterion = kwargs.get("criterion", "")
 
-            async def evaluator(run: Run, example: Example) -> dict:
-                if aspect == "relevance":
-                    return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
-                if aspect == "depth":
-                    return {"key": "quality_test", "score": 0.5, "comment": "5/10"}
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "relevance":
+                    return MockEvaluation(value=0.6, comment="6/10")
+                if criterion == "depth":
+                    return MockEvaluation(value=0.5, comment="5/10")
                 # coherence
-                return {"key": "quality_test", "score": 0.8, "comment": "8/10"}
+                return MockEvaluation(value=0.8, comment="8/10")
 
             return evaluator
 
@@ -153,7 +154,7 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when depth is below minimum (0.4)."""
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -161,12 +162,8 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # depth: 0.3 < 0.4 (BELOW MINIMUM)
         # relevance: 0.9 >= 0.5
@@ -177,12 +174,12 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            aspect = kwargs.get("aspect", "")
+            criterion = kwargs.get("criterion", "")
 
-            async def evaluator(run: Run, example: Example) -> dict:
-                if aspect == "depth":
-                    return {"key": "quality_test", "score": 0.3, "comment": "3/10 - shallow"}
-                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "depth":
+                    return MockEvaluation(value=0.3, comment="3/10 - shallow")
+                return MockEvaluation(value=0.9, comment="9/10")
 
             return evaluator
 
@@ -199,7 +196,7 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when coherence is below minimum (0.4)."""
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -207,12 +204,8 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
         patch(
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # coherence: 0.35 < 0.4 (BELOW MINIMUM)
         # relevance: 0.9 >= 0.5
@@ -223,12 +216,12 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            aspect = kwargs.get("aspect", "")
+            criterion = kwargs.get("criterion", "")
 
-            async def evaluator(run: Run, example: Example) -> dict:
-                if aspect == "coherence":
-                    return {"key": "quality_test", "score": 0.35, "comment": "3.5/10 - incoherent"}
-                return {"key": "quality_test", "score": 0.9, "comment": "9/10"}
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "coherence":
+                    return MockEvaluation(value=0.35, comment="3.5/10 - incoherent")
+                return MockEvaluation(value=0.9, comment="9/10")
 
             return evaluator
 
@@ -245,7 +238,7 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
     """Test that quality gate fails when multiple aspects are below minimums."""
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -254,20 +247,16 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # All aspects below minimums
         # relevance: 0.4 < 0.5
         # depth: 0.3 < 0.4
         # coherence: 0.2 < 0.4
         # Average: (0.4 + 0.3 + 0.2) / 3 = 0.3 < 0.7
-        async def low_score_evaluator(run: Run, example: Example) -> dict:
-            return {"key": "quality_test", "score": 0.3, "comment": "3/10 - poor quality"}
+        def low_score_evaluator(*, input, output, _expected_output=None):
+            return MockEvaluation(value=0.3, comment="3/10 - poor quality")
 
         mock_create.return_value = low_score_evaluator
 
@@ -356,7 +345,7 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
     """Test that quality gate logs which aspects failed minimum thresholds."""
     with (
         patch(
-            "app.domains.analysis.workflows.nodes.quality_gate_node.create_quality_evaluator"
+            "app.shared.services.g_eval.langfuse_evaluators.create_g_eval_evaluator"
         ) as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
@@ -365,12 +354,8 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
             "app.domains.analysis.workflows.nodes.quality_gate_node.get_current_trace_id"
         ) as mock_run_tree,
         patch("app.domains.analysis.workflows.nodes.quality_gate_node.logger") as mock_logger,
-        patch("app.evaluation.types.Run") as mock_run_class,
-        patch("app.evaluation.types.Example") as mock_example_class,
     ):
         mock_run_tree.return_value = None
-        mock_run_class.return_value = MagicMock()
-        mock_example_class.return_value = MagicMock()
 
         # relevance: 0.3 < 0.5 (FAIL)
         # depth: 0.6 >= 0.4 (PASS)
@@ -380,15 +365,15 @@ async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            aspect = kwargs.get("aspect", "")
+            criterion = kwargs.get("criterion", "")
 
-            async def evaluator(run: Run, example: Example) -> dict:
-                if aspect == "relevance":
-                    return {"key": "quality_test", "score": 0.3, "comment": "3/10"}
-                if aspect == "depth":
-                    return {"key": "quality_test", "score": 0.6, "comment": "6/10"}
+            def evaluator(*, input, output, _expected_output=None):
+                if criterion == "relevance":
+                    return MockEvaluation(value=0.3, comment="3/10")
+                if criterion == "depth":
+                    return MockEvaluation(value=0.6, comment="6/10")
                 # coherence
-                return {"key": "quality_test", "score": 0.35, "comment": "3.5/10"}
+                return MockEvaluation(value=0.35, comment="3.5/10")
 
             return evaluator
 

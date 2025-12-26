@@ -22,7 +22,11 @@ export interface TagFilterProps {
  * Provides scrollable list of tag checkboxes for filtering.
  * Supports large tag lists with max-height and overflow.
  */
-export const TagFilter: React.FC<TagFilterProps> = ({ availableTags, selectedTags, onChange }) => {
+export function TagFilter({
+  availableTags,
+  selectedTags,
+  onChange,
+}: TagFilterProps): React.ReactNode {
   if (availableTags.length === 0) {
     return null
   }

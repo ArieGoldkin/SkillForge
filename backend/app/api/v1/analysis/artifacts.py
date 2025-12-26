@@ -1,9 +1,11 @@
 """Artifact download endpoints."""
 
 import uuid
-from typing import Annotated, cast
+from math import ceil
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+import orjson
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, status
 from fastapi.responses import Response
 
 from app.api.schemas.errors import ErrorResponse
@@ -39,11 +41,9 @@ async def get_artifact_by_analysis(
     return ArtifactMetadataResponse(
         artifact_id=str(artifact.id),
         analysis_id=str(artifact.analysis_id),
-        markdown_content=str(cast("str | None", artifact.markdown_content) or ""),
-        artifact_metadata=cast("dict[str, object] | None", artifact.artifact_metadata)
-        if artifact.artifact_metadata
-        else None,
-        trace_id=cast("str | None", artifact.trace_id) if artifact.trace_id else None,
+        markdown_content=artifact.markdown_content or "",
+        artifact_metadata=artifact.artifact_metadata if artifact.artifact_metadata else None,
+        trace_id=artifact.trace_id if artifact.trace_id else None,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
     )
 
@@ -51,44 +51,48 @@ async def get_artifact_by_analysis(
 @router.get(
     "/artifacts/{artifact_id}",
     responses={
+        200: {"description": "Artifact found"},
+        304: {"description": "Not modified"},
         404: {"model": ErrorResponse, "description": "Artifact not found"},
-        500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
 async def get_artifact_by_id(
     artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
-) -> ArtifactMetadataResponse:
-    """Retrieve artifact metadata by artifact ID.
-
-    Args:
-        artifact_id: UUID of the artifact to retrieve
-        repo: Artifact repository dependency
-
-    Returns:
-        Artifact metadata including markdown content
-
-    Raises:
-        HTTPException: 404 if artifact not found
-
-    """
+    if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
+) -> Response:
+    """Retrieve artifact with caching support."""
     artifact = await repo.get_artifact_by_id(artifact_id)
-
     if not artifact:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Artifact {artifact_id} not found",
+        raise HTTPException(status_code=404, detail=f"Artifact {artifact_id} not found")
+
+    etag = await repo.generate_etag(artifact_id)
+
+    # Check conditional GET
+    if if_none_match and etag and if_none_match.strip('"') == etag:
+        return Response(
+            status_code=304,
+            headers={"ETag": f'"{etag}"', "Cache-Control": "public, max-age=3600"},
         )
 
-    return ArtifactMetadataResponse(
+    response_data = ArtifactMetadataResponse(
         artifact_id=str(artifact.id),
         analysis_id=str(artifact.analysis_id),
-        markdown_content=str(cast("str | None", artifact.markdown_content) or ""),
-        artifact_metadata=cast("dict[str, object] | None", artifact.artifact_metadata)
-        if artifact.artifact_metadata
-        else None,
-        trace_id=cast("str | None", artifact.trace_id) if artifact.trace_id else None,
+        markdown_content=artifact.markdown_content or "",
+        artifact_metadata=artifact.artifact_metadata,
+        trace_id=artifact.trace_id,
+        download_count=artifact.download_count or 0,
         created_at=artifact.created_at.isoformat() if artifact.created_at else "",
+    )
+
+    return Response(
+        content=orjson.dumps(response_data.model_dump()),
+        media_type="application/json",
+        headers={
+            "ETag": f'"{etag}"' if etag else "",
+            "Cache-Control": "public, max-age=3600, must-revalidate",
+            "Vary": "Accept-Encoding",
+        },
     )
 
 
@@ -143,10 +147,10 @@ async def download_artifact(
 
         # Extract title from analysis metadata
         title: str | None = None
-        if analysis.extraction_metadata:  # type: ignore[attr-defined]
-            extraction_metadata = analysis.extraction_metadata  # type: ignore[attr-defined]
+        if analysis.extraction_metadata:
+            extraction_metadata = analysis.extraction_metadata
             if isinstance(extraction_metadata, dict):
-                title = extraction_metadata.get("title")  # type: ignore[assignment]
+                title = extraction_metadata.get("title")
 
         # Generate filename
         filename = generate_filename(title, str(artifact.analysis_id))
@@ -187,3 +191,50 @@ async def download_artifact(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to download artifact",
         ) from e
+
+
+@router.get("/artifacts")
+async def list_artifacts(
+    repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    include_deleted: Annotated[bool, Query(description="Include soft-deleted artifacts")] = False,
+) -> dict:
+    """List artifacts with pagination."""
+    artifacts, total = await repo.list_artifacts(
+        page=page, limit=limit, include_deleted=include_deleted
+    )
+    pages = ceil(total / limit) if total > 0 else 0
+
+    items = [
+        {
+            "artifact_id": str(a.id),
+            "analysis_id": str(a.analysis_id),
+            "created_at": a.created_at.isoformat() if a.created_at else "",
+            "download_count": a.download_count or 0,
+        }
+        for a in artifacts
+    ]
+
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "has_next": page < pages,
+        "has_prev": page > 1,
+    }
+
+
+@router.delete("/artifacts/{artifact_id}")
+async def delete_artifact(
+    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
+    repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
+) -> dict:
+    """Soft delete an artifact."""
+    deleted = await repo.soft_delete(artifact_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Artifact not found or already deleted")
+
+    logger.info("artifact_deleted", artifact_id=str(artifact_id))
+    return {"status": "deleted", "artifact_id": str(artifact_id)}

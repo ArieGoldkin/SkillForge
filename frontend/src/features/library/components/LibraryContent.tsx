@@ -1,4 +1,4 @@
-import type { AnalysisStatus, SearchMode } from '@app-types/api'
+import type { FilterStatus, SearchMode } from '@app-types/api'
 
 import { LibraryContentMain } from './LibraryContentMain'
 import { LibraryErrorAlert } from './LibraryErrorAlert'
@@ -15,7 +15,7 @@ interface LibraryContentProps {
   filters: SkillFiltersType
   onFiltersChange: (filters: SkillFiltersType) => void
   availableTags: string[]
-  availableStatuses: AnalysisStatus[]
+  availableStatuses: FilterStatus[]
   filteredSkills: Parameters<typeof LibraryContentMain>[0]['filteredSkills']
   showingCount: number
   totalCount: number
@@ -29,6 +29,7 @@ interface LibraryContentProps {
   onRetry: () => void
   onSelectSkill: (id: string) => void
   onLoadMore?: () => void
+  isPending?: boolean
 }
 
 export function LibraryContent(props: LibraryContentProps) {
@@ -72,6 +73,7 @@ export function LibraryContent(props: LibraryContentProps) {
         isFetchingNextPage={props.isFetchingNextPage}
         onSelectSkill={props.onSelectSkill}
         onLoadMore={props.onLoadMore}
+        isPending={props.isPending}
       />
     </>
   )

@@ -46,9 +46,6 @@ from app.evaluation.ingestion.pii_anonymizer import (
     get_anonymizer,
 )
 
-# Keep ALL_CATEGORIES as alias for backwards compatibility (edge cases)
-ALL_CATEGORIES = EDGE_CASE_CATEGORIES
-
 __all__ = [
     # GitHub
     "GitHubImporter",
@@ -58,7 +55,6 @@ __all__ = [
     "EdgeCaseGenerator",
     "EdgeCaseConfig",
     "EdgeCaseTemplates",
-    "ALL_CATEGORIES",
     "EDGE_CASE_CATEGORIES",
     # Adversarial Examples
     "AdversarialGenerator",

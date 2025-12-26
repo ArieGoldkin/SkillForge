@@ -48,8 +48,6 @@ const selectAnalysisState = (state: SSEStore) => ({
   reset: state.reset,
 })
 
-// Legacy selectors removed - now using consolidated selectors
-
 const useSSELifecycle = ({
   analysisId,
   shouldConnect,
@@ -212,7 +210,7 @@ export default function AnalyzeResult() {
   const { resolvedArtifactId, isResolvedComplete, isFailed, effectiveError } = useMemo(() => {
     // Issue #439: Single source of truth - artifact ID determines completion
     const resolvedArtifactId = artifactId || statusState.resolvedArtifactId || urlArtifactId
-    const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'completed' : undefined)
+    const resolvedStatus = statusState.resolvedStatus || (isComplete ? 'complete' : undefined)
 
     // Issue #439: Artifact-based completion check (single source of truth)
     // No longer depends on progressStage or progressPercent which could desync

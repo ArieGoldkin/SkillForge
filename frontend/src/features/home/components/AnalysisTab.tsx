@@ -34,16 +34,19 @@ This guide covers best practices for integrating REST APIs in React applications
 ## Code Example
 
 \`\`\`typescript
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+import { api } from '@/lib/api-client'
+import { z } from 'zod'
+
+const UserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+})
+
+type User = z.infer<typeof UserSchema>
 
 async function fetchUsers(): Promise<User[]> {
-  const response = await fetch('/api/users');
-  if (!response.ok) throw new Error('Failed to fetch');
-  return response.json();
+  return api('api/users', z.array(UserSchema))
 }
 \`\`\`
 
@@ -65,7 +68,7 @@ async function fetchUsers(): Promise<User[]> {
 /**
  * AnalysisTab component
  */
-export const AnalysisTab: React.FC = () => {
+export function AnalysisTab(): React.ReactNode {
   // Use useState initializer to ensure Date.now() is called only once (React purity)
   const [analysisSteps] = React.useState(createAnalysisSteps)
   const [agentActivities] = React.useState(createAgentActivities)

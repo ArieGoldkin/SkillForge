@@ -686,18 +686,20 @@ def test_genre_aware_minimum_agents():
 
 @pytest.mark.asyncio
 async def test_supervisor_enforces_genre_aware_minimum_research():
-    """Test supervisor enforces minimum 2 agents for RESEARCH genre.
+    """Test supervisor respects LLM agent selection for RESEARCH genre.
 
     Note: AgentSelection schema has min_length=3, so LLM returns 3 agents.
-    However, Issue #540 content-aware filtering may skip agents without
-    relevant content (e.g., tech_comparator on pure theoretical research).
+
+    Issue #547 (GAP 1): Removed content-aware filtering (should_skip_agent).
+    LLM is now the single source of truth for agent selection.
+    Content signals inform the LLM prompt, but don't override its decisions.
 
     This test verifies:
-    1. Genre-aware minimum (2 for research) is met
-    2. Content-aware filtering correctly skips irrelevant agents
+    1. LLM-selected agents are all present (no override filtering)
+    2. Tier 1 agents are always injected
     """
     # Mock selection with 3 agents (schema minimum)
-    # tech_comparator will be skipped due to no comparison patterns in content
+    # Issue #547: tech_comparator is NO LONGER filtered - LLM decision is trusted
     mock_selection = AgentSelection(
         agents=["trend_validator", "tech_comparator", "implementation_planner"],
         reasoning="Research paper needs trend analysis and concept comparison",
@@ -712,7 +714,6 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
     mock_model.with_structured_output = MagicMock(return_value=mock_lcel_chain)
 
     # Research paper content (will be detected as RESEARCH genre)
-    # Note: No comparison patterns, so tech_comparator will be skipped
     content = """
     Abstract: This paper explores the theoretical foundations of neural architecture search.
     We present a novel framework for understanding optimization landscapes in deep learning.
@@ -748,15 +749,14 @@ async def test_supervisor_enforces_genre_aware_minimum_research():
         for tier1_agent in tier1_agents:
             assert tier1_agent in agents, f"Tier 1 agent {tier1_agent} should be present"
 
-        # Issue #540: tech_comparator skipped (no comparison patterns)
-        # Original selection: trend_validator, implementation_planner (tech_comparator filtered)
+        # Issue #547: All LLM-selected agents should be present (no filtering)
         assert "trend_validator" in agents
         assert "implementation_planner" in agents
-        # Verify tech_comparator was correctly filtered out
-        assert "tech_comparator" not in agents
+        # Issue #547 (GAP 1): tech_comparator is now KEPT - LLM is single source of truth
+        assert "tech_comparator" in agents
 
-        # Total: 4 Tier 1 + 2 content-specific = 6 agents (minimum)
-        assert len(agents) >= 6
+        # Total: 4 Tier 1 + 3 content-specific = 7 agents
+        assert len(agents) >= 7
 
 
 @pytest.mark.asyncio

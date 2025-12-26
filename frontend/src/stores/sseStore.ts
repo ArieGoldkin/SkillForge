@@ -1,11 +1,11 @@
 /* eslint-disable max-lines -- SSE Store orchestrates complex state management: event lifecycle, connection management, memory monitoring, and store actions. File length reflects necessary complexity for robust SSE handling. */
 
-import type { SSEEvent } from '@app-types/sse'
 import { create } from 'zustand'
 import { useShallow } from 'zustand/react/shallow'
 
 import { LIMIT_CONSTANTS } from '@/lib/constants'
 import { logger } from '@/lib/logger'
+import type { SSEEvent } from '@/schemas/sse'
 
 import {
   deriveLoadingState,
@@ -337,9 +337,18 @@ const baseStore = create<SSEStore>((set, get) => ({
    * intermediate state where error is cleared but isComplete is still false.
    * This is critical because components subscribed to the store would otherwise
    * see an inconsistent state between two separate set() calls.
+   *
+   * Also clears failure state and removes error events from the events array.
    */
   reconcileComplete: () => {
-    set({ error: null, isComplete: true })
+    set((state) => ({
+      error: null,
+      isComplete: true,
+      hasFailedStages: false,
+      failedStagesCount: 0,
+      // Filter out error events from the events array
+      events: state.events.filter((event) => event.type !== 'error'),
+    }))
   },
 
   /**
@@ -428,11 +437,7 @@ const baseStore = create<SSEStore>((set, get) => ({
 
           // Check if analysis is complete
           const statusData = await analyzeAPI.getAnalysisStatus(analysisId)
-          if (
-            statusData.status === 'complete' ||
-            statusData.status === 'completed' ||
-            statusData.status === 'failed'
-          ) {
+          if (statusData.status === 'complete' || statusData.status === 'failed') {
             get().stopPolling()
             set({ isComplete: true })
           }

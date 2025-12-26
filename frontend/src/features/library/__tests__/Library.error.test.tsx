@@ -1,4 +1,4 @@
-import type { AnalysisStatus } from '@app-types/api'
+import type { FilterStatus } from '@app-types/api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -99,7 +99,7 @@ describe('Library Component - Error Handling', () => {
     return {
       filteredSkills: [],
       availableTags: [],
-      availableStatuses: [] as AnalysisStatus[],
+      availableStatuses: [] as FilterStatus[],
       showingCount: 0,
       totalCount: 0,
       isLoading: false,

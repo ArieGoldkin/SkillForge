@@ -28,41 +28,19 @@ ADVERSARIAL_DIR = DATASETS_DIR / "adversarial"
 EDGE_CASES_DIR = DATASETS_DIR / "edge_cases"
 ARCHIVE_DIR = DATASETS_DIR / "archive"
 
-# Mapping from legacy names to new paths (backwards compatibility)
-LEGACY_NAME_MAP: dict[str, str] = {
-    "supervisor_golden_v1": "golden/supervisor",
-    "agent_analysis_golden_v1": "archive/agent_analysis_golden_v1",
-    "agent_analysis_golden_v2": "golden/agent_analysis",
-    "synthesis_golden_v1": "golden/synthesis",
-    "adversarial_v2": "adversarial/adversarial",
-    "edge_cases_v2": "edge_cases/edge_cases",
-}
-
 
 def _resolve_dataset_path(name: str) -> Path:
     """Resolve dataset name to file path.
 
-    Supports both new paths (golden/supervisor) and legacy names (supervisor_golden_v1).
+    Expects folder-based paths like "golden/supervisor" or "adversarial/adversarial".
     """
-    # Check if it's a legacy name (use .get for cleaner code)
-    resolved_name = LEGACY_NAME_MAP.get(name, name)
+    # Folder-based format (e.g., "golden/supervisor")
+    if "/" in name:
+        return DATASETS_DIR / f"{name}.json"
 
-    # Try with path separators (new format: golden/supervisor)
-    if "/" in resolved_name:
-        return DATASETS_DIR / f"{resolved_name}.json"
-
-    # Try direct file in root (backwards compat)
-    direct_path = DATASETS_DIR / f"{resolved_name}.json"
-    if direct_path.exists():
-        return direct_path
-
-    # Try in golden/ folder by default
-    golden_path = GOLDEN_DIR / f"{resolved_name}.json"
-    if golden_path.exists():
-        return golden_path
-
-    # Return the direct path (will raise FileNotFoundError if doesn't exist)
-    return direct_path
+    # If no folder prefix, raise a clear error
+    msg = f"Dataset name must include category folder (e.g., 'golden/{name}'). Got: '{name}'"
+    raise ValueError(msg)
 
 
 def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, Any]]:
@@ -72,9 +50,7 @@ def load_dataset(name: str, include_metadata: bool = False) -> list[dict[str, An
     For v2.0 datasets, extracts the 'examples' array by default.
 
     Args:
-        name: Dataset name. Supports:
-              - New format: "golden/supervisor", "adversarial/adversarial"
-              - Legacy format: "supervisor_golden_v1", "adversarial_v2"
+        name: Dataset name (e.g., "golden/supervisor", "adversarial/adversarial")
         include_metadata: If True and v2.0 format, return full dataset with metadata.
 
     Returns:

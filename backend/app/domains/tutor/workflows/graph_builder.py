@@ -29,7 +29,7 @@ from app.domains.tutor.workflows.state_accessors import get_syllabus
 try:
     from langgraph.checkpoint.postgres import PostgresSaver  # type: ignore[unresolved-import]
 except ImportError:
-    PostgresSaver = None  # type: ignore[assignment, misc]
+    PostgresSaver = None
 
 logger = get_logger(__name__)
 

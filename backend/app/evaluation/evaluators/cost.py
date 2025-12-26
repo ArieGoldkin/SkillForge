@@ -11,10 +11,10 @@ All evaluators are compatible with Langfuse's evaluate() method.
 from typing import Any
 
 from app.core.model_registry import get_model_info
-from app.evaluation.types import Example, Run
+from app.evaluation.types import EvalExample, EvalRun
 
 
-def cost_evaluator(run: Run, _example: Example) -> dict[str, Any]:
+def cost_evaluator(run: EvalRun, _example: EvalExample) -> dict[str, Any]:
     """Evaluate API cost based on token usage.
 
     Calculates the estimated cost of the LLM call using token counts
@@ -76,7 +76,7 @@ def cost_evaluator(run: Run, _example: Example) -> dict[str, Any]:
     }
 
 
-def cost_per_correct_evaluator(run: Run, _example: Example) -> dict[str, Any]:
+def cost_per_correct_evaluator(run: EvalRun, _example: EvalExample) -> dict[str, Any]:
     """Evaluate cost-effectiveness (cost per correct answer).
 
     Combines cost and correctness to measure how cost-effective a model is.

@@ -453,4 +453,4 @@ def get_library_repository(
         LibraryRepository instance (implements ILibraryRepository Protocol)
 
     """
-    return LibraryRepository(session=db)  # type: ignore[return-value]
+    return LibraryRepository(session=db)

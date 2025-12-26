@@ -18,11 +18,13 @@ export type { MarkdownPreviewProps } from './types'
 /**
  * Empty state component for when no content is available
  */
-const EmptyState: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={cn('text-center py-8 text-muted-foreground', className)}>
-    <p>No content available</p>
-  </div>
-)
+function EmptyState({ className }: { className?: string }): React.ReactNode {
+  return (
+    <div className={cn('text-center py-8 text-muted-foreground', className)}>
+      <p>No content available</p>
+    </div>
+  )
+}
 
 /**
  * MarkdownPreview - Render markdown content with syntax highlighting
@@ -38,12 +40,12 @@ const EmptyState: React.FC<{ className?: string }> = ({ className }) => (
  * - HeadingIdProvider wraps ReactMarkdown with a fresh ID tracker per content
  * - Both use the same slugify() and duplicate-handling logic, ensuring IDs match
  */
-export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
+export function MarkdownPreview({
   content,
   metadata,
   className,
   showMetadata = true,
-}) => {
+}: MarkdownPreviewProps): React.ReactNode {
   if (!content || content.trim().length === 0) {
     return <EmptyState className={className} />
   }

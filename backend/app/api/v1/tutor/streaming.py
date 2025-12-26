@@ -35,7 +35,7 @@ def _get_broadcaster_backend() -> BroadcasterBackend:
 @router.get("/tutor/sessions/{session_id}/stream")
 async def stream_tutor_progress(
     session_id: uuid.UUID,
-    request: Request,  # noqa: ARG001 - Required by SSE framework for disconnect detection
+    request: Request,
 ) -> EventSourceResponse:
     """Stream real-time tutor progress via Server-Sent Events (SSE).
 

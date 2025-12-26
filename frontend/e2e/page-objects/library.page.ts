@@ -26,7 +26,9 @@ export class LibraryPage extends BasePage {
     this.searchModeToggle = page.getByTestId('search-mode-toggle').or(page.getByRole('combobox', { name: /mode/i }));
     // Cards can be in various formats - look for article elements or card-like structures
     this.analysisCards = page.getByTestId('analysis-card').or(page.locator('article, [class*="card"]').filter({ hasText: /.+/ }));
-    this.emptyState = page.getByTestId('empty-state').or(page.getByText(/no.*results|no.*found/i));
+    // Use only the test ID for empty state - the text fallback matches multiple elements (heading + paragraph)
+    // causing strict mode violations. Use .first() on the text fallback to avoid matching multiple elements.
+    this.emptyState = page.getByTestId('empty-state').or(page.getByText(/no.*results|no.*found/i).first());
     this.loadingState = page.getByTestId('loading-state').or(page.locator('[aria-busy="true"]'));
     this.pagination = page.getByTestId('pagination').or(page.getByRole('navigation', { name: /pagination/i }));
   }
@@ -82,11 +84,16 @@ export class LibraryPage extends BasePage {
    * Useful after navigation or search operations.
    */
   async waitForCards(timeout = 10000) {
-    // Wait for the list container to be visible first
-    await this.page.locator('[role="list"]').waitFor({ state: 'visible', timeout });
+    // Wait for either the list container OR empty state to be visible
+    await Promise.race([
+      this.page.locator('[role="list"]').waitFor({ state: 'visible', timeout }),
+      this.emptyState.waitFor({ state: 'visible', timeout }),
+    ]).catch(() => {
+      // Neither appeared - page might still be loading
+    });
 
     // Then wait for at least one card (if data exists)
-    // Using a shorter timeout since grid is already visible
+    // Using a shorter timeout since grid or empty state is already visible
     await this.analysisCards.first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
       // No cards might be valid (empty state)
     });

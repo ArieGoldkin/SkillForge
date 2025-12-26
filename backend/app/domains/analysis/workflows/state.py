@@ -129,3 +129,9 @@ class AnalysisState(TypedDict, total=False):
     # Issue #544: Stage resumption skip flags (for retry/rerun from specific stages)
     skip_extraction: bool  # True to skip extraction node (data already loaded from DB)
     skip_embedding: bool  # True to skip embedding node (data already loaded from DB)
+    # Issue #547 (GAP 4): Dynamic fan-in tracking
+    # These fields track how many agents were ACTUALLY dispatched vs completed
+    # to prevent stuck aggregation when agent counts don't match expectations
+    expected_agent_count: int  # Number of agents actually dispatched by router
+    dispatched_agents: list[str]  # List of agent names actually dispatched
+    completed_agent_count: int  # Incremented by each agent on completion (for validation)

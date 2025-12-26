@@ -101,7 +101,7 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
             if scope and scope.inject_memory and content_summary:
                 prior_memory = await _fetch_agent_memory(agent_type, content_summary)
                 if prior_memory:
-                    scoped_state["prior_memory"] = prior_memory  # type: ignore[typeddict-unknown-key]
+                    scoped_state["prior_memory"] = prior_memory
                     logger.debug(
                         "agent_router_memory_injected",
                         agent_type=agent_type,
@@ -125,13 +125,24 @@ async def route_to_agents(state: AnalysisState) -> list[Send]:
                 available_agents=list(agent_node_map.keys()),
             )
 
+    # Issue #547 (GAP 4): Track dispatched agents for fan-in validation
+    # This allows aggregation to know exactly how many agents to expect
+    dispatched_agent_types = [
+        agent_type for agent_type in selected_agents if agent_type in agent_node_map
+    ]
+
     logger.info(
         "agent_router_routing",
         analysis_id=state.get("analysis_id"),
         selected_agents=selected_agents,
+        dispatched_agents=dispatched_agent_types,
         send_count=len(sends),
+        expected_agent_count=len(dispatched_agent_types),
     )
 
+    # Note: We return Send objects which create parallel branches
+    # The expected_agent_count and dispatched_agents are logged for observability
+    # but actual state updates happen via agent findings accumulation
     return sends
 
 

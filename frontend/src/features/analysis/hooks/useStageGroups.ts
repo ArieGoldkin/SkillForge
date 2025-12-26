@@ -11,6 +11,8 @@ import { useMemo } from 'react'
 
 import type { StageName } from '@/schemas/base'
 
+import { assertNever } from '@lib/utils'
+
 import { STAGE_GROUPS, STAGE_TO_GROUP_MAP } from '../config/stageGroups'
 import type { GroupStatus, GroupStatusMeta, StageGroup } from '../types/accordion'
 
@@ -195,6 +197,11 @@ function computeGroupStatusMeta(
       case 'detecting_conflicts':
         running++
         break
+      case 'pending':
+        // Pending stages don't contribute to any counter
+        break
+      default:
+        assertNever(status)
     }
   }
 

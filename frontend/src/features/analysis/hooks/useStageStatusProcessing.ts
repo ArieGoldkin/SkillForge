@@ -10,14 +10,12 @@
 
 import { useMemo } from 'react'
 
-import { isProgressEvent, isCompleteEvent, isErrorEvent } from '@app-types/sse'
-import type { SSEEvent, SSEProgressEvent, StageName } from '@app-types/sse'
+import { isProgressEvent, isCompleteEvent, isErrorEvent } from '@/schemas/sse'
+import type { SSEEvent, SSEProgressEvent, StageName } from '@/schemas/sse'
 
-import {
-  normalizeStageNameFromBackend,
-  markSkippedAgents,
-  type StageStatusEntry,
-} from './stageConfig'
+import { normalizeStageNameFromBackend } from '../config/stageRegistry'
+
+import { markSkippedAgents, type StageStatusEntry } from './stageConfig'
 
 // ============================================================================
 // Types
