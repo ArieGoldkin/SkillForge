@@ -1,9 +1,9 @@
 ---
 name: react-server-components-framework
-description: Design and implement React Server Components with Next.js 15 App Router. Master server-first architecture, streaming SSR, Server Actions, and modern data fetching patterns for 2025+ frontend development.
-version: 1.0.0
+description: Design and implement React Server Components with Next.js 15 App Router. Master server-first architecture, streaming SSR, Server Actions, React 19 patterns, and modern data fetching for 2025+ development.
+version: 1.1.0
 author: AI Agent Hub
-tags: [frontend, react, nextjs, server-components, streaming, 2025]
+tags: [frontend, react, react-19, nextjs, server-components, streaming, 2025]
 ---
 
 # React Server Components Framework
@@ -198,6 +198,149 @@ grep -n "Parallel Routes" references/routing-patterns.md
 
 # Search migration guide
 grep -i "pages router\|getServerSideProps" references/migration-guide.md
+```
+
+---
+
+## React 19 Patterns (2025+)
+
+React 19 introduces significant changes to component patterns. This section covers the modernization requirements.
+
+**Detailed Implementation**: See `references/react-19-patterns.md` for:
+- Complete migration guide from React 18
+- Code transformation examples
+- Testing patterns for React 19 hooks
+
+### 1. Function Declarations over React.FC
+
+**React 19 deprecates `React.FC`** because it no longer includes `children` in props by default. Always use function declarations:
+
+```tsx
+// ❌ DEPRECATED (React 18 pattern)
+export const Button: React.FC<ButtonProps> = ({ children, onClick }) => {
+  return <button onClick={onClick}>{children}</button>
+}
+
+// ✅ RECOMMENDED (React 19 pattern)
+export function Button({ children, onClick }: ButtonProps): React.ReactNode {
+  return <button onClick={onClick}>{children}</button>
+}
+
+// ✅ ALSO VALID (arrow function without React.FC)
+export const Button = ({ children, onClick }: ButtonProps): React.ReactNode => {
+  return <button onClick={onClick}>{children}</button>
+}
+```
+
+**Benefits**:
+- Simpler type inference
+- Explicit `children` in props when needed
+- Better tree-shaking
+- Clearer component signatures
+
+### 2. Ref as Prop (Removal of forwardRef)
+
+**React 19 removes the need for `forwardRef`**. Refs are now passed as regular props:
+
+```tsx
+// ❌ DEPRECATED (React 18 pattern)
+import { forwardRef } from 'react'
+
+const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  return <input ref={ref} {...props} />
+})
+
+// ✅ RECOMMENDED (React 19 pattern)
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  ref?: React.Ref<HTMLInputElement>
+}
+
+export function Input({ ref, ...props }: InputProps): React.ReactNode {
+  return <input ref={ref} {...props} />
+}
+```
+
+**Note**: For backwards compatibility during migration, you can support both patterns temporarily.
+
+### 3. useActionState (replaces useFormState)
+
+**`useActionState`** is the new API for form state management:
+
+```tsx
+'use client'
+
+import { useActionState } from 'react'
+
+interface FormState {
+  message: string
+  success: boolean
+}
+
+async function submitForm(prevState: FormState, formData: FormData): Promise<FormState> {
+  const email = formData.get('email')
+  // Process form...
+  return { message: 'Submitted!', success: true }
+}
+
+export function ContactForm(): React.ReactNode {
+  const [state, formAction, isPending] = useActionState(submitForm, {
+    message: '',
+    success: false
+  })
+
+  return (
+    <form action={formAction}>
+      <input name="email" type="email" disabled={isPending} />
+      <SubmitButton />
+      {state.message && <p>{state.message}</p>}
+    </form>
+  )
+}
+```
+
+### 4. useFormStatus for Submit Buttons
+
+```tsx
+'use client'
+
+import { useFormStatus } from 'react-dom'
+
+export function SubmitButton(): React.ReactNode {
+  const { pending } = useFormStatus()
+
+  return (
+    <button type="submit" disabled={pending} aria-busy={pending}>
+      {pending ? 'Submitting...' : 'Submit'}
+    </button>
+  )
+}
+```
+
+### 5. useOptimistic for Optimistic Updates
+
+```tsx
+'use client'
+
+import { useOptimistic, useTransition } from 'react'
+
+interface Item { id: string; name: string }
+
+export function ItemList({ items }: { items: Item[] }): React.ReactNode {
+  const [optimisticItems, addOptimisticItem] = useOptimistic(
+    items,
+    (state, newItem: Item) => [...state, newItem]
+  )
+  const [, startTransition] = useTransition()
+
+  const handleAdd = async (item: Item) => {
+    startTransition(() => {
+      addOptimisticItem(item) // Immediate UI update
+    })
+    await saveItem(item) // Server mutation (auto-rollback on error)
+  }
+
+  return <ul>{optimisticItems.map(i => <li key={i.id}>{i.name}</li>)}</ul>
+}
 ```
 
 ---

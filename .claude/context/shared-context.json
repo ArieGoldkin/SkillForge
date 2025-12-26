@@ -395,6 +395,47 @@
   ],
   "architectural_decisions": [
     {
+      "decision": "React 19 Complete Modernization - Component Patterns & Hooks",
+      "rationale": "Comprehensive React 19 modernization replacing deprecated patterns with 2025 best practices. (1) Replaced React.FC with function declarations across 47 components - React.FC no longer includes children in type, making it misleading. (2) Previous forwardRef removal already completed for 11 UI components. (3) Added useOptimistic, useActionState, useFormStatus hooks. Pattern: `function Component(props: Props): React.ReactNode` replaces `const Component: React.FC<Props> = () => {}`.",
+      "date": "2025-12-26",
+      "status": "implemented",
+      "commit": "827c323e",
+      "files_modified": 53,
+      "lines_changed": "+2647 / -343",
+      "technical_decisions": {
+        "react_fc_replacement": "Function declarations with explicit Props type and React.ReactNode return",
+        "children_handling": "Explicit children: React.ReactNode in props when needed (not implicit)",
+        "ref_pattern": "ref?: React.Ref<ElementType> as regular prop, not forwardRef wrapper",
+        "displayName": "Preserved for React DevTools where components use memo()",
+        "test_wrappers": "React.createElement instead of JSX in test helpers to avoid import issues"
+      },
+      "components_converted": {
+        "library": 17,
+        "artifact": 12,
+        "analysis": 10,
+        "tutor_home": 10
+      },
+      "tests_added": {
+        "hook_tests": 5,
+        "total_lines": 1500,
+        "files": [
+          "useLibrarySearch.test.ts",
+          "useLibraryData.test.ts",
+          "useLibraryState.test.ts",
+          "useSkillsData.test.ts",
+          "useLibraryResultCount.test.ts"
+        ]
+      },
+      "quality_evidence": {
+        "typescript": "PASS - 0 errors",
+        "eslint": "PASS - 0 warnings",
+        "biome": "PASS - 11 info notices only",
+        "tests": "PASS - 1702 tests across 95 files"
+      },
+      "skill_updated": "react-server-components-framework v1.1.0",
+      "reference_created": "references/react-19-patterns.md"
+    },
+    {
       "decision": "React 19 API Adoption - useOptimistic, useActionState, useFormStatus",
       "rationale": "Adopted React 19 APIs to improve code quality and user experience. useOptimistic eliminates manual rollback logic in optimistic updates (useFeedback hook). useActionState consolidates form state management with single source of truth (Home component). useFormStatus enables automatic submit button state detection (SubmitButton component). All changes maintain backward compatibility - existing tests pass without modification.",
       "date": "2025-12-25",

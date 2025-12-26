@@ -1,10 +1,22 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "react-server-components-framework",
-  "version": "1.0.0",
-  "description": "Next.js 15 App Router, RSC patterns, Server Actions, streaming SSR, and modern data fetching",
+  "version": "1.1.0",
+  "description": "Next.js 15 App Router, RSC patterns, Server Actions, React 19 modernization, streaming SSR, and data fetching",
 
   "capabilities": {
+    "react-19-patterns": {
+      "keywords": ["react 19", "React.FC", "forwardRef", "useActionState", "useFormStatus", "useOptimistic", "function declaration"],
+      "solves": [
+        "How do I replace React.FC in React 19?",
+        "forwardRef replacement pattern",
+        "useActionState vs useFormState",
+        "React 19 component declaration best practices",
+        "Modernize React components for 2025"
+      ],
+      "reference_file": "references/react-19-patterns.md",
+      "token_cost": 220
+    },
     "rsc-patterns": {
       "keywords": ["rsc", "server component", "client component", "use client", "use server"],
       "solves": [
@@ -58,8 +70,8 @@
   },
 
   "triggers": {
-    "high_confidence": ["next.*js.*15", "server.*component", "app.*router", "server.*action"],
-    "medium_confidence": ["react.*18", "rsc", "use.*server"]
+    "high_confidence": ["next.*js.*15", "server.*component", "app.*router", "server.*action", "react.*19", "React\\.FC", "forwardRef"],
+    "medium_confidence": ["rsc", "use.*server", "useActionState", "useFormStatus", "useOptimistic"]
   },
 
   "integrates_with": ["type-safety-validation", "design-system-starter"],
