@@ -144,6 +144,10 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      - name: Check bundle sizes
+        working-directory: ./frontend
+        run: npm run build:check-size
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
         with:
@@ -152,3 +156,53 @@ jobs:
           compression-level: 0
           retention-days: 7
           if-no-files-found: warn
+
+  # ============================================================================
+  # Phase 4: VISUAL REGRESSION (Percy) - Only run on PRs
+  # ============================================================================
+  visual-regression:
+    needs: [build]
+    runs-on: self-hosted
+    # Only run Percy on pull requests to avoid consuming snapshots on every push
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure PATH
+        run: |
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+
+      - name: Verify Node version
+        run: node --version && npm --version
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install chromium --with-deps
+
+      - name: Start test environment
+        working-directory: ./frontend
+        run: npm run test:env:up
+
+      - name: Wait for services to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:5174 > /dev/null 2>&1; do sleep 2; done' || true
+          timeout 60 bash -c 'until curl -f http://localhost:8501/health > /dev/null 2>&1; do sleep 2; done' || true
+
+      - name: Run Percy visual regression tests
+        working-directory: ./frontend
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+          PLAYWRIGHT_BASE_URL: http://localhost:5174
+          API_BASE_URL: http://localhost:8501
+        run: npm run e2e:percy
+
+      - name: Stop test environment
+        if: always()
+        working-directory: ./frontend
+        run: npm run test:env:down
