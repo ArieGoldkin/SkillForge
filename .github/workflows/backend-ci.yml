@@ -78,7 +78,7 @@ jobs:
           # Force fresh venv if cache is corrupted (check ruff, since that's what this job uses)
           if [ -d ".venv" ] && ! poetry run ruff --version >/dev/null 2>&1; then
             echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv
+            rm -rf .venv 2>/dev/null || true
           fi
           poetry install --no-interaction --no-root
 
@@ -126,7 +126,7 @@ jobs:
           # Force fresh venv if cache is corrupted (check ty, since that's what this job uses)
           if [ -d ".venv" ] && ! poetry run ty --version >/dev/null 2>&1; then
             echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv
+            rm -rf .venv 2>/dev/null || true
           fi
           poetry install --no-interaction --no-root
 
@@ -176,7 +176,7 @@ jobs:
           # Force fresh venv if cache is corrupted (check pytest, since that's what this job uses)
           if [ -d ".venv" ] && ! poetry run pytest --version >/dev/null 2>&1; then
             echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv
+            rm -rf .venv 2>/dev/null || true
           fi
           poetry install --no-interaction --no-root
 

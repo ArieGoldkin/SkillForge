@@ -58,7 +58,7 @@ jobs:
           if [ -d ".venv" ]; then
             if ! poetry run pytest --version >/dev/null 2>&1; then
               echo "⚠️ Cached venv appears corrupted (pytest not found), removing..."
-              rm -rf .venv
+              rm -rf .venv 2>/dev/null || true
             else
               echo "✓ Cached venv appears healthy"
             fi
