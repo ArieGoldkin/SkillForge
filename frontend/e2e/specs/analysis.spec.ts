@@ -197,9 +197,8 @@ test.describe('Analysis Page - Progress Tracking', () => {
     // For completed analyses, completion should be immediate or very fast
     await analyzePage.waitForComplete();
 
-    // Verify artifact link is available
-    await expect(
-      page.getByRole('link', { name: /view.*guide|view.*artifact|view.*result/i })
-    ).toBeVisible();
+    // Verify artifact button/link is available
+    // Note: UI uses either a button ("View Results") or link ("View Guide") depending on context
+    await expect(analyzePage.viewArtifactButton).toBeVisible();
   });
 });
