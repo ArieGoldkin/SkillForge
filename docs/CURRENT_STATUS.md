@@ -1,9 +1,44 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 15, 2025
+**Date:** December 27, 2025
 **Branch:** `dev`
-**Current Focus:** 🟡 Tutoring System UI (Issues #113, #114, #116) + 🟤 Artifact Quality (Issues #299-304)
+**Current Focus:** 🟢 Langfuse Observability (Issues #564, #566 ✅ CLOSED) + 🟡 Stabilizing Milestone
 **Path to Launch:** Triple-Consumer → Tutoring → Evaluation → Content Expansion → Staging/Production → Voice Tutor → Multimodal → MCP Server
+
+---
+
+## 🔍 Langfuse Observability Improvements (Issues #564, #566) - ✅ COMPLETED
+
+**Status:** 🟢 MERGED (December 27, 2025)
+**PR:** #584
+**Coverage:** 80%+ (2100+ tests passing)
+
+### Summary
+Fixed Langfuse prompt observation linking and added release tracking for production observability.
+
+### Changes Made
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Prompt-to-Generation Linking** | All 19 prompts now show observation counts | ✅ Complete |
+| **Release Tracking** | Traces include version/release for deployment correlation | ✅ Complete |
+| **Flaky Test Fix** | Eliminated race conditions with async task awaiting | ✅ Complete |
+| **Poetry Lock Sync** | Fixed CI failures from stale lock file | ✅ Complete |
+
+### Key Files Modified
+
+| File | Change |
+|------|--------|
+| `prompt_manager.py` | Returns prompt metadata for linking |
+| `invocation.py` | Adds `langfuse_prompt` to observations |
+| `factories.py` | All 12 agent factories pass prompt metadata |
+| `progress.py` | Returns `asyncio.Task` for awaiting (best practice) |
+| `sse_helpers.py` | Returns persistence task to eliminate race conditions |
+
+### Test Results
+- Error handling tests: 15/15 PASSED (3x runs, 16 workers)
+- Unit tests (SSE): 17/17 PASSED
+- Integration tests: 482+ PASSED
 
 ---
 
