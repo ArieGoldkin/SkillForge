@@ -39,19 +39,21 @@ def test_extract_findings_summary_tech_comparator():
 
 def test_extract_findings_summary_security_auditor():
     """Test _extract_findings_summary for security_auditor."""
+    # Use correct schema field names: security_risks, best_practices, compliance_notes
     findings = {
-        "vulnerabilities": [{"risk_type": "XSS", "severity": "high"}],
-        "recommendations": [{"type": "input_validation", "priority": "high"}],
+        "security_risks": [{"risk_type": "XSS", "severity": "high"}],
+        "best_practices": [{"type": "input_validation", "priority": "high"}],
     }
     summary = _extract_findings_summary(findings, "security_auditor")
-    assert "1" in summary  # 1 vulnerability
-    assert "1" in summary  # 1 recommendation
+    assert "1" in summary  # 1 security risk
+    assert "1" in summary  # 1 recommendation (best_practices)
 
 
 def test_extract_findings_summary_implementation_planner():
     """Test _extract_findings_summary for implementation_planner."""
+    # Use correct schema field name: 'steps' not 'implementation_steps'
     findings = {
-        "implementation_steps": [
+        "steps": [
             {"step": 1, "description": "Setup"},
             {"step": 2, "description": "Configure"},
             {"step": 3, "description": "Deploy"},
@@ -72,18 +74,20 @@ def test_count_insights_tech_comparator():
 
 def test_count_insights_security_auditor():
     """Test _count_insights for security_auditor."""
+    # Use correct schema field names: security_risks, best_practices
     findings = {
-        "vulnerabilities": [{"risk_type": "XSS"}],
-        "recommendations": [{"type": "input_validation"}, {"type": "encryption"}],
+        "security_risks": [{"risk_type": "XSS"}],
+        "best_practices": [{"type": "input_validation"}, {"type": "encryption"}],
     }
     count = _count_insights(findings, "security_auditor")
-    assert count == 3  # 1 vulnerability + 2 recommendations
+    assert count == 3  # 1 security_risk + 2 best_practices
 
 
 def test_count_insights_implementation_planner():
     """Test _count_insights for implementation_planner."""
+    # Use correct schema field name: 'steps' not 'implementation_steps'
     findings = {
-        "implementation_steps": [
+        "steps": [
             {"step": 1},
             {"step": 2},
             {"step": 3},
@@ -160,12 +164,13 @@ async def test_process_agent_result_emits_rich_details_security_auditor(
     mock_emit, mock_save, mock_persist, mock_session, sample_analysis_id
 ):
     """Test rich details emission for security_auditor."""
+    # Use correct schema field names: security_risks, best_practices
     findings = {
-        "vulnerabilities": [
+        "security_risks": [
             {"risk_type": "XSS", "severity": "high"},
             {"risk_type": "CSRF", "severity": "medium"},
         ],
-        "recommendations": [{"type": "input_validation", "priority": "high"}],
+        "best_practices": [{"type": "input_validation", "priority": "high"}],
         "confidence_score": 0.90,
     }
     agent_type = "security_auditor"
@@ -183,6 +188,6 @@ async def test_process_agent_result_emits_rich_details_security_auditor(
     call_kwargs = mock_emit.call_args.kwargs
     assert "findings_summary" in call_kwargs
     assert "insights_count" in call_kwargs
-    assert call_kwargs["insights_count"] == 3  # 2 vulnerabilities + 1 recommendation
-    assert "2" in call_kwargs["findings_summary"]  # 2 vulnerabilities
+    assert call_kwargs["insights_count"] == 3  # 2 security_risks + 1 best_practice
+    assert "2" in call_kwargs["findings_summary"]  # 2 security risks
     assert "1" in call_kwargs["findings_summary"]  # 1 recommendation

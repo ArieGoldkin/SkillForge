@@ -257,11 +257,12 @@ class Settings(BaseSettings):
         ),
     )
     LLM_MAX_RETRIES: int = Field(
-        default=3,
+        default=2,
         description=(
             "Maximum number of retry attempts for LLM API calls. "
             "Uses LangChain's built-in retry mechanism via max_retries parameter. "
-            "Defaults to 3. Set to 0 to disable retries."
+            "Defaults to 2 (reduced from 3 to avoid retry cascade with LCEL chains). "
+            "Set to 0 to disable retries."
         ),
     )
 
@@ -605,13 +606,14 @@ class Settings(BaseSettings):
         ),
     )
     SELF_CORRECTION_MAX_RETRIES: int = Field(
-        default=2,
+        default=1,
         ge=0,
         le=5,
         description=(
             "Maximum number of self-correction retries per agent (0-5). "
             "Cost per retry: ~500 input + 300 output tokens (~$0.0002 with DeepSeek V3). "
-            "Recommended: 2 (balances quality vs latency). Set to 0 to disable."
+            "Reduced from 2 to 1 to avoid retry cascade (LangChain already retries). "
+            "Set to 0 to disable."
         ),
     )
     SELF_CORRECTION_COMPACT_PROMPTS: bool = Field(

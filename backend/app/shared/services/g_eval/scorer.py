@@ -768,11 +768,13 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
 
             # Use abatch() for parallel LLM processing (5-10x faster than gather)
             config = create_runnable_config()
+            config["max_concurrency"] = (
+                5  # Prevent rate limit violations (must be in config, not kwarg)
+            )
             # Type checker doesn't see list[BaseMessage] as valid Sequence[BaseMessage]
             responses = await model.abatch(
                 batch_inputs,  # type: ignore[arg-type]
                 config=config,
-                max_concurrency=5,  # Prevent rate limit violations
             )
 
             # Parse responses and cache results

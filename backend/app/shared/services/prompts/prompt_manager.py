@@ -22,6 +22,7 @@ Benefits:
 - Cost optimization through caching
 """
 
+import re
 from collections import OrderedDict
 from datetime import UTC, datetime
 from typing import Any
@@ -1326,6 +1327,13 @@ class PromptManager:
     def _compile_prompt(self, prompt: str, variables: dict[str, Any]) -> str:
         """Compile prompt with variable substitution.
 
+        Issue #586: Uses selective regex substitution instead of str.format()
+        to avoid conflicts with JSON examples in Langfuse prompts.
+
+        str.format() interprets ALL {word} as variables, which breaks when
+        prompts contain JSON like {"immediate_actions": [...]}. This method
+        only substitutes variables that are explicitly provided.
+
         Args:
             prompt: Prompt template
             variables: Variables to substitute
@@ -1334,16 +1342,33 @@ class PromptManager:
             Compiled prompt string
 
         """
-        try:
-            return prompt.format(**variables)
-        except KeyError as e:
-            logger.error(
-                "prompt_compilation_failed",
-                error=f"Missing variable: {e}",
-                variables_provided=list(variables.keys()),
-                exc_info=True,
+        if not variables:
+            return prompt
+
+        def replace_var(match: re.Match[str]) -> str:
+            """Replace only if variable is in provided dict."""
+            var_name = match.group(1)
+            if var_name in variables:
+                return str(variables[var_name])
+            # Leave unmatched braces as-is (could be JSON)
+            return match.group(0)
+
+        # Match {word} patterns where word is alphanumeric + underscore
+        # This matches template variables but not JSON keys with colons/quotes
+        pattern = r"\{(\w+)\}"
+        result = re.sub(pattern, replace_var, prompt)
+
+        # Log if some provided variables weren't used (potential typo)
+        used_vars = set(re.findall(r"\{(\w+)\}", prompt))
+        unused_vars = set(variables.keys()) - used_vars
+        if unused_vars:
+            logger.debug(
+                "prompt_compilation_unused_variables",
+                unused=list(unused_vars),
+                prompt_vars=list(used_vars),
             )
-            raise
+
+        return result
 
     async def get_prompt_with_langfuse_client(
         self,
