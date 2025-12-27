@@ -1,9 +1,10 @@
 """Unit tests for ArXiv PDF extractor.
 
 Tests UTF-8 sanitization in PDF content extraction pipeline.
+Tests pypdf 6.x features including extraction_mode="layout".
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 from pypdf import PdfReader
@@ -255,3 +256,128 @@ class TestArxivPDFExtractorIntegration:
         assert "Page 2 content" in content
         assert "Page 3 content" in content
         assert page_count == 3
+
+
+class TestPypdf6xLayoutMode:
+    """Tests for pypdf 6.x extraction_mode='layout' feature.
+
+    pypdf 6.x introduced extraction_mode parameter for better handling of
+    multi-column layouts common in academic papers (especially arXiv).
+    """
+
+    @pytest.fixture
+    def extractor(self) -> ArxivPDFExtractor:
+        """Create ArxivPDFExtractor instance."""
+        return ArxivPDFExtractor()
+
+    def test_extract_pdf_text_uses_layout_mode(self, extractor: ArxivPDFExtractor) -> None:
+        """Test that extraction uses extraction_mode='layout' for 2-column papers.
+
+        pypdf 6.x: extraction_mode='layout' preserves column order in research papers,
+        preventing text from adjacent columns being merged incorrectly.
+        """
+        # Arrange - mock page with extract_text method
+        mock_page = Mock()
+        mock_page.extract_text.return_value = "Column 1 text\nColumn 2 text"
+
+        mock_reader = Mock(spec=PdfReader)
+        mock_reader.pages = [mock_page]
+        mock_reader.metadata = {"/Title": "Two-Column Paper"}
+
+        # Act
+        with patch(
+            "app.shared.services.extraction.arxiv_pdf_extractor.PdfReader"
+        ) as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            extractor._extract_pdf_text(b"fake pdf bytes", "2512.08296")
+
+        # Assert - verify extract_text was called with extraction_mode="layout"
+        mock_page.extract_text.assert_called_with(extraction_mode="layout")
+
+    def test_title_extraction_uses_layout_mode(self, extractor: ArxivPDFExtractor) -> None:
+        """Test that title extraction also uses layout mode for consistency."""
+        # Arrange
+        mock_page = Mock()
+        mock_page.extract_text.return_value = (
+            "A Novel Approach to Retrieval-Augmented Generation\n"
+            "Author Name, Institution\n"
+            "Abstract: This paper presents..."
+        )
+
+        mock_reader = Mock(spec=PdfReader)
+        mock_reader.pages = [mock_page]
+        mock_reader.metadata = None  # Force title extraction from first page
+
+        # Act
+        with patch(
+            "app.shared.services.extraction.arxiv_pdf_extractor.PdfReader"
+        ) as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            _content, title, _page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
+
+        # Assert - title should be extracted from first line
+        assert title == "A Novel Approach to Retrieval-Augmented Generation"
+        # Verify layout mode was used (called twice: once for title, once for content)
+        assert mock_page.extract_text.call_count == 2
+        mock_page.extract_text.assert_called_with(extraction_mode="layout")
+
+    def test_multipage_extraction_all_use_layout_mode(
+        self, extractor: ArxivPDFExtractor
+    ) -> None:
+        """Test that all pages use layout mode extraction."""
+        # Arrange - 3-page document
+        mock_pages = []
+        for i in range(3):
+            mock_page = Mock()
+            mock_page.extract_text.return_value = f"Page {i + 1} content"
+            mock_pages.append(mock_page)
+
+        mock_reader = Mock(spec=PdfReader)
+        mock_reader.pages = mock_pages
+        mock_reader.metadata = {"/Title": "Multi-page Research Paper"}
+
+        # Act
+        with patch(
+            "app.shared.services.extraction.arxiv_pdf_extractor.PdfReader"
+        ) as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            content, _title, page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
+
+        # Assert - all pages should use layout mode
+        assert page_count == 3
+        for mock_page in mock_pages:
+            mock_page.extract_text.assert_called_with(extraction_mode="layout")
+
+    def test_layout_mode_preserves_content_structure(
+        self, extractor: ArxivPDFExtractor
+    ) -> None:
+        """Test that layout mode extraction preserves page markers and structure."""
+        # Arrange - simulate layout-preserved content
+        mock_page = Mock()
+        mock_page.extract_text.return_value = (
+            "Left Column               Right Column\n"
+            "Introduction text         Methods section\n"
+            "continues here            with details\n"
+        )
+
+        mock_reader = Mock(spec=PdfReader)
+        mock_reader.pages = [mock_page]
+        mock_reader.metadata = {"/Title": "Test"}
+
+        # Act
+        with patch(
+            "app.shared.services.extraction.arxiv_pdf_extractor.PdfReader"
+        ) as mock_pdf_reader:
+            mock_pdf_reader.return_value = mock_reader
+            content, _title, _page_count = extractor._extract_pdf_text(
+                b"fake pdf bytes", "2512.08296"
+            )
+
+        # Assert - content should have page markers and preserve structure
+        assert "[Page 1]" in content
+        assert "Left Column" in content
+        assert "Right Column" in content
