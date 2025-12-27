@@ -584,6 +584,14 @@ class Settings(BaseSettings):
         default="http://localhost:3000",
         description="Langfuse server URL",
     )
+    LANGFUSE_RELEASE: str | None = Field(
+        default=None,
+        description=(
+            "Release/version identifier for Langfuse traces (Issue #566). "
+            "Enables filtering traces by deployment version in Langfuse UI. "
+            "Typically set to git commit SHA or semantic version."
+        ),
+    )
 
     # Agent Self-Correction Configuration (Issue #507)
     SELF_CORRECTION_ENABLED: bool = Field(

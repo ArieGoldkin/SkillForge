@@ -29,6 +29,7 @@ from typing import Any
 from app.core.config import get_settings
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
+from app.core.tracing import update_current_observation
 from app.shared.services.cache.redis_connection import create_redis_client
 
 logger = get_logger(__name__)
@@ -1339,6 +1340,46 @@ class PromptManager:
             )
             raise
 
+    def _record_prompt_observation(
+        self,
+        name: str,
+        label: str,
+        source: str,
+        version: str | int = "unknown",
+    ) -> None:
+        """Record prompt usage to current Langfuse observation.
+
+        Issue #564: Links prompt fetches to traces for observability.
+        This enables prompt usage analytics and A/B testing in Langfuse UI.
+
+        Args:
+            name: Prompt name
+            label: Prompt label (e.g., "production")
+            source: Where prompt was fetched from (l1_cache, l2_cache, langfuse, hardcoded)
+            version: Prompt version (from Langfuse or source indicator)
+
+        """
+        try:
+            update_current_observation(
+                metadata={
+                    "prompt_name": name,
+                    "prompt_label": label,
+                    "prompt_source": source,
+                    "prompt_version": str(version),
+                }
+            )
+            logger.debug(
+                "prompt_observation_recorded",
+                name=name,
+                label=label,
+                source=source,
+                version=version,
+            )
+        except Exception:  # noqa: BLE001, S110 - Silent fallback when not in traced context
+            # Don't fail prompt fetching if observation recording fails
+            # This can happen if we're not in a traced context (expected behavior)
+            pass
+
     async def get_prompt(
         self,
         name: str,
@@ -1352,6 +1393,8 @@ class PromptManager:
         2. Try L2 cache (Redis)
         3. Try L3 source (Langfuse API)
         4. Fallback to hardcoded prompts
+
+        Issue #564: Records prompt usage to Langfuse observation for analytics.
 
         Args:
             name: Prompt name (e.g., "analysis-supervisor-routing")
@@ -1378,6 +1421,7 @@ class PromptManager:
         # L1 Cache: In-memory LRU
         cached_prompt = await self._get_from_l1_cache(name, label)
         if cached_prompt:
+            self._record_prompt_observation(name, label, "l1_cache", "cached")
             return self._compile_prompt(cached_prompt, variables)
 
         # L2 Cache: Redis
@@ -1385,6 +1429,7 @@ class PromptManager:
         if cached_prompt:
             # Populate L1 cache
             self.l1_cache.set(self._build_cache_key(name, label), cached_prompt)
+            self._record_prompt_observation(name, label, "l2_cache", "cached")
             return self._compile_prompt(cached_prompt, variables)
 
         # L3 Source: Langfuse API
@@ -1395,6 +1440,9 @@ class PromptManager:
             if prompt_content and prompt_content.strip():
                 # Cache in both L1 and L2
                 await self._cache_prompt(name, label, prompt_content)
+                self._record_prompt_observation(
+                    name, label, "langfuse", prompt_obj.get("version", "unknown")
+                )
                 return self._compile_prompt(prompt_content, variables)
 
             logger.warning(
@@ -1408,6 +1456,7 @@ class PromptManager:
         hardcoded_prompt = self._get_hardcoded_prompt(name)
         if hardcoded_prompt:
             # Don't cache hardcoded prompts (they're already in memory)
+            self._record_prompt_observation(name, label, "hardcoded", "embedded")
             return self._compile_prompt(hardcoded_prompt, variables)
 
         # Not found anywhere
