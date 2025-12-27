@@ -57,6 +57,8 @@ from langchain_core.outputs import ChatResult  # noqa: TC002
 from pydantic import ConfigDict, Field, PrivateAttr
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 
 
@@ -377,6 +379,97 @@ class CachedChatModel(BaseChatModel):
                 cache_key=cache_key[:16] + "..." if cache_key else "unknown",
             )
             raise
+
+    def with_structured_output(
+        self,
+        schema: Any,
+        *,
+        include_raw: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        """Delegate structured output to wrapped model.
+
+        This method allows the cached model to work with structured output
+        schemas (Pydantic models, TypedDict, JSON schema). The caching
+        behavior is preserved because the wrapped model's invoke methods
+        are still called through our cached _agenerate.
+
+        Args:
+            schema: The output schema (Pydantic model, TypedDict, or JSON schema)
+            include_raw: If True, return both raw and parsed output
+            **kwargs: Additional arguments passed to wrapped model
+
+        Returns:
+            A runnable that outputs structured data matching the schema
+
+        Example:
+            >>> from pydantic import BaseModel
+            >>> class Response(BaseModel):
+            ...     answer: str
+            ...     confidence: float
+            >>> structured = cached_model.with_structured_output(Response)
+            >>> result = await structured.ainvoke(messages)
+            >>> print(result.answer, result.confidence)
+
+        """
+        # Delegate to wrapped model - it knows how to create structured output
+        return self.model.with_structured_output(
+            schema,
+            include_raw=include_raw,
+            **kwargs,
+        )
+
+    def with_fallbacks(
+        self,
+        fallbacks: Sequence[Any],
+        *,
+        exceptions_to_handle: tuple[type[BaseException], ...] = (Exception,),
+        exception_key: str | None = None,
+    ) -> Any:
+        """Delegate fallback configuration to wrapped model.
+
+        This method allows the cached model to work with fallback models.
+        If the primary model fails, the fallbacks are tried in order.
+
+        Args:
+            fallbacks: Sequence of fallback models/runnables
+            exceptions_to_handle: Exception types that trigger fallback
+            exception_key: Key to use for exception in output dict
+
+        Returns:
+            A runnable with fallback behavior configured
+
+        Example:
+            >>> fallback = get_chat_model(provider="openai")
+            >>> model_with_fallback = cached_model.with_fallbacks([fallback])
+            >>> result = await model_with_fallback.ainvoke(messages)
+
+        """
+        # Delegate to wrapped model
+        return self.model.with_fallbacks(
+            fallbacks,
+            exceptions_to_handle=exceptions_to_handle,
+            exception_key=exception_key,
+        )
+
+    def bind(self, **kwargs: Any) -> Any:
+        """Delegate bind to wrapped model.
+
+        This method allows binding configuration like temperature, max_tokens,
+        or tools to the model. The returned runnable maintains caching.
+
+        Args:
+            **kwargs: Configuration to bind (temperature, max_tokens, tools, etc.)
+
+        Returns:
+            A runnable with bound configuration
+
+        Example:
+            >>> bound = cached_model.bind(temperature=0.5, max_tokens=1000)
+            >>> result = await bound.ainvoke(messages)
+
+        """
+        return self.model.bind(**kwargs)
 
     def clear_cache(self) -> None:
         """Clear L1 cache for this model instance.
