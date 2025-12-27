@@ -8,8 +8,8 @@
     "types": ["vite/client", "vitest/globals", "node"],
     "skipLibCheck": true,
 
-    /* Node resolution for proper path alias support */
-    "moduleResolution": "node",
+    /* Bundler resolution - modern best practice for Vite (Dec 2025) */
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "moduleDetection": "force",
@@ -38,5 +38,12 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**", "src/test-utils/**"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__tests__/**",
+    "src/test-utils/**",
+    "src/**/*.stories.tsx",
+    "src/**/*.stories.ts"
+  ]
 }
