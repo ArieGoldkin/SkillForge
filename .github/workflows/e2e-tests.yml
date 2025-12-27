@@ -46,10 +46,12 @@ permissions:
   pull-requests: read
   contents: read
 
-# Prevent concurrent E2E runs on the same branch to avoid resource conflicts
+# GLOBAL Docker mutex: Prevents Buildx conflicts across ALL Docker-heavy workflows
+# Uses shared group name "docker-mutex-*" that Docker Build also uses
+# This ensures E2E Tests and Docker Build never run Docker simultaneously on same branch
 concurrency:
-  group: e2e-tests-${{ github.ref }}
-  cancel-in-progress: true
+  group: docker-mutex-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false  # Don't cancel - wait for Docker Build to complete
 
 # =============================================================================
 # Environment Variables (non-sensitive, shared across jobs)

@@ -28,11 +28,12 @@ on:
       - 'docker-compose*.yml'
       - 'Dockerfile*'
 
-# Ensure only one Docker Build runs at a time per PR/branch
-# This prevents Buildx container conflicts on self-hosted runners
+# GLOBAL Docker mutex: Prevents Buildx conflicts across ALL Docker-heavy workflows
+# Uses shared group name "docker-mutex-*" that E2E Tests also uses
+# This ensures Docker Build and E2E Tests never run Docker simultaneously on same branch
 concurrency:
-  group: docker-build-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: docker-mutex-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false  # Don't cancel - let builds complete
 
 env:
   REGISTRY: ghcr.io
