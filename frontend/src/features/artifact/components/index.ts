@@ -14,3 +14,9 @@ export { FeedbackButtons } from './FeedbackButtons'
 export { CommentDialog } from './CommentDialog'
 export { QualityWarningBanner, type QualityWarningBannerProps } from './QualityWarningBanner'
 export { ArtifactSkeleton } from './ArtifactSkeleton'
+export {
+  SuspenseArtifactContent,
+  type SuspenseArtifactContentProps,
+  type ArtifactData,
+} from './SuspenseArtifactContent'
+export { fetchArtifactData } from '../api/fetchArtifactData'
