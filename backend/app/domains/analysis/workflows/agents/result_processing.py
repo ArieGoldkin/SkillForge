@@ -50,7 +50,7 @@ MIN_INSIGHTS_PARTIAL = 2
 MAX_KEY_INSIGHTS = 3
 
 
-def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:  # noqa: PLR0911, PLR0912 - Multiple returns/branches needed for agent-specific extraction logic
+def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:  # noqa: PLR0911, PLR0912, PLR0915 - Multiple returns/branches/statements needed for agent-specific extraction logic
     """Extract human-readable summary from findings.
 
     Args:
@@ -170,7 +170,7 @@ def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> s
     return "Analysis complete"
 
 
-def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noqa: PLR0911 - Multiple returns needed for agent-specific insight counting
+def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noqa: PLR0911, PLR0912, PLR0915 - Multiple returns/branches/statements needed for agent-specific insight counting
     """Count number of insights in findings.
 
     Args:
