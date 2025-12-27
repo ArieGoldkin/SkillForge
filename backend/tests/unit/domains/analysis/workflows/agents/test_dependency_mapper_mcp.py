@@ -48,8 +48,8 @@ def mock_state():
 def mock_prompt_manager():
     """Create mock PromptManager for all tests."""
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a dependency mapper agent. Analyze dependencies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a dependency mapper agent. Analyze dependencies.", None)
     )
     return mock_pm
 

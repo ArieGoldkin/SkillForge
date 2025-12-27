@@ -373,8 +373,11 @@ async def run_learning_path_advisor(  # noqa: PLR0913 - All parameters required 
     )
 
     # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # Issue #564: Use get_prompt_with_langfuse_client() for prompt observation linkage
     prompt_manager = get_prompt_manager()
-    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+    base_prompt, langfuse_prompt_client = await prompt_manager.get_prompt_with_langfuse_client(
+        PROMPT_NAME
+    )
 
     # Build prompt with skill level instructions, grounding, and memory context
     prompt_with_instructions = f"{base_prompt}\n\n{skill_instructions}"
@@ -406,6 +409,10 @@ demonstrated expertise. Make connections between this content and their prior le
         session=session,
         tools=tools,  # Usually None for Tier 3 memory-based agents
     )
+
+    # Issue #564: Attach Langfuse prompt client to agent for observation linkage
+    if langfuse_prompt_client:
+        agent = agent.with_config(metadata={"langfuse_prompt_client": langfuse_prompt_client})
 
     if tools:
         logger.info(

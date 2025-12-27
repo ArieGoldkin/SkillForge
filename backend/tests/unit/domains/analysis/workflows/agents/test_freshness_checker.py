@@ -484,7 +484,9 @@ class TestFreshnessCheckerPromptManager:
         ):
             # Setup prompt manager mock
             mock_pm = AsyncMock()
-            mock_pm.get_prompt.return_value = "Test prompt from Langfuse"
+            mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+                return_value=("Test prompt from Langfuse", None)
+            )
             mock_get_pm.return_value = mock_pm
 
             mock_agent = AsyncMock()
@@ -506,4 +508,4 @@ class TestFreshnessCheckerPromptManager:
             )
 
             # Verify PromptManager was called
-            mock_pm.get_prompt.assert_called_once_with("analysis-agent-freshness-checker")
+            mock_pm.get_prompt_with_langfuse_client.assert_called_once_with("analysis-agent-freshness-checker")

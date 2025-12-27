@@ -128,7 +128,9 @@ async def test_agent_applies_grounding(
     ):
         # Configure PromptManager mock
         mock_pm = AsyncMock()
-        mock_pm.get_prompt = AsyncMock(return_value=test_base_prompt)
+        mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=(test_base_prompt, None)
+        )
         mock_get_pm.return_value = mock_pm
 
         # Run the agent
@@ -147,7 +149,7 @@ async def test_agent_applies_grounding(
         )
 
         # Verify the prompt manager was called
-        mock_pm.get_prompt.assert_called_once_with(prompt_name)
+        mock_pm.get_prompt_with_langfuse_client.assert_called_once_with(prompt_name)
 
         # Verify the prompt contains more than just grounding (includes base prompt)
         assert len(captured_prompt) > len(GROUNDING_INSTRUCTIONS), (
@@ -179,7 +181,9 @@ async def test_tech_comparator_uses_grounding(
     ):
         # Mock PromptManager
         mock_pm = AsyncMock()
-        mock_pm.get_prompt = AsyncMock(return_value="Base tech comparator prompt")
+        mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("Base tech comparator prompt", None)
+        )
         mock_get_pm.return_value = mock_pm
 
         # Set return value for apply_grounding
@@ -221,7 +225,9 @@ async def test_security_auditor_uses_grounding(
     ):
         # Mock PromptManager
         mock_pm = AsyncMock()
-        mock_pm.get_prompt = AsyncMock(return_value="Base security auditor prompt")
+        mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("Base security auditor prompt", None)
+        )
         mock_get_pm.return_value = mock_pm
 
         mock_apply.return_value = "grounded_prompt"
@@ -263,7 +269,9 @@ async def test_implementation_planner_uses_grounding(
     ):
         # Mock PromptManager
         mock_pm = AsyncMock()
-        mock_pm.get_prompt = AsyncMock(return_value="Base implementation planner prompt")
+        mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("Base implementation planner prompt", None)
+        )
         mock_get_pm.return_value = mock_pm
 
         mock_apply.return_value = "grounded_prompt"

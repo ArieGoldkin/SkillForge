@@ -147,8 +147,8 @@ async def test_run_dependency_mapper_success(
 
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a dependency mapper agent. Analyze dependencies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a dependency mapper agent. Analyze dependencies.", None)
     )
     mock_get_pm.return_value = mock_pm
 
@@ -206,8 +206,8 @@ async def test_run_dependency_mapper_error_handling(
 
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a dependency mapper agent. Analyze dependencies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a dependency mapper agent. Analyze dependencies.", None)
     )
     mock_get_pm.return_value = mock_pm
 
@@ -237,8 +237,8 @@ async def test_run_dependency_mapper_schema_validation(
 
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a dependency mapper agent. Analyze dependencies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a dependency mapper agent. Analyze dependencies.", None)
     )
     mock_get_pm.return_value = mock_pm
 

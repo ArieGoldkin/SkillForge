@@ -71,8 +71,26 @@ async def invoke_agent(
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
 
-    # Create RunnableConfig (timeout handled by step_timeout on graph)
-    config = create_runnable_config()
+    # Issue #564: Extract prompt client from agent metadata for CallbackHandler linkage
+    # The prompt is passed through agent.with_config(metadata={"langfuse_prompt_client": ...})
+    langfuse_prompt = None
+    try:
+        if hasattr(agent, "config") and agent.config:
+            agent_metadata = getattr(agent.config, "metadata", {}) or {}
+            langfuse_prompt = agent_metadata.get("langfuse_prompt_client")
+            if langfuse_prompt:
+                logger.debug(
+                    "prompt_extracted_for_linkage",
+                    prompt_name=getattr(langfuse_prompt, "name", "unknown"),
+                    agent_type=agent_type,
+                    analysis_id=analysis_id,
+                )
+    except Exception:  # noqa: BLE001, S110
+        pass  # Graceful degradation - continue without prompt linkage
+
+    # Create RunnableConfig with Langfuse prompt for observation linkage
+    # Issue #564: Passing langfuse_prompt to callback handler links it to the generation
+    config = create_runnable_config(langfuse_prompt=langfuse_prompt)
 
     # Issue #533: Get circuit breaker for LLM API resilience
     resilience_manager = get_resilience_manager()

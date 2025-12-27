@@ -352,8 +352,11 @@ async def run_source_credibility(  # noqa: PLR0913 - All parameters required for
 
     # Issue #418: Fetch prompt from Langfuse via PromptManager
     # This will check L1 (memory) → L2 (Redis) → L3 (Langfuse API) → Hardcoded fallback
+    # Issue #564: Use get_prompt_with_langfuse_client() for prompt observation linkage
     prompt_manager = get_prompt_manager()
-    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+    base_prompt, langfuse_prompt_client = await prompt_manager.get_prompt_with_langfuse_client(
+        PROMPT_NAME
+    )
 
     # Inject source URL context into prompt
     url_context = f"\n\nSOURCE URL TO EVALUATE: {source_url}\n"
@@ -371,6 +374,10 @@ async def run_source_credibility(  # noqa: PLR0913 - All parameters required for
         session=session,
         tools=tools,
     )
+
+    # Issue #564: Attach Langfuse prompt client to agent for observation linkage
+    if langfuse_prompt_client:
+        agent = agent.with_config(metadata={"langfuse_prompt_client": langfuse_prompt_client})
 
     # Log MCP tool usage if tools are provided (uncommon for credibility analysis)
     if tools:

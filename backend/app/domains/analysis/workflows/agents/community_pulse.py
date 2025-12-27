@@ -279,8 +279,11 @@ async def run_community_pulse(  # noqa: PLR0913 - All parameters required for ag
     )
 
     # Issue #418: Fetch prompt from Langfuse via PromptManager
+    # Issue #564: Use get_prompt_with_langfuse_client() for prompt observation linkage
     prompt_manager = get_prompt_manager()
-    base_prompt = await prompt_manager.get_prompt(PROMPT_NAME)
+    base_prompt, langfuse_prompt_client = await prompt_manager.get_prompt_with_langfuse_client(
+        PROMPT_NAME
+    )
 
     # Build prompt with skill level instructions and grounding
     full_prompt = apply_grounding(f"{base_prompt}\n\n{skill_instructions}")
@@ -296,6 +299,10 @@ async def run_community_pulse(  # noqa: PLR0913 - All parameters required for ag
         session=session,
         tools=tools,
     )
+
+    # Issue #564: Attach Langfuse prompt client to agent for observation linkage
+    if langfuse_prompt_client:
+        agent = agent.with_config(metadata={"langfuse_prompt_client": langfuse_prompt_client})
 
     # Log tool usage - Tier 3 agents should have tools
     if tools:
