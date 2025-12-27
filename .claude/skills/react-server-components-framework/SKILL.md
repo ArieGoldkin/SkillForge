@@ -1,7 +1,7 @@
 ---
 name: react-server-components-framework
 description: Design and implement React Server Components with Next.js 15 App Router. Master server-first architecture, streaming SSR, Server Actions, React 19 patterns, and modern data fetching for 2025+ development.
-version: 1.1.0
+version: 1.2.0
 author: AI Agent Hub
 tags: [frontend, react, react-19, nextjs, server-components, streaming, 2025]
 ---

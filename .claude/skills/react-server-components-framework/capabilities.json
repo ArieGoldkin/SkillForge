@@ -1,7 +1,7 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "react-server-components-framework",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Next.js 15 App Router, RSC patterns, Server Actions, React 19 modernization, streaming SSR, and data fetching",
 
   "capabilities": {
@@ -15,7 +15,31 @@
         "Modernize React components for 2025"
       ],
       "reference_file": "references/react-19-patterns.md",
-      "token_cost": 220
+      "token_cost": 280
+    },
+    "use-hook-suspense": {
+      "keywords": ["use()", "use hook", "suspense", "promise", "data fetching", "promise cache", "cachePromise"],
+      "solves": [
+        "How do I use the use() hook in React 19?",
+        "Suspense-native data fetching pattern",
+        "Promise caching to prevent infinite loops",
+        "When to use use() vs TanStack Query",
+        "use() hook infinite loop fix"
+      ],
+      "reference_file": "references/react-19-patterns.md#use-hook",
+      "token_cost": 180
+    },
+    "optimistic-updates-async": {
+      "keywords": ["useOptimistic", "useTransition", "optimistic update", "instant ui", "auto rollback", "chat", "messages"],
+      "solves": [
+        "How to show instant UI updates before API responds?",
+        "useOptimistic with useTransition pattern",
+        "Optimistic updates for chat/messaging",
+        "Auto-rollback on API failure",
+        "Temp ID pattern for optimistic items"
+      ],
+      "reference_file": "references/react-19-patterns.md#useOptimistic-async",
+      "token_cost": 200
     },
     "rsc-patterns": {
       "keywords": ["rsc", "server component", "client component", "use client", "use server"],
@@ -70,8 +94,8 @@
   },
 
   "triggers": {
-    "high_confidence": ["next.*js.*15", "server.*component", "app.*router", "server.*action", "react.*19", "React\\.FC", "forwardRef"],
-    "medium_confidence": ["rsc", "use.*server", "useActionState", "useFormStatus", "useOptimistic"]
+    "high_confidence": ["next.*js.*15", "server.*component", "app.*router", "server.*action", "react.*19", "React\\.FC", "forwardRef", "use\\(\\)", "cachePromise", "promise.*cache"],
+    "medium_confidence": ["rsc", "use.*server", "useActionState", "useFormStatus", "useOptimistic", "useTransition", "suspense.*data", "optimistic.*update"]
   },
 
   "integrates_with": ["type-safety-validation", "design-system-starter"],
