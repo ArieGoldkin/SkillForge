@@ -302,23 +302,19 @@ async def _synthesize_core(
             source_context=source_context,
         )
 
-        # Create LCEL chain with automatic fallback and retry
+        # Create LCEL chain with automatic fallback (retry at LangChain level)
         primary_model = get_chat_model()
         fallback_model = get_chat_model(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
 
-        # LCEL chain: primary with retry → fallback on failure
-        chain = (
-            primary_model.with_structured_output(CoreSynthesisSchema, strict=True)
-            .with_retry(
-                stop_after_attempt=2,  # Retry once before fallback
-                wait_exponential_jitter=True,
-            )
-            .with_fallbacks(
-                [fallback_model.with_structured_output(CoreSynthesisSchema, strict=True)],
-                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-            )
+        # LCEL chain: primary → fallback on failure
+        # NOTE: Removed .with_retry() - redundant with LLM_MAX_RETRIES
+        chain = primary_model.with_structured_output(
+            CoreSynthesisSchema, strict=True
+        ).with_fallbacks(
+            [fallback_model.with_structured_output(CoreSynthesisSchema, strict=True)],
+            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
         )
 
         # Invoke LCEL chain directly
@@ -426,17 +422,13 @@ async def _synthesize_learning(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
 
-        # LCEL chain: primary with retry → fallback on failure
-        chain = (
-            primary_model.with_structured_output(LearningSynthesisSchema, strict=True)
-            .with_retry(
-                stop_after_attempt=2,
-                wait_exponential_jitter=True,
-            )
-            .with_fallbacks(
-                [fallback_model.with_structured_output(LearningSynthesisSchema, strict=True)],
-                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-            )
+        # LCEL chain: primary → fallback on failure
+        # NOTE: Removed .with_retry() - redundant with LLM_MAX_RETRIES
+        chain = primary_model.with_structured_output(
+            LearningSynthesisSchema, strict=True
+        ).with_fallbacks(
+            [fallback_model.with_structured_output(LearningSynthesisSchema, strict=True)],
+            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
         )
 
         # Invoke LCEL chain directly
@@ -547,17 +539,13 @@ async def _synthesize_docs(
             config={"configurable": {"model": settings.LLM_FALLBACK_MODEL}}
         )
 
-        # LCEL chain: primary with retry → fallback on failure
-        chain = (
-            primary_model.with_structured_output(DocsSynthesisSchema, strict=True)
-            .with_retry(
-                stop_after_attempt=2,
-                wait_exponential_jitter=True,
-            )
-            .with_fallbacks(
-                [fallback_model.with_structured_output(DocsSynthesisSchema, strict=True)],
-                exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
-            )
+        # LCEL chain: primary → fallback on failure
+        # NOTE: Removed .with_retry() - redundant with LLM_MAX_RETRIES
+        chain = primary_model.with_structured_output(
+            DocsSynthesisSchema, strict=True
+        ).with_fallbacks(
+            [fallback_model.with_structured_output(DocsSynthesisSchema, strict=True)],
+            exceptions_to_handle=(Exception, TimeoutError, GeneratorExit),
         )
 
         # Invoke LCEL chain directly

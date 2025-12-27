@@ -346,12 +346,14 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
     batch_output_tokens = 0
 
     try:
+        config["max_concurrency"] = (
+            5  # Prevent rate limit violations (must be in config, not kwarg)
+        )
         # LangChain's abatch() processes all inputs in parallel
         # Type checker doesn't see list[BaseMessage] as valid Sequence[BaseMessage]
         results = await llm_with_structure.abatch(
             batch_inputs,  # type: ignore[arg-type]
             config=config,
-            max_concurrency=5,  # Prevent rate limit violations
         )
     except Exception as e:
         # If batch processing fails entirely, fall back to sequential processing

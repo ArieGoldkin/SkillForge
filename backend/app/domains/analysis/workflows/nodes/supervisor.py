@@ -129,10 +129,10 @@ async def _invoke_supervisor_with_retry(
     prompt: str,
     analysis_id: AnalysisID,
 ) -> AgentSelection:
-    """Invoke supervisor model with LCEL retry and fallback.
+    """Invoke supervisor model with LCEL fallback.
 
-    Uses LCEL `.with_retry()` and `.with_fallbacks()` to replace manual retry loop.
-    This provides automatic retry with fallback model on failure.
+    Uses LCEL `.with_fallbacks()` to provide automatic fallback to secondary model.
+    Retry is handled at the LangChain level via LLM_MAX_RETRIES in model_factory.py.
 
     Args:
         model: Chat model with structured output (already bound)
@@ -434,20 +434,16 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
 
         # LangChain 1.2.x: Use strict mode for exact schema compliance
         # Supervisor routing is critical path - must always return valid agent selection
-        # Build LCEL chain with retry and fallback
-        structured_model = (
-            primary_model.with_structured_output(AgentSelection, strict=True)
-            .with_retry(
-                stop_after_attempt=3,  # Retry up to 3 times before fallback
-                wait_exponential_jitter=True,
-            )
-            .with_fallbacks(
-                [fallback_model.with_structured_output(AgentSelection, strict=True)],
-                exceptions_to_handle=(Exception, TimeoutError),
-            )
+        # LCEL chain: primary → fallback on failure
+        # NOTE: Removed .with_retry() - redundant with LLM_MAX_RETRIES in model_factory.py
+        structured_model = primary_model.with_structured_output(
+            AgentSelection, strict=True
+        ).with_fallbacks(
+            [fallback_model.with_structured_output(AgentSelection, strict=True)],
+            exceptions_to_handle=(Exception, TimeoutError),
         )
 
-        # Invoke with LCEL chain (retry + fallback built-in)
+        # Invoke with LCEL chain (fallback built-in, retry at LangChain level)
         selection = await _invoke_supervisor_with_retry(
             structured_model,
             user_prompt,

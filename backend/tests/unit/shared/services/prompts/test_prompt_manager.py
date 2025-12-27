@@ -231,17 +231,56 @@ class TestPromptManager:
         assert result == "Hello Alice, you are 30 years old."
 
     @pytest.mark.asyncio
-    async def test_missing_variable_error(self, manager):
-        """Test error when required variable is missing."""
+    async def test_missing_variable_preserved(self, manager):
+        """Test that missing variables are preserved (for JSON compatibility).
+
+        Issue #586: Changed from KeyError to preservation. When prompts contain
+        JSON examples like {"key": "value"}, we can't distinguish template vars
+        from JSON keys. Missing variables are now left as-is instead of raising.
+        """
         key = "prompt:test-prompt:production"
         manager.l1_cache.set(key, "Hello {name}, you are {age} years old.")
 
-        with pytest.raises(KeyError):
-            await manager.get_prompt(
-                name="test-prompt",
-                variables={"name": "Alice"},  # Missing 'age'
-                label="production",
-            )
+        result = await manager.get_prompt(
+            name="test-prompt",
+            variables={"name": "Alice"},  # Missing 'age' - now preserved
+            label="production",
+        )
+        # {age} is preserved because it wasn't in the variables dict
+        assert result == "Hello Alice, you are {age} years old."
+
+    @pytest.mark.asyncio
+    async def test_json_in_prompt_preserved(self, manager):
+        """Test that JSON examples in prompts are not modified.
+
+        Issue #586: Langfuse prompts often contain JSON examples like:
+        {"immediate_actions": [...], "quick_wins": [...]}
+
+        The old str.format() would interpret these as template variables
+        and raise KeyError. The new regex-based substitution only replaces
+        explicitly provided variables.
+        """
+        key = "prompt:json-prompt:production"
+        json_prompt = '''Analyze the content and return JSON:
+{
+  "immediate_actions": ["action1", "action2"],
+  "findings_count": {findings_count}
+}
+
+Content to analyze: {content}'''
+        manager.l1_cache.set(key, json_prompt)
+
+        result = await manager.get_prompt(
+            name="json-prompt",
+            variables={"content": "My article", "findings_count": 5},
+            label="production",
+        )
+        # JSON structure should be preserved
+        assert '"immediate_actions"' in result
+        assert '"action1"' in result
+        # Template variables should be substituted
+        assert "My article" in result
+        assert "5" in result  # findings_count substituted
 
     @pytest.mark.asyncio
     async def test_langfuse_disabled(self):
