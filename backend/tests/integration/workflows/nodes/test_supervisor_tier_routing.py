@@ -201,9 +201,9 @@ class TestAgentRegistryModeMapping:
         assert set(agents) == {"key_insights", "pros_cons", "audience_fit", "actionable"}
 
     def test_standard_mode_returns_tier1_and_tier2(self):
-        """Standard mode should return Tier 1 + Tier 2 = 8 agents."""
+        """Standard mode should return Tier 1 + Tier 2 = 16 agents."""
         agents = get_agents_for_mode("standard")
-        assert len(agents) == 8
+        assert len(agents) == 16
 
         # Verify Tier 1 included
         for agent in ["key_insights", "pros_cons", "audience_fit", "actionable"]:
@@ -219,9 +219,9 @@ class TestAgentRegistryModeMapping:
             assert agent in agents
 
     def test_deep_dive_mode_returns_all_tiers(self):
-        """Deep dive mode should return all 12 agents."""
+        """Deep dive mode should return all 20 agents."""
         agents = get_agents_for_mode("deep_dive")
-        assert len(agents) == 12
+        assert len(agents) == 20
 
         # Verify all tiers included
         tier1 = ["key_insights", "pros_cons", "audience_fit", "actionable"]

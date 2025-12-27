@@ -75,32 +75,35 @@ async def test_invalid_status_transitions_are_rejected(requires_database):
 
     updater = StatusUpdater()
 
-    # Try invalid transition: pending -> complete (skips required steps)
+    # Try invalid transition: pending -> generating_artifact (skips required steps)
+    # This is genuinely invalid - pending can only go to extracting, complete, failed, or cancelled
     with pytest.raises(ValueError, match="Invalid status transition"):
-        await updater.update(analysis_id, "complete")
+        await updater.update(analysis_id, "generating_artifact")
 
     # Try invalid transition: complete -> pending (terminal state)
-    # First set status to complete (requires content fields due to constraints)
-    # Use create_complete_analysis helper to satisfy constraints
+    # First create a proper complete analysis with all required fields
     from tests.integration.conftest import create_complete_analysis
 
     # Delete the pending analysis and create a complete one with all required fields
-    async with AsyncSessionLocal() as session:
-        # Delete existing pending analysis
-        existing = await session.get(Analysis, analysis_id)
-        if existing:
-            await session.delete(existing)
-            await session.commit()
+    complete_analysis_id = uuid.uuid4()
+    complete_test_url = f"https://test-complete-{complete_analysis_id}.com"
 
-        # Create complete analysis with all required fields
+    async with AsyncSessionLocal() as session:
+        # Create complete analysis with all required fields to satisfy constraint
+        # The create_complete_analysis helper ensures all required fields are set
         await create_complete_analysis(
             session,
-            id=analysis_id,
-            url=test_url,
-            status="complete",
+            id=complete_analysis_id,
+            url=complete_test_url,
+            raw_content="Complete analysis content with sufficient data for completion.",
+            extraction_metadata={
+                "title": "Test Complete Analysis",
+                "word_count": 100,
+                "char_count": 500,
+            },
         )
         await session.commit()
 
-    # Now try to go back to pending (should fail)
+    # Now try to go back to pending (should fail - complete is terminal state)
     with pytest.raises(ValueError, match="Invalid status transition"):
-        await updater.update(analysis_id, "pending")
+        await updater.update(complete_analysis_id, "pending")

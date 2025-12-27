@@ -78,10 +78,10 @@ async def test_update_current_observation_adds_runtime_metadata(mock_get_client)
         }
     )
 
-    # Verify get_client().update_current_observation was called
+    # Verify get_client().update_current_span was called (not update_current_observation)
     mock_get_client.assert_called_once()
-    mock_client.update_current_observation.assert_called_once()
-    call_kwargs = mock_client.update_current_observation.call_args.kwargs
+    mock_client.update_current_span.assert_called_once()
+    call_kwargs = mock_client.update_current_span.call_args.kwargs
     assert call_kwargs["metadata"]["cache_hit"] is True
     assert call_kwargs["metadata"]["result_count"] == 5
     assert call_kwargs["metadata"]["response_time_ms"] == 123.45
@@ -110,8 +110,8 @@ async def test_update_current_observation_with_output(mock_get_client):
 
     # Verify update was called with output and status
     mock_get_client.assert_called_once()
-    mock_client.update_current_observation.assert_called_once()
-    call_kwargs = mock_client.update_current_observation.call_args.kwargs
+    mock_client.update_current_span.assert_called_once()
+    call_kwargs = mock_client.update_current_span.call_args.kwargs
     assert call_kwargs["output"] == {"processed": True, "items": [1, 2, 3]}
     assert call_kwargs["level"] == "DEFAULT"
     assert call_kwargs["status_message"] == "Tool execution successful"
@@ -179,7 +179,7 @@ async def test_traced_tool_with_metadata_and_runtime_updates(mock_observe, mock_
     # Verify get_client was called to update observation metadata
     assert mock_get_client.called
     # Note: Called twice - once for static tags/metadata, once for runtime metadata
-    assert mock_client.update_current_observation.call_count >= 1
+    assert mock_client.update_current_span.call_count >= 1
 
     # Verify result
     assert result["query"] == "test search query"
@@ -247,7 +247,7 @@ async def test_traced_tool_error_handling(mock_get_client):
         await failing_tool("test query")
 
     # Verify observation was updated with error metadata
-    assert mock_client.update_current_observation.called
-    call_kwargs = mock_client.update_current_observation.call_args.kwargs
+    assert mock_client.update_current_span.called
+    call_kwargs = mock_client.update_current_span.call_args.kwargs
     assert call_kwargs["metadata"]["error"] == "API rate limit exceeded"
     assert call_kwargs["level"] == "ERROR"

@@ -80,7 +80,7 @@ async def handle_workflow_exception(
                 "Check LangGraph streaming and timeout configuration."
             ),
         )
-        # Update status and emit error event before re-raising
+        # Update status and emit error event
         status_updater = StatusUpdater()
         await status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
         # Only emit error event if exception has stage context (WorkflowStageError)
@@ -109,7 +109,7 @@ async def handle_workflow_exception(
         error_type=type(exc).__name__,
         context="workflow_task_runner",
     )
-    # Update status and emit error event before re-raising
+    # Update status and emit error event
     status_updater = StatusUpdater()
     await status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
     # Only emit error event if exception has stage context (WorkflowStageError)
@@ -117,6 +117,15 @@ async def handle_workflow_exception(
     if isinstance(exc, WorkflowStageError):
         event_emitter = WorkflowEventEmitter()
         await event_emitter.emit_error(analysis_id, exc)
+        # WorkflowStageError is handled gracefully - don't re-raise
+        # Status and error event already recorded above
+        logger.info(
+            "workflow_task_handled_stage_error",
+            analysis_id=str(analysis_id),
+            stage=exc.stage,
+            message="WorkflowStageError handled gracefully, workflow stopped",
+        )
+        return  # Don't re-raise, workflow completes gracefully
     else:
         logger.warning(
             "workflow_task_failed_no_stage_context",
@@ -128,5 +137,5 @@ async def handle_workflow_exception(
                 "Exception should be wrapped with WorkflowStageError."
             ),
         )
-    # Re-raise to propagate (explicit re-raise for ruff PLE0704)
+    # Re-raise non-WorkflowStageError exceptions
     raise exc

@@ -24,15 +24,16 @@ def build_test_graph(
 
     Args:
         route_to_agents_mock: Mock routing function
-        supervisor_mock: Mock supervisor node function
+        supervisor_mock: DEPRECATED - No longer used (supervisor_node_fn parameter removed)
 
     Returns:
         Compiled graph ready for testing
 
     """
+    # Note: supervisor_mock parameter is kept for backward compatibility but not used
+    # The supervisor_node_fn parameter was removed from build_analysis_graph
     return build_analysis_graph(
         route_to_agents_fn=route_to_agents_mock,
-        supervisor_node_fn=supervisor_mock,
     )
 
 

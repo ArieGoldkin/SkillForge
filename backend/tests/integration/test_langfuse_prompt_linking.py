@@ -1,11 +1,13 @@
 """Integration tests for Langfuse prompt linkage in agent invocation (Issue #564).
 
 Tests verify that prompts fetched from Langfuse are properly linked to generation spans
-during agent execution via update_current_generation, with graceful degradation when
-Langfuse is unavailable.
+during agent execution via langfuse_prompt metadata in RunnableConfig, with graceful
+degradation when Langfuse is unavailable.
+
+The new approach (v3.11+) passes langfuse_prompt in config metadata, which the
+CallbackHandler automatically picks up and links to the generation span.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -15,20 +17,34 @@ from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.invocation import invoke_agent
 
 
+# Helper to create an async side_effect that properly awaits the protected function
+async def async_call_impl(f):
+    """Properly await the async function passed to circuit_breaker.call()."""
+    return await f()
+
+
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_in_agent_invocation(mock_get_client):
-    """Test that prompt is linked to generation span during agent invocation.
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_in_agent_invocation(
+    mock_resilience, mock_create_config
+):
+    """Test that prompt is passed to RunnableConfig metadata during agent invocation.
 
     Scenario: Agent has langfuse_prompt_client in metadata
-    Expected: update_current_generation is called with prompt object
+    Expected: create_runnable_config is called with langfuse_prompt parameter
     """
-    # Mock Langfuse client
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager with async call that properly awaits the function
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
 
-    # Create mock prompt object (simulates Langfuse PromptClient)
+    # Mock config creation
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    # Create mock prompt object (simulates Langfuse TextPromptClient)
     mock_prompt = MagicMock()
     mock_prompt.name = "security-auditor"
     mock_prompt.version = 42
@@ -59,9 +75,8 @@ async def test_prompt_linkage_in_agent_invocation(mock_get_client):
         timeout=30.0,
     )
 
-    # Verify prompt was linked to generation
-    mock_get_client.assert_called_once()
-    mock_langfuse.update_current_generation.assert_called_once_with(prompt=mock_prompt)
+    # Verify create_runnable_config was called with the prompt
+    mock_create_config.assert_called_once_with(langfuse_prompt=mock_prompt)
 
     # Verify agent was invoked successfully
     assert result == {"output": "Test findings"}
@@ -70,30 +85,35 @@ async def test_prompt_linkage_in_agent_invocation(mock_get_client):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_graceful_degradation_langfuse_unavailable(mock_get_client):
-    """Test graceful degradation when Langfuse is unavailable.
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_graceful_degradation_langfuse_unavailable(
+    mock_resilience, mock_create_config
+):
+    """Test graceful degradation when extraction raises exception.
 
-    Scenario: Langfuse raises exception during update_current_generation
-    Expected: Exception is caught, agent execution continues successfully
+    Scenario: Getting metadata raises exception
+    Expected: Exception is caught, agent execution continues with None prompt
     """
-    # Mock Langfuse client that raises exception
-    mock_langfuse = MagicMock()
-    mock_langfuse.update_current_generation.side_effect = RuntimeError("Langfuse unavailable")
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
 
-    # Create mock prompt and agent
-    mock_prompt = MagicMock()
-    mock_prompt.name = "tech-comparator"
-    mock_prompt.version = 3
+    # Mock config creation
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
 
+    # Create mock agent with broken config that raises on metadata access
     mock_agent = MagicMock()
-    mock_agent.ainvoke = AsyncMock(return_value={"output": "Comparison results"})
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Results"})
+
+    # Config that raises exception when accessing metadata
     mock_config = MagicMock()
-    mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
+    type(mock_config).metadata = property(lambda self: (_ for _ in ()).throw(RuntimeError("broken")))
     mock_agent.config = mock_config
 
-    input_messages = {"messages": [{"role": "user", "content": "Compare React vs Vue"}]}
+    input_messages = {"messages": [{"role": "user", "content": "Analyze"}]}
     analysis_id = AnalysisID(uuid4())
 
     # Execute agent invocation - should NOT raise exception
@@ -101,84 +121,126 @@ async def test_prompt_linkage_graceful_degradation_langfuse_unavailable(mock_get
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id=analysis_id,
-        agent_type="tech_comparator",
+        agent_type="test_agent",
         timeout=30.0,
     )
 
-    # Verify agent execution succeeded despite Langfuse error
-    assert result == {"output": "Comparison results"}
+    # Verify agent was still invoked despite metadata extraction failure
+    assert result == {"output": "Results"}
     mock_agent.ainvoke.assert_called_once()
 
-    # Verify update_current_generation was attempted
-    mock_langfuse.update_current_generation.assert_called_once_with(prompt=mock_prompt)
+    # Verify create_runnable_config was called with None (graceful degradation)
+    mock_create_config.assert_called_once_with(langfuse_prompt=None)
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_skipped_for_cache_hits(mock_get_client):
-    """Test prompt linkage is skipped when no prompt in metadata (cache hit scenario).
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_skipped_for_cache_hits(mock_resilience, mock_create_config):
+    """Test that prompt linkage is skipped for cache hits (None client).
 
-    Scenario: Agent has no langfuse_prompt_client in metadata (semantic cache hit)
-    Expected: update_current_generation is NOT called, agent executes normally
+    Scenario: Agent metadata has None for langfuse_prompt_client (cache hit)
+    Expected: create_runnable_config called with langfuse_prompt=None
     """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
 
-    # Create mock agent WITHOUT prompt in metadata (cache hit)
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    # Create agent with None prompt client (simulates L1/L2 cache hit)
     mock_agent = MagicMock()
     mock_agent.ainvoke = AsyncMock(return_value={"output": "Cached results"})
     mock_config = MagicMock()
-    mock_config.metadata = {
-        # No langfuse_prompt_client - simulates cache hit
-        "cache_hit": True,
-        "agent_type": "performance_analyst",
-    }
+    mock_config.metadata = {"langfuse_prompt_client": None}  # Cache hit
     mock_agent.config = mock_config
 
-    input_messages = {"messages": [{"role": "user", "content": "Analyze performance"}]}
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
     analysis_id = AnalysisID(uuid4())
 
-    # Execute agent invocation
     result = await invoke_agent(
         agent=mock_agent,
         input_messages=input_messages,
         analysis_id=analysis_id,
-        agent_type="performance_analyst",
+        agent_type="test_agent",
         timeout=30.0,
     )
 
-    # Verify agent executed successfully
+    # Verify create_runnable_config was called with None
+    mock_create_config.assert_called_once_with(langfuse_prompt=None)
     assert result == {"output": "Cached results"}
-    mock_agent.ainvoke.assert_called_once()
-
-    # Verify update_current_generation was NOT called (no prompt to link)
-    mock_langfuse.update_current_generation.assert_not_called()
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_skipped_when_metadata_is_none(mock_get_client):
-    """Test prompt linkage is skipped when config.metadata is None.
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_skipped_when_config_missing(mock_resilience, mock_create_config):
+    """Test handling when agent has no config.
+
+    Scenario: Agent has no config attribute
+    Expected: Graceful degradation, agent execution continues
+    """
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
+
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    # Agent without config
+    mock_agent = MagicMock()
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Results"})
+    mock_agent.config = None  # No config
+
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
+    analysis_id = AnalysisID(uuid4())
+
+    result = await invoke_agent(
+        agent=mock_agent,
+        input_messages=input_messages,
+        analysis_id=analysis_id,
+        agent_type="test_agent",
+        timeout=30.0,
+    )
+
+    # Verify create_runnable_config was called with None
+    mock_create_config.assert_called_once_with(langfuse_prompt=None)
+    assert result == {"output": "Results"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_skipped_when_metadata_is_none(mock_resilience, mock_create_config):
+    """Test handling when agent config has None metadata.
 
     Scenario: Agent config exists but metadata is None
-    Expected: No exception, agent executes normally
+    Expected: Graceful degradation, agent execution continues
     """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
 
-    # Create mock agent with None metadata
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    # Agent with config but no metadata
     mock_agent = MagicMock()
-    mock_agent.ainvoke = AsyncMock(return_value={"output": "Test output"})
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Results"})
     mock_config = MagicMock()
-    mock_config.metadata = None  # Explicitly None
+    mock_config.metadata = None
     mock_agent.config = mock_config
 
-    input_messages = {"messages": [{"role": "user", "content": "Test input"}]}
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
     analysis_id = AnalysisID(uuid4())
 
-    # Execute agent invocation - should handle None metadata gracefully
     result = await invoke_agent(
         agent=mock_agent,
         input_messages=input_messages,
@@ -187,213 +249,194 @@ async def test_prompt_linkage_skipped_when_metadata_is_none(mock_get_client):
         timeout=30.0,
     )
 
-    # Verify agent executed successfully
-    assert result == {"output": "Test output"}
-    mock_agent.ainvoke.assert_called_once()
-
-    # Verify update_current_generation was NOT called
-    mock_langfuse.update_current_generation.assert_not_called()
+    # Verify create_runnable_config was called with None
+    mock_create_config.assert_called_once_with(langfuse_prompt=None)
+    assert result == {"output": "Results"}
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_skipped_when_config_missing(mock_get_client):
-    """Test prompt linkage is skipped when agent has no config attribute.
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_with_timeout_error(mock_resilience, mock_create_config):
+    """Test that prompt linkage works even when agent times out.
 
-    Scenario: Agent has no config attribute at all
-    Expected: No exception, agent executes normally
+    Scenario: Agent has prompt in metadata but times out during execution
+    Expected: create_runnable_config still called with prompt, TimeoutError raised
     """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager with timeout
+    mock_circuit = MagicMock()
 
-    # Create mock agent without config attribute
-    mock_agent = MagicMock(spec=["ainvoke"])  # Only ainvoke, no config
-    mock_agent.ainvoke = AsyncMock(return_value={"output": "No config output"})
+    async def timeout_call(f):
+        raise TimeoutError("Agent timed out")
 
-    input_messages = {"messages": [{"role": "user", "content": "Test input"}]}
-    analysis_id = AnalysisID(uuid4())
+    mock_circuit.call = AsyncMock(side_effect=timeout_call)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
 
-    # Execute agent invocation - should handle missing config gracefully
-    result = await invoke_agent(
-        agent=mock_agent,
-        input_messages=input_messages,
-        analysis_id=analysis_id,
-        agent_type="test_agent",
-        timeout=30.0,
-    )
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
 
-    # Verify agent executed successfully
-    assert result == {"output": "No config output"}
-    mock_agent.ainvoke.assert_called_once()
-
-    # Verify update_current_generation was NOT called
-    mock_langfuse.update_current_generation.assert_not_called()
-
-
-@pytest.mark.asyncio
-@pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_with_get_client_returning_none(mock_get_client):
-    """Test graceful degradation when get_client returns None.
-
-    Scenario: Langfuse is disabled (get_client returns None)
-    Expected: No exception, agent executes normally
-    """
-    # Langfuse disabled (returns None)
-    mock_get_client.return_value = None
-
-    # Create mock agent with prompt in metadata
     mock_prompt = MagicMock()
-    mock_prompt.name = "implementation-planner"
+    mock_prompt.name = "timeout-test"
 
     mock_agent = MagicMock()
-    mock_agent.ainvoke = AsyncMock(return_value={"output": "Implementation plan"})
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Never reached"})
     mock_config = MagicMock()
     mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
     mock_agent.config = mock_config
 
-    input_messages = {"messages": [{"role": "user", "content": "Plan implementation"}]}
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
     analysis_id = AnalysisID(uuid4())
 
-    # Execute agent invocation - should handle None client gracefully
-    result = await invoke_agent(
-        agent=mock_agent,
-        input_messages=input_messages,
-        analysis_id=analysis_id,
-        agent_type="implementation_planner",
-        timeout=30.0,
-    )
-
-    # Verify agent executed successfully
-    assert result == {"output": "Implementation plan"}
-    mock_agent.ainvoke.assert_called_once()
-
-
-@pytest.mark.asyncio
-@pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-@patch("app.domains.analysis.workflows.agents.invocation.logger")
-async def test_prompt_linkage_logs_debug_message(mock_logger, mock_get_client):
-    """Test that successful prompt linking logs debug message.
-
-    Scenario: Prompt successfully linked to generation
-    Expected: Debug log emitted with prompt name and agent type
-    """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
-
-    mock_prompt = MagicMock()
-    mock_prompt.name = "dependency-mapper"
-    mock_prompt.version = 7
-
-    mock_agent = MagicMock()
-    mock_agent.ainvoke = AsyncMock(return_value={"output": "Dependency map"})
-    mock_config = MagicMock()
-    mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
-    mock_agent.config = mock_config
-
-    input_messages = {"messages": [{"role": "user", "content": "Map dependencies"}]}
-    analysis_id = AnalysisID(uuid4())
-
-    # Execute agent invocation
-    await invoke_agent(
-        agent=mock_agent,
-        input_messages=input_messages,
-        analysis_id=analysis_id,
-        agent_type="dependency_mapper",
-        timeout=30.0,
-    )
-
-    # Verify debug log was emitted
-    mock_logger.debug.assert_any_call(
-        "prompt_linked_to_generation",
-        prompt_name="dependency-mapper",
-        agent_type="dependency_mapper",
-        analysis_id=analysis_id,
-    )
-
-
-@pytest.mark.asyncio
-@pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_with_timeout_error(mock_get_client):
-    """Test prompt linking works correctly even when agent times out.
-
-    Scenario: Prompt is linked, then agent times out
-    Expected: update_current_generation called before timeout, TimeoutError raised
-    """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
-
-    mock_prompt = MagicMock()
-    mock_prompt.name = "research-analyst"
-
-    # Create agent that times out
-    mock_agent = MagicMock()
-
-    async def slow_invoke(*args, **kwargs):
-        await asyncio.sleep(10)  # Longer than timeout
-        return {"output": "Should not reach here"}
-
-    mock_agent.ainvoke = slow_invoke
-
-    mock_config = MagicMock()
-    mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
-    mock_agent.config = mock_config
-
-    input_messages = {"messages": [{"role": "user", "content": "Research topic"}]}
-    analysis_id = AnalysisID(uuid4())
-
-    # Execute agent invocation with short timeout
     with pytest.raises(TimeoutError):
         await invoke_agent(
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=analysis_id,
-            agent_type="research_analyst",
-            timeout=0.5,  # Very short timeout
+            agent_type="test_agent",
+            timeout=30.0,
         )
 
-    # Verify prompt was linked BEFORE timeout occurred
-    mock_langfuse.update_current_generation.assert_called_once_with(prompt=mock_prompt)
+    # Verify create_runnable_config was called with the prompt
+    # (prompt extraction happens before timeout)
+    mock_create_config.assert_called_once_with(langfuse_prompt=mock_prompt)
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@patch("app.domains.analysis.workflows.agents.invocation.get_client")
-async def test_prompt_linkage_with_agent_execution_error(mock_get_client):
-    """Test prompt linking works correctly even when agent execution fails.
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_with_agent_execution_error(mock_resilience, mock_create_config):
+    """Test that prompt linkage occurs even when agent raises exception.
 
-    Scenario: Prompt is linked, then agent raises exception
-    Expected: update_current_generation called before error, original exception raised
+    Scenario: Agent has prompt but raises exception during execution
+    Expected: create_runnable_config still called with prompt, exception propagated
     """
-    mock_langfuse = MagicMock()
-    mock_get_client.return_value = mock_langfuse
+    # Mock resilience manager that propagates error
+    mock_circuit = MagicMock()
+
+    async def error_call(f):
+        return await f()  # Let the agent raise its error
+
+    mock_circuit.call = AsyncMock(side_effect=error_call)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
+
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
 
     mock_prompt = MagicMock()
-    mock_prompt.name = "code-quality-critic"
+    mock_prompt.name = "error-test"
 
-    # Create agent that raises exception
     mock_agent = MagicMock()
-    mock_agent.ainvoke = AsyncMock(side_effect=ValueError("Agent execution failed"))
-
+    mock_agent.ainvoke = AsyncMock(side_effect=ValueError("Agent failed"))
     mock_config = MagicMock()
     mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
     mock_agent.config = mock_config
 
-    input_messages = {"messages": [{"role": "user", "content": "Review code"}]}
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
     analysis_id = AnalysisID(uuid4())
 
-    # Execute agent invocation - should raise ValueError
-    with pytest.raises(ValueError, match="Agent execution failed"):
+    with pytest.raises(ValueError, match="Agent failed"):
         await invoke_agent(
             agent=mock_agent,
             input_messages=input_messages,
             analysis_id=analysis_id,
-            agent_type="code_quality_critic",
+            agent_type="test_agent",
             timeout=30.0,
         )
 
-    # Verify prompt was linked BEFORE agent error occurred
-    mock_langfuse.update_current_generation.assert_called_once_with(prompt=mock_prompt)
+    # Verify create_runnable_config was called with the prompt
+    mock_create_config.assert_called_once_with(langfuse_prompt=mock_prompt)
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+@patch("app.domains.analysis.workflows.agents.invocation.logger")
+async def test_prompt_linkage_logs_debug_message(
+    mock_logger, mock_resilience, mock_create_config
+):
+    """Test that debug log is emitted when prompt is extracted.
+
+    Scenario: Agent has valid prompt in metadata
+    Expected: Debug log with prompt name is emitted
+    """
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
+
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    mock_prompt = MagicMock()
+    mock_prompt.name = "logging-test"
+
+    mock_agent = MagicMock()
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Results"})
+    mock_config = MagicMock()
+    mock_config.metadata = {"langfuse_prompt_client": mock_prompt}
+    mock_agent.config = mock_config
+
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
+    analysis_id = AnalysisID(uuid4())
+
+    await invoke_agent(
+        agent=mock_agent,
+        input_messages=input_messages,
+        analysis_id=analysis_id,
+        agent_type="test_agent",
+        timeout=30.0,
+    )
+
+    # Verify debug log was called
+    mock_logger.debug.assert_any_call(
+        "prompt_extracted_for_linkage",
+        prompt_name="logging-test",
+        agent_type="test_agent",
+        analysis_id=analysis_id,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
+@patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+async def test_prompt_linkage_with_get_client_returning_none(
+    mock_resilience, mock_create_config
+):
+    """Test handling when langfuse_prompt_client key doesn't exist.
+
+    Scenario: Agent metadata exists but has no langfuse_prompt_client key
+    Expected: Graceful handling, None passed to create_runnable_config
+    """
+    # Mock resilience manager
+    mock_circuit = MagicMock()
+    mock_circuit.call = AsyncMock(side_effect=async_call_impl)
+    mock_circuit.state.value = "closed"
+    mock_resilience.return_value.get_circuit_breaker.return_value = mock_circuit
+
+    mock_create_config.return_value = {"callbacks": [], "metadata": {}}
+
+    # Agent with metadata but no langfuse_prompt_client key
+    mock_agent = MagicMock()
+    mock_agent.ainvoke = AsyncMock(return_value={"output": "Results"})
+    mock_config = MagicMock()
+    mock_config.metadata = {"other_key": "value"}  # No langfuse_prompt_client
+    mock_agent.config = mock_config
+
+    input_messages = {"messages": [{"role": "user", "content": "Test"}]}
+    analysis_id = AnalysisID(uuid4())
+
+    result = await invoke_agent(
+        agent=mock_agent,
+        input_messages=input_messages,
+        analysis_id=analysis_id,
+        agent_type="test_agent",
+        timeout=30.0,
+    )
+
+    # Verify create_runnable_config was called with None
+    mock_create_config.assert_called_once_with(langfuse_prompt=None)
+    assert result == {"output": "Results"}
