@@ -19,7 +19,6 @@ runs:
         driver-opts: |
           image=moby/buildkit:latest
           network=host
-      timeout-minutes: 5
       continue-on-error: true
 
     - name: Configure Docker environment
