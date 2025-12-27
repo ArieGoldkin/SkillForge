@@ -164,21 +164,26 @@ const RENDER_ROUTES: RenderRoute[] = [
                     : 'w-full'
               }
             >
-              <ProgressColumn
-                {...extractProgressProps({
-                  overallProgress,
-                  hasFailedStages,
-                  failedStagesCount,
-                  failedStageErrorCodes,
-                  analysisMetadata,
-                  stageStatuses: props.stageStatuses ?? new Map(),
-                  analysisMode: props.analysisMode,
-                  activities,
-                  isConnected,
-                  skipReasons: props.skipReasons,
-                  stageSuccessMetrics: props.stageSuccessMetrics,
-                })}
-              />
+              <ErrorBoundary
+                fallback={<div>Error loading progress</div>}
+                name="ProgressColumn-Default"
+              >
+                <ProgressColumn
+                  {...extractProgressProps({
+                    overallProgress,
+                    hasFailedStages,
+                    failedStagesCount,
+                    failedStageErrorCodes,
+                    analysisMetadata,
+                    stageStatuses: props.stageStatuses ?? new Map(),
+                    analysisMode: props.analysisMode,
+                    activities,
+                    isConnected,
+                    skipReasons: props.skipReasons,
+                    stageSuccessMetrics: props.stageSuccessMetrics,
+                  })}
+                />
+              </ErrorBoundary>
               {/* Activity or Completion Column - only render when there's content */}
               {isComplete && (resolvedArtifactId || artifactId) ? (
                 <div
