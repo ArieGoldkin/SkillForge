@@ -452,7 +452,264 @@ describe('useLibrarySearch', () => {
 
 ---
 
-## 6. ESLint Rules
+## 6. use() Hook for Suspense-Native Data Fetching
+
+React 19's `use()` hook enables declarative data fetching with Suspense:
+
+### Basic Pattern
+
+```typescript
+'use client'
+
+import { use, Suspense } from 'react'
+
+interface ArtifactData {
+  id: string
+  content: string
+}
+
+// Component that uses the promise
+function ArtifactContent({
+  artifactPromise
+}: {
+  artifactPromise: Promise<ArtifactData>
+}): React.ReactNode {
+  // use() suspends until promise resolves
+  // - If pending: shows nearest Suspense fallback
+  // - If fulfilled: returns the data
+  // - If rejected: throws to nearest Error Boundary
+  const data = use(artifactPromise)
+
+  return <div>{data.content}</div>
+}
+
+// Parent with Suspense boundary
+function ArtifactPage({ id }: { id: string }): React.ReactNode {
+  const promise = cachePromise(`artifact-${id}`, () => fetchArtifact(id))
+
+  return (
+    <Suspense fallback={<ArtifactSkeleton />}>
+      <ArtifactContent artifactPromise={promise} />
+    </Suspense>
+  )
+}
+```
+
+### Promise Caching (CRITICAL)
+
+**Without caching, use() causes infinite loops!** Each render creates a new promise, triggering re-suspension:
+
+```typescript
+// lib/promiseCache.ts
+const cache = new Map<string, Promise<unknown>>()
+
+/**
+ * Cache a promise to prevent infinite Suspense loops
+ *
+ * CRITICAL: use() requires stable promise references.
+ * Creating new promises on each render causes infinite re-suspension.
+ */
+export function cachePromise<T>(
+  key: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  if (!cache.has(key)) {
+    const promise = fetcher()
+      .catch((error) => {
+        // Remove failed promises so retry works
+        cache.delete(key)
+        throw error
+      })
+    cache.set(key, promise)
+  }
+  return cache.get(key) as Promise<T>
+}
+
+// Invalidate when data changes
+export function invalidateCache(key: string): void {
+  cache.delete(key)
+}
+
+// Clear all (e.g., on logout)
+export function clearCache(): void {
+  cache.clear()
+}
+```
+
+### When to Use use() vs TanStack Query
+
+| Use Case | use() | TanStack Query |
+|----------|-------|----------------|
+| Read-only data display | ✅ | ✅ |
+| Mutations/refetching | ❌ | ✅ |
+| Optimistic updates | ❌ | ✅ |
+| Background refetch | ❌ | ✅ |
+| Infinite scroll | ❌ | ✅ |
+| Simple one-shot fetch | ✅ | Overkill |
+
+**Rule of thumb**: Use `use()` for simple read-only data. Use TanStack Query for anything with mutations, refetching, or complex cache management.
+
+---
+
+## 7. useOptimistic with useTransition (Async Pattern)
+
+For non-form async operations (chat, lists, toggles), combine `useOptimistic` with `useTransition`:
+
+### Chat Message Pattern (Real-World Example)
+
+```typescript
+'use client'
+
+import { useOptimistic, useTransition } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+
+interface Message {
+  id: string
+  content: string
+  role: 'user' | 'assistant'
+  created_at: string
+}
+
+export function useTutorChat({ sessionId }: { sessionId: string }) {
+  const queryClient = useQueryClient()
+
+  // Server-confirmed messages from React Query
+  const { data: confirmedMessages = [], isLoading } = useQuery({
+    queryKey: ['messages', sessionId],
+    queryFn: () => fetchMessages(sessionId),
+  })
+
+  // Optimistic layer on top of confirmed messages
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
+    confirmedMessages,
+    (current, newMessage: Message) => [...current, newMessage]
+  )
+
+  // Transition for non-blocking updates
+  const [isPending, startTransition] = useTransition()
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim()) return
+
+    // Create optimistic message with temp ID
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content: content.trim(),
+      role: 'user',
+      created_at: new Date().toISOString(),
+    }
+
+    startTransition(async () => {
+      // 1. Instant UI update
+      addOptimisticMessage(optimisticMessage)
+
+      try {
+        // 2. Server mutation
+        await sendMessageAPI(sessionId, content)
+        // 3. Refetch to get confirmed message with real ID
+        await queryClient.invalidateQueries({ queryKey: ['messages', sessionId] })
+      } catch (error) {
+        // 4. useOptimistic auto-rolls back on error!
+        toast({ title: 'Failed to send', variant: 'destructive' })
+      }
+    })
+  }
+
+  return {
+    messages: optimisticMessages,  // Always show optimistic state
+    sendMessage,
+    isPending,
+    isLoading,
+  }
+}
+```
+
+### Key Patterns
+
+1. **Temp IDs**: Use `temp-${Date.now()}` for optimistic items
+2. **Auto-rollback**: `useOptimistic` reverts on error automatically
+3. **Query invalidation**: Refetch to get server-confirmed data
+4. **Transition wrapping**: `startTransition` for non-blocking updates
+
+---
+
+## 8. Testing React 19 Hooks
+
+### Testing useOptimistic Pattern
+
+```typescript
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Mock API
+const mockSendMessage = vi.fn()
+vi.mock('@services/api', () => ({
+  sendMessage: (...args) => mockSendMessage(...args),
+}))
+
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  )
+}
+
+describe('useTutorChat - useOptimistic', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSendMessage.mockResolvedValue({ id: 'msg-1', content: 'Hello' })
+  })
+
+  it('shows message instantly before API responds', async () => {
+    // Make API slow to observe optimistic update
+    mockSendMessage.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve({ id: 'msg-1' }), 500))
+    )
+
+    const { result } = renderHook(() => useTutorChat({ sessionId: 'test' }), {
+      wrapper: createWrapper(),
+    })
+
+    // Wait for initial load
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    // Send message
+    act(() => { result.current.sendMessage('Hello') })
+
+    // Message appears INSTANTLY (optimistic)
+    await waitFor(() => {
+      expect(result.current.messages.length).toBe(1)
+      expect(result.current.messages[0].content).toBe('Hello')
+      expect(result.current.messages[0].id).toMatch(/^temp-/)  // Temp ID
+    })
+  })
+
+  it('rolls back on API failure', async () => {
+    mockSendMessage.mockRejectedValue(new Error('Network error'))
+
+    const { result } = renderHook(() => useTutorChat({ sessionId: 'test' }), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    act(() => { result.current.sendMessage('Will fail') })
+
+    // Message appears optimistically
+    await waitFor(() => expect(result.current.messages.length).toBe(1))
+
+    // After error, useOptimistic rolls back
+    await waitFor(() => expect(result.current.messages.length).toBe(0))
+  })
+})
+```
+
+---
+
+## 9. ESLint Rules
 
 Add these ESLint rules to enforce React 19 patterns:
 
@@ -479,6 +736,6 @@ Add these ESLint rules to enforce React 19 patterns:
 
 ---
 
-**Last Updated**: 2025-12-26
-**React Version**: 19.0.0
-**SkillForge Modernization Commit**: 827c323e
+**Last Updated**: 2025-12-27
+**React Version**: 19.2.3
+**SkillForge Implementation**: Issue #547 (bf43ad5a, 96d9a0e8)
