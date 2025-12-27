@@ -12,16 +12,28 @@ export default defineConfig({
   // Increased workers for parallel execution (storageState enables safe parallelization)
   // 4 workers in CI allows 4 tests to run simultaneously, reducing execution time by ~4x
   workers: process.env.CI ? 4 : undefined,
-  
+
   // Global setup creates storageState.json once, reused by all tests
   // This eliminates repeated navigation/auth steps, reducing test time by 50-70%
   globalSetup: './e2e/global-setup.ts',
+
+  // Snapshot configuration for visual regression testing
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+  updateSnapshots: process.env.CI ? 'missing' : 'none',
 
   reporter: [
     ['html', { open: 'never' }],
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
   ],
+
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,
+      threshold: 0.2,
+      animations: 'disabled',
+    },
+  },
 
   use: {
     // Test environment ports (5174 for frontend, 8501 for backend)

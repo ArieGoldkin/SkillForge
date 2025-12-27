@@ -1,8 +1,8 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "webapp-testing",
-  "version": "1.0.0",
-  "description": "Playwright-based testing with planner, generator, and healer agents for autonomous test creation and maintenance",
+  "version": "1.1.0",
+  "description": "Playwright-based testing with visual regression, planner, generator, and healer agents for autonomous test creation and maintenance",
 
   "capabilities": {
     "playwright-setup": {
@@ -59,6 +59,21 @@
       ],
       "reference_file": "SKILL.md#agent-workflow",
       "token_cost": 120
+    },
+    "visual-regression": {
+      "keywords": ["visual regression", "screenshot", "toHaveScreenshot", "snapshot", "VRT", "baseline", "pixel diff", "visual testing"],
+      "solves": [
+        "How do I set up visual regression testing with Playwright?",
+        "Replace Percy with Playwright native screenshots",
+        "Configure toHaveScreenshot thresholds",
+        "Handle cross-platform screenshot differences",
+        "Mask dynamic content in screenshots",
+        "Set up visual regression in CI/CD",
+        "Update screenshot baselines",
+        "Debug failed visual comparisons"
+      ],
+      "reference_file": "references/visual-regression.md",
+      "token_cost": 450
     }
   },
 
@@ -68,12 +83,18 @@
       "e2e.*test",
       "test.*webapp",
       "playwright.*agent",
-      "planner.*generator.*healer"
+      "planner.*generator.*healer",
+      "visual.*regression",
+      "toHaveScreenshot",
+      "screenshot.*test"
     ],
     "medium_confidence": [
       "test.*ui",
       "browser.*test",
-      "integration.*test"
+      "integration.*test",
+      "snapshot.*test",
+      "percy.*alternative",
+      "baseline.*screenshot"
     ]
   },
 
