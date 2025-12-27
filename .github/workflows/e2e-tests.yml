@@ -160,7 +160,7 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       needs.changes.outputs.source_code == 'true'
-    timeout-minutes: 30  # Reduced from 45 with optimizations
+    timeout-minutes: 45  # Allow time for container startup retries
 
     steps:
       - name: Checkout code
@@ -252,17 +252,44 @@ jobs:
 
       - name: Build and start test environment (lightweight mode)
         run: |
-          # Use Docker Compose --wait flag for automatic health checks
-          # Start ONLY essential services for lightweight E2E (no Langfuse stack)
-          # Langfuse is disabled in .env.test, so don't waste CI resources starting it
-          #
-          # IMPORTANT: backend-seed is a one-shot job that exits after loading data.
-          # The --wait flag expects services to remain running, so backend-seed must
-          # be started separately to avoid "exit code 1" failures.
+          # ==========================================================================
+          # Container Startup with Retry (2025 Best Practice)
+          # ==========================================================================
+          # Docker Compose on macOS self-hosted runners can fail intermittently
+          # due to Docker Desktop VM restarts or resource contention.
+          # Implement retry with exponential backoff for resilience.
 
-          # Step 1: Start long-running services with --wait (health checks)
-          docker compose -f docker-compose.test.yml up -d --wait --build \
-            postgres redis backend frontend
+          start_containers() {
+            echo "⏳ Starting containers..."
+            # Use Docker Compose --wait flag for automatic health checks
+            # Start ONLY essential services for lightweight E2E (no Langfuse stack)
+            docker compose -f docker-compose.test.yml up -d --wait --build \
+              postgres redis backend frontend
+          }
+
+          MAX_RETRIES=3
+          RETRY=0
+          DELAY=10
+
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            if start_containers; then
+              echo "✓ Containers started successfully"
+              break
+            fi
+
+            RETRY=$((RETRY + 1))
+            if [ $RETRY -ge $MAX_RETRIES ]; then
+              echo "::error::Container startup failed after $MAX_RETRIES attempts"
+              docker compose -f docker-compose.test.yml logs --tail=50 || true
+              exit 1
+            fi
+
+            echo "⚠️ Container startup failed, cleaning up and retrying in ${DELAY}s... (attempt $RETRY/$MAX_RETRIES)"
+            docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+            docker container prune -f 2>/dev/null || true
+            sleep $DELAY
+            DELAY=$((DELAY * 2))
+          done
 
           # Step 2: Run backend-seed as one-shot job (loads golden dataset)
           echo "Loading golden dataset..."
@@ -436,19 +463,46 @@ jobs:
           LANGFUSE_SECRET_KEY=sk-lf-ci-e2e-test-secret
           EOF
 
-          # Use Docker Compose --wait flag for automatic health checks
-          # Start test environment with real API keys + Langfuse stack - workflow ENABLED
-          #
-          # IMPORTANT: backend-seed and langfuse-restore are one-shot jobs that exit
-          # after completing their tasks. The --wait flag expects services to remain
-          # running, so they must be started separately.
+          # ==========================================================================
+          # Container Startup with Retry (2025 Best Practice)
+          # ==========================================================================
+          # Docker Compose on macOS self-hosted runners can fail intermittently
+          # due to Docker Desktop VM restarts or resource contention.
 
-          # Step 1: Start long-running services with --wait (health checks)
-          docker compose -f docker-compose.test.yml \
-            --env-file .env.e2e up -d --wait --build \
-            postgres redis backend frontend \
-            langfuse-web langfuse-worker langfuse-db langfuse-clickhouse \
-            langfuse-redis langfuse-minio langfuse-minio-setup
+          start_containers() {
+            echo "⏳ Starting containers with LLM + Langfuse stack..."
+            docker compose -f docker-compose.test.yml \
+              --env-file .env.e2e up -d --wait --build \
+              postgres redis backend frontend \
+              langfuse-web langfuse-worker langfuse-db langfuse-clickhouse \
+              langfuse-redis langfuse-minio langfuse-minio-setup
+          }
+
+          MAX_RETRIES=3
+          RETRY=0
+          DELAY=15
+
+          while [ $RETRY -lt $MAX_RETRIES ]; do
+            if start_containers; then
+              echo "✓ Containers started successfully"
+              break
+            fi
+
+            RETRY=$((RETRY + 1))
+            if [ $RETRY -ge $MAX_RETRIES ]; then
+              echo "::error::Container startup failed after $MAX_RETRIES attempts"
+              docker compose -f docker-compose.test.yml logs --tail=50 || true
+              # Secure cleanup before exit
+              shred -u .env.e2e 2>/dev/null || rm -f .env.e2e
+              exit 1
+            fi
+
+            echo "⚠️ Container startup failed, cleaning up and retrying in ${DELAY}s... (attempt $RETRY/$MAX_RETRIES)"
+            docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+            docker container prune -f 2>/dev/null || true
+            sleep $DELAY
+            DELAY=$((DELAY * 2))
+          done
 
           # Step 2: Run one-shot jobs (golden dataset + Langfuse restore)
           echo "Loading golden dataset..."
