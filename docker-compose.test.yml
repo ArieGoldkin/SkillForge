@@ -68,6 +68,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: runtime
+      # BuildKit cache for faster rebuilds
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache/backend
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache/backend,mode=max
     container_name: skillforge-backend-test
     env_file:
       - ./backend/.env.test  # Test environment uses separate .env.test file
@@ -126,6 +131,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
+      # BuildKit cache for faster rebuilds
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache/frontend
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache/frontend,mode=max
     container_name: skillforge-frontend-test
     environment:
       NODE_ENV: development

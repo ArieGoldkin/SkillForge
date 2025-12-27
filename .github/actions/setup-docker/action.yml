@@ -19,6 +19,7 @@ runs:
         driver-opts: |
           image=moby/buildkit:latest
           network=host
+      timeout-minutes: 5
       continue-on-error: true
 
     - name: Configure Docker environment
@@ -28,8 +29,13 @@ runs:
         echo "BUILDKIT_INLINE_CACHE=1" >> $GITHUB_ENV
         echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
         echo "COMPOSE_DOCKER_CLI_BUILD=1" >> $GITHUB_ENV
-        mkdir -p ${{ inputs.cache-path }}
-        echo "✓ Docker BuildKit configured"
+        # macOS self-hosted runner compatibility
+        echo "DOCKER_API_VERSION=1.43" >> $GITHUB_ENV
+
+        # Create cache directories for backend and frontend
+        mkdir -p ${{ inputs.cache-path }}/backend
+        mkdir -p ${{ inputs.cache-path }}/frontend
+        echo "✓ Docker BuildKit configured with cache at ${{ inputs.cache-path }}"
 
     # Pre-pull base images in parallel for faster builds
     - name: Pre-pull base images (parallel)
