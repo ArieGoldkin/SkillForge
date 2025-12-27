@@ -11,13 +11,14 @@ export { SSEConnectionStatus } from './SSEConnectionStatus'
 export { ALL_STAGES, STAGE_CONFIG, WORKING_STAGES } from '../../config/stageRegistry'
 
 // UI helpers from constants
+export { type StageState, createInitialStages } from './constants'
+
+// Status formatting from config
 export {
-  type StageState,
-  createInitialStages,
   formatAgentName,
   formatStatus,
   getStatusBadgeVariant,
-} from './constants'
+} from '../../config/stageStatusConfig'
 
 // SSE normalization
 export {
