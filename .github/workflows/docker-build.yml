@@ -28,6 +28,12 @@ on:
       - 'docker-compose*.yml'
       - 'Dockerfile*'
 
+# Ensure only one Docker Build runs at a time per PR/branch
+# This prevents Buildx container conflicts on self-hosted runners
+concurrency:
+  group: docker-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
