@@ -161,13 +161,13 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
                         total_tokens = input_tokens + output_tokens
 
                     # Extract model name from response metadata for cost tracking
-                    if hasattr(chunk, "response_metadata") and chunk.response_metadata:
+                    response_metadata = getattr(chunk, "response_metadata", None)
+                    if response_metadata and isinstance(response_metadata, dict):
                         # Try common model name fields from different providers
-                        metadata = chunk.response_metadata
                         model_name = (
-                            metadata.get("model")
-                            or metadata.get("model_name")
-                            or metadata.get("model_id")
+                            response_metadata.get("model")
+                            or response_metadata.get("model_name")
+                            or response_metadata.get("model_id")
                             or model_name  # Keep previous value if not found
                         )
 
@@ -240,11 +240,12 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
 
                 # Submit cost as Langfuse score
                 langfuse_service = get_langfuse_service()
-                langfuse_service.submit_score(
-                    name="cost_usd",
-                    value=cost_usd,
-                    comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
-                )
+                if langfuse_service is not None:
+                    langfuse_service.submit_score(
+                        name="cost_usd",
+                        value=cost_usd,
+                        comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
+                    )
                 logger.debug(
                     "streaming_cost_tracked",
                     agent_type=agent_type,

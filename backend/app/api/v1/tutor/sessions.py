@@ -3,6 +3,7 @@
 import asyncio
 import uuid
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
@@ -65,9 +66,12 @@ async def create_session(
 
     """
     try:
+        # Convert str to UUID for repository (API boundary conversion)
+        analysis_uuid: UUID | None = UUID(request.analysis_id) if request.analysis_id else None
+
         # Create session in database
         session = await repo.create_session(
-            analysis_id=request.analysis_id,
+            analysis_id=analysis_uuid,
             user_level=request.user_level,
         )
 
@@ -76,7 +80,7 @@ async def create_session(
         session_id: uuid.UUID = session.id
         initial_state = build_tutor_state(
             session_id,
-            request.analysis_id,
+            analysis_uuid,
             request.user_level,
         )
 
@@ -94,8 +98,9 @@ async def create_session(
         )
 
         # SQLAlchemy Column types return actual values when accessed from instances
+        # Convert UUID to str for JSON response (API boundary conversion)
         return CreateSessionResponse(
-            session_id=session.id,
+            session_id=str(session.id),
             status=str(session.status),
             sse_endpoint=f"/api/v1/tutor/sessions/{session.id}/stream",
         )
@@ -154,9 +159,10 @@ async def get_session(
         formatted_messages = _format_messages(messages)
 
         # SQLAlchemy Column types return actual values when accessed from instances
+        # Convert UUID to str for JSON response (API boundary conversion)
         return GetSessionResponse(
-            session_id=session.id,
-            analysis_id=session.analysis_id,
+            session_id=str(session.id),
+            analysis_id=str(session.analysis_id) if session.analysis_id else None,
             status=str(session.status),
             syllabus=session.syllabus,
             current_section=int(session.current_section),

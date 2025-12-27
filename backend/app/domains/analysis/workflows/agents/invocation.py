@@ -68,14 +68,14 @@ def _track_llm_cost(
 
     # Extract model name from response metadata for cost tracking
     model_name = "unknown"
-    if hasattr(result, "response_metadata") and result.response_metadata:
+    response_metadata = getattr(result, "response_metadata", None)
+    if response_metadata and isinstance(response_metadata, dict):
         # Try common model name fields from different providers
-        metadata = result.response_metadata
         model_name = (
-            metadata.get("model")
-            or metadata.get("model_name")
-            or metadata.get("model_id")
-            or "unknown"  # type: ignore[union-attr]
+            response_metadata.get("model")
+            or response_metadata.get("model_name")
+            or response_metadata.get("model_id")
+            or "unknown"
         )
 
     # Calculate and submit cost to Langfuse
@@ -89,11 +89,12 @@ def _track_llm_cost(
         # Submit cost as Langfuse score
         try:
             langfuse_service = get_langfuse_service()
-            langfuse_service.submit_score(
-                name="cost_usd",
-                value=cost_usd,
-                comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
-            )
+            if langfuse_service is not None:
+                langfuse_service.submit_score(
+                    name="cost_usd",
+                    value=cost_usd,
+                    comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
+                )
             logger.debug(
                 "agent_cost_tracked",
                 agent_type=agent_type,
