@@ -1,16 +1,15 @@
-import { test } from '@playwright/test';
-import { percySnapshot } from '@percy/playwright';
+import { test, expect } from '@playwright/test';
 
 import { HomePage, AnalyzePage, ArtifactPage } from '../page-objects';
 import { getCompletedAnalysis, createAnalysis } from '../utils/api-helpers';
 
 /**
- * E2E Visual Regression Tests using Percy.
+ * E2E Visual Regression Tests using Playwright's native toHaveScreenshot().
  *
  * These tests capture visual snapshots for visual regression testing.
- * Percy will compare snapshots across builds to detect unintended UI changes.
+ * Playwright will compare snapshots across runs to detect unintended UI changes.
  *
- * Run with: npx percy exec -- npm run e2e:percy
+ * Run with: npm run e2e:vrt
  */
 test.describe('Visual Regression Tests', () => {
   test.describe('Homepage', () => {
@@ -19,7 +18,7 @@ test.describe('Visual Regression Tests', () => {
       await homePage.goto();
       await homePage.urlInput.waitFor({ state: 'visible', timeout: 10000 });
 
-      await percySnapshot(page, 'Homepage - Light Mode');
+      await expect(page).toHaveScreenshot('homepage-light.png');
     });
 
     test('should match homepage snapshot (dark mode)', async ({ page }) => {
@@ -36,7 +35,7 @@ test.describe('Visual Regression Tests', () => {
       // Wait for theme to apply
       await page.waitForTimeout(500);
 
-      await percySnapshot(page, 'Homepage - Dark Mode');
+      await expect(page).toHaveScreenshot('homepage-dark.png');
     });
 
     test('should match homepage with URL input filled', async ({ page }) => {
@@ -46,7 +45,7 @@ test.describe('Visual Regression Tests', () => {
 
       await homePage.urlInput.fill('https://example.com/article');
 
-      await percySnapshot(page, 'Homepage - URL Input Filled');
+      await expect(page).toHaveScreenshot('homepage-url-filled.png');
     });
   });
 
@@ -64,7 +63,13 @@ test.describe('Visual Regression Tests', () => {
       // Wait for library content to load
       await page.waitForSelector('[data-testid="analysis-card"], [role="article"]', { timeout: 10000 });
 
-      await percySnapshot(page, 'Library Page - Analysis Cards');
+      // Mask timestamps and dynamic content
+      await expect(page).toHaveScreenshot('library-with-cards.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
 
     test('should match library page (empty state)', async ({ page }) => {
@@ -75,10 +80,7 @@ test.describe('Visual Regression Tests', () => {
       // Wait for page to fully load
       await page.waitForLoadState('networkidle');
 
-      await percySnapshot(page, 'Library Page - Empty State', {
-        // Only capture if empty state is visible
-        enableJavaScript: true,
-      });
+      await expect(page).toHaveScreenshot('library-empty-state.png');
     });
   });
 
@@ -95,7 +97,14 @@ test.describe('Visual Regression Tests', () => {
       // Wait for page to load
       await analyzePage.waitForPageLoad();
 
-      await percySnapshot(page, 'Analysis Progress - Loading State');
+      // Mask dynamic content like timestamps and progress percentages
+      await expect(page).toHaveScreenshot('analysis-loading.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+          page.locator('[data-testid="progress-percentage"]'),
+        ],
+      });
     });
 
     test('should match analysis progress - complete state', async ({ page, request }) => {
@@ -110,7 +119,13 @@ test.describe('Visual Regression Tests', () => {
 
       await analyzePage.waitForComplete();
 
-      await percySnapshot(page, 'Analysis Progress - Complete State');
+      // Mask timestamps but keep status badges visible
+      await expect(page).toHaveScreenshot('analysis-complete.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
 
     test('should match analysis progress - error state', async ({ page }) => {
@@ -124,7 +139,7 @@ test.describe('Visual Regression Tests', () => {
       // Wait for error message
       await page.waitForSelector('[role="alert"], [data-testid="error-message"]', { timeout: 10000 });
 
-      await percySnapshot(page, 'Analysis Progress - Error State');
+      await expect(page).toHaveScreenshot('analysis-error.png');
     });
   });
 
@@ -142,7 +157,13 @@ test.describe('Visual Regression Tests', () => {
       // Wait for markdown content to render
       await page.waitForSelector('article, [data-testid="markdown-content"]', { timeout: 10000 });
 
-      await percySnapshot(page, 'Artifact Page - Markdown Rendering');
+      // Mask timestamps
+      await expect(page).toHaveScreenshot('artifact-markdown.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
 
     test('should match artifact page - dark mode', async ({ page, request }) => {
@@ -163,7 +184,13 @@ test.describe('Visual Regression Tests', () => {
 
       await page.waitForTimeout(500);
 
-      await percySnapshot(page, 'Artifact Page - Dark Mode');
+      // Mask timestamps
+      await expect(page).toHaveScreenshot('artifact-dark.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
   });
 
@@ -177,7 +204,7 @@ test.describe('Visual Regression Tests', () => {
       await page.goto('/showcase');
       await page.waitForLoadState('networkidle');
 
-      await percySnapshot(page, 'Component Showcase Page');
+      await expect(page).toHaveScreenshot('component-showcase.png');
     });
   });
 
@@ -190,7 +217,7 @@ test.describe('Visual Regression Tests', () => {
       await homePage.goto();
       await homePage.urlInput.waitFor({ state: 'visible', timeout: 10000 });
 
-      await percySnapshot(page, 'Homepage - Mobile (375px)');
+      await expect(page).toHaveScreenshot('homepage-mobile-375px.png');
     });
 
     test('should match library page on tablet viewport', async ({ page, request }) => {
@@ -206,7 +233,13 @@ test.describe('Visual Regression Tests', () => {
       await page.goto('/library');
       await page.waitForSelector('[data-testid="analysis-card"], [role="article"]', { timeout: 10000 });
 
-      await percySnapshot(page, 'Library Page - Tablet (768px)');
+      // Mask timestamps
+      await expect(page).toHaveScreenshot('library-tablet-768px.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
 
     test('should match analysis page on desktop viewport', async ({ page, request }) => {
@@ -223,7 +256,13 @@ test.describe('Visual Regression Tests', () => {
       await analyzePage.goto(completed!.analysis_id);
       await analyzePage.waitForComplete();
 
-      await percySnapshot(page, 'Analysis Progress - Desktop (1280px)');
+      // Mask timestamps
+      await expect(page).toHaveScreenshot('analysis-desktop-1280px.png', {
+        mask: [
+          page.locator('time'),
+          page.locator('[data-testid="timestamp"]'),
+        ],
+      });
     });
   });
 });
