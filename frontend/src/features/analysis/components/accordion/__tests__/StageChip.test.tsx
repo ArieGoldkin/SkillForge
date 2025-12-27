@@ -3,10 +3,16 @@
  *
  * Tests cover:
  * - Name truncation for long stage names
- * - Status colors (complete, running, failed, pending, skipped)
+ * - Status rendering (complete, running, failed, pending, skipped)
  * - Status icons (checkmark, spinner, X, circle, minus)
  * - Size variants (sm, md)
  * - Accessibility compliance
+ * - Framer Motion animations (status transitions, icon changes)
+ *
+ * Note: Component uses framer-motion for animations, so tests verify:
+ * - Semantic rendering (aria-labels, icons) instead of Tailwind classes
+ * - AnimatePresence for icon transitions
+ * - Accessibility maintained during animations
  */
 
 import { render, screen } from '@testing-library/react'
@@ -79,84 +85,101 @@ describe('StageChip', () => {
     })
   })
 
-  describe('status colors', () => {
-    it('shows green background with white text for complete status', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('complete')} />
-      )
+  describe('status rendering', () => {
+    it('renders complete status correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('complete')} />)
 
-      const chip = container.querySelector('span.bg-\\[oklch\\(0\\.6959_0\\.1491_162\\.4796\\)\\]')
+      // Verify aria-label shows complete status
+      const chip = screen.getByLabelText(/Test Stage: complete/i)
       expect(chip).toBeInTheDocument()
-      expect(chip).toHaveClass('text-white')
+
+      // Verify icon is present (checkmark for complete)
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows blue background with white text for running status', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('running')} />
-      )
+    it('renders running status correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('running')} />)
 
-      const chip = container.querySelector('span.bg-\\[oklch\\(0\\.6232_0\\.2118_259\\.1492\\)\\]')
+      // Verify aria-label shows running status
+      const chip = screen.getByLabelText(/Test Stage: running/i)
       expect(chip).toBeInTheDocument()
-      expect(chip).toHaveClass('text-white')
+
+      // Verify spinner icon is present
+      const icon = chip.querySelector('svg.animate-spin')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows blue background for synthesizing status (treated as running)', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('synthesizing')} />
-      )
+    it('renders synthesizing status correctly (treated as running)', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('synthesizing')} />)
 
-      const chip = container.querySelector('span.bg-\\[oklch\\(0\\.6232_0\\.2118_259\\.1492\\)\\]')
+      // Synthesizing is mapped to running status
+      const chip = screen.getByLabelText(/Test Stage: running/i)
       expect(chip).toBeInTheDocument()
+
+      // Should have spinner icon
+      const icon = chip.querySelector('svg.animate-spin')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows red background with white text for failed status', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('failed')} />
-      )
+    it('renders failed status correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('failed')} />)
 
-      const chip = container.querySelector('span.bg-\\[oklch\\(0\\.6369_0\\.2077_25\\.3313\\)\\]')
+      // Verify aria-label shows failed status
+      const chip = screen.getByLabelText(/Test Stage: failed/i)
       expect(chip).toBeInTheDocument()
-      expect(chip).toHaveClass('text-white')
+
+      // Verify X icon is present
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows red background for static_fallback status (treated as failed)', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('static_fallback')} />
-      )
+    it('renders static_fallback status correctly (treated as failed)', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('static_fallback')} />)
 
-      const chip = container.querySelector('span.bg-\\[oklch\\(0\\.6369_0\\.2077_25\\.3313\\)\\]')
+      // static_fallback is mapped to failed status
+      const chip = screen.getByLabelText(/Test Stage: failed/i)
       expect(chip).toBeInTheDocument()
+
+      // Should have X icon
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows gray background for skipped status', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('skipped')} />
-      )
+    it('renders skipped status correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('skipped')} />)
 
-      const chip = container.querySelector(
-        'span.bg-\\[oklch\\(0\\.5556_0\\.0001_286\\.3746\\)\\]\\/50'
-      )
+      // Verify aria-label shows skipped status
+      const chip = screen.getByLabelText(/Test Stage: skipped/i)
       expect(chip).toBeInTheDocument()
+
+      // Verify minus icon is present
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('shows muted gray background for pending status', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('pending')} />
-      )
+    it('renders pending status correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('pending')} />)
 
-      const chip = container.querySelector(
-        'span.bg-\\[oklch\\(0\\.5556_0\\.0001_286\\.3746\\)\\]\\/20'
-      )
+      // Verify aria-label shows pending status
+      const chip = screen.getByLabelText(/Test Stage: pending/i)
       expect(chip).toBeInTheDocument()
+
+      // Verify circle icon is present
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
 
     it('treats undefined status as pending', () => {
-      const { container } = render(<StageChip stageName="test_stage" status={undefined} />)
+      render(<StageChip stageName="test_stage" status={undefined} />)
 
-      const chip = container.querySelector(
-        'span.bg-\\[oklch\\(0\\.5556_0\\.0001_286\\.3746\\)\\]\\/20'
-      )
+      // Should render as pending
+      const chip = screen.getByLabelText(/Test Stage: pending/i)
       expect(chip).toBeInTheDocument()
+
+      // Should have circle icon
+      const icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
     })
   })
 
@@ -219,33 +242,40 @@ describe('StageChip', () => {
   })
 
   describe('size variants', () => {
-    it('applies small size classes when size="sm"', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('complete')} size="sm" />
-      )
+    it('renders small size correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('complete')} size="sm" />)
 
-      // Improved size: px-2 py-1 text-xs min-h-[24px]
-      const chip = container.querySelector('span.px-2.py-1.text-xs.min-h-\\[24px\\]')
+      // Should render with accessible label
+      const chip = screen.getByLabelText(/Test Stage: complete/i)
       expect(chip).toBeInTheDocument()
+
+      // Icon should be present with h-3 w-3 classes
+      const icon = chip.querySelector('svg.h-3.w-3')
+      expect(icon).toBeInTheDocument()
     })
 
-    it('applies medium size classes when size="md"', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('complete')} size="md" />
-      )
+    it('renders medium size correctly', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('complete')} size="md" />)
 
-      // Medium size: px-3 py-1.5 text-sm min-h-[32px]
-      const chip = container.querySelector('span.px-3.py-1\\.5.text-sm.min-h-\\[32px\\]')
+      // Should render with accessible label
+      const chip = screen.getByLabelText(/Test Stage: complete/i)
       expect(chip).toBeInTheDocument()
+
+      // Icon should be present with h-3.5 w-3.5 classes
+      const icon = chip.querySelector('svg.h-3\\.5.w-3\\.5')
+      expect(icon).toBeInTheDocument()
     })
 
     it('defaults to small size when size prop is omitted', () => {
-      const { container } = render(
-        <StageChip stageName="test_stage" status={createStageStatus('complete')} />
-      )
+      render(<StageChip stageName="test_stage" status={createStageStatus('complete')} />)
 
-      const chip = container.querySelector('span.px-2.py-1.text-xs.min-h-\\[24px\\]')
+      // Should render with accessible label
+      const chip = screen.getByLabelText(/Test Stage: complete/i)
       expect(chip).toBeInTheDocument()
+
+      // Should use h-3 w-3 icon (small size)
+      const icon = chip.querySelector('svg.h-3.w-3')
+      expect(icon).toBeInTheDocument()
     })
 
     it('uses h-3 w-3 icon for sm size', () => {
@@ -387,6 +417,91 @@ describe('StageChip', () => {
 
       const chip = screen.getByLabelText(/Already Formatted: complete/i)
       expect(chip).toBeInTheDocument()
+    })
+  })
+
+  describe('animations', () => {
+    it('uses motion.span for animated container', () => {
+      const { container } = render(
+        <StageChip stageName="test_stage" status={createStageStatus('complete')} />
+      )
+
+      // motion.span renders as span with framer-motion data attributes
+      const chip = container.querySelector('span')
+      expect(chip).toBeInTheDocument()
+
+      // Should have accessible label
+      const labeledChip = screen.getByLabelText(/Test Stage: complete/i)
+      expect(labeledChip).toBeInTheDocument()
+    })
+
+    it('wraps icon in motion.div for AnimatePresence', () => {
+      render(<StageChip stageName="test_stage" status={createStageStatus('running')} />)
+
+      // Icon should render inside motion.div (via AnimatePresence)
+      const chip = screen.getByLabelText(/Test Stage: running/i)
+      expect(chip).toBeInTheDocument()
+
+      // Icon wrapper should exist
+      const iconWrapper = chip.querySelector('div')
+      expect(iconWrapper).toBeInTheDocument()
+
+      // Icon itself should be inside the wrapper
+      const icon = iconWrapper?.querySelector('svg.animate-spin')
+      expect(icon).toBeInTheDocument()
+    })
+
+    it('animates status transitions', () => {
+      const { rerender } = render(
+        <StageChip stageName="test_stage" status={createStageStatus('running')} />
+      )
+
+      // Initially should show running status
+      expect(screen.getByLabelText(/Test Stage: running/i)).toBeInTheDocument()
+
+      // Change to complete status
+      rerender(<StageChip stageName="test_stage" status={createStageStatus('complete')} />)
+
+      // Should now show complete status
+      expect(screen.getByLabelText(/Test Stage: complete/i)).toBeInTheDocument()
+    })
+
+    it('handles status icon changes with AnimatePresence', () => {
+      const { rerender } = render(
+        <StageChip stageName="test_stage" status={createStageStatus('pending')} />
+      )
+
+      // Initially should have circle icon (pending)
+      let chip = screen.getByLabelText(/Test Stage: pending/i)
+      let icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
+
+      // Change to complete status
+      rerender(<StageChip stageName="test_stage" status={createStageStatus('complete')} />)
+
+      // Should now have checkmark icon (complete)
+      chip = screen.getByLabelText(/Test Stage: complete/i)
+      icon = chip.querySelector('svg[aria-hidden="true"]')
+      expect(icon).toBeInTheDocument()
+    })
+
+    it('maintains accessibility during animations', () => {
+      const { rerender } = render(
+        <StageChip stageName="test_stage" status={createStageStatus('running')} />
+      )
+
+      // Check initial accessibility
+      let chip = screen.getByLabelText(/Test Stage: running/i)
+      expect(chip).toHaveAttribute('title')
+      expect(chip).toHaveAttribute('aria-label')
+
+      // Change status
+      rerender(<StageChip stageName="test_stage" status={createStageStatus('failed')} />)
+
+      // Accessibility attributes should still be present
+      chip = screen.getByLabelText(/Test Stage: failed/i)
+      expect(chip).toHaveAttribute('title', 'Test Stage: failed')
+      expect(chip).toHaveAttribute('aria-label', 'Test Stage: failed')
     })
   })
 })

@@ -1,9 +1,11 @@
 import { memo } from 'react'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
 
+import { errorVariants, slideInVariants, statusBadgeVariants } from '@lib/animations'
 import { cn } from '@lib/utils'
 
 import {
@@ -66,44 +68,68 @@ export const StageItem = memo(function StageItem({ stage, isLast }: StageItemPro
           <h4 id={stageId} className="font-medium text-sm">
             {stage.label}
           </h4>
-          <Badge
-            variant={getStatusBadgeVariant(stage.status)}
-            className="text-xs"
-            data-testid="status-text"
-            role="status"
-            aria-describedby={stageId}
-          >
-            {formatStatus(stage.status)}
-          </Badge>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={stage.status}
+              variants={statusBadgeVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <Badge
+                variant={getStatusBadgeVariant(stage.status)}
+                className="text-xs"
+                data-testid="status-text"
+                role="status"
+                aria-describedby={stageId}
+              >
+                {formatStatus(stage.status)}
+              </Badge>
+            </motion.div>
+          </AnimatePresence>
         </div>
-        {stage.agent && stage.status === 'running' && (
-          <div
-            className="flex items-center gap-2 text-xs text-muted-foreground mt-1 animate-in slide-in-from-left-2 duration-200"
-            aria-label={`Agent: ${formatAgentName(stage.agent)}`}
-          >
-            <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden="true" />
-            <span className="font-medium">{formatAgentName(stage.agent)}</span>
-          </div>
-        )}
-        {stage.error && (
-          <div
-            className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded space-y-1"
-            role="alert"
-            aria-label={`Error in ${stage.label}`}
-          >
-            <div>
-              <span className="font-medium">Error:</span> {stage.error}
-            </div>
-            {stage.errorCode && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Code:</span>
-                <Badge variant="destructive" className="text-xs">
-                  {formatErrorCode(stage.errorCode)}
-                </Badge>
+        <AnimatePresence mode="wait">
+          {stage.agent && stage.status === 'running' && (
+            <motion.div
+              key="agent-info"
+              variants={slideInVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex items-center gap-2 text-xs text-muted-foreground mt-1"
+              aria-label={`Agent: ${formatAgentName(stage.agent)}`}
+            >
+              <Loader2 className="h-3 w-3 animate-spin text-primary" aria-hidden="true" />
+              <span className="font-medium">{formatAgentName(stage.agent)}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence mode="wait">
+          {stage.error && (
+            <motion.div
+              key="error-info"
+              variants={errorVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded space-y-1"
+              role="alert"
+              aria-label={`Error in ${stage.label}`}
+            >
+              <div>
+                <span className="font-medium">Error:</span> {stage.error}
               </div>
-            )}
-          </div>
-        )}
+              {stage.errorCode && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Code:</span>
+                  <Badge variant="destructive" className="text-xs">
+                    {formatErrorCode(stage.errorCode)}
+                  </Badge>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

@@ -16,8 +16,10 @@
 
 import { memo } from 'react'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, Circle, Loader2, MinusCircle, XCircle } from 'lucide-react'
 
+import { statusIconVariants, TRANSITIONS, STATUS_COLORS } from '@lib/animations'
 import { cn } from '@lib/utils'
 
 import type { StageStatusEntry } from '../../hooks/stageConfig'
@@ -138,13 +140,26 @@ const statusConfig = {
   }
 >
 
-/** Status icon component using config */
+/** Status icon component using config with AnimatePresence */
 const StatusIcon = ({ status, className }: { status: StageStatus; className?: string }) => {
   const config = statusConfig[status]
   const Icon = config.Icon
   const iconClass = cn('flex-shrink-0', config.iconClassName, className)
 
-  return <Icon className={iconClass} aria-hidden="true" />
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={status}
+        variants={statusIconVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        className="flex items-center justify-center"
+      >
+        <Icon className={iconClass} aria-hidden="true" />
+      </motion.div>
+    </AnimatePresence>
+  )
 }
 
 // ============================================================================
@@ -180,20 +195,19 @@ export const StageChip = memo(function StageChip({
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-md font-medium',
-        'transition-colors duration-200',
-        config.bg,
-        config.text,
-        config.border,
-        sizeClasses
-      )}
+    <motion.span
+      className={cn('inline-flex items-center gap-1.5 rounded-md font-medium border', sizeClasses)}
+      animate={{
+        backgroundColor: STATUS_COLORS[stageStatus].bg,
+        borderColor: STATUS_COLORS[stageStatus].border,
+        color: STATUS_COLORS[stageStatus].text,
+      }}
+      transition={TRANSITIONS.normal}
       title={`${fullStageName}: ${stageStatus}`}
       aria-label={`${fullStageName}: ${stageStatus}`}
     >
       <StatusIcon status={stageStatus} className={cn(iconSize, config.icon)} />
       <span className="truncate max-w-[120px]">{label}</span>
-    </span>
+    </motion.span>
   )
 })
