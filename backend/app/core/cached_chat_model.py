@@ -57,6 +57,8 @@ from langchain_core.outputs import ChatResult  # noqa: TC002
 from pydantic import ConfigDict, Field, PrivateAttr
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 
 
@@ -419,10 +421,10 @@ class CachedChatModel(BaseChatModel):
 
     def with_fallbacks(
         self,
-        fallbacks: list[Any],
+        fallbacks: Sequence[Any],
         *,
         exceptions_to_handle: tuple[type[BaseException], ...] = (Exception,),
-        **kwargs: Any,
+        exception_key: str | None = None,
     ) -> Any:
         """Delegate fallback configuration to wrapped model.
 
@@ -430,9 +432,9 @@ class CachedChatModel(BaseChatModel):
         If the primary model fails, the fallbacks are tried in order.
 
         Args:
-            fallbacks: List of fallback models/runnables
+            fallbacks: Sequence of fallback models/runnables
             exceptions_to_handle: Exception types that trigger fallback
-            **kwargs: Additional arguments passed to wrapped model
+            exception_key: Key to use for exception in output dict
 
         Returns:
             A runnable with fallback behavior configured
@@ -447,7 +449,7 @@ class CachedChatModel(BaseChatModel):
         return self.model.with_fallbacks(
             fallbacks,
             exceptions_to_handle=exceptions_to_handle,
-            **kwargs,
+            exception_key=exception_key,
         )
 
     def bind(self, **kwargs: Any) -> Any:
