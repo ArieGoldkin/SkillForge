@@ -136,6 +136,8 @@ jobs:
 
   build-frontend:
     runs-on: self-hosted
+    # Serialize after build-backend to prevent Buildx container conflicts
+    needs: [build-backend]
     # This workflow is optional - don't block PRs if it fails
     continue-on-error: true
     timeout-minutes: 15  # Allow time for retries
