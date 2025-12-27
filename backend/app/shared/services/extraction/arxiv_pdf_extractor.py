@@ -257,11 +257,12 @@ class ArxivPDFExtractor:
         # Extract title from PDF metadata or first page
         title = self._extract_title(reader, paper_id)
 
-        # Extract text from all pages
+        # Extract text from all pages using layout mode for better column handling
+        # pypdf 6.x: extraction_mode="layout" preserves 2-column layouts in research papers
         pages_text = []
         for page_num, page in enumerate(reader.pages):
             try:
-                text = page.extract_text()
+                text = page.extract_text(extraction_mode="layout")
                 if text:
                     # Add page marker for reference
                     pages_text.append(f"[Page {page_num + 1}]\n{text}")
@@ -304,9 +305,10 @@ class ArxivPDFExtractor:
                 return str(metadata_title).strip()
 
         # Try first page header (research papers often have title at top)
+        # Use layout mode for consistent extraction with main content
         if reader.pages:
             try:
-                first_page = reader.pages[0].extract_text()
+                first_page = reader.pages[0].extract_text(extraction_mode="layout")
                 if first_page:
                     lines = first_page.split("\n")
                     for raw_line in lines[:5]:  # Check first 5 lines
