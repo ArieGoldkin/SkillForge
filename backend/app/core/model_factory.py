@@ -14,6 +14,35 @@ from app.core.model_registry import MODEL_REGISTRY
 if TYPE_CHECKING:
     from langchain_core.language_models.chat_models import BaseChatModel
 
+# Lazy import to avoid circular import at module load time
+# CachedChatModel is only used when L1 caching is enabled
+_CachedChatModel = None
+
+
+def _get_cached_chat_model_class():
+    """Lazily import CachedChatModel class.
+
+    Returns:
+        CachedChatModel class or None if import fails.
+
+    """
+    global _CachedChatModel  # noqa: PLW0603
+    if _CachedChatModel is None:
+        try:
+            from app.core.cached_chat_model import CachedChatModel
+
+            _CachedChatModel = CachedChatModel
+            logger.debug("cached_chat_model_class_loaded")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "cached_chat_model_import_failed",
+                error=str(e),
+                fallback="unwrapped_model",
+            )
+            return None
+    return _CachedChatModel
+
+
 logger = get_logger(__name__)
 
 # Task-based model routing for cost optimization
@@ -275,7 +304,26 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
         if redis_cache is not None:
             anthropic_kwargs["cache"] = redis_cache
 
-        return ChatAnthropic(**anthropic_kwargs)  # type: ignore[arg-type,return-value]
+        # Create base model
+        base_model = ChatAnthropic(**anthropic_kwargs)  # type: ignore[arg-type]
+
+        # Wrap with L1 cache if enabled
+        if settings.LLM_CACHE_ENABLED:
+            cached_chat_model_class = _get_cached_chat_model_class()
+            if cached_chat_model_class is not None:
+                agent_type = task_type or "default"
+                logger.info(
+                    "llm_cache_wrapper_enabled",
+                    agent_type=agent_type,
+                    l1_cache_size=settings.LLM_CACHE_L1_SIZE,
+                )
+                return cached_chat_model_class(
+                    model=base_model,
+                    agent_type=agent_type,
+                    cache_enabled=True,
+                )
+
+        return base_model
 
     # For non-Anthropic models, use init_chat_model
     logger.info(
@@ -300,4 +348,22 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
     # Create configurable model that can be switched at invocation time
     # If no runtime model was provided, the model is still configurable via config at invoke time
     # LangChain's init_chat_model has complex overloads that mypy can't resolve
-    return init_chat_model(model_identifier_to_use, **init_kwargs)  # type: ignore[call-overload,no-any-return]
+    base_model = init_chat_model(model_identifier_to_use, **init_kwargs)  # type: ignore[call-overload]
+
+    # Wrap with L1 cache if enabled
+    if settings.LLM_CACHE_ENABLED:
+        cached_chat_model_class = _get_cached_chat_model_class()
+        if cached_chat_model_class is not None:
+            agent_type = task_type or "default"
+            logger.info(
+                "llm_cache_wrapper_enabled",
+                agent_type=agent_type,
+                l1_cache_size=settings.LLM_CACHE_L1_SIZE,
+            )
+            return cached_chat_model_class(
+                model=base_model,
+                agent_type=agent_type,
+                cache_enabled=True,
+            )
+
+    return base_model

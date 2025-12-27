@@ -1,10 +1,12 @@
 """Unit tests for LCEL chain implementations.
 
-Tests LCEL chains with automatic fallback and retry logic for:
+Tests LCEL chains with automatic fallback logic for:
 - Agent factories with fallback chains
 - Synthesis phases using LCEL
 - Batch processing with abatch()
-- Retry behavior with exponential backoff
+
+Note: Retry is handled at the LangChain level via LLM_MAX_RETRIES in model_factory.py,
+not via LCEL .with_retry() (removed to avoid retry cascade).
 """
 
 import asyncio
@@ -32,7 +34,6 @@ def mock_chat_model():
     """Create a mock chat model that supports LCEL methods."""
     mock = MagicMock()
     mock.with_structured_output = MagicMock(return_value=mock)
-    mock.with_retry = MagicMock(return_value=mock)
     mock.with_fallbacks = MagicMock(return_value=mock)
     mock.bind_tools = MagicMock(return_value=mock)
     mock.ainvoke = AsyncMock(return_value={"content": "test", "score": 0.9})
@@ -41,7 +42,7 @@ def mock_chat_model():
 
 @pytest.mark.asyncio
 class TestLCELAgentFactory:
-    """Test LCEL agent factory with fallback and retry."""
+    """Test LCEL agent factory with fallback (retry at LangChain level)."""
 
     @patch("app.domains.analysis.workflows.agents.factories.get_chat_model")
     async def test_create_agent_with_lcel_fallback_basic(
@@ -56,8 +57,8 @@ class TestLCELAgentFactory:
         )
 
         # Verify LCEL chain methods were called
+        # Note: with_retry is NOT called - retry handled at LangChain level
         assert mock_chat_model.with_structured_output.called
-        assert mock_chat_model.with_retry.called
         assert mock_chat_model.with_fallbacks.called
 
     @patch("app.domains.analysis.workflows.agents.factories.get_chat_model")
@@ -66,7 +67,6 @@ class TestLCELAgentFactory:
         # Primary model fails
         primary_mock = MagicMock()
         primary_mock.with_structured_output = MagicMock(return_value=primary_mock)
-        primary_mock.with_retry = MagicMock(return_value=primary_mock)
         primary_mock.with_fallbacks = MagicMock(return_value=primary_mock)
         primary_mock.ainvoke = AsyncMock(side_effect=Exception("Primary model failed"))
 
@@ -93,8 +93,8 @@ class TestLCELAgentFactory:
         assert mock_get_chat_model.call_count == 2
 
     @patch("app.domains.analysis.workflows.agents.factories.get_chat_model")
-    async def test_lcel_retry_configuration(self, mock_get_chat_model, mock_chat_model):
-        """Test retry is configured with exponential backoff."""
+    async def test_lcel_no_retry_uses_fallbacks(self, mock_get_chat_model, mock_chat_model):
+        """Test LCEL chain uses fallbacks without redundant with_retry."""
         mock_get_chat_model.return_value = mock_chat_model
 
         create_agent_with_lcel_fallback(
@@ -102,11 +102,11 @@ class TestLCELAgentFactory:
             response_schema=MockResponseSchema,
         )
 
-        # Verify retry was configured with correct parameters
-        retry_call = mock_chat_model.with_retry.call_args
-        assert retry_call is not None
-        assert retry_call.kwargs["stop_after_attempt"] == 3
-        assert retry_call.kwargs["wait_exponential_jitter"] is True
+        # Verify fallback was configured (retry is at LangChain level)
+        assert mock_chat_model.with_fallbacks.called
+        fallback_call = mock_chat_model.with_fallbacks.call_args
+        assert fallback_call is not None
+        assert "exceptions_to_handle" in fallback_call.kwargs
 
 
 @pytest.mark.asyncio
@@ -173,9 +173,13 @@ class TestBatchCompression:
         await compress_all_findings(agent_findings, "test-analysis-id")
 
         # Verify abatch was called with max_concurrency
+        # Issue #586: max_concurrency is now in config dict, not kwargs
         abatch_call = mock_llm.abatch.call_args
         assert abatch_call is not None
-        assert abatch_call.kwargs.get("max_concurrency") == 5
+        # Check config dict for max_concurrency
+        config = abatch_call.kwargs.get("config") or abatch_call[1].get("config")
+        assert config is not None
+        assert config.get("max_concurrency") == 5
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model")
     async def test_abatch_fallback_to_sequential_on_failure(self, mock_get_chat_model):
@@ -264,10 +268,9 @@ class TestSynthesisLCEL:
             _synthesize_core,
         )
 
-        # Mock LLM with LCEL methods
+        # Mock LLM with LCEL methods (no with_retry - handled at LangChain level)
         mock_llm = MagicMock()
         mock_llm.with_structured_output = MagicMock(return_value=mock_llm)
-        mock_llm.with_retry = MagicMock(return_value=mock_llm)
         mock_llm.with_fallbacks = MagicMock(return_value=mock_llm)
         mock_llm.ainvoke = AsyncMock(
             return_value={
@@ -297,8 +300,8 @@ class TestSynthesisLCEL:
         result = await _synthesize_core(compressed_findings, [], {}, "test-id")
 
         # Verify LCEL chain was constructed
+        # Note: with_retry is NOT called - retry handled at LangChain level
         assert mock_llm.with_structured_output.called
-        assert mock_llm.with_retry.called
         assert mock_llm.with_fallbacks.called
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis_phased.get_chat_model")
@@ -308,10 +311,9 @@ class TestSynthesisLCEL:
             _synthesize_learning,
         )
 
-        # Mock LLM that fails
+        # Mock LLM that fails (no with_retry - handled at LangChain level)
         mock_llm = MagicMock()
         mock_llm.with_structured_output = MagicMock(return_value=mock_llm)
-        mock_llm.with_retry = MagicMock(return_value=mock_llm)
         mock_llm.with_fallbacks = MagicMock(return_value=mock_llm)
         mock_llm.ainvoke = AsyncMock(side_effect=TimeoutError("Synthesis timeout"))
 
@@ -341,9 +343,9 @@ class TestSynthesisLCEL:
         )
 
         # Mock LLM that hangs (simulated by long sleep)
+        # No with_retry - retry handled at LangChain level
         mock_llm = MagicMock()
         mock_llm.with_structured_output = MagicMock(return_value=mock_llm)
-        mock_llm.with_retry = MagicMock(return_value=mock_llm)
         mock_llm.with_fallbacks = MagicMock(return_value=mock_llm)
 
         async def slow_invoke(*args, **kwargs):

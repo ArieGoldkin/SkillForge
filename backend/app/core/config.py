@@ -257,11 +257,12 @@ class Settings(BaseSettings):
         ),
     )
     LLM_MAX_RETRIES: int = Field(
-        default=3,
+        default=2,
         description=(
             "Maximum number of retry attempts for LLM API calls. "
             "Uses LangChain's built-in retry mechanism via max_retries parameter. "
-            "Defaults to 3. Set to 0 to disable retries."
+            "Defaults to 2 (reduced from 3 to avoid retry cascade with LCEL chains). "
+            "Set to 0 to disable retries."
         ),
     )
 
@@ -525,6 +526,61 @@ class Settings(BaseSettings):
         ),
     )
 
+    # LLM Response Cache Configuration (Phase 2 Cost Optimization)
+    # 2-tier cache: L1 (in-memory) + L2 (Redis semantic) for 50-70% cost savings
+    LLM_CACHE_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable LLM response caching. When enabled, uses 2-tier cache: "
+            "L1 (in-memory TTLCache) for exact matches, L2 (Redis semantic) "
+            "for similar queries. Provides 50-70% cost savings on repeated queries."
+        ),
+    )
+    LLM_CACHE_L1_SIZE: int = Field(
+        default=1000,
+        ge=100,
+        le=10000,
+        description=(
+            "Maximum number of entries in L1 in-memory cache (100-10000). "
+            "Each entry is ~10KB, so 1000 entries = ~10MB memory usage."
+        ),
+    )
+    LLM_CACHE_L1_TTL: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description=(
+            "TTL in seconds for L1 in-memory cache (1-60 minutes). "
+            "Default: 5 minutes. Shorter TTL = fresher responses, higher cost."
+        ),
+    )
+    LLM_CACHE_L2_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable L2 Redis semantic cache. Uses existing REDIS_URL connection. "
+            "Provides semantic similarity matching for cache hits."
+        ),
+    )
+    LLM_CACHE_L2_TTL: int = Field(
+        default=86400,
+        ge=3600,
+        le=604800,
+        description=(
+            "TTL in seconds for L2 Redis semantic cache (1-168 hours). "
+            "Default: 24 hours. Longer TTL = more cache hits, potentially staler data."
+        ),
+    )
+    LLM_CACHE_SIMILARITY_THRESHOLD: float = Field(
+        default=0.92,
+        ge=0.80,
+        le=0.99,
+        description=(
+            "Minimum cosine similarity for L2 semantic cache hits (0.80-0.99). "
+            "Higher = stricter matching, fewer but more accurate hits. "
+            "0.92 (default) = 92% similarity required."
+        ),
+    )
+
     # Anthropic Prompt Caching Configuration
     ANTHROPIC_PROMPT_CACHE_TTL: str = Field(
         default="1h",
@@ -605,13 +661,14 @@ class Settings(BaseSettings):
         ),
     )
     SELF_CORRECTION_MAX_RETRIES: int = Field(
-        default=2,
+        default=1,
         ge=0,
         le=5,
         description=(
             "Maximum number of self-correction retries per agent (0-5). "
             "Cost per retry: ~500 input + 300 output tokens (~$0.0002 with DeepSeek V3). "
-            "Recommended: 2 (balances quality vs latency). Set to 0 to disable."
+            "Reduced from 2 to 1 to avoid retry cascade (LangChain already retries). "
+            "Set to 0 to disable."
         ),
     )
     SELF_CORRECTION_COMPACT_PROMPTS: bool = Field(

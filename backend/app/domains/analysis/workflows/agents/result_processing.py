@@ -19,6 +19,30 @@ from app.domains.analysis.workflows.agents.validation.specificity_scorer import 
 
 logger = get_logger(__name__)
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# AGENT_COUNTABLE_FIELDS: Single Source of Truth for Schema Field Names
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 2025 Best Practice: Centralized mapping prevents key mismatch bugs (Issue #584)
+# These field names MUST match the Pydantic v2 schema definitions exactly.
+# Run `pytest tests/unit/workflows/agents/test_schema_alignment.py -v` to verify.
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AGENT_COUNTABLE_FIELDS: dict[str, list[str]] = {
+    # Content Analysis Agents (Tier 0)
+    "tech_comparator": ["alternatives"],
+    "security_auditor": ["security_risks", "best_practices", "compliance_notes"],
+    "implementation_planner": ["steps"],
+    "performance_analyst": ["bottlenecks", "optimization_opportunities"],
+    "code_quality_critic": ["code_issues", "best_practices"],
+    "trend_validator": ["trend_assessments"],
+    "dependency_mapper": ["required_dependencies", "optional_dependencies", "core_dependencies"],
+    "integration_feasibility": ["integration_steps", "breaking_changes"],
+    # Tier 1: Universal Agents
+    "actionable": ["immediate_actions", "follow_up_actions", "resources"],
+    "key_insights": ["insights"],
+    "pros_cons": ["pros", "cons"],
+    "audience_fit": ["secondary_audiences", "prerequisites", "not_suitable_for"],
+}
+
 # Quality assessment thresholds
 MIN_INSIGHTS_COMPREHENSIVE = 5
 MIN_SPECIFICITY_COMPREHENSIVE = 0.7
@@ -26,7 +50,7 @@ MIN_INSIGHTS_PARTIAL = 2
 MAX_KEY_INSIGHTS = 3
 
 
-def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:  # noqa: PLR0911, PLR0912 - Multiple returns/branches needed for agent-specific extraction logic
+def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> str:  # noqa: PLR0911, PLR0912, PLR0915 - Multiple returns/branches/statements needed for agent-specific extraction logic
     """Extract human-readable summary from findings.
 
     Args:
@@ -46,20 +70,25 @@ def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> s
         return f"Identified {primary} as primary technology"
 
     if agent_type == "security_auditor":
-        vulnerabilities = findings.get("vulnerabilities", [])
-        recommendations = findings.get("recommendations", [])
-        vuln_count = len(vulnerabilities) if isinstance(vulnerabilities, list) else 0
-        rec_count = len(recommendations) if isinstance(recommendations, list) else 0
-        return f"Found {vuln_count} vulnerabilities, {rec_count} recommendations"
+        # Schema uses security_risks, best_practices, compliance_notes
+        security_risks = findings.get("security_risks", [])
+        best_practices = findings.get("best_practices", [])
+        compliance_notes = findings.get("compliance_notes", [])
+        risk_count = len(security_risks) if isinstance(security_risks, list) else 0
+        bp_count = len(best_practices) if isinstance(best_practices, list) else 0
+        cn_count = len(compliance_notes) if isinstance(compliance_notes, list) else 0
+        return f"Found {risk_count} security risks, {bp_count + cn_count} recommendations"
 
     if agent_type == "implementation_planner":
-        steps = findings.get("implementation_steps", [])
+        # Schema uses 'steps' field, not 'implementation_steps'
+        steps = findings.get("steps", [])
         step_count = len(steps) if isinstance(steps, list) else 0
         return f"Planned {step_count} implementation steps"
 
     if agent_type == "performance_analyst":
+        # Schema uses 'optimization_opportunities', not 'optimizations'
         bottlenecks = findings.get("bottlenecks", [])
-        optimizations = findings.get("optimizations", [])
+        optimizations = findings.get("optimization_opportunities", [])
         bottleneck_count = len(bottlenecks) if isinstance(bottlenecks, list) else 0
         opt_count = len(optimizations) if isinstance(optimizations, list) else 0
         if bottleneck_count > 0 or opt_count > 0:
@@ -76,31 +105,72 @@ def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> s
         return "Code quality review complete"
 
     if agent_type == "trend_validator":
-        trends = findings.get("trends", [])
+        # Schema uses 'trend_assessments', not 'trends'
+        trends = findings.get("trend_assessments", [])
         trend_count = len(trends) if isinstance(trends, list) else 0
         if trend_count > 0:
             return f"Validated {trend_count} technology trends"
         return "Trends analysis complete"
 
     if agent_type == "dependency_mapper":
-        dependencies = findings.get("dependencies", [])
-        dep_count = len(dependencies) if isinstance(dependencies, list) else 0
-        if dep_count > 0:
-            return f"Mapped {dep_count} dependencies"
+        # Schema uses required_dependencies, optional_dependencies, core_dependencies
+        required = findings.get("required_dependencies", [])
+        optional = findings.get("optional_dependencies", [])
+        core = findings.get("core_dependencies", [])
+        req_count = len(required) if isinstance(required, list) else 0
+        opt_count = len(optional) if isinstance(optional, list) else 0
+        core_count = len(core) if isinstance(core, list) else 0
+        total = req_count + opt_count + core_count
+        if total > 0:
+            return f"Mapped {total} dependencies ({req_count} required, {opt_count} optional)"
         return "Dependencies analysis complete"
 
     if agent_type == "integration_feasibility":
-        integration_points = findings.get("integration_points", [])
-        ip_count = len(integration_points) if isinstance(integration_points, list) else 0
-        if ip_count > 0:
-            return f"Identified {ip_count} integration points"
+        # Schema uses 'integration_steps', not 'integration_points'
+        integration_steps = findings.get("integration_steps", [])
+        breaking_changes = findings.get("breaking_changes", [])
+        is_count = len(integration_steps) if isinstance(integration_steps, list) else 0
+        bc_count = len(breaking_changes) if isinstance(breaking_changes, list) else 0
+        if is_count > 0 or bc_count > 0:
+            return f"Identified {is_count} integration steps, {bc_count} breaking changes"
         return "Integration feasibility analysis complete"
+
+    # Tier 1: Universal Agents
+    if agent_type == "actionable":
+        immediate = findings.get("immediate_actions", [])
+        follow_up = findings.get("follow_up_actions", [])
+        resources = findings.get("resources", [])
+        imm_count = len(immediate) if isinstance(immediate, list) else 0
+        fu_count = len(follow_up) if isinstance(follow_up, list) else 0
+        res_count = len(resources) if isinstance(resources, list) else 0
+        return (
+            f"Extracted {imm_count} immediate actions, {fu_count} follow-ups, {res_count} resources"
+        )
+
+    if agent_type == "key_insights":
+        insights = findings.get("insights", [])
+        insight_count = len(insights) if isinstance(insights, list) else 0
+        return f"Identified {insight_count} key insights"
+
+    if agent_type == "pros_cons":
+        pros = findings.get("pros", [])
+        cons = findings.get("cons", [])
+        pro_count = len(pros) if isinstance(pros, list) else 0
+        con_count = len(cons) if isinstance(cons, list) else 0
+        return f"Found {pro_count} pros, {con_count} cons"
+
+    if agent_type == "audience_fit":
+        prereqs = findings.get("prerequisites", [])
+        secondary = findings.get("secondary_audiences", [])
+        prereq_count = len(prereqs) if isinstance(prereqs, list) else 0
+        sec_count = len(secondary) if isinstance(secondary, list) else 0
+        return f"Identified {sec_count + 1} audiences, {prereq_count} prerequisites"
 
     # Generic fallback
     return "Analysis complete"
 
 
-def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noqa: PLR0911 - Multiple returns needed for agent-specific insight counting
+def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noqa: PLR0911, PLR0912, PLR0915 - Multiple returns/branches/statements needed for agent-specific insight counting
     """Count number of insights in findings.
 
     Args:
@@ -116,19 +186,24 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
         return len(alternatives) if isinstance(alternatives, list) else 0
 
     if agent_type == "security_auditor":
-        vulnerabilities = findings.get("vulnerabilities", [])
-        recommendations = findings.get("recommendations", [])
-        vuln_count = len(vulnerabilities) if isinstance(vulnerabilities, list) else 0
-        rec_count = len(recommendations) if isinstance(recommendations, list) else 0
-        return vuln_count + rec_count
+        # Schema uses security_risks, best_practices, compliance_notes
+        security_risks = findings.get("security_risks", [])
+        best_practices = findings.get("best_practices", [])
+        compliance_notes = findings.get("compliance_notes", [])
+        risk_count = len(security_risks) if isinstance(security_risks, list) else 0
+        bp_count = len(best_practices) if isinstance(best_practices, list) else 0
+        cn_count = len(compliance_notes) if isinstance(compliance_notes, list) else 0
+        return risk_count + bp_count + cn_count
 
     if agent_type == "implementation_planner":
-        steps = findings.get("implementation_steps", [])
+        # Schema uses 'steps' field, not 'implementation_steps'
+        steps = findings.get("steps", [])
         return len(steps) if isinstance(steps, list) else 0
 
     if agent_type == "performance_analyst":
+        # Schema uses 'optimization_opportunities', not 'optimizations'
         bottlenecks = findings.get("bottlenecks", [])
-        optimizations = findings.get("optimizations", [])
+        optimizations = findings.get("optimization_opportunities", [])
         bottleneck_count = len(bottlenecks) if isinstance(bottlenecks, list) else 0
         opt_count = len(optimizations) if isinstance(optimizations, list) else 0
         return bottleneck_count + opt_count
@@ -141,16 +216,57 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
         return issue_count + bp_count
 
     if agent_type == "trend_validator":
-        trends = findings.get("trends", [])
+        # Schema uses 'trend_assessments', not 'trends'
+        trends = findings.get("trend_assessments", [])
         return len(trends) if isinstance(trends, list) else 0
 
     if agent_type == "dependency_mapper":
-        dependencies = findings.get("dependencies", [])
-        return len(dependencies) if isinstance(dependencies, list) else 0
+        # Schema uses required_dependencies, optional_dependencies, core_dependencies
+        required = findings.get("required_dependencies", [])
+        optional = findings.get("optional_dependencies", [])
+        core = findings.get("core_dependencies", [])
+        req_count = len(required) if isinstance(required, list) else 0
+        opt_count = len(optional) if isinstance(optional, list) else 0
+        core_count = len(core) if isinstance(core, list) else 0
+        return req_count + opt_count + core_count
 
     if agent_type == "integration_feasibility":
-        integration_points = findings.get("integration_points", [])
-        return len(integration_points) if isinstance(integration_points, list) else 0
+        # Schema uses 'integration_steps' and 'breaking_changes'
+        integration_steps = findings.get("integration_steps", [])
+        breaking_changes = findings.get("breaking_changes", [])
+        is_count = len(integration_steps) if isinstance(integration_steps, list) else 0
+        bc_count = len(breaking_changes) if isinstance(breaking_changes, list) else 0
+        return is_count + bc_count
+
+    # Tier 1: Universal Agents
+    if agent_type == "actionable":
+        immediate = findings.get("immediate_actions", [])
+        follow_up = findings.get("follow_up_actions", [])
+        resources = findings.get("resources", [])
+        imm_count = len(immediate) if isinstance(immediate, list) else 0
+        fu_count = len(follow_up) if isinstance(follow_up, list) else 0
+        res_count = len(resources) if isinstance(resources, list) else 0
+        return imm_count + fu_count + res_count
+
+    if agent_type == "key_insights":
+        insights = findings.get("insights", [])
+        return len(insights) if isinstance(insights, list) else 0
+
+    if agent_type == "pros_cons":
+        pros = findings.get("pros", [])
+        cons = findings.get("cons", [])
+        pro_count = len(pros) if isinstance(pros, list) else 0
+        con_count = len(cons) if isinstance(cons, list) else 0
+        return pro_count + con_count
+
+    if agent_type == "audience_fit":
+        prereqs = findings.get("prerequisites", [])
+        secondary = findings.get("secondary_audiences", [])
+        not_suitable = findings.get("not_suitable_for", [])
+        prereq_count = len(prereqs) if isinstance(prereqs, list) else 0
+        sec_count = len(secondary) if isinstance(secondary, list) else 0
+        not_count = len(not_suitable) if isinstance(not_suitable, list) else 0
+        return prereq_count + sec_count + not_count
 
     # Generic fallback: count top-level list/dict items
     count = 0
@@ -266,11 +382,13 @@ async def process_agent_result(  # noqa: PLR0912 - Multiple branches needed for 
         if primary:
             key_insights.append(f"Primary technology: {primary}")
     elif agent_type == "security_auditor":
-        vulnerabilities = findings.get("vulnerabilities", [])
-        if isinstance(vulnerabilities, list) and vulnerabilities:
-            key_insights.append(f"Found {len(vulnerabilities)} security vulnerabilities")
+        # Schema uses 'security_risks', not 'vulnerabilities'
+        security_risks = findings.get("security_risks", [])
+        if isinstance(security_risks, list) and security_risks:
+            key_insights.append(f"Found {len(security_risks)} security risks")
     elif agent_type == "implementation_planner":
-        steps = findings.get("implementation_steps", [])
+        # Schema uses 'steps', not 'implementation_steps'
+        steps = findings.get("steps", [])
         if isinstance(steps, list) and steps:
             key_insights.append(f"Planned {len(steps)} implementation steps")
     # Add findings_summary as a key insight if available

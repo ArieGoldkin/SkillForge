@@ -3,14 +3,16 @@
 This module provides factory functions that wrap agent creation with:
 - Few-shot prompting via semantic search
 - LCEL chains with automatic fallback (replaces manual try/catch)
-- Retry handling for transient failures
 - Quality filtering for example selection
 
-Architecture (Dec 2025 - LangChain performance features):
+Architecture (Dec 2025 - Retry Flattening):
 - Few-shot prompting always enabled
 - LCEL `.with_fallbacks()` for automatic model fallback
-- LCEL `.with_retry()` for transient failure handling
+- Retry handled by LangChain max_retries (not LCEL .with_retry())
 - Graceful degradation: Falls back to baseline on any errors
+
+NOTE: .with_retry() removed to prevent retry cascade. Retries are now
+handled solely by LangChain's max_retries parameter in model_factory.py.
 
 Example:
     >>> async with AsyncSessionLocal() as session:
@@ -115,11 +117,10 @@ def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
             parallel_tool_calls=tool_call_config.parallel_tool_calls if tool_call_config else True,
         )
 
-    # LCEL chain with automatic fallback and retry
-    chain = primary_with_structure.with_retry(
-        stop_after_attempt=3,  # Retry up to 3 times for transient failures
-        wait_exponential_jitter=True,  # Exponential backoff with jitter
-    ).with_fallbacks(
+    # LCEL chain with automatic fallback (retry handled by LangChain max_retries)
+    # NOTE: Removed .with_retry() - redundant with LLM_MAX_RETRIES in model_factory.py
+    # This prevents retry cascade: SDK retry x LangChain retry x LCEL retry
+    chain = primary_with_structure.with_fallbacks(
         [fallback_with_structure],
         exceptions_to_handle=(Exception,),  # Handle all exceptions
     )
@@ -127,7 +128,7 @@ def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
     logger.info(
         "lcel_agent_created",
         agent_type=agent_type,
-        has_retry=True,
+        has_retry=False,  # Retry now at LangChain level only
         has_fallback=True,
     )
 

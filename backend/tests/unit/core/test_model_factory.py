@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.core.model_factory import (
     TASK_MODEL_MAP,
     _get_redis_cache_for_model,
@@ -9,6 +11,19 @@ from app.core.model_factory import (
     _should_strip_provider_prefix,
     get_chat_model,
 )
+
+
+@pytest.fixture(autouse=True)
+def _disable_cached_chat_model():
+    """Disable CachedChatModel wrapper for all tests in this module.
+
+    Tests mock init_chat_model and ChatAnthropic to return MagicMock,
+    but CachedChatModel requires a real BaseChatModel instance.
+    This fixture patches _get_cached_chat_model_class to return None,
+    skipping the cache wrapper and returning the mocked model directly.
+    """
+    with patch("app.core.model_factory._get_cached_chat_model_class", return_value=None):
+        yield
 
 # =============================================================================
 # Tests for _resolve_model_from_registry

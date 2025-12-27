@@ -266,20 +266,27 @@ class TestPromptManagerWithLangfuseClient:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_missing_variable_raises_key_error(self, manager, mock_langfuse):
-        """Missing required variable should raise KeyError."""
+    async def test_missing_variable_preserved(self, manager, mock_langfuse):
+        """Missing variables are preserved for JSON compatibility.
+
+        Issue #586: Changed from KeyError to preservation. When prompts contain
+        JSON examples like {"key": "value"}, we can't distinguish template vars
+        from JSON keys. Missing variables are now left as-is instead of raising.
+        """
         mock_prompt = MagicMock(spec=TextPromptClient)
         mock_prompt.prompt = "Hello {name}, you are {age} years old"
         mock_prompt.version = 1
         mock_prompt.config = {}
         mock_langfuse.get_prompt.return_value = mock_prompt
 
-        with pytest.raises(KeyError):
-            await manager.get_prompt_with_langfuse_client(
-                name="test-prompt",
-                variables={"name": "Alice"},  # Missing 'age'
-                label="production",
-            )
+        result, client = await manager.get_prompt_with_langfuse_client(
+            name="test-prompt",
+            variables={"name": "Alice"},  # Missing 'age' - now preserved
+            label="production",
+        )
+        # {age} is preserved because it wasn't in the variables dict
+        assert result == "Hello Alice, you are {age} years old"
+        assert client is not None
 
     @pytest.mark.asyncio
     @pytest.mark.unit

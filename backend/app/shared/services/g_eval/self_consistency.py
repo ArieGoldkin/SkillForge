@@ -154,12 +154,14 @@ async def score_criterion_with_self_consistency(  # noqa: PLR0913 - Function nee
 
     try:
         config = create_runnable_config()
+        config["max_concurrency"] = (
+            5  # Prevent rate limit violations (must be in config, not kwarg)
+        )
         # Use abatch() for parallel LLM processing (5-10x faster than gather)
         # Type checker doesn't see list[BaseMessage] as valid Sequence[BaseMessage]
         responses = await model.abatch(
             batch_inputs,  # type: ignore[arg-type]
             config=config,
-            max_concurrency=5,  # Prevent rate limit violations
         )
 
         # Parse responses into CriterionScore objects
