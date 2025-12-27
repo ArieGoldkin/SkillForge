@@ -144,9 +144,7 @@ def _extract_findings_summary(findings: dict[str, object], agent_type: str) -> s
         imm_count = len(immediate) if isinstance(immediate, list) else 0
         fu_count = len(follow_up) if isinstance(follow_up, list) else 0
         res_count = len(resources) if isinstance(resources, list) else 0
-        return (
-            f"Extracted {imm_count} immediate actions, {fu_count} follow-ups, {res_count} resources"
-        )
+        return f"Extracted {imm_count} immediate actions, {fu_count} follow-ups, {res_count} resources"
 
     if agent_type == "key_insights":
         insights = findings.get("insights", [])
