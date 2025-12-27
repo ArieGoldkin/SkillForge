@@ -134,9 +134,7 @@ class TestSelfConsistencyScoring:
 
     @pytest.mark.asyncio
     async def test_score_criterion_with_self_consistency_parallel_execution(self) -> None:
-        """Test that samples are generated in parallel using abatch."""
-        import time
-
+        """Test that samples are generated in parallel using abatch (single batch call)."""
         with patch("app.shared.services.g_eval.self_consistency.get_chat_model") as mock_model:
             mock_response = MagicMock()
             mock_response.content = """
@@ -145,18 +143,12 @@ class TestSelfConsistencyScoring:
             <confidence>0.7</confidence>
             """
 
-            async def slow_abatch(*args, **kwargs):
-                await asyncio.sleep(0.1)  # Simulate 100ms batch LLM call
-                # Return 3 responses (abatch processes all inputs in parallel)
-                return [mock_response] * 3
-
             mock_llm = AsyncMock()
-            mock_llm.abatch = slow_abatch
+            # Track batch call arguments to verify parallel execution
+            mock_llm.abatch = AsyncMock(return_value=[mock_response] * 3)
             mock_model.return_value = mock_llm
 
-            start_time = time.time()
-
-            await score_criterion_with_self_consistency(
+            result = await score_criterion_with_self_consistency(
                 input_content="Test input",
                 output="Test output",
                 criterion="depth",
@@ -165,11 +157,17 @@ class TestSelfConsistencyScoring:
                 n_samples=3,
             )
 
-            elapsed = time.time() - start_time
+            # Verify parallel execution: abatch called exactly once with all 3 samples
+            # (If sequential, ainvoke would be called 3 times instead)
+            assert mock_llm.abatch.call_count == 1
 
-            # With abatch, all 3 samples are processed in one batch call (~0.1s)
-            # Allow some overhead, but should be much less than 0.3s (sequential would be)
-            assert elapsed < 0.25  # Parallel execution should complete in < 250ms
+            # Verify batch contained all 3 samples (inputs list length)
+            batch_call_args = mock_llm.abatch.call_args
+            inputs_list = batch_call_args[0][0]  # First positional arg is the inputs list
+            assert len(inputs_list) == 3
+
+            # Verify all 3 samples were processed
+            assert len(result.individual_samples) == 3
 
     @pytest.mark.asyncio
     async def test_score_criterion_with_self_consistency_temperature(self) -> None:
