@@ -93,6 +93,7 @@ def create_runnable_config(
     thread_id: str | None = None,
     metadata: dict[str, str] | None = None,
     tags: list[str] | None = None,
+    langfuse_prompt: object | None = None,
 ) -> RunnableConfig:
     """Create RunnableConfig for LangGraph execution.
 
@@ -107,6 +108,8 @@ def create_runnable_config(
         thread_id: Optional thread ID for checkpointing
         metadata: Optional metadata dict for tracing (e.g., agent_type, analysis_id)
         tags: Optional list of tags for categorization (e.g., ["agent", "tech_comparator"])
+        langfuse_prompt: Optional Langfuse TextPromptClient for prompt-to-generation linkage
+            (Issue #564: Links prompts to generations in Langfuse UI)
 
     Returns:
         RunnableConfig with thread_id, metadata, tags, and Langfuse callbacks if enabled
@@ -134,7 +137,14 @@ def create_runnable_config(
         if callback:
             config["callbacks"] = [callback]
 
-    if metadata:
+    # Issue #564: Link prompt to generation via metadata
+    # The langfuse_prompt in metadata is automatically picked up by the CallbackHandler
+    # and links the generation to the prompt version in Langfuse UI
+    if langfuse_prompt is not None:
+        # Copy metadata to avoid modifying caller's dict, then add langfuse_prompt
+        config["metadata"] = dict(metadata) if metadata else {}
+        config["metadata"]["langfuse_prompt"] = langfuse_prompt
+    elif metadata:
         config["metadata"] = metadata
 
     if tags:

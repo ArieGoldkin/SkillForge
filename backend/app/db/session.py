@@ -101,11 +101,12 @@ def get_engine() -> "AsyncEngine":
         _is_test_mode = os.getenv("PYTEST_CURRENT_TEST") is not None
         if _is_test_mode:
             # Dynamic pool sizing based on CPU count
-            # Formula: pool_size = cpu_count * 2.4 ensures ~3 connections per worker
-            # Example: 16 CPUs → 38 connections (enough for 16 pytest-xdist workers)
+            # Formula: pool_size = cpu_count * 4 ensures ~4 connections per worker
+            # Example: 8 CPUs → 32 connections (enough for 16 pytest-xdist workers)
+            # Each test may need 2-3 connections (create, emit, poll), so 4x is safe
             _cpu_count = os.cpu_count() or 4
-            _test_pool_size = int(_cpu_count * 2.4)
-            _test_max_overflow = 10
+            _test_pool_size = int(_cpu_count * 4)
+            _test_max_overflow = 20  # Higher overflow for burst activity
         else:
             _test_pool_size = 5
             _test_max_overflow = 5

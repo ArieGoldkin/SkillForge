@@ -26,6 +26,8 @@ from collections import OrderedDict
 from datetime import UTC, datetime
 from typing import Any
 
+from langfuse.model import TextPromptClient
+
 from app.core.config import get_settings
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
@@ -1204,12 +1206,15 @@ class PromptManager:
     async def _fetch_from_langfuse(self, name: str, label: str) -> dict[str, Any] | None:
         """Fetch prompt from Langfuse API.
 
+        Issue #564: Modified to include TextPromptClient in return dict for prompt linkage.
+
         Args:
             name: Prompt name
             label: Prompt label
 
         Returns:
-            Prompt object with 'prompt' and 'version' keys, or None if not found
+            Prompt object with 'prompt', 'version', 'config', and 'langfuse_client' keys,
+            or None if not found
 
         """
         if not self.langfuse_client:
@@ -1246,6 +1251,7 @@ class PromptManager:
                 "prompt": prompt_obj.prompt,
                 "version": prompt_obj.version,
                 "config": prompt_obj.config,
+                "langfuse_client": prompt_obj,  # Issue #564: Store TextPromptClient for linkage
             }
 
         except Exception as e:
@@ -1338,6 +1344,93 @@ class PromptManager:
                 exc_info=True,
             )
             raise
+
+    async def get_prompt_with_langfuse_client(
+        self,
+        name: str,
+        variables: dict[str, Any] | None = None,
+        label: str = "production",
+    ) -> tuple[str, TextPromptClient | None]:
+        r"""Get prompt content AND Langfuse client object for observation linking.
+
+        Issue #564: New method that returns both compiled prompt and TextPromptClient
+        for proper Langfuse prompt-to-generation linkage.
+
+        Fetching strategy:
+        1. Try L1 cache (in-memory LRU) → returns (content, None)
+        2. Try L2 cache (Redis) → returns (content, None)
+        3. Try L3 source (Langfuse API) → returns (content, TextPromptClient)
+        4. Fallback to hardcoded prompts → returns (content, None)
+
+        Args:
+            name: Prompt name (e.g., "analysis-supervisor-routing")
+            variables: Variables for prompt compilation
+            label: Prompt label/version (default: "production")
+
+        Returns:
+            Tuple of (compiled_prompt_string, langfuse_client_or_none)
+            - L1/L2 cache hits return (content, None) - no client object
+            - L3 Langfuse fetch returns (content, TextPromptClient) - linkable
+            - Hardcoded fallback returns (content, None) - no client object
+
+        Raises:
+            ValueError: If prompt not found in any source
+            KeyError: If required variables are missing
+
+        Example:
+            >>> prompt, langfuse_client = await manager.get_prompt_with_langfuse_client(
+            ...     name="analysis-supervisor-routing",
+            ...     variables={"agent_list": "- agent1\n- agent2"},
+            ...     label="production",
+            ... )
+            >>> # If langfuse_client is not None, can link to generation span
+
+        """
+        variables = variables or {}
+
+        # L1 Cache: In-memory LRU
+        cached_prompt = await self._get_from_l1_cache(name, label)
+        if cached_prompt:
+            return self._compile_prompt(cached_prompt, variables), None
+
+        # L2 Cache: Redis
+        cached_prompt = await self._get_from_l2_cache(name, label)
+        if cached_prompt:
+            # Populate L1 cache
+            self.l1_cache.set(self._build_cache_key(name, label), cached_prompt)
+            return self._compile_prompt(cached_prompt, variables), None
+
+        # L3 Source: Langfuse API - CRITICAL PATH FOR LINKAGE
+        prompt_obj = await self._fetch_from_langfuse(name, label)
+        if prompt_obj:
+            prompt_content = prompt_obj["prompt"]
+            langfuse_client = prompt_obj["langfuse_client"]  # TextPromptClient object
+
+            # Only use Langfuse prompt if it has content
+            if prompt_content and prompt_content.strip():
+                # Cache content only (not client object)
+                await self._cache_prompt(name, label, prompt_content)
+
+                # Return BOTH compiled content and client object
+                return self._compile_prompt(prompt_content, variables), langfuse_client
+
+            logger.warning(
+                "prompt_langfuse_empty",
+                name=name,
+                label=label,
+                message="Langfuse prompt is empty, falling back to hardcoded",
+            )
+
+        # Fallback: Hardcoded prompts
+        hardcoded_prompt = self._get_hardcoded_prompt(name)
+        if hardcoded_prompt:
+            # Don't cache hardcoded prompts (they're already in memory)
+            return self._compile_prompt(hardcoded_prompt, variables), None
+
+        # Not found anywhere
+        msg = f"Prompt '{name}' not found in Langfuse or hardcoded fallbacks"
+        logger.error("prompt_not_found", name=name, label=label)
+        raise ValueError(msg)
 
     async def get_prompt(
         self,

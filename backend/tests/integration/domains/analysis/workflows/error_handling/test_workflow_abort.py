@@ -19,7 +19,14 @@ from .conftest import create_test_analysis
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_embedding_failure_stops_workflow(requires_database, reset_engine_connections):
-    """Test that embedding failure stops workflow (abort signal)."""
+    """Test that embedding failure stops workflow (abort signal).
+
+    The orchestrator catches WorkflowStageError and handles it gracefully:
+    - Status is set to 'failed'
+    - Error event is emitted
+    - Exception is NOT re-raised (workflow completes gracefully)
+    - Subsequent nodes are skipped
+    """
     analysis_id = uuid.uuid4()
     test_url = f"https://test-embedding-abort-{analysis_id}.com"
 
@@ -97,6 +104,8 @@ async def test_embedding_failure_stops_workflow(requires_database, reset_engine_
     ):
         workflow = create_analysis_workflow()
         orchestrator = WorkflowOrchestrator(workflow=workflow)
+        # The orchestrator catches WorkflowStageError and handles it gracefully
+        # No exception should be raised
         await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
 
     # Verify subsequent nodes were NOT called
@@ -111,7 +120,13 @@ async def test_embedding_failure_stops_workflow(requires_database, reset_engine_
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_supervisor_failure_stops_workflow(requires_database, reset_engine_connections):
-    """Test that supervisor failure stops workflow."""
+    """Test that supervisor failure stops workflow.
+
+    Note: Under pytest-xdist parallel load, worker crashes can occur if resources
+    aren't properly cleaned up. This test uses try/finally to ensure proper cleanup.
+    """
+    import asyncio
+
     analysis_id = uuid.uuid4()
     test_url = f"https://test-supervisor-abort-{analysis_id}.com"
 
@@ -180,7 +195,11 @@ async def test_supervisor_failure_stops_workflow(requires_database, reset_engine
         ):
             workflow = create_analysis_workflow()
             orchestrator = WorkflowOrchestrator(workflow=workflow)
-            await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
+            try:
+                await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
+            finally:
+                # Allow pending async tasks to complete to prevent worker crashes
+                await asyncio.sleep(0.05)
 
     # Verify subsequent nodes were NOT called
     assert nodes_called["quality_gate"] is False, "Quality gate should be skipped"
@@ -347,7 +366,9 @@ async def test_aggregation_failure_stops_workflow(requires_database, reset_engin
 async def test_agent_failure_does_not_stop_workflow(requires_database, reset_engine_connections):
     """Test that agent failure does NOT stop workflow (agents are non-blocking).
 
-    When an agent fails, other agents may still execute and workflow continues.
+    When an agent fails, the agent node catches the exception and returns empty findings.
+    The workflow continues to aggregation even though one agent produced no results.
+    This is the expected behavior for resilient workflow execution.
     """
     analysis_id = uuid.uuid4()
     test_url = f"https://test-agent-non-blocking-{analysis_id}.com"
@@ -357,21 +378,32 @@ async def test_agent_failure_does_not_stop_workflow(requires_database, reset_eng
 
     # Track if aggregation was called (workflow continued)
     aggregation_called = False
+    artifact_called = False
 
     async def mock_aggregate_node(state):
         nonlocal aggregation_called
         aggregation_called = True
-        return {"aggregated_insights": {}}
+        return {"aggregated_insights": {"summary": "Test aggregation"}}
 
-    # Mock agent to fail
+    async def mock_artifact_node(state):
+        nonlocal artifact_called
+        artifact_called = True
+        return {"artifact_id": str(uuid.uuid4())}
+
+    # Mock agent runner to fail (not the node itself - the node catches exceptions)
+    # The agent node will catch this and return empty findings
     with (
         patch(
-            "app.domains.analysis.workflows.agents.tech_comparator.run_tech_comparator",
-            side_effect=WorkflowError("Tech comparator failed"),
+            "app.domains.analysis.workflows.tasks.runners.run_tech_comparator_with_session",
+            side_effect=Exception("Tech comparator failed"),
         ),
         patch(
-            "app.domains.analysis.workflows.tasks.aggregate_findings.aggregate_findings",
+            "app.domains.analysis.workflows.graph_builder.aggregate_findings",
             side_effect=mock_aggregate_node,
+        ),
+        patch(
+            "app.domains.analysis.workflows.graph_builder.generate_artifact",
+            side_effect=mock_artifact_node,
         ),
     ):
         # Mock previous stages to succeed
@@ -417,4 +449,8 @@ async def test_agent_failure_does_not_stop_workflow(requires_database, reset_eng
     # Verify aggregation WAS called (workflow continued despite agent failure)
     assert aggregation_called is True, (
         "Aggregation should be called even if agent fails (non-blocking)"
+    )
+    # Verify artifact was also generated (workflow completed fully)
+    assert artifact_called is True, (
+        "Artifact should be generated even if agent fails (workflow completes)"
     )

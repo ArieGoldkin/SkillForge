@@ -91,8 +91,8 @@ async def test_run_integration_feasibility_success(
     """Test successful integration feasibility execution."""
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are an integration feasibility agent. Analyze feasibility."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are an integration feasibility agent. Analyze feasibility.", None)
     )
     mock_get_pm.return_value = mock_pm
 
@@ -139,8 +139,8 @@ async def test_integration_feasibility_error_handling(
     """Test error handling in integration feasibility."""
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are an integration feasibility agent. Analyze feasibility."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are an integration feasibility agent. Analyze feasibility.", None)
     )
     mock_get_pm.return_value = mock_pm
     analysis_id = str(uuid4())

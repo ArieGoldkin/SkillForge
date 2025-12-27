@@ -123,8 +123,8 @@ async def test_fact_validator_with_tools(mock_session: AsyncSession, base_state:
             side_effect=mock_run_with_tracking,
         ),
     ):
-        mock_pm.return_value.get_prompt = AsyncMock(
-            return_value="You are a fact validation specialist"
+        mock_pm.return_value.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("You are a fact validation specialist", None)
         )
 
         result = await run_fact_validator(
@@ -181,7 +181,9 @@ async def test_fact_validator_without_tools_logs_warning(
             side_effect=mock_run_with_tracking,
         ),
     ):
-        mock_pm.return_value.get_prompt = AsyncMock(return_value="Test prompt")
+        mock_pm.return_value.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("Test prompt", None)
+        )
 
         result = await run_fact_validator(
             content=content,
@@ -239,7 +241,9 @@ async def test_fact_validator_uses_grounding(mock_session: AsyncSession, base_st
             side_effect=mock_run_with_tracking,
         ),
     ):
-        mock_pm.return_value.get_prompt = AsyncMock(return_value="Base prompt")
+        mock_pm.return_value.get_prompt_with_langfuse_client = AsyncMock(
+            return_value=("Base prompt", None)
+        )
 
         await run_fact_validator(
             content=content,

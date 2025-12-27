@@ -143,6 +143,7 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
     session: AsyncSession,
     tools: Sequence[BaseTool] | None = None,
     tool_call_config: ToolCallConfig | None = None,
+    langfuse_prompt_client: Any | None = None,
 ) -> Runnable:
     """Create agent with optional few-shot prompting based on feature flags.
 
@@ -163,6 +164,7 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
         session: Database session for example retrieval
         tools: Optional MCP tools for tool-enabled agents
         tool_call_config: Optional tool call configuration
+        langfuse_prompt_client: Optional Langfuse prompt client for observation linking
 
     Returns:
         Runnable: Agent instance (with or without few-shot examples)
@@ -223,6 +225,11 @@ async def create_agent_with_optional_few_shot(  # noqa: PLR0913 - Factory needs 
         min_quality_score=config.few_shot_min_quality,
         system_prompt=system_prompt,
     )
+
+    # Issue #564: Attach prompt client for observation linking
+    if langfuse_prompt_client:
+        agent = agent.with_config(metadata={"langfuse_prompt_client": langfuse_prompt_client})
+
     return agent
 
 

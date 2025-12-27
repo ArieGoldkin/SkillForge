@@ -134,7 +134,7 @@ Version control for prompts in production:
 
 ```python
 # Fetch prompt from Langfuse
-from langfuse import Langfuse
+from langfuse import Langfuse, get_client
 
 langfuse = Langfuse()
 
@@ -148,13 +148,51 @@ response = await llm.generate(
         {"role": "user", "content": user_input}
     ]
 )
-
-# Link prompt to trace
-langfuse.trace(
-    name="security_analysis",
-    metadata={"prompt_version": prompt.version}
-)
 ```
+
+#### Linking Prompts to Generations (Issue #564 Pattern)
+
+**CRITICAL:** To make the "Number of Observations" counter work in Langfuse Prompts UI, you MUST link the `TextPromptClient` object to the generation span:
+
+```python
+from langfuse import get_client
+
+# Method 1: update_current_generation (preferred in SkillForge)
+langfuse = get_client()
+prompt = langfuse.get_prompt("security_auditor", label="production")
+
+# Link prompt to current generation span
+langfuse.update_current_generation(prompt=prompt)
+
+# Method 2: Pass prompt when starting generation
+with langfuse.start_as_current_generation(
+    name="security-analysis",
+    model="claude-sonnet-4-20250514",
+    prompt=prompt  # Links automatically!
+) as generation:
+    response = await llm.generate(...)
+    generation.update(output=response)
+```
+
+**SkillForge Pattern (with caching):**
+```python
+# PromptManager returns both content AND TextPromptClient
+prompt_content, prompt_client = await prompt_manager.get_prompt_with_langfuse_client(
+    name="analysis-agent-security-auditor",
+    variables={"skill_instructions": "..."},
+    label="production",
+)
+
+# Pass prompt_client through agent metadata
+if prompt_client:
+    agent = agent.with_config(metadata={"langfuse_prompt_client": prompt_client})
+
+# In invoke_agent(), link prompt to generation
+if prompt_client:
+    langfuse.update_current_generation(prompt=prompt_client)
+```
+
+**Note:** Cache hits (L1/L2) return `None` for `prompt_client` - linkage only happens on L3 Langfuse fetches (~5% of calls). This is acceptable for analytics.
 
 **Prompt Versioning in UI:**
 ```

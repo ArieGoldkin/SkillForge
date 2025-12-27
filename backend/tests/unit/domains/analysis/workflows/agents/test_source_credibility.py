@@ -55,7 +55,7 @@ async def test_source_credibility_official_documentation(
     """Test source credibility assessment for official documentation."""
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(return_value="You are a source credibility analyst.")
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(return_value=("You are a source credibility analyst.", None))
     mock_get_pm.return_value = mock_pm
 
     # Mock agent creation

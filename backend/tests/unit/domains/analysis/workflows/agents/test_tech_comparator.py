@@ -97,8 +97,8 @@ async def test_run_tech_comparator_success(
     """Test successful tech comparator execution."""
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a tech comparator agent. Compare technologies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a tech comparator agent. Compare technologies.", None)
     )
     mock_get_pm.return_value = mock_pm
 
@@ -142,8 +142,8 @@ async def test_run_tech_comparator_error_handling(
     """Test error handling in tech comparator."""
     # Mock PromptManager
     mock_pm = AsyncMock()
-    mock_pm.get_prompt = AsyncMock(
-        return_value="You are a tech comparator agent. Compare technologies."
+    mock_pm.get_prompt_with_langfuse_client = AsyncMock(
+        return_value=("You are a tech comparator agent. Compare technologies.", None)
     )
     mock_get_pm.return_value = mock_pm
 

@@ -24,15 +24,16 @@ def build_test_graph(
 
     Args:
         route_to_agents_mock: Mock routing function
-        supervisor_mock: Mock supervisor node function
+        supervisor_mock: DEPRECATED - No longer used (supervisor_node_fn parameter removed)
 
     Returns:
         Compiled graph ready for testing
 
     """
+    # Note: supervisor_mock parameter is kept for backward compatibility but not used
+    # The supervisor_node_fn parameter was removed from build_analysis_graph
     return build_analysis_graph(
         route_to_agents_fn=route_to_agents_mock,
-        supervisor_node_fn=supervisor_mock,
     )
 
 
@@ -81,27 +82,51 @@ async def wait_for_event_persistence(
     Returns:
         True if event was found, False if timeout
 
+    Note: Under heavy pytest-xdist parallel load (16+ workers), database connections
+    may be contended. This function uses retry logic and longer poll intervals
+    to handle connection pool exhaustion gracefully.
     """
     import time
 
+    from sqlalchemy.exc import OperationalError, TimeoutError as SQLAlchemyTimeoutError
+
     # Use time.time() instead of event_loop.time() to avoid issues during cleanup
     start_time = time.time()
+    poll_interval = 0.15  # Slightly longer poll interval to reduce connection churn
+    connection_errors = 0
+    max_connection_errors = 5  # Allow some connection failures under load
+
     while (time.time() - start_time) < max_wait:
-        async with AsyncSessionLocal() as session:
-            stmt = (
-                select(AnalysisProgress)
-                .where(AnalysisProgress.analysis_id == analysis_id)
-                .where(AnalysisProgress.progress_data["type"].astext == event_type)
-                .order_by(AnalysisProgress.created_at.desc())
-                .limit(1)  # Get most recent event only
-            )
-            result = await session.execute(stmt)
-            event = result.scalar_one_or_none()
-            if event:
-                # Small delay to ensure session cleanup completes
-                await asyncio.sleep(0.01)
-                return True
-        await asyncio.sleep(0.1)  # Check every 100ms
+        try:
+            async with AsyncSessionLocal() as session:
+                stmt = (
+                    select(AnalysisProgress)
+                    .where(AnalysisProgress.analysis_id == analysis_id)
+                    .where(AnalysisProgress.progress_data["type"].astext == event_type)
+                    .order_by(AnalysisProgress.created_at.desc())
+                    .limit(1)  # Get most recent event only
+                )
+                result = await session.execute(stmt)
+                event = result.scalar_one_or_none()
+                if event:
+                    # Small delay to ensure session cleanup completes
+                    await asyncio.sleep(0.01)
+                    return True
+        except (OperationalError, SQLAlchemyTimeoutError, ConnectionError, OSError) as e:
+            # Handle connection pool exhaustion under parallel load
+            connection_errors += 1
+            if connection_errors >= max_connection_errors:
+                # Too many connection errors - likely pool exhaustion
+                # Wait longer before retrying to let other workers release connections
+                await asyncio.sleep(1.0)
+                connection_errors = 0  # Reset counter after longer wait
+            else:
+                # Brief wait before retry
+                await asyncio.sleep(0.2)
+            continue
+
+        await asyncio.sleep(poll_interval)
+
     return False
 
 
