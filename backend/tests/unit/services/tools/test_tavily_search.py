@@ -1,57 +1,59 @@
 """Unit tests for Tavily Search API service.
 
-VCR-based tests for deterministic HTTP replay:
-- Records real Tavily API responses during first run
-- Replays responses from cassettes in subsequent runs
-- No mocking needed for HTTP calls - VCR handles it
-- API keys are automatically filtered from cassettes
+Uses pytest-httpx for mocking HTTP responses:
+- Deterministic responses without network calls
+- Full control over response content and status codes
+- Verifies all expected requests are made
 
-To record new cassettes:
-    VCR_RECORD_MODE=all pytest tests/unit/services/tools/test_tavily_search.py -k vcr -v
-
-To verify cassettes work without network:
-    pytest tests/unit/services/tools/test_tavily_search.py -v --vcr-record=none
+For integration tests with real API, use tests/integration/test_tavily_integration.py
 """
 
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from pytest_httpx import HTTPXMock
 
 from app.core.exceptions import TavilySearchError
 from app.shared.services.tools.tavily_search import TavilySearch
+
+# Sample responses for mocking
+SAMPLE_SEARCH_RESPONSE = {
+    "query": "Python best practices 2025",
+    "answer": "Follow PEP 8 for style, use virtual environments, and adopt GitFlow for version control.",
+    "results": [
+        {
+            "title": "Python Logging Best Practices: Complete Guide 2025",
+            "url": "https://example.com/python-logging",
+            "content": "Best practices for Python logging in 2025...",
+            "score": 0.9995627,
+            "raw_content": None,
+        },
+        {
+            "title": "A Guide of Best Practices for Python",
+            "url": "https://example.com/python-guide",
+            "content": "The Hitchiker's Guide to Python best practices...",
+            "score": 0.99760324,
+            "raw_content": None,
+        },
+    ],
+    "images": [],
+    "response_time": 1.5,
+}
 
 
 @pytest.fixture
 def tavily_search():
     """Create a TavilySearch instance with mocked Redis.
 
-    For VCR recording (VCR_RECORD_MODE=all), uses real API key from environment.
-    For VCR replay or mock tests, uses a placeholder key.
-
-    Redis is still mocked because we're testing the Tavily HTTP API,
-    not the Redis integration (which has its own integration tests).
+    Uses a test API key since httpx_mock will intercept all HTTP requests.
+    Redis is mocked because we're testing the Tavily HTTP API logic.
     """
-    # Use real API key when recording VCR cassettes, placeholder otherwise
-    vcr_mode = os.environ.get("VCR_RECORD_MODE", "none")
-    if vcr_mode in ("all", "new_episodes"):
-        # Recording mode - use real API key from settings
-        from app.core.config import get_settings
-
-        real_settings = get_settings()
-        api_key = real_settings.TAVILY_API_KEY
-        if not api_key:
-            pytest.skip("TAVILY_API_KEY required for VCR recording")
-    else:
-        # Replay mode - use placeholder (VCR will intercept anyway)
-        api_key = "test-tavily-key-placeholder"
-
     with (
         patch("app.shared.services.tools.tavily_search.settings") as mock_settings,
         patch("app.shared.services.tools.tavily_search.create_redis_client") as mock_redis,
     ):
-        mock_settings.TAVILY_API_KEY = api_key
+        mock_settings.TAVILY_API_KEY = "test-tavily-api-key"
         mock_settings.REDIS_URL = "redis://localhost:6380"
 
         # Mock Redis client
@@ -100,12 +102,14 @@ def tavily_search_no_cache():
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_success(tavily_search):
-    """Test successful search returns expected results.
+async def test_search_success(tavily_search, httpx_mock: HTTPXMock):
+    """Test successful search returns expected results."""
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=SAMPLE_SEARCH_RESPONSE,
+    )
 
-    VCR will record the Tavily API response on first run and replay it afterward.
-    """
     result = await tavily_search.search("Python best practices 2025")
 
     assert result["query"] == "Python best practices 2025"
@@ -118,12 +122,18 @@ async def test_search_success(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_basic_depth(tavily_search):
-    """Test search with basic depth parameter.
+async def test_search_basic_depth(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with basic depth parameter."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "FastAPI async patterns",
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the basic depth API response.
-    """
     result = await tavily_search.search_basic("FastAPI async patterns")
 
     assert result["query"] == "FastAPI async patterns"
@@ -132,12 +142,18 @@ async def test_search_basic_depth(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_advanced_depth(tavily_search):
-    """Test search with advanced depth parameter.
+async def test_search_advanced_depth(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with advanced depth parameter."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "LangGraph workflow examples",
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the advanced depth API response.
-    """
     result = await tavily_search.search_advanced("LangGraph workflow examples")
 
     assert result["query"] == "LangGraph workflow examples"
@@ -160,14 +176,21 @@ async def test_search_whitespace_query(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_query_truncation(tavily_search):
-    """Test search truncates overly long queries.
-
-    VCR will record the truncated query being sent to the API.
-    """
+async def test_search_query_truncation(tavily_search, httpx_mock: HTTPXMock):
+    """Test search truncates overly long queries."""
     # Create a query longer than TAVILY_MAX_QUERY_LENGTH (400 chars)
     long_query = "Python programming best practices " * 20  # ~700 chars
+    truncated_query = long_query[:400]
+
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": truncated_query,
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
     result = await tavily_search.search(long_query)
 
@@ -309,12 +332,19 @@ async def test_search_without_cache(tavily_search_no_cache):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_custom_max_results(tavily_search):
-    """Test search with custom max_results parameter.
+async def test_search_custom_max_results(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with custom max_results parameter."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "TypeScript best practices",
+        "results": SAMPLE_SEARCH_RESPONSE["results"] * 5,  # 10 results
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the API response with 10 results.
-    """
     result = await tavily_search.search("TypeScript best practices", max_results=10)
 
     assert result["query"] == "TypeScript best practices"
@@ -324,12 +354,24 @@ async def test_search_custom_max_results(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_include_raw_content(tavily_search):
-    """Test search with include_raw_content parameter.
+async def test_search_include_raw_content(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with include_raw_content parameter."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "React Server Components",
+        "results": [
+            {
+                **SAMPLE_SEARCH_RESPONSE["results"][0],
+                "raw_content": "Full raw content of the page...",
+            }
+        ],
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the API response with raw content included.
-    """
     result = await tavily_search.search("React Server Components", include_raw_content=True)
 
     assert result["query"] == "React Server Components"
@@ -337,12 +379,19 @@ async def test_search_include_raw_content(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_include_images(tavily_search):
-    """Test search with include_images parameter.
+async def test_search_include_images(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with include_images parameter."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "Next.js 15 features",
+        "images": ["https://example.com/image1.png", "https://example.com/image2.png"],
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the API response with images included.
-    """
     result = await tavily_search.search("Next.js 15 features", include_images=True)
 
     assert result["query"] == "Next.js 15 features"
@@ -350,12 +399,19 @@ async def test_search_include_images(tavily_search):
 
 
 @pytest.mark.asyncio
-@pytest.mark.vcr()
-async def test_search_no_answer(tavily_search):
-    """Test search with include_answer=False.
+async def test_search_no_answer(tavily_search, httpx_mock: HTTPXMock):
+    """Test search with include_answer=False."""
+    response = {
+        **SAMPLE_SEARCH_RESPONSE,
+        "query": "PostgreSQL indexing",
+        "answer": None,  # No answer when include_answer=False
+    }
+    httpx_mock.add_response(
+        url="https://api.tavily.com/search",
+        method="POST",
+        json=response,
+    )
 
-    VCR will record the API response without the answer field.
-    """
     result = await tavily_search.search("PostgreSQL indexing", include_answer=False)
 
     assert result["query"] == "PostgreSQL indexing"
